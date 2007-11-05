@@ -1938,7 +1938,7 @@ CONTAINS
 !</description>
 
 !<input>
-  ! The name of the .prm file to read.
+  ! The name of the .tri file to read.
   CHARACTER(LEN=*), INTENT(IN) :: sfilename
 
   ! OPTIONAL: An rboundary object specifying the underlying domain.
@@ -2018,7 +2018,7 @@ CONTAINS
     ! Read NEL,NVT,NMT,NVE,NBCT from the file
     ! and store this information in the structure.
     READ (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        NVE,rtriangulation%NBCT    
+        NVE,rtriangulation%NBCT
 
     ! Comment: 'DCORVG'
     READ (iunit,*)
@@ -5992,5 +5992,104 @@ CONTAINS
     END SELECT
 
   END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_exportTriFile2D(rtriangulation, sfilename)
+
+!<description>
+    ! This routine exports a 2D triangulation into a .TRI file.
+!</description>
+
+!<input>
+    ! Triangulation structure, to be exported
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+
+    ! The name of the .tri file to read.
+    CHARACTER(LEN=*), INTENT(IN) :: sfilename
+!</input>
+!</subroutine>
+
+    ! Local variables
+    REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddata2D
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
+    INTEGER(I32), DIMENSION(:), POINTER   :: p_Idata
+    INTEGER(I32), DIMENSION(:), POINTER   :: p_IverticesAtBoundary
+    INTEGER(I32), DIMENSION(:), POINTER   :: p_IboundaryCpIdx
+    CHARACTER(SYS_STRLEN) :: ckmmstr
+    INTEGER(I32) :: ivt, iel
+    INTEGER      :: idim, ive, nve, ibct
+    INTEGER      :: iunit
+    
+    ! Open the file
+    CALL io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
+
+    ! Comment: Header
+    WRITE (iunit,*) 'Coarse mesh exported by FeatFlow2 exporter'
+    WRITE (iunit,*) 'Parametrisierung PARXC, PARYC, TMAXC'
+
+    ! Write NEL,NVT,NMT,NVE,NBCT to the file
+    WRITE (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
+        tria_getNNVE(rtriangulation),rtriangulation%NBCT,'NEL NVT NMT NVE NBCT'
+
+    ! Write: 'DCORVG'
+    WRITE (iunit,*) 'DCORVG'
+
+    ! Get the pointers to the coordinate array
+    CALL storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+    
+    ! Write the data to the file
+    DO ivt = 1, rtriangulation%NVT
+      WRITE (iunit,*) (p_Ddata2D(idim,ivt),idim=1,NDIM2D)
+    END DO
+
+    ! Write: 'KVERT'
+    WRITE (iunit,*) 'KVERT'
+
+    ! Get the pointer to the IverticesAtElement array and read the array
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_Idata2D)
+
+    ! Write the data to the file
+    DO iel = 1, rtriangulation%NEL
+      WRITE (iunit,*) (p_Idata2D(ive,iel),ive=1,SIZE(p_Idata2D,1))
+    END DO
+
+    ! Write: 'KNPR'
+    WRITE (iunit,*) 'KNPR'
+
+    ! Get the pointer to the InodalProperty array
+    CALL storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_Idata)
+    
+    ! Write the data
+    DO ivt = 1, rtriangulation%NVT
+      WRITE (iunit,*) p_Idata(ivt)
+    END DO
+
+    ! Write: 'KMM'
+    WRITE (iunit,*) 'KMM'
+    
+    ! Get the pointer to the IboundaryCpIdx and IverticesAtBoundary arrays
+    CALL storage_getbase_int(&
+        rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    CALL storage_getbase_int(&
+        rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+
+    ! Write the data
+    ckmmstr = ''
+    DO ibct = 1, rtriangulation%NBCT
+      ckmmstr = ADJUSTL(TRIM(ckmmstr))//' '//&
+          TRIM(sys_siL(p_IverticesAtBoundary(p_IboundaryCpIdx(ibct)),10))//' '//&
+          TRIM(sys_siL(p_IverticesAtBoundary(p_IboundaryCpIdx(ibct+1)-1),10))
+    END DO
+    WRITE (iunit,*) TRIM(ckmmstr)
+
+    ! Close the file, finish
+    CLOSE(iunit)
+  END SUBROUTINE tria_exportTriFile2D
 
 END MODULE
