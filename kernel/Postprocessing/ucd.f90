@@ -3218,6 +3218,11 @@ CONTAINS
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffer.
+    IF (.NOT. ASSOCIATED(rexport%p_Hvariables)) THEN
+      CALL ucd_moreVariables(rexport)
+    END IF
+
+    ! Create a new variable. If necessary, increase the size of the buffer.
     IF (rexport%nvariables .GE. SIZE(rexport%p_Hvariables)) THEN
       CALL ucd_moreVariables(rexport)
     END IF
