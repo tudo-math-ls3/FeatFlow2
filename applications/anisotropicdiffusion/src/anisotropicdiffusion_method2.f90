@@ -641,6 +641,7 @@ CONTAINS
           ieltype,ierrorestimator,rindicator)
 
       ! Perform one step h-adaptivity
+      CALL hadapt_refreshAdaptation(rhadapt,rtriangulation)
       CALL hadapt_performAdaptation(rhadapt,rindicator)
       
       ! Release the indicator vector again
