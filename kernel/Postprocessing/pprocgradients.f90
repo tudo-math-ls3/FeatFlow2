@@ -2346,7 +2346,11 @@ CONTAINS
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
             CALL sys_halt()
           END SELECT
-          
+
+          ! Release memory
+          CALL domint_doneIntegration(rintSubset)
+          CALL domint_doneIntegration(rintSubsetDest)
+
           ! Deallocate temporary memory
           DEALLOCATE(Dderivatives)
           DEALLOCATE(Dpolynomials)
