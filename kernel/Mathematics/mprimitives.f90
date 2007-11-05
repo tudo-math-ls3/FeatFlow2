@@ -47,7 +47,6 @@
 MODULE mprimitives
 
   USE fsystem
-  USE linearalgebra
   USE genoutput
   
   IMPLICIT NONE
@@ -1017,8 +1016,8 @@ CONTAINS
 
     ! local variables
     REAL(DP), DIMENSION(SIZE(Dd)) :: rv1
-    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z
-    INTEGER  :: its, i, j, jj, k, l, nm, n, m
+    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z, dot
+    INTEGER  :: its, i, j, jj, k, l, nm, n, m, idot
     INTEGER, PARAMETER :: MAX_ITS = 30
     LOGICAL :: btransposed
 
@@ -1062,7 +1061,10 @@ CONTAINS
           scale = SUM(ABS(Da(i,i:m)))
           IF (scale .GT. SYS_EPSREAL) THEN
             Da(i,i:m) = Da(i,i:m)/scale
-            s = lalg_scalarProductDble (Da(i,i:m), Da(i,i:m))
+            s = 0.0_DP
+            DO idot = i, m
+              s = s+Da(i,idot)*Da(i,idot)
+            END DO
             f = Da(i,i)
             g = -SIGN(SQRT(s),f)
             h = f*g-s
@@ -1303,7 +1305,10 @@ CONTAINS
           scale = SUM(ABS(Da(i:m,i)))
           IF (scale .GT. SYS_EPSREAL) THEN
             Da(i:m,i) = Da(i:m,i)/scale
-            s = lalg_scalarProductDble (Da(i:m,i), Da(i:m,i))
+            s = 0.0_DP
+            DO idot = i, m
+              s = s+Da(idot,i)*Da(idot,i)
+            END DO
             f = Da(i,i)
             g = -SIGN(SQRT(s),f)
             h = f*g-s
