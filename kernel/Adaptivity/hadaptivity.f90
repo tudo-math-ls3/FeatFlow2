@@ -485,25 +485,22 @@ MODULE hadaptivity
   INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CRS_4TRIA1QUAD   = 29
 
   ! Operation identifier for coarsening: 4-tria : 3-tria
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CRS_4TRIA3TRIA2 = 30
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CRS_4TRIA3TRIA3 = 31
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CRS_4TRIA3TRIA2  = 30
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CRS_4TRIA3TRIA3  = 31
 
 !</constantblock>
 
 
 !<constantblock description="Global flags for grid refinement/coarsening">
 
-  ! No refinement
-  INTEGER, PARAMETER :: HADAPT_NOREFINEMENT          = 0
+  ! No refinement and coarsening
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_NOADAPTATION         = 0
 
-  ! No coarsening
-  INTEGER, PARAMETER :: HADAPT_NOCOARSENING          = 0
-
-  ! Red-Green refinement strategy (R. Banks)
-  INTEGER, PARAMETER :: HADAPT_REDGREEN              = 1
+  ! Red-Green refinement and coarsening strategy (R. Banks)
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_REDGREEN             = 1
 
   ! Longest edge bisection strategy (M. Rivara)
-  INTEGER, PARAMETER :: HADAPT_LONGESTEDGE           = 2
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_LONGESTEDGE          = 2
 
 !</constantblock>
 
@@ -795,11 +792,8 @@ MODULE hadaptivity
     ! and must be deleted in hadapt_releaseAdaptation.
     INTEGER(I32) :: iduplicationFlag                 = 0
 
-    ! Tag: Specified the strategy for grid refinement
-    INTEGER :: irefinementStrategy                   = HADAPT_NOREFINEMENT
-
-    ! Tag: Specifies the coarsening strategy
-    INTEGER :: icoarseningStrategy                   = HADAPT_NOCOARSENING
+    ! Tag: Specified the strategy for grid refinementand coarsening
+    INTEGER :: iadaptationStrategy                   = HADAPT_NOADAPTATION
 
     ! Maximum number of subdivisions from the original mesh
     INTEGER :: NSUBDIVIDEMAX                         = 0
@@ -1023,8 +1017,7 @@ CONTAINS
 
     ! Get mandatory parameters from list
     CALL parlst_getvalue_int   (rparlist,ssection,"nsubdividemax",rhadapt%nsubdividemax)
-    CALL parlst_getvalue_int   (rparlist,ssection,"irefinementStrategy",rhadapt%irefinementStrategy)
-    CALL parlst_getvalue_int   (rparlist,ssection,"icoarseningStrategy",rhadapt%icoarseningStrategy)
+    CALL parlst_getvalue_int   (rparlist,ssection,"iadaptationStrategy",rhadapt%iadaptationStrategy)
     CALL parlst_getvalue_double(rparlist,ssection,"drefinementTolerance",rhadapt%drefinementTolerance)
     CALL parlst_getvalue_double(rparlist,ssection,"dcoarseningTolerance",rhadapt%dcoarseningTolerance)
 
@@ -1229,8 +1222,7 @@ CONTAINS
     NULLIFY(rhadapt%p_ImidneighboursAtElement)
     
     ! Clear parameters
-    rhadapt%irefinementStrategy  = HADAPT_NOREFINEMENT
-    rhadapt%icoarseningStrategy  = HADAPT_NOCOARSENING
+    rhadapt%iadaptationStrategy  = HADAPT_NOADAPTATION
     rhadapt%drefinementTolerance = 0._DP
     rhadapt%dcoarseningTolerance = 0._DP
 
@@ -1344,8 +1336,7 @@ CONTAINS
       CALL hadapt_releaseAdaptation(rhadaptBackup)
 
       rhadaptBackup%iSpec                = rhadapt%iSpec
-      rhadaptBackup%iRefinementStrategy  = rhadapt%iRefinementStrategy
-      rhadaptBackup%iCoarseningStrategy  = rhadapt%iCoarseningStrategy
+      rhadaptBackup%iadaptationStrategy  = rhadapt%iadaptationStrategy
       rhadaptBackup%NSUBDIVIDEMAX        = rhadapt%NSUBDIVIDEMAX
       rhadaptBackup%nRefinementSteps     = rhadapt%nRefinementSteps
       rhadaptBackup%nCoarseningSteps     = rhadapt%nCoarseningSteps
@@ -1508,8 +1499,7 @@ CONTAINS
     idupFlag = rhadapt%iduplicationFlag
 
     rhadapt%iSpec                = rhadaptBackup%iSpec
-    rhadapt%iRefinementStrategy  = rhadaptBackup%iRefinementStrategy
-    rhadapt%iCoarseningStrategy  = rhadaptBackup%iCoarseningStrategy
+    rhadapt%iadaptationStrategy  = rhadaptBackup%iadaptationStrategy
     rhadapt%NSUBDIVIDEMAX        = rhadaptBackup%NSUBDIVIDEMAX
     rhadapt%nRefinementSteps     = rhadaptBackup%nRefinementSteps
     rhadapt%nCoarseningSteps     = rhadaptBackup%nCoarseningSteps
@@ -2544,8 +2534,8 @@ CONTAINS
     rhadapt%increaseNVT=0
     
     ! What kind of grid refinement should be performed
-    SELECT CASE(rhadapt%irefinementStrategy)
-    CASE (HADAPT_NOREFINEMENT)   ! No grid refinement
+    SELECT CASE(rhadapt%iadaptationStrategy)
+    CASE (HADAPT_NOADAPTATION)   ! No grid refinement
 
       
     CASE (HADAPT_REDGREEN)       ! Red-green grid refinement
@@ -2604,17 +2594,7 @@ CONTAINS
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
           rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
-      
-
-!!$    CASE (HADAPT_LONGESTEDGE)   ! Bisection of longest edge
-!!$
-!!$      ! Mark elements for refinement based on indicator function
-!!$      CALL mark_refinement2D(rhadapt,rindicator)
-!!$      
-!!$      ! Perform refinement
-!!$      CALL bisection_refine(rhadapt)
-
-      
+            
     CASE DEFAULT
       CALL output_line('Unsupported refinement strategy!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
@@ -2693,10 +2673,8 @@ CONTAINS
         TRIM(sys_siL(rhadapt%nCoarseningSteps,3)))
     CALL output_line('Total number of grid smoothing  steps:       '//&
         TRIM(sys_siL(rhadapt%nSmoothingSteps,3)))
-    CALL output_line('Strategy for grid refinement:                '//&
-        TRIM(sys_siL(rhadapt%irefinementStrategy,3)))
-    CALL output_line('Strategy for grid coarsening:                '//&
-        TRIM(sys_siL(rhadapt%icoarseningStrategy,3)))
+    CALL output_line('Strategy for grid refinement and coarsening: '//&
+        TRIM(sys_siL(rhadapt%iadaptationStrategy,3)))
     CALL output_line('Total/initial number of elements:            '//&
         TRIM(sys_siL(rhadapt%NEL,15))//"("//TRIM(sys_siL(rhadapt%NEL0,15))//")")
     CALL output_line('Total/initial number of vertices:            '//&
