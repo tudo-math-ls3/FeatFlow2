@@ -1877,39 +1877,39 @@ CONTAINS
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV1D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,1))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
                 
               CASE (NDIM2D)
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV2D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,1))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV2D_Y, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,2))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,2))
                 
               CASE (NDIM3D)
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,1))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
                 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_Y, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,2))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,2))
                 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
                     p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
                     1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_Z, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints+ncubp,:,3))
+                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,3))
                 
               CASE DEFAULT
                 CALL output_line('Invalid spatial dimension!',&
