@@ -10,8 +10,10 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) ppgrd_calcGradient
-!#     -> Calculates the recovered gradient of a scalar finite element
-!#        function.
+!#     -> Standard implementation for the calculation of the recovered 
+!#        gradient of a scalar finite element function.
+!#        A parameter admits to choose a method which is used with
+!#        default parameters.
 !#
 !# Auxiliary routines, called internally.
 !#
@@ -22,9 +24,9 @@
 !#
 !# 2.) ppgrd_calcGradSuperPatchRecov
 !#     -> Calculate the reconstructed gradient as P1, Q1, P2 or Q2
-!#        vector for an arbitrary conformal discretisation in 2D.
+!#        vector for an arbitrary conformal discretisation.
 !#        Uses the superconvergent patch recovery technique suggested
-!#        by Zienkiewicz and Zhu.
+!#        by Zienkiewicz and Zhu. 1D, 2D, 3D.
 !#
 !# </purpose>
 !#########################################################################
@@ -225,17 +227,20 @@ CONTAINS
       ! recovery routine.
       SELECT CASE (imethod)
       CASE (PPGRD_INTERPOL)
+        ! 1st order gradient
         CALL ppgrd_calcGrad2DInterpP12Q12cnf (rvectorScalar,rvectorGradient)
       CASE (PPGRD_ZZTECHNIQUE)
-        CALL output_line ('ZZ not implemented!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-        CALL sys_halt()
+        ! 2nd order gradient with ZZ.
+        ! Standard method is 'nodewise'.
+        CALL ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,PPGRD_NODEPATCH)
       END SELECT
 
     CASE DEFAULT
-      CALL output_line ('Unsupported dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      CALL sys_halt()
+      ! Use ZZ as default.
+      CALL ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,PPGRD_NODEPATCH)
+      !CALL output_line ('Unsupported dimension!',&
+      !    OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
+      !CALL sys_halt()
     END SELECT
 
   END SUBROUTINE
