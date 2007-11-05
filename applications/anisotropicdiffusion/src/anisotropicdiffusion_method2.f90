@@ -176,9 +176,6 @@ CONTAINS
     ! A scalar vector for storing the indicator for h-adaptivity
     TYPE(t_vectorScalar) :: rindicator
 
-    ! Maximum level for h-refinement
-    INTEGER :: NLMAXhRefinement
-
     ! Maximum number of h-adaptivity cycles
     INTEGER :: MAXhRefinementSteps
 
@@ -232,10 +229,6 @@ CONTAINS
     ! Maximum level
     CALL parlst_getvalue_int (rparams, '', &
                                      'NLMAX', NLMAX, 7)
-
-    ! Maximum level of refinement
-    CALL parlst_getvalue_int (rparams, '', &
-                                     'NLMAXhRefinement', NLMAXhRefinement, 0)
 
     ! Maximum number of refinement steps
     CALL parlst_getvalue_int (rparams, '', &
@@ -315,18 +308,8 @@ CONTAINS
     ! +------------------------------------------------------------------------
     ! | SETUP OF THE H-ADAPTIVITY
     ! +------------------------------------------------------------------------
-    ! Prepare h-adaptivity
-    rhadapt%iSpec=2**1
-    rhadapt%nsubdividemax = NLMAXhRefinement
-    rhadapt%irefinementStrategy = 1
-    rhadapt%icoarseningStrategy = 1
-
-    ! The following tolerance values are the bounds for the monitor function
-    ! gethadaptMonitorFunction below. If this monitor function returns a value
-    ! > drefinementTolerance to an element, that element is refined.
-    ! A value < dcoarseningTolerance on the other hand results in coarsening.
-    rhadapt%drefinementTolerance = 1e-1
-    rhadapt%dcoarseningTolerance = 1e-10
+    
+    CALL hadapt_initFromParameterlist(rhadapt,rparams,"adaptivity")
     CALL hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
     ! +------------------------------------------------------------------------

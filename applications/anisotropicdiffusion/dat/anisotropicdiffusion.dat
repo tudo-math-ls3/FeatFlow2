@@ -9,7 +9,7 @@ sfileTRI = './pre/quad2d.tri'
 
 # Convert quad mesh to triangle mesh
 
-iconvertToTriangleMesh = 0
+iconvertToTriangleMesh = 1
 
 # Percentage value (0..1) for mesh distortion
 # 0=no distortion. E.g. 0.2=20%
@@ -19,7 +19,7 @@ dmeshDistortion=0.0
 # Element type to use for the discretisation.
 # 11=Q1, 1=P1, 13=Q2, 2=P2, -30=Q1~ nonparametric, -1=mixed P1/Q1
 
-ielementType = 11
+ielementType = -1
 
 # Type of stabilisation.
 # 0=none
@@ -33,17 +33,18 @@ dgamma = 0.01
 
 # Maximum level of the discretisation
 
-NLMAX = 3
-
-# Maximum refinement level for h-adaptivity
-NLMAXhRefinement = 10
+NLMAX = 1
 
 # Maximum number of refinement steps
 MAXhRefinementSteps = 10
 
+# Type of error estimator
+# 1=L2-projection, 2=node-based ZZ, 3=element-based ZZ, 4=face-based ZZ
+ierrorestimator = 3
+
 # Rotation angle for the anisotropic diffusion
 
-dtheta = 0
+dtheta = -40
 
 # Entries in the diffusion matrix
 
@@ -60,3 +61,19 @@ ddiffusionA22 = 0.001
 # 4: u=unknown, u(outer boundarry component)=0, u(inner BC)=2
 
 isolution = 4
+
+
+[adaptivity]
+
+# Maximum refinement level for h-adaptivity
+nsubdividemax = 5
+
+# Strategy for grid adaptation
+# =1, red-green refinement/coarsening
+iadaptationStrategy = 1
+
+# Tolerance for grid refinement
+drefinementTolerance = 5e-1
+
+# Tolerance for grid recoarsening
+dcoarseningTolerance = 1e-1

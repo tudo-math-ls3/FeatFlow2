@@ -34,7 +34,7 @@ PROGRAM anisotropicdiffusion
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
+  CALL system_init(); sys_haltmode = SYS_HALT_THROWFPE
   
   ! Initialise the output system. Write the program output to screen as
   ! well as to the file 'log/output.txt'.
@@ -45,10 +45,10 @@ PROGRAM anisotropicdiffusion
   CALL storage_init(999, 100)
 
   ! Call the problem to solve. 
-  CALL output_lbrk ()
-  CALL output_line ('Calculating anisotropic diffusion problem with method 1')
-  CALL output_line ('-------------------------------------------------------')
-  CALL anisotropicdiffusion1
+!  CALL output_lbrk ()
+!  CALL output_line ('Calculating anisotropic diffusion problem with method 1')
+!  CALL output_line ('-------------------------------------------------------')
+!  CALL anisotropicdiffusion1
 
   ! Call the problem to solve. 
   CALL output_lbrk ()
