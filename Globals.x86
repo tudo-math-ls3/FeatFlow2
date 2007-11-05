@@ -29,7 +29,7 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
-OPTFLAGSFDEBUG = -ftrace=full
+OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS   = -pipe
@@ -182,7 +182,7 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-OPTFLAGSFDEBUG = -ftrace=full
+OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS   = -pipe
@@ -268,7 +268,7 @@ AR=xiar
 OPTFLAGS  = -O3 -ipo
 OPTFLAGSCDEBUG = -traceback
 OPTFLAGSCPPDEBUG = -traceback
-OPTFLAGSFDEBUG = -traceback -check all
+OPTFLAGSFDEBUG = -check bounds -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
 CPPFLAGS   = -vec-report0
