@@ -19,60 +19,56 @@
 !#      -> Wrapper. Create a FEAT 2.0 triangulation structure from a
 !#         FEAT 1.x triangulation structure.
 !#
-!#  2.) tria_readTriFile1D
-!#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic 
-!#         information.
-!#
-!#  3.) tria_readTriFile2D
+!#  2.) tria_readTriFile2D
 !#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
 !#         information.
 !#
-!#  4.) tria_initStandardMeshFromRaw
+!#  3.) tria_initStandardMeshFromRaw
 !#      -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
 !#         (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!#  5.) tria_refine2LevelOrdering
+!#  4.) tria_refine2LevelOrdering
 !#      -> Refines a mesh according to the 2-level ordering algorithm.
 !#         Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
-!#  6.) tria_compress2LevelOrdHierarchy
+!#  5.) tria_compress2LevelOrdHierarchy
 !#      -> Can be used to compress a mesh hierarchy created with the 2-level
 !#         ordering. Saves memory. Shares vertex coordinates between fine
 !#         and coarse mesh.
 !#
-!#  7.) tria_quickRefine2LevelOrdering
+!#  6.) tria_quickRefine2LevelOrdering
 !#      -> Refines a mesh multiple times according to the 2-level ordering 
 !#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
 !#         coarse mesh.
 !#
-!#  8.) tria_done
+!#  7.) tria_done
 !#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!#  9.) tria_rawGridToTri
+!#  8.) tria_rawGridToTri
 !#      -> Converts a raw mesh into a triangular mesh.
 !#
-!# 10.) tria_duplicate
+!#  9.) tria_duplicate
 !#      -> Creates a duplicate / backup of a triangulation.
 !#         Some information may be shared between two triangulation structures.
 !#
-!# 11.) tria_restore
+!# 10.) tria_restore
 !#      -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 12.) tria_searchBoundaryNode
+!# 11.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 13.) tria_getPointsOnEdge
+!# 12.) tria_getPointsOnEdge
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
-!# 14.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
+!# 13.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
-!# 15.) tria_createRawTria1D
+!# 14.) tria_createRawTria1D
 !#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
 !#         of the same length
 !#
-!# 16.) tria_infoStatistics
+!# 15.) tria_infoStatistics
 !#      -> Prints out statistics about a mesh.
 !#
 !# Auxiliary routines:
@@ -2303,181 +2299,6 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_readTriFile1D(rtriangulation, sfilename, rboundary)
-
-!<description>
-  ! This routine reads a .TRI file of a 1D triangulation into memory
-  ! and creates a 'raw' triangulation (i.e. a triangulation that contains
-  ! only basic information, see below). 
-  !
-  ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .prm 
-  ! file to read.
-  !
-  ! This reads only the very basic information that is needed to create
-  ! the coarse grid. No information about boundary points, subdivisions
-  ! or whatever is created.
-  ! The following arrays / information tags will be initialised:
-  !
-  ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
-  ! DvertexCoords, IverticesAtElement, InodalProperty, 
-  ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
-  ! The nodal property array InodalProperty contains only the data for the
-  ! vertices of the triangulation.
-  ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
-  ! for the boundary component (according to IboundaryCpIdx) but not 
-  ! for the parameter value.
-  !
-  ! The triangulation structure rtriangulation must be empty. All previous
-  ! information in this structure (if there is any) is lost!
-!</description>
-
-!<input>
-  ! The name of the .prm file to read.
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
-
-  ! OPTIONAL: An rboundary object specifying the underlying domain.
-  ! If not specified, the routine assumes that the TRI file does not specify
-  ! boundary parameter values, i.e. the point coordinates in the TRI file
-  ! are all real coordinates. The array DvertexParameterValue is not
-  ! generated in this case.
-  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
-! </input>
-  
-!<output>
-  ! Triangulation structure, to be filled with data
-  TYPE(t_triangulation), INTENT(OUT) :: rtriangulation
-!</output>
-  
-!</subroutine>
-
-    ! Input channel for reading
-    INTEGER :: iunit
-    
-    ! Open the file
-    CALL io_openFileForReading(sfilename, iunit)
-
-    ! We create a 1D triangulation here.
-    rtriangulation%ndim = NDIM1D
-
-    ! Read the basic mesh
-    CALL tria_readRawTriangulation1D (iunit,rtriangulation)
-
-    ! Create the basic boundary information
-    CALL tria_genRawBoundary2D (rtriangulation,rboundary)
-
-    ! Close the file, finish
-    CLOSE(iunit)
-
-  END SUBROUTINE
-  
-!************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE tria_readRawTriangulation1D (iunit,rtriangulation)
-
-!<description>  
-  ! Auxiliary routine of tria_readTriFile1D.
-  ! Reads basic information from a triangulation file into rtriangulation.
-  ! That means, the following information arrays / tags are initialised:
-  ! NEL,NVT,NMT,NBCT,InelOfType,
-  ! DvertexCoords, IverticesAtElement and InodalProperty.
-  ! The data is read from the file without being changed!
-!</description>
-  
-!<input>
-  ! Unit number of the file to be read
-  INTEGER, INTENT(IN) :: iunit
-!</input>
-  
-!<inputoutput> 
-  ! Triangulation to be initialised with basic data.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
-!</inputoutput>
-
-!</subroutine>
-
-    ! Local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
-    INTEGER(I32) :: ivt, iel
-    INTEGER :: ive, nve
-    INTEGER(I32), DIMENSION(2) :: Isize
-    
-    ! The first two lines in the file are comments.
-    READ(iunit,*)
-    READ(iunit,*)
-    
-    ! Read NEL,NVT,NMT,NVE,NBCT from the file
-    ! and store this information in the structure.
-    READ (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        NVE,rtriangulation%NBCT    
-
-    ! Comment: 'DCORVG'
-    READ (iunit,*)
-
-    ! Allocate memory for the basic arrays on the heap
-    Isize = (/NDIM1D,INT(rtriangulation%NVT,I32)/)
-    CALL storage_new2D ('tria_read_tri1D', 'DCORVG', Isize, ST_DOUBLE, &
-        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
-        
-    ! Get the pointers to the coordinate array
-    CALL storage_getbase_double2D(&
-        rtriangulation%h_DvertexCoords,p_Ddata2D)
-        
-    ! Read the data from the file, store it in the array.
-    !READ (iunit,*) ((p_Ddata2D(idim,ivt),idim=1,NDIM1D), ivt=1,rtriangulation%NVT)
-    READ (iunit,*) (p_Ddata2D(1,ivt), ivt=1, rtriangulation%NVT)
-
-    ! Comment: 'KVERT'
-    READ (iunit,*)
-
-    ! Allocate memory for IverticesAtElement
-    Isize = (/nve,INT(rtriangulation%NEL,I32)/)
-    CALL storage_new2D ('tria_read_tri1D', 'KVERT', Isize, ST_INT, &
-        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
-        
-    ! Get the pointer to the IverticesAtElement array and read the array
-    CALL storage_getbase_int2D(&
-        rtriangulation%h_IverticesAtElement,p_Idata2D)
-
-    READ (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
-
-    ! Loop through the elements and determine how many elements
-    ! of each element type we have.
-    rtriangulation%InelOfType(:) = 0
-    DO iel=1,rtriangulation%nel
-      DO ive=nve,1,-1
-        IF (p_Idata2D(ive,iel) .NE. 0) THEN
-          rtriangulation%InelOfType(ive) = rtriangulation%InelOfType(ive)+1
-          EXIT
-        END IF
-      END DO
-    END DO
-
-    ! Comment: 'KNPR'
-    READ (iunit,*)
-
-    ! Allocate memory for InodalProperty 
-    CALL storage_new ('tria_read_tri1D', 'KNPR', &
-        INT(rtriangulation%NVT,I32), ST_INT, &
-        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
-    
-    ! Get the pointer to the InodalProperty array
-    CALL storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_Idata)
-
-    ! Read the data
-    READ (iunit,*) (p_Idata(ivt),ivt=1,rtriangulation%NVT)
-
-  END SUBROUTINE
-
-!************************************************************************
-
-!<subroutine>
-
   SUBROUTINE tria_createRawTria1D(rtriangulation,dleft,dright,nintervals)
   
 !<description>
@@ -2567,8 +2388,26 @@ CONTAINS
     
     ! There is one boundary component - the interval ends
     rtriangulation%NBCT = 1
-    !rtriangulation%NVBD = 2
     
+    ! Allocate memory for boundary components
+    CALL storage_new ('tria_createRawTria1D', 'KBCT', 3, ST_INT, &
+        rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the boundary components
+    CALL storage_getbase_int(rtriangulation%h_IboundaryCpIdx, p_Idata)
+    p_Idata = (/ 1, 2, 3 /)
+
+    ! There is one vertice per boundary component
+    rtriangulation%NVBD = 2
+    
+    ! Allocate memory for boundary components
+    CALL storage_new ('tria_createRawTria1D', 'KVBD', 2, ST_INT, &
+        rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the boundary components
+    CALL storage_getbase_int(rtriangulation%h_IverticesAtBoundary, p_Idata)
+    p_Idata = (/ 1, nintv+1 /)
+
     ! Allocate memory for nodal property
     CALL storage_new ('tria_createRawTria1D', 'KNPR', nintv+1, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
