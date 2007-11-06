@@ -2362,8 +2362,10 @@ CONTAINS
       nverts = rexport%p_rtriangulation%NVT + rrefine%nvertices
       
       ! Get edges of elements (needed for quadratic cells)
-      CALL storage_getbase_int2d (rexport%p_rtriangulation%h_IedgesAtElement,&
-          p_IedgesAtElement)
+      IF (rexport%p_rtriangulation%h_IedgesAtElement .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int2d (rexport%p_rtriangulation%h_IedgesAtElement,&
+            p_IedgesAtElement)
+      END IF
 
       ! First we need to count how many vertex-based and how many element-based
       ! variables we have.
@@ -2419,7 +2421,7 @@ CONTAINS
           WRITE(mfile, '(3E16.7)') p_DvertexRefined(1:3, i)
         END DO
         
-      ELSE
+      ELSE IF (UBOUND(p_DvertexCoords,1) .EQ. 2) THEN
         ! 2D coordinates
         
         ! Write corner vertices
@@ -2430,6 +2432,19 @@ CONTAINS
         ! Write refined vertices
         DO i=1, rrefine%nvertices
           WRITE(mfile, '(3E16.7)') p_DvertexRefined(1:2, i), 0.0_DP
+        END DO
+        
+      ELSE
+        ! 1D coordinates
+        
+        ! Write corner vertices
+        DO i=1, rexport%p_Rtriangulation%NVT
+          WRITE(mfile, '(3E16.7)') p_DvertexCoords(1, i), 0.0_DP, 0.0_DP
+        END DO
+
+        ! Write refined vertices
+        DO i=1, rrefine%nvertices
+          WRITE(mfile, '(3E16.7)') p_DvertexRefined(1, i), 0.0_DP, 0.0_DP
         END DO
 
       END IF
@@ -2472,6 +2487,11 @@ CONTAINS
         DO j=1, ncells
         
           SELECT CASE (p_InumVertsPerCell(j))
+          CASE (2)
+            ! Quadratic edge
+            WRITE(mfile, '(4I10)') 3, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), k + j
+                
           CASE (3)
             ! Quadratic triangle
             WRITE(mfile, '(7I10)') 6,(p_IverticesAtElement(1,j)-1), &
@@ -2497,6 +2517,10 @@ CONTAINS
         WRITE(mfile, '(A, I10)') "CELL_TYPES", ncells
         DO j=1, ncells
           SELECT CASE (p_InumVertsPerCell(j))
+          CASE (2)
+            ! quadratic edge
+            WRITE(mfile, '(I4)') VTK_QUADRATIC_EDGE 
+             
           CASE (3)
             ! quadratic triangle
             WRITE(mfile, '(I4)') VTK_QUADRATIC_TRIANGLE
@@ -2513,6 +2537,11 @@ CONTAINS
         DO j=1, ncells
         
           SELECT CASE (p_InumVertsPerCell(j))
+          CASE (2)
+            ! edge
+            WRITE(mfile, '(3I10)') 2, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1)
+
           CASE (3)
             ! triangle
             WRITE(mfile, '(4I10)') 3, (p_IverticesAtElement(1,j)-1), &
@@ -2534,6 +2563,10 @@ CONTAINS
         WRITE(mfile, '(A, I10)') "CELL_TYPES", ncells
         DO j=1, ncells
           SELECT CASE (p_InumVertsPerCell(j))
+          CASE (2)
+            ! Edge
+            WRITE(mfile, '(I4)') VTK_LINE
+            
           CASE (3)
             ! Triangle
             WRITE(mfile, '(I4)') VTK_TRIANGLE
