@@ -44,7 +44,8 @@
 !##############################################################################
 
 PROGRAM poisson
-
+   
+  USE poisson_method0
   USE poisson_method1
   USE poisson_method2
   USE poisson_method3
@@ -68,6 +69,12 @@ PROGRAM poisson
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
   CALL storage_init(999, 100)
+
+  ! Call the problem to solve. Poisson 1:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 0')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson0
 
   ! Call the problem to solve. Poisson 1:
   CALL output_lbrk ()
