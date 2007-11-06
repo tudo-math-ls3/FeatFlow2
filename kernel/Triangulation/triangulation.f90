@@ -71,6 +71,9 @@
 !# 15.) tria_infoStatistics
 !#      -> Prints out statistics about a mesh.
 !#
+!# 16.) tria_exportTriFile
+!#      -> Exports a triangulation structure to a .TRI file.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -315,6 +318,19 @@ MODULE triangulation
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
+!</constantblock>
+  
+!<constantblock description="Format tags for TRI file formats.">
+
+  ! Standard TRI file format, compatible to FEAT1.
+  ! For 2D triangulations, Vertex coordinates of boundary vertices are
+  ! replaced by parameter values.
+  INTEGER(I32), PARAMETER :: TRI_FMT_STANDARD          = 0
+  
+  ! Standard TRI file format, but the vertex coordinates are 
+  ! exported 'as they are', not as parameter values.
+  INTEGER(I32), PARAMETER :: TRI_FMT_NOPARAMETRISATION = 2**0
+  
 !</constantblock>
   
 !</constants>
@@ -4426,7 +4442,6 @@ CONTAINS
 !</subroutine>
  
     INTEGER :: ifine
-    INTEGER(I32) :: isize
 
     SELECT CASE(rtriangulation%ndim)
     CASE (NDIM1D)
@@ -5425,9 +5440,9 @@ CONTAINS
 
 !************************************************************************
 
-!<function>
+!<subroutine>
 
-  INTEGER FUNCTION tria_searchBoundaryNode(inode,rtriangulation)
+  SUBROUTINE tria_searchBoundaryNode(inode,rtriangulation,iindex)
 
 !<description>
   ! This routine accepts as inode a vertex or an edge number of a boundary 
@@ -5446,13 +5461,14 @@ CONTAINS
   TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
 !</input>
 
-!<result>
+!<output>
   ! If inode is a boundary vertex: The index of the inode in IboundaryVertexPos.
   ! If inode is a boundary edge: The index of the inode in IboundaryEdgePos.
   ! =0 if inode was not found (e.g. because inode is not on the boundary e.g.).
-!</result>
+  INTEGER, INTENT(OUT) :: iindex
+!</output>
 
-!</function>
+!</subroutine>
 
     ! local variables
     INTEGER :: ibct
@@ -5467,7 +5483,7 @@ CONTAINS
 
     ! We can quit if ibct=0: The node is not on the boundary.
     IF (ibct .EQ. 0) THEN
-      tria_searchBoundaryNode = 0
+      iindex = 0
       RETURN
     END IF
     
@@ -5488,10 +5504,10 @@ CONTAINS
     
     IF (p_InodePos(1,ileft) .EQ. inode) THEN
       ! Return the index in the node array.
-      tria_searchBoundaryNode = p_InodePos(2,ileft)
+      iindex = p_InodePos(2,ileft)
     ELSE IF (p_InodePos(1,iright) .EQ. inode) THEN
       ! Return the index in the node array.
-      tria_searchBoundaryNode = p_InodePos(2,iright)
+      iindex = p_InodePos(2,iright)
     ELSE
       DO WHILE (ileft .LT. iright)
         ipos = (ileft+iright)/2
@@ -5501,13 +5517,13 @@ CONTAINS
           ileft = ipos
         ELSE
           ! We found the node. Return the index in the node array.
-          tria_searchBoundaryNode = p_InodePos(2,ipos)
+          iindex = p_InodePos(2,ipos)
           EXIT
         END IF
       END DO
     END IF
     
-  END FUNCTION
+  END SUBROUTINE
 
   ! ***************************************************************************
 
@@ -5836,38 +5852,113 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_exportTriFile2D(rtriangulation, sfilename)
+  SUBROUTINE tria_exportTriFile(rtriangulation, sfilename, ctriFormat)
 
 !<description>
-    ! This routine exports a 2D triangulation into a .TRI file.
+    ! This routine exports a triangulation into a .TRI file.
 !</description>
 
 !<input>
     ! Triangulation structure, to be exported
-    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
 
-    ! The name of the .tri file to read.
+    ! The name of the .tri file to write.
     CHARACTER(LEN=*), INTENT(IN) :: sfilename
+    
+    ! OPTIONAL: Format tag of the TRI file to export.
+    ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
+    !    Vertex coordinates of boundary vertices are in 2D replaced
+    !    by parameter values.
+    ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the 
+    !    vertex coordinates are exported 'as they are', not as parameter
+    !    values.
+    ! If not specified, TRI_FMT_STANDARD is assumed.
+    INTEGER(I32), INTENT(IN), OPTIONAL :: ctriFormat
+!</input>
+!</subroutine>
+
+    ! Depending on the dimension of the triangulation, call the corresponding
+    ! export routine!
+    SELECT CASE(rtriangulation%ndim)
+    CASE (NDIM1D)
+      CALL output_line ('1D TRI file export not implemented!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_exportTriFile')
+      CALL sys_halt()
+      
+    CASE (NDIM2D)
+      CALL tria_exportTriFile2D(rtriangulation, sfilename, ctriFormat)
+      
+    CASE (NDIM3D)
+      CALL output_line ('3D TRI file export not implemented!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_exportTriFile')
+      CALL sys_halt()
+      
+    CASE DEFAULT
+      CALL output_line ('Triangulation structure not properly initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_exportTriFile')
+      CALL sys_halt()
+    END SELECT
+
+  END SUBROUTINE tria_exportTriFile
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_exportTriFile2D(rtriangulation, sfilename, ctriFormat)
+
+!<description>
+    ! Auxiliary routine. This routine exports a 2D triangulation into a .TRI file.
+!</description>
+
+!<input>
+    ! Triangulation structure, to be exported
+    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+
+    ! The name of the .tri file to write.
+    CHARACTER(LEN=*), INTENT(IN) :: sfilename
+
+    ! OPTIONAL: Format tag of the TRI file to export.
+    ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
+    !    Vertex coordinates of boundary vertices are in 2D replaced
+    !    by parameter values.
+    ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the 
+    !    vertex coordinates are exported 'as they are', not as parameter
+    !    values.
+    ! If not specified, TRI_FMT_STANDARD is assumed.
+    INTEGER(I32), INTENT(IN), OPTIONAL :: ctriFormat
 !</input>
 !</subroutine>
 
     ! Local variables
     REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddata2D
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata
     INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
     INTEGER(I32), DIMENSION(:), POINTER   :: p_Idata
     INTEGER(I32), DIMENSION(:), POINTER   :: p_IverticesAtBoundary
+    INTEGER(I32), DIMENSION(:), POINTER   :: p_InodalProperty
     INTEGER(I32), DIMENSION(:), POINTER   :: p_IboundaryCpIdx
     CHARACTER(SYS_STRLEN) :: ckmmstr
-    INTEGER(I32) :: ivt, iel
-    INTEGER      :: idim, ive, nve, ibct
+    INTEGER(I32) :: ivt, iel, ivbd
+    INTEGER      :: idim, ive, ibct
     INTEGER      :: iunit
+    LOGICAL      :: bnoParameters
+    
+    bnoParameters = .FALSE.
+    IF (PRESENT(ctriFormat)) &
+      bnoParameters = ctriFormat .EQ. TRI_FMT_NOPARAMETRISATION
     
     ! Open the file
     CALL io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
 
     ! Comment: Header
     WRITE (iunit,*) 'Coarse mesh exported by FeatFlow2 exporter'
-    WRITE (iunit,*) 'Parametrisierung PARXC, PARYC, TMAXC'
+    IF (.NOT. bnoParameters) THEN
+      WRITE (iunit,*) 'Parametrisation PARXC, PARYC, TMAXC'
+      !WRITE (iunit,*) 'Parametrisierung PARXC, PARYC, TMAXC'
+    ELSE
+      WRITE (iunit,*) 'No parametrisation'
+    END IF
 
     ! Write NEL,NVT,NMT,NVE,NBCT to the file
     WRITE (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
@@ -5881,9 +5972,34 @@ CONTAINS
         rtriangulation%h_DvertexCoords,p_Ddata2D)
     
     ! Write the data to the file
-    DO ivt = 1, rtriangulation%NVT
-      WRITE (iunit,*) (p_Ddata2D(idim,ivt),idim=1,NDIM2D)
-    END DO
+    !
+    IF (.NOT. bnoParameters) THEN
+      ! Standard FEAT1 format. For boundary vertices, the parameter value is
+      ! exported instead of the vertex coordinate!
+      CALL storage_getbase_int(&
+          rtriangulation%h_InodalProperty,p_InodalProperty)
+      CALL storage_getbase_double(&
+          rtriangulation%h_DvertexParameterValue,p_Ddata)
+      
+      DO ivt = 1, rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
+          ! Get the index of the vertex in the IverticesAtBoundary array.
+          CALL tria_searchBoundaryNode(ivt,rtriangulation,ivbd)
+          
+          ! Write the parameter value. 2nd entry is =0.
+          WRITE (iunit,*) p_Ddata(ivbd),0.0_DP
+        ELSE
+          WRITE (iunit,*) (p_Ddata2D(idim,ivt),idim=1,NDIM2D)
+        END IF
+      END DO
+    ELSE
+      ! Parameterless format.
+      ! The coordinates of the vertices are exportes 'as they are' independent
+      ! of whether they are on the boundary or not.
+      DO ivt = 1, rtriangulation%NVT
+        WRITE (iunit,*) (p_Ddata2D(idim,ivt),idim=1,NDIM2D)
+      END DO
+    END IF
 
     ! Write: 'KVERT'
     WRITE (iunit,*) 'KVERT'
@@ -5929,6 +6045,7 @@ CONTAINS
 
     ! Close the file, finish
     CLOSE(iunit)
+    
   END SUBROUTINE tria_exportTriFile2D
 
 END MODULE
