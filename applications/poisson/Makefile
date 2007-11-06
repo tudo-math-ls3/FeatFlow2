@@ -11,7 +11,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
 
 # The source files 
-SRC =   poisson_callback.f90 poisson_method1.f90 \
+SRC =   poisson_callback.f90 poisson_method0.f90 poisson_method1.f90 \
         poisson_method2.f90 poisson_method3.f90 poisson_method4.f90 \
         poisson_method5.f90 poisson_method6.f90 poisson_method7.f90 \
         poisson_method8.f90 poisson.f90
