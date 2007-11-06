@@ -595,12 +595,12 @@ CONTAINS
   ! The triangulation structure underlying to the discretisation.
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
-  ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
-  
   ! Number of solution components maintained by the block structure
-  INTEGER, INTENT(IN)                          :: ncomponents
+  INTEGER, INTENT(IN), OPTIONAL                :: ncomponents
   
+  ! OPTIONAL: The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
+
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
   TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
@@ -620,7 +620,11 @@ CONTAINS
   rblockDiscr%ndimension             = rtriangulation%ndim
   rblockDiscr%ccomplexity            = SPDISC_UNIFORM
   rblockDiscr%p_rtriangulation       => rtriangulation
-  rblockDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundary)) THEN
+    rblockDiscr%p_rboundary            => rboundary
+  ELSE
+    NULLIFY(rblockDiscr%p_rboundary)
+  END IF
   IF (PRESENT(rboundaryConditions)) THEN
     rblockDiscr%p_rboundaryConditions  => rboundaryConditions
   ELSE
@@ -878,7 +882,7 @@ CONTAINS
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
@@ -913,7 +917,11 @@ CONTAINS
   !rspatialDiscr%ndimension             = NDIM2D
   rspatialDiscr%ndimension             = rtriangulation%ndim
   rspatialDiscr%p_rtriangulation       => rtriangulation
-  rspatialDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundary)) THEN
+    rspatialDiscr%p_rboundary            => rboundary
+  ELSE
+    NULLIFY(rspatialDiscr%p_rboundary)
+  END IF
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
