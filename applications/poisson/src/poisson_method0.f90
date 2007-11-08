@@ -85,7 +85,6 @@ CONTAINS
 
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
@@ -192,6 +191,9 @@ CONTAINS
     ! In contrast to the 2D poisson examples, we will directly set the
     ! dirichlet boundary conditions by hand instead of discretising an analytic
     ! boundary condition function using a boundary structure.
+    !
+    ! Set p_rdiscreteBC to NULL -- bcasm_initDirichletBC_1D will allocate it.
+    NULLIFY(p_rdiscreteBC)
     CALL bcasm_initDirichletBC_1D(rdiscretisation, p_rdiscreteBC, 0.0_DP, 0.0_DP)
                              
     ! Hang the pointer into the vector and matrix. That way, these
@@ -338,9 +340,6 @@ CONTAINS
     ! Release our discrete version of the boundary conditions
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
 
-    ! ...and also the corresponding analytic description.
-    CALL bcond_doneBC (p_rboundaryConditions)
-    
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
     CALL spdiscr_releaseBlockDiscr(rdiscretisation)
