@@ -796,7 +796,7 @@ MODULE hadaptivity
     ! and must be deleted in hadapt_releaseAdaptation.
     INTEGER(I32) :: iduplicationFlag                 = 0
 
-    ! Tag: Specified the strategy for grid refinementand coarsening
+    ! Tag: Specified the strategy for grid refinement and coarsening
     INTEGER :: iadaptationStrategy                   = HADAPT_NOADAPTATION
 
     ! Maximum number of subdivisions from the original mesh
