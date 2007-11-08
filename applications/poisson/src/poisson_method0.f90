@@ -101,9 +101,6 @@ CONTAINS
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
-    ! The number of sub-intervals for the discretisation
-    INTEGER :: nintervals = 16
-    
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
     
@@ -111,7 +108,9 @@ CONTAINS
     TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
-
+    ! The number of sub-intervals for the discretisation
+    INTEGER :: nintervals = 16
+    
     ! Ok, let's start. 
     ! At first, create the basic triangulation.
     ! Our domain is [0, 1], divided into nintervals sub-intervals.
@@ -304,8 +303,7 @@ CONTAINS
     
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
-    ! Start UCD export to VTK file:
-    CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u0.vtk')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u0.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
