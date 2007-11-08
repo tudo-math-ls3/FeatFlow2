@@ -1548,6 +1548,11 @@ CONTAINS
             
             ! We have i-1 vertices on that element -- so what is it?
             SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D
+              WRITE(mfile,'(A)') 'line 2'
+              WRITE(mfile,'(3I8)') p_IverticesAtElement(1:2,iel)
+            
             CASE (3)
               ! Triangle
               WRITE(mfile,'(A)') 'tri 3'
@@ -1582,6 +1587,21 @@ CONTAINS
             
             ! We have i-1 vertices on that element -- so what is it?
             SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D.
+              !
+              ! The coarse grid element is
+              !
+              !   1 -----IEL----- 2
+              !
+              ! The once refined element is
+              !
+              !   1 -- IEL -- 1* -- NEL+IEL -- 2
+              !
+              ! Write the connectivity of element IEL
+              WRITE(mfile,'(A)') 'line 2'
+              WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
+
             CASE (3)
               ! Triangle.
               !
@@ -1657,6 +1677,13 @@ CONTAINS
             
             ! We have i-1 vertices on that element -- so what is it?
             SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D.
+              !
+              ! Element "NEL+1"
+              WRITE(mfile,'(A)') 'line 2'
+              WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
+              
             CASE (3)
               ! Triangle.
                   
