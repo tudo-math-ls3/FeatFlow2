@@ -155,8 +155,7 @@ CONTAINS
     ! Prepare h-adaptivity
     rhadapt%iSpec=2**1
     rhadapt%nsubdividemax = NLMAXhRefinement
-    rhadapt%irefinementStrategy = 1
-    rhadapt%icoarseningStrategy = 1
+    rhadapt%iadaptationStrategy = HADAPT_REDGREEN
     
     ! The following tolerance values are the bounds for the monitor function
     ! gethadaptMonitorFunction below. If this monitor function returns a value
