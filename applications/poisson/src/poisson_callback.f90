@@ -771,8 +771,11 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE gethadaptMonitorFunction(rtriangulation,rindicator)
+  SUBROUTINE gethadaptMonitorFunction(rtriangulation,rsolution,ieltype,ierrorestimator,rindicator)
   
+    USE pprocgradients
+    USE pprocerror
+
 !<description>
   ! This routine defines a 'monitor function' for the adaptive grid refinement
   ! with the h-adaptivity refinement strategy. rindicator is a vector with
@@ -782,58 +785,163 @@ CONTAINS
 !</descrition>
   
 !<input>
-  ! The triangulation structure of the underlying mesh which is to be refined
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    ! The triangulation structure of the underlying mesh which is to be refined
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+
+    ! The solution vector
+    TYPE(t_vectorScalar), INTENT(INOUT)  :: rsolution
+    
+    ! The type of element used for the FE solution
+    INTEGER(I32), INTENT(IN) :: ieltype
+    
+    ! The type of error estimator
+    INTEGER, INTENT(IN) :: ierrorestimator
 !</input>
     
 !</inputoutput>
-  ! An indicator vector. Entry i in the vector rindicatir that tells the 
-  ! mesh adaption routines whether to refine element i or to do coarsening
-  ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
-  ! in coarsening -- as specified during the initialisation of the
-  ! mesh refinement in the main program.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+    ! An indicator vector. Entry i in the vector rindicatir that tells the 
+    ! mesh adaption routines whether to refine element i or to do coarsening
+    ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
+    ! in coarsening -- as specified during the initialisation of the
+    ! mesh refinement in the main program.
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
 
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    REAL(DP), DIMENSION(:), POINTER   :: p_Dindicator
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: ive
-    REAL(DP) :: distance
+    TYPE(t_vectorBlock)         :: rgradient,rgradientRef
+    TYPE(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
+    REAL(DP)                    :: dsolutionError,dgradientError,daux
 
-    ! In this example, we do adaptive refinement to a ring.
-    ! (x0,y0) defines the midpoint of the ring.
-    REAL(DP), PARAMETER :: x0=0.5, y0=0.5
+    ! Initialise block discretisations
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
+        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
+        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+
+    ! What kind of element type is used for the FE solution
+    SELECT CASE(ieltype)
+    CASE(1)
+      ! Initialise spatial discretisations for gradient with P0-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with P1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      
+    CASE(2)
+      ! Initialise spatial discretisations for gradient with P1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with P2-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+
+    CASE(11)
+      ! Initialise spatial discretisations for gradient with Q0-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with Q1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+
+    CASE(13)
+      ! Initialise spatial discretisations for gradient with Q1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with Q2-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+
+    CASE(-1)
+      ! Initialise spatial discretisations for gradient with P0/Q0-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with P1/Q1-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(2))
+      
+    CASE DEFAULT
+      CALL output_line('Unsupproted element type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      CALL sys_halt()
+    END SELECT
     
-    ! r0 defines the radius of the inner circle, r1 the radius of the
-    ! outer circle that define the ring.
-    REAL(DP), PARAMETER :: r0=0.2, r1=0.3
+    ! Create block vector for gradient values
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock,   rgradient,    .TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlockRef,rgradientRef, .TRUE.)
 
-    ! Get information about the mesh.
-    CALL storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_DvertexCoords)
-    CALL storage_getbase_int2D(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    ! Recover consistent gradient
+    CALL ppgrd_calcGradient (rsolution, rgradient)
 
-    ! Get the array of the indicator function.
-    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
+    ! Recover smoothed gradient
+    SELECT CASE(ierrorestimator)
+    CASE (1)
+      CALL ppgrd_calcGradient (rsolution, rgradientRef)
+
+    CASE (2)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
+
+    CASE (3)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
+
+    CASE (4)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+
+    CASE DEFAULT
+      CALL output_line('Invalid type of error estimator!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      CALL sys_halt()
+    END SELECT
+
+    ! Compute gradient error
+    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
+        dgradientError,relementError=rindicator)
+    PRINT *, "!!gradient error!! = ",dgradientError
+
+    ! Compute L2-norm of solution
+    CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
+
+    ! Prepare indicator for grid refinement/coarsening
+    daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
+    CALL lsyssc_scaleVector(rindicator,1._DP/daux)
     
-    DO iel=1,rtriangulation%NEL
-      ! Loop through the vertices on the element.
-      ! If at least one corner vertex of the the element iel is inside 
-      ! of the ring, refine it.
-      DO ive = 1,tria_getNVE(p_IverticesAtElement,iel)
-        ! Distance to the center of the ring
-        distance = &
-            SQRT( (p_DvertexCoords(1,p_IverticesAtElement(ive,iel))-x0)**2 + &
-                  (p_DvertexCoords(2,p_IverticesAtElement(ive,iel))-y0)**2 )
-          
-        IF ((distance .GE. r0) .AND. (distance  .LE. r1)) THEN
-          p_Dindicator(iel) = 2.0
-        END IF
-      END DO
-    END DO
+    ! Release temporal discretisation structure
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+    
+    ! Release vectors
+    CALL lsysbl_releaseVector(rgradient)
+    CALL lsysbl_releaseVector(rgradientRef)
     
   END SUBROUTINE gethadaptMonitorFunction
 
