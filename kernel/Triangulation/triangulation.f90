@@ -2036,21 +2036,28 @@ CONTAINS
     READ (iunit,*)
 
     ! Allocate memory for the basic arrays on the heap
+    ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,INT(rtriangulation%NVT,I32)/)
     CALL storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
+    ! p_Ddata2D is the pointer to the coordinate array
     CALL storage_getbase_double2D(&
         rtriangulation%h_DvertexCoords,p_Ddata2D)
         
     ! Read the data from the file, store it in the array.
+    ! read data into p_Ddata:
+    ! first read nvt x-coordinates into p_Ddata(1,ivt)
+    ! then read nvt  y-coordinates into p_Ddata(2,ivt)
     READ (iunit,*) ((p_Ddata2D(idim,ivt),idim=1,NDIM2D), ivt=1,rtriangulation%NVT)
 
     ! Comment: 'KVERT'
     READ (iunit,*)
 
     ! Allocate memory for IverticesAtElement
+    ! build the old KVERT...
+    ! 2d array of size(NVE, NEL)
     Isize = (/nve,INT(rtriangulation%NEL,I32)/)
     CALL storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
@@ -2059,12 +2066,14 @@ CONTAINS
     CALL storage_getbase_int2D(&
         rtriangulation%h_IverticesAtElement,p_Idata2D)
 
+    ! read ive=1 indices to nve into p_Idata2D(ive,iel) where iel=1 to NEL
     READ (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
 
     ! Loop through the elements and determine how many elements
     ! of each element type we have.
     rtriangulation%InelOfType(:) = 0
     DO iel=1,rtriangulation%nel
+      ! start at the last index of element iel down to the first
       DO ive=nve,1,-1
         IF (p_Idata2D(ive,iel) .NE. 0) THEN
           rtriangulation%InelOfType(ive) = rtriangulation%InelOfType(ive)+1
