@@ -171,7 +171,7 @@ CONTAINS
   TYPE(t_blockDiscretisation), INTENT(IN) :: rblockDiscr
   
   ! The dirichlet boundary values for the left and right interval ends.
-  REAL(DP), INTENT(IN) :: dleft, dright
+  REAL(DP), INTENT(IN), OPTIONAL :: dleft, dright
 
 !</input>  
 
@@ -185,9 +185,8 @@ CONTAINS
 !</subroutine>
 
   ! A hand full of local variables
-  INTEGER :: i, ibndVert, ibndElem, iDOF
+  INTEGER :: idx, ibndVert, ibndElem, inumBCs, iDOF
   INTEGER(I32) :: ielemType
-  REAL(DP), DIMENSION(2) :: Dvalues
   TYPE(t_discreteBCEntry), POINTER :: p_rdiscrBCEntry
   TYPE(t_discreteBCDirichlet), POINTER :: p_rdirichlet
   REAL(DP), DIMENSION(:), POINTER             :: p_DdirichletValues
@@ -197,7 +196,13 @@ CONTAINS
   TYPE(t_elementDistribution), POINTER        :: p_relemDist
   INTEGER, DIMENSION(:), POINTER :: p_IelemAtVert,p_IelemAtVertIdx, &
       p_IvertAtBnd, p_IbndCpIdx
-  INTEGER(PREC_DOFIDX), DIMENSION(2) :: IDOFs
+  INTEGER(PREC_DOFIDX), DIMENSION(4) :: IDOFs
+  
+  ! Check how many boundary components we want to fix
+  inumBCs = 0
+  IF (PRESENT(dleft))  inumBCs = inumBCs + 1
+  IF (PRESENT(dright)) inumBCs = inumBCs + 1
+  IF (inumBCs .LE. 0) RETURN
   
   ! Is there a structure we can work with?
   IF (.NOT. ASSOCIATED(p_rdiscreteBC)) THEN
@@ -217,7 +222,7 @@ CONTAINS
 
   ! Allocate a new structure array with iregionCount 
   ! entries for all the boundary conditions.
-  ALLOCATE(p_rdiscreteBC%p_RdiscBCList(2))
+  ALLOCATE(p_rdiscreteBC%p_RdiscBCList(inumBCs))
 
   ! Which component is to be discretised?
   p_rspatialDiscr => rblockDiscr%RspatialDiscretisation(1)
@@ -249,15 +254,12 @@ CONTAINS
   CALL storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
   CALL storage_getbase_int(p_rtria%h_IelementsAtVertex, p_IelemAtVert)
 
-  ! Store our boundary condition values into an array for easier
-  ! access inside a DO-loop... ;-)
-  Dvalues = (/ dleft, dright /)
-
   ! Go through our both boundary conditions...
-  DO i = 1, 2
+  idx = 1
+  IF (PRESENT(dleft)) THEN
   
     ! Get the boundary condition entry
-    p_rdiscrBCEntry => p_rdiscreteBC%p_RdiscBCList(i)
+    p_rdiscrBCEntry => p_rdiscreteBC%p_RdiscBCList(idx)
     
     ! We have dirichlet conditions here
     p_rdiscrBCEntry%itype = DISCBC_TPDIRICHLET
@@ -281,10 +283,10 @@ CONTAINS
     CALL storage_getbase_double(p_rdirichlet%h_DdirichletValues, p_DdirichletValues)
     
     ! Set the value of the dirichlet condition
-    p_DdirichletValues(1) = Dvalues(i)
+    p_DdirichletValues(1) = dleft
     
     ! Get the index of the boundary vertice
-    ibndVert = p_IvertAtBnd(p_IbndCpIdx(i))
+    ibndVert = p_IvertAtBnd(p_IbndCpIdx(idx))
     
     ! As we know that a boundary vertice has only one element that is
     ! adjacent to it, we can read it out directly
@@ -306,15 +308,91 @@ CONTAINS
       ! element - for the left boundary vertice it is the first DOF of
       ! the left boundary element, for the right one it is the second.
       CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
-      iDOF = IDOFs(i)
+      iDOF = IDOFs(idx)
       
+    CASE (EL_P2_1D)
+      ! P2_1D element
+      ! For the left boundary vertice we need to fix the first DOF, for
+      ! the right boundary we need the second DOF.
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(idx)
+            
     END SELECT
         
     ! Store the DOF
     p_IdirichletDOFs(1) = iDOF
-    
-  END DO
   
+    idx = idx + 1
+  END IF 
+  IF (PRESENT(dright)) THEN
+  
+    ! Get the boundary condition entry
+    p_rdiscrBCEntry => p_rdiscreteBC%p_RdiscBCList(idx)
+    
+    ! We have dirichlet conditions here
+    p_rdiscrBCEntry%itype = DISCBC_TPDIRICHLET
+    
+    ! Get the dirichlet boundary condition
+    p_rdirichlet => p_rdiscrBCEntry%rdirichletBCs
+    
+    ! In the current setting, there is always 1 boundary component
+    ! and 1 DOF to be processed.
+    p_rdirichlet%icomponent = 1
+    p_rdirichlet%nDOF = 1
+
+    ! Allocate the arrays
+    CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_IdirichletDOFs', &
+        1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
+    CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_DdirichletValues', &
+        1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
+    
+    ! Get the arrays for the dirichlet DOFs and values
+    CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs, p_IdirichletDOFs)
+    CALL storage_getbase_double(p_rdirichlet%h_DdirichletValues, p_DdirichletValues)
+    
+    ! Set the value of the dirichlet condition
+    p_DdirichletValues(1) = dleft
+    
+    ! Get the index of the boundary vertice
+    ibndVert = p_IvertAtBnd(p_IbndCpIdx(idx))
+    
+    ! As we know that a boundary vertice has only one element that is
+    ! adjacent to it, we can read it out directly
+    ibndElem = p_IelemAtVert(p_IelemAtVertIdx(ibndVert))
+    
+    ! Now we need to find the DOF for this boundary condition.
+    ! This is element-dependent...
+    SELECT CASE(ielemType)
+    CASE (EL_P0_1D)
+      ! P0_1D element
+      ! This is the easy case - there's only one DOF per element and this
+      ! is the one we are searching for...
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(1)
+    
+    CASE (EL_P1_1D)
+      ! P1_1D element
+      ! In this case the boundary vertice is one of the two DOFs of the
+      ! element - for the left boundary vertice it is the first DOF of
+      ! the left boundary element, for the right one it is the second.
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(idx)
+      
+    CASE (EL_P2_1D)
+      ! P2_1D element
+      ! For the left boundary vertice we need to fix the first DOF, for
+      ! the right boundary we need the second DOF.
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(idx)
+            
+    END SELECT
+        
+    ! Store the DOF
+    p_IdirichletDOFs(1) = iDOF
+  
+    idx = idx + 1
+  END IF 
+
   ! That's it
       
   END SUBROUTINE

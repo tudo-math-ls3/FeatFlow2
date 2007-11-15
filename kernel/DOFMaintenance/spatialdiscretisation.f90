@@ -407,6 +407,10 @@ CONTAINS
       CASE (EL_P1_1D)
         ! Use trapezoidal rule
         ccubType = CUB_TRZ_1D
+      
+      CASE (EL_P2_1D)
+        ! Use Gauss-2
+        ccubType = CUB_G2_1D
 
 !      CASE (EL_Q0)
 !        ! Use Gauss-1
@@ -498,6 +502,10 @@ CONTAINS
       CASE (EL_P1_1D)
         ! 2-point Gauss
         ccubType = CUB_G2_1D
+      
+      CASE (EL_P2_1D)
+        ! 3-point Gauss
+        ccubType = CUB_G3_1D
 
 !      CASE (EL_Q0)
 !        ! 1-point Gauss

@@ -165,6 +165,9 @@ CONTAINS
     CASE (EL_P1_1D)
       ! DOF's in the vertices
       NDFG_uniform1D = rtriangulation%NVT
+    CASE (EL_P2_1D)
+      ! DOF's in the vertices and cell midpoints
+      NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL
     END SELECT
     
     END FUNCTION
@@ -438,6 +441,12 @@ CONTAINS
         ! DOF's in the vertices
         CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
         CALL dof_locGlobUniMult_P1_1D(p_2darray, IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_P2_1D)
+        ! DOF's in the vertices and line midpoints
+        CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+        CALL dof_locGlobUniMult_P2_1D(p_rtriangulation%NVT, p_2darray, IelIdx,&
+                                      IdofGlob)
         RETURN
       END SELECT
         
@@ -820,6 +829,58 @@ CONTAINS
     ! Note that the number in this array is NVT+1..NVT+NMT.
     IdofGlob(4:6,i) = IedgesAtElement(1:3,IelIdx(i))
     
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  PURE SUBROUTINE dof_locGlobUniMult_P2_1D(NVT, IverticesAtElement, IelIdx,&
+                                           IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q1.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Number of corner vertices in the triangulation
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  INTEGER(I32) :: i
+  
+  ! Loop through the elements to handle
+  DO i=1,SIZE(IelIdx)
+    ! Calculate the global DOF's - which are simply the vertex numbers of the 
+    ! corners and the cell midpoints.
+    IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
+    IdofGlob(3,i) = NVT + IelIdx(i)
   END DO
 
   END SUBROUTINE

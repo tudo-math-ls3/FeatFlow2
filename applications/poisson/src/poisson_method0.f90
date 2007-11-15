@@ -52,7 +52,7 @@ CONTAINS
   ! 3.) Set up matrix
   ! 4.) Create solver structure
   ! 5.) Solve the problem
-  ! 6.) Write solution to VTK file
+  ! 6.) Write solution to GMV file
   ! 7.) Release all variables, finish
 !</description>
 
@@ -103,7 +103,10 @@ CONTAINS
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
     
-    ! Output block for UCD output to VTK file
+    ! Error of FE function to reference function
+    REAL(DP) :: derror
+
+    ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
@@ -115,6 +118,11 @@ CONTAINS
     ! Our domain is [0, 1], divided into nintervals sub-intervals.
     CALL tria_createRawTria1D(rtriangulation, 0.0_DP, 1.0_DP, nintervals)
     
+    ! As the tria_createRawTria1D routine always generates a grid
+    ! with sub-intervals of equal length, we can optionally disturb
+    ! the mesh. This will result in an unsymmetric matrix.
+    !CALL meshmod_disturbMesh(rtriangulation, 0.2_DP)
+
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (rtriangulation)
@@ -124,14 +132,28 @@ CONTAINS
     ! solution vector. In this simple problem, we only have one block.
     CALL spdiscr_initBlockDiscr (rdiscretisation, 1, rtriangulation)
     
+    ! In the next step, we will define the element type and the cubature
+    ! formula that is to be used. For this 1D poisson-example we currently
+    ! have 2 possible element types: linear and quadratic ones.
+    ! For linear elements the trapezoidal formula satisfies all our
+    ! needs, for quadratic elements we should choose a 3-point Gauss-formula.
+    !
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    ! We will use linear elements and the trapezoidal rule for cubature.
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+    ! Setting up a linear element and trapezoidal rule would be...
                                    EL_P1_1D,CUB_TRZ_1D,rtriangulation)
+    ! Setting up a quadratic element and 3-point Gauss rule would be...
+                                   !EL_P2_1D,CUB_G3_1D,rtriangulation)
                  
+    ! We will set the evaluation cubature formula to 3-point Gauss.
+    ! If we don't do this, then the L2-error, which is calculated in the
+    ! post-processing phase would be beyond machine exactness...
+    rdiscretisation%RspatialDiscretisation(1)%RelementDistribution(1)%ccubTypeEval = &
+      CUB_G6_1D
+
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -264,6 +286,8 @@ CONTAINS
     ! Please keep in mind that the CG solver needs a symmetric preconditioner
     ! and will (most probably) not work with unsymmetric preconditioners as
     ! SOR or (M)ILU(s)
+    ! Also remember that the CG solver might diverge if the grid was disturbed
+    ! using the 'meshmod_disturbMesh' routine.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Setting up a Defect-Correction-Solver would be...
     !CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
@@ -314,6 +338,14 @@ CONTAINS
     CALL ucd_write (rexport)
     CALL ucd_release (rexport)
     
+    ! Calculate the error to the reference function.
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_1D)
+    CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction_1D)
+    CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
+
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !
