@@ -978,6 +978,26 @@ CONTAINS
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
         SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
+        CASE (EL_P1_1D)
+          ! P1 prolongation
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL mlprj_prolUniformP1_1D_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+               p_rtriaCoarse%NEL)
+
+        CASE (EL_P2_1D)
+          ! P2 prolongation
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL mlprj_prolUniformP2_1D_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+
         CASE (EL_P1)
           ! P1 prolongation
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
@@ -1257,6 +1277,26 @@ CONTAINS
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
         SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeRestriction))
+        CASE (EL_P1_1D)
+          ! P1 restriction
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL mlprj_restUniformP1_1D_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
+               p_rtriaCoarse%NEL)
+               
+        CASE (EL_P2_1D)
+          ! P2 restriction
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL mlprj_restUniformP2_1D_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
+               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+
         CASE (EL_P1)
           ! P1 restriction
           CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
@@ -1542,6 +1582,15 @@ CONTAINS
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
         SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
+        CASE (EL_P1_1D)
+          ! P1 interpolation
+          CALL mlprj_interpUniformP1_1D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
+        CASE (EL_P2_1D)
+          ! P2 interpolation
+          CALL mlprj_interpUniformP2_1D_double (p_DuCoarse,p_DuFine,&
+               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+
         CASE (EL_P1)
           ! P1 interpolation
           CALL mlprj_interpUniformP1_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
@@ -1549,7 +1598,7 @@ CONTAINS
         CASE (EL_P2)
           ! P2 interpolation
           CALL mlprj_interpUniformP2_double (p_DuCoarse,p_DuFine, &
-                                           p_rtriaCoarse%NVT, p_rtriaCoarse%NMT)          
+                                           p_rtriaCoarse%NVT, p_rtriaCoarse%NMT)
                                            
         CASE (EL_Q0)
           ! Q0 interpolation
@@ -1633,6 +1682,352 @@ CONTAINS
 !  ! local variables
 !
 !  END SUBROUTINE
+
+
+  ! ***************************************************************************
+  ! Support for 1D P1 element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformP1_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
+                                            IvertsAtElemFine,NELcoarse)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
+
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  REAL(DP) :: duh1,duh2,duh3
+
+    ! Copy the first NVT entries - they belong to the coarse grid vertices
+    ! that are fine grid vertices at the same time.
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+
+    ! Loop over the elements
+    DO iel=1,NELCoarse
+
+      duh1=DuCoarse(IvertsAtElemCoarse(1,iel))
+      duh2=DuCoarse(IvertsAtElemCoarse(2,iel))
+
+      ! If IEL is the current element index of the coarse grid element,
+      ! then it was refined into 2 new fine grid elements with indices
+      ! IEL and NVT+IEL, where NVT is the number of coarse grid vertices.
+      ! The 'new' vertice in the fine grid corresponding to the coarse grid
+      ! element IEL is the second vertice of the fine grid element IEL
+      ! (and the first of the fine grid element NVT+IEL).
+      DuFine(IvertsAtElemFine(2,iel)) = Q2 * (duh1 + duh2)
+
+    END DO
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformP1_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
+               IvertsAtElemFine,NELcoarse)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+
+  ! IverticesAtElement array (KVERT) on the caorse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
+  
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_VERTEXIDX) :: ifgv, icgv1, icgv2
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    !
+    ! Copy the first NVT entries - this gives the first additive contribution.
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+    
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Get the 'new' fine grid vertice
+      ifgv = IvertsAtElemFine(2,iel)
+      
+      ! Get the 'old' coarse grid vertices
+      icgv1 = IvertsAtElemCoarse(1,iel)
+      icgv2 = IvertsAtElemCoarse(2,iel)
+
+      DuCoarse(icgv1) = DuCoarse(icgv1) + Q2 * DuFine(ifgv)
+      DuCoarse(icgv2) = DuCoarse(icgv2) + Q2 * DuFine(ifgv)
+
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformP1_1D_double (DuCoarse,DuFine,NVTcoarse)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  
+    ! The first coase.NVT entries of the fine grid vector define 
+    ! the values on the coarse grid - because of the two-level ordering!
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    
+  END SUBROUTINE
+
+
+  ! ***************************************************************************
+  ! Support for 1D P2 element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformP2_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
+                                            IvertsAtElemFine,NVTcoarse,NELcoarse)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
+
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: P_3_8 = 0.375_DP
+  REAL(DP), PARAMETER :: P_1_8 = 0.125_DP
+  REAL(DP), PARAMETER :: P_3_4 = 0.75_DP
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER :: NVTfine
+  REAL(DP) :: dv1,dv2,del
+
+    ! Copy all DOFs from the coarse grid into the fine grid - 
+    ! the DOFs belonging to the 'new' fine grid vertices get
+    ! their values from the edge midpoints in the coarse grid.
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+    
+    ! Calculate number of vertices in fine grid
+    NVTfine = NVTcoarse+NELcoarse
+
+    ! Loop over the elements
+    DO iel=1,NELCoarse
+    
+      ! Get the DOFs from the coarse grid vertices...
+      dv1 = DuCoarse(IvertsAtElemCoarse(1,iel))
+      dv2 = DuCoarse(IvertsAtElemCoarse(2,iel))
+      
+      ! ...and get the DOF from the coarse grid edge midpoint
+      del = DuCoarse(NVTcoarse + iel)
+      
+      ! Perform quadratic interpolation to calculate the DOFs for the
+      ! fine grid edge midpoints.
+      DuFine(NVTfine + iel) = P_3_8*dv1 - P_1_8*dv2 + P_3_4*del
+      DuFine(NVTfine + NELcoarse + iel) = -P_1_8*dv1 + P_3_8*dv2 + P_3_4*del
+
+    END DO
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformP2_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
+               IvertsAtElemFine,NVTcoarse,NELcoarse)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+
+  ! IverticesAtElement array (KVERT) on the caorse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
+  
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: P_3_8 = 0.375_DP
+  REAL(DP), PARAMETER :: P_1_8 = 0.125_DP
+  REAL(DP), PARAMETER :: P_3_4 = 0.75_DP
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER :: NVTfine
+  REAL(DP) :: dem1,dem2
+  INTEGER(PREC_VERTEXIDX) :: icgv1, icgv2,icgem
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    !
+    ! Copy the first NVT entries - this gives the first additive contribution.
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+    
+    ! Calculate number of vertices in fine grid
+    NVTfine = NVTcoarse+NELcoarse
+
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Get the fine grid edge midpoints
+      dem1 = DuFine(NVTfine+iel)
+      dem2 = DuFine(NVTfine+NELcoarse+iel)
+
+      icgv1 = IvertsAtElemCoarse(1,iel)
+      icgv2 = IvertsAtElemCoarse(2,iel)
+      icgem = NVTcoarse+iel
+      
+      ! distribute the DOFs
+      DuCoarse(icgv1) = DuCoarse(icgv1) + P_3_8*dem1 - P_1_8*dem2
+      DuCoarse(icgv2) = DuCoarse(icgv2) - P_1_8*dem1 + P_3_8*dem2
+      DuCoarse(icgem) = DuCoarse(icgem) + P_3_4*(dem1 + dem2)
+
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformP2_1D_double (DuCoarse,DuFine,NVTcoarse,NELcoarse)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! $P_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER :: len
+  
+    len = NVTcoarse+NELcoarse
+  
+    ! The first coase.NVT entries of the fine grid vector define 
+    ! the values on the coarse grid - because of the two-level ordering!
+    CALL lalg_copyVectorDble(DuFine(1:len),DuCoarse(1:len))
+    
+  END SUBROUTINE
 
   ! ***************************************************************************
   ! Support for P0 element
