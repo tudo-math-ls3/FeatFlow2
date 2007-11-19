@@ -428,9 +428,6 @@ MODULE cc2dmediumm2nonlinearcore
     ! applied as preconditioner).
     REAL(DP) :: drhoLinearSolver = 0.0_DP
     
-    ! time used for matrix assembly
-    REAL(DP) :: dtimeMatrix = 0.0_DP
-    
   END TYPE
 
 !</typeblock>
@@ -678,9 +675,6 @@ CONTAINS
     CALL collct_setvalue_real(rcollection,'CCNL_RHOMG',&
         rnonlinearIteration%drhoLinearSolver,.TRUE.)
         
-    CALL collct_setvalue_real(rcollection,'CCNL_TIMEMATRIX', &
-         rnonlinearIteration%dtimeMatrix, .TRUE.)    
-
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -841,8 +835,6 @@ CONTAINS
     rnonlinearIteration%drhoLinearSolver = &
         collct_getvalue_real(rcollection,'CCNL_RHOMG')
         
-    rnonlinearIteration%dtimeMatrix = &
-        collct_getvalue_real(rcollection,'CCNL_TIMEMATRIX')
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1047,14 +1039,7 @@ CONTAINS
       rmatrixAssembly%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
-      CALL stat_clearTimer(rtimer)
-      CALL stat_startTimer(rtimer)        
       CALL c2d2_assembleDefect (rmatrixAssembly,rx,rd)        
-      CALL stat_stopTimer(rtimer)
-      rnonlinearIteration%dtimeMatrix = &
-      rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal
-      
-      
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
       IF (ASSOCIATED(p_RfilterChain)) THEN    
@@ -1247,14 +1232,9 @@ CONTAINS
       rmatrixAssembly%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
-      CALL stat_clearTimer(rtimer)
-      CALL stat_startTimer(rtimer)
       ! Assemble the matrix.        
       CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
           p_rmatrix,rmatrixAssembly,rtemp1)
-      CALL stat_stopTimer(rtimer)
-      rnonlinearIteration%dtimeMatrix = &
-      rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal      
       
       ! We don't have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
@@ -1476,19 +1456,10 @@ CONTAINS
           
         END IF
         
-        CALL stat_clearTimer(rtimer)
-        CALL stat_startTimer(rtimer)
         ! Assemble the preconditioner matrices in rnonlinearIteration
         ! on all levels that the solver uses.
         CALL assembleLinsolMatrices (rnonlinearIteration,p_rcollection,&
             bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
-        CALL stat_stopTimer(rtimer)
-        rnonlinearIteration%dtimeMatrix = &
-        rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal  
-        
-        ! save to the collection
-        CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
-                   
         
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -1739,9 +1710,6 @@ CONTAINS
           rmatrixAssembly%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
 
-          ! time the assembly routine
-          CALL stat_clearTimer(rtimer)
-          CALL stat_startTimer(rtimer)
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. NLMAX) THEN
@@ -1751,14 +1719,6 @@ CONTAINS
             CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
                 p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
           END IF
-          ! stop the timer and add to the total computation time
-          CALL stat_stopTimer(rtimer)
-          rnonlinearIteration%dtimeMatrix = &
-          rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal 
-          
-          ! save to the collection
-          CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
-               
 
           ! Boundary conditions
           ! ---------------------------------------------------
@@ -2196,14 +2156,8 @@ CONTAINS
     ! transfer values from the collection into the iteration structure
     CALL c2d2_restoreNonlinearLoop(rnonlinearIteration,rcollection)
 
-    ! display the computation time for performSolve on the screen
-    PRINT *,"Computation time for routine performSolve: ", &
-    rnonlinearIteration%dtimeMatrix
-        
     ! Remove parameters of the nonlinear loop from the collection.
     CALL c2d2_removeNonlinearLoop (rnonlinearIteration,rcollection)
-    
-
              
     IF (.NOT. PRESENT(rtempBlock)) THEN
       ! Release the temporary vector

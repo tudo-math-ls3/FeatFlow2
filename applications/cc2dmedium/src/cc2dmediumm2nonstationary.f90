@@ -494,9 +494,6 @@ CONTAINS
     ! Finally tell the time stepping scheme that we completed the time step.
     CALL timstp_nextSubstep (rtimestepping)
 
-    rnonlinearIteration%dtimeMatrix = rnonlinearIteration%dtimeMatrix + &
-    rnonlinearIterationTmp%dtimeMatrix
-
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1140,9 +1137,6 @@ CONTAINS
       CALL output_separator(OU_SEP_AT)
 
     END DO
-
-    
-    PRINT *,"Computation time: ",rnonlinearIteration%dtimeMatrix
 
     ! Clean up the stuff of/for the nonlinear solver.
     !
