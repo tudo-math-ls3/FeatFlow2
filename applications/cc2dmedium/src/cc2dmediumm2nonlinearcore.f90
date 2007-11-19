@@ -927,7 +927,6 @@ CONTAINS
     CALL collct_deletevalue(rcollection,'CCNL_IBMATTRANSPOSED')
     CALL collct_deletevalue(rcollection,'CCNL_IADAPTIVEMATRIX')
     CALL collct_deletevalue(rcollection,'CCNL_DADMATTHRESHOLD')
-    CALL collct_deletevalue(rcollection,'CCNL_INEUMANN')
     
     ! Delete residual information
     CALL collct_deletevalue (rcollection,'CCNL_RESINIT')

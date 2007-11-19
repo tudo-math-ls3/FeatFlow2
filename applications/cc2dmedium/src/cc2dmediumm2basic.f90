@@ -106,6 +106,12 @@ MODULE cc2dmediumm2basic
     ! specifies how to generate the mass matrix.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
 
+    ! This flag signales whether there are Neumann boundary components
+    ! visible on the boundary of this level or not. If there are no
+    ! Neumann boundary components visible, the equation gets indefinite
+    ! for the pressure.
+    LOGICAL :: bhasNeumannBoundary
+    
   END TYPE
   
 !</typeblock>
@@ -185,6 +191,15 @@ MODULE cc2dmediumm2basic
     ! This value must be initialised before the matrices are set
     ! up and must not be changed afterwards.
     LOGICAL :: bdecoupledXY
+
+    ! iboundary parameter from the DAT file. Specifies whether to update
+    ! boundary conditions in nonstationary simulations or not.
+    ! =0: stationary Dirichlet boundary conditions
+    ! =1: nonstationary boundary conditions, possibly with
+    !     pressure drop
+    ! =2: nonstationary boundary conditions, possibly with
+    !     prssure drop and/or Neumann boundary parts
+    INTEGER :: iboundary
 
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions
@@ -269,14 +284,7 @@ MODULE cc2dmediumm2basic
 ! NLMAX                 | Maximum level of the discretisation
 ! IUPWIND               | Type of stabilisation. =0:streamline diff, =1:upwind,
 !                       | =2:jump stabil
-! IBOUNDARY             ! =0: stationary Dirichlet boundary conditions
-!                       ! =1: nonstationary boundary conditions, possibly with
-!                       !     pressure drop
-!                       ! =2: nonstationary boundary conditions, possibly with
-!                       !     prssure drop and/or Neumann boundary parts
 ! UPSAM                 | Stabilisation parameter
-! INEUMANN              | =YES, if there is Neumann boundary in the problem.
-!                       | =NO, otherwise
 !
 ! Before the nonlinear iteration, some parameters are added to the collection.
 ! These are available during the nonlinear iteration and released afterwards.

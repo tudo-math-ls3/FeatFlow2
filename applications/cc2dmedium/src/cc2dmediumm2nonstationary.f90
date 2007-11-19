@@ -429,7 +429,7 @@ CONTAINS
           
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
-    IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+    IF (rproblem%iboundary .NE. 0) THEN
       CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
     END IF
 

@@ -112,8 +112,8 @@ CONTAINS
   ! For this purpose, the parameters in the [BDEXPRESSIONS] and [BDCONDITIONS]
   ! sections of the DAT files (saved in rproblem\%rparamList) are evaluated.
   !
-  ! A flag 'INEUMANN'==YES/NO is added to the collection that tells about
-  ! whether there is Neumann boundary somewhere.
+  ! The bhasNeumannBoudary flag on every level is initialised according to
+  ! whether there exist Neumann boundary components on the boundary or not.
 !</description>
   
 !<inputoutput>
@@ -446,12 +446,15 @@ CONTAINS
       
     END DO
 
-    ! Add to the collection whether there is Neumann boundary or not.    
-    IF (bNeumann) THEN
-      CALL collct_setvalue_int (rproblem%rcollection, 'INEUMANN', YES, .TRUE.)
-    ELSE
-      CALL collct_setvalue_int (rproblem%rcollection, 'INEUMANN', NO, .TRUE.)
-    END IF
+    ! Remember whether there is Neumann boundary or not.
+    !
+    ! Note: actually the bhasNeumannBoundary flag signales whether there
+    ! are Neumann boundary components discretely *visible* on that level or not!
+    ! We just initialise it here according to whether there are analytically
+    ! visible or not. This is still a lack in the design and has to be
+    ! somehow fixed later!
+    rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
+        bNeumann
     
     ! Remove the temporary collection from memory.
     CALL collct_done (rcoll)

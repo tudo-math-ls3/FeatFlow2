@@ -455,12 +455,6 @@ CONTAINS
       CALL bcond_doneBC (rproblem%p_rboundaryConditions)
     END DO
     
-    ! Remove the Neumann flag from the collection
-    CALL collct_deletevalue (rproblem%rcollection, 'INEUMANN')
-    
-    ! Remove the identifier that we should use BDC from the DAT file
-    CALL collct_deletevalue (rproblem%rcollection, 'BDCFROMDAT')
-
     ! Release the parser object with all the expressions to be evaluated
     ! on the boundary.
     p_rparser => collct_getvalue_pars (rproblem%rcollection, BDC_BDPARSER, &

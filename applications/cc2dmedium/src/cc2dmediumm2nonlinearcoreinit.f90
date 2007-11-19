@@ -338,7 +338,9 @@ CONTAINS
     rnonlinearIteration%p_RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
     
     ! Do we have Neumann boundary?
-    bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+    !
+    ! The bhasNeumannBoundary flag of the higher level decides about that...
+    bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
     rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
     IF (.NOT. bneumann) THEN
       ! Pure Dirichlet problem -- Neumann boundary for the pressure.
@@ -465,6 +467,15 @@ CONTAINS
       ! files, the prepared filter chain and the interlevel projection structure.
       ! This gives us the linear solver node rpreconditioner%p_rsolverNode
       ! which identifies the linear solver.
+      !
+      ! Note that we pass rpreconditioner%p_RfilterChain as filter chain here,
+      ! i.e. we use the same filter chain for all levels. This is a lack in the
+      ! design of linsolinit_initFromFile as it forces us to use the same
+      ! filters on all levels, which is not always advisable! (e.g. if
+      ! a higher level 'sees' Neumann boundary while a lower one doesn't,
+      ! there has actually another filter chain to be used on the lower level
+      ! than on the higher one...)
+      ! We probably change this later...
       CALL linsolinit_initFromFile (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
                                     rproblem%rparamList,ssolverName,&
                                     NLMAX-NLMIN+1,&
