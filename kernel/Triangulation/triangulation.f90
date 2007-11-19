@@ -2385,12 +2385,10 @@ CONTAINS
     ! Initialise vertices
     p_Dcoords(1,1) = dleft
     s = 1.0_DP / REAL(nintv, DP)
-    !$OMP PARALLEL DO PRIVATE(t)
     DO i=2, nintv
       t = REAL(i-1, DP) * s
       p_Dcoords(1,i) = (1.0_DP - t) * dleft + t * dright
     END DO
-    !$OMP END PARALLEL DO
     p_Dcoords(1,nintv+1) = dright
     
     ! And we have nintv elements
@@ -2404,12 +2402,10 @@ CONTAINS
     CALL storage_getbase_int2d(rtriangulation%h_IverticesAtElement, p_Iverts)
     
     ! Initialise elements
-    !$OMP PARALLEL DO
     DO i=1, nintv
       p_Iverts(1,i) = i
       p_Iverts(2,i) = i+1
     END DO
-    !$OMP END PARALLEL DO
     
     ! There is one boundary component - the interval ends
     rtriangulation%NBCT = 1
@@ -2442,11 +2438,6 @@ CONTAINS
     
     ! Set up nodal property
     p_Idata(1) = 1
-    !$OMP PARALLEL DO
-    DO i=2, nintv
-      p_Idata(i) = 0
-    END DO
-    !$OMP END PARALLEL DO
     p_Idata(nintv+1) = 1
 
     ! That's it
@@ -4795,21 +4786,28 @@ CONTAINS
         
         ! IEL1
         p_IvertAtElementDest(1,iel) = p_IvertAtElementSource(1, iel)
-        p_IvertAtElementDest(1,iel) = ivtoffset + iel
+        p_IvertAtElementDest(2,iel) = ivtoffset + iel
         
         ! IEL2
         p_IvertAtElementDest(1,iel2) = ivtoffset + iel
-        p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource(2, iel)
+        p_IvertAtElementDest(2,iel2) = p_IvertAtElementSource(2, iel)
       
       END DO
       !$OMP END PARALLEL DO
       
-      
-      ! The last step of setting up the raw mesh on the finer level:
       ! Set up InodalProperty. But that's the most easiest thing: Simply
       ! copy the nodal property array from the coarse mesh to the fine mesh.
       CALL storage_copy (rsourceTriangulation%h_InodalProperty,&
           rdestTriangulation%h_InodalProperty)
+      
+      ! We also need to copy the boundary vertices array to the finer level.
+      rdestTriangulation%NVBD = rsourceTriangulation%NVBD
+      CALL storage_copy (rsourceTriangulation%h_IverticesAtBoundary,&
+          rdestTriangulation%h_IverticesAtBoundary)
+      
+      rdestTriangulation%NBCT = rsourceTriangulation%NBCT
+      CALL storage_copy (rsourceTriangulation%h_IboundaryCpIdx,&
+          rdestTriangulation%h_IboundaryCpIdx)
     
     END SUBROUTINE
     
