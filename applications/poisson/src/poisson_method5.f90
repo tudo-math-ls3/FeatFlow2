@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple Laplace
+!# This module is a demonstation program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
 !# The routine splits up the tasks of reading the domain, creating 
@@ -1037,7 +1037,7 @@ CONTAINS
     ALLOCATE(p_rproblem)
     
     ! Ok, let's start. 
-    ! We want to solve our Laplace problem on level...
+    ! We want to solve our Poisson problem on level...
 
     NLMIN = 1
     NLMAX = 7

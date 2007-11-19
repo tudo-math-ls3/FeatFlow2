@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains callback functions for the poisson problem that are
+!# This module contains callback functions for the Poisson problem that are
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for

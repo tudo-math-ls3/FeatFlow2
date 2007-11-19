@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple Laplace
+!# This module is a demonstation program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
 !# For simplicity, this example application is derived from poisson_method1.
@@ -133,7 +133,7 @@ CONTAINS
 
     ! Ok, let's start. 
     !
-    ! We want to solve our Laplace problem on level...
+    ! We want to solve our Poisson problem on level...
     NLMAX = 7
     
     ! At first, read in the parametrisation of the boundary and save
