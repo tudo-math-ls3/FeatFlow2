@@ -16,6 +16,10 @@
 !#     -> Initialise a linear solver node by reading parameters from a
 !#        INI/DAT file
 !#
+!# 2.) linsolinit_initParams
+!#     -> Read parameters of a linear solver from a section of a DAT file
+!#        and write them into a solver structure.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -277,12 +281,12 @@ CONTAINS
     ! Get the solver type we should set up.
     ! Let's hope the parameter 'isolverType' exists! That one is
     ! mandatory; if not, the get-routine will stop.
-    CALL parlst_getvalue_int (p_rsection, 'iSolverType', isolverType)
+    CALL parlst_getvalue_int (p_rsection, 'isolverType', isolverType)
 
     ! Try to get the solver subtype from the parameter list.
     ! This allows switching between different variants of the same
     ! basic algorithm (e.g. VANCA)
-    CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
+    CALL parlst_getvalue_int (p_rsection, 'isolverSubtype', isolverSubtype,0)
 
     ! Many solvers support preconditioners - we try to fetch the
     ! name of the preconditioner in-advance to prevent code
@@ -329,7 +333,7 @@ CONTAINS
       !  iscale = 1   -> Scale preconditioned vector according to actual formula
       !                  in the literature
       !         = 0   -> no scaling, original FEAT implementation
-      CALL parlst_getvalue_int (p_rsection, 'iscale', i1, 0)
+      CALL parlst_getvalue_int (p_rsection, 'bscale', i1, 0)
       CALL linsol_initSSOR (p_rsolverNode,bscale = i1 .EQ. 1)
       
     CASE (LINSOL_ALG_BICGSTAB)
@@ -362,7 +366,7 @@ CONTAINS
 
       ! Try to get the solver subtype from the parameter list.
       ! This allows switching between right- and left preconditioned BiCGStab.
-      CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
+      CALL parlst_getvalue_int (p_rsection, 'isolverSubtype', isolverSubtype,0)
 
       ! Krylow space dimension
       CALL parlst_getvalue_int (p_rsection, 'ikrylovDim', ikrylowDim,40)
@@ -389,7 +393,7 @@ CONTAINS
       !               > 0.0               -> Build MILU(s)
       !
       ! Get fill-in level
-      CALL parlst_getvalue_int (p_rsection, 'ifillinLevel', i1, 0)
+      CALL parlst_getvalue_int (p_rsection, 'ifill', i1, 0)
       
       ! Get MILU relaxsation parameter
       CALL parlst_getvalue_double (p_rsection, 'drelax', d1, 0.0_DP)
@@ -528,38 +532,8 @@ CONTAINS
     !
     ! So parse the given parameters now to initialise the solver node:
     
-    CALL parlst_getvalue_double (p_rsection, 'domega', &
-                                 p_rsolverNode%domega, p_rsolverNode%domega)
-
-    CALL parlst_getvalue_int (p_rsection, 'nminIterations', &
-                              p_rsolverNode%nminIterations, p_rsolverNode%nminIterations)
-
-    CALL parlst_getvalue_int (p_rsection, 'nmaxIterations', &
-                              p_rsolverNode%nmaxIterations, p_rsolverNode%nmaxIterations)
-
-    CALL parlst_getvalue_double (p_rsection, 'depsRel', &
-                                 p_rsolverNode%depsRel, p_rsolverNode%depsRel)
-
-    CALL parlst_getvalue_double (p_rsection, 'depsAbs', &
-                                 p_rsolverNode%depsAbs, p_rsolverNode%depsAbs)
-
-    CALL parlst_getvalue_int (p_rsection, 'iresNorm', &
-                              p_rsolverNode%iresNorm, p_rsolverNode%iresNorm)
-
-    CALL parlst_getvalue_int (p_rsection, 'istoppingCriterion', &
-                              p_rsolverNode%istoppingCriterion, &
-                              p_rsolverNode%istoppingCriterion)
-
-    CALL parlst_getvalue_int (p_rsection, 'ioutputLevel', &
-                              p_rsolverNode%ioutputLevel, p_rsolverNode%ioutputLevel)
-
-    CALL parlst_getvalue_int (p_rsection, 'niteResOutput', &
-                              p_rsolverNode%niteResOutput, p_rsolverNode%niteResOutput)
-                              
-    CALL parlst_getvalue_int (p_rsection, 'isolverSubgroup', &
-                              p_rsolverNode%isolverSubgroup, &
-                              p_rsolverNode%isolverSubgroup)
-                              
+    CALL linsolinit_initParams (p_rsolverNode,rparamList,ssolverName)
+    
     ! Up to now, we initialised for a linear solver. In case this solver is
     ! used as smoother in a Multigrid algorithm, this initialisation
     ! is not comppletely correct - we have to transform the solver into
@@ -576,6 +550,201 @@ CONTAINS
       CALL linsol_convertToSmoother (p_rsolverNode,i1)
     
     END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE linsolinit_initParams (rsolverNode,rparamList,ssection,csolverType)
+  
+!<description>
+  ! This section reads the standard parameters for a linear solver from the
+  ! section ssection in the parameter list rparamList and changes
+  ! specified entries in the solver node rsolverNode. Variables whose
+  ! values are not specified in the parameter list are left unchanged
+  ! in rsolverNode.
+  !
+  ! The parameters that can be specified in the parameter list have exactly
+  ! the same names as in the linear solver structure rsolverNode.
+  ! Note that not all parameters in rsolverNode are changed by this routine.
+  ! 'Critical' parameters like solver type etc. are left unchanged.
+  !
+  ! csolverType allows to specify a special solver type whose parameters should
+  ! be initialised. If this is desired, the routine should be called twice --
+  ! once with csolverType=LINSOL_ALG_UNDEFINED to initialise the main parameters
+  ! and once with csolverType=LINSOL_ALG_xxxx to initialise the special,
+  ! solver dependent parameters.
+!</description>
+
+!<input>
+  ! The parameter list that contains the whole solver configuration.
+  TYPE(t_parlist), INTENT(IN) :: rparamList
+  
+  ! The name of a section in rparamList that contains the configuration of
+  ! the linear solver.
+  CHARACTER(LEN=*), INTENT(IN) :: ssection
+  
+  ! OPTIONAL: Type of solver structure that should be initialised.
+  ! If unspecified or if set to LINSOL_ALG_UNDEFINED, the parameters in the
+  ! main solver structure are initialised.
+  ! Otherwise, csolverType must be a LINSOL_ALG_xxx constant that specifies
+  ! a special solver type whose parameters should be initialised (e.g.
+  ! the 'ikrylovDim' parameter of the GMRES method).
+  INTEGER, INTENT(IN), OPTIONAL :: csolverType
+!</input>
+
+!<output>
+  ! A linear solver node whose parameters should be changed according to the
+  ! parameters in rparamList.
+  TYPE(t_linsolNode), INTENT(INOUT) :: rsolverNode
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: csolver
+    TYPE(t_parlstSection), POINTER :: p_rsection
+    INTEGER :: i1,ikrylowDim
+    
+    csolver = LINSOL_ALG_UNDEFINED
+    IF (PRESENT(csolverType)) csolver = csolverType
+
+    ! Check that there is a section called ssolverName - otherwise we
+    ! cannot create anything!
+    
+    CALL parlst_querysection(rparamList, ssection, p_rsection) 
+    
+    IF (.NOT. ASSOCIATED(p_rsection)) THEN
+      PRINT *,'Cannot create linear solver; no section '''&
+              //TRIM(ssection)//'''!'
+      CALL sys_halt()
+    END IF
+    
+    ! Now comes a biiig select for all the different types of solvers
+    ! that are supported by this routine.
+    SELECT CASE (csolver)
+      
+    CASE (LINSOL_ALG_SSOR)
+      ! SSOR solver
+      !
+      ! Init the solver node.
+      ! Parameters:
+      !  iscale = 1   -> Scale preconditioned vector according to actual formula
+      !                  in the literature
+      !         = 0   -> no scaling, original FEAT implementation
+      CALL parlst_getvalue_int (p_rsection, 'iscale', i1, -1)
+      IF (i1 .NE. -1) THEN
+        rsolverNode%p_rsubnodeSSOR%bscale = i1 .EQ. 1
+      END IF
+      
+    CASE (LINSOL_ALG_BICGSTAB)
+      ! BiCGStab solver
+
+      ! Try to get the solver subtype from the parameter list.
+      ! This allows switching between right- and left preconditioned BiCGStab.
+      CALL parlst_getvalue_int (p_rsection, 'isolverSubtype', &
+        rsolverNode%p_rsubnodeBiCGStab%cprecondType,&
+        rsolverNode%p_rsubnodeBiCGStab%cprecondType)
+
+    CASE (LINSOL_ALG_GMRES)
+      ! GMRES solver
+
+      ! Krylow space dimension
+      CALL parlst_getvalue_int (p_rsection, 'ikrylovDim', ikrylowDim,40)
+      
+      ! Apply Gram Schmidt twice
+      CALL parlst_getvalue_int (p_rsection, 'btwiceGS', i1,-1)
+
+      rsolverNode%p_rsubnodeGMRES%ikrylovDim = ikrylowDim
+      IF (i1 .NE. -1) THEN
+        rsolverNode%p_rsubnodeGMRES%btwiceGS = i1 .EQ. 1
+      END IF
+      
+    CASE (LINSOL_ALG_MILUS1x1)
+      ! (M)ILU solver
+      !
+      ! Parameters:
+      !  ifillinLevel = 0 / 1 / 2 / ...   -> Fill-in level for factorisation
+      !  drelax       = 0.0               -> Build ILU(s)
+      !               > 0.0               -> Build MILU(s)
+      !
+      ! Get fill-in level
+      CALL parlst_getvalue_int (p_rsection, 'ifill', &
+        rsolverNode%p_rsubnodeMILUs1x1%ifill, &
+        rsolverNode%p_rsubnodeMILUs1x1%ifill)
+      
+      ! Get MILU relaxsation parameter
+      CALL parlst_getvalue_double (p_rsection, 'drelax', &
+        rsolverNode%p_rsubnodeMILUs1x1%drelax, &
+        rsolverNode%p_rsubnodeMILUs1x1%drelax)
+      
+    CASE (LINSOL_ALG_MULTIGRID)
+      ! Multigrid solver
+      !
+      ! Parameters:
+      !  icycle         = 0               -> F-cycle
+      !                 = 1               -> V-cycle
+      !                 = 2               -> W-cycle
+      !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
+      !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
+      
+      ! Then, get solver specific data.
+      CALL parlst_getvalue_int (p_rsection, 'icycle', &
+                                rsolverNode%p_rsubnodeMultigrid%icycle,&
+                                rsolverNode%p_rsubnodeMultigrid%icycle)
+
+      ! Coarse grid correction parameters
+      CALL parlst_getvalue_int (p_rsection, 'ccorrectionTypeAlpha', &
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%ccorrectionType,&
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%ccorrectionType)
+
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMin', &
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin,&
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin)
+      
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMax', &
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax,&
+           rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax)
+    
+    CASE DEFAULT
+    
+      ! Initialise the main solver parameters
+    
+      CALL parlst_getvalue_double (p_rsection, 'domega', &
+                                  rsolverNode%domega, rsolverNode%domega)
+
+      CALL parlst_getvalue_int (p_rsection, 'nminIterations', &
+                                rsolverNode%nminIterations, rsolverNode%nminIterations)
+
+      CALL parlst_getvalue_int (p_rsection, 'nmaxIterations', &
+                                rsolverNode%nmaxIterations, rsolverNode%nmaxIterations)
+
+      CALL parlst_getvalue_double (p_rsection, 'depsRel', &
+                                  rsolverNode%depsRel, rsolverNode%depsRel)
+
+      CALL parlst_getvalue_double (p_rsection, 'depsAbs', &
+                                  rsolverNode%depsAbs, rsolverNode%depsAbs)
+
+      CALL parlst_getvalue_int (p_rsection, 'iresNorm', &
+                                rsolverNode%iresNorm, rsolverNode%iresNorm)
+
+      CALL parlst_getvalue_int (p_rsection, 'istoppingCriterion', &
+                                rsolverNode%istoppingCriterion, &
+                                rsolverNode%istoppingCriterion)
+
+      CALL parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+                                rsolverNode%ioutputLevel, rsolverNode%ioutputLevel)
+
+      CALL parlst_getvalue_int (p_rsection, 'niteResOutput', &
+                                rsolverNode%niteResOutput, rsolverNode%niteResOutput)
+                                
+      CALL parlst_getvalue_int (p_rsection, 'isolverSubgroup', &
+                                rsolverNode%isolverSubgroup, &
+                                rsolverNode%isolverSubgroup)
+
+    END SELECT ! isolverType
 
   END SUBROUTINE
   
