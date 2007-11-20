@@ -35,11 +35,14 @@
 !#     -> Scales a coordinate x linearly from the interval [a,b] to the
 !#        interval [c,d]
 !#
-!# 8.) mprim_SVD_factorise
+!# 8.) mprim_quadraticInterpolation
+!#     -> Evaluate the quadratic interpolation polynomial of three values.
+!#
+!# 9.) mprim_SVD_factorise
 !#     -> Compute the factorisation for a singular value decomposition
 !#
-!# 9.) mprim_SVD_backsubst
-!#     -> Perform back substitution for a singular value decomposition
+!# 10.) mprim_SVD_backsubst
+!#      -> Perform back substitution for a singular value decomposition
 !#
 !# </purpose>
 !##############################################################################
@@ -968,6 +971,52 @@ CONTAINS
     d2 = (-db*dc+da*dd)*d3
     
     dy = d1*dx+d2
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  ELEMENTAL SUBROUTINE mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
+  
+!<description>
+  ! Calculates a quadratic interpolation. dx is a value in the range $[-1,1]$.
+  ! The routine calculates the value $dy:=p(dx)$ with $p(.)$ being the quadratic
+  ! interpolation polynomial with $p(-1)=d1$, $p(0)=d2$ and $p(1)=d3$.
+!<description>
+  
+!<input>
+  ! The parameter value in the range $[-1,1]$ where the polynomial should be evaluated.
+  REAL(DP), INTENT(IN) :: dx
+  
+  ! The value $p(-1)$.
+  REAL(DP), INTENT(IN) :: d1
+
+  ! The value $p(0)$.
+  REAL(DP), INTENT(IN) :: d2
+
+  ! The value $p(1)$.
+  REAL(DP), INTENT(IN) :: d3
+!</input>
+
+!<output>
+  ! The value $p(dx)$.
+  REAL(DP), INTENT(OUT) :: dy
+!</output>
+  
+!</subroutine>
+
+    ! The polynomial p(t) = a + bt + ct^2 has to fulfill:
+    !   p(-1)=d1, p(0)=d2, p(1)=d3.
+    !
+    ! So the polynomial has the shape:
+    !   p(t) = d1  +  1/2(d3-d1)t  +  1/2(d3-2d2+d1)t^2
+    !
+    ! The Horner scheme gives us:
+    !   p(t) = 1/2 ( (d3-2d2+d1)t + (d3-d1) ) t + d1
+    
+    dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d1
 
   END SUBROUTINE
 
