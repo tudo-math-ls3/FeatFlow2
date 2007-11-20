@@ -112,8 +112,8 @@ CONTAINS
   ! For this purpose, the parameters in the [BDEXPRESSIONS] and [BDCONDITIONS]
   ! sections of the DAT files (saved in rproblem\%rparamList) are evaluated.
   !
-  ! A flag 'INEUMANN'==YES/NO is added to the collection that tells about
-  ! whether there is Neumann boundary somewhere.
+  ! The bhasNeumannBoudary flag on every level is initialised according to
+  ! whether there exist Neumann boundary components on the boundary or not.
 !</description>
   
 !<inputoutput>
@@ -317,6 +317,122 @@ CONTAINS
             CASE (1)
               ! Simple Dirichlet boundary
               ! Read the line again, get the expressions for X- and Y-velocity
+              READ(cstr,*) ityp,dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              
+              ! For any string <> '', create the appropriate Dirichlet boundary
+              ! condition and add it to the list of boundary conditions.
+              ! Set the string tag of the boundary condition to the name of
+              ! the expression to evaluate.
+              !
+              ! Set the integer tag of the structure to the type of the expression.
+              ! That way the callback routine for discretising the BC's can quickly
+              ! check wht is to evaluate.
+              ! If the type is a double precision value, set the double precision
+              ! tag to that value so it can be evaluated quicker that taking the
+              ! value from the collection.
+              IF (sbdex1 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
+                                                  1,rboundaryRegion,p_rbcRegion)
+                                                  
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
+
+                ! Dual equation has Dirichlet-0-boundary
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
+                                                   4,rboundaryRegion,p_rbcRegion)
+                                                   
+                CALL setZeroVelocity (p_rbcRegion)
+              END IF
+              
+              IF (sbdex2 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
+                                                   2,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex2,rproblem%rcollection,rcoll,p_rbcRegion)
+
+                ! Dual equation has Dirichlet-0-boundary
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
+                                                   5,rboundaryRegion,p_rbcRegion)
+                                                   
+                CALL setZeroVelocity (p_rbcRegion)
+              END IF
+              
+              ! Now the same thing again, this time separately for primal and dual
+              ! variables.
+              ! This is necessary if a solver solves 3x3 subproblems with only primal
+              ! or only dual vectors.
+              
+              IF (sbdex1 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                                   1,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
+
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsDual,&
+                                                   1,rboundaryRegion,p_rbcRegion)
+                                                   
+                CALL setZeroVelocity (p_rbcRegion)
+              END IF
+              
+              IF (sbdex2 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                                   2,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex2,rproblem%rcollection,rcoll,p_rbcRegion)
+
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsDual,&
+                                                   2,rboundaryRegion,p_rbcRegion)
+                                                   
+                CALL setZeroVelocity (p_rbcRegion)
+              END IF
+              
+              ! If we have no-slip boundary conditions, the X- and Y-velocity
+              ! matrices are 'decoupled' as they are modified differently
+              ! by the boundary-conditions implementation filter!
+              ! In this case, change rproblem%bdecoupledXY from FALSE to TRUE
+              ! to indicate that.
+              IF ( ((sbdex1 .EQ. '') .AND. (sbdex2 .NE. '')) ) THEN
+                rproblem%bdecoupledXY = .TRUE.
+              END IF
+              
+            CASE (2)
+            
+              ! Pressure drop boundary conditions.
+              ! Read the line again to get the actual parameters
+              READ(cstr,*) ityp,dvalue,iintervalEnds,ibctyp,sbdex1
+              
+              ! For any string <> '', create the appropriate pressure drop boundary
+              ! condition and add it to the list of boundary conditions.
+              ! Set the string tag of the boundary condition to the name of
+              ! the expression to evaluate.
+              !
+              ! Set the integer tag of the structure to the type of the expression.
+              ! That way the callback routine for discretising the BC's can quickly
+              ! check wht is to evaluate.
+              ! If the type is a double precision value, set the double precision
+              ! tag to that value so it can be evaluated quicker that taking the
+              ! value from the collection.
+              IF (sbdex1 .NE. '') THEN
+                IvelEqns = (/1,2/)
+                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,&
+                                              IvelEqns,&
+                                              rboundaryRegion,p_rbcRegion)          
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
+
+                ! Again for the pure primal equation.
+                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                              IvelEqns,&
+                                              rboundaryRegion,p_rbcRegion)          
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
+              END IF
+                            
+            CASE (3)
+              
+              ! Nonlinear slip boundary conditions.
+              IvelComp = (/1,2/)
+              CALL bcond_newSlipBConRealBD (rproblem%p_rboundaryConditions,&
+                                            IvelComp(1:NDIM2D),&
+                                            rboundaryRegion,p_rbcRegion)
+            
+            CASE (4)
+              ! Simple Dirichlet boundary
+              ! Read the line again, get the expressions for X- and Y-velocity
               READ(cstr,*) ityp,dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
               
               ! For any string <> '', create the appropriate Dirichlet boundary
@@ -399,46 +515,6 @@ CONTAINS
                 rproblem%bdecoupledXY = .TRUE.
               END IF
               
-            CASE (2)
-            
-              ! Pressure drop boundary conditions.
-              ! Read the line again to get the actual parameters
-              READ(cstr,*) ityp,dvalue,iintervalEnds,ibctyp,sbdex1
-              
-              ! For any string <> '', create the appropriate pressure drop boundary
-              ! condition and add it to the list of boundary conditions.
-              ! Set the string tag of the boundary condition to the name of
-              ! the expression to evaluate.
-              !
-              ! Set the integer tag of the structure to the type of the expression.
-              ! That way the callback routine for discretising the BC's can quickly
-              ! check wht is to evaluate.
-              ! If the type is a double precision value, set the double precision
-              ! tag to that value so it can be evaluated quicker that taking the
-              ! value from the collection.
-              IF (sbdex1 .NE. '') THEN
-                IvelEqns = (/1,2/)
-                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,&
-                                              IvelEqns,&
-                                              rboundaryRegion,p_rbcRegion)          
-                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
-
-                ! Again for the pure primal equation.
-                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
-                                              IvelEqns,&
-                                              rboundaryRegion,p_rbcRegion)          
-                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
-              END IF
-              
-              
-            CASE (3)
-              
-              ! Nonlinear slip boundary conditions.
-              IvelComp = (/1,2/)
-              CALL bcond_newSlipBConRealBD (rproblem%p_rboundaryConditions,&
-                                            IvelComp(1:NDIM2D),&
-                                            rboundaryRegion,p_rbcRegion)
-            
             CASE DEFAULT
               PRINT *,'Unknown boundary condition'
               STOP
@@ -459,12 +535,15 @@ CONTAINS
       
     END DO
 
-    ! Add to the collection whether there is Neumann boundary or not.    
-    IF (bNeumann) THEN
-      CALL collct_setvalue_int (rproblem%rcollection, 'INEUMANN', YES, .TRUE.)
-    ELSE
-      CALL collct_setvalue_int (rproblem%rcollection, 'INEUMANN', NO, .TRUE.)
-    END IF
+    ! Remember whether there is Neumann boundary or not.
+    !
+    ! Note: actually the bhasNeumannBoundary flag signales whether there
+    ! are Neumann boundary components discretely *visible* on that level or not!
+    ! We just initialise it here according to whether there are analytically
+    ! visible or not. This is still a lack in the design and has to be
+    ! somehow fixed later!
+    rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
+        bNeumann
     
     ! Remove the temporary collection from memory.
     CALL collct_done (rcoll)
@@ -510,6 +589,27 @@ CONTAINS
         rbcRegion%itag = collct_getvalue_int (rcollection, &
                            sexprName, 0, SEC_SBDEXPRESSIONS)
       END SELECT
+    
+   END SUBROUTINE 
+
+    ! -------------------------------------------------------------------------
+  
+    SUBROUTINE setZeroVelocity (rbcRegion)
+    
+    ! Initialises a boundary condition region to zero velocity.
+    ! Used for dual velocity variables.
+    
+    ! Boundary condition region to be set up
+    TYPE(t_bcRegion), INTENT(INOUT) :: rbcRegion
+    
+      INTEGER :: iexptyp
+    
+      rbcRegion%stag = ''
+  
+      ! Set up the BC to realise zero-boundary-conditions.
+      iexptyp = BDC_VALDOUBLE
+      rbcRegion%ibdrexprtype = BDC_VALDOUBLE
+      rbcRegion%dtag = 0.0_DP
     
    END SUBROUTINE 
 

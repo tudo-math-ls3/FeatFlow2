@@ -134,7 +134,7 @@ CONTAINS
     ! to the parameter list.
     CALL parlst_readfromfile (rparamList, './data/discretisation.dat')
     CALL parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
-    CALL parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
+    ! CALL parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
     CALL parlst_readfromfile (rparamList, './data/output.dat')
     CALL parlst_readfromfile (rparamList, './data/paramtriang.dat')
     CALL parlst_readfromfile (rparamList, './data/bdconditions.dat')

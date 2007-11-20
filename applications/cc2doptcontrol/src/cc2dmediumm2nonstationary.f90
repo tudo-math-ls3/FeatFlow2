@@ -13,7 +13,7 @@
 !#     -> Initialise the parameters of the time dependent solver from DAT file
 !#        parameters.
 !#
-!# 2.) c2d2_solveNonstationary
+!# 2.) c2d2_solveNonstationaryDirect
 !#     -> Solves the space-time coupled system.
 !# </purpose>
 !##############################################################################
@@ -132,10 +132,10 @@ CONTAINS
 
 !</subroutine>
 
-    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: Rsupermatrix
+    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: RspaceTimeDiscr
     TYPE(t_spacetimeVector) :: rx,rd,rb
     TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i,ispacelevelcoupledtotimelevel
+    INTEGER :: i,ispacelevelcoupledtotimelevel,ispaceTimeSolverType
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX
 
     ! Get the minimum and maximum time level from the parameter list    
@@ -144,78 +144,90 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMAX',TIMENLMAX,1)
 
+    ! Allocate memory fo rthe space-time discretisation structures
+    ! on all levels. Initialis the maximum level such that it represents
+    ! the finest time level as well as the finest space level.
+    ALLOCATE(RspaceTimeDiscr(TIMENLMIN:TIMENLMAX))
+    
+    CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
+        rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
+
+    ! Read the target flow -- stationary or nonstationary
+    CALL c2d2_initTargetFlow (rproblem,RspaceTimeDiscr(TIMENLMAX)%niterations)
+        
+    ! Figure out which type of solver we should use to solve
+    ! the problem. 
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
-        'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
+                              'ispaceTimeSolverType',ispaceTimeSolverType,0)
 
-    ALLOCATE(Rsupermatrix(TIMENLMIN:TIMENLMAX))
-
-    ! Initialise the supersystem on all levels
-    SELECT CASE (ispacelevelcoupledtotimelevel)
+    ! Call the solver for the space/time coupled system.
+    SELECT CASE (ispaceTimeSolverType)
     CASE (0)
-      ! Everywhere the same space level
-      DO i=TIMENLMIN,TIMENLMAX
-        IF (i .EQ. TIMENLMAX) THEN
+      ! 1-level (in time) defect correction solver with a preconditioner
+      ! in space. 
+      !
+      ! Call the defect correction solver      
+      CALL c2d2_solveSupersystemDefCorr (rproblem, &
+          RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
+      
+    CASE (1)
+      ! Space-time multigrid solver in space and/or time.
+      !
+      ! Should we couple space and time coarsening/refinement?
+      CALL parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
+          'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
+
+      ! Initialise the supersystem on all levels below the topmost one
+      SELECT CASE (ispacelevelcoupledtotimelevel)
+      CASE (0)
+        ! Everywhere the same space level
+        DO i=TIMENLMIN,TIMENLMAX-1
           CALL c2d2_initParamsSupersystem (rproblem,i,&
-              rproblem%NLMAX,Rsupermatrix(i), rx, rb, rd)
-        ELSE
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
-              rproblem%NLMAX,Rsupermatrix(i))
-        END IF
-      END DO
-    CASE (1) 
-      ! Space level NLMAX-i = Time level TIMENLMAX-i
-      DO i=TIMENLMIN,TIMENLMAX
-        IF (i .EQ. TIMENLMAX) THEN
+              rproblem%NLMAX,RspaceTimeDiscr(i))
+        END DO
+        
+      CASE (1) 
+        ! Space level NLMAX-i = Time level TIMENLMAX-i
+        DO i=TIMENLMIN,TIMENLMAX-1
           CALL c2d2_initParamsSupersystem (rproblem,i,&
               MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              Rsupermatrix(i), rx, rb, rd)
-        ELSE
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
-              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              Rsupermatrix(i))
-        END IF
-      END DO
-    CASE (2)
-      ! Space level NLMAX-i = Time level TIMENLMAX-i,
-      ! but no restriction in time
-      DO i=TIMENLMIN,TIMENLMAX
-        IF (i .EQ. TIMENLMAX) THEN
+              RspaceTimeDiscr(i), rx, rb, rd)
+        END DO
+        
+      CASE (2)
+        ! Space level NLMAX-i = Time level TIMENLMAX-i,
+        ! but no restriction in time
+        DO i=TIMENLMIN,TIMENLMAX-1
           CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
               MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              Rsupermatrix(i), rx, rb, rd)
-        ELSE
-          CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
-              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              Rsupermatrix(i))
-        END IF
-      END DO
+              RspaceTimeDiscr(i))
+        END DO
+      END SELECT
+      
+      ! Call the multigrid solver to solve on all these levels
+      CALL c2d2_solveSupersystemMultigrid (rproblem, &
+          RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd)
     END SELECT
     
-    ! Read the target flow -- stationary or nonstationary
-    CALL c2d2_initTargetFlow (rproblem,Rsupermatrix(TIMENLMAX)%niterations)
-        
-    ! Call the solver for the space/time coupled system. We only solve on level NLMAX.
-    CALL c2d2_solveSupersystemPrecond (rproblem, &
-        Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
-    !CALL c2d2_solveSupersystemDefCorr (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
-      
+    ! POSTPROCESSING
+    !
     ! Create a temp vector
     CALL lsysbl_createVecBlockByDiscr (&
-        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation,&
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation,&
         rvectorTmp,.TRUE.)
     
     ! Attach the boundary conditions to that vector
     rvectorTmp%p_rdiscreteBC => &
-        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
     rvectorTmp%p_rdiscreteBCfict => &
-        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,Rsupermatrix(TIMENLMAX)%niterations
+    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%niterations
     
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &
-          i*Rsupermatrix(TIMENLMAX)%dtstep
+          i*RspaceTimeDiscr(TIMENLMAX)%dtstep
       rproblem%rtimedependence%itimeStep = i
     
       CALL sptivec_getTimestepData (rx, i, rvectorTmp)
@@ -229,13 +241,10 @@ CONTAINS
     
     CALL c2d2_doneTargetFlow (rproblem)
     
-    DO i=TIMENLMIN,TIMENLMAX
-      IF (i .EQ. TIMENLMAX) THEN
-        CALL c2d2_doneParamsSupersystem (Rsupermatrix(i),rx,rb,rd)
-      ELSE
-        CALL c2d2_doneParamsSupersystem (Rsupermatrix(i))
-      END IF
+    DO i=TIMENLMIN,TIMENLMAX-1
+      CALL c2d2_doneParamsSupersystem (RspaceTimeDiscr(i))
     END DO
+    CALL c2d2_doneParamsSupersystem (RspaceTimeDiscr(TIMENLMAX),rx,rb,rd)
 
   END SUBROUTINE
   

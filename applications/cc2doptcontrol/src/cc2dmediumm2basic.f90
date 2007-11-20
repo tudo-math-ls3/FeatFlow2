@@ -138,6 +138,12 @@ MODULE cc2dmediumm2basic
     ! specifies how to generate the mass matrix.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
     
+    ! This flag signales whether there are Neumann boundary components
+    ! visible on the boundary of this level or not. If there are no
+    ! Neumann boundary components visible, the equation gets indefinite
+    ! for the pressure.
+    LOGICAL :: bhasNeumannBoundary
+    
   END TYPE
   
 !</typeblock>
@@ -224,6 +230,10 @@ MODULE cc2dmediumm2basic
     ! Target flow granilarity for the filenames of a nonstationary target flow.
     ! Specifies how the number in the filename is increased.
     INTEGER :: itargetFlowDelta = 1
+    
+    ! Number of files that describe the target flow.
+    ! -1=As many files as there are solution vectors on the finest time level.
+    INTEGER :: itargetFlowTimesteps = -1
   
   END TYPE
 
@@ -373,8 +383,6 @@ MODULE cc2dmediumm2basic
 !                       ! =2: nonstationary boundary conditions, possibly with
 !                       !     prssure drop and/or Neumann boundary parts
 ! UPSAM                 | Stabilisation parameter
-! INEUMANN              | =YES, if there is Neumann boundary in the problem.
-!                       | =NO, otherwise
 !
 ! On every level between NLMIN and NLMAX:
 !

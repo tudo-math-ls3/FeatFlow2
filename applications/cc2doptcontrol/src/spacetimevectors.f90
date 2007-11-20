@@ -27,37 +27,41 @@
 !# 4.) sptivec_getTimestepData
 !#     -> Restores a timestep vector from a global space-time vector
 !#
-!# 5.) sptivec_convertSupervectorToVector
+!# 5.) sptivec_getTimestepDataByTime
+!#     -> Restores a timestep vector from a global space-time vector based
+!#        on a time stamp
+!#
+!# 6.) sptivec_convertSupervectorToVector
 !#     -> Converts a global space-time vector to a usual block vector.
 !#
-!# 6.) sptivec_vectorLinearComb
+!# 7.) sptivec_vectorLinearComb
 !#     -> Linear combination of two vectors
 !#
-!# 7.) sptivec_copyVector
+!# 8.) sptivec_copyVector
 !#     -> Copy a vector to another
 !#
-!# 8.) sptivec_vectorNorm
+!# 9.) sptivec_vectorNorm
 !#     -> Calculate the norm of a vector
 !#
-!# 9.) sptivec_clearVector
-!#     -> Clears a vector
+!# 10.) sptivec_clearVector
+!#      -> Clears a vector
 !#
-!# 10.) sptivec_saveToCollection
+!# 11.) sptivec_saveToCollection
 !#      -> Saves a space-time vector to a collection
 !#
-!# 11.) sptivec_restoreFromCollection
+!# 12.) sptivec_restoreFromCollection
 !#      -> Restores a space-time vector from a collection
 !#
-!# 12.) sptivec_removeFromCollection
+!# 13.) sptivec_removeFromCollection
 !#      -> Removes a space-time vector from a collection
 !#
-!# 13.) sptivec_setConstant
+!# 14.) sptivec_setConstant
 !#      -> Initialises the whole space-time vector with a constant value.
 !#
-!# 14.) sptivec_loadFromFileSequence
+!# 15.) sptivec_loadFromFileSequence
 !#      -> Reads in a space-time vector from a sequence of files on disc
 !#
-!# 15.) sptivec_saveToFileSequence
+!# 16.) sptivec_saveToFileSequence
 !#      -> Writes a space-time vector to a sequence of files on disc
 !#
 !# </purpose>
@@ -83,6 +87,10 @@ MODULE spacetimevectors
   ! a list of block vectors for every timestep of a nonstationary simulation
   ! which simulates simultaneously in space and time. Some parts of this
   ! vector may be written to disc if there's not enough memory.
+  !
+  ! The vector can be accessed in two ways: On the one hand, one can read a
+  ! specific time step by its number. On the other hand, one can access the
+  ! content by a time stamp.
   TYPE t_spacetimeVector
   
     ! Whether this vector shares its data with another vector.
@@ -356,6 +364,139 @@ CONTAINS
       CALL lalg_scaleVectorDble (p_Ddest,rspaceTimeVector%p_Dscale(isubvector))
     END IF
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_getTimestepDataByTime (rspaceTimeVector, dtimestamp, rvector)
+
+!<description>
+  ! Restores the data of a timestep into the vector rvector. dtimestamp is a time
+  ! stamp in the range 0.0 .. 1.0, where 0.0 corresponds to the 0th subvector
+  ! and 1.0 to the last subvector in the space time vector. If dtimestamp
+  ! specifies a time stamp between two stored vectors, quadratic interpolation
+  ! is used to calculate rvector.
+!</desctiprion>
+
+!<input>
+  ! Time stamp of the vector whose data should be retrieved.
+  REAL(DP), INTENT(IN) :: dtimestamp
+  
+  ! Space-time vector structure where to save the data.
+  TYPE(t_spacetimeVector), INTENT(IN) :: rspaceTimeVector
+!</input>
+
+!<inputoutput>
+  ! Vector with data that should receive the data.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_Dsource1,p_Dsource2,p_Dsource3,p_Ddest
+    INTEGER :: itimestep1,itimestep2,itimestep3
+    REAL(DP) :: dreltime,dabstime
+    INTEGER :: i,dscal1,dscal2,dscal3
+
+    ! Make sure we can store the timestep data.
+    IF ((dtimestamp .LT. 0.0_DP) .OR. (dtimestamp .GT. 1.0_DP)) THEN
+      CALL output_line('Invalid time stamp!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepDataByTime')
+      CALL sys_halt()
+    END IF
+    
+    IF (rvector%NEQ .NE. rspaceTimeVector%NEQ) THEN
+      CALL output_line('Vector size invalid!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
+      CALL sys_halt()
+    END IF
+    
+    ! Get the time step which is closest to the time stamp.
+    ! Rescale dtimestamp to the interval [0..ntimesteps].
+    dabstime = dtimestamp*REAL(rspaceTimeVector%ntimesteps,DP)
+    itimestep2 = INT(dabstime + 0.5_DP)
+    
+    IF (dabstime .EQ. REAL(itimestep2,DP)) THEN
+      ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we 
+      ! can call the routine to get that timestep; this saves us some
+      ! time as the interpolation can be omitted.
+      CALL sptivec_getTimestepData (rspaceTimeVector, itimestep2, rvector)
+      RETURN
+    END IF
+    
+    IF (rspaceTimeVector%ntimesteps .EQ. 1) THEN
+      ! Special case: only one timestep!
+      itimestep1 = 0
+      itimestep2 = 0
+      itimestep3 = 1
+    ELSE
+      ! Is this the first or the last timestep?
+      IF (itimestep2 .EQ. 0) THEN
+        ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
+        ! near timestep 0.
+        itimestep1 = 0
+        itimestep2 = 1
+        itimestep3 = 2
+      ELSE IF (itimestep2 .EQ. rspaceTimeVector%ntimesteps) THEN
+        ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
+        ! near timestep n.
+        itimestep1 = rspaceTimeVector%ntimesteps-2
+        itimestep2 = rspaceTimeVector%ntimesteps-1
+        itimestep3 = rspaceTimeVector%ntimesteps
+      ELSE
+        ! Somewhere in the inner. Get the number of the previous and next timestep
+        itimestep1 = itimestep2-1
+        itimestep3 = itimestep2+1
+      END IF
+    END IF
+
+    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
+    ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
+    ! This will be used to evaluate the quadratic polynomial.
+    dreltime = dabstime-REAL(itimestep2,DP)
+    
+    IF (((rspaceTimeVector%p_IdataHandleList(itimestep1) .NE. ST_NOHANDLE) .AND. &
+         (rspaceTimeVector%p_IdataHandleList(itimestep1) .LT. 0)) .OR. &
+        ((rspaceTimeVector%p_IdataHandleList(itimestep2) .NE. ST_NOHANDLE) .AND. &
+         (rspaceTimeVector%p_IdataHandleList(itimestep2) .LT. 0)) .OR. &
+        ((rspaceTimeVector%p_IdataHandleList(itimestep3) .NE. ST_NOHANDLE) .AND. &
+         (rspaceTimeVector%p_IdataHandleList(itimestep3) .LT. 0))) THEN
+      CALL output_line('external data not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
+      CALL sys_halt()
+    END IF
+
+    ! Get the vector data of the three timesteps
+    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep1),&
+        p_Dsource1)
+    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep2),&
+        p_Dsource2)
+    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep3),&
+        p_Dsource3)
+
+    CALL lsysbl_getbase_double (rvector,p_Ddest)
+
+    ! Calculate the quadratic interpolation of the three arrays.
+    dscal1 = rspaceTimeVector%p_Dscale(itimestep1)
+    dscal2 = rspaceTimeVector%p_Dscale(itimestep2)
+    dscal3 = rspaceTimeVector%p_Dscale(itimestep3)
+    IF (rspaceTimeVector%ntimesteps .EQ. 1) THEN
+      ! Special case: only 1 timestep. Linear interpolation. dreltime is in [0..1]!
+      DO i=1,SIZE(p_Ddest)
+        p_Ddest(i) = (1.0_DP-dreltime) * dscal2*p_Dsource2(i) + &
+                     dreltime*dscal3*p_Dsource3(i)
+      END DO
+    ELSE
+      ! Quadratic interpolation
+      DO i=1,SIZE(p_Ddest)
+        CALL mprim_quadraticInterpolation (dreltime,&
+            dscal1*p_Dsource1(i),dscal2*p_Dsource2(i),dscal3*p_Dsource3(i),p_Ddest(i))
+      END DO
+    END IF
+    
   END SUBROUTINE
 
   ! ***************************************************************************

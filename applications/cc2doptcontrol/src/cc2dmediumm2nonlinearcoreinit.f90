@@ -219,7 +219,7 @@ CONTAINS
   !
   ! This routine initialises only the basic structure. However, it does
   ! not set/initialise the type of preconditioner (Defect corection,
-  ! Newton,´...).
+  ! Newton,...).
 !</description>
 
 !<input>
@@ -309,7 +309,9 @@ CONTAINS
           FILTER_DISCBCDEFFICT
       
       ! Do we have Neumann boundary?
-      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      !
+      ! The bhasNeumannBoundary flag of the higher level decides about that...
+      bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
       rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
       IF (.NOT. bneumann) THEN
         ! Pure Dirichlet problem -- Neumann boundary for the pressure.
@@ -337,7 +339,7 @@ CONTAINS
           FILTER_DISCBCDEFFICT
       
       ! Do we have Neumann boundary?
-      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
       rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
       IF (.NOT. bneumann) THEN
         ! Pure Dirichlet problem -- Neumann boundary for the pressure.
@@ -375,7 +377,7 @@ CONTAINS
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioning
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Preconditioner was a linear solver structure.
       !
       ! Release the preconditioner matrix on every level
@@ -424,7 +426,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_configPreconditioner (rproblem,rpreconditioner)
+  SUBROUTINE c2d2_configPreconditioner (rproblem,rpreconditioner,ssection,&
+      ctypePreconditioner)
   
 !<description>
   ! This routine prepares the preconditioner by means of the parameters
@@ -434,6 +437,16 @@ CONTAINS
 !<input>
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  
+  ! Name of the section containing the configuration of the preconditioner.
+  ! If ctypePreconditioner=CCPREC_LINEARSOLVER or =CCPREC_NEWTON, this must
+  ! specify the name of the section that configures a linear solver.
+  CHARACTER(LEN=*), INTENT(IN) :: ssection
+  
+  ! Type of the preconditioner.
+  ! =1: standard linear equation.
+  ! =2: Newton matrix
+  INTEGER, INTENT(IN) :: ctypePreconditioner
 !</input>
 
 !<inputoutput>
@@ -453,17 +466,15 @@ CONTAINS
     CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
-    ! At first, ask the parameters in the INI/DAT file which type of 
-    ! preconditioner is to be used. The data in the preconditioner structure
-    ! is to be initialised appropriately!
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
-        'itypePreconditioning', &
-        rpreconditioner%ctypePreconditioning, 1)
-    
+    ! Note in the structure which preconditioner we use and which section in
+    ! the DAT file contains its parameters.
+    rpreconditioner%ctypePreconditioning = ctypePreconditioner
+    rpreconditioner%spreconditionerSection = ssection
+
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioner
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
       !
@@ -483,18 +494,10 @@ CONTAINS
         p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisationDual
       END SELECT
       
-      ! Figure out the name of the section that contains the information
-      ! about the linear subsolver. Ask the parameter list from the INI/DAT file
-      ! for the 'slinearSolver' value
-      CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                  'slinearSolver', sstring, '')
-      ssolverName = ''
-      IF (sstring .NE. '') READ (sstring,*) ssolverName
-      IF (ssolverName .EQ. '') THEN
-        PRINT *,'No linear subsolver!'
-        STOP
-      END IF
-                                    
+      ! The preconditioner is a linear solver, so ssection is the name of the section
+      ! configuring the linear solver.
+      ssolverName = ssection
+      
       ! Initialise a standard interlevel projection structure. We
       ! can use the same structure for all levels. Therefore it's enough
       ! to initialise one structure using the RHS vector on the finest
@@ -511,6 +514,15 @@ CONTAINS
       ! files, the prepared filter chain and the interlevel projection structure.
       ! This gives us the linear solver node rpreconditioner%p_rsolverNode
       ! which identifies the linear solver.
+      !
+      ! Note that we pass rpreconditioner%p_RfilterChain as filter chain here,
+      ! i.e. we use the same filter chain for all levels. This is a lack in the
+      ! design of linsolinit_initFromFile as it forces us to use the same
+      ! filters on all levels, which is not always advisable! (e.g. if
+      ! a higher level 'sees' Neumann boundary while a lower one doesn't,
+      ! there has actually another filter chain to be used on the lower level
+      ! than on the higher one...)
+      ! We probably change this later...
       CALL linsolinit_initFromFile (rpreconditioner%p_rsolverNode,&
                                     rproblem%rparamList,ssolverName,&
                                     NLMAX-NLMIN+1,&
@@ -609,17 +621,10 @@ CONTAINS
     ! Pointer to the template FEM matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
     
-    ! At first, ask the parameters in the INI/DAT file which type of 
-    ! preconditioner is to be used. The data in the preconditioner structure
-    ! is to be initialised appropriately!
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
-        'itypePreconditioning', &
-        rpreconditioner%ctypePreconditioning, 1)
-    
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioner
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
 
       IF (.NOT. binit) THEN
         ! Restore the standard matrix structure in case the matrices had been
@@ -1009,7 +1014,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: NLMIN,NLMAX,ccompatible,iprecType
-  CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
+  CHARACTER(LEN=PARLST_MLDATA) :: ssolverName
   TYPE(t_interlevelProjectionBlock) :: rprojection
 
   ! An array for the system matrix(matrices) during the initialisation of
@@ -1017,16 +1022,10 @@ CONTAINS
   TYPE(t_matrixBlock), DIMENSION(rpreconditioner%NLMAX) :: Rmatrices
   TYPE(t_linsolNode), POINTER :: p_rsolverNode
     
-    ! At first, ask the parameters in the INI/DAT file which type of 
-    ! preconditioner is to be used. 
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                     'itypePreconditioning', &
-                                     iprecType, 1)
-
-    SELECT CASE (iprecType)
+    SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioning
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! That preconditioner is a solver for a linear system.
       !
       ! Which levels have we to take care of during the solution process?
@@ -1036,17 +1035,10 @@ CONTAINS
       ! Temporarily set up the solver node for the linear subsolver.
       !
       ! Figure out the name of the section that contains the information
-      ! about the linear subsolver. Ask the parameter list from the INI/DAT file
-      ! for the 'slinearSolver' value
-      CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                  'slinearSolver', sstring, '')
-      ssolverName = ''
-      IF (sstring .NE. '') READ (sstring,*) ssolverName
-      IF (ssolverName .EQ. '') THEN
-        PRINT *,'No linear subsolver!'
-        STOP
-      END IF
-                                    
+      ! about the linear subsolver. This is noted in the spreconditionerSection
+      ! section in the preconditioner structure.
+      ssolverName = rpreconditioner%spreconditionerSection
+      
       ! Initialise a standard interlevel projection structure. We
       ! can use the same structure for all levels. Therefore it's enough
       ! to initialise one structure using the RHS vector on the finest

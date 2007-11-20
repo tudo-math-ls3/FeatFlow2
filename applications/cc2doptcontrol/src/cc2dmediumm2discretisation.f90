@@ -1338,6 +1338,9 @@ CONTAINS
 
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itargetFlowDelta',rproblem%roptcontrol%itargetFlowDelta,1)
+
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'itargetFlowTimesteps',rproblem%roptcontrol%itargetFlowTimesteps,-1)
     
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ispaceTimeFormulation',rproblem%roptcontrol%ispaceTimeFormulation,0)
@@ -1473,10 +1476,21 @@ CONTAINS
       !    rproblem%roptcontrol%p_rdiscrTargetFlow
 
       ! Read them in into a space-time vector.
-      CALL sptivec_loadFromFileSequence (&
-          rproblem%roptcontrol%rtargetFlowNonstat,&
-          '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
-          0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
+      IF (rproblem%roptcontrol%itargetFlowTimesteps .EQ. -1) THEN
+        ! As many files as we have timesteps
+        CALL sptivec_loadFromFileSequence (&
+            rproblem%roptcontrol%rtargetFlowNonstat,&
+            '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
+            0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
+      ELSE
+        ! Exactly itargetFlowDelta timesteps, the values inbetween
+        ! must be calculated by interpolation.
+        CALL sptivec_loadFromFileSequence (&
+            rproblem%roptcontrol%rtargetFlowNonstat,&
+            '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
+            0,rproblem%roptcontrol%itargetFlowTimesteps,&
+            rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
+      END IF
 
     END SELECT
 

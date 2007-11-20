@@ -140,6 +140,8 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
+    REAL(DP) :: dreltime
+
     ! In a nonstationary simulation, save the simulation time as well as the
     ! minimum and maximum time to the quick-access array of the collection,
     ! so it can be accessed in the callback routines!
@@ -165,8 +167,21 @@ CONTAINS
     IF ((rproblem%roptcontrol%itypeTargetFlow .EQ. 2) .OR. &
         (rproblem%roptcontrol%itypeTargetFlow .EQ. 4))  THEN
       IF (rproblem%roptcontrol%rtargetFlowNonstat%ntimesteps .GT. 0) THEN
-        CALL sptivec_getTimestepData (rproblem%roptcontrol%rtargetFlowNonstat, &
-            rproblem%rtimedependence%itimeStep, rproblem%roptcontrol%rtargetFlow)
+        
+        !CALL sptivec_getTimestepData (rproblem%roptcontrol%rtargetFlowNonstat, &
+        !    rproblem%rtimedependence%itimeStep, rproblem%roptcontrol%rtargetFlow)
+        
+        ! Get the timestep based on the time stamp. If necessary, the routine will
+        ! interpolate between timesteps. drelTime is the 'relative' time in the range
+        ! 0..1 with 0 corresponding to dtimeInit and 1 corresponding to dtimeMax.
+        dreltime = (rproblem%rtimedependence%dtime - &
+                    rproblem%rtimedependence%dtimeInit) / &
+                   (rproblem%rtimedependence%dtimeMax - &
+                    rproblem%rtimedependence%dtimeInit) 
+                    
+        CALL sptivec_getTimestepDataByTime (rproblem%roptcontrol%rtargetFlowNonstat, &
+            dreltime, rproblem%roptcontrol%rtargetFlow)
+            
       END IF
       ! Otherwise, there is no vector.
     END IF

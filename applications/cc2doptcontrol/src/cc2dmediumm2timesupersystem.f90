@@ -17,7 +17,7 @@
 !#     -> Only for nonstationary Stokes problem. Executes Crank-Nicolson on the
 !#        fully space-time coupled system
 !#
-!# 2.) c2d2_solveSupersystemPrecond
+!# 2.) c2d2_solveSupersystemMultigrid
 !#     -> Solves the Stokes and Navier-Stokes problem with a preconditioned
 !#        defect correction approach. Crank Nicolson is used for the time
 !#        discretisation.
@@ -1047,7 +1047,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, dnorm, rb,ry)
+  SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, &
+      dnorm, rb,ry)
 
 !<description>
   ! This routine assembles the space-time defect d=b-Ax. rd must have been
@@ -1571,7 +1572,13 @@ CONTAINS
   SUBROUTINE c2d2_solveSupersystemDefCorr (rproblem, rspaceTimeDiscr, rx, rb, rd)
   
 !<description>
-  ! 
+  ! This is a primitive space-time defect correction solver. It applies the
+  ! iteration
+  !    $$ rx = rx + C^{-1} ( rb - A rx ) $$
+  ! to a space time vector rx and a space time RHS vector rb.
+  ! Here, $C^{-1}$ is a spatial preconditioner (linear solver) that is applied 
+  ! to each time step during the iteration. The configuration of this defect
+  ! correction loop is specified in the '[TIME-DEFCORR]' section in the DAT files.
 !</description>
 
 !<input>
@@ -1599,10 +1606,12 @@ CONTAINS
 !</subroutine>
 
     ! The nonlinear solver configuration
-    INTEGER :: isubstep,iglobIter
+    INTEGER :: isubstep,iglobIter,ctypePreconditioner
     LOGICAL :: bneumann
+    CHARACTER(LEN=SYS_STRLEN) :: sstring,slinearSolver
+    INTEGER :: nminIterations,nmaxIterations
 
-    REAL(DP) :: ddefNorm,dinitDefNorm
+    REAL(DP) :: ddefNorm,dinitDefNorm,depsRel,depsAbs
     
     TYPE(t_ccspatialPreconditioner) :: rpreconditioner
     
@@ -1636,12 +1645,25 @@ CONTAINS
     rtempVectorB%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorB%p_rdiscreteBCfict => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    ! Some preparations for the nonlinear solver.
+    ! Some preparations for the spatial preconditioner.
     !
-    ! Initialise the preconditioner for the nonlinear iteration
+    ! Get the name of the section containing the linear solver from the DAT file.
+    CALL parlst_getvalue_string (rproblem%rparamList, 'TIME-DEFCORR', &
+                                 'slinearSolver', sstring, '')
+    READ(sstring,*) slinearSolver
+
+    ! Type of spatial preconditioning? Standard or Newton?
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-DEFCORR', &
+                              'ctypePreconditioner', ctypePreconditioner, 0)
+    
+    ! Initialise the preconditioner for the preconditioning in every timestep.
+    ! Specify slinearSolver as the name of the section that configures the
+    ! spatial preconditioner. This is (up to now only) the name of a section
+    ! containing configuration data of a linear solver.
     CALL c2d2_initPreconditioner (rproblem,&
         rproblem%NLMIN,rproblem%NLMAX,rpreconditioner,0)
-    CALL c2d2_configPreconditioner (rproblem,rpreconditioner)
+    CALL c2d2_configPreconditioner (rproblem,rpreconditioner,slinearSolver,&
+        ctypePreconditioner)
 
     ! Implement the bondary conditions into all initial solution vectors
     DO isubstep = 0,rspaceTimeDiscr%niterations
@@ -1697,6 +1719,19 @@ CONTAINS
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     CALL output_separator (OU_SEP_EQUAL)        
 
+    ! Get some solver parameters for the iteration
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-DEFCORR', &
+                              'nminIterations', nminIterations, 0)
+
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-DEFCORR', &
+                              'nmaxIterations', nmaxIterations, 0)
+
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DEFCORR', &
+                                 'depsRel', depsRel, 1.0E-5_DP)
+
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DEFCORR', &
+                                 'depsAbs', depsAbs, 1.0E99_DP)
+
     iglobIter = 0
     
 !    !CALL c2d2_solveSupersysDirect (rproblem, rspaceTimeDiscr, rx, rd, &
@@ -1704,8 +1739,9 @@ CONTAINS
 !    CALL c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
 !      rtempvectorX, rtempvectorB, rtempVector)
     
-    DO WHILE ((ddefNorm .GT. 1.0E-5*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99_DP) .AND. &
-              (iglobIter .LT. 10))
+    DO WHILE ((iglobIter .LT. nminIterations) .OR. &
+              ((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GE. depsAbs) .AND. &
+               (iglobIter .LT. nmaxIterations)))
     
       iglobIter = iglobIter+1
       
@@ -1729,7 +1765,7 @@ CONTAINS
     
     ! ---------------------------------------------------------------
     ! Release the preconditioner of the nonlinear iteration
-    CALL c2d2_releasePreconditioner (rpreconditioner)
+    CALL c2d2_donePreconditioner (rpreconditioner)
     
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
@@ -1748,7 +1784,7 @@ CONTAINS
     CALL output_separator (OU_SEP_EQUAL)        
     
     ! Do we have Neumann boundary?
-    bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+    bneumann = rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
     
     IF (.NOT. bneumann) THEN
       ! Normalise the primal and dual pressure to zero.
@@ -1775,7 +1811,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_solveSupersystemPrecond (rproblem, RspaceTimeDiscr, rx, rb, rd)
+  SUBROUTINE c2d2_solveSupersystemMultigrid (rproblem, RspaceTimeDiscr, rx, rb, rd)
   
 !<description>
   ! This subroutine solves the nonstationary space time coupled (Navier-)Stokes
@@ -1834,8 +1870,7 @@ CONTAINS
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondPrimal
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondDual
     TYPE(t_sptiProjection), DIMENSION(SIZE(RspaceTimeDiscr)) :: RinterlevelProjection
-    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(SIZE(RspaceTimeDiscr)) :: &
-        myRspaceTimeDiscr
+    TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVecCoarse,rtempVecFine
     
     ! A solver node that identifies our solver.
@@ -1844,6 +1879,9 @@ CONTAINS
     TYPE(t_sptilsNode), POINTER :: p_rpresmoother,p_rpostsmoother
 
     REAL(DP) :: ddefNorm,dinitDefNorm
+    
+    CHARACTER(LEN=SYS_STRLEN) :: slinearSolver,sstring
+    INTEGER :: ctypePreconditioner
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx
@@ -1890,6 +1928,10 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                             'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
   
+    ! Type of spatial preconditioning? Standard or Newton?
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                              'ctypePreconditioner', ctypePreconditioner, 0)
+
     ! We set up a space-time preconditioner, e.g. in the following configuration:
     ! Main Preconditioner: Multigrid
     !     -> Presmoother:  Block Jacobi/GS
@@ -1913,8 +1955,22 @@ CONTAINS
       
       IF (ilev .EQ. 1) THEN
         i = ctypeCoarseGridSolver
+        
+        ! Get the name of the section containing the linear solver from the DAT file --
+        ! in case we use a linear solver as spatial preconditioner.
+        CALL parlst_getvalue_string (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'slinearSolver', sstring, '')
+        READ(sstring,*) slinearSolver
+
       ELSE
         i = cspaceTimeSmoother
+        
+        ! Get the name of the section containing the linear solver from the DAT file --
+        ! in case we use a linear solver as spatial preconditioner.
+        CALL parlst_getvalue_string (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'slinearSolver', sstring, '')
+        READ(sstring,*) slinearSolver
+
       END IF
       
       SELECT CASE (i)
@@ -1925,7 +1981,11 @@ CONTAINS
         ! but this has still to be implemeted and is a little bit harder!)
         CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
             ispacelev,RspatialPrecond(ilev),0)
-        CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
+        ! Specify slinearSolver as the name of the section that configures the
+        ! spatial preconditioner. This is (up to now only) the name of a section
+        ! containing configuration data of a linear solver.
+        CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev),&
+            slinearSolver,ctypePreconditioner)
          
       END SELECT
 
@@ -2093,20 +2153,27 @@ CONTAINS
     ! Attach the spatial preconditioner which is applied to each block.
     ! CALL sptils_initBlockJacobi (rproblem,p_rsolverNode,rspatialPrecond)
     
-    ! Put a pointer to our rx into the space time discretisation on the maximum level
-    myRspaceTimeDiscr = RspaceTimeDiscr
-    myRspaceTimeDiscr(UBOUND(myRspaceTimeDiscr,1))%p_rsolution => rx
-    
     ! Allocate space-time vectors on all lower levels that hold the solution vectors
     ! for the evaluation of the nonlinearity (if we have a nonlinearity).
     DO ilev=1,SIZE(RspatialPrecond)-1
-      ALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
-      CALL sptivec_initVector (myRspaceTimeDiscr(ilev)%p_rsolution,&
-        dof_igetNDofGlobBlock(myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
-        myRspaceTimeDiscr(ilev)%niterations)   
+      RspaceTimeMatrix(ilev)%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+      
+      ALLOCATE(RspaceTimeMatrix(ilev)%p_rsolution)
+      CALL sptivec_initVector (RspaceTimeMatrix(ilev)%p_rsolution,&
+        dof_igetNDofGlobBlock(RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
+        RspaceTimeDiscr(ilev)%niterations)   
     END DO
+
+    ilev = UBOUND(RspaceTimeDiscr,1)
+
+    ! Initialise the matrix of the maximum level.
+    RspaceTimeMatrix(ilev)%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+
+    ! Put a pointer to our rx into the space time discretisation on the maximum level
+    RspaceTimeMatrix(ilev)%p_rsolution => rx
+    
     ! Attach matrix information
-    CALL sptils_setMatrices (p_rsolverNode,myRspaceTimeDiscr)
+    CALL sptils_setMatrices (p_rsolverNode,RspaceTimeMatrix)
     ! Initialise the space-time preconditioner
     CALL sptils_initStructure (p_rsolverNode,ierror)
     CALL sptils_initData (p_rsolverNode,ierror)
@@ -2135,9 +2202,9 @@ CONTAINS
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
     CALL c2d2_optc_nonstatFunctional (rproblem,&
-        myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
-        rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
-        myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+        RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+        rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+        RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
         Derror)
     CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
     CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
@@ -2176,27 +2243,27 @@ CONTAINS
 
       DO ilev=SIZE(RspatialPrecond)-1,1,-1
         CALL lsysbl_enforceStructureDiscr(&
-            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscretisation,rtempVecFine)
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscretisation,rtempVecFine)
         rtempVecFine%p_rdiscreteBC =>&
-            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
         rtempVecFine%p_rdiscreteBCfict =>&
-            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
             
         CALL lsysbl_enforceStructureDiscr(&
-            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,rtempVecCoarse)
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,rtempVecCoarse)
         rtempVecCoarse%p_rdiscreteBC =>&
-            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
         rtempVecCoarse%p_rdiscreteBCfict =>&
-            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteFBC
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteFBC
 
         ! Interpolate down
         CALL sptipr_performInterpolation (RinterlevelProjection(ilev+1),&
-            myRspaceTimeDiscr(ilev)%p_rsolution, myRspaceTimeDiscr(ilev+1)%p_rsolution,&
+            RspaceTimeMatrix(ilev)%p_rsolution, RspaceTimeMatrix(ilev+1)%p_rsolution,&
             rtempVecCoarse,rtempVecFine)
             
         ! Set boundary conditions
-        CALL c2d2_implementBCsolution (rproblem,myRspaceTimeDiscr(ilev),&
-            myRspaceTimeDiscr(ilev)%p_rsolution,rtempVecCoarse)
+        CALL c2d2_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
+            RspaceTimeMatrix(ilev)%p_rsolution,rtempVecCoarse)
       END DO
       
       CALL lsysbl_releaseVector(rtempVecFine)
@@ -2221,9 +2288,9 @@ CONTAINS
       IF (rproblem%MT_outputLevel .GE. 1) THEN
         ! Value of the functional
         CALL c2d2_optc_nonstatFunctional (rproblem,&
-            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
-            rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
-            myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+            RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+            rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+            RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
             Derror)
         CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
         CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
@@ -2246,7 +2313,7 @@ CONTAINS
       CALL sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
       
       ! Do we have Neumann boundary?
-      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
       
       IF (.NOT. bneumann) THEN
         ! Normalise the primal and dual pressure to zero.
@@ -2294,9 +2361,9 @@ CONTAINS
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
     CALL c2d2_optc_nonstatFunctional (rproblem,&
-        myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
-        rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
-        myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+        RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+        rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+        RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
         Derror)
     CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
     CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
@@ -2305,7 +2372,7 @@ CONTAINS
     CALL output_separator (OU_SEP_EQUAL)        
 
     ! Do we have Neumann boundary?
-    bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+    bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
     
     IF (.NOT. bneumann) THEN
       ! Normalise the primal and dual pressure to zero.
@@ -2334,8 +2401,8 @@ CONTAINS
     END DO
 
     DO ilev=1,SIZE(RspatialPrecond)-1
-      CALL sptivec_releaseVector (myRspaceTimeDiscr(ilev)%p_rsolution)
-      DEALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
+      CALL sptivec_releaseVector (RspaceTimeMatrix(ilev)%p_rsolution)
+      DEALLOCATE(RspaceTimeMatrix(ilev)%p_rsolution)
     END DO
           
     CALL lsysbl_releaseVector (rtempVectorB)

@@ -404,8 +404,8 @@ MODULE cc2dmediumm2spacetimesolver
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     INTEGER                    :: icurrentIteration
 
-    ! Space time discretisation structure that allows apply the system matrix.
-    TYPE(t_ccoptSpaceTimeDiscretisation) :: rspaceTimeDiscr
+    ! Structure of the space time matrix that the solver should use.
+    TYPE(t_ccoptSpaceTimeMatrix) :: rmatrix
     
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     TYPE (t_sptilsSubnodeDefCorr), POINTER        :: p_rsubnodeDefCorr     => NULL()
@@ -546,8 +546,8 @@ MODULE cc2dmediumm2spacetimesolver
   
   TYPE t_sptilsMGLevelInfo
   
-    ! Space time discretisation structure that allows apply the system matrix.
-    TYPE(t_ccoptSpaceTimeDiscretisation) :: rspaceTimeDiscr
+    ! Structure that defines the space time matrix on that level.
+    TYPE(t_ccoptSpaceTimeMatrix)        :: rmatrix
     
     ! A RHS vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
@@ -697,7 +697,7 @@ CONTAINS
   ! on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used 
   ! only by the multigrid initialisation routine.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -709,7 +709,7 @@ CONTAINS
 
   ! Copy the matrix structure on the finest level to the rsolverNode
   ! structure. This corresponds to the system we want to solve.
-  rsolverNode%rspaceTimeDiscr = Rmatrices(UBOUND(Rmatrices,1))
+  rsolverNode%rmatrix = Rmatrices(UBOUND(Rmatrices,1))
   
   ! Depending on the solver type, call the corresponding initialisation
   ! routine. For all single-grid solvers, pass the matrix on the highest
@@ -1454,7 +1454,7 @@ CONTAINS
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -1487,7 +1487,7 @@ CONTAINS
   
 !<inputoutput>
   ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+  TYPE(t_sptilsNode), INTENT(INOUT), TARGET :: rsolverNode
 !</inputoutput>
   
 !<output>
@@ -1498,27 +1498,32 @@ CONTAINS
 !</output>
   
 !</subroutine>
+
+    ! Local variables
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
     
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
     
     ! Allocate memory for the two temp vectors.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector,&
-        dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        rsolverNode%rspaceTimeDiscr%niterations)
+        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
+        p_rspaceTimeDiscr%niterations)
 
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector2,&
-        dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        rsolverNode%rspaceTimeDiscr%niterations)
+        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
+        p_rspaceTimeDiscr%niterations)
         
     ! and memory for a spatial temp vector.
     CALL lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
         rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
     rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there's not much to do with isubgroup,
@@ -1668,7 +1673,7 @@ CONTAINS
   REAL(DP) :: domega
 
   ! The system matrix
-  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rmatrix
+  TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
   
   ! Minimum number of iterations, print-sequence for residuals
   INTEGER :: nminIterations, niteResOutput
@@ -1684,7 +1689,7 @@ CONTAINS
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
-    p_rmatrix => rsolverNode%rspaceTimeDiscr
+    p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
     IF (rd%ntimesteps .EQ. 0) THEN
@@ -1788,9 +1793,9 @@ CONTAINS
         
         ! Filter the defect for boundary conditions in space and time.
         CALL c2d2_implementInitCondDefect (&
-            p_rmatrix,p_rdef,p_rsubnode%rtempVectorSpace)
+            p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
         CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-           p_rmatrix,p_rdef,p_rsubnode%rtempVectorSpace)
+           p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
         
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_rdef,rsolverNode%iresNorm)
@@ -2000,7 +2005,7 @@ CONTAINS
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -2161,6 +2166,7 @@ CONTAINS
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX
     
     ! DEBUG!!!
@@ -2168,7 +2174,8 @@ CONTAINS
     
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rspaceTimeDiscr
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%dtstep
@@ -2245,8 +2252,8 @@ CONTAINS
       ! If no solution is specified, we have a linear problem and thus
       ! the content of rtempVector is not relevant; actually it's even
       ! zero by initialisation.
-      IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-        CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
+      IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+        CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
             isubstep, rtempVectorX)
       END IF
       CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
@@ -2378,7 +2385,7 @@ CONTAINS
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -2539,6 +2546,7 @@ CONTAINS
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3,rtempVectorX
     
     ! DEBUG!!!
@@ -2546,7 +2554,8 @@ CONTAINS
         
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rspaceTimeDiscr
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%dtstep
@@ -2683,8 +2692,8 @@ CONTAINS
       ! If no solution is specified, we have a linear problem and thus
       ! the content of rtempVector is not relevant; actually it's even
       ! zero by initialisation.
-      IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-        CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
+      IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+        CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
             isubstep, rtempVectorX)
       END IF
       
@@ -2838,7 +2847,7 @@ CONTAINS
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -2866,7 +2875,7 @@ CONTAINS
   
 !<inputoutput>
   ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+  TYPE(t_sptilsNode), INTENT(INOUT), TARGET :: rsolverNode
 !</inputoutput>
   
 !<output>
@@ -2877,11 +2886,15 @@ CONTAINS
 !</output>
   
 !</subroutine>
+
+    TYPE(t_ccoptspaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+
     ! Allocate memory for a temp vector.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeBlockFBGS%rtempVector,&
-        dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        rsolverNode%rspaceTimeDiscr%niterations)
+        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
+        p_rspaceTimeDiscr%niterations)
 
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
@@ -3007,6 +3020,7 @@ CONTAINS
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3
     TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX2,rtempVectorX3
     TYPE(t_vectorBlock) :: rtempVectorSol
@@ -3018,7 +3032,8 @@ CONTAINS
         
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rspaceTimeDiscr
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%dtstep
@@ -3210,8 +3225,8 @@ CONTAINS
         END IF
 
         ! Read in the solution vector of the current timestep (for nonlinear problems).
-        IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-          CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
+        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
               isubstep, rtempVectorSol)
         END IF
 
@@ -3320,8 +3335,8 @@ CONTAINS
         END IF
 
         ! Read in the solution vector of the current timestep (for nonlinear problems).
-        IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-          CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
+        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
               isubstep, rtempVectorSol)
         END IF
 
@@ -3460,7 +3475,7 @@ CONTAINS
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN)   :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN)   :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -3530,20 +3545,21 @@ CONTAINS
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    ntimesteps = rsolverNode%rspaceTimeDiscr%niterations
-    NEQ = dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
+    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%niterations
+    NEQ = dof_igetNDofGlobBlock(rsolverNode%rmatrix%p_rspaceTimeDiscretisation%&
+        p_rlevelInfo%p_rdiscretisation)
     DO i=1,4
       CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQ,ntimesteps)
     END DO
   
     ! Allocate memory for a spatial temp vector.
     CALL lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation,&
         rsolverNode%p_rsubnodeCG%rtempVectorSpace)
     rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
     rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
 
   END SUBROUTINE
   
@@ -3743,7 +3759,8 @@ CONTAINS
   INTEGER :: ite
 
   ! The system matrix
-  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rmatrix
+  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+  TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
   
   ! Minimum number of iterations, print-sequence for residuals
   INTEGER :: nminIterations, niteResOutput
@@ -3768,11 +3785,12 @@ CONTAINS
     
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    p_rmatrix => rsolverNode%rspaceTimeDiscr
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF ((rd%ntimesteps .EQ. 0) .OR. (p_rmatrix%niterations .EQ. 0) .OR. &
-        (p_rmatrix%niterations .NE. rd%ntimesteps) ) THEN
+    IF ((rd%ntimesteps .EQ. 0) .OR. (p_rspaceTimeDiscr%niterations .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%niterations .NE. rd%ntimesteps) ) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -3831,9 +3849,9 @@ CONTAINS
     
     ! Filter the defect for boundary conditions in space and time.
     CALL c2d2_implementInitCondDefect (&
-        p_rmatrix,p_DR,p_rsubnode%rtempVectorSpace)
+        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
     CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-        p_rmatrix,p_DR,p_rsubnode%rtempVectorSpace)
+        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
     
     ! Get the norm of the residuum
     dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
@@ -3928,9 +3946,9 @@ CONTAINS
 
         ! Filter the defect for boundary conditions in space and time.
         CALL c2d2_implementInitCondDefect (&
-            p_rmatrix,p_DR,p_rsubnode%rtempVectorSpace)
+            p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
         CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-           p_rmatrix,p_DR,p_rsubnode%rtempVectorSpace)
+           p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
 
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 4: Calculate ||g_{k+1}|| and write some output
@@ -4214,7 +4232,7 @@ CONTAINS
     ! Afterwards, reshape the data to form a scalar matrix which
     ! can be feed to UMFPACK.
     CALL assembleGlobalSpaceTimeMatrix (rsolverNode%p_rproblem,&
-        rsolverNode%rspaceTimeDiscr,rmatrixGlobal)
+        rsolverNode%rmatrix,rmatrixGlobal)
     CALL glsys_assembleGlobal (rmatrixGlobal, rtempMatrix, .TRUE., .TRUE.)
     
     ! The global block matrix is not needed anymore.
@@ -4226,7 +4244,7 @@ CONTAINS
     ! the pressure in the first node by writing a unit line into
     ! the global matrix for the first pressure DOF in every timestep.
     CALL pressureDirichlet (rsolverNode%p_rproblem,&
-        rsolverNode%rspaceTimeDiscr,rtempMatrix)
+        rsolverNode%rmatrix,rtempMatrix)
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
     !                               .TRUE., 0, 'matrix.txt', '(E10.2)')
@@ -4315,7 +4333,7 @@ CONTAINS
     TYPE(t_problem), INTENT(INOUT) :: rproblem
 
     ! The source space-time matrix where rmatrix was generated from
-    TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rsupermatrix
+    TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rsupermatrix
 
     ! The global space time matrix to be modified.
     ! Must be a 1x1 block matrix with the submatrix (1,1) representing
@@ -4325,22 +4343,25 @@ CONTAINS
       INTEGER(PREC_VECIDX), DIMENSION(:), ALLOCATABLE :: Iidx
       INTEGER(PREC_VECIDX) :: ivelSize,ipSize,neq
       INTEGER :: i
+      TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    
+      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
     
       ! Nothing to do if there is Nuemann boundary here.
-      IF (collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES) RETURN
+      IF (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) RETURN
     
-      neq = rsupermatrix%p_rlevelInfo%rpreallocatedSystemMatrix%neq
-      ivelSize = 2 * rsupermatrix%p_rlevelInfo%rmatrixStokes%NEQ
-      ipSize = rsupermatrix%p_rlevelInfo%rmatrixB1%NCOLS
+      neq = p_rspaceTimeDiscr%p_rlevelInfo%rpreallocatedSystemMatrix%neq
+      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes%NEQ
+      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1%NCOLS
     
       ! Create an array containing all the rows where a unit vector is to be
       ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
       ! (primal + dual pressure, not the initial condition)
-      ALLOCATE(Iidx(0:2*rsupermatrix%niterations))
+      ALLOCATE(Iidx(0:2*p_rspaceTimeDiscr%niterations))
       
       ! Add the row of the first primal/dual pressure DOF to that array.
       Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
-      DO i=1,rsupermatrix%niterations
+      DO i=1,p_rspaceTimeDiscr%niterations
         Iidx(2*i-1) = i*neq+ivelSize+1
         Iidx(2*i  ) = i*neq+neq-ipSize+1
       END DO
@@ -4368,7 +4389,7 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 
   ! The source space-time matrix
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rsupermatrix
+  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), TARGET :: rsupermatrix
   
   ! The destination block matrix
   TYPE(t_matrixBlock), INTENT(OUT) :: rmatrix
@@ -4380,9 +4401,12 @@ CONTAINS
     INTEGER :: isubstep,ileft,iright,ix
     INTEGER(PREC_VECIDX), DIMENSION(1) :: Irows
     INTEGER(PREC_VECIDX) :: idiag
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
   
+    p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
+   
     ! Create a global matrix:
-    CALL lsysbl_createEmptyMatrix (rmatrix,6*(rsupermatrix%niterations+1))
+    CALL lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%niterations+1))
   
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -4390,17 +4414,17 @@ CONTAINS
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
-        rsupermatrix%p_rlevelInfo%p_rdiscretisation
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
     rmatrixComponents%p_rmatrixStokes           => &
-        rsupermatrix%p_rlevelInfo%rmatrixStokes          
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1             => &
-        rsupermatrix%p_rlevelInfo%rmatrixB1              
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
     rmatrixComponents%p_rmatrixB2             => &
-        rsupermatrix%p_rlevelInfo%rmatrixB2              
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
     rmatrixComponents%p_rmatrixMass           => &
-        rsupermatrix%p_rlevelInfo%rmatrixMass            
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
-        rsupermatrix%p_rlevelInfo%rmatrixIdentityPressure
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
     rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
     rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
@@ -4409,7 +4433,7 @@ CONTAINS
 
     ! Copy references to the preallocated system matrix. Use that as space
     ! for storing matrix data.
-    CALL lsysbl_duplicateMatrix (rsupermatrix%p_rlevelInfo%rpreallocatedSystemMatrix,&
+    CALL lsysbl_duplicateMatrix (p_rspaceTimeDiscr%p_rlevelInfo%rpreallocatedSystemMatrix,&
         rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         
     ! Create a vector for evaluating the nonlinearity.
@@ -4417,11 +4441,11 @@ CONTAINS
     CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
     
     ! Loop through the substeps
-    DO isubstep = 0,rsupermatrix%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%niterations
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rsupermatrix%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%dtstep
       rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
@@ -4435,14 +4459,14 @@ CONTAINS
       ileft = -1
       iright = 1
       IF (isubstep .EQ. 0) ileft = 0
-      IF (isubstep .EQ. rsupermatrix%niterations) iright = 0
+      IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) iright = 0
       
       ! Loop over the matrix bands in the current row isubstep
       DO ix = ileft,iright
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,rsupermatrix%dtimeStepTheta,&
-          isubstep,ix,rmatrixComponents)
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscr,&
+          p_rspaceTimeDiscr%dtimeStepTheta,isubstep,ix,rmatrixComponents)
           
         ! If there is a nonlinearity involved, get the evaluation point.
         IF ((rmatrixComponents%dgamma1 .NE. 0.0_DP) .OR. &
@@ -4491,21 +4515,21 @@ CONTAINS
           rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
           rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         END SELECT
-        CALL matfil_discreteBC (rblockTemp,rsupermatrix%p_rlevelInfo%p_rdiscreteBC)
-        CALL matfil_discreteFBC (rblockTemp,rsupermatrix%p_rlevelInfo%p_rdiscreteFBC)
+        CALL matfil_discreteBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
+        CALL matfil_discreteFBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
 
         ! Include the current matrix into the global matrix 
         CALL insertMatrix (rblockTemp,rmatrix,(isubstep+ix)*6+1,isubstep*6+1,.FALSE.)
         
       END DO  
 
-      IF (collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .NE. YES) THEN
+      IF (.NOT. p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) THEN
         ! Insert a 'point matrix' containing a zero in the pressure block.
         ! This allows the boundary condition implementation routine to
         ! insert a unit vector for the pressure if we have a pure-Dirichlet
         ! problem
         CALL createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
-            rsupermatrix%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
+            p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
         IF (isubstep .NE. 0) THEN
           CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
               rmatrix%RmatrixBlock(isubstep*6+3,isubstep*6+3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -4991,7 +5015,7 @@ END SUBROUTINE
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN) :: Rmatrices
 !</input>
   
 !<inputoutput>
@@ -5006,7 +5030,7 @@ END SUBROUTINE
     ! Loop through the level. 
     DO ilev=1,SIZE(Rmatrices)
       ! On each level, set the matrix.
-      rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rspaceTimeDiscr = &
+      rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rmatrix = &
           Rmatrices(ilev)
       
       ! Call the setmatrices-routine for the presmoother/postsmoother/
@@ -5066,6 +5090,7 @@ END SUBROUTINE
     ! local variables
     INTEGER :: ilev,NLMAX,ntimesteps
     INTEGER(PREC_VECIDX) :: NEQ
+    TYPE(t_sptilsMGLevelInfo), POINTER :: p_rmgLevel
     
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
@@ -5078,29 +5103,27 @@ END SUBROUTINE
 
     ! Loop through the level. 
     DO ilev=1,NLMAX
+    
+      p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
+    
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (.NOT. ASSOCIATED(&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+      IF (.NOT. ASSOCIATED(p_rmgLevel%p_rpresmoother,p_rmgLevel%p_rpostsmoother)) THEN
         ! May be the presmoother and postsmoother are identical; initialise them
         ! only once!
-        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-          CALL sptils_initStructure(&
-              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
+        IF (ASSOCIATED(p_rmgLevel%p_rpresmoother)) THEN
+          CALL sptils_initStructure(p_rmgLevel%p_rpresmoother,ierror)
           IF (ierror .NE. ierror) RETURN
         END IF
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
-        CALL sptils_initStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother,ierror)
+      IF (ASSOCIATED(p_rmgLevel%p_rpostsmoother)) THEN
+        CALL sptils_initStructure(p_rmgLevel%p_rpostsmoother,ierror)
         IF (ierror .NE. ierror) RETURN
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)) THEN
-        CALL sptils_initStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver,ierror)
+      IF (ASSOCIATED(p_rmgLevel%p_rcoarseGridSolver)) THEN
+        CALL sptils_initStructure(p_rmgLevel%p_rcoarseGridSolver,ierror)
         IF (ierror .NE. ierror) RETURN
       END IF
       
@@ -5110,33 +5133,28 @@ END SUBROUTINE
       !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
       !        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
               
-      ntimesteps = rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
-              rspaceTimeDiscr%niterations
-      NEQ = dof_igetNDofGlobBlock(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
-              rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
+      ntimesteps = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%niterations
+      NEQ = dof_igetNDofGlobBlock(p_rmgLevel%&
+              rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
               
       ! On all levels except for the maximum one, create a solution vector
       IF (ilev .LT. NLMAX) THEN
         CALL sptivec_initVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rsolutionVector,&
-            NEQ,ntimesteps)
+            p_rmgLevel%rsolutionVector,NEQ,ntimesteps)
       END IF
       
       ! On all levels except for the first one, create a RHS and a temp vector
       IF (ilev .GT. 1) THEN
         CALL sptivec_initVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rrhsVector,&
-            NEQ,ntimesteps)
+            p_rmgLevel%rrhsVector,NEQ,ntimesteps)
         CALL sptivec_initVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rtempVector,&
-            NEQ,ntimesteps)
+            p_rmgLevel%rtempVector,NEQ,ntimesteps)
       END IF
       
       ! Create a block temp vector for the interlevel projection
       CALL lsysbl_createVecBlockByDiscr(&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rspaceTimeDiscr%&
-          p_rlevelInfo%p_rdiscretisation,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rprjVector,.FALSE.)
+          p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation,&
+          p_rmgLevel%rprjVector,.FALSE.)
 
     END DO
     
@@ -5171,6 +5189,7 @@ END SUBROUTINE
 
     ! local variables
     INTEGER :: ilev
+    TYPE(t_sptilsMGLevelInfo), POINTER :: p_rmgLevel
     
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
@@ -5180,29 +5199,27 @@ END SUBROUTINE
 
     ! Loop through the level. 
     DO ilev=1,SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
+     
+      p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
+    
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (.NOT. ASSOCIATED(&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+      IF (.NOT. ASSOCIATED(p_rmgLevel%p_rpresmoother,p_rmgLevel%p_rpostsmoother)) THEN
         ! May be the presmoother and postsmoother are identical; initialise them
         ! only once!
-        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-          CALL sptils_initData(&
-              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
+        IF (ASSOCIATED(p_rmgLevel%p_rpresmoother)) THEN
+          CALL sptils_initData(p_rmgLevel%p_rpresmoother,ierror)
           IF (ierror .NE. ierror) RETURN
         END IF
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
-        CALL sptils_initData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother,ierror)
+      IF (ASSOCIATED(p_rmgLevel%p_rpostsmoother)) THEN
+        CALL sptils_initData(p_rmgLevel%p_rpostsmoother,ierror)
         IF (ierror .NE. ierror) RETURN
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)) THEN
-        CALL sptils_initData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver,ierror)
+      IF (ASSOCIATED(p_rmgLevel%p_rcoarseGridSolver)) THEN
+        CALL sptils_initData(p_rmgLevel%p_rcoarseGridSolver,ierror)
         IF (ierror .NE. ierror) RETURN
       END IF
     END DO
@@ -5231,33 +5248,32 @@ END SUBROUTINE
 
     ! local variables
     INTEGER :: ilev
+    TYPE(t_sptilsMGLevelInfo), POINTER :: p_rmgLevel
     
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
     ! Loop through the level. 
     DO ilev=1,SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
+    
+      p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
+    
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (.NOT. ASSOCIATED(&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+      IF (.NOT. ASSOCIATED(p_rmgLevel%p_rpresmoother,p_rmgLevel%p_rpostsmoother)) THEN
         ! May be the presmoother and postsmoother are identical; release them
         ! only once!
-        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-          CALL sptils_doneData(&
-              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        IF (ASSOCIATED(p_rmgLevel%p_rpresmoother)) THEN
+          CALL sptils_doneData(p_rmgLevel%p_rpresmoother)
         END IF
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
-        CALL sptils_doneData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)
+      IF (ASSOCIATED(p_rmgLevel%p_rpostsmoother)) THEN
+        CALL sptils_doneData(p_rmgLevel%p_rpostsmoother)
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)) THEN
-        CALL sptils_doneData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)
+      IF (ASSOCIATED(p_rmgLevel%p_rcoarseGridSolver)) THEN
+        CALL sptils_doneData(p_rmgLevel%p_rcoarseGridSolver)
       END IF
     END DO
 
@@ -5285,6 +5301,7 @@ END SUBROUTINE
 
     ! local variables
     INTEGER :: ilev,NLMAX
+    TYPE(t_sptilsMGLevelInfo), POINTER :: p_rmgLevel
     
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
@@ -5292,51 +5309,44 @@ END SUBROUTINE
     ! Loop through the level. 
     NLMAX = SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
     DO ilev=1,NLMAX
+    
+      p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
+    
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (.NOT. ASSOCIATED(&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+      IF (.NOT. ASSOCIATED(p_rmgLevel%p_rpresmoother,p_rmgLevel%p_rpostsmoother)) THEN
         ! May be the presmoother and postsmoother are identical; release them
         ! only once!
-        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-          CALL sptils_doneStructure(&
-              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        IF (ASSOCIATED(p_rmgLevel%p_rpresmoother)) THEN
+          CALL sptils_doneStructure(p_rmgLevel%p_rpresmoother)
         END IF
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
-        CALL sptils_doneStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)
+      IF (ASSOCIATED(p_rmgLevel%p_rpostsmoother)) THEN
+        CALL sptils_doneStructure(p_rmgLevel%p_rpostsmoother)
       END IF
       
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)) THEN
-        CALL sptils_doneStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)
+      IF (ASSOCIATED(p_rmgLevel%p_rcoarseGridSolver)) THEN
+        CALL sptils_doneStructure(p_rmgLevel%p_rcoarseGridSolver)
       END IF
 
 
       ! Release the projection structure
-      CALL sptipr_doneProjection (&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rinterlevelProjection)
+      CALL sptipr_doneProjection (p_rmgLevel%rinterlevelProjection)
               
       ! Release vectors
               
       IF (ilev .LT. NLMAX) THEN
-        CALL sptivec_releaseVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rsolutionVector)
+        CALL sptivec_releaseVector (p_rmgLevel%rsolutionVector)
       END IF
       
       IF (ilev .GT. 1) THEN
-        CALL sptivec_releaseVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rrhsVector)
-        CALL sptivec_releaseVector (&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rtempVector)
+        CALL sptivec_releaseVector (p_rmgLevel%rrhsVector)
+        CALL sptivec_releaseVector (p_rmgLevel%rtempVector)
       END IF
 
       ! Release the temp vector for prolongation/restriction
-      CALL lsysbl_releaseVector (&
-        rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rprjVector)
+      CALL lsysbl_releaseVector (p_rmgLevel%rprjVector)
 
     END DO
 
@@ -5539,7 +5549,8 @@ END SUBROUTINE
     INTEGER :: i
     INTEGER :: iiterations
     REAL(DP) :: dres
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rmatrix
+    TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
@@ -5555,7 +5566,8 @@ END SUBROUTINE
     !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
     
     ! Apply nmaxIterations times defect correction to the given solution rx.
-    p_rmatrix => rsolverNode%rspaceTimeDiscr
+    p_rmatrix => rsolverNode%rmatrix
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
     
     ! Do we have an iterative or one-step solver given?
     ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
@@ -5576,9 +5588,9 @@ END SUBROUTINE
       
       ! Implement boundary conditions into the defect
       CALL c2d2_implementInitCondDefect (&
-          p_rmatrix,rtemp,rspatialTemp)
+          p_rspaceTimeDiscr,rtemp,rspatialTemp)
       CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-          p_rmatrix,rtemp,rspatialTemp)
+          p_rspaceTimeDiscr,rtemp,rspatialTemp)
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
@@ -5643,7 +5655,8 @@ END SUBROUTINE
   REAL(DP) :: dres,dstep
   
   ! The system matrix on the current level
-  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rmatrix
+  TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
+  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
   
   ! Our MG structure
   TYPE(t_sptilsSubnodeMultigrid), POINTER :: p_rsubnode
@@ -5654,7 +5667,8 @@ END SUBROUTINE
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid
     
     ! Get the system matrix on the finest level:
-    p_rmatrix => rsolverNode%rspaceTimeDiscr
+    p_rmatrix => rsolverNode%rmatrix
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
 
     IF (p_rsubnode%icycle .LT. 0) THEN
       ! Wrong cycle
@@ -5776,10 +5790,11 @@ END SUBROUTINE
           ilev = nlmax
 
           ! Get the system matrix on the finest level:
-          p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
+          p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
           
           IF (rsolverNode%ioutputLevel .GE. 3) THEN
-            CALL output_line ('Space-Time-Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
+            CALL output_line (&
+              'Space-Time-Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
           END IF
           
           ! Build the defect...
@@ -5793,11 +5808,11 @@ END SUBROUTINE
           
             ! Implement boundary conditions into the defect
             CALL c2d2_implementInitCondDefect (&
-                p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
+                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
             CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-                p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
+                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
           END IF
@@ -5864,11 +5879,11 @@ END SUBROUTINE
 
                 ! Implement boundary conditions into the defect
                 CALL c2d2_implementInitCondDefect (&
-                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
 
@@ -5903,11 +5918,11 @@ END SUBROUTINE
 
                 ! Implement boundary conditions into the defect
                 CALL c2d2_implementInitCondDefect (&
-                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
 
@@ -5928,7 +5943,7 @@ END SUBROUTINE
             
               ! Go down one level
               ilev = ilev - 1
-              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
+              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
 
               IF (rsolverNode%ioutputLevel .GE. 3) THEN
                 CALL output_line ('Space-Time-Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
@@ -5955,7 +5970,7 @@ END SUBROUTINE
             !
             DO WHILE (ilev .LT. nlmax)
               ilev = ilev + 1
-              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
+              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
               
               IF (rsolverNode%ioutputLevel .GE. 3) THEN
                 CALL output_line ('Space-Time-Multigrid: Current mesh level: '&
@@ -5970,17 +5985,18 @@ END SUBROUTINE
                     p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                     p_rsubnode%p_Rlevels(ilev)%rprjVector,&
-                    p_rmatrix,p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     rsolverNode%p_rproblem)
 
               ! Implement boundary conditions into the vector.
               ! It's still a defect, although a preconditioned one.
               CALL c2d2_implementInitCondDefect (&
-                  p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
+                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
               CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
-                  p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
+                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
 

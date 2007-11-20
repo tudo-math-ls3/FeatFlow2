@@ -215,6 +215,19 @@ MODULE cc2dmediumm2spacetimediscret
     ! matrices/vectors on the spatial level of the matrix.
     TYPE(t_problem_lvl), POINTER :: p_rlevelInfo
 
+  END TYPE
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Defines the basic shape of the supersystem which realises the coupling
+  ! between all timesteps.
+  TYPE t_ccoptSpaceTimeMatrix
+  
+    ! Pointer to the space time discretisation that corresponds to this matrix.
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation => NULL()
+  
     ! Pointer to a space-time solution vector that defines the point
     ! where the nonlinearity is evaluated when applying or calculating
     ! matrices.
@@ -226,6 +239,7 @@ MODULE cc2dmediumm2spacetimediscret
   END TYPE
 
 !</typeblock>
+
 
 !</types>
 
@@ -302,17 +316,17 @@ CONTAINS
     ! Initialise the global solution- and defect- vector.
     IF (PRESENT(rx)) THEN
       CALL sptivec_initVector (rx,&
-          dof_igetNDofGlobBlock(rproblem%RlevelInfo(ilevelSpace)%p_rdiscretisation,.FALSE.),&
+          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
           rspaceTimeDiscr%niterations)
     END IF
     IF (PRESENT(rb)) THEN
       CALL sptivec_initVector (rb,&
-          dof_igetNDofGlobBlock(rproblem%RlevelInfo(ilevelSpace)%p_rdiscretisation,.FALSE.),&
+          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
           rspaceTimeDiscr%niterations)
     END IF
     IF (PRESENT(rd)) THEN
       CALL sptivec_initVector (rd,&
-          dof_igetNDofGlobBlock(rproblem%RlevelInfo(ilevelSpace)%p_rdiscretisation,.FALSE.),&
+          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
           rspaceTimeDiscr%niterations)
     END IF
 
@@ -896,7 +910,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_spaceTimeMatVec (rproblem, rspaceTimeDiscr, rx, rd, cx, cy, dnorm)
+  SUBROUTINE c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, cx, cy, dnorm)
 
 !<description>
   ! This routine performs a matrix-vector multiplication with the
@@ -915,7 +929,7 @@ CONTAINS
 
   ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
   ! coupled space-time matrix.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), POINTER :: rspaceTimeMatrix
 !</input>
 
 !<inputoutput>
@@ -948,13 +962,17 @@ CONTAINS
     REAL(DP) :: dtheta
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
     REAL(DP), DIMENSION(:), POINTER :: p_DxE1,p_DxE2,p_DxE3
     
+    ! Pointer to the space time discretisation
+    p_rspaceTimeDiscretisation => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    
     ! Level of the discretisation
-    ilevel = rspaceTimeDiscr%ilevel
+    ilevel = p_rspaceTimeDiscretisation%ilevel
 
     ! Theta-scheme identifier.
     ! =1: implicit Euler.
@@ -962,13 +980,13 @@ CONTAINS
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     ! Create a temp vector that contains the part of rd which is to be modified.
-    p_rdiscr => rspaceTimeDiscr%p_RlevelInfo%p_rdiscretisation
+    p_rdiscr => p_rspaceTimeDiscretisation%p_RlevelInfo%p_rdiscretisation
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
     
     ! The vector will be a defect vector. Assign the boundary conditions so
     ! that we can implement them.
-    rtempVectorD%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
     
     ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector1,.FALSE.)
@@ -978,9 +996,9 @@ CONTAINS
     ! Get the parts of the X-vector which are to be modified at first --
     ! subvector 1, 2 and 3.
     CALL sptivec_getTimestepData(rx, 0, rtempVector1)
-    IF (rspaceTimeDiscr%niterations .GT. 0) &
+    IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
       CALL sptivec_getTimestepData(rx, 1, rtempVector2)
-    IF (rspaceTimeDiscr%niterations .GT. 1) &
+    IF (p_rspaceTimeDiscretisation%niterations .GT. 1) &
       CALL sptivec_getTimestepData(rx, 2, rtempVector3)
       
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
@@ -997,7 +1015,7 @@ CONTAINS
     ! we need another temp vector that holds the evaluation point.
     ! If not, we take the vector rx. This is archived by creating new
     ! vectors that share their information with rx.
-    IF (ASSOCIATED(rspaceTimeDiscr%p_rsolution)) THEN
+    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval1,.FALSE.)
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval2,.FALSE.)
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval3,.FALSE.)
@@ -1010,12 +1028,12 @@ CONTAINS
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     END IF
 
-    IF (ASSOCIATED(rspaceTimeDiscr%p_rsolution)) THEN
-      CALL sptivec_getTimestepData(rspaceTimeDiscr%p_rsolution, 0, rtempVectorEval1)
-      IF (rspaceTimeDiscr%niterations .GT. 0) &
-        CALL sptivec_getTimestepData(rspaceTimeDiscr%p_rsolution, 1, rtempVectorEval2)
-      IF (rspaceTimeDiscr%niterations .GT. 1) &
-        CALL sptivec_getTimestepData(rspaceTimeDiscr%p_rsolution, 2, rtempVectorEval3)
+    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+      CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval1)
+      IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
+        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval2)
+      IF (p_rspaceTimeDiscretisation%niterations .GT. 1) &
+        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval3)
     END IF
     
     ! DEBUG!!!
@@ -1033,17 +1051,17 @@ CONTAINS
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
+        p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation
     rmatrixComponents%p_rmatrixStokes         => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1             => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixB1              
     rmatrixComponents%p_rmatrixB2             => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixB2              
     rmatrixComponents%p_rmatrixMass           => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixIdentityPressure
     rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
     rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
@@ -1057,11 +1075,11 @@ CONTAINS
 
     ! Loop through the substeps
     
-    DO isubstep = 0,rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscretisation%niterations
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscretisation%dtstep
 
       ! Get the part of rd which is to be modified.
       IF (cy .NE. 0.0_DP) THEN
@@ -1101,7 +1119,7 @@ CONTAINS
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,0,rmatrixComponents)
           
         ! Subtract: rd = rd - A11 x1
@@ -1115,7 +1133,7 @@ CONTAINS
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,1,rmatrixComponents)
 
         ! Subtract: rd = rd - A12 x2
@@ -1125,7 +1143,7 @@ CONTAINS
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
+      ELSE IF (isubstep .LT. p_rspaceTimeDiscretisation%niterations) THEN
 
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! isubstep+1 and a substep isubstep-1!  Here, we have to handle the following
@@ -1146,7 +1164,7 @@ CONTAINS
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,-1,rmatrixComponents)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
@@ -1165,7 +1183,7 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii xi
@@ -1179,7 +1197,7 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,1,rmatrixComponents)
           
         ! Subtract: rd = rd - Aii+1 xi+1
@@ -1208,7 +1226,7 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,-1,rmatrixComponents)
           
         ! Subtract: rd = rd - Ann-1 xn-1
@@ -1224,7 +1242,7 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
           isubstep,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Ann xn
@@ -1247,7 +1265,7 @@ CONTAINS
       END IF
       
       IF ((isubstep .GT. 0) .AND. &
-          (isubstep .LT. rspaceTimeDiscr%niterations-1)) THEN
+          (isubstep .LT. p_rspaceTimeDiscretisation%niterations-1)) THEN
       
         ! Shift the timestep data: x_n+1 -> x_n -> x_n-1
         IF (rtempVector2%NEQ .NE. 0) &
@@ -1266,11 +1284,11 @@ CONTAINS
         
         ! A similar shifting has to be done for the evaluation point --
         ! if it's different from rx!
-        IF (ASSOCIATED(rspaceTimeDiscr%p_rsolution)) THEN
+        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
           CALL lsysbl_copyVector (rtempVectorEval2, rtempVectorEval1)
           CALL lsysbl_copyVector (rtempVectorEval3, rtempVectorEval2)
           ! Get the new x_n+1 for the next pass through the loop.
-          CALL sptivec_getTimestepData(rspaceTimeDiscr%p_rsolution, &
+          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
               isubstep+2, rtempVectorEval3)
         END IF
         
@@ -1281,7 +1299,7 @@ CONTAINS
     ! If dnorm is specified, normalise it.
     ! It was calculated from rspaceTimeDiscr%niterations+1 subvectors.
     IF (PRESENT(dnorm)) THEN
-      dnorm = SQRT(dnorm / REAL(rspaceTimeDiscr%niterations+1,DP))
+      dnorm = SQRT(dnorm / REAL(p_rspaceTimeDiscretisation%niterations+1,DP))
     END IF
     
     ! Release the temp vectors.

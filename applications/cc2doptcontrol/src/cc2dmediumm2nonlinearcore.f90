@@ -132,62 +132,12 @@ MODULE cc2dmediumm2nonlinearcore
   ! Preconditioning by Newton-Iteration
   INTEGER, PARAMETER :: CCPREC_NEWTON        = 2
 
-  ! Preconditioning by dynamic Newton-Iteration (uses defect correction
-  ! and switches automatically to Newton if the error is small enough)
-  INTEGER, PARAMETER :: CCPREC_NEWTONDYNAMIC = 3
-
 !</constantblock>
 
 !</constants>
 
   
 !<types>
-
-!<typeblock>
-
-  ! This structure controls the Newton iteration -- i.e. the preconditioning
-  ! with the Frechet derivative of the Navier--Stokes equation, which
-  ! can lead to quadratic covergence of the nonlinear solver.
-  ! As Newton works only in the basin of attraction of the solution,
-  ! the parameters in this structure allow to define a switching criterion
-  ! when to use Newton. In the first couple of iterations, defect correction
-  ! is used, while the iteration switches to Newton if the residuum is small
-  ! enough.
-  ! This block is used if CCPREC_NEWTONDYNAMIC is used as preconditioner.
-  TYPE t_ccDynamicNewtonControl
-  
-    ! Minimum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMIN)
-
-    INTEGER :: nminFixPointIterations = 0
-
-    ! Maximum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMAX)
-
-    INTEGER :: nmaxFixPointIterations = 999
-
-    ! Norm of absolute residuum before applying Newton. 
-    ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
-    ! Otherwise, the usual fix point iteration is used.
-    ! Stamndard value = 1E-5.
-
-    REAL(DP) :: depsAbsNewton = 1.0E-5_DP
-
-    ! Norm of relative residuum before applying Newton. 
-    ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
-    ! Otherwise, the usual fix point iteration is used.
-    ! Standard value = 1E99 -> The absolute residuum counts.
-
-    REAL(DP) :: depsRelNewton = 1.0E99_DP
-  
-  END TYPE
-  
-!</typeblock>
-
 
 !<typeblock>
 
@@ -281,6 +231,9 @@ MODULE cc2dmediumm2nonlinearcore
     ! system, CCPREC_NEWTON for a Newton iteration,...)
     INTEGER :: ctypePreconditioning = CCPREC_NONE
     
+    ! Name of the section in the DAT file configuring this preconditioner.
+    CHARACTER(LEN=SYS_STRLEN) :: spreconditionerSection = ''
+    
     ! Target equation where the preconditioner is allowed to be applied to.
     ! =0: full primal-dual (6x6) system
     ! =1: primal (3x3) system
@@ -308,10 +261,6 @@ MODULE cc2dmediumm2nonlinearcore
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
     
-    ! Configuration block for the adaptive Newton preconditioner.
-    ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
-    TYPE(t_ccDynamicNewtonControl) :: radaptiveNewton
-
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
     TYPE(t_vectorScalar), POINTER :: p_rtempVectorSc
@@ -462,7 +411,7 @@ CONTAINS
       SELECT CASE (rpreconditioner%ctypePreconditioning)
       CASE (CCPREC_NONE)
         ! No preconditioning. Do nothing.
-      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
         ! Preconditioning with a linear solver.
         !
         ! At first, assemble the preconditioner matrices on all levels
@@ -735,7 +684,7 @@ CONTAINS
         p_rprojection => rpreconditioner%p_rprojection
         p_rvectorTemp => rpreconditioner%p_rtempVectorSc
 
-        ! Get the filter chain. We need tghat later to filter the matrices.        
+        ! Get the filter chain. We need that later to filter the matrices.        
         p_RfilterChain => rpreconditioner%p_RfilterChain
 
         ! Initialise the matrix assembly structure rmatrixAssembly to describe the
