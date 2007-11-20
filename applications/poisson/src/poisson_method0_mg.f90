@@ -189,9 +189,9 @@ CONTAINS
       CALL spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1), &
       ! Setting up a linear element and trapezoidal rule would be...
-          !EL_P1_1D,CUB_TRZ_1D,Rlevels(i)%rtriangulation)
+          EL_P1_1D,CUB_TRZ_1D,Rlevels(i)%rtriangulation)
       ! Setting up a quadratic element and 3-point Gauss rule would be...
-          EL_P2_1D,CUB_G3_1D,Rlevels(i)%rtriangulation)
+          !EL_P2_1D,CUB_G3_1D,Rlevels(i)%rtriangulation)
     END DO
 
     ! Now as the discretisation is set up, we can start to generate
