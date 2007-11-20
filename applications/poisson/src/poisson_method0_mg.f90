@@ -137,8 +137,8 @@ CONTAINS
     ! This defines the coarse mesh on level 1!
     INTEGER :: nintervals = 16
     
-    ! The number of levels. The coarse mesh on level 1 with nintervals intervals is refines
-    ! nlevel-1 times to get the fine mesh
+    ! The number of levels. The coarse mesh on level 1 with nintervals intervals is
+    ! refined nlevel-1 times to get the fine mesh
     INTEGER :: nlevels = 4
     
     ! Ok, let's start. 
