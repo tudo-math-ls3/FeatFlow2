@@ -1016,7 +1016,7 @@ CONTAINS
     ! The Horner scheme gives us:
     !   p(t) = 1/2 ( (d3-2d2+d1)t + (d3-d1) ) t + d1
     
-    dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d1
+    dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d2
 
   END SUBROUTINE
 
