@@ -1011,10 +1011,10 @@ CONTAINS
     !   p(-1)=d1, p(0)=d2, p(1)=d3.
     !
     ! So the polynomial has the shape:
-    !   p(t) = d1  +  1/2(d3-d1)t  +  1/2(d3-2d2+d1)t^2
+    !   p(t) = d2  +  1/2(d3-d1)t  +  1/2(d3-2d2+d1)t^2
     !
     ! The Horner scheme gives us:
-    !   p(t) = 1/2 ( (d3-2d2+d1)t + (d3-d1) ) t + d1
+    !   p(t) = 1/2 ( (d3-2d2+d1)t + (d3-d1) ) t + d2
     
     dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d2
 
