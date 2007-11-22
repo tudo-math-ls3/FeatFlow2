@@ -135,7 +135,8 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: RspaceTimeDiscr
     TYPE(t_spacetimeVector) :: rx,rd,rb
     TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i,ispacelevelcoupledtotimelevel,ispaceTimeSolverType
+    INTEGER :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
+    INTEGER :: ctypePreconditioner
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX
 
     ! Get the minimum and maximum time level from the parameter list    
@@ -157,20 +158,30 @@ CONTAINS
         
     ! Figure out which type of solver we should use to solve
     ! the problem. 
-    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
-                              'ispaceTimeSolverType',ispaceTimeSolverType,0)
+    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
+                              'cspaceTimeSolverType',cspaceTimeSolverType,0)
+                              
+    ! Get the preconditioner type which is to be used in the nonlinear
+    ! solver.
+    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
+                              'ctypePreconditioner',ctypePreconditioner,1)
 
     ! Call the solver for the space/time coupled system.
-    SELECT CASE (ispaceTimeSolverType)
+    SELECT CASE (cspaceTimeSolverType)
     CASE (0)
+      ! 1-level (in time) Gauss elimination solver.
+      CALL c2d2_solveSupersystemDirect (rproblem, &
+          RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
+
+    CASE (1)
       ! 1-level (in time) defect correction solver with a preconditioner
       ! in space. 
       !
       ! Call the defect correction solver      
       CALL c2d2_solveSupersystemDefCorr (rproblem, &
-          RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
+          RspaceTimeDiscr(TIMENLMAX), rx, rb, rd, ctypePreconditioner)
       
-    CASE (1)
+    CASE (2)
       ! Space-time multigrid solver in space and/or time.
       !
       ! Should we couple space and time coarsening/refinement?
@@ -206,7 +217,7 @@ CONTAINS
       
       ! Call the multigrid solver to solve on all these levels
       CALL c2d2_solveSupersystemMultigrid (rproblem, &
-          RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+          RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd, ctypePreconditioner)
     END SELECT
     
     ! POSTPROCESSING

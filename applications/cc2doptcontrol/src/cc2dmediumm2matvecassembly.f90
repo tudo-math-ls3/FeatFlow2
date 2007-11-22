@@ -430,7 +430,17 @@ CONTAINS
         !    ( A11  A12  B1  M/a          ) 
         !    ( A21  A22  B2       M/a     ) 
         !    ( B1^T B2^T I                )
-        !
+        
+        ! In case dnewton1=0, switch off the A12/A21 matrices as we don't
+        ! assemble them.
+        IF (rmatrixComponents%dnewton1 .NE. 0.0_DP) THEN
+          rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+          rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+        ELSE
+          rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+          rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+        END IF
+
         ! 1.) Assemble the velocity submatrix
         !
         !    ( A11  A12   .    .    .    . ) 

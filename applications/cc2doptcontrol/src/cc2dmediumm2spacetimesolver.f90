@@ -2259,7 +2259,7 @@ CONTAINS
       CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
 
       ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
         isubstep,0,rmatrixComponents)
         
       ! Perform preconditioning of the spatial defect with the method provided by the
@@ -2702,7 +2702,7 @@ CONTAINS
       IF (isubstep .GT. 0) THEN
       
         ! Create d2 = RHS - Mx1 
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,-1,rmatrixComponents)
           
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorD1,rtempVectorD2,rsolverNode%domega)
@@ -2718,7 +2718,7 @@ CONTAINS
       END IF
 
       ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
         isubstep,0,rmatrixComponents)
 
       ! Perform preconditioning of the spatial defect with the method 
@@ -3206,7 +3206,7 @@ CONTAINS
           CALL sptivec_getTimestepData (p_rx, isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,rtempVectorRHS)
@@ -3217,7 +3217,7 @@ CONTAINS
         IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
           
           ! Create d2 = RHS - Ml3 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,rtempVectorRHS)
@@ -3231,7 +3231,7 @@ CONTAINS
         END IF
 
         ! Set up the matrix weights for the diagonal matrix
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents)
           
         ! Create d2 = RHS - A(solution) X2
@@ -3312,7 +3312,7 @@ CONTAINS
         IF (isubstep .GT. 0) THEN
         
           ! Create d2 = RHS - Mx1 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,rtempVectorRHS)
@@ -3327,7 +3327,7 @@ CONTAINS
           CALL sptivec_getTimestepData (p_rx, isubstep+1, rtempVectorX3)
         
           ! Create d2 = RHS - Ml3 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,rtempVectorRHS)
@@ -3341,7 +3341,7 @@ CONTAINS
         END IF
 
         ! Set up the matrix weights for the diagonal matrix
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents)
           
         ! Create d2 = RHS - A(solution) X2
@@ -4465,7 +4465,7 @@ CONTAINS
       DO ix = ileft,iright
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscr,&
+        CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,&
           p_rspaceTimeDiscr%dtimeStepTheta,isubstep,ix,rmatrixComponents)
           
         ! If there is a nonlinearity involved, get the evaluation point.

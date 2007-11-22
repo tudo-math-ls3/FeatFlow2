@@ -399,7 +399,8 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Dsource1,p_Dsource2,p_Dsource3,p_Ddest
     INTEGER :: itimestep1,itimestep2,itimestep3
     REAL(DP) :: dreltime,dabstime
-    INTEGER :: i,dscal1,dscal2,dscal3
+    INTEGER :: i
+    REAL(DP) :: dscal1,dscal2,dscal3
 
     ! Make sure we can store the timestep data.
     IF ((dtimestamp .LT. 0.0_DP) .OR. (dtimestamp .GT. 1.0_DP)) THEN

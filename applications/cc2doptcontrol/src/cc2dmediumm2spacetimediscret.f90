@@ -225,6 +225,11 @@ MODULE cc2dmediumm2spacetimediscret
   ! between all timesteps.
   TYPE t_ccoptSpaceTimeMatrix
   
+    ! Type of the matrix.
+    ! =0: Standard system matrix.
+    ! =1: Newton matrix
+    INTEGER :: cmatrixType = 0
+  
     ! Pointer to the space time discretisation that corresponds to this matrix.
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation => NULL()
   
@@ -369,7 +374,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+  SUBROUTINE c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
       isubstep,irelpos,rmatrixComponents)
 
 !<description>
@@ -397,7 +402,7 @@ CONTAINS
   
   ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
   ! coupled space-time matrix.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), TARGET :: rspaceTimeMatrix
 
   ! Theta scheme identifier.
   ! = 0.5: Crank-Nicolson.
@@ -450,9 +455,26 @@ CONTAINS
     ! the RHS, too!
     REAL(DP) :: dequationType
     
+    ! Pointer to the space time discretisation structure.
+    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    REAL(DP) :: dnewton
+    
+    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    
     dequationType = 1.0_DP
     IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
       dequationType = -1.0_DP
+
+    ! What's the matrix type we should set up? If we have to set up a
+    ! Newton matrix, we put dnewton to 1.0 so the Newton part in the
+    ! primal velocity is assembled.
+    dnewton = 0.0_DP
+    IF (rspaceTimeMatrix%cmatrixType .EQ. 1) THEN
+      IF (rproblem%iequation .EQ. 0) THEN
+        ! Newton is only to be assembled in Navier-Stokes!
+        dnewton = 1.0_DP
+      END IF
+    END IF
 
     ! The first and last substep is a little bit special concerning
     ! the matrix!
@@ -471,7 +493,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = dtheta
@@ -501,7 +523,7 @@ CONTAINS
         ! the initial condition meets the target flow (y_0 = z_0).
         !
         ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
-        !     dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+        !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
              dtheta * (-1.0_DP)
         rmatrixComponents%dmu1 = 0.0_DP
@@ -521,7 +543,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -546,7 +568,7 @@ CONTAINS
             
       END IF
     
-    ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
+    ELSE IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
       
       ! We are sonewhere in the middle of the matrix. There is a substep
       ! isubstep+1 and a substep isubstep-1!
@@ -566,7 +588,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -586,7 +608,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dequationType * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
       ELSE IF (irelpos .EQ. 0) THEN    
@@ -599,8 +621,8 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
@@ -610,7 +632,7 @@ CONTAINS
         rmatrixComponents%dgamma2 = &
             - dtheta * REAL(1-rproblem%iequation,DP)
         
-        rmatrixComponents%dnewton1 = 0.0_DP
+        rmatrixComponents%dnewton1 = dtheta * dnewton
         rmatrixComponents%dnewton2 = &
               dtheta * REAL(1-rproblem%iequation,DP)
 
@@ -621,7 +643,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dequationType * dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+            dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
 
@@ -638,7 +660,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -691,11 +713,11 @@ CONTAINS
 !        rmatrixComponents%dalpha1 = -1.0_DP
 !        rmatrixComponents%dalpha2 = 0.0_DP
 !        
-!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep
 !        rmatrixComponents%dtheta2 = 0.0_DP
 !        
 !        rmatrixComponents%dgamma1 = &
-!            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!            (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        rmatrixComponents%dgamma2 = 0.0_DP
 !        
 !        rmatrixComponents%dnewton1 = 0.0_DP
@@ -708,7 +730,7 @@ CONTAINS
 !        rmatrixComponents%dtau2 = 0.0_DP
 !        
 !        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+!            p_rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 !        rmatrixComponents%dmu2 = 0.0_DP
 !        
 !      ELSE IF (irelpos .EQ. 0) THEN
@@ -724,28 +746,28 @@ CONTAINS
 !        rmatrixComponents%dalpha1 = 1.0_DP
 !        rmatrixComponents%dalpha2 = 1.0_DP
 !        
-!        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta1 = dtheta * p_rspaceTimeDiscr%dtstep
 !        rmatrixComponents%dtheta2 = 0.0_DP
 !        
 !        rmatrixComponents%dgamma1 = &
-!            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!            dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        rmatrixComponents%dgamma2 = 0.0_DP
-!!           - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!!           - dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        
 !        rmatrixComponents%dnewton1 = 0.0_DP
 !        rmatrixComponents%dnewton2 = 0.0_DP
-!!             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!!             dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !
-!        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
+!        rmatrixComponents%deta1 = p_rspaceTimeDiscr%dtstep
 !        rmatrixComponents%deta2 = 0.0_DP
 !        
 !        rmatrixComponents%dtau1 = 1.0_DP
 !        rmatrixComponents%dtau2 = 0.0_DP
 !        
 !        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+!            dtheta * p_rspaceTimeDiscr%dtstep / p_rspaceTimeDiscr%dalphaC
 !        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            (-rspaceTimeDiscr%dgammaC)
+!            (-p_rspaceTimeDiscr%dgammaC)
 !
 !      END IF
         
@@ -762,7 +784,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -782,7 +804,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dequationType * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
       ELSE IF (irelpos .EQ. 0) THEN    
@@ -795,8 +817,8 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
@@ -806,7 +828,7 @@ CONTAINS
         rmatrixComponents%dgamma2 = &
             - dtheta * REAL(1-rproblem%iequation,DP)
         
-        rmatrixComponents%dnewton1 = 0.0_DP
+        rmatrixComponents%dnewton1 = dtheta * dnewton
         rmatrixComponents%dnewton2 = &
               dtheta * REAL(1-rproblem%iequation,DP)
 
@@ -817,13 +839,13 @@ CONTAINS
         rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dequationType * dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+            dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
             
         ! Weight the mass matrix by GAMMA instead of delta(T).
         ! That's the only difference to the implementation above!
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            !dtheta * rspaceTimeDiscr%dtstep
-            (-dequationType) * dtheta * rspaceTimeDiscr%dgammaC
+            !dtheta * p_rspaceTimeDiscr%dtstep
+            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
 
       END IF        
         
@@ -843,11 +865,11 @@ CONTAINS
 !        rmatrixComponents%dalpha1 = -1.0_DP
 !        rmatrixComponents%dalpha2 = 0.0_DP
 !        
-!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep
 !        rmatrixComponents%dtheta2 = 0.0_DP
 !        
 !        rmatrixComponents%dgamma1 = &
-!            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!            (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        rmatrixComponents%dgamma2 = 0.0_DP
 !        
 !        rmatrixComponents%dnewton1 = 0.0_DP
@@ -860,7 +882,7 @@ CONTAINS
 !        rmatrixComponents%dtau2 = 0.0_DP
 !        
 !        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+!            p_rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 !        rmatrixComponents%dmu2 = 0.0_DP
 !
 !      ELSE IF (irelpos .EQ. 0) THEN    
@@ -876,29 +898,29 @@ CONTAINS
 !        rmatrixComponents%dalpha1 = 1.0_DP
 !        rmatrixComponents%dalpha2 = 1.0_DP
 !        
-!        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
-!        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta1 = dtheta * p_rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta2 = dtheta * p_rspaceTimeDiscr%dtstep
 !        
 !        rmatrixComponents%dgamma1 = &
-!            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!            dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        rmatrixComponents%dgamma2 = &
-!            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!            - dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !        
 !        rmatrixComponents%dnewton1 = 0.0_DP
 !        rmatrixComponents%dnewton2 = &
-!              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!              dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
 !
-!        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
-!        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
+!        rmatrixComponents%deta1 = p_rspaceTimeDiscr%dtstep
+!        rmatrixComponents%deta2 = p_rspaceTimeDiscr%dtstep
 !        
 !        rmatrixComponents%dtau1 = 1.0_DP
 !        rmatrixComponents%dtau2 = 1.0_DP
 !        
 !        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+!            dtheta * p_rspaceTimeDiscr%dtstep / p_rspaceTimeDiscr%dalphaC
 !        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            dtheta * (-rspaceTimeDiscr%dgammaC)
-!            !dtheta * (-rspaceTimeDiscr%dtstep) ! probably wrong!
+!            dtheta * (-p_rspaceTimeDiscr%dgammaC)
+!            !dtheta * (-p_rspaceTimeDiscr%dtstep) ! probably wrong!
 !
 !      END IF
 
@@ -1119,7 +1141,7 @@ CONTAINS
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents)
           
         ! Subtract: rd = rd - A11 x1
@@ -1133,7 +1155,7 @@ CONTAINS
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,1,rmatrixComponents)
 
         ! Subtract: rd = rd - A12 x2
@@ -1164,7 +1186,7 @@ CONTAINS
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,-1,rmatrixComponents)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
@@ -1183,7 +1205,7 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii xi
@@ -1197,7 +1219,7 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,1,rmatrixComponents)
           
         ! Subtract: rd = rd - Aii+1 xi+1
@@ -1226,7 +1248,7 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,-1,rmatrixComponents)
           
         ! Subtract: rd = rd - Ann-1 xn-1
@@ -1242,7 +1264,7 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,p_rspaceTimeDiscretisation,dtheta,&
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Ann xn
