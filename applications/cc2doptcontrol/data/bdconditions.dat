@@ -136,7 +136,7 @@ bdExpressions(20) =
 bdComponent1(3)=
   0  2.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
   0  3.0  3  1  'Dirichlet1'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
-  0  4.0  3  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+  0  4.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
  0  4.0  3  1  'Dirichlet0'  'Dirichlet0'  # Complete boundary component Dirichlet-0 boudary
