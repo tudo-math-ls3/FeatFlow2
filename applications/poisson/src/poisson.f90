@@ -48,6 +48,7 @@ PROGRAM poisson
   USE poisson_method0
   USE poisson_method0_mg
   USE poisson_method1
+  USE poisson_method1_mg
   USE poisson_method2
   USE poisson_method3
   USE poisson_method4
@@ -89,6 +90,12 @@ PROGRAM poisson
   CALL output_line ('-----------------------------------------')
   CALL poisson1
   
+  ! Call the problem to solve. Poisson 1-mg:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-Problem with method 1-mg')
+  CALL output_line ('--------------------------------------------')
+  CALL poisson1_mg
+
   ! Call the problem to solve. Poisson 2:
   CALL output_lbrk ()
   CALL output_line ('Calculating Poisson-Problem with method 2')
