@@ -2723,6 +2723,7 @@ CONTAINS
     INTEGER :: ihandle
     
     ! Read in the data, create a temp array in the main memory.
+    ihandle = ST_NOHANDLE
     CALL exstor_getdata_storage (h_source, ihandle, rheap)
     
     ! If necessary, allocate a new block.
