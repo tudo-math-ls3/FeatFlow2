@@ -36,12 +36,20 @@
 !#  9.) exstor_getdata_int,
 !#      exstor_getdata_single,
 !#      exstor_getdata_double,
+!#      exstor_getdata_storage
 !#      -> Reads 1D data from a storage container
 !#
 !# 10.) exstor_setdata_int
 !#      exstor_setdata_single,
 !#      exstor_setdata_double,
+!#      exstor_setdata_storage
 !#      -> Writes 1D data to a storage container
+!#
+!# 11.) exstor_clear
+!#      -> Clears an array by overwriting the entries with 0 (or .FALSE. for LOGICALs).
+!#
+!# 12.) exstor_copy
+!#      -> Copies the content of one array to another.
 !#
 !# The external storage management consists of a number of 'storage containers'.
 !# A storage container can be for example a directory on a hard disc. Each 
@@ -187,7 +195,7 @@ MODULE externalstorage
 
     ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
-    INTEGER :: idataType = ST_NOHANDLE
+    INTEGER :: cdataType = ST_NOHANDLE
 
     ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
     INTEGER :: idimension = 0
@@ -589,7 +597,7 @@ CONTAINS
       ! Don't pass i as handle as storage_free will set the handle
       ! passed to it to 0!
       ihandle = i
-      IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) &
+      IF (p_rheap%p_Rdescriptors(i)%cdataType .NE. ST_NOHANDLE) &
         CALL exstor_free(ihandle,rheap)
     END DO
 
@@ -658,18 +666,18 @@ CONTAINS
         CALL output_lbrk ()
         ! Loop through the heap and search allocated handles
         DO i=1,SIZE(p_rheap%p_IfreeHandles)
-          IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) THEN
+          IF (p_rheap%p_Rdescriptors(i)%cdataType .NE. ST_NOHANDLE) THEN
             IF (p_rheap%p_Rdescriptors(i)%idimension .EQ. 1) THEN
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 1D, Length=' // &
                    TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes),15)) //&
-                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%cdataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             ELSE
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 2D, Length=' // &
                    TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes),15)) // &
-                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%cdataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             END IF
           END IF
@@ -861,7 +869,7 @@ CONTAINS
         rheap%p_RstorageContainers(icontainer)%dcurrentStorage - p_rnode%dmemBytes
 
     ! Clear the descriptor structure
-    p_rnode%idataType = ST_NOHANDLE
+    p_rnode%cdataType = ST_NOHANDLE
     p_rnode%idimension = 0
     p_rnode%dmemBytes = 0.0_DP
     p_rnode%icontainerId = 0
@@ -926,7 +934,7 @@ CONTAINS
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Is the node associated at all?
-    IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    IF (p_rnode%cdataType .EQ. ST_NOHANDLE) THEN
       CALL output_line ('Trying to release nonexistent handle: '//sys_siL(ihandle,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_free')
       CALL sys_halt()
@@ -1146,7 +1154,7 @@ CONTAINS
 
     ! Initialise the content
 
-    p_rnode%idataType = ctype
+    p_rnode%cdataType = ctype
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
     p_rnode%icontainerId = icontainer
@@ -1317,7 +1325,7 @@ CONTAINS
 
     ! Initialise the content
 
-    p_rnode%idataType = ctype
+    p_rnode%cdataType = ctype
     p_rnode%idimension = 2
     p_rnode%sname = snameBackup
     p_rnode%icontainerId = icontainer
@@ -1398,7 +1406,7 @@ CONTAINS
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Is the node associated at all?
-    IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    IF (p_rnode%cdataType .EQ. ST_NOHANDLE) THEN
       CALL output_line ('Handle invalid: '//sys_siL(ihandle,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getsize1D')
       CALL sys_halt()
@@ -1465,7 +1473,7 @@ CONTAINS
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Is the node associated at all?
-    IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    IF (p_rnode%cdataType .EQ. ST_NOHANDLE) THEN
       CALL output_line ('Handle invalid: '//sys_siL(ihandle,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
       CALL sys_halt()
@@ -1534,7 +1542,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_INT) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
       CALL sys_halt()
@@ -1690,7 +1698,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_INT) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
       CALL sys_halt()
@@ -1745,7 +1753,7 @@ CONTAINS
       IF (rnode%istorageHandle .EQ. ST_NOHANDLE) THEN
         ! We have to allocate memory.
         CALL storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
-            rnode%idataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       END IF
     
       ! Get the memory block and copy it.
@@ -1841,7 +1849,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_SINGLE) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
       CALL sys_halt()
@@ -1997,7 +2005,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_SINGLE) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
       CALL sys_halt()
@@ -2052,7 +2060,7 @@ CONTAINS
       IF (rnode%istorageHandle .EQ. ST_NOHANDLE) THEN
         ! We have to allocate memory.
         CALL storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
-            rnode%idataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       END IF
     
       ! Get the memory block and copy it.
@@ -2148,7 +2156,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_DOUBLE) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
       CALL sys_halt()
@@ -2304,7 +2312,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
+    IF (p_rheap%p_Rdescriptors(ihandle)%cdataType .NE. ST_DOUBLE) THEN
       CALL output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
       CALL sys_halt()
@@ -2359,7 +2367,7 @@ CONTAINS
       IF (rnode%istorageHandle .EQ. ST_NOHANDLE) THEN
         ! We have to allocate memory.
         CALL storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
-            rnode%idataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       END IF
     
       ! Get the memory block and copy it.
@@ -2403,5 +2411,358 @@ CONTAINS
 
   END SUBROUTINE
 
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE exstor_getdata_storage (ihandle, istoragehandle, rheap, rstorageheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array in the storage management of the main
+  ! memory.
+!</description>
+
+!<input>
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  TYPE(t_exstorageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle to a memory block in the main memory, maintained by the 
+  ! storage.f90. Data read from the data container is directly saved
+  ! to this memory block.
+  ! If this is ST_NOHANDLE, a new handle is automatically created
+  ! and the data is saved to it.
+  INTEGER, INTENT(INOUT) :: istoragehandle
+
+  ! OPTIONAL: local heap structure of the storage management for the
+  ! main memory. If not given, the global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rstorageheap
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ctype
+    INTEGER(I32) :: isize
+
+    ! Pointer to the heap
+    TYPE(t_exstorageBlock), POINTER :: p_rheap
+    TYPE(t_exstorageNode), POINTER :: p_rnode
+    TYPE(t_exstorageContainer), POINTER :: p_rcontainer
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
+
+    ! Get the heap to use - local or global one.
+
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbaseexternal
+    END IF
+
+    IF (ihandle .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+      CALL sys_halt()
+    END IF
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    IF (istoragehandle .EQ. ST_NOHANDLE) THEN
+    
+      ! Allocate a new memory block with the correct data type that is just
+      ! as large that it can hold our data.
+      
+      SELECT CASE(p_rnode%idimension)
+      CASE (1)
+        CALL storage_new ('exstor_getdata_storage','datacopy',p_rnode%Isize(1),&
+            p_rnode%cdataType,istoragehandle,ST_NEWBLOCK_NOINIT,rstorageheap)
+      CASE (2)
+        CALL storage_new ('exstor_getdata_storage','datacopy',p_rnode%Isize,&
+            p_rnode%cdataType,istoragehandle,ST_NEWBLOCK_NOINIT,rstorageheap)
+      END SELECT
+      
+    ELSE
+      CALL storage_getdatatype(istoragehandle,ctype)
+      IF (p_rnode%cdataType .NE. ctype) THEN
+        CALL output_line ('Wrong data format!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+        CALL sys_halt()
+      END IF
+      
+      CALL storage_getsize (istoragehandle,isize)
+      IF (p_rnode%Isize(1) .NE. isize) THEN
+        CALL output_line ('Data array has the wrong size!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+        CALL sys_halt()
+      END IF
+
+    END IF
+    
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    IF (p_rnode%cinitNewBlock .NE. ST_NEWBLOCK_NOINIT) THEN
+      CALL storage_initialiseBlock (istoragehandle, p_rnode%cinitNewBlock)
+      RETURN
+    END IF
+    
+    ! Ok, we have to copy data from the external storage to the memory block.
+    ! This now depends on the data type...
+    SELECT CASE (p_rnode%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (istoragehandle,p_Ddata,rstorageheap)
+      CALL exstor_getdata_double (ihandle,p_Ddata)
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (istoragehandle,p_Fdata,rstorageheap)
+      CALL exstor_getdata_single (ihandle,p_Fdata)
+    CASE (ST_INT)
+      CALL storage_getbase_int (istoragehandle,p_Idata,rstorageheap)
+      CALL exstor_getdata_int (ihandle,p_Idata)
+    CASE DEFAULT
+      CALL output_line ('Unsupported data type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+    END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE exstor_setdata_storage (ihandle, istoragehandle, rheap, rstorageheap)
+
+!<description>
+  ! This routine writes data from a local array in the storage management
+  ! of the main memory to an external storage container.
+!</description>
+
+!<input>
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! Handle to a memory block in the main memory, maintained by the 
+  ! storage.f90. The data in this memory block is directly saved
+  ! to the the data container.
+  INTEGER, INTENT(IN) :: istoragehandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  TYPE(t_exstorageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+  ! OPTIONAL: local heap structure of the storage management for the
+  ! main memory. If not given, the global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rstorageheap
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ctype
+    INTEGER(I32) :: isize
+
+    ! Pointer to the heap
+    TYPE(t_exstorageBlock), POINTER :: p_rheap
+    TYPE(t_exstorageNode), POINTER :: p_rnode
+    TYPE(t_exstorageContainer), POINTER :: p_rcontainer
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
+
+    ! Get the heap to use - local or global one.
+
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbaseexternal
+    END IF
+
+    IF (ihandle .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      CALL sys_halt()
+    END IF
+
+    IF (istoragehandle .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('istoragehandle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      CALL sys_halt()
+    END IF
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    CALL storage_getdatatype(istoragehandle,ctype)
+    IF (p_rnode%cdataType .NE. ctype) THEN
+      CALL output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      CALL sys_halt()
+    END IF
+    
+    CALL storage_getsize (istoragehandle,isize)
+    IF (p_rnode%Isize(1) .NE. isize) THEN
+      CALL output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      CALL sys_halt()
+    END IF
+    
+    ! Ok, we have to copy data from the external storage to the memory block.
+    ! This now depends on the data type...
+    SELECT CASE (p_rnode%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (istoragehandle,p_Ddata)
+      CALL exstor_setdata_double (ihandle,p_Ddata)
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (istoragehandle,p_Fdata)
+      CALL exstor_setdata_single (ihandle,p_Fdata)
+    CASE (ST_INT)
+      CALL storage_getbase_int (istoragehandle,p_Idata)
+      CALL exstor_setdata_int (ihandle,p_Idata)
+    CASE DEFAULT
+      CALL output_line ('Unsupported data type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+    END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE exstor_clear (ihandle, rheap)
+
+!<description>
+  ! This routine clears an array identified by ihandle; all entries are
+  ! overwritten by 0.
+!</description>
+
+!<input>
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  TYPE(t_exstorageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputoutput>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    TYPE(t_exstorageBlock), POINTER :: p_rheap
+
+    ! Get the heap to use - local or global one.
+
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbaseexternal
+    END IF
+
+    IF (ihandle .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_clear')
+      CALL sys_halt()
+    END IF
+
+    ! Set the initialised-flag to ST_NEWBLOCK_ZERO. The data is
+    ! trated as zero when it's accessed the next time.
+    p_rheap%p_Rdescriptors(ihandle)%cinitNewBlock = ST_NEWBLOCK_ZERO
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE exstor_copy(h_source, h_dest, icontainerId, rheap)
+
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be the
+  ! same!
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  INTEGER, INTENT(IN) :: h_source
+
+  ! OPTIONAL: If h_dest=ST_NOHANDLE, this parameter allows to specify
+  ! a container id where new data is stored to.
+  ! If h_dest<>ST_NOHANDLE, this parameter is ignored.
+  INTEGER, INTENT(IN), OPTIONAL :: icontainerId
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_exstorageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+  
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it. Such a new
+  ! block is allocated in the container icontainerId
+  INTEGER, INTENT(INOUT) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_exstorageBlock), POINTER :: p_rheap
+    TYPE(t_exstorageNode), POINTER :: p_rnode
+    INTEGER :: ihandle
+    
+    ! Read in the data, create a temp array in the main memory.
+    CALL exstor_getdata_storage (h_source, ihandle, rheap)
+    
+    ! If necessary, allocate a new block.
+    IF (h_dest .EQ. ST_NOHANDLE) THEN
+
+      IF(PRESENT(rheap)) THEN
+        p_rheap => rheap
+      ELSE
+        p_rheap => rbaseexternal
+      END IF
+
+      IF (h_source .EQ. ST_NOHANDLE) THEN
+        CALL output_line ('Handle invalid!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+        CALL sys_halt()
+      END IF
+    
+      ! Get the container and the storage node
+      p_rnode => p_rheap%p_Rdescriptors(ihandle)
+      
+      ! Allocate a new memory block with the correct data type that is just
+      ! as large that it can hold our data.
+      
+      SELECT CASE(p_rnode%idimension)
+      CASE (1)
+        CALL exstor_new ('exstor_copy','datacopy',p_rnode%Isize(1),&
+            p_rnode%cdataType,h_dest,ST_NEWBLOCK_NOINIT,icontainerId,rheap)
+      CASE (2)
+        CALL exstor_new ('exstor_copy','datacopy',p_rnode%Isize,&
+            p_rnode%cdataType,h_dest,ST_NEWBLOCK_NOINIT,icontainerId,rheap)
+      END SELECT
+      
+    END IF
+    
+    ! Write the data to a new block
+    CALL exstor_setdata_storage (h_dest, ihandle, rheap)
+    
+    ! Release the temp memory
+    CALL storage_free (ihandle)
+
+  END SUBROUTINE
 
 END MODULE
