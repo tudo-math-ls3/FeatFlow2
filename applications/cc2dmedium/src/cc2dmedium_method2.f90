@@ -45,6 +45,7 @@ MODULE cc2dmedium_method2
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE statistics
   
   USE collection
   USE convection
@@ -175,10 +176,25 @@ CONTAINS
     ! A structure for the postprocessing.
     TYPE(t_c2d2postprocessing) :: rpostprocessing
     
+    ! Timer objects for stopping time
+    TYPE(t_timer) :: rtimerTotal
+    TYPE(t_timer) :: rtimerGridGeneration
+    TYPE(t_timer) :: rtimerMatrixGeneration
+    TYPE(t_timer) :: rtimerSolver
+    
     INTEGER :: i
     
     ! Ok, let's start. 
-    !
+    
+    ! Initialise the timers by zero:
+    CALL stat_clearTimer(rtimerTotal)
+    CALL stat_clearTimer(rtimerGridGeneration)
+    CALL stat_clearTimer(rtimerMatrixGeneration)
+    CALL stat_clearTimer(rtimerSolver)
+
+    ! Start the timer
+    CALL stat_startTimer(rtimerTotal)
+    
     ! Allocate memory fo rthe problem structure -- it's rather large!
     ALLOCATE (p_rproblem)
     
@@ -224,7 +240,14 @@ CONTAINS
       CALL output_line('Initialising parametrisation / triangulation...')
     END IF
     
+    CALL stat_startTimer(rtimerGridGeneration)
+    
     CALL c2d2_initParamTriang (p_rproblem)
+    
+    CALL stat_stopTimer(rtimerGridGeneration)
+    CALL output_lbrk ()
+    CALL output_line ("Time for mesh generation: "//&
+      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
     
     ! Print mesh information
     IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
@@ -265,7 +288,15 @@ CONTAINS
       CALL output_separator (OU_SEP_MINUS)
       CALL output_line('Initialising matrices/vectors...')
     END IF
+    
+    CALL stat_startTimer(rtimerMatrixGeneration)
+    
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+    
+    CALL stat_stopTimer(rtimerMatrixGeneration)
+    CALL output_lbrk ()
+    CALL output_line ("Time for matrix initialisation: "//&
+      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
 
     IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
       CALL output_separator (OU_SEP_MINUS)
@@ -316,7 +347,12 @@ CONTAINS
         CALL output_line('Invoking stationary solver...')
         CALL output_separator (OU_SEP_MINUS)
       END IF
+      
+      CALL stat_startTimer(rtimerSolver)
+      
       CALL c2d2_solve (p_rproblem,rvector,rrhs)
+      
+      CALL stat_stopTimer(rtimerSolver)
     
       ! Postprocessing
       CALL c2d2_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
@@ -337,7 +373,7 @@ CONTAINS
       ! doesn't like this.
       IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
         CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating discrete boundary conditionsof first time step...')
+        CALL output_line('Generating discrete boundary conditions of first time step...')
       END IF
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
       
@@ -347,7 +383,12 @@ CONTAINS
         CALL output_line('Invoking nonstationary solver...')
         CALL output_separator (OU_SEP_MINUS)
       END IF
+      
+      CALL stat_startTimer(rtimerSolver)
+      
       CALL c2d2_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
+      
+      CALL stat_stopTimer(rtimerSolver)
       
     END IF
     
@@ -379,6 +420,20 @@ CONTAINS
     CALL collct_done (p_rproblem%rcollection)
     
     DEALLOCATE(p_rproblem)
+    
+    ! Stop the timer
+    CALL stat_stopTimer(rtimerTotal)
+    
+    ! Print the time for the total computation
+    CALL output_lbrk ()
+    CALL output_line ("Time for initial mesh generation:       "//&
+        TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    CALL output_line ("Time for initial matrix initialisation: "//&
+      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    CALL output_line ("Total Time for solver:                  "//&
+      TRIM(sys_sdL(rtimerSolver%delapsedReal,10)))
+    CALL output_line ("Total time:                             "//&
+        TRIM(sys_sdL(rtimerTotal%delapsedReal,10)))
     
   END SUBROUTINE
 

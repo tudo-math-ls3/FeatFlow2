@@ -759,8 +759,8 @@ CONTAINS
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = rmatrixComponents%dupsam
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rmatrixComponents%dgamma
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rmatrixComponents%dgamma
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rmatrixComponents%dnewton
@@ -1289,8 +1289,8 @@ CONTAINS
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = rmatrixComponents%dupsam
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rmatrixComponents%dgamma
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rmatrixComponents%dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rmatrixComponents%dnewton
