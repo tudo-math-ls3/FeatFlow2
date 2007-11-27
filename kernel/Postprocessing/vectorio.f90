@@ -176,7 +176,7 @@ MODULE vectorio
     REAL(DP) :: dval
     
     IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=PRESENT(sformat))
+      CALL io_openFileForReading(sfile, cf, bformatted=PRESENT(sformat))
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_readArray_Dble: Could not open file '// &
                  trim(sfile)

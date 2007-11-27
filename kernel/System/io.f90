@@ -17,6 +17,9 @@
 !# 3.) io_readlinefromfile
 !#     -> Reads one line from an opend file 
 !#
+!# 4.) io_deleteFile
+!#     -> Deletes a file.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -112,7 +115,7 @@ CONTAINS
              form="formatted")
       ELSE
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read",&
-             form="formatted")
+             form="unformatted")
       END IF
       if (istatus .ne. 0) then
         write(unit=*,fmt=*) "*** Error while opening file '",trim(sfilename),"'. ***"
@@ -219,6 +222,31 @@ CONTAINS
     endif
 
   end subroutine io_openFileForWriting
+
+! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE io_deleteFile(sfilename)
+
+!<description>
+  ! this routione deletes a file sfilename.
+!</description>
+
+!<input>
+  ! filename
+  CHARACTER(*), INTENT(IN) :: sfilename
+!</input>
+!</subroutine>
+
+    INTEGER :: iunit
+    
+    ! Open the file for writing, overwrite the old one.
+    CALL io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
+    
+    ! Close the file and delete it.
+    CLOSE (iunit, STATUS='DELETE')
+
+  END SUBROUTINE 
 
 ! ***************************************************************************
 

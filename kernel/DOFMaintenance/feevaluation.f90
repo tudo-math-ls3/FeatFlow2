@@ -39,6 +39,23 @@ MODULE feevaluation
     MODULE PROCEDURE fevl_evaluate_sim2
   END INTERFACE
 
+!<constants>
+
+!<constantblock description="Constants for the cnonmeshPoints parameter.">
+
+  ! Points outside of the domain not allowed.
+  INTEGER, PARAMETER :: FEVL_NONMESHPTS_NONE   = 0
+
+  ! Points outside of the domain allowed, try to find an element nearby to evaluate.
+  INTEGER, PARAMETER :: FEVL_NONMESHPTS_NEARBY = 1
+
+  ! Points outside of the domain allowed, assume 0 as value there.
+  INTEGER, PARAMETER :: FEVL_NONMESHPTS_ZERO   = 2
+
+!</constantblock>
+
+!</constants>
+
 CONTAINS
 
   ! ***************************************************************************
@@ -46,7 +63,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE fevl_evaluate (iderType, Dvalues, rvectorScalar, Dpoints, &
-      Ielements, IelementsHint, bnonmeshPoints)
+      Ielements, IelementsHint, cnonmeshPoints)
                                       
 !<description>
   ! This is the most general (and completely slowest) finite element evaluation
@@ -77,12 +94,11 @@ CONTAINS
   ! containing the points. This is ignored if Ielements is specified!
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: IelementsHint
   
-  ! OPTIONAL: Whether some points in Dpoint may be outside of the mesh.
-  ! =FALSE: All points must be in cells of the mesh (standard).
-  ! =TRUE: Some points may be outside of the mesh. May happen e.g. in
-  !        nonconvex domains. The evaluation of the FE function then takes
-  !        place in the element that is nearest to the point.
-  LOGICAL, INTENT(IN), OPTIONAL :: bnonmeshPoints
+  ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
+  ! if a point is located outside of the domain. May happen e.g. in
+  ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
+  ! parameter if cnonmeshPoints is not specified. 
+  INTEGER, INTENT(IN), OPTIONAL :: cnonmeshPoints
   
 !</input>
 
@@ -94,7 +110,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bnonpar,bnonmesh
+    LOGICAL :: bnonpar
+    INTEGER :: cnonmesh
     INTEGER :: ipoint,ieltype,indof,nve,ibas
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
@@ -178,8 +195,8 @@ CONTAINS
     Bder = .FALSE.
     Bder(iderType) = .TRUE.
     
-    bnonmesh = .FALSE.
-    IF (PRESENT(bnonmeshPoints)) bnonmesh = bnonmeshPoints
+    cnonmesh = FEVL_NONMESHPTS_NONE
+    IF (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
     
     ! We loop over all points.
 
@@ -212,14 +229,23 @@ CONTAINS
         
         IF (iel .EQ. 0) THEN
         
-          ! We really have not luck here... Are nonmesh-points allowed?=
-          IF (bnonmesh) THEN
+          ! We really have not luck here... Are nonmesh-points allowed?
+          IF (cnonmesh .EQ. FEVL_NONMESHPTS_NEARBY) THEN
+          
             ! Yes. Find the closest element!
             CALL tsrch_getNearestElem_BruteForce (Dpoints(:,ipoint), &
               rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
               
             ! The evaluation routine then evaluates the FE function
             ! outside of the element...
+            
+          ELSE IF (cnonmesh .EQ. FEVL_NONMESHPTS_ZERO) THEN
+            
+            ! Assume zero here.
+            Dvalues(ipoint) = dval
+            
+            CYCLE
+            
           END IF
           
         END IF

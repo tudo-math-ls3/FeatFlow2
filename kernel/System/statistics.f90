@@ -42,8 +42,31 @@
 !# 10.) stat_clear
 !#      -> This routine clears the statistic in rstat
 !# 
+!# To calculate the computation time of another routine, one has to use
+!# the t_timer structure. This can be done as follows:
 !#
-!#  ... (documentation incomplete)
+!#   ! Declare a timer structure
+!#   TYPE(t_timer) :: rtimer
+!#
+!#   ! Initialise the timer by zero:
+!#   CALL stat_clearTimer(rtimer)
+!#
+!#   ! Start the timer
+!#   CALL stat_startTimer(rtimer)
+!#
+!#   ! Do some time-consuming work
+!#   ...
+!#
+!#   ! Stop the timer
+!#   CALL stat_stopTimer(rtimer)
+!#
+!#   ! Print the wall clock time that was necessary for the computation
+!#   WRITE(*,*) "Time for computation: ",rtimer%delapsedReal
+!#
+!# Note that there may be some confusion in case, OpenMP is used! Use 
+!# rtimer%delapsedReal to get the real computation time of the program and
+!# assure that you are the only one computing on the machine!
+!# 
 !# </purpose>
 !##############################################################################
 

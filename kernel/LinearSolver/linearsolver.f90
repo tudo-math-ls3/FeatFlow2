@@ -10899,6 +10899,7 @@ CONTAINS
   DO WHILE(ASSOCIATED(p_rcurrentLevel))
     IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
       CALL linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     ! Pre- and postsmoother may be identical!
     ! Take care not to initialise the same smoother twice!
@@ -10906,9 +10907,11 @@ CONTAINS
         (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
                           p_rcurrentLevel%p_rpostSmoother))) THEN
       CALL linsol_initStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
       CALL linsol_initStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
   END DO
@@ -11086,6 +11089,7 @@ CONTAINS
   DO WHILE(ASSOCIATED(p_rcurrentLevel))
     IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     
     ! Pre- and postsmoother may be identical!
@@ -11093,10 +11097,12 @@ CONTAINS
         (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
                           p_rcurrentLevel%p_rpostSmoother))) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
+      IF (ierror .NE. LINSOL_ERR_NOERROR) RETURN
     END IF
     p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
   END DO
