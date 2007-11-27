@@ -738,8 +738,11 @@ CONTAINS
       ! Allocate memory for an identity matrix in the size of the pressure.
       ! Attach a discretisation structure that describes the pressure element
       ! as trial space.
-      CALL lsyssc_createDiagMatrixStruc (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
+      CALL lsyssc_createDiagMatrixStruc (&
+          rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
           rproblem%RlevelInfo(i)%rmatrixB1%NCOLS,LSYSSC_MATRIX9)
+      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
+          LSYSSC_SETM_UNDEFINED)
       rproblem%RlevelInfo(i)%rmatrixIdentityPressure%p_rspatialDiscretisation => &
         p_rdiscretisation%RspatialDiscretisation(3)
 

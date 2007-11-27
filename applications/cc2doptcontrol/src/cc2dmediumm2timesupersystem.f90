@@ -56,6 +56,7 @@ MODULE cc2dmediumm2timesupersystem
   USE paramlist
   USE timestepping
   USE l2projection
+  USE statistics
   
   USE collection
   USE convection
@@ -2105,6 +2106,8 @@ CONTAINS
     
     CHARACTER(LEN=SYS_STRLEN) :: slinearSolver,sstring
     
+    TYPE(t_timer) :: rtimerMGStep
+    
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx
 
@@ -2526,10 +2529,16 @@ CONTAINS
         CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
       END IF
       
+      CALL stat_clearTimer (rtimerMGStep)
+      
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
         CALL sptils_initData (p_rsolverNode,ierror)
+        
+        CALL stat_startTimer (rtimerMGStep)
         CALL sptils_precondDefect (p_rsolverNode,rd)
+        CALL stat_stopTimer (rtimerMGStep)
+        
         CALL sptils_doneData (p_rsolverNode)
       END IF
       
@@ -2572,6 +2581,8 @@ CONTAINS
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
           ' Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+      CALL output_line ('Time for computation of this iterate: '//&
+          TRIM(sys_sdL(rtimerMGStep%delapsedReal,10)))
       CALL output_separator (OU_SEP_EQUAL)
       
     END DO

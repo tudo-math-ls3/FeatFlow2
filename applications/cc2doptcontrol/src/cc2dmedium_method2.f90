@@ -63,6 +63,8 @@ MODULE cc2dmedium_method2
   USE cc2dmediumm2postprocessing
   USE cc2dmediumm2stationary
   
+  USE externalstorage
+  
   IMPLICIT NONE
   
 CONTAINS
@@ -182,6 +184,11 @@ CONTAINS
     
     ! Ok, let's start. 
     !
+    ! Initialise the external storage management.
+    
+    CALL exstor_init (999,100)
+    CALL exstor_attachDirectory('./ff2storage')
+    
     ! Allocate memory for the problem; it's rather large.
     ALLOCATE (p_rproblem)
     
@@ -309,6 +316,9 @@ CONTAINS
     CALL collct_done (p_rproblem%rcollection)
     
     DEALLOCATE(p_rproblem)
+    
+    ! Clean up the external storage management
+    CALL exstor_done ()
     
   END SUBROUTINE
 

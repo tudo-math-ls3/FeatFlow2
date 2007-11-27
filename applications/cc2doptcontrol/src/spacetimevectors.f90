@@ -71,7 +71,7 @@ MODULE spacetimevectors
 
   USE fsystem
   USE genoutput
-  USE storage
+  USE externalstorage
   USE linearsystemscalar
   USE linearsystemblock
   USE collection
@@ -96,10 +96,6 @@ MODULE spacetimevectors
     ! Whether this vector shares its data with another vector.
     LOGICAL :: bisCopy = .FALSE.
   
-    ! The name of a directory that is used for temporarily storing data to disc.
-    ! Standard is the current directory.
-    CHARACTER(SYS_STRLEN) :: sdirectory = './'
-    
     ! This flag defines a scaling factor for each substep. The scaling is applied
     ! when a subvector is read and is reset to 1.0 if a subvector is saved.
     ! The whole vector is zero if it's new and if it's cleared by clearVector.
@@ -132,7 +128,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVector (rspaceTimeVector,NEQ,ntimesteps,sdirectory)
+  SUBROUTINE sptivec_initVector (rspaceTimeVector,NEQ,ntimesteps)
 
 !<description>
   ! Initialises a space time vector. rvectorTemplate is a template vector that
@@ -147,10 +143,6 @@ CONTAINS
   ! Number of timesteps to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
   INTEGER, INTENT(IN) :: ntimesteps
-  
-  ! OPTIONAL: Directory name where to save temporary data. If not present,
-  ! the current directory './' is the default.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdirectory
 !</input>
 
 !<output>
@@ -163,7 +155,6 @@ CONTAINS
     INTEGER :: i
 
     ! Initialise the data.
-    IF (PRESENT(sdirectory)) rspaceTimeVector%sdirectory = sdirectory
     rspaceTimeVector%ntimesteps = ntimesteps
     ALLOCATE(rspaceTimeVector%p_IdataHandleList(0:ntimesteps))
     ALLOCATE(rspaceTimeVector%p_Dscale(0:ntimesteps))
@@ -174,7 +165,7 @@ CONTAINS
     
     ! Allocate memory for every subvector
     DO i=0,ntimesteps
-      CALL storage_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
         NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), ST_NEWBLOCK_ZERO)
     END DO
     
@@ -214,7 +205,7 @@ CONTAINS
         IF (rspaceTimeVector%p_IdataHandleList(i) .NE. ST_NOHANDLE) THEN
         
           IF (rspaceTimeVector%p_IdataHandleList(i) .GT. 0) THEN
-            CALL storage_free (rspaceTimeVector%p_IdataHandleList(i))
+            CALL exstor_free (rspaceTimeVector%p_IdataHandleList(i))
           ELSE IF (rspaceTimeVector%p_IdataHandleList(i) .LT. 0) THEN
             PRINT *,'external data not implemented!'
             STOP
@@ -259,7 +250,7 @@ CONTAINS
 
 !</subroutine>
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+    REAL(DP), DIMENSION(:), POINTER :: p_Dsource
 
     ! Make sure we can store the timestep data.
     IF ((isubvector .LT. 0) .OR. (isubvector .GT. rspaceTimeVector%ntimesteps)) THEN
@@ -287,8 +278,9 @@ CONTAINS
     ! Don't use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
     CALL lsysbl_getbase_double (rvector,p_Dsource)
-    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    !CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
+    !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    CALL exstor_setdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Dsource)
 
     ! After a setTimestepData, the scale factor is 1.0.
     rspaceTimeVector%p_Dscale(isubvector) = 1.0_DP
@@ -322,7 +314,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddest
 
     ! Make sure we can store the timestep data.
     IF ((isubvector .LT. 0) .OR. (isubvector .GT. rspaceTimeVector%ntimesteps)) THEN
@@ -354,10 +346,11 @@ CONTAINS
     !
     ! Don't use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
-    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),&
-        p_Dsource)
+    !CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),&
+    !    p_Dsource)
     CALL lsysbl_getbase_double (rvector,p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
     
     ! Scale the vector?
     IF (rspaceTimeVector%p_Dscale(isubvector) .NE. 1.0_DP) THEN
@@ -396,11 +389,12 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Dsource1,p_Dsource2,p_Dsource3,p_Ddest
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddest
     INTEGER :: itimestep1,itimestep2,itimestep3
     REAL(DP) :: dreltime,dabstime
     INTEGER :: i
     REAL(DP) :: dscal1,dscal2,dscal3
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_Dsource
 
     ! Make sure we can store the timestep data.
     IF ((dtimestamp .LT. 0.0_DP) .OR. (dtimestamp .GT. 1.0_DP)) THEN
@@ -471,12 +465,14 @@ CONTAINS
     END IF
 
     ! Get the vector data of the three timesteps
-    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep1),&
-        p_Dsource1)
-    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep2),&
-        p_Dsource2)
-    CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(itimestep3),&
-        p_Dsource3)
+    ALLOCATE(p_Dsource(rspaceTimeVector%NEQ,3))
+    
+    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep1),&
+        p_Dsource(:,1))
+    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep2),&
+        p_Dsource(:,2))
+    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep3),&
+        p_Dsource(:,3))
 
     CALL lsysbl_getbase_double (rvector,p_Ddest)
 
@@ -487,16 +483,18 @@ CONTAINS
     IF (rspaceTimeVector%ntimesteps .EQ. 1) THEN
       ! Special case: only 1 timestep. Linear interpolation. dreltime is in [0..1]!
       DO i=1,SIZE(p_Ddest)
-        p_Ddest(i) = (1.0_DP-dreltime) * dscal2*p_Dsource2(i) + &
-                     dreltime*dscal3*p_Dsource3(i)
+        p_Ddest(i) = (1.0_DP-dreltime) * dscal2*p_Dsource(i,2) + &
+                     dreltime*dscal3*p_Dsource(i,3)
       END DO
     ELSE
       ! Quadratic interpolation
       DO i=1,SIZE(p_Ddest)
         CALL mprim_quadraticInterpolation (dreltime,&
-            dscal1*p_Dsource1(i),dscal2*p_Dsource2(i),dscal3*p_Dsource3(i),p_Ddest(i))
+            dscal1*p_Dsource(i,1),dscal2*p_Dsource(i,2),dscal3*p_Dsource(i,3),p_Ddest(i))
       END DO
     END IF
+    
+    DEALLOCATE(p_Dsource)
     
   END SUBROUTINE
 
@@ -994,9 +992,6 @@ CONTAINS
 !</subroutine>
 
     ! Save the content of the structure    
-    CALL collct_setvalue_string (rcollection,TRIM(sname)//'_DIR',&
-        rx%sdirectory,.TRUE.,ilevel,ssection)
-
     CALL collct_setvalue_int (rcollection,TRIM(sname)//'_NEQ',&
         rx%NEQ,.TRUE.,ilevel,ssection)
   
@@ -1054,9 +1049,6 @@ CONTAINS
     rx%bisCopy = .TRUE.
 
     ! Get the content of the structure    
-    CALL collct_getvalue_string (rcollection,TRIM(sname)//'_DIR',&
-        rx%sdirectory,ilevel,ssection)
-
     rx%NEQ = collct_getvalue_int (rcollection,TRIM(sname)//'_NEQ',&
         ilevel,ssection)
   
@@ -1127,7 +1119,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
-      bformatted,brepeatLast,sdirectory)
+      bformatted,brepeatLast)
 
 !<description>
   ! This routine loads a space-time vector from a sequence of files on the
@@ -1176,10 +1168,6 @@ CONTAINS
   !
   ! Standard value = false = missing solutions are set to zero.
   LOGICAL, OPTIONAL :: brepeatLast
-
-  ! OPTIONAL: Directory name where to save temporary data. If not present,
-  ! the current directory './' is the default.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdirectory
   
 !</input>
 
@@ -1222,15 +1210,15 @@ CONTAINS
 
         IF (i .EQ. istart) THEN
           ! At the first file, create a space-time vector holding the data.
-          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1,sdirectory)
+          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1)
         END IF         
         
         ! Save the data
-        CALL storage_copy (rvector%h_Ddata,rx%p_IdataHandleList(i))
+        CALL exstor_setdata_storage (rx%p_IdataHandleList(i),rvector%h_Ddata)
       ELSE
         IF (i .EQ. istart) THEN
           ! At the first file, create a space-time vector holding the data.
-          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1,sdirectory)
+          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1)
         END IF         
 
         IF (brepeat) THEN
@@ -1239,7 +1227,7 @@ CONTAINS
               ssubroutine='sptivec_loadFromFileSequence')
         
           ! Copy the data from the last known solution to the current one.
-          CALL storage_copy (&
+          CALL exstor_copy (&
               rx%p_IdataHandleList(ilast),&
               rx%p_IdataHandleList(i))
         ELSE
@@ -1247,7 +1235,7 @@ CONTAINS
               //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
         
           ! Clear that array. Zero solution.
-          CALL storage_clear (rx%p_IdataHandleList(i))
+          CALL exstor_clear (rx%p_IdataHandleList(i))
         END IF
       END IF
     
@@ -1361,18 +1349,25 @@ CONTAINS
 !</subroutine>
 
     ! Local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: p_Ddata
     INTEGER :: i
+    
+    ! Allocate memory for intermediate values
+    ALLOCATE(p_Ddata(rx%NEQ))
 
     ! Loop over the files
     DO i=0,rx%ntimesteps
     
       ! Get the data and set to a defined value.
-      CALL storage_getbase_double (rx%p_IdataHandleList(i),p_Ddata)
+      CALL exstor_getdata_double (rx%p_IdataHandleList(i),p_Ddata)
       p_Ddata(:) = dvalue
+      CALL exstor_setdata_double (rx%p_IdataHandleList(i),p_Ddata)
+
       rx%p_Dscale(i) = 1.0_DP
 
     END DO
+    
+    DEALLOCATE(p_Ddata)
     
   END SUBROUTINE
 

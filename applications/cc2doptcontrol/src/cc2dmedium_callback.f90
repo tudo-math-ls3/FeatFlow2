@@ -972,7 +972,7 @@ CONTAINS
         
         ! Evaluate at the given points - X-coordinate
         CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(1), &
-          DpointsAct, IelementsHint=IelementsAct,bnonmeshPoints=.FALSE.)
+          DpointsAct, IelementsHint=IelementsAct,cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
           
         DO i=0,nelements-1
           DO j=1,npointsPerElement
@@ -1182,7 +1182,7 @@ CONTAINS
         
         ! Evaluate at the given points - Y-coordinate
         CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(2), &
-          DpointsAct, IelementsHint=IelementsAct,bnonmeshPoints=.FALSE.)
+          DpointsAct, IelementsHint=IelementsAct,cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
           
         DO i=0,nelements-1
           DO j=1,npointsPerElement

@@ -497,9 +497,9 @@ CONTAINS
         !      RmatrixBlock(4,1)%h_Da,p_Ddata)
         !END DO
             
-
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
+        CALL linsol_updateStructure (rpreconditioner%p_rsolverNode,ierror)
         CALL linsol_initData (p_rsolverNode, ierror)
         IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
         
