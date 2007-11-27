@@ -300,6 +300,13 @@ CONTAINS
   
 !</subroutine>
 
+  ! To get the X/Y-coordinates of the boundary point, use:
+  !
+  ! REAL(DP) :: dx,dy
+  !
+  ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+  !     rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+
   ! Return zero Dirichlet boundary values for all situations.
   Dvalues(1) = 0.0_DP
   
