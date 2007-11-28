@@ -1056,14 +1056,12 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, &
-      dnorm, rb,ry)
+      dnorm, rb)
 
 !<description>
   ! This routine assembles the space-time defect d=b-Ax. rd must have been
   ! initialised by the space-time RHS vector b. The routine will then
   ! calculate rd = rd - A rx to get the space-time defect.
-  ! ry is an optional parameter that allows to specify where to evaluate the
-  ! nonlinearity. If specified, the routine calculates rd = rd - A(ry) rx
 !</description>
 
 !<input>
@@ -1073,10 +1071,6 @@ CONTAINS
 
   ! A structure defining the space time matrix of the corresponding system.
   TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
-  
-  ! OPTIONAL: Evaluation point for A. If specified, A=A(ry) is used.
-  ! If not soecified, the routine calculates A=A(rx)
-  TYPE(t_spacetimeVector), INTENT(INOUT), OPTIONAL :: ry
 !</input>
 
 !<inputoutput>
@@ -1154,17 +1148,17 @@ CONTAINS
     ! Create temp vectors for the evaluation point of the nonlinearity.
     ! If ry is not specified, share the vector content with rx, thus
     ! use ry=rx.
-    IF (PRESENT(ry)) THEN
+    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval1,.FALSE.)
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval2,.FALSE.)
       CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval3,.FALSE.)
       
       ! Get the first three evaluation points
-      CALL sptivec_getTimestepData(ry, 0, rtempVectorEval1)
+      CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval1)
       IF (p_rspaceTimeDiscr%niterations .GT. 0) &
-        CALL sptivec_getTimestepData(ry, 1, rtempVectorEval2)
+        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval2)
       IF (p_rspaceTimeDiscr%niterations .GT. 1) &
-        CALL sptivec_getTimestepData(ry, 2, rtempVectorEval3)
+        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval3)
     ELSE
       CALL lsysbl_duplicateVector (rtempVector1,rtempVectorEval1,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -1420,10 +1414,10 @@ CONTAINS
         ! The same for the 'evaluation vector' ry -- if it's specified.
         ! If not specified, rtempVectorX and rtempVectorEvalX share the
         ! same memory, so we don't have to do anything.
-        IF (PRESENT(ry)) THEN
+        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
           CALL lsysbl_copyVector (rtempVectorEval2, rtempVectorEval1)
           CALL lsysbl_copyVector (rtempVectorEval3, rtempVectorEval2)
-          CALL sptivec_getTimestepData(ry, isubstep+2, rtempVectorEval3)
+          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, isubstep+2, rtempVectorEval3)
         END IF
         
       END IF
@@ -2533,13 +2527,13 @@ CONTAINS
       
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
-        CALL sptils_initData (p_rsolverNode,ierror)
-        
         CALL stat_startTimer (rtimerMGStep)
+
+        CALL sptils_initData (p_rsolverNode,ierror)
         CALL sptils_precondDefect (p_rsolverNode,rd)
-        CALL stat_stopTimer (rtimerMGStep)
-        
         CALL sptils_doneData (p_rsolverNode)
+
+        CALL stat_stopTimer (rtimerMGStep)
       END IF
       
       ! Filter the defect for boundary conditions in space and time.

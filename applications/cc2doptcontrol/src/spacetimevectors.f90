@@ -1210,7 +1210,7 @@ CONTAINS
 
         IF (i .EQ. istart) THEN
           ! At the first file, create a space-time vector holding the data.
-          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1)
+          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart)
         END IF         
         
         ! Save the data

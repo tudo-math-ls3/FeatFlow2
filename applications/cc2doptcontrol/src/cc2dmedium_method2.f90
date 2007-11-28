@@ -187,7 +187,7 @@ CONTAINS
     ! Initialise the external storage management.
     
     CALL exstor_init (999,100)
-    CALL exstor_attachDirectory('./ff2storage')
+    !CALL exstor_attachDirectory('./ff2storage')
     
     ! Allocate memory for the problem; it's rather large.
     ALLOCATE (p_rproblem)
@@ -316,6 +316,10 @@ CONTAINS
     CALL collct_done (p_rproblem%rcollection)
     
     DEALLOCATE(p_rproblem)
+    
+    ! Information about external storage usage
+    CALL output_lbrk ()
+    CALL exstor_info ()
     
     ! Clean up the external storage management
     CALL exstor_done ()
