@@ -3822,7 +3822,7 @@ CONTAINS
                 JDFG = Idofs(JDOFE,IEL)
                 du1locx = du1locx + DmeshVelocity(1,JDFG)*dbx
                 du1locy = du1locy + DmeshVelocity(1,JDFG)*dby
-                du2locx = du2locx + DmeshVelocity(2,JDFG)*dby
+                du2locx = du2locx + DmeshVelocity(2,JDFG)*dbx
                 du2locy = du2locy + DmeshVelocity(2,JDFG)*dby
 
               END DO ! JDOFE
