@@ -523,9 +523,11 @@ CONTAINS
       CALL tria_done (Rlevels(i)%rtriangulation)
     END DO
     
+    DEALLOCATE(Rlevels)
+    
     ! Finally release the domain, that's it.
     CALL boundary_release (p_rboundary)
-    
+
   END SUBROUTINE
 
 END MODULE
