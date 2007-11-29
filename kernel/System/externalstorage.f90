@@ -948,7 +948,10 @@ CONTAINS
 
     CASE (EXSTOR_CONT_RAMDRIVE)
       ! The handle identifies another handle in the main memory storage subsystem.
-      CALL storage_free (p_rnode%istorageHandle)
+      ! Note that the handle may be ST_NOHANDLE -- which is the case if no data
+      ! is associated to this up to now.
+      IF (p_rnode%istorageHandle .NE. ST_NOHANDLE) &
+        CALL storage_free (p_rnode%istorageHandle)
 
     CASE (EXSTOR_CONT_DIRECTORY)
       ! The handle identifies a file in a directory. Delete the file.

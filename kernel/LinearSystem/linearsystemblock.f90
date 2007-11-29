@@ -3929,7 +3929,7 @@ CONTAINS
   SUBROUTINE lsysbl_deriveSubmatrix (rsourceMatrix,rdestMatrix,&
                                      cdupStructure, cdupContent,&
                                      ifirstBlock,ilastBlock,&
-                                     ifirstBlockY,ilastBlockY)
+                                     ifirstBlockCol,ilastBlockCol)
   
 !<description>
   ! This routine derives a block matrix as a subset of another block matrix.
@@ -3937,13 +3937,9 @@ CONTAINS
   ! ifirstBlock is the number of the first diagonal block in rsourceMatrix
   ! which should be put to position (1,1) in rdestMatrix.
   ! ilastBlock is the index the last diagonal block in rdestMatrix
-  ! which should be put to rdestMatrix
+  ! which should be put to rdestMatrix.
   !
-  ! rvectorDest will therefore contain the submatrix
-  ! (ifirstSubvector..ilastSubvector , ifirstSubvector..ilastSubvector)
-  ! of rdestMatrix.
-  !
-  ! The newly created block vector will not have any block discretisation 
+  ! The newly created block matrix will not have any block discretisation 
   ! structure attached!
   !
   ! Duplicating a matrix does not necessarily mean that new memory is
@@ -3964,14 +3960,14 @@ CONTAINS
   !  the submatrices means copying the corresponding handle. 
   !  The application must keep track of the permutations.
   !
-  ! Remark 2: When ifirstBlockY,ilastBlockY is not specified, the routine
+  ! Remark 2: When ifirstBlockCol,ilastBlockCol is not specified, the routine
   !  creates a matrix oriented at the diagonal:
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlock:ilastBlock)
-  !  If ifirstBlockY,ilastBlockY is specified, the routine creates
+  !  If ifirstBlockCol,ilastBlockCol is specified, the routine creates
   !  a submatrix based on X/Y block coordinates. ifirstBlock,ilastBlock in this
-  !  case specify the X-coordinates in the block matrix while 
-  !  ifirstBlockY,ilastBlockY specify the Y-coordinates:
-  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockY:ilastBlockY)
+  !  case specify the Y-coordinates in the block matrix while 
+  !  ifirstBlockCol,ilastBlockCol specify the X-coordinates:
+  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockCol:ilastBlockCol)
 !</description>
   
 !<input>
@@ -3994,11 +3990,11 @@ CONTAINS
 
   ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
-  INTEGER, INTENT(IN), OPTIONAL :: ifirstBlockY
+  INTEGER, INTENT(IN), OPTIONAL :: ifirstBlockCol
 
   ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is ilastBlock.
-  INTEGER, INTENT(IN), OPTIONAL :: ilastBlockY
+  INTEGER, INTENT(IN), OPTIONAL :: ilastBlockCol
 
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -4084,40 +4080,44 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_MATIDX) :: i,j
-    INTEGER :: ifirst, ilast, ifirstY, ilastY
+    INTEGER :: ifirstX, ilastX, ifirstY, ilastY
     
     ! Evaluate the optional parameters
-    ifirst = 1
-    ilast = rsourceMatrix%ndiagBlocks
+    ifirstX = 1
+    ilastX = rsourceMatrix%ndiagBlocks
+
+    ifirstY = ifirstX
+    ilastY = ilastX
     
     IF (PRESENT(ifirstBlock)) THEN
-      ifirst = MIN(MAX(ifirst,ifirstBlock),ilast)
+      ifirstY = MIN(MAX(ifirstY,ifirstBlock),ilastX)
     END IF
     
     IF (PRESENT(ilastBlock)) THEN
-      ilast = MAX(MIN(ilast,ilastBlock),ifirst)
+      ilastY = MAX(MIN(ilastY,ilastBlock),ifirstX)
     END IF
     
-    ifirstY = ifirst
-    ilastY = ilast
-
-    IF (PRESENT(ifirstBlockY)) THEN
-      ifirstY = MIN(MAX(ifirstY,ifirstBlockY),ilastY)
+    IF (PRESENT(ifirstBlockCol)) THEN
+      ifirstX = MIN(MAX(ifirstX,ifirstBlockCol),ilastX)
+    ELSE
+      ifirstX = ifirstX
     END IF
     
-    IF (PRESENT(ilastBlockY)) THEN
-      ilastY = MAX(MIN(ilastY,ilastBlockY),ifirstY)
+    IF (PRESENT(ilastBlockCol)) THEN
+      ilastX = MAX(MIN(ilastX,ilastBlockCol),ifirstX)
+    ELSE
+      ilastX = ilastX
     END IF
     
     ! Currently, we only support square matrices -- this is a matter of change in the future!
-    IF ((ilastY-ilast) .NE. (ifirstY-ifirst)) THEN
+    IF ((ilastY-ifirstY) .NE. (ilastX-ifirstX)) THEN
       PRINT *,'lsysbl_deriveSubmatrix: Currently, only square matrices are supported!'
       STOP
     END IF
     
     ! If the destination matrix has the correct size, leave it.
     ! if not, release it and create a new one.
-    IF ((rdestMatrix%NEQ .NE. 0) .AND. (rdestMatrix%ndiagBlocks .NE. ilast-ifirst+1)) THEN
+    IF ((rdestMatrix%NEQ .NE. 0) .AND. (rdestMatrix%ndiagBlocks .NE. ilastX-ifirstX+1)) THEN
       CALL lsysbl_releaseMatrix (rdestMatrix)
     END IF
     
@@ -4125,13 +4125,13 @@ CONTAINS
     ! of duplicateMatrix. 
     IF (rdestMatrix%NEQ .EQ. 0) &
       CALL lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1))
-    DO j=ifirstY,ilastY
-      DO i=ifirst,ilast
-        IF (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
+    DO i=ifirstY,ilastY
+      DO j=ifirstX,ilastX
+        IF (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j)) THEN
         
           CALL lsyssc_duplicateMatrix ( &
               rsourceMatrix%RmatrixBlock(i,j), &
-              rdestMatrix%RmatrixBlock(i-ifirst+1,j-ifirst+1),&
+              rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1),&
               cdupStructure, cdupContent)
                                        
         END IF
