@@ -4100,13 +4100,13 @@ CONTAINS
     IF (PRESENT(ifirstBlockCol)) THEN
       ifirstX = MIN(MAX(ifirstX,ifirstBlockCol),ilastX)
     ELSE
-      ifirstX = ifirstX
+      ifirstX = ifirstY
     END IF
     
     IF (PRESENT(ilastBlockCol)) THEN
       ilastX = MAX(MIN(ilastX,ilastBlockCol),ifirstX)
     ELSE
-      ilastX = ilastX
+      ilastX = ilastY
     END IF
     
     ! Currently, we only support square matrices -- this is a matter of change in the future!
