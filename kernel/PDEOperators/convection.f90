@@ -4127,14 +4127,19 @@ CONTAINS
                 !
                 ! The Newton part is calculated as follows:
                 !
-                ! grad(V) * U  =  ( grad(V1) ) * ( U1 ) 
-                !                 ( grad(V2) )   ( U2 )   
+                ! U * grad(V)  =  ( U * grad(.) ) V
                 !
-                !              =  ( V1_x ) * ( U1 )  +  ( V2_x ) * ( U1 )
-                !                 ( V1_y )   ( U2 )     ( V2_y )   ( U2 )   
+                !              =  ( U * grad(V1) )  
+                !                 ( U * grad(V2) ) 
                 !
-                !              =  ( V1_x * U1  +  V1_y * U_2 )
-                !                 ( V2_x * U1  +  V2_y * U_2 )
+                !              =  ( (U1) * (V1x) ) 
+                !                 ( (U2)   (V1y) )
+                !                 (              )
+                !                 ( (U1) * (V2x) ) 
+                !                 ( (U2)   (V2y) )
+                !
+                !              =  ( U1 * V1x  + U2 * V1y )
+                !                 ( U1 * V2x  + U2 * V2y )
                 !
                 !              =  ( V1_x  V1_y ) ( U1 )
                 !                 ( V2_x  V2_y ) ( U2 )
