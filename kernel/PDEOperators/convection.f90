@@ -4125,8 +4125,25 @@ CONTAINS
                 ! Finally calculate the contribution to the system
                 ! matrices A11, A12, A21 and A22.
                 !
-                ! With the velocity U~=(u,v), we have to assemble:
-                ! U*grad(u~), which is realised in each cubature point as:
+                ! The Newton part is calculated as follows:
+                !
+                ! grad(V) * U  =  ( grad(V1) ) * ( U1 ) 
+                !                 ( grad(V2) )   ( U2 )   
+                !
+                !              =  ( V1_x ) * ( U1 )  +  ( V2_x ) * ( U1 )
+                !                 ( V1_y )   ( U2 )     ( V2_y )   ( U2 )   
+                !
+                !              =  ( V1_x * U1  +  V1_y * U_2 )
+                !                 ( V2_x * U1  +  V2_y * U_2 )
+                !
+                !              =  ( V1_x  V1_y ) ( U1 )
+                !                 ( V2_x  V2_y ) ( U2 )
+                !
+                !              -> ( A11   A12  )
+                !                 ( A21   A22  )
+                !
+                ! With the velocity V=(u,v), we have to assemble:
+                ! grad(V)*U, which is realised in each cubature point as:
                 !   du/dx * phi_j*phi_i -> A11
                 !   du/dy * phi_j*phi_i -> A12
                 !   dv/dx * phi_j*phi_i -> A21
