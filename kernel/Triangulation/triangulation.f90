@@ -272,6 +272,10 @@ MODULE triangulation
   ! Number of vertices per element for quadrilateral element shapes in 2D.
   INTEGER, PARAMETER :: TRIA_NVEQUAD2D = 4
   
+  ! number of elements of a 3d connector
+  integer, parameter :: TRIA_NCONNECT3D = 5
+  
+  
 !</constantblock>
 
 !<constantblock description="KIND values for triangulation data">
@@ -744,6 +748,17 @@ MODULE triangulation
     
   END TYPE
 
+!</typeblock>
+
+!<typeblock>
+  ! a connector connects to adjacent cells (i.e. a face in 3d)
+  ! structure used to generate 3d connectivity
+  type t_connector3d
+      ! the array stores at 1-4 the vertices of a face
+      ! at 5 the element the face belongs to
+      ! at 6 it stores the local face number
+      integer, dimension(6) :: I_conData
+  end type
 !</typeblock>
   
 !</types>
@@ -2533,10 +2548,10 @@ CONTAINS
       
     CASE (NDIM3D)
     ! vertices at element info provided by tri-File
-    ! call facesAtElement
-    ! call tria_genElementsAtVertex3D
-    ! call tria_genNeighboursAtElement3D
-    ! call tria_genEdgesAtElement3D
+    call tria_genElementsAtVertex3D   (rtriangulation)
+    call tria_genFacesAtElement3D     (rtriangulation)
+    call tria_genNeighboursAtElement3D(rtriangulation)
+    call tria_genEdgesAtElement3D     (rtriangulation)
     ! call tria_genElementsAtEdge3D
     ! I_ElementsAtEdge3d als liste
     ! I_ElementsAtEdge2d als liste
@@ -6186,8 +6201,6 @@ CONTAINS
 
     ! close the file, finish
     close(iunit)
-    
-    call tria_genElementsAtVertex3D(rtriangulation)
   
   end subroutine
   
@@ -6596,6 +6609,605 @@ CONTAINS
     call storage_free(haux1)
     
     end subroutine ! end tria_genElementsAtVertex3D
+
+!************************************************************************
+
+!<subroutine>    
+    subroutine tria_genFacesAtElement3D(rtriangulation)
     
+!<description>
+  ! This routine generates the array IfacesAtElement
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+    type(t_triangulation), intent(inout) :: rtriangulation
+!</inputoutput>
+    
+!</subroutine>        
+
+    ! local variables
+    integer(PREC_VERTEXIDX) , dimension(:,:), pointer :: p_IverticesAtElement
+    
+    ! Get some data arrays about the vertices.
+    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+     
+    
+    
+    end subroutine ! end tria_genFacesAtElement3D
+    
+!************************************************************************    
+!<subroutine>      
+  recursive subroutine tria_mergesort(p_ConnectorList, l, r, pos)
+   
+!<description>
+  ! this routine sorts a connector list
+  ! it is used as an auxilliary routine
+  ! during the Neighbours at elements routine
+!</description>
+    
+!<input>
+  ! the array positions l...r will be sorted
+  ! the sorting key is element 'pos' of the connector
+  integer :: l,r,pos
+!</input>
+  
+!<inputoutput>
+  ! the list of connectors    
+  type(t_connector3d), dimension(:), pointer :: p_ConnectorList
+!</inputoutput>
+
+!</subroutine>      
+    
+  ! local variables
+  integer :: m
+    
+      if(l < r) then
+        
+          m = l + (r-l)/2
+            
+          call tria_mergesort(p_ConnectorList,l,m, pos)
+          call tria_mergesort(p_ConnectorList,m+1,r, pos)
+          call tria_merge(p_ConnectorList,l,m,r,pos)
+        
+      end if
+    
+  end subroutine ! tria_mergesort
+        
+!************************************************************************      
+
+!<subroutine> 
+  subroutine tria_merge(p_ConnectorList, l, m, r, pos)
+    
+!<description>
+  ! 
+  ! standard auxilliary routine in the mergesort algorithm
+  ! 
+!</description>
+    
+!<input> 
+  ! the array positions l...r will be sorted
+  ! the sorting key is element 'pos' of the connector
+  integer :: l,r,m,pos
+!</input>
+
+!<inputoutput>
+  ! the list of connectors     
+  type(t_connector3d), dimension(:), pointer :: p_ConnectorList
+!</inputoutput>
+
+!</subroutine>     
+
+  ! local variables
+  integer :: i,j,n1,n2,k
+    
+  type(t_connector3d), dimension(:), pointer :: p_L, p_R
+    
+  ! function body
+  
+    
+  ! init counters
+  n1 = m - l + 1
+    
+  n2 = r - m 
+    
+  k = l    
+    
+  ! allocate memory for merging
+  allocate(p_L(n1))
+  allocate(p_R(n2))
+    
+  ! fill left array
+  do i=1,n1
+      p_L(i) = p_ConnectorList(l+i-1)
+  end do
+    
+  ! fill right array
+  do j=1,n2
+      p_R(j) = p_ConnectorList(m+j)
+  end do
+    
+  i = 1
+  j = 1
+    
+  ! merge 
+  do
+  if( (i > n1 ) .or. (j > n2) ) exit
+    
+      ! if the current element of the left array is smaller
+      ! copy it to p_ConnectorList
+      ! else
+      ! copy the element from the right array
+      if(p_L(i)%I_conData(pos) <= p_R(j)%I_conData(pos)) then
+          p_ConnectorList(k) = p_L(i)
+          i = i + 1
+          k = k + 1
+      else
+          p_ConnectorList(k) = p_R(j)                 
+        j = j + 1
+        k = k + 1
+    end if
+    
+  end do
+    
+  ! copy the remaining entries of p_L (if present)
+  do
+  if(i > n1) exit
+    
+      p_ConnectorList(k) = p_L(i)
+      ! increment counters
+      k = k + 1
+      i = i + 1
+        
+  end do
+
+  ! copy the remaining entries of p_R (if present)
+  do
+  if(j > n2) exit
+    
+      p_ConnectorList(k) = p_R(j)
+      ! increment counters
+      k = k + 1
+      j = j + 1
+        
+  end do
+
+  ! done merging
+    
+  ! free p_L and p_R
+  deallocate(p_L)
+  deallocate(p_R)
+    
+  end subroutine ! end tria_merge 
+  
+!************************************************************************   
+      
+!<subroutine>      
+  subroutine tria_buildConnectorList(p_IConnectList, rtriangulation)
+
+!<description>
+  ! this routine builds the connector list used 
+  ! in the neighbours at elements 
+  ! routine
+!</description>
+
+!<input>
+  type(t_triangulation) :: rtriangulation
+!</input>
+    
+!<inputoutput>    
+  ! the list of connectors this routine is supposed to build
+  type(t_connector3d), dimension(:), pointer :: p_IConnectList    
+!</inputoutput>  
+  
+!</subroutine>    
+
+  ! local variables
+  integer :: i,j,k, NVFACE
+  
+  integer, dimension(:,:), pointer :: p_idata3d
+    
+  ! function body
+  
+  ! Get some data arrays about the vertices.
+  call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+      p_idata3d)
+  
+    
+  ! allocate memory for NEL connectors
+  allocate(p_IConnectList(rtriangulation%NEL*rtriangulation%NAE))
+    
+  ! number of  face
+  NVFACE = rtriangulation%NAE
+    
+  ! loop through all hexahedrons
+  do i=1, rtriangulation%NEL
+      ! build connectors for each hexahedron
+      
+      !=========================================================  
+      ! first face
+      j=1
+      do k=1,4
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
+          p_idata3d(k,i)
+      end do
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(k)=i
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
+      j=j+1
+      !=========================================================
+      ! sixth face
+      do k=5,8
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k-4) = &
+          p_idata3d(k,i)
+      end do
+        
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+      
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=6
+      j=j+1
+      !=========================================================
+      ! second face
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+      p_idata3d(1,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+      p_idata3d(2,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+      p_idata3d(5,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+      p_idata3d(6,i)
+        
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+      
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
+        
+      ! increment counter
+      j=j+1
+      
+      !=========================================================  
+      ! fourth face
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+      p_idata3d(4,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+      p_idata3d(3,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+      p_idata3d(7,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+      p_idata3d(8,i)
+        
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+        
+      ! increment counter
+      j=j+1
+        
+      !=========================================================  
+      ! third face
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+      p_idata3d(2,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+      p_idata3d(3,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+      p_idata3d(6,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+      p_idata3d(7,i)
+        
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
+        
+      ! increment counter
+      j=j+1
+        
+      !=========================================================  
+      ! fifth face
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+      p_idata3d(1,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+      p_idata3d(4,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+      p_idata3d(8,i)
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+      p_idata3d(5,i)
+        
+      ! save the number of the element this face was found from
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+      
+      ! assign the local face number
+      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=5
+        
+      !=========================================================  
+    
+  end do
+    
+  ! done...
+  end subroutine ! end tria_buildConnectorList
+  
+!************************************************************************   
+  
+!<subroutine>  
+  subroutine tria_genNeighboursAtElement3D(rtriangulation)
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+    type(t_triangulation), intent(inout) :: rtriangulation
+!</inputoutput>
+
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer, dimension(:), pointer :: p_IelementsAtVertex
+  integer, dimension(:,:), pointer :: p_idata3d
+    
+  ! the array this routine is supposed to build
+  integer, dimension(:,:), pointer :: p_IneighboursAtElement3
+     
+!</subroutine>
+     
+  ! local variables
+  integer :: iElements, nae, iel, iae, j
+  
+  integer(i32), dimension(2) :: Isize
+
+  ! a pointer to a list of connectors
+  type(t_connector3d), dimension(:), pointer :: p_IConnectList
+    
+  ! function body ...
+  
+  nae = rtriangulation%NAE
+  
+  ! Do we have (enough) memory for that array?
+  if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
+    Isize = (/nae,int(rtriangulation%NEL,I32)/)
+    call storage_new2D ('tria_genNeighboursAtElement3D', 'KADJ', &
+        Isize, ST_INT, &
+        rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
+  else
+    call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
+    if (Isize(2) .NE. rtriangulation%NEL) then
+      ! If the size is wrong, reallocate memory.
+      call storage_realloc ('tria_genNeighboursAtElement3D', &
+          rtriangulation%NEL, rtriangulation%h_IneighboursAtElement, &
+          ST_NEWBLOCK_NOINIT, .FALSE.)
+    end if
+  end if
+  
+  ! get a pointer to the memory just allocated
+  call storage_getbase_int2d(rtriangulation%h_IneighboursAtElement, &
+  p_IneighboursAtElement3)
+  
+  p_IneighboursAtElement3(:,:) = 0  
+    
+  ! first build the connector list
+  call tria_buildConnectorList(p_IConnectList,rtriangulation)
+    
+  iElements = rtriangulation%NEL*rtriangulation%NAE
+    
+  ! ConnectorList is build, now sort it
+  call tria_sortElements3dInt(p_IConnectList,iElements)
+  call tria_sortElements3d(p_IConnectList,iElements)
+  
+  ! assign the neighbours at elements
+  ! traverse the connector list
+  do iel = 2,iElements
+  
+    ! check for equivalent connectors... that means:
+    ! check if all 4 vertices that define the face are equal
+    j = 0
+    do while(p_IConnectList(iel-1)%I_conData(j+1) == &
+         p_IConnectList(iel)%I_conData(j+1) )
+         ! increment counter
+         j=j+1 
+    end do
+    
+    ! assign information
+    if(j==4) then
+      ! iel is a neighbour of iel-1 at the p_IConnectList(iel-1)%I_conData(6) face
+      p_IneighboursAtElement3(p_IConnectList(iel-1)%I_conData(6), &
+      p_IConnectList(iel-1)%I_conData(5)) = &
+      p_IConnectList(iel)%I_conData(5)
+      
+      ! iel-1 is a neighbour of iel at the p_IConnectList(iel)%I_conData(6) face
+      p_IneighboursAtElement3(p_IConnectList(iel)%I_conData(6), &
+      p_IConnectList(iel)%I_conData(5)) = &
+      p_IConnectList(iel-1)%I_conData(5)
+    end if
+  
+  end do 
+  
+  
+  ! free list of connectors
+  deallocate(p_IConnectList)
+  
+  ! done... easy...
+    
+  end subroutine ! tria_genNeighboursAtElement3D
+  
+!************************************************************************   
+  
+!<subroutine>    
+  subroutine tria_sortElements3dInt(p_IConnectList, iElements)
+
+!<description>
+  ! this routine builds the connector list used 
+  ! in the neighbours at elements 
+  ! routine
+!</description>
+    
+  ! parameter values
+
+!<inputoutput>        
+  type(t_connector3d), dimension(:), pointer :: p_IConnectList
+!</inputoutput>          
+    
+!<input>    
+  integer, intent(in) :: iElements
+!</input>
+    
+!</subroutine>
+    
+  ! local variables
+  integer, dimension(:), pointer :: p_IEntries
+  
+  integer :: i
+
+  ! create a sorted numbering in all connectors    
+  do i=1,iElements
+    
+      p_IEntries =>p_IConnectList(i)%I_conData(1:4)
+        
+      call tria_quickSortInt(p_IEntries, 1, 4)
+    
+  end do
+    
+  end subroutine ! end tria_sortElements
+    
+!************************************************************************     
+  
+!<subroutine>   
+  recursive subroutine tria_quickSortInt(p_IConnector, l, r)
+    
+      
+!<description>
+  ! this routine builds the connector list used 
+  ! in the neighbours at elements 
+  ! routine
+!</description>
+    
+  integer, dimension(:), pointer :: p_IConnector
+    
+!<input>    
+  integer, intent(in) :: l,r
+!</input>  
+
+!</subroutine>   
+
+  integer :: m, lpos, rpos, pivot
+  
+  integer :: temp  
+    
+  if( l < r) then
+    
+      ! counter from left
+      lpos = l+1
+        
+      ! counter from right
+      rpos = r
+        
+      ! assign the pivot element
+      pivot = p_IConnector(l)
+        
+      do while(lpos <= rpos)
+            
+          ! we find an element less than pivot => increment
+          if(p_IConnector(lpos) <= pivot) then
+            lpos=lpos+1
+          ! we find an element greater than => decrement
+          else if(p_IConnector(rpos) > pivot) then
+            rpos=rpos-1
+          ! ok swap the elements  
+          else
+              ! swap connectors
+              temp = p_IConnector(lpos)
+                
+              p_IConnector(lpos) = p_IConnector(rpos)
+                
+              p_IConnector(rpos) = temp
+          end if
+        
+      end do
+        
+      ! swap pivot element            
+      temp = p_IConnector(l)
+        
+      p_IConnector(l) = p_IConnector(rpos)
+        
+      p_IConnector(rpos) = temp
+        
+      ! assign new pivot position
+      m=rpos
+      ! recursively sort the two subarrays
+      call tria_quickSortInt(p_IConnector, l, m-1)
+      call tria_quickSortInt(p_IConnector, m+1,r)
+    
+  end if !
+    
+  end subroutine !end tria_quickSortInt
+  
+!====================================================================
+!
+!   this subroutine establishes the lexicographic ordering on the
+!   list of connectors in 3d
+!
+!====================================================================
+!<subroutine>
+  subroutine tria_sortElements3d(p_IConnectList,iElements)
+  
+!<description>
+  ! this routine builds the connector list used 
+  ! in the neighbours at elements 
+  ! routine
+!</description>
+
+!<input>    
+  integer, intent(in) :: iElements
+!</input>  
+
+!<inputoutput>        
+  type(t_connector3d), dimension(:), pointer :: p_IConnectList
+!</inputoutput>
+
+!</subroutine>
+
+  ! local
+  integer :: j
+    
+  do j=TRIA_NCONNECT3D,1,-1
+      call tria_mergesort(p_IConnectList, 1, iElements, j)
+  end do
+    
+  end subroutine ! end tria_sortElements
+  
+!====================================================================  
+  
+!<subroutine>  
+  subroutine tria_genEdgesAtElement3D(rtriangulation)    
+!<description>
+  ! this routine creates the information
+  ! which edges belong to an element
+  ! and stores them in IedgesAtElement
+  ! Furthermore the edge numbering is calculated. That means,
+  ! it generates information about the edges adjacent to
+  ! each element IedgesAtElement (KMID) and calculates the correct NMT.
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement, IneighboursAtElement.
+  ! If necessary, new memory is allocated.  
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+    type(t_triangulation), intent(inout) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+  ! local variables
+  
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IneighboursAtElement
+  
+  
+  end subroutine ! end tria_genEdgesAtElement3D
 
 END MODULE
