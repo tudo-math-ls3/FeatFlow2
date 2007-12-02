@@ -2088,7 +2088,8 @@ CONTAINS
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondPrimal
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondDual
     TYPE(t_sptiProjection), DIMENSION(SIZE(RspaceTimeDiscr)) :: RinterlevelProjection
-    TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspaceTimeMatrix
+    TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspaceTimePrecondMatrix
+    TYPE(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVecCoarse,rtempVecFine
     
     ! A solver node that identifies our solver.
@@ -2368,17 +2369,17 @@ CONTAINS
     DO ilev=1,SIZE(RspatialPrecond)
     
       ! Pointer to the corresponding space time discretisation structure
-      RspaceTimeMatrix(ilev)%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+      RspaceTimePrecondMatrix(ilev)%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
       
       ! Configure the matrix type; standard or Newton matrix
       SELECT CASE (ctypePreconditioner)
       CASE (1)
         ! Standard system matrix
-        RspaceTimeMatrix(ilev)%cmatrixType = 0
+        RspaceTimePrecondMatrix(ilev)%cmatrixType = 0
         
       CASE (2)
         ! Newton matrix
-        RspaceTimeMatrix(ilev)%cmatrixType = 1
+        RspaceTimePrecondMatrix(ilev)%cmatrixType = 1
       END SELECT
       
     END DO
@@ -2386,18 +2387,24 @@ CONTAINS
     ! Allocate space-time vectors on all lower levels that hold the solution vectors
     ! for the evaluation of the nonlinearity (if we have a nonlinearity).
     DO ilev=1,SIZE(RspatialPrecond)-1
-      ALLOCATE(RspaceTimeMatrix(ilev)%p_rsolution)
-      CALL sptivec_initVector (RspaceTimeMatrix(ilev)%p_rsolution,&
+      ALLOCATE(RspaceTimePrecondMatrix(ilev)%p_rsolution)
+      CALL sptivec_initVector (RspaceTimePrecondMatrix(ilev)%p_rsolution,&
         dof_igetNDofGlobBlock(RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
         RspaceTimeDiscr(ilev)%niterations)   
     END DO
 
     ! On the maximum level attach the solution vector.
     nlmax = UBOUND(RspaceTimeDiscr,1)
-    RspaceTimeMatrix(nlmax)%p_rsolution => rx
+    RspaceTimePrecondMatrix(nlmax)%p_rsolution => rx
+    
+    ! Create a space time matrix for the maximum level which serves as basis for
+    ! setting up the defect. This is the actual system matrix, thus it doesn't
+    ! contain any Newton parts!
+    rspaceTimeMatrix%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+    rspaceTimeMatrix%p_rsolution => rx
     
     ! Attach matrix information to the linear solver
-    CALL sptils_setMatrices (p_rsolverNode,RspaceTimeMatrix)
+    CALL sptils_setMatrices (p_rsolverNode,RspaceTimePrecondMatrix)
     
     ! Initialise the space-time preconditioner
     CALL sptils_initStructure (p_rsolverNode,ierror)
@@ -2408,7 +2415,7 @@ CONTAINS
     !
     ! Get the initial defect: d=b-Ax
     CALL c2d2_assembleSpaceTimeRHS (rproblem, &
-      RspaceTimeMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
+      RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
       rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
 
     ! Implement the initial condition into the RHS.
@@ -2419,7 +2426,7 @@ CONTAINS
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, RspaceTimeMatrix(nlmax), &
+    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
         rx, rd, ddefNorm)
         
     dinitDefNorm = ddefNorm
@@ -2427,7 +2434,7 @@ CONTAINS
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
     CALL c2d2_optc_nonstatFunctional (rproblem,&
-        RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+        RspaceTimePrecondMatrix(SIZE(RspatialPrecond))%p_rsolution,&
         rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
         RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
         Derror)
@@ -2483,12 +2490,12 @@ CONTAINS
 
         ! Interpolate down
         CALL sptipr_performInterpolation (RinterlevelProjection(ilev+1),&
-            RspaceTimeMatrix(ilev)%p_rsolution, RspaceTimeMatrix(ilev+1)%p_rsolution,&
+            RspaceTimePrecondMatrix(ilev)%p_rsolution, RspaceTimePrecondMatrix(ilev+1)%p_rsolution,&
             rtempVecCoarse,rtempVecFine)
             
         ! Set boundary conditions
         CALL c2d2_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
-            RspaceTimeMatrix(ilev)%p_rsolution,rtempVecCoarse)
+            RspaceTimePrecondMatrix(ilev)%p_rsolution,rtempVecCoarse)
       END DO
       
       CALL lsysbl_releaseVector(rtempVecFine)
@@ -2513,7 +2520,7 @@ CONTAINS
       IF (rproblem%MT_outputLevel .GE. 1) THEN
         ! Value of the functional
         CALL c2d2_optc_nonstatFunctional (rproblem,&
-            RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+            rspaceTimeMatrix%p_rsolution,&
             rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
             RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
             Derror)
@@ -2565,7 +2572,7 @@ CONTAINS
 
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)
-      CALL c2d2_assembleSpaceTimeDefect (rproblem, RspaceTimeMatrix(nlmax), &
+      CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
           rx, rd, ddefNorm)
           
       ! Filter the defect for boundary conditions in space and time.
@@ -2589,14 +2596,14 @@ CONTAINS
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, RspaceTimeMatrix(nlmax), &  
+    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &  
         rx, rd, ddefNorm)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
     CALL c2d2_optc_nonstatFunctional (rproblem,&
-        RspaceTimeMatrix(SIZE(RspatialPrecond))%p_rsolution,&
+        rspaceTimeMatrix%p_rsolution,&
         rtempVector,RspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
         RspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
         Derror)
@@ -2636,8 +2643,8 @@ CONTAINS
     END DO
 
     DO ilev=1,SIZE(RspatialPrecond)-1
-      CALL sptivec_releaseVector (RspaceTimeMatrix(ilev)%p_rsolution)
-      DEALLOCATE(RspaceTimeMatrix(ilev)%p_rsolution)
+      CALL sptivec_releaseVector (RspaceTimePrecondMatrix(ilev)%p_rsolution)
+      DEALLOCATE(RspaceTimePrecondMatrix(ilev)%p_rsolution)
     END DO
           
     CALL lsysbl_releaseVector (rtempVectorB)

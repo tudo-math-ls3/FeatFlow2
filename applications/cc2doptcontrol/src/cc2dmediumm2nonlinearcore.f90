@@ -18,13 +18,14 @@
 !#  $$        A_1 y   +  \eta_1 B p   +  \mu_1 M \lambda         = f_1 $$
 !#  $$ \tau_1 B^T y   +  \kappa_1 I p                            = f_2 $$
 !#
-!#  $$   \mu_2 M y    +  A_2 \lambda  +  \eta_2 B \xi            = f_3 $$
+!#  $$        R_2 y   +  A_2 \lambda  + \eta_2   B \xi           = f_3 $$
 !#  $$            \tau_2 B^T \lambda  + \kappa_2 I \xi           = f_4 $$
 !#
 !# with
 !#
 !#   $$ A_1 = \iota_1 I  +  \alpha_1 M  +  \theta_1 L  +  \gamma_1 N(y) + dnewton_1 N*(y)$$
 !#   $$ A_2 = \iota_2 I  +  \alpha_2 M  +  \theta_2 L  +  \gamma_2 N(y) + dnewton_2 N*(y)$$
+!#   $$ R_2 =               \mu_2    M  +                                 dr_2      N*(\lambda) $$
 !#  
 !# and
 !#
@@ -36,6 +37,8 @@
 !#                   $$ (y\Delta)\cdot $$
 !#   $N*(y)$ = Newton matrix, depending on the primal velocity, i.e.
 !#                  $$ (\Delta y)\cdot $$
+!#   $N*(\lambda)$ = Newton matrix, depending on the dual velocity, i.e.
+!#                  $$ (\Delta \lambda)\cdot $$
 !#   
 !#   $\iota_i$  = 0/1     - switches the identity matrix on/off,
 !#   $\alpha_i$ = 0/1     - switches the mass matrix on/off;
@@ -49,6 +52,7 @@
 !#   $\mu_i$              - Weight for the 'coupling' mass matrix.
 !#   $\kappa_i$ = 0/1     - Switches of the identity matrix I for the pressure
 !#                          in the continuity equation
+!#   $\dr_i \in R$        - Switches the 'reactive coupling mass matrix' on/off
 !#                    
 !# (y,p) is the velocity/pressure solution pair.
 !# (lambda,xi) is the dual velocity/pressure solution.

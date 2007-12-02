@@ -54,16 +54,27 @@
 !# form (here for 2 timesteps with solutions y_0(initial), y_1 and y_2):
 !#
 !#  Explicit Euler.
-!#  a=alpha. g=gamma. y_i=velocity in the i'th step.
+!#  a=alpha. g=gamma. y_i=velocity in the i'th step. l_i=dual velocity in the i'th step.
+!#
 !#  Stokes:          A = A(y_i) = -nu*Laplace(.)
-!#  Navier-Stokes:   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
+!#                   R = -M (from the RHS)
+!#
+!#  Navier-Stokes:   Standard iteration:
+!#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
+!#                   N = N(y_i) = -nu*Laplace(.) + y_i*grad(.) - (.)*grad(y_i)
+!#                   R = R(l_i) = -M                                   
+!#
+!#                   Newton iteration:
+!#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.) + grad(y_i)*(.)
+!#                   N = N(y_i) = -nu*Laplace(.) + y_i*grad(.) - grad(y_i)*(.)
+!#                   R = R(l_i) = -M + l_i*grad(.) - grad(l_i)*(.)
 !#  
 !#  ====================================================================================================
 !#  [I     ]                       |                                  |
 !#                                 |                                  |
 !#            [I ]                 |                                  |
 !#                                 |                                  |
-!#                 [M/dt + A] [-B] |                 [-M/dt    ]      |
+!#                 [M/dt + N] [-B] |                 [-M/dt    ]      |
 !#                                 |                                  |
 !#                 [-B^t    ]      |                                  |
 !#                                 |                                  |
@@ -72,7 +83,7 @@
 !#                                 |                                  |
 !#                                 | [-B^t    ]                       |
 !#                                 |                                  |
-!#                                 | [-M      ]      [M/dt + A ] [-B] |                  [-M/dt   ]
+!#                                 | [ R      ]      [M/dt + N ] [-B] |                  [-M/dt   ]
 !#                                 |   ^                              |
 !#                                 | from the        [-B^t     ]      |
 !#                                 | RHS                              |
@@ -81,7 +92,7 @@
 !#                                 |                                  |                                  
 !#                                 |                                  |  [-B^t    ]                      
 !#                                 |                                  |                                  
-!#                                 |                                  |  [-g M    ]      [M/dt + A] [-B] 
+!#                                 |                                  |  [ g R    ]      [M/dt + N] [-B] 
 !#                                 |                                  |    ^                             
 !#                                 |                                  |  from the        [-B^t    ]      
 !#                                 |                                  |  RHS                                  
@@ -94,7 +105,7 @@
 !#  Stokes:          A(y_i) = -nu*Laplace(.)
 !#                   N(y_i) = not present
 !#  Navier-Stokes:   A(y_i) = -nu*Laplace(.) + y_i*grad(.)
-!#                   N(y_i) = -nu*Laplace(.) + y_i*grad(.) + (.)*grad(y_i)
+!#                   N(y_i) = -nu*Laplace(.) + y_i*grad(.) - (.)*grad(y_i)
 !#  
 !#  ===============================================================================================================================================================
 !#  [I                ]                                   |                                                    |                                            
@@ -524,8 +535,19 @@ CONTAINS
         !
         ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
         !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-             dtheta * (-1.0_DP)
+        IF (dnewton .EQ. 0.0_DP) THEN
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              dtheta * (-1.0_DP)
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
+        ELSE
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              dtheta * (-1.0_DP)
+          rmatrixComponents%dr21 = ddualPrimalCoupling * &
+              dtheta * ( 1.0_DP)
+          rmatrixComponents%dr22 = ddualPrimalCoupling * &
+              dtheta * (-1.0_DP)
+        END IF
         rmatrixComponents%dmu1 = 0.0_DP
         !rmatrixComponents%dmu2 = 0.0_DP
                     
@@ -565,6 +587,9 @@ CONTAINS
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
+            
+        rmatrixComponents%dr21 = 0.0_DP
+        rmatrixComponents%dr22 = 0.0_DP
             
       END IF
     
@@ -611,6 +636,9 @@ CONTAINS
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
+        rmatrixComponents%dr21 = 0.0_DP
+        rmatrixComponents%dr22 = 0.0_DP
+
       ELSE IF (irelpos .EQ. 0) THEN    
 
         ! The diagonal matrix.
@@ -644,8 +672,19 @@ CONTAINS
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-dequationType) * dtheta 
+        IF (dnewton .EQ. 0.0_DP) THEN
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta 
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
+        ELSE
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta 
+          rmatrixComponents%dr21 = ddualPrimalCoupling * &
+              ( dequationType) * dtheta 
+          rmatrixComponents%dr22 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta 
+        END IF
 
       ELSE IF (irelpos .EQ. 1) THEN
             
@@ -682,6 +721,9 @@ CONTAINS
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
+            
+        rmatrixComponents%dr21 = 0.0_DP
+        rmatrixComponents%dr22 = 0.0_DP
             
       END IF
     
@@ -807,6 +849,9 @@ CONTAINS
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
+        rmatrixComponents%dr21 = 0.0_DP
+        rmatrixComponents%dr22 = 0.0_DP
+
       ELSE IF (irelpos .EQ. 0) THEN    
 
         ! The diagonal matrix.
@@ -843,9 +888,20 @@ CONTAINS
             
         ! Weight the mass matrix by GAMMA instead of delta(T).
         ! That's the only difference to the implementation above!
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            !dtheta * p_rspaceTimeDiscr%dtstep
-            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
+        IF (dnewton .EQ. 0.0_DP) THEN
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
+              !dtheta * p_rspaceTimeDiscr%dtstep
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
+        ELSE
+          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
+          rmatrixComponents%dr21 = ddualPrimalCoupling * &
+              ( dequationType) * dtheta 
+          rmatrixComponents%dr22 = ddualPrimalCoupling * &
+              (-dequationType) * dtheta 
+        END IF
 
       END IF        
         

@@ -4476,11 +4476,16 @@ CONTAINS
           CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, isubstep+ix, rvector)
         END IF
       
-        ! Assemble the matrix in rblockTemp
+        ! Assemble the matrix in rblockTemp.
+        ! Note that the weights of the matrices must be set before, otherwise
+        ! the assembly routines would complain about missing matrices :-)
+        rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
+        rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
+        rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
+        rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rblockTemp,rmatrixComponents,rvector,ctypePrimalDual=0) 
 
-        ! Include the boundary conditions into that matrix.
         ! Switch of matrices that aren't needed.
         SELECT CASE (ix)
         CASE (-1)
@@ -4515,6 +4520,8 @@ CONTAINS
           rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
           rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         END SELECT
+
+        ! Include the boundary conditions into that matrix.
         CALL matfil_discreteBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
         CALL matfil_discreteFBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
 

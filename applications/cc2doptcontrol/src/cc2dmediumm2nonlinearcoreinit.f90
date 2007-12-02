@@ -688,7 +688,10 @@ CONTAINS
             ! for these matrices.
             p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
             
-            ! If we have a Stokes problem, A12 and A21 don't exist.
+            ! If we have a Stokes problem, A12 and A21 don't exist, so we have nothing to
+            ! do. In the Navier-Stokes case however, we have A12 and A21, so create them!
+            ! Furthermore, there is to be a A51 and A42 submatrix allocated for the
+            ! reactive coupling mass matrix R!
             IF (rproblem%iequation .EQ. 0) THEN
             
               IF (p_rmatrixPreconditioner%RmatrixBlock(1,2)%cmatrixFormat &
@@ -716,6 +719,34 @@ CONTAINS
                 ! Allocate memory for the entries; don't initialise the memory.
                 CALL lsyssc_allocEmptyMatrix (&
                     p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
+
+              END IF               
+
+              IF (p_rmatrixPreconditioner%RmatrixBlock(5,1)%cmatrixFormat &
+                  .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+                  
+                CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
+                  p_rmatrixPreconditioner%RmatrixBlock(5,1), &
+                  LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                  
+                ! Allocate memory for the entries; don't initialise the memory.
+                CALL lsyssc_allocEmptyMatrix (&
+                    p_rmatrixPreconditioner%RmatrixBlock(5,1),LSYSSC_SETM_UNDEFINED)
+                  
+              END IF
+
+              IF (p_rmatrixPreconditioner%RmatrixBlock(4,2)%cmatrixFormat &
+                  .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+                  
+                ! Create a new matrix A21 in memory. create a new matrix
+                ! using the template FEM matrix...
+                CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
+                  p_rmatrixPreconditioner%RmatrixBlock(4,2), &
+                  LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                  
+                ! Allocate memory for the entries; don't initialise the memory.
+                CALL lsyssc_allocEmptyMatrix (&
+                    p_rmatrixPreconditioner%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
 
               END IF               
 
