@@ -19,7 +19,7 @@
 !# 3.) boundary_igetNBoundComp
 !#     -> Get the number of bonudary components 
 !#
-!# 4.) boundary_dgetNsegments
+!# 4.) boundary_igetNsegments
 !#     -> Get the number of boundary segments in a boundary component
 !#
 !# 5.) boundary_dgetMaxParVal
@@ -439,7 +439,7 @@ MODULE boundary
 
 !<function>
 
-  INTEGER FUNCTION boundary_dgetNsegments(rboundary, iboundCompIdx)
+  INTEGER FUNCTION boundary_igetNsegments(rboundary, iboundCompIdx)
 
 !<description>
   ! This function returns the number of boundary segments in
@@ -447,7 +447,7 @@ MODULE boundary
 !</description>
 
 !<result>
-  ! Parametric length of boundary component iboundCompIdx.
+  ! Number of boundary segments on boundary component iboundCompIdx.
 !</result>
 
 !<input>
@@ -468,7 +468,7 @@ MODULE boundary
   if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
     CALL output_line ('iboundCompIdx out of bounds!', &
                       OU_CLASS_WARNING,OU_MODE_STD,'boundary_dgetNsegments')
-    boundary_dgetNsegments = -1
+    boundary_igetNsegments = -1
     RETURN
   ENDIF
 
@@ -476,7 +476,7 @@ MODULE boundary
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
   
   ! Get the maximum parameter value
-  boundary_dgetNsegments = p_IsegCount(iboundCompIdx)
+  boundary_igetNsegments = p_IsegCount(iboundCompIdx)
 
   END FUNCTION 
 
@@ -541,7 +541,7 @@ MODULE boundary
   
   p_rboundary%iboundarycount = p_rboundary%iboundarycount_g
   
-  ! Allocate an array containing handles. Each handle Each handle refers
+  ! Allocate an array containing handles. Each handle refers
   ! to integer data for a boundary component.
   CALL storage_new1D("boundary_read", "h_Idbldatavec_handles", &
                   INT(p_rboundary%iboundarycount,I32), ST_INT, &
