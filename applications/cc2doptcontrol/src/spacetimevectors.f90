@@ -9,6 +9,9 @@
 !# a nonstationary simulation where the timestep length and the number of
 !# timesteps is fixed.
 !#
+!# Making use of the externalstorage.f90 library, vectors can be held on
+!# external memory storage devices.
+!#
 !# The module provides the following subroutines:
 !#
 !# 1.) sptivec_initVector
