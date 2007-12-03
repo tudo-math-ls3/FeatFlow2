@@ -2555,9 +2555,10 @@ CONTAINS
     call tria_genFacesAtElement3D     (rtriangulation)
     call tria_genNeighboursAtElement3D(rtriangulation)
     call tria_genEdgesAtElement3D     (rtriangulation)
-    ! call tria_genElementsAtEdge3D
+    call tria_genElementsAtEdge3D     (rtriangulation)
     ! I_ElementsAtEdge3d als liste
     ! I_ElementsAtEdge2d als liste
+    
     ! call tria_genVerticesAtEdge3D
     ! faces have global numbers
     ! nvt+nmt+1 = first face
@@ -3325,6 +3326,8 @@ CONTAINS
     CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
     
+    ! in 3d this is a list because there no fixed number
+    ! of elements at an edge
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IelementsAtEdge .EQ. ST_NOHANDLE) THEN
       Isize = (/2,rtriangulation%NMT/)
@@ -3347,8 +3350,9 @@ CONTAINS
     
     ! Loop through all elements and all edges on the elements
     !$OMP PARALLEL DO PRIVATE(ive,iedge)
+    ! all elements
     DO iel = 1,UBOUND(p_IedgesAtElement,2)
-      
+      ! loop 1-4
       DO ive = 1,UBOUND(p_IedgesAtElement,1)
 
         ! Is there a neighbour?
@@ -6854,7 +6858,7 @@ CONTAINS
 !</subroutine>    
 
   ! local variables
-  integer :: i,j,k, NVFACE
+  integer :: i,j,k, NVFACE,iae
   
   integer, dimension(:,:), pointer :: p_idata3d
     
@@ -7253,13 +7257,27 @@ CONTAINS
   
   integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
   integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer, dimension(:), pointer :: p_IelementsAtVertex
   integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
-  INTEGER :: ive, iveneighbour
-  integer(prec_elementidx) :: iel, ielneighbour
+  integer :: ive, iveneighbour
+  integer(prec_elementidx) :: iel,ied, ielneighbour,iSCElement
   integer(prec_edgeidx) :: iedge
   integer(i32), dimension(2) :: Isize
   
+  integer(prec_vertexidx) :: iVertex1, iVertex2, iVGlobal1, iVGlobal2
+  integer(prec_vertexidx) :: iVertexAtEdge1,iVertexAtEdge2
   
+  ! list of local edges
+  integer, dimension(2,12) :: Iedges
+  
+  integer :: i
+  
+  ! initialize the local edges
+  Iedges= reshape((/1,2,2,3,3,4,4,1,1,5,2,6,3,7,4,8,5,6,6,7,7,8,8,5/),&
+  (/2,12/))
+  
+  ! check if the arrays are present      
   if (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
     call output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
@@ -7274,27 +7292,262 @@ CONTAINS
 
   ! Get the arrays.
   call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
   call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+  ! get the elements at vertex array
+  call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+  ! Get the index array.
+  call storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
+       p_IelementsAtVertexIdx)
+  
     
-  ! Do we have (enough) memory for that array?
-  if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
-    call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
-    call storage_new2D ('tria_genEdgesAtElement2D', 'KMID', &
+  ! size of I_edgesAtElement
+  Isize=(/rtriangulation%NEE, rtriangulation%NEL/)
+ 
+  ! allocate memory 
+  call storage_new2D ('tria_genEdgesAtElement2D', 'KMID', &
         Isize, ST_INT, &
         rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
-  else
-    call storage_getsize2D (rtriangulation%h_IedgesAtElement, Isize)
-    if (Isize(2) .NE. rtriangulation%NEL) then
-      ! If the size is wrong, reallocate memory.
-      call storage_realloc ('tria_genEdgesAtElement2D', &
-          rtriangulation%NEL, rtriangulation%h_IedgesAtElement, &
-          ST_NEWBLOCK_NOINIT, .FALSE.)
-      Isize(2) = rtriangulation%NEL
-    end if
-  end if
   
+  ! Fill IedgesAtElement with 0. That's important in case some
+  ! elements in the array are not tackled when searching for edges
+  ! (e.g. in meshes where triangles and quads are mixed).
+  call storage_clear (rtriangulation%h_IedgesAtElement)
+
+  ! get the pointer to the memory
+  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    
+  ! iedge counts the edges and specifies the last given edge number.
+  ! The numbering starts with NVT, the first edge gets the number NVT+1.
+  iedge = rtriangulation%NVT
   
+  ! loop over all elements
+  do iel=1,rtriangulation%NEL
+  
+    ! loop over all edges at the element
+    do ied=1, rtriangulation%NEE
+    
+      ! get the local vertex indices of the current edge
+      iVertex1 = Iedges(1,ied)
+      iVertex2 = Iedges(2,ied)
+    
+      ! get the corresponding global vertex numbers
+      iVGlobal1 = p_IverticesAtElement(iVertex1,iel)
+      iVGlobal2 = p_IverticesAtElement(iVertex2,iel)
+      
+      ! get the element with the lowest element number
+      ! that contains the edge consisting of the
+      ! vertices iVGlobal1 and iVGlobal2
+      call tria_smallestCommonElement(rtriangulation, &
+                   iVGlobal1, iVGlobal2,iel,iSCElement) 
+                   
+      
+      ! if the smallest common element index greater or equal to
+      ! the current iel the edge does not yet have an index
+      ! so assign an index to the edge                   
+      if(iSCElement >= iel) then
+      
+      ! increment edge number
+      iedge = iedge + 1
+      
+      ! assign the edge number
+      p_IedgesAtElement(ied,iel) = iedge
+      
+      else
+      ! the smallest common element index is less than the current iel
+      ! the edge already has a number, so                   
+      ! search for edge (iVertex1,iVertex2) in the smallest common element
+      
+      do i=1,rtriangulation%NEE
+      
+          ! get the indices of the current edge of iSCElement
+          iVertexAtEdge1=p_IVerticesAtElement(Iedges(1,i),iSCElement)
+          iVertexAtEdge2=p_IVerticesAtElement(Iedges(2,i),iSCElement)
+          
+          ! for better readability ... ;)
+          ! if iVGlobal1 == iVertexAtEdge1 and iVGlobal2 == iVertexAtEdge2
+          if( (iVGlobal1 == iVertexAtEdge1) & 
+              .and. (iVGlobal2 == iVertexAtEdge2) .or. &
+              ! or iVGlobal1==iVertexAtEdge2 and iVGlobal2==iVertexAtEdge1
+              (iVGlobal1 == iVertexAtEdge2) .and. &
+              (iVGlobal2 == iVertexAtEdge1)) then
+          
+          ! assign the edge number
+          p_IedgesAtElement(ied,iel) = p_IedgesAtElement(i,iSCElement)
+          
+          ! the edge was found we can break out of the loop
+          exit
+              
+          end if
+      
+      end do ! end i
+      
+      end if
+    
+    end do ! end ied
+  
+  end do ! end iel
+  
+  ! Save the correct NMT.
+  rtriangulation%NMT = iedge-rtriangulation%NVT
   
   end subroutine ! end tria_genEdgesAtElement3D
+  
+!====================================================================    
+!<subroutine>
+  subroutine tria_smallestCommonElement(rtriangulation, iVGlobal1, iVGlobal2, iel, iSCElement)       
+  
+!<description>
+! this routine computes the element with the lowest element number
+! that contains the edge consisting of vertices iVGlobal1 and iVGlobal2
+! and returns it in iSCElement
+!</description>
+
+!<input>  
+  integer(prec_vertexidx), intent(in) :: iVGlobal1, iVGlobal2, iel
+  type(t_triangulation), intent(in) :: rtriangulation  
+!</input>
+  
+!<output>  
+  integer(prec_elementidx), intent(out) :: iSCElement  
+!</output>
+  
+!</subroutine>
+
+! local variables
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer, dimension(:), pointer :: p_IelementsAtVertex
+  
+  integer(prec_elementidx) :: ive11, ive12, ive21, ive22
+  
+  ! used for looping
+  integer(prec_elementidx) :: i,j
+  
+  integer(prec_elementidx) :: iel1, iel2
+
+  ! get the elements at vertex array
+  call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+  ! Get the index array.
+  call storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
+       p_IelementsAtVertexIdx)
+       
+  iSCElement = iel
+       
+  ive11 = p_IelementsAtVertexIdx(iVGlobal1)
+  ive12 = p_IelementsAtVertexIdx(iVGlobal1+1)-1
+  
+  ive21 = p_IelementsAtVertexIdx(iVGlobal2)       
+  ive22 = p_IelementsAtVertexIdx(iVGlobal2+1)-1
+  
+  ! loop over all the elements attached to vertex iVGloval1
+  do i = ive11, ive12
+    
+    ! current element at vertex iVGlobal1
+    iel1 = p_IelementsAtVertex(i)
+    
+    ! loop over all elements attached to vertex iVGlobal2
+    do j = ive21, ive22
+    
+      ! get the current element at vertex iVGlobal2
+      iel2 = p_IelementsAtVertex(j) 
+      
+      ! check the vertices share element iel1
+      if( ( iel2 == iel1) .and. (iel2 < iSCElement  ) ) then
+        iSCElement = iel2      
+      end if
+      
+    end do ! end j
+  end do ! end i       
+
+  ! done...
+
+  end subroutine ! end tria_smallestCommonElement
+
+!====================================================================    
+!<subroutine>  
+  subroutine tria_genElementsAtEdge3D(rtriangulation)
+  
+!<description>
+  ! This routine generates information about the elements adjacent to each 
+  ! edge IelementsAtEdge (KMID). 
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement, IneighboursAtElement.
+  ! NMT must be set up correctly.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<input>  
+  type(t_triangulation), intent(in) :: rtriangulation  
+!</input>
+    
+  
+!</subroutine>  
+  ! local variables
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtEdge
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
+  integer :: ive
+  integer(prec_elementidx) :: iel
+  integer(prec_vertexidx) :: NVT
+  integer(prec_edgeidx) :: iedge
+  integer(i32), dimension(2) :: Isize
+
+!  ! Is everything here we need?
+!  if (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+!    call output_line ('IverticesAtElement not available!', &
+!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
+!    call sys_halt()
+!  end if
+!
+!  if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
+!    call output_line ('IedgesAtElement not available!', &
+!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
+!    call sys_halt()
+!  end if
+!
+!  if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
+!    call output_line ('IneighboursAtElement not available!', &
+!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
+!    call sys_halt()
+!  end if
+!
+!  if (rtriangulation%NMT .EQ. 0) then
+!    call output_line ('Edge information (NMT) not initialised!', &
+!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
+!    call sys_halt()
+!  end if
+!
+!  ! Get the arrays.
+!  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+!  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+!  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+!      p_IneighboursAtElement)
+!    
+!  ! Do we have (enough) memory for that array?
+!  if (rtriangulation%h_IelementsAtEdge .EQ. ST_NOHANDLE) then
+!    Isize = (/2,rtriangulation%NMT/)
+!    call storage_new2D ('tria_genElementsAtEdge2D', 'KMID', &
+!        Isize, ST_INT, &
+!        rtriangulation%h_IelementsAtEdge, ST_NEWBLOCK_NOINIT)
+!  else
+!    call storage_getsize2D (rtriangulation%h_IelementsAtEdge, Isize)
+!    if (Isize(2) .NE. rtriangulation%NMT) then
+!      ! If the size is wrong, reallocate memory.
+!      call storage_realloc ('tria_genElementsAtEdge2D', &
+!          rtriangulation%NMT, rtriangulation%h_IelementsAtEdge, &
+!          ST_NEWBLOCK_NOINIT, .FALSE.)
+!    end if
+!  end if
+!    
+!  call storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
+!    
+!  ! nvt shorthand  
+!  NVT = rtriangulation%NVT
+  
+  
+  end subroutine ! end tria_genElementsAtEdge3D
+
 
 END MODULE
