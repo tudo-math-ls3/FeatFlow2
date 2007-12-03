@@ -9,9 +9,6 @@
 !# a nonstationary simulation where the timestep length and the number of
 !# timesteps is fixed.
 !#
-!# The module provides automatic functionality to write out vectors to
-!# external memory storage in case there is too much memory allocated.
-!#
 !# The module provides the following subroutines:
 !#
 !# 1.) sptivec_initVector
