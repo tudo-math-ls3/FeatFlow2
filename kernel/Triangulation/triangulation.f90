@@ -74,10 +74,13 @@
 !# 16.) tria_exportTriFile
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
-!# 17.) tria_readTriFile3D
+!# 17.) tria_getNeighbourVertex
+!#      -> Calculates the vertex number of the neighbour vertex of a 
+!#         vertex on an edge.
+!#
+!# 18.) tria_readTriFile3D
 !#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
 !#         information.
-!#
 !#
 !# Auxiliary routines:
 !#
@@ -2778,6 +2781,50 @@ CONTAINS
     END DO
   
   END FUNCTION
+
+  !************************************************************************
+
+!<subroutine>
+
+  ELEMENTAL SUBROUTINE tria_getNeighbourVertex(ivertex,ivt1,ivt2,ineighbour)
+
+!<description>
+  ! Calculates the vertex number of the neighbour vertex of a vertex on an
+  ! edge.
+  !
+  ! ivt1 and ivt2 are the vertex numbers of two vertices connected
+  ! by an edge. ivertex is either ivt1 or ivt2.
+  ! The result of this routine is the number of the neighbour vertex
+  ! of ivertex, i.e. if ivertex=ivt1, ineighbour=ivt2 and if
+  ! ivertex=ivt2, ineighbour=ivt1.
+!</description>
+
+!<input>
+  ! Vertex number. Either ivt1 or ivt2.
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivertex
+  
+  ! Vertex number of one vertex adjacent to an edge.
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivt1
+
+  ! Vertex number of the other vertex adjacent to that edge.
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivt2
+!</input>
+
+!<output>
+  ! Vertex number of the neighbour of ivertex.
+  INTEGER(PREC_VERTEXIDX), INTENT(OUT) :: ineighbour
+!</output>
+
+!</subroutine>
+
+    ! Note: Directly implementing this formula into the program
+    ! code brings more speed :-)
+    ! But to have a reference not to forget the formula, we have
+    ! this routine...
+    
+    ineighbour = ivt1 + ivt2 - ivertex
+    
+  END SUBROUTINE 
 
 !************************************************************************
 
