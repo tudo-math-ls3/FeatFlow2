@@ -109,9 +109,6 @@ MODULE spacetimevectors
     
     ! A list of handles (dimension 0:ntimesteps) to double-precision arrays 
     ! which save the data of the ntimesteps+1 data subvectors. 
-    ! A handle number > 0 indicates that the vector data
-    ! is appearent in memory. A handle number < 0 indicates that the array
-    ! is written to disc and has to be read in before it can be used.
     ! A value ST_NOHANDLE indicates that there is currently no data stored
     ! at that timestep.
     INTEGER, DIMENSION(:), POINTER :: p_IdataHandleList => NULL()
@@ -204,12 +201,7 @@ CONTAINS
       DO i=0,rspaceTimeVector%ntimesteps
         IF (rspaceTimeVector%p_IdataHandleList(i) .NE. ST_NOHANDLE) THEN
         
-          IF (rspaceTimeVector%p_IdataHandleList(i) .GT. 0) THEN
-            CALL exstor_free (rspaceTimeVector%p_IdataHandleList(i))
-          ELSE IF (rspaceTimeVector%p_IdataHandleList(i) .LT. 0) THEN
-            PRINT *,'external data not implemented!'
-            STOP
-          END IF
+          CALL exstor_free (rspaceTimeVector%p_IdataHandleList(i))
           
         END IF
       END DO
@@ -261,13 +253,6 @@ CONTAINS
     
     IF (rvector%NEQ .NE. rspaceTimeVector%NEQ) THEN
       CALL output_line('Vector size invalid!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
-      CALL sys_halt()
-    END IF
-
-    IF ((rspaceTimeVector%p_IdataHandleList(isubvector) .NE. ST_NOHANDLE) .AND. &
-        (rspaceTimeVector%p_IdataHandleList(isubvector) .LT. 0)) THEN
-      CALL output_line('external data not implemented!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
       CALL sys_halt()
     END IF
@@ -335,13 +320,6 @@ CONTAINS
       RETURN
     END IF
 
-    IF ((rspaceTimeVector%p_IdataHandleList(isubvector) .NE. ST_NOHANDLE) .AND. &
-        (rspaceTimeVector%p_IdataHandleList(isubvector) .LT. 0)) THEN
-      CALL output_line('external data not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
-      CALL sys_halt()
-    END IF
-    
     ! Get the vector data. 
     !
     ! Don't use storage_copy, as this might give errors in case the array
@@ -453,17 +431,6 @@ CONTAINS
     ! This will be used to evaluate the quadratic polynomial.
     dreltime = dabstime-REAL(itimestep2,DP)
     
-    IF (((rspaceTimeVector%p_IdataHandleList(itimestep1) .NE. ST_NOHANDLE) .AND. &
-         (rspaceTimeVector%p_IdataHandleList(itimestep1) .LT. 0)) .OR. &
-        ((rspaceTimeVector%p_IdataHandleList(itimestep2) .NE. ST_NOHANDLE) .AND. &
-         (rspaceTimeVector%p_IdataHandleList(itimestep2) .LT. 0)) .OR. &
-        ((rspaceTimeVector%p_IdataHandleList(itimestep3) .NE. ST_NOHANDLE) .AND. &
-         (rspaceTimeVector%p_IdataHandleList(itimestep3) .LT. 0))) THEN
-      CALL output_line('external data not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
-      CALL sys_halt()
-    END IF
-
     ! Get the vector data of the three timesteps
     ALLOCATE(p_Dsource(rspaceTimeVector%NEQ,3))
     
@@ -534,13 +501,15 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
     
     IF (rx%NEQ .NE. ry%NEQ) THEN
-      PRINT *,'Space-time vectors have different size!'
-      STOP
+      CALL output_line('Space-time vectors have different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
+      CALL sys_halt()
     END IF
 
     IF (rx%ntimesteps .NE. ry%ntimesteps) THEN
-      PRINT *,'Space-time vectors have different number of timesteps!'
-      STOP
+      CALL output_line('Space-time vectors have different number of timesteps!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
+      CALL sys_halt()
     END IF
     
     Isize(1) = rx%NEQ
@@ -600,15 +569,17 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
     
     IF (rx%NEQ .NE. ry%NEQ) THEN
-      PRINT *,'Space-time vectors have different size!'
-      STOP
+      CALL output_line('Space-time vectors have different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
+      CALL sys_halt()
     END IF
 
     IF (rx%ntimesteps .NE. ry%ntimesteps) THEN
-      PRINT *,'Space-time vectors have different number of timesteps!'
-      STOP
+      CALL output_line('Space-time vectors have different number of timesteps!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
+      CALL sys_halt()
     END IF
-    
+
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
@@ -676,15 +647,17 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
     
     IF (rx%NEQ .NE. ry%NEQ) THEN
-      PRINT *,'Space-time vectors have different size!'
-      STOP
+      CALL output_line('Space-time vectors have different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      CALL sys_halt()
     END IF
 
     IF (rx%ntimesteps .NE. ry%ntimesteps) THEN
-      PRINT *,'Space-time vectors have different number of timesteps!'
-      STOP
+      CALL output_line('Space-time vectors have different number of timesteps!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      CALL sys_halt()
     END IF
-    
+
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
@@ -813,7 +786,8 @@ CONTAINS
 
     ! Simply set the "empty" flag to TRUE.
     ! When restoreing data with getTimestepData, that routine will return a zero vector.
-    rx%p_Dscale(:) = 0.0_DP
+    ! rx%p_Dscale(:) = 0.0_DP
+    CALL lalg_clearVectorDble (rx%p_Dscale(:))
 
   END SUBROUTINE
 
@@ -853,7 +827,8 @@ CONTAINS
     !!END DO
 
     ! Scale the scaling factors of all subvectors with dscale.
-    rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
+    ! rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
+    CALL lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
 
   END SUBROUTINE
 
@@ -1242,7 +1217,8 @@ CONTAINS
     END DO
     
     ! The vector is scaled by 1.0.
-    rx%p_Dscale(:) = 1.0_DP
+    ! rx%p_Dscale(:) = 1.0_DP
+    CALL lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
     CALL lsyssc_releaseVector (rvector)
