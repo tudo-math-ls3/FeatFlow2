@@ -7204,8 +7204,48 @@ CONTAINS
 !</subroutine>
   ! local variables
   
-  integer, dimension(:,:), pointer :: p_IverticesAtElement
-  integer, dimension(:,:), pointer :: p_IneighboursAtElement
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
+  INTEGER :: ive, iveneighbour
+  integer(prec_elementidx) :: iel, ielneighbour
+  integer(prec_edgeidx) :: iedge
+  integer(i32), dimension(2) :: Isize
+  
+  
+  if (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+    call output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
+    call sys_halt()
+  end if
+
+  if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
+    call output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
+    call sys_halt()
+  end if
+
+  ! Get the arrays.
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+    
+  ! Do we have (enough) memory for that array?
+  if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
+    call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
+    call storage_new2D ('tria_genEdgesAtElement2D', 'KMID', &
+        Isize, ST_INT, &
+        rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
+  else
+    call storage_getsize2D (rtriangulation%h_IedgesAtElement, Isize)
+    if (Isize(2) .NE. rtriangulation%NEL) then
+      ! If the size is wrong, reallocate memory.
+      call storage_realloc ('tria_genEdgesAtElement2D', &
+          rtriangulation%NEL, rtriangulation%h_IedgesAtElement, &
+          ST_NEWBLOCK_NOINIT, .FALSE.)
+      Isize(2) = rtriangulation%NEL
+    end if
+  end if
+  
   
   
   end subroutine ! end tria_genEdgesAtElement3D
