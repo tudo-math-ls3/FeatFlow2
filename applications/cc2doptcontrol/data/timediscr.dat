@@ -29,7 +29,7 @@ dtimeMax = 1.0                           # TIMEMX
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 2                          # NITNS
+niterations = 8                          # NITNS
 
 # Minimum level in time.
 TIMENLMIN = 1
@@ -78,7 +78,7 @@ cspaceTimeSolverType = 2
 #     (at the cost of assembly time and stability of the linear solver/
 #     preconditioner).
 
-ctypePreconditioner = 1
+ctypePreconditioner = 2
 
 # Minimum number of steps
 
@@ -91,7 +91,7 @@ nmaxIterations     = 20
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 5 1E-8 0.001
+depsRel            = 1E-5 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -191,6 +191,18 @@ ioutputLevel       = 3
 
 icycle = 1
 
+# Minimum value for the adaptive coarse grid correction.
+# Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
+# Standard = 1.0
+
+dalphamin = 1.0
+
+# Minimum value for the adaptive coarse grid correction.
+# Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
+# Standard = 1.0
+
+dalphamax = 1.0
+
 ###############
 [TIME-SMOOTHER]
 ###############
@@ -211,7 +223,7 @@ domega = 0.7
 domegaPrecond = 1.0
 
 # Number of smoothing steps
-nsmSteps = 2
+nsmSteps = 1
 
 # Switch smoothing on/off.
 # =1: do smoothing as pre- and/or postsmoother, respectively.
@@ -240,31 +252,32 @@ slinearSolver        = 'CC-MULTIGRID'
 # =2: Iterative Block Forward-Backward Gauss-Seidel
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
-ctypeCoarseGridSolver = 4
+# =5: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
+ctypeCoarseGridSolver = 5
 
 # Minimum number of time-iterations on the coarsest time-mesh
 nminIterations = 1
 
 # Maximum number of time-iterations on the coarsest time-mesh
-nmaxIterations = 1000
+nmaxIterations = 100
 
 # Damping parameter
 domega = 1.0
 
 # Damping parameter of a preconditioner; only used for cascaded solvers
 # (e.g. CG(...)) or SOR
-domegaPrecond = 0.7 1.0
+domegaPrecond = 1.0 0.7 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 1E-10 
+depsRel            = 1E-5 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-15
+depsAbs            = 1E-10 5
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
