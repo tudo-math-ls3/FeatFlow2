@@ -89,7 +89,7 @@
 !#         problems with $Q_2/QP_1$ discretisation. Full VANCA approach.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#
-!# 19.) vanca_init2DNSSOCQ1TQ0fullCoupConf
+!# 19.) vanca_init2DNavierStokesOptC
 !#      -> Initialise the VANCA solver for 2D Navier-Stokes optimal control
 !#         problems. Specialised $\tilde Q1/Q0$ version, full VANCA approach.
 !#
@@ -434,9 +434,26 @@ MODULE vanca
     ! Pointer to diagonal entries in the mass matrix
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalM => NULL()
 
-    ! Pointer to the matrix entries of the mass matrix or NULL
-    ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM => NULL()
+    ! Pointer to the matrix entries of the mass matrix at position
+    ! (1,4) and (2,5) in the pimal system, or NULL if not present.
+    ! Has the same structure as the mass matrix.
+    REAL(DP), DIMENSION(:), POINTER             :: p_DM14 => NULL()
+
+    ! Pointer to the coupling system at position (4,1), or NULL if not present
+    ! Has the same structure as the mass matrix.
+    REAL(DP), DIMENSION(:), POINTER             :: p_DR41 => NULL()
+
+    ! Pointer to the coupling system at position (5,2), or NULL if not present
+    ! Has the same structure as the mass matrix.
+    REAL(DP), DIMENSION(:), POINTER             :: p_DR52 => NULL()
+
+    ! Pointer to the coupling system at position (4,2), or NULL if not present
+    ! Has the same structure as the mass matrix.
+    REAL(DP), DIMENSION(:), POINTER             :: p_DR42 => NULL()
+
+    ! Pointer to the coupling system at position (5,1), or NULL if not present
+    ! Has the same structure as the mass matrix.
+    REAL(DP), DIMENSION(:), POINTER             :: p_DR51 => NULL()
 
 
     ! Pointer to the column structure of the B/D-matrices.
@@ -1883,31 +1900,36 @@ CONTAINS
           IF (i .LE. 2) THEN
             IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
                 .NE. 0) THEN
-              PRINT *,'vanca_check2DSPQ1TQ0: Transposed submatrices not supported.'
+              CALL output_line ('Transposed submatrices not supported.',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
               CALL sys_halt()
             END IF
           ELSE
             IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
                 .EQ. 0) THEN
-              PRINT *,'vanca_check2DSPQ1TQ0: B1/B2 submatrices must be virtually'
-              PRINT *,'transposed (LSYSSC_MSPEC_TRANSPOSED)!'
+              CALL output_line ('B1/B2 submatrices must be virtually '//&
+                  'transposed (LSYSSC_MSPEC_TRANSPOSED)',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
               CALL sys_halt()
             END IF
           END IF
           
           IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
               (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            PRINT *,'vanca_check2DSPQ1TQ0: Only format 7 and 9 matrices supported.'
+            CALL output_line ('Only format 7 and 9 matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
             CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            PRINT *,'vanca_check2DSPQ1TQ0: Only double precision matrices supported.'
+            CALL output_line ('Only double precision matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
             CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) THEN
-            PRINT *,'vanca_check2DSPQ1TQ0: Scaled matrices not supported.'
+            CALL output_line ('Scaled matrices not supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
             CALL sys_halt()
           END IF
           
@@ -1919,13 +1941,15 @@ CONTAINS
     ! that of A(2,3) must be identical to A(3,2).
     IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      PRINT *,'vanca_check2DSPQ1TQ0: Structure of B1 and B1^T different!'
+      CALL output_line ('Structure of B1 and B1^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
       CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
         (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      PRINT *,'vanca_check2DSPQ1TQ0: Structure of B2 and B2^T different!'
+      CALL output_line ('Structure of B2 and B2^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DSPQ1TQ0simple')
       CALL sys_halt()
     END IF
     
@@ -3980,7 +4004,9 @@ CONTAINS
                                   domega * FF(1+lofsp)
       ELSE IF (ilapackInfo .LT. 0) THEN
 
-        PRINT *,'ERROR: LAPACK(DGESV) solver'      
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ1TQ0fullConf')
 
       END IF
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
@@ -4459,7 +4485,9 @@ CONTAINS
                                  
       ELSE IF (ilapackInfo .LT. 0) THEN
       
-        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ1TQ0fullCoupConf')
         
       END IF
 
@@ -4922,7 +4950,9 @@ CONTAINS
                                         domega * FF(3+lofsp)
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        PRINT *,'ERROR: LAPACK(DGESV) solver'      
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ2QP1simple')
         
       END IF
 
@@ -5383,7 +5413,9 @@ CONTAINS
                                         
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ2QP1simpleConf')
         
       END IF
 
@@ -5837,7 +5869,9 @@ CONTAINS
                                         domega * FF(3+lofsp)
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ2QP1full')
         
       END IF
 
@@ -6302,7 +6336,9 @@ CONTAINS
                                         domega * FF(3+lofsp)
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DSPQ2QP1fullConf')
         
       END IF
 
@@ -6848,7 +6884,8 @@ CONTAINS
       
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        CALL output_line('LAPACK(DGESV) solver failed!',&
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSQ1TQ0fullCoupConf')
         
       END IF
@@ -7150,7 +7187,7 @@ CONTAINS
       END IF
       
       CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
-          rvanca%rvanca2DNavStOptC%p_DM )
+          rvanca%rvanca2DNavStOptC%p_DM14 )
           
       CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
           rvanca%rvanca2DNavStOptC%p_KcolM)
@@ -7164,6 +7201,59 @@ CONTAINS
         rvanca%rvanca2DNavStOptC%p_KdiagonalM => rvanca%rvanca2DNavStOptC%p_KldM
       END IF
       
+    END IF
+
+    ! Get the coupling matrix from the primal to the dual system. 
+    ! This may be the mass matrix or a completely decoupled matrix.
+    ! In all cases, the submatrices have the same structure as the mass
+    ! matrix, so if the structure of the mass matrix is not yet set,
+    ! we have to fetch it!
+    IF (lsysbl_isSubmatrixPresent (rmatrix,4,1)) THEN
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),&
+          rvanca%rvanca2DNavStOptC%p_DR41 )
+
+      IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavStOptC%p_KcolM)) THEN
+        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,1),&
+            rvanca%rvanca2DNavStOptC%p_KcolM)
+        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,1), &
+            rvanca%rvanca2DNavStOptC%p_KldM )
+      END IF
+    END IF
+
+    IF (lsysbl_isSubmatrixPresent (rmatrix,4,2)) THEN
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),&
+          rvanca%rvanca2DNavStOptC%p_DR42 )
+
+      IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavStOptC%p_KcolM)) THEN
+        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,2),&
+            rvanca%rvanca2DNavStOptC%p_KcolM)
+        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,2), &
+            rvanca%rvanca2DNavStOptC%p_KldM )
+      END IF
+    END IF
+
+    IF (lsysbl_isSubmatrixPresent (rmatrix,5,1)) THEN
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,1),&
+          rvanca%rvanca2DNavStOptC%p_DR51 )
+
+      IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavStOptC%p_KcolM)) THEN
+        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,1),&
+            rvanca%rvanca2DNavStOptC%p_KcolM)
+        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,1), &
+            rvanca%rvanca2DNavStOptC%p_KldM )
+      END IF
+    END IF
+
+    IF (lsysbl_isSubmatrixPresent (rmatrix,5,2)) THEN
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,2),&
+          rvanca%rvanca2DNavStOptC%p_DR52 )
+
+      IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavStOptC%p_KcolM)) THEN
+        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,2),&
+            rvanca%rvanca2DNavStOptC%p_KcolM)
+        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,2), &
+            rvanca%rvanca2DNavStOptC%p_KldM )
+      END IF
     END IF
 
     ! Get the multiplication factors of the submatrices.
@@ -7321,8 +7411,11 @@ CONTAINS
               rvector, rrhs, domega,p_IelementList)
 
         END SELECT          
+
       ELSE
-        PRINT *,'VANCA: Unsupported discretisation!'
+
+        CALL output_line ('Unsupported discretisation.',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokesOptC')
         CALL sys_halt()
         
       END IF
@@ -7407,6 +7500,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45
     REAL(DP), DIMENSION(:), POINTER             :: p_DA44,p_DA45,p_DA54,p_DA55
+    REAL(DP), DIMENSION(:), POINTER             :: p_DR41,p_DR52,p_DR51,p_DR42
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM
@@ -7506,7 +7600,15 @@ CONTAINS
     ! because of the initialisation of the structure!
     p_KcolM => rvanca%p_KcolM
     p_KldM => rvanca%p_KldM
-    p_DM => rvanca%p_DM
+    p_DM => rvanca%p_DM14
+    
+    ! Coupling matrix in the dual equation at position (4:5,1:2). For a standard
+    ! system, there is A(4,1) = A(5,2) = M and A(5,1) = A(4,2) = 0.
+    ! For a Newton system, this block is completely decoupled!
+    p_DR41 => rvanca%p_DR41
+    p_DR42 => rvanca%p_DR42
+    p_DR51 => rvanca%p_DR51
+    p_DR52 => rvanca%p_DR52
     
     ! Diagonal submatrices A33 and A66 (if they exist)
     IF (rvanca%Dmultipliers(3,3) .NE. 0.0_DP) THEN
@@ -7911,7 +8013,7 @@ CONTAINS
         END DO
         
         ! The mass matrix defect.
-        IF (ASSOCIATED(p_KldM)) THEN
+        IF (ASSOCIATED(p_DM)) THEN
           ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
           daux = rvanca%Dmultipliers(1,4)
           
@@ -7929,35 +8031,97 @@ CONTAINS
             !   ( du  ) = ( du  ) - (  .   .   .  aM   .   .  ) ( u  )
             !   ( dv  )   ( dv  )   (  .   .   .   .  aM   .  ) ( v  )
             !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
-            !   ( dl1 )   ( dl1 )   ( bM   .   .   .   .   .  ) ( l1 )
-            !   ( dl2 )   ( dl2 )   (  .  bM   .   .   .   .  ) ( l2 )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
             !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
 
             FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
             FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
 
-            FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
-            FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
-            
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
             DO k=1,nnvel
               IF (j .EQ. IdofGlobal(k)) THEN
                 AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
                 AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
-                
-                AA (inode+lofsl1,k+lofsu) = daux2*p_DM(ia)
-                AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
-                ! AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
-                ! AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
+                EXIT
+              END IF
+            END DO          
+          END DO
+        END IF
+
+        ! The defect in the coupling matrix from the primal to the dual system
+        IF (ASSOCIATED(p_DR41)) THEN
+          ! Get the multipliers
+          daux = rvanca%Dmultipliers(4,1)
+          daux2 = rvanca%Dmultipliers(5,2)
+          
+          ia1 = p_KldM(idof)
+          ia2 = p_KldM(idof+1)-1
+          DO ia = ia1,ia2
+
+            J = p_KcolM(ia)
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   ( bR   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .  bR   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            FF(inode+lofsl1) = FF(inode+lofsl1)-daux*p_DR41(ia)*p_Dvector(J+ioffsetu)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DR52(ia)*p_Dvector(J+ioffsetv)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsl1,k+lofsu) = daux*p_DR41(ia)
+                AA (inode+lofsl2,k+lofsv) = daux2*p_DR52(ia)
+                EXIT
+              END IF
+            END DO          
+          END DO
+        END IF
+
+        IF (ASSOCIATED(p_DR51)) THEN
+          ! Get the multipliers
+          daux = rvanca%Dmultipliers(5,1)
+          daux2 = rvanca%Dmultipliers(4,2)
+          
+          ia1 = p_KldM(idof)
+          ia2 = p_KldM(idof+1)-1
+          DO ia = ia1,ia2
+
+            J = p_KcolM(ia)
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .  bR   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   ( bR   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DR42(ia)*p_Dvector(J+ioffsetv)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-daux*p_DR51(ia)*p_Dvector(J+ioffsetu)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsl2,k+lofsu) = daux*p_DR51(ia)
+                AA (inode+lofsl1,k+lofsv) = daux2*p_DR42(ia)
                 EXIT
               END IF
             END DO          
           END DO
         END IF
         
-        ! Ok, up to now, all loops are clean and vectoriseable. Now the only
-        ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+        ! THe next loop will determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
@@ -8086,7 +8250,9 @@ CONTAINS
       
       ELSE IF (ilapackInfo .LT. 0) THEN
         
-        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        CALL output_line (&
+            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupConf')
         
       END IF
 
@@ -8310,7 +8476,7 @@ CONTAINS
     ! because of the initialisation of the structure!
     p_KcolM => rvanca%p_KcolM
     p_KldM => rvanca%p_KldM
-    p_DM => rvanca%p_DM
+    p_DM => rvanca%p_DM14
     
     ! Diagonal submatrices A33 and A66 (if they exist)
     IF (rvanca%Dmultipliers(3,3) .NE. 0.0_DP) THEN
@@ -8896,7 +9062,7 @@ CONTAINS
         ELSE IF (ilapackInfo .LT. 0) THEN
           
           CALL output_line (&
-              'LAPACK(DGESV) solver failed',&
+              'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
           
         END IF
@@ -9234,7 +9400,7 @@ CONTAINS
         ELSE IF (ilapackInfo .LT. 0) THEN
           
           CALL output_line (&
-              'LAPACK(DGESV) solver failed',&
+              'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
           
         END IF
@@ -9571,7 +9737,7 @@ CONTAINS
         ELSE IF (ilapackInfo .LT. 0) THEN
           
           CALL output_line (&
-              'LAPACK(DGESV) solver failed',&
+              'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
           
         END IF

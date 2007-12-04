@@ -613,6 +613,9 @@ MODULE linearsolver
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTDIRECT    = 5
 
   ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTOC        = 20
+
+  ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
@@ -5208,7 +5211,7 @@ CONTAINS
                                 rsolverNode%p_rsubnodeVANCA%rvanca,&
                                 VANCAPC_2DNAVIERSTOKES,VANCATP_FULL)
 
-    CASE (LINSOL_VANCA_2DFNAVSTOCDIRECT )
+    CASE (LINSOL_VANCA_2DFNAVSTOC,LINSOL_VANCA_2DFNAVSTOCDIRECT )
       ! Full VANCA for Navier-Stokes optimal control
       CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANCA%rvanca,&
