@@ -1386,12 +1386,12 @@ CONTAINS
       ! add it to dnorm.
       IF (PRESENT(dnorm)) THEN
         IF (rproblem%MT_outputLevel .GE. 2) THEN
-          CALL output_line ('||D_'//TRIM(sys_siL(isubstep,2))//'|| = '//&
+          CALL output_line ('||D_'//TRIM(sys_siL(isubstep,10))//'|| = '//&
               TRIM(sys_sdEL(&
                   SQRT(lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)&
                   ),10)) )
           DO icp=1,6
-            CALL output_line ('  ||D_'//TRIM(sys_siL(isubstep,2))//'^'//TRIM(sys_siL(icp,2))&
+            CALL output_line ('  ||D_'//TRIM(sys_siL(isubstep,10))//'^'//TRIM(sys_siL(icp,2))&
                 //'|| = '//&
                 TRIM(sys_sdEL(&
                     SQRT(lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2)&
@@ -2269,6 +2269,7 @@ CONTAINS
         CASE (5)
           ! Forward backward Gauss Seidel as preconditioner
           CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          !CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
 
           ! BiCGStab solver        
           CALL sptils_initBiCGStab (rproblem,p_rcgrSolver,p_rprecond)
