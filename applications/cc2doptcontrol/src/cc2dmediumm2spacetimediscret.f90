@@ -1007,14 +1007,13 @@ CONTAINS
 
   ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
   ! coupled space-time matrix.
-  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), POINTER :: rspaceTimeMatrix
+  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
+
+  ! A space-time vector defining the current solution.
+  TYPE(t_spacetimeVector), INTENT(IN) :: rx
 !</input>
 
 !<inputoutput>
-  ! A space-time vector defining the current solution.
-  ! Is replaced by the new solution
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
   ! A second space-time vector.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
   

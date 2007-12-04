@@ -192,6 +192,9 @@ MODULE cc2dmediumm2spacetimesolver
   ! CG iteration (preconditioned) 
   INTEGER, PARAMETER :: SPTILS_ALG_CG            = 6
 
+  ! BiCGStab iteration (preconditioned) 
+  INTEGER, PARAMETER :: SPTILS_ALG_BICGSTAB      = 7
+
   ! UMFPACK solver
   INTEGER, PARAMETER :: SPTILS_ALG_UMFPACK4      = 11
 
@@ -410,14 +413,17 @@ MODULE cc2dmediumm2spacetimesolver
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     TYPE (t_sptilsSubnodeDefCorr), POINTER        :: p_rsubnodeDefCorr     => NULL()
 
-    ! Pointer to a structure for the Defect correction solver; NULL() if not set
+    ! Pointer to a structure for the CG solver; NULL() if not set
     TYPE (t_sptilsSubnodeCG), POINTER             :: p_rsubnodeCG     => NULL()
+
+    ! Pointer to a structure for the BiCGStab solver; NULL() if not set
+    TYPE (t_sptilsSubnodeBiCGStab), POINTER       :: p_rsubnodeBiCGStab => NULL()
 
     ! Pointer to a structure for the block Jacobi preconditioner
     TYPE(t_sptilsSubnodeBlockJacobi), POINTER     :: p_rsubnodeBlockJacobi => NULL()
 
     ! Pointer to a structure for the block Gauss-Seidel preconditioner
-    TYPE(t_sptilsSubnodeBlockSOR), POINTER         :: p_rsubnodeBlockSOR => NULL()
+    TYPE(t_sptilsSubnodeBlockSOR), POINTER        :: p_rsubnodeBlockSOR => NULL()
 
     ! Pointer to a structure for the multigrid preconditioner
     TYPE(t_sptilsSubnodeMultigrid), POINTER       :: p_rsubnodeMultigrid => NULL()
@@ -436,7 +442,7 @@ MODULE cc2dmediumm2spacetimesolver
 
 !<typeblock>
   
-  ! This structure realises the subnode for the BiCGStab solver.
+  ! This structure realises the subnode for the Defect correction solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
   ! t_sptilsNode structure for the solver that realises the 
   ! preconditioning.
@@ -480,6 +486,34 @@ MODULE cc2dmediumm2spacetimesolver
     ! A temporary space-time vector.
     TYPE(t_vectorBlock)               :: rtempVectorSpace
   
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the BiCGStab solver.
+  ! The entry p_rpreconditioner points either to NULL() or to another
+  ! t_linsolNode structure for the solver that realises the 
+  ! preconditioning.
+  
+  TYPE t_sptilsSubnodeBiCGStab
+  
+    ! Temporary vectors to use during the solution process
+    TYPE(t_spaceTimeVector), DIMENSION(6) :: RtempVectors
+    
+    ! Another temporary vector for right- and symmetrical preconditioning
+    TYPE(t_vectorBlock) :: rprecondTemp
+    
+    ! A pointer to the solver node for the preconditioner or NULL(),
+    ! if no preconditioner is used.
+    TYPE(t_sptilsNode), POINTER       :: p_rpreconditioner            => NULL()
+
+    ! A temporary space-time vector.
+    TYPE(t_vectorBlock)               :: rtempVectorSpace
+    
   END TYPE
   
 !</typeblock>
@@ -557,6 +591,9 @@ MODULE cc2dmediumm2spacetimesolver
     ! in initStructure and released in doneStructure.
     TYPE(t_spacetimeVector)             :: rsolutionVector
 
+    ! A temporary vector for the adaptive coarse grid correction
+    TYPE(t_spacetimeVector)             :: rtempCGCvector
+
     ! A temporary vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
     TYPE(t_spacetimeVector)             :: rtempVector
@@ -623,15 +660,25 @@ MODULE cc2dmediumm2spacetimesolver
     !  2=W-cycle.
     INTEGER                       :: icycle                   = 0
     
-    ! Array of t_sptilsMGLevelInfo structures for all the levels the MG solver
-    ! should handle.
-    TYPE(t_sptilsMGLevelInfo), DIMENSION(:), POINTER :: p_Rlevels => NULL()
-    
     ! INPUT PARAMETER: Minimum level in p_Rlevels.
     INTEGER                       :: NLMIN                    = 1
     
     ! INPUT PARAMETER: Maximum level in p_Rlevels.
     INTEGER                       :: NLMAX                    = 1
+
+    ! INPUT PARAMETER: Minimum value for adaptive coarse grid correction.
+    ! A value of dalphamin=dalphamax deactivates the adaptive coarse
+    ! grid correction. Standard = 1.0.
+    REAL(DP)                      :: dalphamin                = 1.0_DP
+    
+    ! INPUT PARAMETER: Maximum value for adaptive coarse grid correction.
+    ! A value of dalphamin=dalphamax deactivates the adaptive coarse
+    ! grid correction. Standard = 1.0.
+    REAL(DP)                      :: dalphamax                = 1.0_DP
+    
+    ! Array of t_sptilsMGLevelInfo structures for all the levels the MG solver
+    ! should handle.
+    TYPE(t_sptilsMGLevelInfo), DIMENSION(:), POINTER :: p_Rlevels => NULL()
     
   END TYPE
   
@@ -726,6 +773,8 @@ CONTAINS
     CALL sptils_setMatrixDefCorr (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_CG)
     CALL sptils_setMatrixCG (rsolverNode,Rmatrices)
+  CASE (SPTILS_ALG_BiCGStab)
+    CALL sptils_setMatrixBiCGStab (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_BLOCKJACOBI)
     CALL sptils_setMatrixBlockJacobi (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_BLOCKSOR)
@@ -778,6 +827,8 @@ CONTAINS
       CALL sptils_initStructureDefCorr (rsolverNode,ierror)
     CASE (SPTILS_ALG_CG)
       CALL sptils_initStructureCG (rsolverNode,ierror)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_initStructureBiCGStab (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_initStructureBlockJacobi (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -833,6 +884,8 @@ CONTAINS
       CALL sptils_initDataDefCorr (rsolverNode,ierror)
     CASE (SPTILS_ALG_CG)
       CALL sptils_initDataCG (rsolverNode,ierror)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_initDataBiCGStab (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_initDataBlockJacobi (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -945,6 +998,8 @@ CONTAINS
       CALL sptils_doneDataDefCorr (rsolverNode)
     CASE (SPTILS_ALG_CG)
       CALL sptils_doneDataCG (rsolverNode)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_doneDataBiCGStab (rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneDataBlockJacobi (rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -985,6 +1040,8 @@ CONTAINS
       CALL sptils_doneStructureDefCorr (rsolverNode)
     CASE (SPTILS_ALG_CG)
       CALL sptils_doneStructureCG (rsolverNode)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_doneStructureBiCGStab (rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneStructureBlockJacobi (rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -1042,6 +1099,8 @@ CONTAINS
       CALL sptils_doneDefCorr (p_rsolverNode)
     CASE (SPTILS_ALG_CG)
       CALL sptils_doneCG (p_rsolverNode)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_doneBiCGStab (p_rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneBlockJacobi (p_rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -1284,6 +1343,8 @@ CONTAINS
       CALL sptils_precDefCorr (rsolverNode,rd)
     CASE (SPTILS_ALG_CG)
       CALL sptils_precCG (rsolverNode,rd)
+    CASE (SPTILS_ALG_BICGSTAB)
+      CALL sptils_precBiCGStab (rsolverNode,rd)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_precBlockJacobi (rsolverNode,rd)
     CASE (SPTILS_ALG_BLOCKSOR)
@@ -4205,7 +4266,7 @@ CONTAINS
 
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
-  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   INTEGER, INTENT(OUT) :: ierror
 !</output>
@@ -4225,7 +4286,7 @@ CONTAINS
     REAL(DP), DIMENSION(90) :: Dinfo
     
     ! A-priori we have no error...
-    ierror = LINSOL_ERR_NOERROR
+    ierror = SPTILS_ERR_NOERROR
 
     ! We have to create a global matrix first!
     ! Call the assembly routine to assemble the global block matrix.
@@ -4893,6 +4954,719 @@ END SUBROUTINE
   END SUBROUTINE
 
 ! *****************************************************************************
+! Routines for the BiCGStab solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE sptils_initBiCGStab (rproblem,p_rsolverNode,p_rpreconditioner)
+  
+!<description>
+  ! Creates a t_sptilsNode solver structure for the BiCGStab solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! The problem structure that defines the problem.
+  ! A pointer to this is saved in the solver node, so the problem structure
+  ! must not be released before the solver node is released.
+  TYPE(t_problem), TARGET :: rproblem
+
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! will be used.
+  TYPE(t_sptilsNode), POINTER, OPTIONAL   :: p_rpreconditioner
+!</input>
+  
+!<output>
+  ! A pointer to a t_sptilsNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_sptilsNode), POINTER         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+
+    ! Create a default solver structure
+    CALL sptils_initSolverGeneral(rproblem,p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = SPTILS_ALG_BICGSTAB
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = SPTILS_ABIL_CHECKDEF + &
+                                SPTILS_ABIL_USESUBSOLVER
+    
+    ! Allocate the subnode for BiCGStab.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    ALLOCATE(p_rsolverNode%p_rsubnodeBiCGStab)
+    
+    ! Attach the preconditioner if given. 
+    
+    IF (PRESENT(p_rpreconditioner)) THEN 
+      p_rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner => p_rpreconditioner
+    END IF
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_setMatrixBiCGStab (rsolverNode,Rmatrices)
+  
+!<description>
+  
+  ! This routine is called if the system matrix changes.
+  ! The routine calls sptils_setMatrices for the preconditioner of BiCGStab
+  ! to inform also that one about the change of the matrix pointer.
+  
+!</description>
+  
+!<input>
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(:), INTENT(IN)   :: Rmatrices
+!</input>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the BiCGStab solver
+  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Do we have a preconditioner given? If yes, call the general initialisation
+    ! routine to initialise it.
+    
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_setMatrices (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
+                              Rmatrices)
+    END IF
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_initStructureBiCGStab (rsolverNode, ierror)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the UMFPACK4 solver
+  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! SPTILS_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: isubgroup,i,ntimesteps,NEQ
+    TYPE(t_sptilsSubnodeBiCGStab), POINTER :: p_rsubnode
+    
+    ! A-priori we have no error...
+    ierror = SPTILS_ERR_NOERROR
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there's not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_initStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
+                                isubgroup)
+    END IF
+    
+    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. 
+    ! Allocate that here! Use the default data type prescribed in the solver 
+    ! structure for allocating the temp vectors.
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%niterations
+    NEQ = dof_igetNDofGlobBlock(rsolverNode%rmatrix%p_rspaceTimeDiscretisation%&
+        p_rlevelInfo%p_rdiscretisation)
+    DO i=1,6
+      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQ,ntimesteps)
+    END DO
+    
+    ! Allocate memory for a spatial temp vector.
+    CALL lsysbl_createVecBlockByDiscr (&
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation,&
+        rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
+    rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBC => &
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
+    rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBCfict => &
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_initDataBiCGStab (rsolverNode, ierror)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the UMFPACK4 solver
+  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! SPTILS_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
+!</subroutine>
+
+    ! A-priori we have no error...
+    ierror = SPTILS_ERR_NOERROR
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there's not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_initData (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, ierror)
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_doneDataBiCGStab (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneData.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the UMFPACK4 solver
+  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there's not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the done routine of the preconditioner.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_doneData (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_doneStructureBiCGStab (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the UMFPACK4 solver
+  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    TYPE(t_sptilsSubnodeBiCGStab), POINTER :: p_rsubnode
+    
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there's not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_doneStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    END IF
+    
+    ! Release temporary data if associated
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    IF (p_rsubnode%RtempVectors(1)%NEQ .NE. 0) THEN
+      DO i=6,1,-1
+        CALL sptivec_releaseVector(p_rsubnode%RtempVectors(i))
+      END DO
+    END IF
+    
+    CALL lsysbl_releaseVector (rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE sptils_doneBiCGStab (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the BiCGStab solver from
+  ! the heap. In particular, if a preconditioner is attached to the solver
+  ! structure, it's also released from the heap by calling 
+  ! linsol_releaseSolver for it.
+  ! This DONE routine is declared as RECURSIVE to permit a clean
+  ! interaction with linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! A pointer to a t_sptilsNode structure of the BiCGStab solver.
+  TYPE(t_sptilsNode), POINTER         :: rsolverNode
+!</input>
+  
+!</subroutine>
+
+    ! Check if there's a preconditioner attached. If yes, release it.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL sptils_releaseSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    END IF
+    
+    ! Release memory if still associated
+    CALL sptils_doneDataBiCGStab (rsolverNode)
+    CALL sptils_doneStructureBiCGStab (rsolverNode)
+    
+    ! Release the BiCGStab subnode
+    DEALLOCATE(rsolverNode%p_rsubnodeBiCGStab)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  RECURSIVE SUBROUTINE sptils_precBiCGStab (rsolverNode,rd)
+  
+!<description>
+  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+  !
+  ! The implementation follows the original paper introducing BiCGStab:
+  !   van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
+  !   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
+  !   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the BiCGStab solver
+  TYPE(t_sptilsNode), INTENT(INOUT), TARGET :: rsolverNode
+   
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_spaceTimeVector), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
+  REAL(DP) :: drho1,drho0,dfr
+  INTEGER :: ite,i
+
+  ! The system matrix
+  TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+  TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  INTEGER :: nminIterations, niteResOutput
+  
+  ! Whether to filter/prcondition
+  LOGICAL bprec,bfilter
+  
+  ! Our structure
+  TYPE(t_sptilsSubnodeBiCGStab), POINTER :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  TYPE(t_spaceTimeVector), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx
+  TYPE(t_sptilsNode), POINTER :: p_rprecSubnode
+  
+    ! Solve the system!
+  
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rmatrix => rsolverNode%rmatrix
+
+    ! Check the parameters
+    IF ((rd%ntimesteps .EQ. 0) .OR. (p_rspaceTimeDiscr%niterations .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%niterations .NE. rd%ntimesteps) ) THEN
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    ! Minimum number of iterations
+ 
+    nminIterations = MAX(rsolverNode%nminIterations,0)
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    
+    ! Iteration when the residuum is printed:
+
+    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+
+    ! Set pointers to the temporary vectors
+    p_DR   => p_rsubnode%RtempVectors(1)
+    p_DR0  => p_rsubnode%RtempVectors(2)
+    p_DP   => p_rsubnode%RtempVectors(3)
+    p_DPA  => p_rsubnode%RtempVectors(4)
+    p_DSA  => p_rsubnode%RtempVectors(5)
+    p_rx   => p_rsubnode%RtempVectors(6)
+    
+    IF (bprec) THEN
+      p_rprecSubnode => p_rsubnode%p_rpreconditioner
+    END IF
+    
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    CALL sptivec_clearVector (p_rx)
+      
+    ! Initialize used vectors with zero
+      
+    CALL sptivec_clearVector(p_DP)
+    CALL sptivec_clearVector(p_DPA)
+    
+    ! Initialise the iteration vector with zero.
+
+    ! Initialization
+
+    drho0  = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
+    ! is also our initial defect.
+
+    CALL sptivec_copyVector(rd,p_DR)
+    
+    ! Filter the defect for boundary conditions in space and time.
+    CALL c2d2_implementInitCondDefect (&
+        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
+    CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
+
+    IF (bprec) THEN
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      CALL sptils_precondDefect (p_rprecSubnode,p_DR)
+    END IF
+    
+    ! Get the norm of the residuum
+    dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+    IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+              (dres .LE. 1E99_DP))) dres = 0.0_DP
+
+    ! Initialize starting residuum
+      
+    rsolverNode%dinitialDefect = dres
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      CALL sptivec_clearVector(p_rx)
+      ite = 0
+      rsolverNode%dfinalDefect = dres
+          
+    ELSE
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        CALL output_line ('Space-Time-BiCGStab: Iteration '// &
+             TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+      END IF
+
+      CALL sptivec_copyVector(p_DR,p_DR0)
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      DO ite = 1,rsolverNode%nmaxIterations
+      
+        rsolverNode%icurrentIteration = ite
+
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+
+        IF (drho0*domega0 .EQ. 0.0_DP) THEN
+          ! Should not happen
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            CALL output_line ('Space-Time-BiCGStab: Iteration prematurely stopped! '//&
+                 'Correction vector is zero!')
+          END IF
+
+          ! Some tuning for the output, then cancel.
+
+          rsolverNode%iresult = -1
+          rsolverNode%iiterations = ITE-1
+          EXIT
+          
+        END IF
+
+        dbeta=(drho1*dalpha)/(drho0*domega0)
+        drho0 = drho1
+
+        CALL sptivec_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
+        CALL sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
+
+        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+            p_DP,p_DPA, 1.0_DP,0.0_DP)
+        
+        ! Filter the defect for boundary conditions in space and time.
+        CALL c2d2_implementInitCondDefect (&
+            p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
+        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+            p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
+
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL sptils_precondDefect (p_rprecSubnode,p_DPA)
+        END IF
+
+        dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
+        
+        IF (dalpha .EQ. 0.0_DP) THEN
+          ! We are below machine exactness - we can't do anything more...
+          ! May happen with very small problems with very few unknowns!
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            CALL output_line ('Space-Time-BiCGStab: Convergence failed, ALPHA=0!')
+            rsolverNode%iresult = -2
+            EXIT
+          END IF
+        END IF
+        
+        dalpha = drho1/dalpha
+
+        CALL sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
+
+        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+            p_DR,p_DSA, 1.0_DP,0.0_DP)
+        
+        ! Filter the defect for boundary conditions in space and time.
+        CALL c2d2_implementInitCondDefect (&
+            p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
+        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+            p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
+
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL sptils_precondDefect (p_rprecSubnode,p_DSA)
+        END IF
+        
+        domega1 = sptivec_scalarProduct (p_DSA,p_DR)
+        domega2 = sptivec_scalarProduct (p_DSA,p_DSA)
+        
+        IF (domega1 .EQ. 0.0_DP) THEN
+          domega0 = 0.0_DP
+        ELSE
+          IF (domega2 .EQ. 0.0_DP) THEN
+            IF (rsolverNode%ioutputLevel .GE. 2) THEN
+              CALL output_line ('Space-Time-BiCGStab: Convergence failed: omega=0!')
+              rsolverNode%iresult = -2
+              EXIT
+            END IF
+          END IF
+          domega0 = domega1/domega2
+        END IF
+
+        CALL sptivec_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
+        CALL sptivec_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
+
+        CALL sptivec_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
+
+        ! Get the norm of the new (final?) residuum
+        dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+     
+        rsolverNode%dfinalDefect = dfr
+
+        ! Test if the iteration is diverged
+        IF (sptils_testDivergence(rsolverNode,dfr)) THEN
+          CALL output_line ('Space-Time-BiCGStab: Solution diverging!')
+          rsolverNode%iresult = 1
+          EXIT
+        END IF
+     
+        ! At least perform nminIterations iterations
+        IF (ite .GE. nminIterations) THEN
+        
+          ! Check if the iteration converged
+          IF (sptils_testConvergence(rsolverNode,dfr)) EXIT
+          
+        END IF
+
+        ! print out the current residuum
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (MOD(ite,niteResOutput).EQ.0)) THEN
+          CALL output_line ('Space-Time-BiCGStab: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        END IF
+
+      END DO
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      IF (ite .GT. rsolverNode%nmaxIterations) &
+        ite = rsolverNode%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+      IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+          (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
+          (rsolverNode%iresult .GE. 0)) THEN
+        CALL output_line ('Space-Time-BiCGStab: Iteration '// &
+            TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+      END IF
+
+    END IF
+
+    rsolverNode%iiterations = ite
+    
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    CALL sptivec_copyVector (p_rx,rd)
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+    IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+    
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
+        rsolverNode%dconvergenceRate = &
+                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                    (1.0_DP/REAL(rsolverNode%iiterations,DP))
+      END IF
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        CALL output_lbrk()
+        CALL output_line ('Space-Time-BiCGStab statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+        ELSE
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
+        END IF
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+
+      END IF
+
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+        CALL output_line (&
+              'Space-Time-BiCGStab: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+      END IF
+      
+    ELSE
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+    END IF  
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
 ! Multigrid preconditioner
 ! *****************************************************************************
 
@@ -5158,6 +5932,14 @@ END SUBROUTINE
             p_rmgLevel%rtempVector,NEQ,ntimesteps)
       END IF
       
+      ! If adaptive coarse grid correction is activated, we need a temporary
+      ! vector for the adaptive coarse grid correction on every level.
+      IF (rsolverNode%p_rsubnodeMultigrid%dalphamin .NE. &
+          rsolverNode%p_rsubnodeMultigrid%dalphamax) THEN
+        CALL sptivec_initVector (&
+            p_rmgLevel%rtempCGCvector,NEQ,ntimesteps)
+      END IF
+      
       ! Create a block temp vector for the interlevel projection
       CALL lsysbl_createVecBlockByDiscr(&
           p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation,&
@@ -5350,6 +6132,13 @@ END SUBROUTINE
       IF (ilev .GT. 1) THEN
         CALL sptivec_releaseVector (p_rmgLevel%rrhsVector)
         CALL sptivec_releaseVector (p_rmgLevel%rtempVector)
+      END IF
+      
+      ! If adaptive coarse grid correction is activated, we need a temporary
+      ! vector for the adaptive coarse grid correction on every level.
+      IF (rsolverNode%p_rsubnodeMultigrid%dalphamin .NE. &
+          rsolverNode%p_rsubnodeMultigrid%dalphamax) THEN
+        CALL sptivec_releaseVector (p_rmgLevel%rtempCGCvector)
       END IF
 
       ! Release the temp vector for prolongation/restriction
@@ -6007,8 +6796,31 @@ END SUBROUTINE
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
-              ! Step length control. By default, choose step length 1.0.
-              dstep = 1.0_DP
+              ! Step length control. By default, choose step length dalphamin
+              ! which is usually = 1.0.
+              dstep = p_rsubnode%dalphamin ! 1.0_DP
+              
+              ! If adaptive coarse grid correction is activated, get the
+              ! step length parameter by energy minimisation.
+              IF (p_rsubnode%dalphamin .NE. p_rsubnode%dalphamax) THEN
+              
+                ! Calculate the optimal alpha.
+                CALL calcCGCenergyMin (rsolverNode%p_rproblem,&
+                    p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
+                    p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                    p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
+                    p_rmatrix,&
+                    p_rsubnode%p_Rlevels(ilev)%rtempCGCvector,&
+                    p_rsubnode%p_Rlevels(ilev)%rprjVector,&
+                    p_rsubnode%dalphamin, p_rsubnode%dalphamax, dstep)
+                
+                ! Some output
+                IF (rsolverNode%ioutputLevel .GE. 2) THEN
+                  CALL output_line ('Coarse grid correction factor: '//&
+                    'dstep = '//TRIM(sys_sdEL(dstep,15)) )
+                END IF
+                
+              END IF
               
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to
@@ -6229,6 +7041,99 @@ END SUBROUTINE
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
     END IF  
+  
+  CONTAINS
+  
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE calcCGCenergyMin (rproblem,&
+                    rsolutionVector,rcorrectionVector,rrhsVector,rmatrix,&
+                    rtempVector,rtempSpaceVector,dalphamin, dalphamax, dstep)
+                  
+    ! Calculates the optimal coarse grid correction factor using
+    ! energy minimisation.
+    
+    ! Problem structure
+    TYPE(t_problem), INTENT(INOUT) :: rproblem
+    
+    ! Uncorrected solution vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rsolutionVector
+    
+    ! Correction vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rcorrectionVector
+
+    ! RHS vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rrhsVector
+    
+    ! Corresponding space-time matrix
+    TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rmatrix
+    
+    ! Temp vector
+    TYPE(t_spacetimeVector), INTENT(INOUT) :: rtempVector
+    
+    ! A temp vector, only in space
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rtempSpaceVector
+    
+    ! Minimum/maximum value for the correction factor
+    REAL(DP), INTENT(IN) :: dalphamin,dalphamax
+    
+    ! OUTPUT: Calculated step length parameter
+    REAL(DP), INTENT(OUT) :: dstep
+    
+      ! local variables
+      REAL(DP) :: dnom, ddenom
+    
+      ! The formula is just as for standard multigrid.
+      ! With u=uncorrected solution, c=correction vector, 
+      ! f=rhs vector, calculate
+      !
+      !           ( f-Au, c )
+      !  dstep = -------------
+      !            ( Ac, c )
+      !
+      ! Calculate the nominator
+      CALL sptivec_copyVector (rrhsVector,rtempVector)
+      CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
+          rsolutionVector,rtempVector, -1.0_DP,1.0_DP)
+
+      ! Implement boundary conditions into the vector.
+      CALL c2d2_implementInitCondDefect (&
+          rmatrix%p_rspaceTimeDiscretisation,&
+          rtempVector, rtempSpaceVector)
+      CALL c2d2_implementBCdefect (rproblem,&
+          rmatrix%p_rspaceTimeDiscretisation,&
+          rtempVector, rtempSpaceVector)
+
+      ! Calculate the denominator:
+      
+      CALL sptivec_clearVector (rtempVector)
+      CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
+          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP)
+      
+      ! Implement boundary conditions into the vector.
+      CALL c2d2_implementInitCondDefect (&
+          rmatrix%p_rspaceTimeDiscretisation,&
+          rtempVector, rtempSpaceVector)
+      CALL c2d2_implementBCdefect (rproblem,&
+          rmatrix%p_rspaceTimeDiscretisation,&
+          rtempVector, rtempSpaceVector)
+
+      ! Get the denominator      
+      ddenom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
+      
+      ! Trick to avoid div/0
+      IF (ddenom .EQ. 0.0_DP) ddenom = 1.0_DP
+      
+      ! Get the nominator      
+      dnom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
+
+      ! Result...
+      dstep = dnom / ddenom
+                   
+      ! Force it to be in the allowed range.
+      dstep = MIN(dalphamax,MAX(dalphamin,dstep))
+                    
+    END SUBROUTINE
   
   END SUBROUTINE
 

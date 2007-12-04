@@ -2190,7 +2190,7 @@ CONTAINS
       END IF
       
       SELECT CASE (i)
-      CASE (0,1,2,3,4)
+      CASE (0,1,2,3,4,5)
         ! Initialise the spatial preconditioner for Block Jacobi
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
@@ -2203,6 +2203,9 @@ CONTAINS
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev),&
             slinearSolver,ctypePreconditioner)
          
+      CASE DEFAULT
+        PRINT *,'Unknown preconditioner/smoother: ',i
+        CALL sys_halt()
       END SELECT
 
       ! Generate an interlevel projection structure for that level.
@@ -2245,6 +2248,7 @@ CONTAINS
           CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
 
         CASE (2)
+          ! Forward backward Gauss Seidel
           CALL sptils_initBlockFBGS (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
 
           ! Defect correction solver
@@ -2261,6 +2265,13 @@ CONTAINS
           ! UMFACK Gauss elimination
           CALL sptils_initUMFPACK4 (rproblem,p_rcgrSolver)
           p_rcgrSolver%domega = domega
+
+        CASE (5)
+          ! Forward backward Gauss Seidel as preconditioner
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+
+          ! BiCGStab solver        
+          CALL sptils_initBiCGStab (rproblem,p_rcgrSolver,p_rprecond)
 
         CASE DEFAULT
           PRINT *,'Unknown solver: ',ctypeCoarseGridSolver
@@ -2364,6 +2375,13 @@ CONTAINS
                                 'depsAbs', p_rmgSolver%depsAbs, 1E-5_DP)
     CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
                              'istoppingCriterion', p_rmgSolver%istoppingCriterion, 0)
+
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
+                                'dalphaMin', p_rmgSolver%p_rsubnodeMultigrid%dalphaMin,&
+                                1.0_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
+                                'dalphaMax', p_rmgSolver%p_rsubnodeMultigrid%dalphaMax,&
+                                1.0_DP)
     
     ! Initialise the basic parameters of the system matrices on all levels.
     DO ilev=1,SIZE(RspatialPrecond)
