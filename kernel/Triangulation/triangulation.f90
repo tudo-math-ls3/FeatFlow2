@@ -446,6 +446,10 @@ MODULE triangulation
     ! Number of edges in the domain belonging to elements
     INTEGER(PREC_EDGEIDX)    :: NMT = 0
     
+    ! total number of faces in the domain
+    INTEGER(PREC_EDGEIDX)    :: NAT = 0
+    
+    
     ! Number of elements in the domain; 
     ! corresponding to SIZE(RverticesOnElement)
     INTEGER(PREC_ELEMENTIDX) :: NEL = 0
@@ -763,6 +767,12 @@ MODULE triangulation
     ! Elements Adjacent to an Edge. 
     ! Handle to h_IelementsAtEdge3d 
     INTEGER        :: h_IelementsAtEdge3d = ST_NOHANDLE
+    
+    ! the faces at an element
+    INTEGER        :: h_IfacesAtElement = ST_NOHANDLE
+    
+    ! the verticesAtFace
+    INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
     
   END TYPE
 
@@ -2578,12 +2588,14 @@ CONTAINS
     
     ! faces have global numbers
     ! nvt+nmt+1 = first face
-    
+    call tria_genFacesAtElement       (rtriangulation)
+    call tria_genVerticesAtFace       (rtriangulation)
+    call tria_genElementsAtFace       (rtriangulation) 
     ! call genGlobalFaceNumbers
-    ! call ElementsAtFace
+    
     ! call FacesAtEdge(list)
     ! call EdgesAtFace(global face, global edge)
-    ! call VerticesAtFace
+    
     ! call FacesAtVertex(liste)
     
     
@@ -7643,9 +7655,299 @@ CONTAINS
     
   
 !</subroutine>  
+  
   ! local variables
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtElement
+  
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtEdge
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
+  integer :: ive
+  integer(prec_elementidx) :: iel 
+  integer(prec_edgeidx) :: NMT,ilocEdge
+  integer(prec_edgeidx) :: iedge,iglobalEdge,ielementNumber
+  integer(prec_vertexidx) :: iVertexGlobal1, iVertexGlobal2
+  
+  ! list of local edges
+  integer, dimension(2,12) :: Iedges
+  
+  integer, dimension(2)    :: Isize
+  
+  ! initialize the local edges
+  Iedges= reshape((/1,2,2,3,3,4,4,1,1,5,2,6,3,7,4,8,5,6,6,7,7,8,8,5/),&
+  (/2,12/))
+  ! nmt shorthand
+  NMT = rtriangulation%NMT
+
+  ! get the arrays
+  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  call storage_getbase_int(rtriangulation%h_IelementsAtEdgeIdx3d,p_IelementsAtEdgeIdx3d)
+  call storage_getbase_int(rtriangulation%h_IelementsAtEdge3d,p_IelementsAtEdge3d)
+  
+  Isize = (/2,rtriangulation%NMT/)
+  
+  ! allocate memory
+  if(rtriangulation%h_IverticesAtEdge == ST_NOHANDLE) then
+    call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtEdge', &
+        int(Isize), ST_INT, &
+        rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+
+  
+  ! loop over all edges (with global edge numbers)
+  do iedge=1,rtriangulation%NMT
+      ! get an element that is attached to that edge
+      iel = p_IelementsAtEdge3d(p_IelementsAtEdgeIdx3d(iedge))
+      ! loop over all local edges
+      do ilocEdge = 1,rtriangulation%NEE
+        ! get the global edge number
+        iglobalEdge = p_IedgesAtElement(ilocEdge,iel)-rtriangulation%NVT
+        ! check if this edge's global number equal to the current edge
+        if(iedge == iglobalEdge) then
+          ! get the global indices of the vertices attached to that edge
+          iVertexGlobal1 = p_IverticesAtElement(Iedges(1,ilocEdge),iel)
+          iVertexGlobal2 = p_IverticesAtElement(Iedges(2,ilocEdge),iel)
+          
+          ! assign the vertex numbers            
+          p_IverticesAtEdge(1,iedge)=iVertexGlobal1
+          p_IverticesAtEdge(2,iedge)=iVertexGlobal2
+          
+          exit
+          
+        end if ! iedge == iglobalEdge
+      
+      end do ! end iel
+      
+  end do ! end iedge  
   
   end subroutine ! end tria_genVerticesAtEdge3D
+
+!====================================================================    
+!<subroutine>  
+  subroutine tria_genFacesAtElement(rtriangulation)
+!<description>
+  ! this routine builds the FacesAtElement array and
+  ! assigns global face numbers
+!</description>
+  
+  ! it is super easy just use IneighboursAtElement(iface,iel)
+
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+  
+!</subroutine>  
+
+  ! local variables
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  
+  
+  integer(prec_vertexidx)  :: ive, ifaceNeighbour
+  integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
+
+  ! list of local face numbers
+  integer, dimension(4,6) :: Ifaces
+  
+  integer, dimension(2) :: Isize
+  
+  ! initialize the local face numbers
+  Ifaces= reshape((/1,2,3,4, 1,2,5,6, 2,3,6,7, 3,4,7,8, 1,4,5,8, 5,6,7,8/),&
+  (/4,6/))
+  
+  ! face numbering starts at NVT+NMT+1
+  ifaceGlobal = rtriangulation%NVT+rtriangulation%NMT
+  
+  ! allocate memory and get pointers
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
+  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+      p_IneighboursAtElement)
+      
+  Isize = (/rtriangulation%NAE,rtriangulation%NEL/)
+  
+  ! allocate memory
+  if(rtriangulation%h_IfacesAtElement == ST_NOHANDLE) then
+    call storage_new2d('tria_genElementsAtEdge3D', 'IfacesAtElement', &
+        int(Isize), ST_INT, &
+        rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  ! get the pointer
+  call storage_getbase_int2D(rtriangulation%h_IfacesAtElement,p_IfacesAtElement)
+  
+  ! loop over all elements
+  do iel=1,rtriangulation%NEL
+    ! loop over all local faces
+    do iface = 1,rtriangulation%NAE
+      
+      ! check if a face number was already assigned
+      if(p_IneighboursAtElement(iface,iel) == 0 .or. &
+         p_IneighboursAtElement(iface,iel) >  iel) then
+
+        ! a face number was not yet assigned
+        ! increment face number
+        ifaceGlobal = ifaceGlobal + 1
+      
+        ! assign the global face number
+        p_IfacesAtElement(iface,iel) = ifaceGlobal
+      
+      else
+      
+        ! a face number was already assigned
+        
+        ! get the element number of the neighbour
+        ineighbour = p_IneighboursAtElement(iface,iel)
+        
+        ifaceNeighbour = 1
+        do 
+         if(iel == p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
+         ifaceNeighbour = ifaceNeighbour + 1
+        end do
+        
+        ifaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
+        
+        ! assign the global face number
+        p_IfacesAtElement(iface,iel) = ifaceNumber
+      
+      end if
+    
+    end do ! end iface
+  
+  end do ! end iel
+  
+  ! number of faces in total
+  rtriangulation%NAT = ifaceGlobal-rtriangulation%NMT - &
+                       rtriangulation%NVT 
+  
+  end subroutine ! end tria_genFacesAtElement
+  
+  
+!====================================================================      
+!<subroutine>  
+  subroutine tria_genVerticesAtFace(rtriangulation)
+!<description>
+  ! this routine builds the VerticesAtFace array and
+!</description>
+  
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+  
+!</subroutine>    
+
+  ! local variables
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IverticesAtFace
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  
+  
+  integer(prec_vertexidx)  :: ive, ifaceNeighbour
+  integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
+
+  ! list of local face numbers
+  integer, dimension(4,6) :: Ifaces
+  
+  integer, dimension(2) :: Isize
+  
+  ! initialize the local face numbers
+  Ifaces= reshape((/1,2,3,4, 1,2,5,6, 2,3,6,7, 3,4,7,8, 1,4,5,8, 5,6,7,8/),&
+  (/4,6/))
+  
+  ! allocate memory and get pointers
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
+  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+      p_IneighboursAtElement)
+      
+  call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
+      p_IfacesAtElement)
+      
+    
+  Isize = (/4,rtriangulation%NAT/)
+  
+  ! allocate memory
+  if(rtriangulation%h_IverticesAtFace == ST_NOHANDLE) then
+    call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtFace', &
+        int(Isize), ST_INT, &
+        rtriangulation%h_IverticesAtFace, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  ! get the pointer
+  call storage_getbase_int2D(rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
+    
+  ifaceGlobal = 0
+  
+  ! loop over all elements
+  do iel=1,rtriangulation%NEL
+    ! loop over all local faces
+    do iface = 1,rtriangulation%NAE
+      
+      ! check if a face number was already assigned
+      if(p_IneighboursAtElement(iface,iel) == 0 .or. &
+         p_IneighboursAtElement(iface,iel) >  iel) then
+
+        ! a face number was not yet assigned
+        ! increment face number
+        ifaceGlobal = ifaceGlobal + 1
+      
+        ! assign the vertices at this face
+        p_IverticesAtFace(:,ifaceGlobal) = p_IverticesAtElement(ifaces(:,iface),iel)
+      
+         
+      else
+      
+        ! a face number was already assigned
+        
+        ! get the element number of the neighbour
+        ineighbour = p_IneighboursAtElement(iface,iel)
+        
+        ifaceNeighbour = 1
+        do 
+         if(iel /= p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
+         ifaceNeighbour = ifaceNeighbour + 1
+        end do
+        
+        ifaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour) - &
+                      rtriangulation%NMT - rtriangulation%NVT
+        
+        ! assign the vertices at this face
+        p_IverticesAtFace(:,ifaceNumber) = p_IverticesAtElement(ifaces(:,iface),iel)
+      
+      end if
+    
+    end do ! end iface
+  
+  end do ! end iel
+
+  end subroutine
+  
+!====================================================================      
+!<subroutine>  
+  subroutine tria_genElementsAtFace(rtriangulation) 
+!<description>
+  ! this routine builds the ElementsAtFace array 
+!</description>
+  
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+  
+!</subroutine>    
+  end subroutine
+  
 
 
 END MODULE
