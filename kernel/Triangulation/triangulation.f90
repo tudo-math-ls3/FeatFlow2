@@ -749,6 +749,21 @@ MODULE triangulation
     ! the formula for regular distributed vertices on elements is similar.
     INTEGER           :: h_DfreeVertexCoordinates = ST_NOHANDLE
     
+    ! Handle to h_IelementsAtEdgeIdx3d=array [1..NMT+1] of integer.
+    ! Index array for h_IelementsAtEdge3d of length NMT+1 for describing the
+    ! elements attached to an edge. for edge IVE, the array
+    ! p_IelementsAtEdge3d contains the indices of the elements around this
+    ! edge at the array positions
+    !     h_IelementsAtEdgeIdx3d(IVE)..h_IelementsAtEdgeIdx3d(IVE+1)-1.
+    ! By subtracting
+    !     p_IelementsAtEdgeIdx3d(IVE+1)-p_IelementsAtEdgeIdx3d(IVE)
+    ! One can get the number of elements attached to edge IVE.
+    INTEGER        :: h_IelementsAtEdgeIdx3d = ST_NOHANDLE
+    
+    ! Elements Adjacent to an Edge. 
+    ! Handle to h_IelementsAtEdge3d 
+    INTEGER        :: h_IelementsAtEdge3d = ST_NOHANDLE
+    
   END TYPE
 
 !</typeblock>
@@ -2559,18 +2574,19 @@ CONTAINS
     call tria_genNeighboursAtElement3D(rtriangulation)
     call tria_genEdgesAtElement3D     (rtriangulation)
     call tria_genElementsAtEdge3D     (rtriangulation)
-    ! I_ElementsAtEdge3d als liste
-    ! I_ElementsAtEdge2d als liste
+    call tria_genVerticesAtEdge3D     (rtriangulation)
     
-    ! call tria_genVerticesAtEdge3D
     ! faces have global numbers
     ! nvt+nmt+1 = first face
+    
     ! call genGlobalFaceNumbers
     ! call ElementsAtFace
     ! call FacesAtEdge(list)
     ! call EdgesAtFace(global face, global edge)
     ! call VerticesAtFace
     ! call FacesAtVertex(liste)
+    
+    
     ! call verticesAtBoundary
     ! call edgesAtBoundary
     ! call facesAtBoundary
@@ -2580,7 +2596,7 @@ CONTAINS
     ! CALL tria_genElementVolume3d       (rtriangulation)
     ! CALL tria_genEdgeNodalProperty3d   (rtriangulation)
     ! call tria_genFaceNodalProperty3d
-    
+    ! I_elementsAtEdge als liste    
     
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
@@ -7479,78 +7495,157 @@ CONTAINS
   ! If necessary, new memory is allocated.
 !</description>
 
-!<input>  
-  type(t_triangulation), intent(in) :: rtriangulation  
-!</input>
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+    
+  
+!</subroutine>  
+  ! local variables
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtElement
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
+  integer(prec_edgeidx), dimension(:), pointer :: p_Iaux1
+  integer :: ive
+  integer(prec_elementidx) :: iel
+  integer(prec_edgeidx) :: NMT
+  integer(prec_edgeidx) :: iedge,iglobalEdge
+  integer(i32) :: Isize,haux1
+
+  ! Is everything here we need?
+  if (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+    call output_line ('IverticesAtElement not available!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge3D')
+    call sys_halt()
+  end if
+
+  if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
+    call output_line ('IedgesAtElement not available!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge3D')
+    call sys_halt()
+  end if
+
+  if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
+    call output_line ('IneighboursAtElement not available!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge3D')
+    call sys_halt()
+  end if
+
+  if (rtriangulation%NMT .EQ. 0) then
+    call output_line ('Edge information (NMT) not initialised!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge3D')
+    call sys_halt()
+  end if
+
+  ! Get the arrays.
+  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+      p_IneighboursAtElement)
+      
+  if(rtriangulation%h_IelementsAtEdgeIdx3d == ST_NOHANDLE) then
+    call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtVertexIdx', &
+        int(rtriangulation%NMT+1,I32), ST_INT, &
+        rtriangulation%h_IelementsAtEdgeIdx3d, ST_NEWBLOCK_NOINIT)
+  end if      
+    
+  ! Fill the index array with zero.
+  call storage_clear (rtriangulation%h_IelementsAtEdgeIdx3d)
+    
+    
+  call storage_getbase_int(rtriangulation%h_IelementsAtEdgeIdx3d,p_IelementsAtEdgeIdx3d)
+    
+  ! nvt shorthand  
+  NMT = rtriangulation%NMT
+  
+  ! first we calculate the number of elements at each edge simply by counting
+    
+  ! loop over all elements
+  do iel = 1, rtriangulation%NEL
+    ! loop over all local edges
+    do iedge = 1, rtriangulation%NEE
+
+      ! iglobalEdge is the iedge-th edge at element iel
+      iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
+            
+      ! increase the number of elements by one
+      p_IelementsAtEdgeIdx3d(iglobalEdge+1) = p_IelementsAtEdgeIdx3d(iglobalEdge+1) + 1
+        
+    end do ! end iedge
+        
+  end do ! end ive
+    
+  ! set the first index to 1
+  p_IelementsAtEdgeIdx3d(1) = 1
+    
+  ! in the next step we sum up the number of elements at two
+  ! successive edges to create the index array,
+  ! thus at the penultimate position of p_IelementsAtEdgeIdx3d
+  ! we find the length of p_IelementsAtEdge3d
+  do iedge = 2, NMT+1
+      p_IelementsAtEdgeIdx3d(iedge) = p_IelementsAtEdgeIdx3d(iedge) + p_IelementsAtEdgeIdx3d(iedge-1)
+  end do
+    
+  ! set the size
+  Isize = p_IelementsAtEdgeIdx3d(rtriangulation%NMT+1)-1
+  
+  ! allocate memory
+  if(rtriangulation%h_IelementsAtEdge3d == ST_NOHANDLE) then
+    call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtEdge3d', &
+        int(Isize), ST_INT, &
+        rtriangulation%h_IelementsAtEdge3d, ST_NEWBLOCK_NOINIT)
+  end if      
+    
+  ! Fill the index array with zero.
+  call storage_clear (rtriangulation%h_IelementsAtEdge3d)
+    
+  ! get the pointer  
+  call storage_getbase_int(rtriangulation%h_IelementsAtEdge3d,p_IelementsAtEdge3d)
+
+  ! Duplicate the p_IelementsAtVertexIdx array. We use that as pointer and index
+  ! when new elements at a vertex are found.
+  haux1 = ST_NOHANDLE
+  call storage_copy (rtriangulation%h_IelementsAtEdgeIdx3d,haux1)
+  call storage_getbase_int (haux1,p_Iaux1)  
+
+  do iel = 1, rtriangulation%NEL
+    ! loop over all local edges
+    do iedge = 1, rtriangulation%NEE
+
+      ! iglobalEdge is the iedge-th edge at element iel
+      iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
+       
+      ! store the adjacency information at position p_Iaux1(ivt)        
+      p_IelementsAtEdge3d( p_Iaux1(iglobalEdge) ) = iel
+      ! increase the position of the next element in p_Iaux1(ivt)
+      p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1
+        
+    end do ! end iedge
+        
+  end do ! end ive
+    
+  call storage_free(haux1)  
+  
+  end subroutine ! end tria_genElementsAtEdge3D
+  
+!====================================================================    
+!<subroutine>  
+  subroutine tria_genVerticesAtEdge3D(rtriangulation)  
+!<description>
+! this routine assigns the Vertices at Edge array
+!</description>
+
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
     
   
 !</subroutine>  
   ! local variables
   
-  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
-  integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtEdge
-  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
-  integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
-  integer :: ive
-  integer(prec_elementidx) :: iel
-  integer(prec_vertexidx) :: NVT
-  integer(prec_edgeidx) :: iedge
-  integer(i32), dimension(2) :: Isize
-
-!  ! Is everything here we need?
-!  if (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
-!    call output_line ('IverticesAtElement not available!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-!    call sys_halt()
-!  end if
-!
-!  if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
-!    call output_line ('IedgesAtElement not available!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-!    call sys_halt()
-!  end if
-!
-!  if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
-!    call output_line ('IneighboursAtElement not available!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-!    call sys_halt()
-!  end if
-!
-!  if (rtriangulation%NMT .EQ. 0) then
-!    call output_line ('Edge information (NMT) not initialised!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-!    call sys_halt()
-!  end if
-!
-!  ! Get the arrays.
-!  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
-!  call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-!  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-!      p_IneighboursAtElement)
-!    
-!  ! Do we have (enough) memory for that array?
-!  if (rtriangulation%h_IelementsAtEdge .EQ. ST_NOHANDLE) then
-!    Isize = (/2,rtriangulation%NMT/)
-!    call storage_new2D ('tria_genElementsAtEdge2D', 'KMID', &
-!        Isize, ST_INT, &
-!        rtriangulation%h_IelementsAtEdge, ST_NEWBLOCK_NOINIT)
-!  else
-!    call storage_getsize2D (rtriangulation%h_IelementsAtEdge, Isize)
-!    if (Isize(2) .NE. rtriangulation%NMT) then
-!      ! If the size is wrong, reallocate memory.
-!      call storage_realloc ('tria_genElementsAtEdge2D', &
-!          rtriangulation%NMT, rtriangulation%h_IelementsAtEdge, &
-!          ST_NEWBLOCK_NOINIT, .FALSE.)
-!    end if
-!  end if
-!    
-!  call storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
-!    
-!  ! nvt shorthand  
-!  NVT = rtriangulation%NVT
-  
-  
-  end subroutine ! end tria_genElementsAtEdge3D
+  end subroutine ! end tria_genVerticesAtEdge3D
 
 
 END MODULE
