@@ -1868,6 +1868,9 @@ CONTAINS
     CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     
     icount = rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+
+    ! Check if quadrilaterals exists at all
+    IF (icount .EQ. 0) RETURN
     
     ! Create a new p_IverticesAtElement array for the triangular mesh.
     Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
