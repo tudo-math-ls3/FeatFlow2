@@ -26,12 +26,12 @@ nminIterations     = 1 2
 
 # Maximum number of steps
 
-nmaxIterations     = 1 100
+nmaxIterations     = 20 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-10 1E-8 0.001
+depsRel            = 1E-2 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -89,18 +89,43 @@ dalphaMax          = 10.0
 # Both names can be identical, then the same configuration is used
 # as pre- and postsmoother.
 
-spreSmootherName   = 'CC-VANCA2DQ1TP0'
-spostSmootherName  = 'CC-VANCA2DQ1TP0'
+#spreSmootherName   = 'CC-VANCA2DQ1TP0'
+#spostSmootherName  = 'CC-VANCA2DQ1TP0'
+spreSmootherName   = 'CC-BICGSTABSMOOTHER' 
+spostSmootherName  = 'CC-BICGSTABSMOOTHER' 
 
 # Name of the coarse grid solver. This is the name of another 
 # subsection in this file which describes the actual smoother.
 
-#scoarseGridSolver  = 'CC-UMFPACK'
-scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
+scoarseGridSolver  = 'CC-UMFPACK'
+#scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
 
 # ========================================================================
 # The following section describes the parameters of the VANCA smoother.
 # When a parameter is deleted or commented out, the standard value is used.
+
+#####################
+[CC-BICGSTABSMOOTHER]
+#####################
+
+# Type identifier of the solver that should be used.
+# 7=BiCGStab, 1=Defect correction
+
+isolverType        = 7
+
+# Number of smoothing steps
+
+nsmoothingSteps    = 2
+
+# Relaxation parameter
+
+domega             = 1.0 0.7 1.0
+
+ioutputLevel = 0
+
+# VANCA preconditioner
+
+spreconditioner = 'CC-VANCA2DQ1TP0'
 
 #################
 [CC-VANCA2DQ1TP0]
@@ -130,17 +155,22 @@ isolverType        = 54
 #   'direct' method, bypassing the defect correction approach.
 #   (-> specialised variant of 4, but faster)
 #
+# 20=Full VANCA for 2D Navier-Stokes optimal control problem.
 # 21=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#    Note: This doesn't seem to work!?!
+# 22=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
+# 23=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#    Note: This doesn't seem to work!?!
 
-isolverSubtype     = 21 5   # 21
+isolverSubtype     = 22 5   # 21
 
 # Number of smoothing steps
 
-nsmoothingSteps    = 8
+nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.7 1.0
+domega             = 1.0 0.7 1.0
 
 ioutputLevel = 0
 
@@ -156,15 +186,15 @@ ioutputLevel = 0
 # Type identifier of the solver that should be used.
 # 7=BiCGStab, 1=Defect correction
 
-isolverType        = 1
+isolverType        = 7 11 7
 
 # Minimum number of steps
 
-nminIterations     = 10 0
+nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 10 00
+nmaxIterations     = 1000
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -226,3 +256,4 @@ domega             = 0.7
 # 11=UMFPACK
 
 isolverType        = 11
+

@@ -91,7 +91,7 @@ nmaxIterations     = 20
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 10 2 5 1E-8 0.001
+depsRel            = 1E-2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -106,7 +106,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 2 3
+ioutputLevel       = 0 3
 
 #####################
 [TIME-POSTPROCESSING]
@@ -271,7 +271,7 @@ domegaPrecond = 1.0 0.7 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 1E-10 
+depsRel            = 1E-3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
