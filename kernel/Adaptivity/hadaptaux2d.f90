@@ -5788,9 +5788,6 @@ CONTAINS
             END IF
           END DO
 
-!!$          ! And don't forget the new vertex in the interior of the quadrilateral
-!!$          rhadapt%increaseNVT=rhadapt%increaseNVT+1
-
         CASE DEFAULT
           CALL output_line('Invalid element type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mark_refinement2D')
