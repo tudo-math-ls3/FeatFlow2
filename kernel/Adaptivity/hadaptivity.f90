@@ -258,6 +258,7 @@ MODULE hadaptivity
   IMPLICIT NONE
 
   PRIVATE
+  PUBLIC :: t_hadapt
   PUBLIC :: hadapt_initFromParameterlist
   PUBLIC :: hadapt_initFromTriangulation
   PUBLIC :: hadapt_generateRawMesh
