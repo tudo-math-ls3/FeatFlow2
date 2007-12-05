@@ -334,7 +334,7 @@ MODULE ucd
     CHARACTER(LEN=SYS_STRLEN) :: ssimTimeFormat = "(F20.5)"
     
     ! Format of the output of double-precision numbers. Fortran format string.
-    CHARACTER(LEN=SYS_STRLEN) :: sdataFormat = "(E16.8)"
+    CHARACTER(LEN=SYS_STRLEN) :: sdataFormat = "(E16.8E3)"
     
     ! An array containing the names of all the variables
     CHARACTER(LEN=SYS_NAMELEN), DIMENSION(:), POINTER :: p_SvariableNames => NULL()
