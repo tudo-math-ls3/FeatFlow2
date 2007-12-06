@@ -1782,12 +1782,6 @@ CONTAINS
               
               ! We have i-1 vertices on that element -- so what is it?
               SELECT CASE (i-1)
-              CASE (2)
-                ! Line in 1D.
-                !
-                ! Element "NEL+1"
-                WRITE(mfile,'(A)') 'line 2'
-                WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
                 
               CASE (3)
                 ! Triangle.
