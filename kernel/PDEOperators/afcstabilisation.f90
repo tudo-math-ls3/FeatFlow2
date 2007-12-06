@@ -52,7 +52,7 @@ MODULE afcstabilisation
   USE linearsystemscalar
   USE triangulation
   USE cubature
-  USE sorting
+  !USE sorting
 
   IMPLICIT NONE
   
@@ -699,7 +699,7 @@ CONTAINS
     ! Check if edge-based data structure is prepared
     IF (IAND(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .EQ. 0) THEN
       CALL output_line('Discrete operator does not provide required &
-          edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
+          &edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateSubdiagEdges')
       CALL sys_halt()
     END IF

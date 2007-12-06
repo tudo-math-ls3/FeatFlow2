@@ -2503,7 +2503,7 @@ CONTAINS
       IF (IAND(rafcstab%iSpec, AFCSTAB_LIMITER) .EQ. 0 .OR.&
           IAND(rafcstab%iSpec, AFCSTAB_FLUXES)  .EQ. 0) THEN
         CALL output_line('Stabilization does not provide precomputed fluxes &
-            and/or nodal correction factors',OU_CLASS_ERROR,OU_MODE_STD,&
+            &and/or nodal correction factors',OU_CLASS_ERROR,OU_MODE_STD,&
             'gfsc_buildResidualScalar')
         CALL sys_halt()
       END IF
