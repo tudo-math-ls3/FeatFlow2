@@ -30,8 +30,8 @@ MODULE poisson_method8
   USE spatialdiscretisation
   USE ucd
   USE pprocerror
-  USE hadaptivity
   USE hadaptaux
+  USE hadaptivity
     
   USE poisson_callback
   
