@@ -334,36 +334,46 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: NVE
+  INTEGER :: NVE, idim
   LOGICAL :: bcompatible
 
   ! Get from the element distribution the trial space and from that
   ! the number of vertices, the element expects.
   NVE = elem_igetNVE(ielementType)
+  idim = elem_igetDimension(ielementType)
   
   bcompatible = .TRUE.
   
   ! Now we directly access the cubature constants in cubature.f90!
   ! This is the only point in the kernel where this is necessary.
   
-  ! 1D?
-  IF (ccubType .LE. 99) bcompatible = .FALSE.
+  ! 1D: Line?
+  IF (ccubType .LE. 99) THEN
+    IF ((NVE .NE. 2) .OR. (idim .NE. NDIM1D)) bcompatible = .FALSE.
+  END IF
 
-  ! 3D?
-  IF (ccubType .GE. 300) bcompatible = .FALSE.
-  
-  ! Quad?
+  ! 2D: Quad?
   IF ((ccubType .GE. 200) .AND. (ccubType .LE. 249)) THEN
     ! Tri?
-    IF (NVE .EQ. 3) bcompatible = .FALSE.
+    IF ((NVE .NE. 4) .OR. (idim .NE. NDIM2D)) bcompatible = .FALSE.
   END IF
   
-  ! Tri?
+  ! 2D: Tri?
   IF ((ccubType .GE. 250) .AND. (ccubType .LE. 299)) THEN
     ! Quad?
-    IF (NVE .EQ. 4) bcompatible = .FALSE.
+    IF ((NVE .NE. 3) .OR. (idim .NE. NDIM2D)) bcompatible = .FALSE.
   END IF
   
+  ! 3D: Hexa?
+  IF ((ccubType .GE. 300) .AND. (ccubType .LE. 349)) THEN
+    IF ((NVE .NE. 8) .OR. (idim .NE. NDIM3D)) bcompatible = .FALSE.
+  END IF
+  
+  ! 3D: Tetraa?
+  IF ((ccubType .GE. 350) .AND. (ccubType .LE. 499)) THEN
+    IF ((NVE .NE. 4) .OR. (idim .NE. NDIM3D)) bcompatible = .FALSE.
+  END IF
+
   IF (.NOT. bcompatible) THEN
     CALL output_line ('Element and cubature formula not compatible!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_checkCubature')  

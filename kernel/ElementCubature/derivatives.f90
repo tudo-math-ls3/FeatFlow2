@@ -21,7 +21,7 @@ MODULE derivatives
   
 !<constants>
 
-!<constantblock description="Descriptors to identify derivative types in 2D">
+!<constantblock description="Descriptors to identify derivative types in 1D">
 
   ! function value in term
   INTEGER, PARAMETER :: DER_FUNC1D     = 1
@@ -62,7 +62,7 @@ MODULE derivatives
 
 !</constantblock>
 
-!<constantblock description="Descriptors to identify derivative types in 2D">
+!<constantblock description="Descriptors to identify derivative types in 3D">
 
   ! function value in term
   INTEGER, PARAMETER :: DER_FUNC3D     = 1

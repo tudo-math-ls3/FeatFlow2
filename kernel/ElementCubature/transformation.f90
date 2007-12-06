@@ -149,7 +149,7 @@ MODULE transformation
   INTEGER, PARAMETER :: TRAFO_NAUXJAC2D = 4
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 3D
-  INTEGER, PARAMETER :: TRAFO_NAUXJAC3D = 9
+  INTEGER, PARAMETER :: TRAFO_NAUXJAC3D = 24
 
   ! Max. Number of entries in the array, dimension independent
   INTEGER, PARAMETER :: TRAFO_NAUXJACMAX = TRAFO_NAUXJAC3D
@@ -160,7 +160,7 @@ MODULE transformation
 !<constantblock description="Coordinate system constants.">
 
   ! Maximum number of dimensions on reference elements.
-  ! =4 for Tethrahedrons with barycentric coordinates in 3D
+  ! =4 for Tetrahedra with barycentric coordinates in 3D
   INTEGER, PARAMETER :: TRAFO_MAXDIMREFCOORD = NDIM3D+1
 
 !</constantblock>
@@ -172,19 +172,19 @@ MODULE transformation
   INTEGER, PARAMETER :: TRAFO_ID_UNKNOWN       = 0
 
   ! Linear transformation for simplex-type elements (1D-lines, 2D-triangles, 
-  ! 3D-tethrahedrons)
+  ! 3D-tetrahedra)
   INTEGER, PARAMETER :: TRAFO_ID_LINSIMPLEX    = 1
 
   ! Multilinear (Bilinear/Trilinear) transformation for cubic-shaped elements 
-  ! (2D-quadrilaterals, 3D-hexahedrals)
+  ! (2D-quadrilaterals, 3D-hexahedra)
   INTEGER, PARAMETER :: TRAFO_ID_MLINCUBE     = 2
   
   ! Quadratic transformation for simplex-type elements (1D-lines, 2D-triangles, 
-  ! 3D-tethrahedrons)
+  ! 3D-tetrahedra)
   INTEGER, PARAMETER :: TRAFO_ID_QUADSIMPLEX   = 3
 
   ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation 
-  ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedrals)
+  ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedra)
   INTEGER, PARAMETER :: TRAFO_ID_MQUADCUBE    = 4
 !</constantblock>
 
@@ -231,13 +231,24 @@ MODULE transformation
 
   ! 2D coordinates on real quadrilateral
   INTEGER, PARAMETER :: TRAFO_CS_REAL2DQUAD  = 6
+  
+  ! Barycentric coordinates on tetrahedron
+  INTEGER, PARAMETER :: TRAFO_CS_BARY3DTETRA = 10
+  
+  ! 3D coordinates on reference tetrahedron
+  INTEGER, PARAMETER :: TRAFO_CS_REF3DTETRA  = 11
+  
+  ! 3D coodinates on real tetrahedron
+  INTEGER, PARAMETER :: TRAFO_CS_REAL3DTETRA = 12
+  
+  ! 3D coordinates on reference hexahedron
+  INTEGER, PARAMETER :: TRAFO_CS_REF3DHEXA   = 13
+  
+  ! 3D coordinates on real hexahedron
+  INTEGER, PARAMETER :: TRAFO_CS_REAL3DHEXA  = 14
 !</constantblock>
 
 !</constants>
-
-  INTERFACE trafo_calcJac
-    MODULE PROCEDURE trafo_calcJac2D
-  END INTERFACE
 
   INTERFACE trafo_calcRealCoords
     MODULE PROCEDURE trafo_calcRealCoords2D
@@ -338,7 +349,7 @@ CONTAINS
     END SELECT
     
   CASE (NDIM3D)
-    ! 3D elements. Tetrahedrals, Hexahedrals. Check the actual transformation
+    ! 3D elements. Tetrahedra, Hexahedra. Check the actual transformation
     ! ID how to transform.
   
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
@@ -451,7 +462,7 @@ CONTAINS
       END SELECT
 
     CASE (NDIM3D)
-      ! 3D elements. Tetrahedrals, Hexahedrals.
+      ! 3D elements. Tetrahedra, Hexahedra.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
       CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
@@ -596,7 +607,7 @@ CONTAINS
       END SELECT
 
     CASE (NDIM3D)
-      ! 3D elements. Tetrahedrals, Hexahedrals.
+      ! 3D elements. Tetrahedra, Hexahedra.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
       CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
@@ -698,7 +709,7 @@ CONTAINS
   REAL(DP) :: dax, day, dbx, dby, dcx, dcy
   
   ! auxiliary factors for the bilinear quad mapping
-  REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
+  REAL(DP), DIMENSION(TRAFO_NAUXJACMAX) :: DjacPrep
   
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
@@ -729,59 +740,32 @@ CONTAINS
 
       ! 2D simplex -> linear triangular transformation.
       !
-      ! Calculate with or without coordinates?
-      IF (.NOT. PRESENT(DpointReal)) THEN
+      ! Calculate the Jacobian matrix and determinant.
+      !
+      ! Example where to find information about barycentric coordinates:
+      ! http://mathworld.wolfram.com/BarycentricCoordinates.html
+      !
+      ! The determinant is simply the polygonal area of the parallelogram
+      ! given by the two vectors (c-a,b-a); c.f.
+      !
+      ! http://mathworld.wolfram.com/Parallelogram.html
       
-        ! Calculate the Jacobian matrix and determinant.
-        !
-        ! Example where to find information about barycentric coordinates:
-        ! http://mathworld.wolfram.com/BarycentricCoordinates.html
-        !
-        ! The determinant is simply the polygonal area of the parallelogram
-        ! given by the two vectors (c-a,b-a); c.f.
-        !
-        ! http://mathworld.wolfram.com/Parallelogram.html
+      dax = Dcoords(1, 1)
+      day = Dcoords(2, 1)
+      dbx = Dcoords(1, 2)
+      dby = Dcoords(2, 2)
+      dcx = Dcoords(1, 3)
+      dcy = Dcoords(2, 3)
+      
+      Djac(1)=dbx-dax
+      Djac(2)=dby-day
+      Djac(3)=dcx-dax
+      Djac(4)=dcy-day
+      
+      ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
         
-        dax = Dcoords(1, 1)
-        day = Dcoords(2, 1)
-        dbx = Dcoords(1, 2)
-        dby = Dcoords(2, 2)
-        dcx = Dcoords(1, 3)
-        dcy = Dcoords(2, 3)
-        
-        Djac(1)=dbx-dax
-        Djac(2)=dby-day
-        Djac(3)=dcx-dax
-        Djac(4)=dcy-day
-        
-        ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
-        
-      ELSE
-
-        ! Calculate the Jacobian matrix and determinant.
-        !
-        ! Example where to find information about barycentric coordinates:
-        ! http://mathworld.wolfram.com/BarycentricCoordinates.html
-        !
-        ! The determinant is simply the polygonal area of the parallelogram
-        ! given by the two vectors (c-a,b-a); c.f.
-        !
-        ! http://mathworld.wolfram.com/Parallelogram.html
-        
-        dax = Dcoords(1, 1)
-        day = Dcoords(2, 1)
-        dbx = Dcoords(1, 2)
-        dby = Dcoords(2, 2)
-        dcx = Dcoords(1, 3)
-        dcy = Dcoords(2, 3)
-        
-        Djac(1)=dbx-dax
-        Djac(2)=dby-day
-        Djac(3)=dcx-dax
-        Djac(4)=dcy-day
-        
-        ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
-        
+      ! Calculate coordinates?
+      IF (.NOT. PRESENT(DpointReal)) THEN
         ! Ok, that was easy. It's slightly more complicated to get
         ! the matrix...
         ! But as long as the matrix is not needed, we skip the calculation -
@@ -799,21 +783,18 @@ CONTAINS
           
     CASE (TRAFO_ID_MLINCUBE)
     
+      ! Prepare the calculation of the Jacobi determinants
+      CALL trafo_calcJacPrepare2D(Dcoords, DjacPrep)
+
       ! Calculate with or without coordinates?
       IF (.NOT. PRESENT(DpointReal)) THEN
       
-        ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
-        
         ! Calculate the Jacobian matrix and determinant
-        CALL trafo_calcJac (Dcoords,DjacPrep,Djac(:),ddetj, &
+        CALL trafo_calcJac2D (Dcoords,DjacPrep,Djac(:),ddetj, &
                               DpointRef(1),DpointRef(2))
       
       ELSE
 
-        ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
-        
         ! Calculate the Jacobian matrix and determinant
         CALL trafo_calcTrafo_quad2d (Dcoords,DjacPrep,Djac(:),ddetj, &
                                 DpointRef(1),DpointRef(2), &
@@ -821,7 +802,35 @@ CONTAINS
       END IF
       
     END SELECT
+  
+  CASE (NDIM3D)
+  
+    ! 3D elements. Tetra-, Hexahedra. Check the actual transformation
+    ! ID how to transform.
+  
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_MLINCUBE)
     
+      ! Prepare the calculation of the Jacobi determinants
+      CALL trafo_calcJacPrepare3D(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointReal)) THEN
+        
+        ! Calculate the Jacobian matrix and determinant
+        CALL trafo_calcJac3D (DjacPrep,Djac(:),ddetj, &
+                              DpointRef(1),DpointRef(2),DpointRef(3))
+      
+      ELSE
+        
+        ! Calculate the Jacobian matrix and determinant
+        CALL trafo_calcTrafo_hexa3d (DjacPrep,Djac(:),ddetj, &
+                                DpointRef(1),DpointRef(2),DpointRef(3),&
+                                DpointReal(1),DpointReal(2),DpointReal(3))
+      END IF
+    
+    END SELECT
+  
   END SELECT
 
   END SUBROUTINE
@@ -892,7 +901,7 @@ CONTAINS
   REAL(DP) :: dax, day, dbx, dby, dcx, dcy
   
   ! auxiliary factors for the bilinear quad mapping
-  REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
+  REAL(DP), DIMENSION(TRAFO_NAUXJACMAX) :: DjacPrep
   
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
@@ -1025,25 +1034,21 @@ CONTAINS
           
     CASE (TRAFO_ID_MLINCUBE)
     
+      ! Prepare the calculation of the Jacobi determinants
+      CALL trafo_calcJacPrepare2D(Dcoords, DjacPrep)
+        
       ! Calculate with or without coordinates?
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
-        ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
-        
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcJac (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcJac2D (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                DpointsRef(1,ipt),DpointsRef(2,ipt))
         END DO ! ipt
-        
       
       ELSE
 
-        ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
-        
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
@@ -1055,7 +1060,42 @@ CONTAINS
       END IF
       
     END SELECT
+ 
+  CASE (NDIM3D)
+  
+    ! 3D elements. Tetra-, Hexahedra. Check the actual transformation
+    ! ID how to transform.
+  
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_MLINCUBE)
     
+      ! Prepare the calculation of the Jacobi determinants
+      CALL trafo_calcJacPrepare3D(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointsReal)) THEN
+      
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          CALL trafo_calcJac3D (DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt))
+        END DO ! ipt
+        
+      ELSE
+        
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          CALL trafo_calcTrafo_hexa3d(DjacPrep,Djac(:,ipt),Ddetj(ipt),&
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt),&
+              DpointsReal(1,ipt),DpointsReal(2,ipt),DpointsReal(3,ipt))
+        END DO ! ipt
+        
+      END IF
+    
+    END SELECT
+      
   END SELECT
 
   END SUBROUTINE
@@ -1141,7 +1181,7 @@ CONTAINS
   REAL(DP) :: dax, day, dbx, dby, dcx, dcy
   
   ! auxiliary factors for the bilinear quad mapping
-  REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
+  REAL(DP), DIMENSION(TRAFO_NAUXJACMAX) :: DjacPrep
   
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
@@ -1310,15 +1350,15 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Loop over the elements
-        !%OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
-          CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
+          CALL trafo_calcJacPrepare2D(Dcoords(:,:,iel), DjacPrep)
           
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcJac (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcJac2D (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                 DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel))
           END DO ! ipt
           
@@ -1328,10 +1368,10 @@ CONTAINS
       ELSE
 
         ! Loop over the elements
-        !%OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
-          CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
+          CALL trafo_calcJacPrepare2D(Dcoords(:,:,iel), DjacPrep)
           
           ! Loop over the points
           DO ipt=1,npointsPerEl
@@ -1347,16 +1387,64 @@ CONTAINS
       END IF
       
     END SELECT ! actual ID
+ 
+  CASE (NDIM3D)
   
+    ! 3D elements. Tetra-, Hexahedra. Check the actual transformation
+    ! ID how to transform.
+  
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_MLINCUBE)
+    
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointsReal)) THEN
+      
+        !%OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        DO iel = 1,nelements
+          ! Prepare the calculation of the Jacobi determinants
+          CALL trafo_calcJacPrepare3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          DO ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            CALL trafo_calcJac3D (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel))
+          END DO ! ipt
+          
+        END DO !iel
+        !%OMP END PARALLEL DO
+        
+      ELSE
+
+        !%OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        DO iel = 1, nelements
+          ! Prepare the calculation of the Jacobi determinants
+          CALL trafo_calcJacPrepare3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          DO ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            CALL trafo_calcTrafo_hexa3d (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel),&
+                DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel),DpointsReal(3,ipt,iel))
+          END DO ! ipt
+          
+        END DO ! iel
+        !%OMP END PARALLEL DO
+        
+      END IF
+    
+    END SELECT
+        
   END SELECT ! Dimension
 
   END SUBROUTINE
 
-! **********************************************************************
+! <!---------------------------------------------------------------------------
 ! Explaination of the quadrilateral transformation:
 !
 ! We want to perform a transformation from the reference quadrilateral
-! [-1,1]x[-1,1] onto a "real" quadrilaterl:
+! [-1,1]x[-1,1] onto a "real" quadrilateral:
 !
 !   (-1,1) ___ (1,1)         (x4,y4)   ___  (x3,y3)
 !         |  |                        /  \
@@ -1378,7 +1466,7 @@ CONTAINS
 !
 ! This gives the linear system:
 !
-!  a1 - a2 - a3 - a4 = x1       b1 - b2 - b3 - b4 = y1
+!  a1 - a2 - a3 + a4 = x1       b1 - b2 - b3 + b4 = y1
 !  a1 + a2 - a3 - a4 = x2       b1 + b2 - b3 - b4 = y2
 !  a1 + a2 + a3 + a4 = x3       b1 + b2 + b3 + b4 = y3
 !  a1 - a2 + a3 - a4 = x4       b1 - b2 + b3 - b4 = y4
@@ -1397,7 +1485,7 @@ CONTAINS
 ! They can be calculated with trafo_calcJacPrepare in advance for all points that
 ! have to be mapped. To be more exact, trafo_calcJacPrepare calculates:
 !
-!  J1 = 1/2 * (-x1 - x2 + x3 - x4)
+!  J1 = 1/2 * (-x1 - x2 + x3 + x4)
 !  J2 = 1/2 * ( x1 - x2 + x3 - x4)
 !
 !  J3 = 1/2 * (-y1 + y2 - y3 + y4)
@@ -1410,7 +1498,7 @@ CONTAINS
 !  a3  =  1/4 * (-x1 - x2 + x3 + x4)  =  1/2 * J1 
 !  a4  =  1/4 * ( x1 - x2 + x3 - x4)  =  1/2 * J2
 !
-!  b1  =  1/4 * ( y1 + y2 + y3 + y4)  =  1/2 * (y1 + y3 + J2)
+!  b1  =  1/4 * ( y1 + y2 + y3 + y4)  =  1/2 * (y1 + y3 + J3)
 !  b2  =  1/4 * (-y1 + y2 + y3 - y4)  =  1/2 * J4
 !  b3  =  1/4 * (-y1 - y2 + y3 + y4)  =  1/2 * (y3 - y1 - J4)
 !  b4  =  1/4 * ( y1 - y2 + y3 - y4)  =  1/2 * J3
@@ -1433,11 +1521,11 @@ CONTAINS
 ! on the reference element to coordinates (XX,YY) on the real element by:
 !
 !   (XX,YY) := Psi(XI1,XI2) 
-! **********************************************************************
+! ---------------------------------------------------------------------------->
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcJacPrepare(Dcoords, DjacPrep)
+  PURE SUBROUTINE trafo_calcJacPrepare2D(Dcoords, DjacPrep)
   
 !<description>
   ! Calculate auxiliary Jacobian factors for standard quadrilateral.
@@ -2000,8 +2088,10 @@ CONTAINS
       ETAP2 = 1E15_DP
     END IF
 
-    D1 = SQRT(XIP1**2+ETAP1**2)
-    D2 = SQRT(XIP2**2+ETAP2**2)
+    !D1 = SQRT(XIP1**2+ETAP1**2)
+    !D2 = SQRT(XIP2**2+ETAP2**2)
+    D1 = XIP1**2+ETAP1**2
+    D2 = XIP2**2+ETAP2**2
 
     IF (D1 .LT. D2) THEN
       dparx = XIP1
@@ -2011,6 +2101,396 @@ CONTAINS
       dpary = ETAP2
     END IF
   
+  END SUBROUTINE
+
+! <!---------------------------------------------------------------------------
+! Explaination of the hexahedral transformation:
+!
+! We want to perform a transformation from the reference hexahedron
+! [-1,1]x[-1,1]x[-1,1] onto a "real" hexahedron:
+!
+!             H-------G              W---V
+!            /|      /|             /|   |\
+!           E-------F |            T-----U \
+!           | |     | |     =>     | |    \ \
+!           | D-----|-C            | S-----\-R
+!           |/      |/             |/       \|
+!           A-------B              P---------Q
+!
+! where:   x   y   z
+!    A = (-1, -1, -1)         P = (x1, y1, z1)
+!    B = ( 1, -1, -1)         Q = (x2, y2, z2)
+!    C = ( 1,  1, -1)         R = (x3, y3, z3)
+!    D = (-1,  1, -1)         S = (x4, y4, z4)
+!    E = (-1, -1,  1)         T = (x5, y5, z5)
+!    F = ( 1, -1,  1)         U = (x6, y6, z6)
+!    G = ( 1,  1,  1)         V = (x7, y7, z7)
+!    H = (-1,  1,  1)         W = (x8, y8, z8)
+!
+! By theory this can be done with a trilinear mapping, i.e. mapping
+! Psi:R^3 -> R^3 of the form:
+!
+!    / yi1 \       / xi1 \
+!    | yi2 | = Psi | xi2 |
+!    \ yi3 /       \ xi3 /
+!
+! where:
+!
+!  yi1 = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2 
+!      + a6*xi1*xi3 + a7*xi2*xi3 + a8*xi1*xi2*xi3
+!  yi2 = b1 + b2*xi1 + b3*xi2 + b4*xi3 + b5*xi1*xi2
+!      + b6*xi1*xi3 + b7*xi2*xi3 + b8*xi1*xi2*xi3
+!  yi3 = c1 + c2*xi1 + c3*xi2 + c4*xi3 + c5*xi1*xi2
+!      + c6*xi1*xi3 + c7*xi2*xi3 + c8*xi1*xi2*xi3
+!
+! Our special transformation has to map:
+!
+!  Psi(-1,-1,-1) = (x1, y1, z1)
+!  Psi( 1,-1,-1) = (x2, y2, z2)
+!  Psi( 1, 1,-1) = (x3, y3, z3)
+!  Psi(-1, 1,-1) = (x4, y4, z4)
+!  Psi(-1,-1, 1) = (x5, y5, z5)
+!  Psi( 1,-1, 1) = (x6, y6, z6)
+!  Psi( 1, 1, 1) = (x7, y7, z7)
+!  Psi(-1, 1, 1) = (x8, y8, z8)
+!
+! This gives us 3 linear systems:
+!
+!  a1 - a2 - a3 - a4 + a5 + a6 + a7 - a8 = x1
+!  a1 + a2 - a3 - a4 - a5 - a6 + a7 + a8 = x2
+!  a1 + a2 + a3 - a4 + a5 - a6 - a7 - a8 = x3
+!  a1 - a2 + a3 - a4 - a5 + a6 - a7 + a8 = x4
+!  a1 - a2 - a3 + a4 + a5 - a6 - a7 + a8 = x5
+!  a1 + a2 - a3 + a4 - a5 + a6 - a7 - a8 = x6
+!  a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 = x7
+!  a1 - a2 + a3 + a4 - a5 - a6 + a7 - a8 = x8
+!
+! (For the two other linear systems replace 'a' with 'b'/'c'
+!  and 'x' with 'y'/'z' ...)
+!
+! Reorder the systems to calculate the ai, bi and ci:
+!
+!  a1 = 1/8 * ( x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8)
+!  a2 = 1/8 * (-x1 + x2 + x3 - x4 - x5 + x6 + x7 - x8)
+!  a3 = 1/8 * (-x1 - x2 + x3 + x4 - x5 - x6 + x7 + x8)
+!  a4 = 1/8 * (-x1 - x2 - x3 - x4 + x5 + x6 + x7 + x8)
+!  a5 = 1/8 * ( x1 - x2 + x3 - x4 + x5 - x6 + x7 - x8)
+!  a6 = 1/8 * ( x1 - x2 - x3 + x4 - x5 + x6 + x7 - x8)
+!  a7 = 1/8 * ( x1 + x2 - x3 - x4 - x5 - x6 + x7 + x8)
+!  a8 = 1/8 * (-x1 + x2 - x3 + x4 + x5 - x6 + x7 - x8)
+!
+! The ai, bi and ci depend only on the corners of the hexahedron, but not on
+! the current point. So they are constant for all points we want to map from
+! the reference element to the real one. We call them "auxiliary Jacobian
+! factors". They are calculated with trafo_calcJacPrepare3D in advance for
+! all points that have to be mapped.
+! The Jacobian matrix of the trilinear transformation is now calculated
+! as usual by partial differentiation:
+!
+! DPhi[1,1](xi1,xi2,xi3) = a2 + a5*xi2 + a6*xi3 + a8*xi2*xi3
+! DPhi[1,2](xi1,xi2,xi3) = a3 + a5*xi1 + a7*xi3 + a8*xi1*xi3
+! DPhi[1,3](xi1,xi2,xi3) = a4 + a6*xi1 + a7*xi2 + a8*xi1*xi2
+! DPhi[1,1](xi1,xi2,xi3) = b2 + b5*xi2 + b6*xi3 + b8*xi2*xi3
+! DPhi[1,2](xi1,xi2,xi3) = b3 + b5*xi1 + b7*xi3 + b8*xi1*xi3
+! DPhi[1,3](xi1,xi2,xi3) = b4 + b6*xi1 + b7*xi2 + b8*xi1*xi2
+! DPhi[1,1](xi1,xi2,xi3) = c2 + c5*xi2 + c6*xi3 + c8*xi2*xi3
+! DPhi[1,2](xi1,xi2,xi3) = c3 + c5*xi1 + c7*xi3 + c8*xi1*xi3
+! DPhi[1,3](xi1,xi2,xi3) = c4 + c6*xi1 + c7*xi2 + c8*xi1*xi2
+!
+! which gives the Jacobian determinant of the 3x3-matrix:
+!
+! det DPhi = DPhi[1,1]*(DPhi[2,2]*DPhi[3,3] - DPhi[2,3]*DPhi[3,2])
+!          + DPhi[1,2]*(DPhi[2,3]*DPhi[3,1] - DPhi[2,1]*DPhi[3,3])
+!          + DPhi[1,3]*(DPhi[2,1]*DPhi[3,2] - DPhi[2,2]*DPhi[3,1])
+! ---------------------------------------------------------------------------->
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcJacPrepare3D(Dcoords, DjacPrep)
+  
+!<description>
+  ! Calculate auxiliary Jacobian factors for standard hexahedron.
+  ! This routine builds up constant factors that are later used during
+  ! the transformation from the reference element to the real element.
+!</description>
+
+!<input>
+  ! Coordinates of the four corners of the real hexahedron.
+  ! Dcoord(1,.) = x-coordinates, 
+  ! Dcoord(2,.) = y-coordinates,
+  ! Dcoord(3,.) = y-coordinates.
+  ! DIMENSION(#space dimensions,NVE)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+!</input>
+  
+!<output>
+  ! Arrays with auxiliary jacobian factors for later computation
+  ! DIMENSION(TRAFO_NAUXJAC3D)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DjacPrep
+!</output>
+
+!</subroutine>
+
+  DjacPrep( 1) = 0.125_DP *&
+               ( Dcoords(1,1)+Dcoords(1,2)+Dcoords(1,3)+Dcoords(1,4)&
+                +Dcoords(1,5)+Dcoords(1,6)+Dcoords(1,7)+Dcoords(1,8))
+  DjacPrep( 2) = 0.125_DP *&
+               (-Dcoords(1,1)+Dcoords(1,2)+Dcoords(1,3)-Dcoords(1,4)&
+                -Dcoords(1,5)+Dcoords(1,6)+Dcoords(1,7)-Dcoords(1,8))
+  DjacPrep( 3) = 0.125_DP *&
+               (-Dcoords(1,1)-Dcoords(1,2)+Dcoords(1,3)+Dcoords(1,4)&
+                -Dcoords(1,5)-Dcoords(1,6)+Dcoords(1,7)+Dcoords(1,8))
+  DjacPrep( 4) = 0.125_DP *&
+               (-Dcoords(1,1)-Dcoords(1,2)-Dcoords(1,3)-Dcoords(1,4)&
+                +Dcoords(1,5)+Dcoords(1,6)+Dcoords(1,7)+Dcoords(1,8))
+  DjacPrep( 5) = 0.125_DP *&
+               ( Dcoords(1,1)-Dcoords(1,2)+Dcoords(1,3)-Dcoords(1,4)&
+                +Dcoords(1,5)-Dcoords(1,6)+Dcoords(1,7)-Dcoords(1,8))
+  DjacPrep( 6) = 0.125_DP *&
+               ( Dcoords(1,1)-Dcoords(1,2)-Dcoords(1,3)+Dcoords(1,4)&
+                -Dcoords(1,5)+Dcoords(1,6)+Dcoords(1,7)-Dcoords(1,8))
+  DjacPrep( 7) = 0.125_DP *&
+               ( Dcoords(1,1)+Dcoords(1,2)-Dcoords(1,3)-Dcoords(1,4)&
+                -Dcoords(1,5)-Dcoords(1,6)+Dcoords(1,7)+Dcoords(1,8))
+  DjacPrep( 8) = 0.125_DP *&
+               (-Dcoords(1,1)+Dcoords(1,2)-Dcoords(1,3)+Dcoords(1,4)&
+                +Dcoords(1,5)-Dcoords(1,6)+Dcoords(1,7)-Dcoords(1,8))
+  DjacPrep( 9) = 0.125_DP *&
+               ( Dcoords(2,1)+Dcoords(2,2)+Dcoords(2,3)+Dcoords(2,4)&
+                +Dcoords(2,5)+Dcoords(2,6)+Dcoords(2,7)+Dcoords(2,8))
+  DjacPrep(10) = 0.125_DP *&
+               (-Dcoords(2,1)+Dcoords(2,2)+Dcoords(2,3)-Dcoords(2,4)&
+                -Dcoords(2,5)+Dcoords(2,6)+Dcoords(2,7)-Dcoords(2,8))
+  DjacPrep(11) = 0.125_DP *&
+               (-Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)+Dcoords(2,4)&
+                -Dcoords(2,5)-Dcoords(2,6)+Dcoords(2,7)+Dcoords(2,8))
+  DjacPrep(12) = 0.125_DP *&
+               (-Dcoords(2,1)-Dcoords(2,2)-Dcoords(2,3)-Dcoords(2,4)&
+                +Dcoords(2,5)+Dcoords(2,6)+Dcoords(2,7)+Dcoords(2,8))
+  DjacPrep(13) = 0.125_DP *&
+               ( Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)-Dcoords(2,4)&
+                +Dcoords(2,5)-Dcoords(2,6)+Dcoords(2,7)-Dcoords(2,8))
+  DjacPrep(14) = 0.125_DP *&
+               ( Dcoords(2,1)-Dcoords(2,2)-Dcoords(2,3)+Dcoords(2,4)&
+                -Dcoords(2,5)+Dcoords(2,6)+Dcoords(2,7)-Dcoords(2,8))
+  DjacPrep(15) = 0.125_DP *&
+               ( Dcoords(2,1)+Dcoords(2,2)-Dcoords(2,3)-Dcoords(2,4)&
+                -Dcoords(2,5)-Dcoords(2,6)+Dcoords(2,7)+Dcoords(2,8))
+  DjacPrep(16) = 0.125_DP *&
+               (-Dcoords(2,1)+Dcoords(2,2)-Dcoords(2,3)+Dcoords(2,4)&
+                +Dcoords(2,5)-Dcoords(2,6)+Dcoords(2,7)-Dcoords(2,8))
+  DjacPrep(17) = 0.125_DP *&
+               ( Dcoords(3,1)+Dcoords(3,2)+Dcoords(3,3)+Dcoords(3,4)&
+                +Dcoords(3,5)+Dcoords(3,6)+Dcoords(3,7)+Dcoords(3,8))
+  DjacPrep(18) = 0.125_DP *&
+               (-Dcoords(3,1)+Dcoords(3,2)+Dcoords(3,3)-Dcoords(3,4)&
+                -Dcoords(3,5)+Dcoords(3,6)+Dcoords(3,7)-Dcoords(3,8))
+  DjacPrep(19) = 0.125_DP *&
+               (-Dcoords(3,1)-Dcoords(3,2)+Dcoords(3,3)+Dcoords(3,4)&
+                -Dcoords(3,5)-Dcoords(3,6)+Dcoords(3,7)+Dcoords(3,8))
+  DjacPrep(20) = 0.125_DP *&
+               (-Dcoords(3,1)-Dcoords(3,2)-Dcoords(3,3)-Dcoords(3,4)&
+                +Dcoords(3,5)+Dcoords(3,6)+Dcoords(3,7)+Dcoords(3,8))
+  DjacPrep(21) = 0.125_DP *&
+               ( Dcoords(3,1)-Dcoords(3,2)+Dcoords(3,3)-Dcoords(3,4)&
+                +Dcoords(3,5)-Dcoords(3,6)+Dcoords(3,7)-Dcoords(3,8))
+  DjacPrep(22) = 0.125_DP *&
+               ( Dcoords(3,1)-Dcoords(3,2)-Dcoords(3,3)+Dcoords(3,4)&
+                -Dcoords(3,5)+Dcoords(3,6)+Dcoords(3,7)-Dcoords(3,8))
+  DjacPrep(23) = 0.125_DP *&
+               ( Dcoords(3,1)+Dcoords(3,2)-Dcoords(3,3)-Dcoords(3,4)&
+                -Dcoords(3,5)-Dcoords(3,6)+Dcoords(3,7)+Dcoords(3,8))
+  DjacPrep(24) = 0.125_DP *&
+               (-Dcoords(3,1)+Dcoords(3,2)-Dcoords(3,3)+Dcoords(3,4)&
+                +Dcoords(3,5)-Dcoords(3,6)+Dcoords(3,7)-Dcoords(3,8))
+  
+  END SUBROUTINE 
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcTrafo_hexa3d (DjacPrep,Djac,ddetj, &
+                                          dparx,dpary,dparz,&
+                                          dxreal,dyreal,dzreal)
+
+!<description>
+  ! This subroutine performs two tasks:
+  ! -Initialisation of a a given 3x3 matrix with the
+  !  mapping information from the reference element to the "real"
+  !  hexahedron. Calculation of the Jacobian determinant
+  ! -Transformation of a given point on the reference element onto
+  !  the "real" element
+  ! Both things are performed simultaneously because the jacobian
+  ! determinant is dependent of the point.
+  !
+  ! Before this routine can be called, the auxiliary factors DjacPrep
+  ! have to be calculated with trafo_calcJacPrepare3D for the 
+  ! considered element.
+!</description>  
+
+!<input>
+  ! Auxiliary constants for the considered element with
+  ! coordinates in Dcoord; have to be computed previously
+  ! by trafo_calcJacPrepare3D.
+  ! DIMENSION(TRAFO_NAUXJAC3D)
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
+  
+  ! Coordinates of a point on the reference element
+  REAL(DP), INTENT(IN) :: dparx,dpary,dparz
+  
+!</input>
+  
+!<output>
+  ! The Jacobian matrix of the mapping from the reference to the 
+  ! real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Djac
+  
+  ! The determinant of the mapping.
+  REAL(DP), INTENT(OUT) :: ddetj
+  
+  ! X-Coordinates of a point on the real element
+  REAL(DP), INTENT(OUT) :: dxreal
+  
+  ! Y-Coordinates of a point on the real element
+  REAL(DP), INTENT(OUT) :: dyreal
+
+  ! Z-Coordinates of a point on the real element
+  REAL(DP), INTENT(OUT) :: dzreal
+  
+!</output>
+  
+!</subroutine>
+
+  Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
+          + DjacPrep(8)*dpary*dparz
+  Djac(2) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
+          + DjacPrep(8)*dparx*dparz
+  Djac(3) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+          + DjacPrep(8)*dparx*dpary
+  Djac(4) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
+          + DjacPrep(16)*dpary*dparz
+  Djac(5) = DjacPrep(11) + DjacPrep(13)*dparx + DjacPrep(15)*dparz &
+          + DjacPrep(16)*dparx*dparz
+  Djac(6) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
+          + DjacPrep(16)*dparx*dpary
+  Djac(7) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
+          + DjacPrep(24)*dpary*dparz
+  Djac(8) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
+          + DjacPrep(24)*dparx*dparz
+  Djac(9) = DjacPrep(20) + DjacPrep(22)*dparx + DjacPrep(23)*dpary &
+          + DjacPrep(24)*dparx*dpary
+
+  ! Determinant of the mapping
+
+  ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+        + Djac(2)*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
+        + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+  
+  ! Map the point to the real element
+  
+  dxreal = DjacPrep(1) + DjacPrep(2)*dparx + DjacPrep(3)*dpary &
+         + DjacPrep(4)*dparz + DjacPrep(5)*dparx*dpary &
+         + DjacPrep(6)*dparx*dparz + DjacPrep(7)*dpary*dparz &
+         + DjacPrep(8)*dparx*dpary*dparz
+  dyreal = DjacPrep(9) + DjacPrep(10)*dparx + DjacPrep(11)*dpary &
+         + DjacPrep(12)*dparz + DjacPrep(13)*dparx*dpary &
+         + DjacPrep(14)*dparx*dparz + DjacPrep(15)*dpary*dparz &
+         + DjacPrep(16)*dparx*dpary*dparz
+  dzreal = DjacPrep(17) + DjacPrep(18)*dparx + DjacPrep(19)*dpary &
+         + DjacPrep(20)*dparz + DjacPrep(21)*dparx*dpary &
+         + DjacPrep(22)*dparx*dparz + DjacPrep(23)*dpary*dparz &
+         + DjacPrep(24)*dparx*dpary*dparz
+  
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcJac3D (DjacPrep,Djac,ddetj,dparx,dpary,dparz)
+
+!<description>
+  ! Calculate Jacobian determinant of mapping from reference- to
+  ! real element.
+  !
+  ! This routine only calculates the Jacobian determinant of the
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
+  ! calculates this determinant but also maps the point. So this routine
+  ! can be used to speed up the code if the coordinates of the
+  ! mapped point already exist.
+  !
+  ! Before this routine can be called, the auxiliary factors DJF
+  ! have to be calculated with trafo_calcJacPrepare for the considered element.
+!</description>  
+
+!<input>
+  ! Auxiliary constants for the considered element with
+  ! coordinates in Dcoord; have to be computed previously
+  ! by trafo_calcJacPrepare.
+  ! DIMENSION(TRAFO_NAUXJAC3D)
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
+  
+  ! Coordinates of a point on the reference element
+  REAL(DP), INTENT(IN) :: dparx,dpary,dparz
+!</input>
+  
+!<output>
+  ! The Jacobian matrix of the mapping from the reference to the 
+  ! real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Djac
+  
+  ! The determinant of the mapping.
+  REAL(DP), INTENT(OUT) :: ddetj
+!</output>
+  
+!</subroutine>
+
+  ! Jacobian matrix of the mapping:
+
+  Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
+          + DjacPrep(8)*dpary*dparz
+  Djac(2) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
+          + DjacPrep(8)*dparx*dparz
+  Djac(3) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+          + DjacPrep(8)*dparx*dpary
+  Djac(4) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
+          + DjacPrep(16)*dpary*dparz
+  Djac(5) = DjacPrep(11) + DjacPrep(13)*dparx + DjacPrep(15)*dparz &
+          + DjacPrep(16)*dparx*dparz
+  Djac(6) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
+          + DjacPrep(16)*dparx*dpary
+  Djac(7) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
+          + DjacPrep(24)*dpary*dparz
+  Djac(8) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
+          + DjacPrep(24)*dparx*dparz
+  Djac(9) = DjacPrep(20) + DjacPrep(22)*dparx + DjacPrep(23)*dpary &
+          + DjacPrep(24)*dparx*dpary
+
+  ! Determinant of the mapping
+
+  ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+        + Djac(2)*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
+        + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+          
   END SUBROUTINE
 
   !************************************************************************

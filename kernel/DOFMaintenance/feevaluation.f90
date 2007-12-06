@@ -290,7 +290,7 @@ CONTAINS
       ! the mapping between the reference and the real element.
       ! In case we use a nonparametric element, we need the 
       ! coordinates of the points on the real element, too.
-      CALL trafo_calcJacPrepare(Dcoord, DjacPrep)
+      CALL trafo_calcJacPrepare2D(Dcoord, DjacPrep)
       CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
           Dcoord,DjacPrep,Djac,ddetj,DparPoint)
     
@@ -500,7 +500,7 @@ CONTAINS
       ! the mapping between the reference and the real element.
       ! In case we use a nonparametric element, we need the 
       ! coordinates of the points on the real element, too.
-      CALL trafo_calcJacPrepare(Dcoord, DjacPrep)
+      CALL trafo_calcJacPrepare2D(Dcoord, DjacPrep)
 
       ! If the world coordinates of the point are given, take them
       ! If not, compute them in the transformation.

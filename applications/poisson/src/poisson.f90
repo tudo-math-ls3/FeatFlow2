@@ -56,6 +56,7 @@ PROGRAM poisson
   USE poisson_method6
   USE poisson_method7
   USE poisson_method8
+  USE poisson3d_method1
   
   IMPLICIT NONE
   
@@ -71,7 +72,7 @@ PROGRAM poisson
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
   CALL storage_init(999, 100)
-
+  
   ! Call the problem to solve. Poisson 0:
   CALL output_lbrk ()
   CALL output_line ('Calculating Poisson-Problem with method 0')
@@ -137,6 +138,12 @@ PROGRAM poisson
   CALL output_line ('Calculating Poisson-Problem with method 8')
   CALL output_line ('-----------------------------------------')
   CALL poisson8
+
+  ! Call the problem to solve. Poisson3D-1:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating 3D Poisson-Problem with method 1')
+  CALL output_line ('--------------------------------------------')
+  CALL poisson3d_method1
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

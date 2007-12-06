@@ -147,8 +147,13 @@ CONTAINS
     CASE (TRAFO_CS_BARY2DTRI)
       ALLOCATE(rintSubset%p_DcubPtsRef(3,npointsPerElement,nelements))
       
+    CASE (TRAFO_CS_BARY3DTETRA)
+      ALLOCATE(rintSubset%p_DcubPtsRef(4,npointsPerElement,nelements))
+
     CASE (TRAFO_CS_REF2DTRI,TRAFO_CS_REF2DQUAD,&
-          TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD,TRAFO_CS_REF1D)
+          TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD,TRAFO_CS_REF1D,&
+          TRAFO_CS_REF3DTETRA,TRAFO_CS_REF3DHEXA,&
+          TRAFO_CS_REAL3DTETRA,TRAFO_CS_REAL3DHEXA)
       ALLOCATE(rintSubset%p_DcubPtsRef(ndimSpace,npointsPerElement,nelements))
       
     CASE DEFAULT

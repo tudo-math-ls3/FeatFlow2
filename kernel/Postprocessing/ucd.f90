@@ -2579,7 +2579,15 @@ CONTAINS
             WRITE(mfile, '(5I10)') 4, (p_IverticesAtElement(1,j)-1), &
                 (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
                 (p_IverticesAtElement(4,j)-1)
-            
+          
+          CASE (8)
+            ! hexahedron
+            WRITE(mfile, '(9I10)') 8, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
+                (p_IverticesAtElement(4,j)-1), (p_IverticesAtElement(5,j)-1), &
+                (p_IverticesAtElement(6,j)-1), (p_IverticesAtElement(7,j)-1), &
+                (p_IverticesAtElement(8,j)-1)
+                
           CASE DEFAULT
             PRINT *,'Invalid element!'
           END SELECT
@@ -2601,6 +2609,10 @@ CONTAINS
           CASE (4)
             ! Quadrilateral
             WRITE(mfile, '(I4)') VTK_QUAD
+          
+          CASE (8)
+            ! Hexahedron
+            WRITE(mfile, '(I4)') VTK_HEXAHEDRON
             
           END SELECT
         END DO
