@@ -239,22 +239,21 @@
 
 MODULE hadaptivity
 
-  USE fsystem
-  USE storage
-  USE paramlist
-  USE collection
-  USE triangulation
-  USE linearsystemscalar
-  USE hadaptaux3d
-  USE quadtree
-  USE octree
   USE arraylist
   USE binarytree
-  USE list
-  USE sort
+  USE collection
+  USE hadaptaux3d
   USE io
+  USE linearsystemscalar
+  USE list
+  USE octree
+  USE paramlist
+  USE quadtree
+  USE sort
+  USE storage
+  USE triangulation
+  USE fsystem
 
-  
   IMPLICIT NONE
 
   PRIVATE
@@ -293,7 +292,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_initFromParameterlist(rhadapt,rparlist,ssection)
+  SUBROUTINE hadapt_initFromParameterlist(rhadapt, rparlist, ssection)
 
 !<description>
     ! This subroutine initializes the adaptivity structure
@@ -315,13 +314,17 @@ CONTAINS
 !</subroutine>
 
     ! Get mandatory parameters from list
-    CALL parlst_getvalue_int   (rparlist,ssection,"nsubdividemax",rhadapt%nsubdividemax)
-    CALL parlst_getvalue_int   (rparlist,ssection,"iadaptationStrategy",rhadapt%iadaptationStrategy)
-    CALL parlst_getvalue_double(rparlist,ssection,"drefinementTolerance",rhadapt%drefinementTolerance)
-    CALL parlst_getvalue_double(rparlist,ssection,"dcoarseningTolerance",rhadapt%dcoarseningTolerance)
+    CALL parlst_getvalue_int   (rparlist,&
+        ssection, "nsubdividemax", rhadapt%nsubdividemax)
+    CALL parlst_getvalue_int   (rparlist,&
+        ssection, "iadaptationStrategy", rhadapt%iadaptationStrategy)
+    CALL parlst_getvalue_double(rparlist,&
+        ssection, "drefinementTolerance", rhadapt%drefinementTolerance)
+    CALL parlst_getvalue_double(rparlist,&
+        ssection, "dcoarseningTolerance", rhadapt%dcoarseningTolerance)
 
     ! Initialize data
-    rhadapt%iSpec=HADAPT_HAS_PARAMETERS
+    rhadapt%iSpec = HADAPT_HAS_PARAMETERS
   END SUBROUTINE hadapt_initFromParameterlist
 
   ! ***************************************************************************
@@ -1775,7 +1778,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_performAdaptation(rhadapt,rindicator,rcollection,fcb_hadaptCallback)
+  SUBROUTINE hadapt_performAdaptation(rhadapt, rindicator, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs the complete adaptation process.
@@ -1790,16 +1793,16 @@ CONTAINS
 
 !<input>
     ! Indicator vector for refinement
-    TYPE(t_vectorScalar), INTENT(IN)         :: rindicator
+    TYPE(t_vectorScalar), INTENT(IN)            :: rindicator
 
     ! callback routines
     include 'intf_hadaptcallback.inc'
-    OPTIONAL :: fcb_hadaptCallback
+    OPTIONAL                                    :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)            :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
 
     ! OPTIONAL: Collection
     TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
@@ -1821,16 +1824,16 @@ CONTAINS
     END IF
 
     ! Initialize initial dimensions
-    CALL storage_getsize(rhadapt%h_IverticesAtElement,Isize)
-    rhadapt%NELMAX=Isize(2)
-    CALL storage_getsize(rhadapt%h_IneighboursAtElement,Isize)
-    rhadapt%NELMAX=MIN(rhadapt%NELMAX,Isize(2))
+    CALL storage_getsize(rhadapt%h_IverticesAtElement, Isize)
+    rhadapt%NELMAX = Isize(2)
+    CALL storage_getsize(rhadapt%h_IneighboursAtElement, Isize)
+    rhadapt%NELMAX = MIN(rhadapt%NELMAX,Isize(2))
 
-    rhadapt%InelOfType0=rhadapt%InelOfType
-    rhadapt%NVT0       =rhadapt%NVT
-    rhadapt%NEL0       =rhadapt%NEL
-    rhadapt%NVBD0      =rhadapt%NVBD
-    rhadapt%increaseNVT=0
+    rhadapt%InelOfType0 = rhadapt%InelOfType
+    rhadapt%NVT0        = rhadapt%NVT
+    rhadapt%NEL0        = rhadapt%NEL
+    rhadapt%NVBD0       = rhadapt%NVBD
+    rhadapt%increaseNVT = 0
     
     ! What kind of grid refinement should be performed
     SELECT CASE(rhadapt%iadaptationStrategy)
@@ -1839,60 +1842,72 @@ CONTAINS
       
     CASE (HADAPT_REDGREEN)       ! Red-green grid refinement
 
-      ! Mark elements for refinement based on indicator function
-      CALL mark_refinement2D(rhadapt,rindicator)
-
-      ! Mark additional elements to restore conformity
-      CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
-
-      ! Mark element for recoarsening based on indicator function
-      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
+      ! Which spatial dimensions are we?
+      SELECT CASE(rhadapt%ndim)
+        
+      CASE (NDIM2D)
+        ! Mark elements for refinement based on indicator function
+        CALL mark_refinement2D(rhadapt, rindicator)
+        
+        ! Mark additional elements to restore conformity
+        CALL redgreen_mark_refinement2D(rhadapt, rcollection, fcb_hadaptCallback)
+        
+        ! Mark element for recoarsening based on indicator function
+        CALL redgreen_mark_coarsening2D(rhadapt, rindicator)
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
+        CALL sys_halt()
+      END SELECT
 
       ! Compute new dimensions
-      nvt=rhadapt%NVT+rhadapt%increaseNVT
-      nel=NumberOfElements(rhadapt)
+      nvt = rhadapt%NVT+rhadapt%increaseNVT
+      nel = NumberOfElements(rhadapt)
 
       ! Adjust vertex age array and nodal property array
-      CALL storage_realloc('hadapt_performAdaptation',nvt,&
-          rhadapt%h_IvertexAge,ST_NEWBLOCK_NOINIT,.TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation',nvt,&
-          rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', nvt,&
+          rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', nvt,&
+          rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .TRUE.)
      
       ! Adjust elemental arrays
-      CALL storage_realloc('hadapt_performAdaptation',nel,&
-          rhadapt%h_IverticesAtElement,ST_NEWBLOCK_NOINIT,.TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation',nel,&
-          rhadapt%h_IneighboursAtElement,ST_NEWBLOCK_NOINIT,.TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation',nel,&
-          rhadapt%h_ImidneighboursAtElement,ST_NEWBLOCK_NOINIT,.TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', nel,&
+          rhadapt%h_IverticesAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', nel,&
+          rhadapt%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', nel,&
+          rhadapt%h_ImidneighboursAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
 
       ! Reset pointers
-      CALL storage_getbase_int(rhadapt%h_IvertexAge,rhadapt%p_IvertexAge)
+      CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+                               rhadapt%p_IvertexAge)
       CALL storage_getbase_int(rhadapt%h_InodalProperty,&
-          rhadapt%p_InodalProperty)
+                               rhadapt%p_InodalProperty)
       CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
-          rhadapt%p_IverticesAtElement)
+                                 rhadapt%p_IverticesAtElement)
       CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
-          rhadapt%p_IneighboursAtElement)
+                                 rhadapt%p_IneighboursAtElement)
       CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
-          rhadapt%p_ImidneighboursAtElement)
+                                 rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
-        Ivertices=(/nvt/); Ielements=(/0/)
-        CALL fcb_hadaptCallback(rcollection,&
-            HADAPT_OPR_ADJUSTVERTEXDIM,Ivertices,Ielements)
+      IF (PRESENT(fcb_hadaptCallback) .AND. PRESENT(rcollection)) THEN
+        Ivertices = (/nvt/)
+        Ielements = (/0/)
+        CALL fcb_hadaptCallback(rcollection, HADAPT_OPR_ADJUSTVERTEXDIM,&
+                                Ivertices, Ielements)
       END IF
 
       ! Perform refinement
-      CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
+      CALL redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
 
       ! Perform coarsening
-      CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
+      CALL redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
 
       ! Adjust nodal property array
-      CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
-          rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
+      CALL storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
+          rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .TRUE.)
             
     CASE DEFAULT
       CALL output_line('Unsupported refinement strategy!',&
@@ -1916,13 +1931,13 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER :: p_Imarker
       INTEGER(PREC_ELEMENTIDX)       :: iel
       
-      CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
+      CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
       
       ! Initialize number of elements by current number
-      nel=rhadapt%NEL0
+      nel = rhadapt%NEL0
       
       ! Loop over all elements and check marker
-      DO iel=1,rhadapt%NEL0
+      DO iel = 1, rhadapt%NEL0
         
         SELECT CASE(p_Imarker(iel))
         CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3,&
@@ -1930,16 +1945,16 @@ CONTAINS
           ! Interestingly enought, the coarsening of 2 quadrilaterals into three
           ! triangles which reduces the number of vertices by one also increases
           ! the number of elements by one which has to be taken into account here.
-          nel=nel+1
+          nel = nel+1
 
         CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,MARK_REF_QUAD3TRIA_3,&
              MARK_REF_QUAD3TRIA_4,MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_23,&
              MARK_REF_TRIA3TRIA_13)
-          nel=nel+2
+          nel = nel+2
           
         CASE(MARK_REF_TRIA4TRIA,MARK_REF_QUAD4QUAD,MARK_REF_QUAD4TRIA_12,&
              MARK_REF_QUAD4TRIA_23,MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14)
-          nel=nel+3
+          nel = nel+3
         END SELECT
       END DO
     END FUNCTION NumberOfElements
