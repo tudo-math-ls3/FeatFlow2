@@ -4246,6 +4246,10 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_VECIDX) :: iNEQ,iisize,i,n
+    LOGICAL              :: bcopy
+
+    ! Set copy flag
+    bcopy = .NOT.bclear
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
@@ -4277,7 +4281,7 @@ CONTAINS
 
       ! Reallocate the memory for handle h_Ddata
       CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
-          ST_NEWBLOCK_NOINIT, .FALSE.)  
+          ST_NEWBLOCK_NOINIT, bcopy)  
       
     ELSEIF (PRESENT(NEQMAX)) THEN
 
@@ -4297,7 +4301,7 @@ CONTAINS
         ELSE
           ! Otherwise, 
           CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
-              ST_NEWBLOCK_NOINIT, .FALSE.)
+              ST_NEWBLOCK_NOINIT, bcopy)
         END IF
       END IF
     END IF
@@ -4504,6 +4508,10 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_VECIDX) :: isize,i,j,n
+    LOGICAL              :: bcopy
+
+    ! Set copy flag
+    bcopy = .NOT.bclear
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
@@ -4534,7 +4542,7 @@ CONTAINS
 
         ! Yes, reallocate memory for handle h_Ddata
         CALL storage_realloc('lsysbl_resizeVecBlockIndMat', rx%NEQ, rx%h_Ddata, &
-            ST_NEWBLOCK_NOINIT, .FALSE.)
+            ST_NEWBLOCK_NOINIT, bcopy)
       END IF
 
       n=1
@@ -4623,7 +4631,7 @@ CONTAINS
     ! local variables
     INTEGER :: iblock
 
-    DO iblock=1,rvector%nblocks
+    DO iblock = 1, rvector%nblocks
       CALL output_line ('Vector-block #'//TRIM(sys_siL(iblock,0)))
       CALL lsyssc_infoVector(rvector%RvectorBlock(iblock))
     END DO
