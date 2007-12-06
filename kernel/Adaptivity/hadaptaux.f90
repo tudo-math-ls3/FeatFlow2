@@ -22,12 +22,12 @@
 
 MODULE hadaptaux
   
-  USE fsystem
-  USE storage
-  USE quadtree
-  USE octree
   USE arraylist
   USE binarytree
+  USE fsystem
+  USE octree
+  USE quadtree
+  USE storage
   USE triangulation
 
   IMPLICIT NONE
