@@ -1643,157 +1643,205 @@ CONTAINS
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IedgesAtElement,&
               p_IedgesAtElement)
               
-          DO iel = 1,rexport%p_rtriangulation%NEL
+          SELECT CASE (rexport%p_rtriangulation%ndim)
           
-            ! Count the number of vertices on that element
-            DO i=1,UBOUND(p_IverticesAtElement,1)
-              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+          CASE (NDIM1D)
+              
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
+              
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+              CASE (2)
+                ! Line in 1D.
+                !
+                ! The coarse grid element is
+                !
+                !   1 -----IEL----- 2
+                !
+                ! The once refined element is
+                !
+                !   1 -- IEL -- 1* -- NEL+IEL -- 2
+                !
+                ! Write the connectivity of element IEL
+                WRITE(mfile,'(A)') 'line 2'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
+
+              END SELECT
+              
+            END DO
+
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
+              
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+              CASE (2)
+                ! Line in 1D.
+                !
+                ! Element "NEL+1"
+                WRITE(mfile,'(A)') 'line 2'
+                WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
+                
+              END SELECT
+              
+            END DO
+
+          CASE (NDIM2D)
+              
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
+              
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+
+              CASE (3)
+                ! Triangle.
+                !
+                ! Let a coarse grid triangle be locally numbered as:
+                !
+                !   2 
+                !   |  \
+                !   |    \
+                !   | IEL  \
+                !   |        \
+                !   3----------1
+                ! 
+                ! Then the refinement process assigns the following numbers:
+                !
+                !   2_
+                !   |  \_
+                !   | NEL \_
+                !   | +1     \_
+                !   2*-------- 1* 
+                !   | \_  IEL=1|  \_
+                !   |NEL \_    | NEL \_
+                !   |+3     \_ | +2     \_
+                !   3----------3*---------1
+                !
+                ! So write the edge(-midpoint) numbers as corner numbers
+                ! of the "main" element
+                    
+                WRITE(mfile,'(A)') 'tri 3'
+                WRITE(mfile,'(3I8)') p_IedgesAtElement(1:3,iel)
+                
+              CASE (4)
+                ! Quad
+                !
+                ! Let a coarse grid quad be locally numbered as
+                !
+                !  4-------3
+                !  |       |
+                !  |  IEL  |
+                !  |       |
+                !  1-------2
+                !
+                ! Then the refinement process assigns the following numbers:
+                !
+                !  4-----7-----3
+                !  |NEL+3|NEL+2|
+                !  |     |     |
+                !  8-----9-----6
+                !  |IEL=1|NEL+1|
+                !  |     |     |
+                !  1-----5-----2
+                !
+                ! So construct the corners of the 'smaller' elements from the
+                ! corners of the coarse grid element, the numbers of the
+                ! edge(-midpoint)s of the element and the number of the midpoint
+                ! of the element -- which is defined as the element number itself.
+                
+                WRITE(mfile,'(A)')'quad 4'
+                WRITE(mfile,'(4I8)') &
+                    p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel),&
+                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
+                    p_IedgesAtElement(4,iel)
+                
+              END SELECT
+              
+            END DO
+
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
+              
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+              CASE (2)
+                ! Line in 1D.
+                !
+                ! Element "NEL+1"
+                WRITE(mfile,'(A)') 'line 2'
+                WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
+                
+              CASE (3)
+                ! Triangle.
+                    
+                ! Element "NEL+1"
+                WRITE(mfile,'(A)') 'tri 3'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(2,iel), &
+                    p_IedgesAtElement(2,iel),p_IedgesAtElement(1,iel)
+
+                ! Element "NEL+2"
+                WRITE(mfile,'(A)') 'tri 3'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel), &
+                    p_IedgesAtElement(1,iel),p_IedgesAtElement(3,iel)
+
+                ! Element "NEL+3"
+                WRITE(mfile,'(A)') 'tri 3'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(3,iel), &
+                    p_IedgesAtElement(3,iel),p_IedgesAtElement(2,iel)
+                
+              CASE (4)
+                ! Quad
+                !
+                ! Element "NEL+1"
+                WRITE(mfile,'(A)')'quad 4'
+                WRITE(mfile,'(4I8)') &
+                    p_IverticesAtElement(2,iel),p_IedgesAtElement(2,iel),&
+                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
+                    p_IedgesAtElement(1,iel)
+
+                ! Element "NEL+2"
+                WRITE(mfile,'(A)')'quad 4'
+                WRITE(mfile,'(4I8)') &
+                    p_IverticesAtElement(3,iel),p_IedgesAtElement(3,iel),&
+                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
+                    p_IedgesAtElement(2,iel)
+
+                ! Element "NEL+3"
+                WRITE(mfile,'(A)')'quad 4'
+                WRITE(mfile,'(4I8)') &
+                    p_IverticesAtElement(4,iel),p_IedgesAtElement(4,iel),&
+                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
+                    p_IedgesAtElement(3,iel)
+                
+              END SELECT
+              
             END DO
             
-            ! We have i-1 vertices on that element -- so what is it?
-            SELECT CASE (i-1)
-            CASE (2)
-              ! Line in 1D.
-              !
-              ! The coarse grid element is
-              !
-              !   1 -----IEL----- 2
-              !
-              ! The once refined element is
-              !
-              !   1 -- IEL -- 1* -- NEL+IEL -- 2
-              !
-              ! Write the connectivity of element IEL
-              WRITE(mfile,'(A)') 'line 2'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
+          CASE (NDIM3D)
 
-            CASE (3)
-              ! Triangle.
-              !
-              ! Let a coarse grid triangle be locally numbered as:
-              !
-              !   2 
-              !   |  \
-              !   |    \
-              !   | IEL  \
-              !   |        \
-              !   3----------1
-              ! 
-              ! Then the refinement process assigns the following numbers:
-              !
-              !   2_
-              !   |  \_
-              !   | NEL \_
-              !   | +1     \_
-              !   2*-------- 1* 
-              !   | \_  IEL=1|  \_
-              !   |NEL \_    | NEL \_
-              !   |+3     \_ | +2     \_
-              !   3----------3*---------1
-              !
-              ! So write the edge(-midpoint) numbers as corner numbers
-              ! of the "main" element
-                  
-              WRITE(mfile,'(A)') 'tri 3'
-              WRITE(mfile,'(3I8)') p_IedgesAtElement(1:3,iel)
-              
-            CASE (4)
-              ! Quad
-              !
-              ! Let a coarse grid quad be locally numbered as
-              !
-              !  4-------3
-              !  |       |
-              !  |  IEL  |
-              !  |       |
-              !  1-------2
-              !
-              ! Then the refinement process assigns the following numbers:
-              !
-              !  4-----7-----3
-              !  |NEL+3|NEL+2|
-              !  |     |     |
-              !  8-----9-----6
-              !  |IEL=1|NEL+1|
-              !  |     |     |
-              !  1-----5-----2
-              !
-              ! So construct the corners of the 'smaller' elements from the
-              ! corners of the coarse grid element, the numbers of the
-              ! edge(-midpoint)s of the element and the number of the midpoint
-              ! of the element -- which is defined as the element number itself.
-              
-              WRITE(mfile,'(A)')'quad 4'
-              WRITE(mfile,'(4I8)') &
-                  p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel),&
-                  rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                  p_IedgesAtElement(4,iel)
-              
-            END SELECT
-            
-          END DO
-
-          DO iel = 1,rexport%p_rtriangulation%NEL
+            CALL output_line ('GMV export for 1x refined mesh in 3D'//&
+                ' not implemented!', OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+            CALL sys_halt()
           
-            ! Count the number of vertices on that element
-            DO i=1,UBOUND(p_IverticesAtElement,1)
-              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
-            END DO
-            
-            ! We have i-1 vertices on that element -- so what is it?
-            SELECT CASE (i-1)
-            CASE (2)
-              ! Line in 1D.
-              !
-              ! Element "NEL+1"
-              WRITE(mfile,'(A)') 'line 2'
-              WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
-              
-            CASE (3)
-              ! Triangle.
-                  
-              ! Element "NEL+1"
-              WRITE(mfile,'(A)') 'tri 3'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(2,iel), &
-                  p_IedgesAtElement(2,iel),p_IedgesAtElement(1,iel)
-
-              ! Element "NEL+2"
-              WRITE(mfile,'(A)') 'tri 3'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel), &
-                  p_IedgesAtElement(1,iel),p_IedgesAtElement(3,iel)
-
-              ! Element "NEL+3"
-              WRITE(mfile,'(A)') 'tri 3'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(3,iel), &
-                  p_IedgesAtElement(3,iel),p_IedgesAtElement(2,iel)
-              
-            CASE (4)
-              ! Quad
-              !
-              ! Element "NEL+1"
-              WRITE(mfile,'(A)')'quad 4'
-              WRITE(mfile,'(4I8)') &
-                  p_IverticesAtElement(2,iel),p_IedgesAtElement(2,iel),&
-                  rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                  p_IedgesAtElement(1,iel)
-
-              ! Element "NEL+2"
-              WRITE(mfile,'(A)')'quad 4'
-              WRITE(mfile,'(4I8)') &
-                  p_IverticesAtElement(3,iel),p_IedgesAtElement(3,iel),&
-                  rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                  p_IedgesAtElement(2,iel)
-
-              ! Element "NEL+3"
-              WRITE(mfile,'(A)')'quad 4'
-              WRITE(mfile,'(4I8)') &
-                  p_IverticesAtElement(4,iel),p_IedgesAtElement(4,iel),&
-                  rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                  p_IedgesAtElement(3,iel)
-              
-            END SELECT
-            
-          END DO
+          END SELECT
           
         END IF
         
