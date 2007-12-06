@@ -42,6 +42,9 @@
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Adaptivity">
+		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux.f90"/>
+		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux2d.f90"/>
+		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux3d.f90"/>
 		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptivity.f90"/>
 		<File RelativePath="..\..\..\kernel\Adaptivity\intf_hadaptcallback.inc"/></Filter>
 		<Filter Name="BasicGeometry">
