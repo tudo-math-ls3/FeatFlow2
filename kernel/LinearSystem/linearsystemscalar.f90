@@ -2618,7 +2618,7 @@ CONTAINS
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
     LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
 
-    ! OPTIONAL: Wether to enforce resize even if matrix is copied from another matrix
+    ! OPTIONAL: Whether to enforce resize even if matrix is copied from another matrix
     LOGICAL, INTENT(IN), OPTIONAL              :: bforce
 
 !</input>
@@ -16979,9 +16979,9 @@ CONTAINS
     IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
       CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
       IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
-        CALL output_line ('Kdiagonal memory usage:  '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NEQ+1),2))//'%')
+        CALL output_line ('Kdiagonal memory usage:  '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NEQ),2))//'%')
       ELSE
-        CALL output_line ('Kdiagonl memory usage:   '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NCOLS+1),2))//'%')
+        CALL output_line ('Kdiagonl memory usage:   '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NCOLS),2))//'%')
       END IF
     END IF
   END SUBROUTINE lsyssc_infoMatrix
@@ -17005,10 +17005,11 @@ CONTAINS
     ! local variables
     INTEGER(PREC_VECIDX) :: isize
 
-    WRITE(*,FMT='(A)')       '-------------------------'
+    CALL output_line ('ScalarVector:')
+    CALL output_line ('-------------')
     CALL output_line ('cdataType:              '//TRIM(sys_siL(rvector%cdataType,15)))
-    CALL output_line ('NEQ:                    '//TRIM(sys_siL(rvector%NEQ,0)))
-    CALL output_line ('NVAR:                   '//TRIM(sys_siL(rvector%NVAR,0)))
+    CALL output_line ('NEQ:                    '//TRIM(sys_siL(rvector%NEQ,15)))
+    CALL output_line ('NVAR:                   '//TRIM(sys_siL(rvector%NVAR,15)))
     CALL output_line ('isortStrategy:          '//TRIM(sys_siL(rvector%isortStrategy,15)))
     CALL output_line ('h_IsortPermutation:     '//TRIM(sys_siL(rvector%h_IsortPermutation,15)))
     CALL output_line ('h_Ddata:                '//TRIM(sys_siL(rvector%h_Ddata,15)))
@@ -17016,7 +17017,7 @@ CONTAINS
       CALL storage_getsize(rvector%h_Ddata,isize)
       CALL output_line ('Ddata memory usage:     '//TRIM(sys_sdL(100/REAL(isize,DP)*rvector%NEQ*rvector%NVAR,2))//'%')
     END IF
-    CALL output_line ('iidxFirstEntry:         '//TRIM(sys_siL(rvector%iidxFirstEntry,0)))
+    CALL output_line ('iidxFirstEntry:         '//TRIM(sys_siL(rvector%iidxFirstEntry,15)))
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoVector
 
