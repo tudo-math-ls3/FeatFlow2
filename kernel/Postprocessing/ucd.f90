@@ -1022,7 +1022,8 @@ CONTAINS
 !</subroutine>
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setAlternativeSource: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setAlternativeSource')
       CALL sys_halt()
     END IF
     
@@ -1084,7 +1085,8 @@ CONTAINS
 !</subroutine>
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setMaterials: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setMaterials')
       CALL sys_halt()
     END IF
     
@@ -1136,14 +1138,16 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX) :: NEL
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setCellMaterial: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setCellMaterial')
       CALL sys_halt()
     END IF
     
     NEL = rexport%p_rtriangulation%NEL
     
     IF (SIZE(Imaterials) .LT. NEL) THEN
-      PRINT *,'ucd_setCellMaterial error: Imaterials invalid!'
+      CALL output_line ('Imaterials invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setCellMaterial')
       CALL sys_halt()
     END IF
     
@@ -1210,7 +1214,8 @@ CONTAINS
   INTEGER(PREC_VERTEXIDX) :: NVT
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setVertexMaterial: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setVertexMaterial')
       CALL sys_halt()
     END IF
     
@@ -1219,20 +1224,23 @@ CONTAINS
     NEL = rexport%p_rtriangulation%NEL
     
     IF (SIZE(ImaterialsVert) .LT. NVT) THEN
-      PRINT *,'ucd_setVertexMaterial error: ImaterialsVert invalid!'
+      CALL output_line ('ImaterialsVert invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setVertexMaterial')
       CALL sys_halt()
     END IF
 
     IF (PRESENT(ImaterialsMid)) THEN
       IF (SIZE(ImaterialsMid) .LT. NMT) THEN
-        PRINT *,'ucd_setVertexMaterial error: ImaterialsMid invalid!'
+        CALL output_line ('ImaterialsMid invalid!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setVertexMaterial')
         CALL sys_halt()
       END IF
     END IF
 
     IF (PRESENT(ImaterialsElem)) THEN
       IF (SIZE(ImaterialsElem) .LT. NEL) THEN
-        PRINT *,'ucd_setVertexMaterial error: ImaterialsElem invalid!'
+        CALL output_line ('ImaterialsElem invalid!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setVertexMaterial')
         CALL sys_halt()
       END IF
     END IF
@@ -1296,8 +1304,8 @@ CONTAINS
     IF (rexport%sfilename .NE. '') THEN
       CALL io_openFileForWriting(rexport%sfilename, rexport%iunit, SYS_REPLACE)
       IF (rexport%iunit .LT. 0) THEN
-        PRINT *,'ucd_write: Cannot open file "'//TRIM(rexport%sfilename)&
-                //'" for writing!'
+        CALL output_line ('Cannot open file "'//TRIM(rexport%sfilename)&
+                //'" for writing!', OU_CLASS_ERROR,OU_MODE_STD,'ucd_write')
         CALL sys_halt()
       END IF
     END IF
@@ -1538,36 +1546,93 @@ CONTAINS
         
         IF (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .EQ. 0) THEN
         
-          ! Standard mesh.
-          DO iel = 1,rexport%p_rtriangulation%NEL
+          SELECT CASE (rexport%p_rtriangulation%ndim)
           
-            ! Count the number of vertices on that element
-            DO i=1,UBOUND(p_IverticesAtElement,1)
-              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+          CASE (NDIM1D)
+        
+            ! Standard mesh.
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
+              
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+              CASE (2)
+                ! Line in 1D
+                WRITE(mfile,'(A)') 'line 2'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(1:2,iel)
+              
+              CASE DEFAULT
+                CALL output_line ('Invalid element!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+              END SELECT
+                
             END DO
             
-            ! We have i-1 vertices on that element -- so what is it?
-            SELECT CASE (i-1)
-            CASE (2)
-              ! Line in 1D
-              WRITE(mfile,'(A)') 'line 2'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(1:2,iel)
+          CASE (NDIM2D)
+
+            ! Standard mesh.
+            DO iel = 1,rexport%p_rtriangulation%NEL
             
-            CASE (3)
-              ! Triangle
-              WRITE(mfile,'(A)') 'tri 3'
-              WRITE(mfile,'(3I8)') p_IverticesAtElement(1:3,iel)
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
               
-            CASE (4)
-              ! Quad
-              WRITE(mfile,'(A)')'quad 4'
-              WRITE(mfile,'(4I8)') p_IverticesAtElement(1:4,iel)
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
               
-            CASE DEFAULT
-              PRINT *,'Invalid element!'
-            END SELECT
+              CASE (3)
+                ! Triangle
+                WRITE(mfile,'(A)') 'tri 3'
+                WRITE(mfile,'(3I8)') p_IverticesAtElement(1:3,iel)
+                
+              CASE (4)
+                ! Quad
+                WRITE(mfile,'(A)')'quad 4'
+                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:4,iel)
+                
+              CASE DEFAULT
+                CALL output_line ('Invalid element!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+              END SELECT
+                
+            END DO
+
+          CASE (NDIM3D)
+          
+            ! Standard mesh.
+            DO iel = 1,rexport%p_rtriangulation%NEL
+            
+              ! Count the number of vertices on that element
+              DO i=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+              END DO
               
-          END DO
+              ! We have i-1 vertices on that element -- so what is it?
+              SELECT CASE (i-1)
+              
+              CASE (4)
+                ! Pyramid
+                WRITE(mfile,'(A)') 'ptet4 4'
+                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:4,iel)
+                
+              CASE (8)
+                ! Hexahedron
+                WRITE(mfile,'(A)')'hex 8'
+                WRITE(mfile,'(8I8)') p_IverticesAtElement(1:8,iel)
+                
+              CASE DEFAULT
+                CALL output_line ('Invalid element!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+              END SELECT
+                
+            END DO
+
+          END SELECT          
             
         ELSE
 
@@ -2183,7 +2248,8 @@ CONTAINS
               p_IverticesAtElement(1:4,j)
           
         CASE DEFAULT
-          PRINT *,'Invalid element!'
+          CALL output_line ('Invalid element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeAVS')
           
         END SELECT
         
@@ -2535,7 +2601,8 @@ CONTAINS
                 k + p_IedgesAtElement(4,j)
             
           CASE DEFAULT
-            PRINT *,'Invalid element!'
+            CALL output_line ('Invalid element!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
           END SELECT
           
         END DO
@@ -2589,7 +2656,8 @@ CONTAINS
                 (p_IverticesAtElement(8,j)-1)
                 
           CASE DEFAULT
-            PRINT *,'Invalid element!'
+            CALL output_line ('Invalid element!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
           END SELECT
           
         END DO
@@ -2692,7 +2760,10 @@ CONTAINS
             ! Make sure we have at least the X-coordinate
 
             IF (.NOT. ASSOCIATED(p_Dx)) THEN
-              PRINT *, "Error: Variable vector ", j, " does not have X-coordinates!"
+              CALL output_line ('Error: Variable vector '//&
+                  TRIM(sys_siL(j,10))//' does not have X-coordinates!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
+              
               ! Try next vector
               CYCLE
             END IF
@@ -2991,12 +3062,14 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
     IF (PRESENT(DdataElem) .AND. .NOT. PRESENT(DdataMid)) THEN
-      PRINT *,'ucd_addVariableVertexBased: Error in the parameters!'
+      CALL output_line ('Error in the parameters!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
       CALL sys_halt()
     END IF
     
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
       CALL sys_halt()
     END IF
     
@@ -3038,7 +3111,8 @@ CONTAINS
             p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
                                                    rexport%p_rtriangulation%NMT))
       ELSE
-        PRINT *,'ucd_addVariableVertexBased: Warning. No edge midpoint data available!'
+        CALL output_line ('Warning. No edge midpoint data available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
       END IF
     END IF
     
@@ -3052,8 +3126,8 @@ CONTAINS
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
                     rexport%p_rtriangulation%NEL))
       ELSE
-        PRINT *,'ucd_addVariableVertexBased: Warning. No element midpoint '//&
-                'data available!'
+        CALL output_line ('Warning. No element midpoint data available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
       END IF
     END IF    
 
@@ -3107,7 +3181,8 @@ CONTAINS
 !</subroutine>
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVarVertBasedVec')
       CALL sys_halt()
     END IF
     
@@ -3195,7 +3270,8 @@ CONTAINS
 !</subroutine>
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVarElemBasedVec')
       CALL sys_halt()
     END IF
     
@@ -3285,7 +3361,8 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addVariableElementBased: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableElementBased')
       CALL sys_halt()
     END IF
     
@@ -3382,7 +3459,8 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addPolygon: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addPolygon')
       CALL sys_halt()
     END IF
     
@@ -3447,7 +3525,8 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setTracers: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setTracers')
       CALL sys_halt()
     END IF
     
@@ -3538,17 +3617,21 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addTracerVariable')
       CALL sys_halt()
     END IF
     
     IF (rexport%ntracers .LE. 0) THEN
-      PRINT *,'ucd_addTracerVariable: No tracers specified!'
+      CALL output_line ('No tracers specified!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addTracerVariable')
       CALL sys_halt()
     END IF
     
     IF (SIZE(Ddata) .LT. rexport%ntracers) THEN
-      PRINT *,'ucd_addTracerVariable: Ddata too small, more tracers than data!'
+      CALL output_line ('Ddata too small, more tracers than data!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addTracerVariable')
+      CALL sys_halt()
     END IF
 
     ! Create a new variable. If necessary, increase the size of the buffer.
@@ -3603,7 +3686,8 @@ CONTAINS
     CHARACTER(LEN=SYS_STRLEN) :: stext
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setSimulationTime')
       CALL sys_halt()
     END IF
     
@@ -3618,7 +3702,8 @@ CONTAINS
       ! a runtime error or simply a message on the screen.
       WRITE(stext,ssimTimeFormat) 0.0_DP
       IF (stext .EQ. "") THEN
-        PRINT *,'ucd_setSimulationTime: Invalid output format!'
+        CALL output_line ('Invalid output format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ucd_setSimulationTime')
         CALL sys_halt()
       END IF
     END IF
@@ -3653,7 +3738,8 @@ CONTAINS
     CHARACTER(LEN=SYS_STRLEN) :: stext
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_setOutputNumberFormat: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setOutputNumberFormat')
       CALL sys_halt()
     END IF
     
@@ -3665,7 +3751,8 @@ CONTAINS
     ! a runtime error or simply a message on the screen.
     WRITE(stext,sformat) 0.0_DP
     IF (stext .EQ. "") THEN
-      PRINT *,'ucd_setOutputNumberFormat: Invalid output format!'
+      CALL output_line ('Invalid output format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_setOutputNumberFormat')
       CALL sys_halt()
     END IF
   
@@ -3699,7 +3786,8 @@ CONTAINS
     INTEGER :: i
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addCommentLine: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addCommentLine')
       CALL sys_halt()
     END IF
     
@@ -3754,7 +3842,8 @@ CONTAINS
     CHARACTER, DIMENSION(:), POINTER :: p_sbuf,p_sparams
 
     IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
-      PRINT *,'ucd_addParameterList: Export structure not initialised!'
+      CALL output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addParameterList')
       CALL sys_halt()
     END IF
     
@@ -3845,8 +3934,8 @@ CONTAINS
     IF (sfilename .NE. '') THEN
       CALL io_openFileForReading(sfilename, mfile, .TRUE.)
       IF (mfile .LT. 0) THEN
-        PRINT *,'ucd_readGMV: Cannot open file "'//TRIM(sfilename)&
-                //'" for writing!'
+        CALL output_line ('Cannot open file "'//TRIM(sfilename)&
+                //'" for writing!',OU_CLASS_ERROR,OU_MODE_STD,'ucd_readGMV')
         CALL sys_halt()
       END IF
     END IF
