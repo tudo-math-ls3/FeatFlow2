@@ -236,7 +236,7 @@ CONTAINS
     ! Now go through all vertices and map the DOFs
     idof = 1
     DO ivt=1, rtriangulation%NVT
-      ! Is this a boundary vertice?
+      ! Is this a boundary vertex?
       IF (p_InodalProperty(ivt) > 0) THEN
         ! Then add it to the Dirichlet-DOF array
         p_IdirichletDOFs(idof) = ivt
@@ -317,8 +317,10 @@ CONTAINS
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
-    ! We'll export it to VTK as GMV does not support 3D grid yet...
-    CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.vtk')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.gmv')
+    
+    ! Export to VTK would be:
+    ! CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.vtk')
 
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
