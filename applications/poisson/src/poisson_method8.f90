@@ -31,6 +31,7 @@ MODULE poisson_method8
   USE ucd
   USE pprocerror
   USE hadaptivity
+  USE hadaptaux
     
   USE poisson_callback
   
