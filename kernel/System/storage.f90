@@ -80,6 +80,8 @@
 !#      -> Initialise a storage block with zero (like storage_clear)
 !#         or increasing number.
 !#
+!# 15.) storage_isEqual
+!#      -> Checks if the content of two different handles is equal
 !# </purpose>
 !##############################################################################
 
@@ -5414,5 +5416,200 @@ CONTAINS
     p_rnode = rstorageNode
 
   END SUBROUTINE
+
+!************************************************************************
+
+!<FUNCTION>
+
+  FUNCTION storage_isEqual (ihandle1, ihandle2, rheap1, rheap2) RESULT (bisequal)
+
+!<description>
+
+  ! This routine checks if the content of two different handles is equal
+
+!</description>
+
+!<input>
+
+  ! The first handle
+  INTEGER, INTENT(IN) :: ihandle1
+
+  ! The second handle
+  INTEGER, INTENT(IN) :: ihandle2
+
+  ! OPTIONAL: first local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap1
+
+  ! OPTIONAL: second local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap2
+
+!</input>
+
+!<result>
+
+  ! .TRUE. if the content is equal.
+  LOGICAL :: bisequal
+
+!</output>
+
+!</function>
+
+  ! local variables
+
+  ! Pointer to the heaps
+  TYPE(t_storageBlock), POINTER :: p_rheap1,p_rheap2
+
+  ! Identifier for data type
+  INTEGER :: idatatype1, idatatype2
+
+  ! Identifier for data dimension
+  INTEGER :: idimension1, idimension2
+
+  ! Identifier for size
+  INTEGER(I32) :: isize1, isize2
+  INTEGER(I32) :: Isize2D1(2), Isize2D2(2)
+
+  ! Auxiliary arrays
+  REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddouble2D1,p_Ddouble2D2
+  REAL(DP), DIMENSION(:),   POINTER     :: p_Ddouble1D1,p_Ddouble1D2
+  REAL(SP), DIMENSION(:,:), POINTER     :: p_Fsingle2D1,p_Fsingle2D2
+  REAL(SP), DIMENSION(:),   POINTER     :: p_Fsingle1D1,p_Fsingle1D2
+  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iinteger2D1,p_Iinteger2D2
+  INTEGER(I32), DIMENSION(:),   POINTER :: p_Iinteger1D1,p_Iinteger1D2
+  LOGICAL, DIMENSION(:,:), POINTER      :: p_Blogical2D1,p_Blogical2D2
+  LOGICAL, DIMENSION(:),   POINTER      :: p_Blogical1D1,p_Blogical1D2
+  CHARACTER, DIMENSION(:,:), POINTER    :: p_Schar2D1,p_Schar2D2
+  CHARACTER, DIMENSION(:),   POINTER    :: p_Schar1D1,p_Schar1D2
+  
+  ! Get the heaps to use - local or global one.
+
+  IF(PRESENT(rheap1)) THEN
+    p_rheap1 => rheap1
+  ELSE
+    p_rheap1 => rbase
+  END IF
+
+  IF(PRESENT(rheap2)) THEN
+    p_rheap2 => rheap2
+  ELSE
+    p_rheap2 => rbase
+  END IF
+
+  ! Determine data type
+  CALL storage_getdatatype(ihandle1, idatatype1, p_rheap1)
+  CALL storage_getdatatype(ihandle2, idatatype2, p_rheap2)
+
+  IF (idatatype1 .NE. idatatype2) THEN
+    bisequal = .FALSE.
+    RETURN
+  END IF
+
+  ! Determine dimension
+  CALL storage_getdimension(ihandle1, idimension1, p_rheap1)
+  CALL storage_getdimension(ihandle2, idimension2, p_rheap2)
+
+  IF (idimension1 .NE. idimension2) THEN
+    bisequal = .FALSE.
+    RETURN
+  END IF
+
+  ! What dimension do we have?
+  SELECT CASE(idimension1)
+  CASE (1)
+
+    ! Determine size
+    CALL storage_getsize1d(ihandle1, isize1, p_rheap1)
+    CALL storage_getsize1d(ihandle2, isize2, p_rheap2)
+
+    IF (isize1 .NE. isize2) THEN
+      bisequal = .FALSE.
+      RETURN
+    END IF
+
+    ! What data type do we have?
+    SELECT CASE(idatatype1)
+    CASE (ST_INT)
+      CALL storage_getbase_int(ihandle1, p_Iinteger1D1, p_rheap1)
+      CALL storage_getbase_int(ihandle2, p_Iinteger1D2, p_rheap2)
+
+      bisequal = ALL(p_Iinteger1D1 .EQ. p_Iinteger1D2)
+
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single(ihandle1, p_Fsingle1D1, p_rheap1)
+      CALL storage_getbase_single(ihandle2, p_Fsingle1D2, p_rheap2)
+      
+      bisequal = ALL(p_Fsingle1D1 .EQ. p_Fsingle1D2)
+
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double(ihandle1, p_Ddouble1D1, p_rheap1)
+      CALL storage_getbase_double(ihandle2, p_Ddouble1D2, p_rheap2)
+
+      bisequal = ALL(p_Ddouble1D1 .EQ. p_Ddouble1D2)
+      
+    CASE (ST_LOGICAL)
+      CALL storage_getbase_logical(ihandle1, p_Blogical1D1, p_rheap1)
+      CALL storage_getbase_logical(ihandle2, p_Blogical1D2, p_rheap2)
+
+      bisequal = ALL(p_Blogical1D1 .AND. p_Blogical1D2)
+      
+    CASE (ST_CHAR)
+      CALL storage_getbase_char(ihandle1, p_Schar1D1, p_rheap1)
+      CALL storage_getbase_char(ihandle2, p_Schar1D2, p_rheap2)
+
+      bisequal = ALL(p_Schar1D1 .EQ. p_Schar1D2)
+    END SELECT
+
+  CASE (2)
+
+    ! Determine size
+    CALL storage_getsize2d(ihandle1, Isize2D1, p_rheap1)
+    CALL storage_getsize2d(ihandle2, Isize2D2, p_rheap2)
+
+    IF (ANY(Isize2d1 .NE. Isize2D2)) THEN
+      bisequal = .FALSE.
+      RETURN
+    END IF
+
+    ! What data type do we have?
+    SELECT CASE(idatatype1)
+    CASE (ST_INT)
+      CALL storage_getbase_int2d(ihandle1, p_Iinteger2D1, p_rheap1)
+      CALL storage_getbase_int2d(ihandle2, p_Iinteger2D2, p_rheap2)
+
+      bisequal = ALL(p_Iinteger2D1 .EQ. p_Iinteger2D2)
+
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single2d(ihandle1, p_Fsingle2D1, p_rheap1)
+      CALL storage_getbase_single2d(ihandle2, p_Fsingle2D2, p_rheap2)
+      
+      bisequal = ALL(p_Fsingle2D1 .EQ. p_Fsingle2D2)
+
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double2d(ihandle1, p_Ddouble2D1, p_rheap1)
+      CALL storage_getbase_double2d(ihandle2, p_Ddouble2D2, p_rheap2)
+
+      bisequal = ALL(p_Ddouble2D1 .EQ. p_Ddouble2D2)
+      
+    CASE (ST_LOGICAL)
+      CALL storage_getbase_logical2d(ihandle1, p_Blogical2D1, p_rheap1)
+      CALL storage_getbase_logical2d(ihandle2, p_Blogical2D2, p_rheap2)
+
+      bisequal = ALL(p_Blogical2D1 .AND. p_Blogical2D2)
+      
+    CASE (ST_CHAR)
+      CALL storage_getbase_char2d(ihandle1, p_Schar2D1, p_rheap1)
+      CALL storage_getbase_char2d(ihandle2, p_Schar2D2, p_rheap2)
+
+      bisequal = ALL(p_Schar2D1 .EQ. p_Schar2D2)
+    END SELECT
+
+  CASE DEFAULT
+    PRINT *, 'Error in storage_realloc: Handle ',ihandle1, &
+        ' is neither 1- nor 2- dimensional!'
+    CALL sys_halt()
+  END SELECT
+  END FUNCTION storage_isEqual
 
 END MODULE
