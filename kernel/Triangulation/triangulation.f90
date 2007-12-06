@@ -2591,7 +2591,6 @@ CONTAINS
     call tria_genFacesAtElement       (rtriangulation)
     call tria_genVerticesAtFace       (rtriangulation)
     call tria_genElementsAtFace       (rtriangulation) 
-    ! call genGlobalFaceNumbers
     
     ! call FacesAtEdge(list)
     ! call EdgesAtFace(global face, global edge)
@@ -7693,7 +7692,7 @@ CONTAINS
   ! allocate memory
   if(rtriangulation%h_IverticesAtEdge == ST_NOHANDLE) then
     call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtEdge', &
-        int(Isize), ST_INT, &
+        Isize, ST_INT, &
         rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
   end if      
   
@@ -7778,7 +7777,7 @@ CONTAINS
   ! allocate memory
   if(rtriangulation%h_IfacesAtElement == ST_NOHANDLE) then
     call storage_new2d('tria_genElementsAtEdge3D', 'IfacesAtElement', &
-        int(Isize), ST_INT, &
+        Isize, ST_INT, &
         rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_NOINIT)
   end if      
   
@@ -7875,13 +7874,13 @@ CONTAINS
   call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
       p_IfacesAtElement)
       
-    
+  ! init isize  
   Isize = (/4,rtriangulation%NAT/)
   
   ! allocate memory
   if(rtriangulation%h_IverticesAtFace == ST_NOHANDLE) then
     call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtFace', &
-        int(Isize), ST_INT, &
+        Isize, ST_INT, &
         rtriangulation%h_IverticesAtFace, ST_NEWBLOCK_NOINIT)
   end if      
   
@@ -7915,11 +7914,14 @@ CONTAINS
         ineighbour = p_IneighboursAtElement(iface,iel)
         
         ifaceNeighbour = 1
+        
+        ! number of the face
         do 
          if(iel /= p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
          ifaceNeighbour = ifaceNeighbour + 1
         end do
         
+        ! index of the face in the array is obtained by nmt and nvt
         ifaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour) - &
                       rtriangulation%NMT - rtriangulation%NVT
         
@@ -7932,7 +7934,7 @@ CONTAINS
   
   end do ! end iel
 
-  end subroutine
+  end subroutine ! end tria_genVerticesAtFace
   
 !====================================================================      
 !<subroutine>  
@@ -7946,8 +7948,6 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>    
-  end subroutine
-  
-
+  end subroutine ! end tria_genElementsAtFace
 
 END MODULE
