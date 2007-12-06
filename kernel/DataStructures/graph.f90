@@ -77,12 +77,13 @@
 
 MODULE graph
 
-  USE fsystem
-  USE storage
-  USE genoutput
-  USE binarytree
   USE arraylist
+  USE binarytree
+  USE fsystem
+  USE genoutput
   USE linearsystemscalar
+  USE storage
+
   IMPLICIT NONE
 
   PRIVATE
@@ -442,6 +443,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
     INTEGER(PREC_TABLEIDX) :: itable
     INTEGER(PREC_VECIDX) :: ieq
     INTEGER(PREC_MATIDX) :: ia,ncols
@@ -542,6 +544,31 @@ CONTAINS
         ia = ia+ncols
       END DO
       p_Kld(rscalarMatrix%NEQ+1)=ia
+    END IF
+
+    ! Do we have to rebuild the diagonal?
+    IF (rscalarMatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9 .OR.&
+        rscalarMatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9INTL) THEN
+
+      ! Create new memory or resize existing memory      
+      IF (rscalarMatrix%h_Kdiagonal .EQ. ST_NOHANDLE) THEN
+        CALL storage_new('grph_generateMatrix','p_Kdiagonal',&
+            rscalarMatrix%NEQ, ST_INT, rscalarMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+      ELSE
+        CALL storage_getsize(rscalarMatrix%h_Kdiagonal,isize)
+        IF (isize < rscalarMatrix%NEQ) THEN
+          CALL storage_realloc('grph_generateMatrix',&
+              rscalarMatrix%NEQ, rscalarMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT, .FALSE.)
+        END IF
+      END IF
+
+      ! Set pointers
+      CALL lsyssc_getbase_Kld(rscalarMatrix, p_Kld)
+      CALL lsyssc_getbase_Kcol(rscalarMatrix, p_Kcol)
+      CALL lsyssc_getbase_Kdiagonal(rscalarMatrix, p_Kdiagonal)
+
+      ! Rebuild array
+      CALL lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rscalarMatrix%NEQ)
     END IF
   END SUBROUTINE grph_generateMatrix
 
