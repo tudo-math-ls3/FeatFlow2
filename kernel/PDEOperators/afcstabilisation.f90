@@ -45,14 +45,14 @@
 !# </purpose>
 !##############################################################################
 MODULE afcstabilisation
+
   USE fsystem
-  USE storage
-  USE paramlist
   USE genoutput
   USE linearsystemscalar
+  USE paramlist
+  USE sorting
+  USE storage
   USE triangulation
-  USE cubature
-  !USE sorting
 
   IMPLICIT NONE
   
@@ -248,8 +248,10 @@ MODULE afcstabilisation
     ! flag isortStrategy!
     INTEGER :: h_IsortPermutation                      = ST_NOHANDLE
 
-    ! Auxiliary vectors
+    ! Auxiliary nodal vectors; used internally
     TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RnodalVectors => NULL()
+
+    ! Auxiliary edge vectors; used internally
     TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RedgeVectors  => NULL()
   END TYPE t_afcstab
 !</typeblock>
@@ -423,10 +425,12 @@ CONTAINS
     INTEGER :: i
 
     ! Check if dimension NVAR is correct
-    IF (rafcstab%NVAR .NE. nvar) THEN
-      CALL output_line('Invalid number of variables!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabilisation')
-      CALL sys_halt()
+    IF (PRESENT(nvar)) THEN
+      IF (rafcstab%NVAR .NE. nvar) THEN
+        CALL output_line('Invalid number of variables!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabilisation')
+        CALL sys_halt()
+      END IF
     END IF
 
     ! Resize nodal quantities
