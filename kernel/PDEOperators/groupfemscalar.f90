@@ -55,13 +55,14 @@
 !##############################################################################
 
 MODULE groupfemscalar
+
+  USE afcstabilisation
   USE fsystem
-  USE storage
   USE genoutput
   USE linearalgebra
-  USE linearsystemscalar
   USE linearsystemblock
-  USE afcstabilisation
+  USE linearsystemscalar
+  USE storage
 
   IMPLICIT NONE
 
@@ -159,14 +160,14 @@ CONTAINS
           rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
       
       ! Handle for IverticesAtEdge
-      Isize = (/4,rafcstab%NEDGE/)
+      Isize = (/4, rafcstab%NEDGE/)
       IF (rafcstab%h_IverticesAtEdge .NE. ST_NOHANDLE)&
           CALL storage_free(rafcstab%h_IverticesAtEdge)
       CALL storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! Handle for DcoefficientsAtEdge
-      Isize = (/3,rafcstab%NEDGE/)
+      Isize = (/3, rafcstab%NEDGE/)
       IF (rafcstab%h_DcoefficientsAtEdge .NE. ST_NOHANDLE)&
           CALL storage_free(rafcstab%h_DcoefficientsAtEdge)
       CALL storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
@@ -444,7 +445,7 @@ CONTAINS
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      CALL storage_copy(rmatrixL%h_Kld,h_Ksep)
+      CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
       CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
 
       ! Do we have a stabilization structure?
@@ -1227,7 +1228,7 @@ CONTAINS
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
-            
+
       ! Loop over all rows
       DO i = 1, NEQ
         
