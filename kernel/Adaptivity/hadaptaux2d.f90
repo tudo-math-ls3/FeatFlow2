@@ -133,9 +133,9 @@
 
 MODULE hadaptaux2d
 
+  USE collection
   USE fsystem
   USE hadaptaux
-  USE collection
 
   IMPLICIT NONE
 
