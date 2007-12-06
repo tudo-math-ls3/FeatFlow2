@@ -11590,7 +11590,19 @@ CONTAINS
         CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
       END IF
       
+      ! Perform preconditioning
       CALL linsol_precondDefect(rsolverNode,rtemp)
+      
+      ! If the preconditioner broke down, cancel the smoothing,
+      ! it would destroy out solution!
+      IF (rsolverNode%iresult .NE. 0) THEN
+        IF (rsolverNode%ioutputLevel .GE. 0) THEN
+          CALL output_line ('Smoothing canceled, preconditioner broke down!', &
+                            OU_CLASS_WARNING,OU_MODE_STD,'linsol_smoothCorrection')
+          EXIT
+        END IF
+      END IF
+      
       CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
     END DO
