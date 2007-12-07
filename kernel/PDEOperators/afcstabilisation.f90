@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afcstabilization </name>
+!# <name> afcstabilisation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -75,41 +75,44 @@ MODULE afcstabilisation
   ! *****************************************************************************
 
 !<constants>
-!<constantblock description="Global format flags for AFC stabilization">
+!<constantblock description="Global format flags for AFC stabilisation">
 
-  ! No stabilization: use standard high-order Galerkin discretization
+  ! No stabilisation: use standard high-order Galerkin discretization
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_GALERKIN        = 0
   
-  ! Stabilization of discrete upwind type
+  ! Stabilisation of discrete upwind type
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UPWIND          = 1
   
-  ! Stabilization of FEM-FCT type
+  ! Stabilisation of semi-implicit FEM-FCT type
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT          = 2
   
-  ! Stabilization of general purpose type
+  ! Stabilisation of general purpose type
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMGP           = 3
   
-  ! Stabilization of FEM-TVD type
+  ! Stabilisation of FEM-TVD type
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 4
+  
+  ! Stabilisation of predictor-corrector FEM-FCT type
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_PC       = 5
   
 !</constantblock>
 
 !<constantblock description="Global format flags for dissipation">
 
   ! Employ scalar dissipation (default)
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SCALARDISSIPATION      = 1
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SCALARDISSIPATION = 1
 
   ! Employ tensorial dissipation
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_TENSORDISSIPATION      = 2
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_TENSORDISSIPATION = 2
 
 !</constantblock>
 
-!<constantblock description="Bitfield identifiers for state of stabilization">
+!<constantblock description="Bitfield identifiers for state of stabilisation">
   
-  ! Stabilization is undefined
+  ! Stabilisation is undefined
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UNDEFINED       = 2**0
 
-  ! Stabilization has been initialized
+  ! Stabilisation has been initialized
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_INITIALIZED     = 2**1
 
   ! Edge-based structure generated: KEDGE
@@ -157,13 +160,13 @@ MODULE afcstabilisation
   ! data structure that holds all required information for stabilisation
   TYPE t_afcstab
     
-    ! Format Tag. Identifies the type of stabilization
+    ! Format Tag. Identifies the type of stabilisation
     INTEGER :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
 
     ! Format Tag. Specifies the type of dissipation
     INTEGER :: iDissipation                            = AFCSTAB_SCALARDISSIPATION
 
-    ! Format Tag: Specifies the stabilization
+    ! Format Tag: Specifies the stabilisation
     INTEGER :: iSpec                                   = AFCSTAB_UNDEFINED
 
     ! Format Tag: Specifies whether an extended stencil should be
@@ -173,7 +176,7 @@ MODULE afcstabilisation
     INTEGER :: iextendedJacobian                       = 0
 
     ! Format Tag: Specifies whether the consistent mass matrix should
-    ! be considered in the stabilization procedure
+    ! be considered in the stabilisation procedure
     !   imass = 0 : neglect consistent mass matrix
     !   imass = 1 : consider consistent mass matrix
     INTEGER :: imass                                   = 0
@@ -294,30 +297,31 @@ CONTAINS
 !</subroutine>
 
     ! local variable
-    INTEGER :: istabilization
+    INTEGER :: istabilisation
 
-    ! Get type of stabilization from parameter list
+    ! Get type of stabilisation from parameter list
     CALL parlst_getvalue_int(rparlist, ssectionName,&
-        "istabilization", istabilization)
+        "istabilisation", istabilisation)
     
-    ! Check if stabilization should be applied
-    IF (istabilization .EQ. AFCSTAB_GALERKIN) THEN
+    ! Check if stabilisation should be applied
+    IF (istabilisation .EQ. AFCSTAB_GALERKIN) THEN
       
       RETURN   ! -> high-order Galerkin
       
-    ELSEIF ((istabilization .NE. AFCSTAB_UPWIND) .AND. &
-        (    istabilization .NE. AFCSTAB_FEMFCT) .AND. &
-        (    istabilization .NE. AFCSTAB_FEMTVD) .AND. &
-        (    istabilization .NE. AFCSTAB_FEMGP)) THEN 
+    ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND) .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT) .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMTVD) .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMGP)  .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT_PC)) THEN 
       
       CALL output_line('Invalid AFC type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initFromParameterlist')
       CALL sys_halt()
 
     ELSE
-      ! Set type of stabilization
+      ! Set type of stabilisation
       rafcstab%iSpec                 = AFCSTAB_UNDEFINED
-      rafcstab%ctypeAFCstabilisation = istabilization
+      rafcstab%ctypeAFCstabilisation = istabilisation
       
       ! Set additional parameters
       CALL parlst_getvalue_int(rparlist, ssectionName,&
