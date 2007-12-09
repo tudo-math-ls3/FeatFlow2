@@ -136,9 +136,9 @@ MODULE cubature
 
   ! vertices, midpoints, center, degree = 4, ncubp = 7 
   INTEGER, PARAMETER :: CUB_VMC = 254
-! </constantblock>
+!</constantblock>
 
-! <constantblock variable="ccubType" description="3D formulas">
+!<constantblock variable="ccubType" description="3D formulas, hexa">
 
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   INTEGER, PARAMETER :: CUB_G1_3D = 301
@@ -157,11 +157,35 @@ MODULE cubature
 
 !</constantblock>
 
+!<constantblock variable="ccubType" description="3D formulas, tetra">
+  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  INTEGER, PARAMETER :: CUB_G1_3D_T = 350
+  
+  ! trapezoidal rule, 3D, degree = 2, ncubp = 4
+  INTEGER, PARAMETER :: CUB_TRZ_3D_T = 351
+  
+  ! 4-point Stroud rule, 3D, degree = 2, ncubp = 4
+  INTEGER, PARAMETER :: CUB_S2_3D_T = 352
+  
+  ! 10-point Stroud rule, 3D, degree = 3, ncubp = 10
+  INTEGER, PARAMETER :: CUB_S3_3D_T = 353
+  
+  ! 15-point Stroud rule, 3D, degree = 5, ncubp = 15
+  INTEGER, PARAMETER :: CUB_S5_3D_T = 354
+  
+!</constantblock>
+
   ! maximal size of cubature node field
   INTEGER, PARAMETER :: CUB_MAXCUBP = 36
 
-  ! maximal number of cubature points in 1-D
+  ! maximal number of cubature points in 1D
   INTEGER, PARAMETER :: CUB_MAXCUBP_1D = 6
+  
+  ! maximal number of cubature points in 2D
+  INTEGER, PARAMETER :: CUB_MAXCUBP_2D = 36
+  
+  ! maximal number of cubature points in 3D
+  INTEGER, PARAMETER :: CUB_MAXCUBP_3D = 15
 
 !</constants>
 
@@ -192,7 +216,7 @@ CONTAINS
 
   SELECT CASE(TRIM(sys_upcase(scubName)))
 
-  !1D-formulas
+  ! 1D-formulas
   CASE("G1_1D")
     cub_igetID=CUB_G1_1D
   CASE("TRZ_1D")
@@ -210,7 +234,7 @@ CONTAINS
   CASE("G6_1D")
     cub_igetID=CUB_G6_1D
 
-  !2D-fomulas
+  ! 2D-fomulas, quadrilateral
   CASE ("G1X1")
     cub_igetID=CUB_G1X1
   CASE ("TRZ")
@@ -242,7 +266,7 @@ CONTAINS
   CASE ("PG3X3")
     cub_igetID=CUB_PG3X3
     
-  !triangle formulas
+  ! 2D-formulas, triangle
   CASE ("G1_T")
     cub_igetID=CUB_G1_T
   CASE ("TRZ_T")
@@ -254,7 +278,7 @@ CONTAINS
   CASE ("VMC")
     cub_igetID=CUB_VMC
 
-  !3D-formulas
+  ! 3D-formulas, hexahedron
   CASE("G1_3D")
     cub_igetID=CUB_G1_3D
   CASE("MIDAREA_3D")
@@ -265,6 +289,18 @@ CONTAINS
     cub_igetID=CUB_G2_3D
   CASE("CUB_G3_3D")
     cub_igetID=CUB_G3_3D
+  
+  ! 3D-formulas, tetrahedron
+  CASE("CUB_G1_3D_T")
+    cub_igetID=CUB_G1_3D_T
+  CASE("CUB_TRZ_3D_T")
+    cub_igetID=CUB_TRZ_3D_T
+  CASE("CUB_S2_3D_T")
+    cub_igetID=CUB_S2_3D_T
+  CASE("CUB_S3_3D_T")
+    cub_igetID=CUB_S3_3D_T
+  CASE("CUB_S5_3D_T")
+    cub_igetID=CUB_S5_3D_T
 
   CASE DEFAULT
     PRINT *,'Error: Unknown cubature formula: ',scubname
@@ -304,15 +340,20 @@ CONTAINS
   !     Triangles:
   !        Dxi(1..ncubp,1)=1st barycentric coordinate, 
   !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
-  !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
-  ! 3D: Hexahedraly:
+  !        Dxi(1..ncubp,3)=3rd barycentric coordinate
+  ! 3D: Hexahedra:
   !       Dxi(1..ncubp,1)=x-coord, 
   !       Dxi(1..ncubp,2)=y-coord, 
   !       Dxi(1..ncubp,3)=z-coord
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D), INTENT(OUT) :: Dxi
+  !     Tetrahedra:
+  !        Dxi(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
+  !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
+  !        Dxi(1..ncubp,4)=4th barycentric coordinate
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi
   
   ! For every cubature point the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP), INTENT(OUT) :: Domega
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Domega
   
 !</output>
 
@@ -1446,6 +1487,203 @@ CONTAINS
     Domega(27)=  0.43895747599451_DP
 
     ncubp     =  27
+
+  ! tetrahedra
+  CASE(CUB_G1_3D_T)
+    Dxi(1,1)  =  0.25_DP
+    Dxi(1,2)  =  0.25_DP
+    Dxi(1,3)  =  0.25_DP
+    Dxi(1,4)  =  0.25_DP
+    
+    Domega(1) = 0.1666666666666667_DP
+    
+    ncubp = 1
+    
+  CASE(CUB_TRZ_3D_T)
+    Dxi(1,1)  =  1.0_DP
+    Dxi(1,2)  =  0.0_DP
+    Dxi(1,3)  =  0.0_DP
+    Dxi(1,4)  =  0.0_DP
+    Dxi(2,1)  =  0.0_DP
+    Dxi(2,2)  =  1.0_DP
+    Dxi(2,3)  =  0.0_DP
+    Dxi(2,4)  =  0.0_DP
+    Dxi(3,1)  =  0.0_DP
+    Dxi(3,2)  =  0.0_DP
+    Dxi(3,3)  =  1.0_DP
+    Dxi(3,4)  =  0.0_DP
+    Dxi(4,1)  =  0.0_DP
+    Dxi(4,2)  =  0.0_DP
+    Dxi(4,3)  =  0.0_DP
+    Dxi(4,4)  =  1.0_DP
+
+    Domega(1) =  0.0416666666666667_DP
+    Domega(2) =  0.0416666666666667_DP
+    Domega(3) =  0.0416666666666667_DP
+    Domega(4) =  0.0416666666666667_DP
+    
+    ncubp     =  4
+
+  CASE(CUB_S2_3D_T)
+    Dxi(1,1)  = 0.5854101966249685_DP
+    Dxi(1,2)  = 0.1381966011250105_DP
+    Dxi(1,3)  = 0.1381966011250105_DP
+    Dxi(1,4)  = 0.1381966011250105_DP
+    Dxi(2,1)  = 0.1381966011250105_DP
+    Dxi(2,2)  = 0.5854101966249685_DP
+    Dxi(2,3)  = 0.1381966011250105_DP
+    Dxi(2,4)  = 0.1381966011250105_DP
+    Dxi(3,1)  = 0.1381966011250105_DP
+    Dxi(3,2)  = 0.1381966011250105_DP
+    Dxi(3,3)  = 0.5854101966249685_DP
+    Dxi(3,4)  = 0.1381966011250105_DP
+    Dxi(4,1)  = 0.1381966011250105_DP
+    Dxi(4,2)  = 0.1381966011250105_DP
+    Dxi(4,3)  = 0.1381966011250105_DP
+    Dxi(4,4)  = 0.5854101966249685_DP
+    
+    Domega(1) = 0.0416666666666667_DP
+    Domega(2) = 0.0416666666666667_DP
+    Domega(3) = 0.0416666666666667_DP
+    Domega(4) = 0.0416666666666667_DP
+    
+    ncubp = 4
+  
+  CASE(CUB_S3_3D_T)
+    Dxi( 1,1) = 0.1438564719343849_DP
+    Dxi( 1,2) = 0.1438564719343849_DP
+    Dxi( 1,3) = 0.1438564719343849_DP
+    Dxi( 1,4) = 0.5684305841968454_DP
+    Dxi( 2,1) = 0.1438564719343849_DP
+    Dxi( 2,2) = 0.1438564719343849_DP
+    Dxi( 2,3) = 0.5684305841968454_DP
+    Dxi( 2,4) = 0.1438564719343849_DP
+    Dxi( 3,1) = 0.1438564719343849_DP
+    Dxi( 3,2) = 0.5684305841968454_DP
+    Dxi( 3,3) = 0.1438564719343849_DP
+    Dxi( 3,4) = 0.1438564719343849_DP
+    Dxi( 4,1) = 0.5684305841968454_DP
+    Dxi( 4,2) = 0.1438564719343849_DP
+    Dxi( 4,3) = 0.1438564719343849_DP
+    Dxi( 4,4) = 0.1438564719343849_DP
+    Dxi( 5,1) = 0.5_DP
+    Dxi( 5,2) = 0.5_DP
+    Dxi( 5,3) = 0.0_DP
+    Dxi( 5,4) = 0.0_DP
+    Dxi( 6,1) = 0.5_DP
+    Dxi( 6,2) = 0.0_DP
+    Dxi( 6,3) = 0.5_DP
+    Dxi( 6,4) = 0.0_DP
+    Dxi( 7,1) = 0.5_DP
+    Dxi( 7,2) = 0.0_DP
+    Dxi( 7,3) = 0.0_DP
+    Dxi( 7,4) = 0.5_DP
+    Dxi( 8,1) = 0.0_DP
+    Dxi( 8,2) = 0.5_DP
+    Dxi( 8,3) = 0.5_DP
+    Dxi( 8,4) = 0.0_DP
+    Dxi( 9,1) = 0.0_DP
+    Dxi( 9,2) = 0.5_DP
+    Dxi( 9,3) = 0.0_DP
+    Dxi( 9,4) = 0.5_DP
+    Dxi(10,1) = 0.0_DP
+    Dxi(10,2) = 0.0_DP
+    Dxi(10,3) = 0.5_DP
+    Dxi(10,4) = 0.5_DP
+
+    Domega( 1) = 0.0362941783134010_DP
+    Domega( 2) = 0.0362941783134010_DP
+    Domega( 3) = 0.0362941783134010_DP
+    Domega( 4) = 0.0362941783134010_DP
+    Domega( 5) = 0.0035816589021771_DP
+    Domega( 6) = 0.0035816589021771_DP
+    Domega( 7) = 0.0035816589021771_DP
+    Domega( 8) = 0.0035816589021771_DP
+    Domega( 9) = 0.0035816589021771_DP
+    Domega(10) = 0.0035816589021771_DP
+    
+    ncubp = 10
+  
+  CASE(CUB_S5_3D_T)
+    Dxi( 1,1)  = 0.25_DP
+    Dxi( 1,2)  = 0.25_DP
+    Dxi( 1,3)  = 0.25_DP
+    Dxi( 1,4)  = 0.25_DP
+    Dxi( 2,1)  = 0.7240867658418309_DP
+    Dxi( 2,2)  = 0.0919710780527230_DP
+    Dxi( 2,3)  = 0.0919710780527230_DP
+    Dxi( 2,4)  = 0.0919710780527230_DP
+    Dxi( 3,1)  = 0.0919710780527230_DP
+    Dxi( 3,2)  = 0.7240867658418309_DP
+    Dxi( 3,3)  = 0.0919710780527230_DP
+    Dxi( 3,4)  = 0.0919710780527230_DP
+    Dxi( 4,1)  = 0.0919710780527230_DP
+    Dxi( 4,2)  = 0.0919710780527230_DP
+    Dxi( 4,3)  = 0.7240867658418309_DP
+    Dxi( 4,4)  = 0.0919710780527230_DP
+    Dxi( 5,1)  = 0.0919710780527230_DP
+    Dxi( 5,2)  = 0.0919710780527230_DP
+    Dxi( 5,3)  = 0.0919710780527230_DP
+    Dxi( 5,4)  = 0.7240867658418309_DP
+    Dxi( 6,1)  = 0.0406191165111103_DP
+    Dxi( 6,2)  = 0.3197936278296299_DP
+    Dxi( 6,3)  = 0.3197936278296299_DP
+    Dxi( 6,4)  = 0.3197936278296299_DP
+    Dxi( 7,1)  = 0.3197936278296299_DP
+    Dxi( 7,2)  = 0.0406191165111103_DP
+    Dxi( 7,3)  = 0.3197936278296299_DP
+    Dxi( 7,4)  = 0.3197936278296299_DP
+    Dxi( 8,1)  = 0.3197936278296299_DP
+    Dxi( 8,2)  = 0.3197936278296299_DP
+    Dxi( 8,3)  = 0.0406191165111103_DP
+    Dxi( 8,4)  = 0.3197936278296299_DP
+    Dxi( 9,1)  = 0.3197936278296299_DP
+    Dxi( 9,2)  = 0.3197936278296299_DP
+    Dxi( 9,3)  = 0.3197936278296299_DP
+    Dxi( 9,4)  = 0.0406191165111103_DP
+    Dxi(10,1)  = 0.4436491673103708_DP
+    Dxi(10,2)  = 0.0563508326896292_DP
+    Dxi(10,3)  = 0.0563508326896292_DP
+    Dxi(10,4)  = 0.4436491673103708_DP
+    Dxi(11,1)  = 0.4436491673103708_DP
+    Dxi(11,2)  = 0.0563508326896292_DP
+    Dxi(11,3)  = 0.4436491673103708_DP
+    Dxi(11,4)  = 0.0563508326896292_DP
+    Dxi(12,1)  = 0.4436491673103708_DP
+    Dxi(12,2)  = 0.4436491673103708_DP
+    Dxi(12,3)  = 0.0563508326896292_DP
+    Dxi(12,4)  = 0.0563508326896292_DP
+    Dxi(13,1)  = 0.0563508326896292_DP
+    Dxi(13,2)  = 0.0563508326896292_DP
+    Dxi(13,3)  = 0.4436491673103708_DP
+    Dxi(13,4)  = 0.4436491673103708_DP
+    Dxi(14,1)  = 0.0563508326896292_DP
+    Dxi(14,2)  = 0.4436491673103708_DP
+    Dxi(14,3)  = 0.0563508326896292_DP
+    Dxi(14,4)  = 0.4436491673103708_DP
+    Dxi(15,1)  = 0.0563508326896292_DP
+    Dxi(15,2)  = 0.4436491673103708_DP
+    Dxi(15,3)  = 0.4436491673103708_DP
+    Dxi(15,4)  = 0.0563508326896292_DP
+    
+    Domega( 1) = 0.0197530864197531_DP
+    Domega( 2) = 0.0119895139631698_DP
+    Domega( 3) = 0.0119895139631698_DP
+    Domega( 4) = 0.0119895139631698_DP
+    Domega( 5) = 0.0119895139631698_DP
+    Domega( 6) = 0.0115113678710454_DP
+    Domega( 7) = 0.0115113678710454_DP
+    Domega( 8) = 0.0115113678710454_DP
+    Domega( 9) = 0.0115113678710454_DP
+    Domega(10) = 0.0088183421516755_DP
+    Domega(11) = 0.0088183421516755_DP
+    Domega(12) = 0.0088183421516755_DP
+    Domega(13) = 0.0088183421516755_DP
+    Domega(14) = 0.0088183421516755_DP
+    Domega(15) = 0.0088183421516755_DP
+    
+    ncubp = 15
+
   CASE DEFAULT 
     PRINT *,'Error: unknown cubature formula: ',ccubType
     CALL sys_halt()
