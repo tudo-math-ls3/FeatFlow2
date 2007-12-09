@@ -735,7 +735,6 @@ CONTAINS
     ! ID how to transform.
   
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    
     CASE (TRAFO_ID_LINSIMPLEX)
 
       ! 2D simplex -> linear triangular transformation.
@@ -765,7 +764,7 @@ CONTAINS
       ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
         
       ! Calculate coordinates?
-      IF (.NOT. PRESENT(DpointReal)) THEN
+      IF (PRESENT(DpointReal)) THEN
         ! Ok, that was easy. It's slightly more complicated to get
         ! the matrix...
         ! But as long as the matrix is not needed, we skip the calculation -
@@ -809,6 +808,43 @@ CONTAINS
     ! ID how to transform.
   
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+
+      ! 3D simplex -> linear tetrahedral transformation.
+      !
+      ! Calculate the Jacobian matrix and determinant.
+      Djac(1)=Dcoords(1,2)-Dcoords(1,1)
+      Djac(2)=Dcoords(2,2)-Dcoords(2,1)
+      Djac(3)=Dcoords(3,2)-Dcoords(3,1)
+      Djac(4)=Dcoords(1,3)-Dcoords(1,1)
+      Djac(5)=Dcoords(2,3)-Dcoords(2,1)
+      Djac(6)=Dcoords(3,3)-Dcoords(3,1)
+      Djac(7)=Dcoords(1,4)-Dcoords(1,1)
+      Djac(8)=Dcoords(2,4)-Dcoords(2,1)
+      Djac(9)=Dcoords(3,4)-Dcoords(3,1)
+      
+      ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+            + Djac(2)*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
+            + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+        
+      ! Calculate coordinates?
+      IF (PRESENT(DpointReal)) THEN
+        ! Calculation of the real coordinates is also easy.
+        DpointReal(1) = DpointRef(1)*Dcoords(1,1) &
+                            + DpointRef(2)*Dcoords(1,2) &
+                            + DpointRef(3)*Dcoords(1,3) &
+                            + DpointRef(4)*Dcoords(1,4)
+        DpointReal(2) = DpointRef(1)*Dcoords(2,1) &
+                            + DpointRef(2)*Dcoords(2,2) &
+                            + DpointRef(3)*Dcoords(2,3) &
+                            + DpointRef(4)*Dcoords(2,4)
+        DpointReal(3) = DpointRef(1)*Dcoords(3,1) &
+                            + DpointRef(2)*Dcoords(3,2) &
+                            + DpointRef(3)*Dcoords(3,3) &
+                            + DpointRef(4)*Dcoords(3,4)
+          
+      END IF
+
     CASE (TRAFO_ID_MLINCUBE)
     
       ! Prepare the calculation of the Jacobi determinants
@@ -1067,6 +1103,74 @@ CONTAINS
     ! ID how to transform.
   
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+
+      ! 3D simplex -> linear tetrahedral transformation.
+      !
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointsReal)) THEN
+      
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+        
+          ! Calculate the Jacobian matrix and determinant.
+          Djac(1,ipt)=Dcoords(1,2)-Dcoords(1,1)
+          Djac(2,ipt)=Dcoords(2,2)-Dcoords(2,1)
+          Djac(3,ipt)=Dcoords(3,2)-Dcoords(3,1)
+          Djac(4,ipt)=Dcoords(1,3)-Dcoords(1,1)
+          Djac(5,ipt)=Dcoords(2,3)-Dcoords(2,1)
+          Djac(6,ipt)=Dcoords(3,3)-Dcoords(3,1)
+          Djac(7,ipt)=Dcoords(1,4)-Dcoords(1,1)
+          Djac(8,ipt)=Dcoords(2,4)-Dcoords(2,1)
+          Djac(9,ipt)=Dcoords(3,4)-Dcoords(3,1)
+          
+          Ddetj(ipt) = Djac(1,ipt)*(Djac(5,ipt)*Djac(9,ipt) &
+                              - Djac(6,ipt)*Djac(8,ipt)) &
+                     + Djac(2,ipt)*(Djac(6,ipt)*Djac(7,ipt) &
+                              - Djac(4,ipt)*Djac(9,ipt)) &
+                     + Djac(3,ipt)*(Djac(4,ipt)*Djac(8,ipt) &
+                              - Djac(5,ipt)*Djac(7,ipt))
+        END DO
+        
+      ELSE    
+          
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+        
+          ! Calculate the Jacobian matrix and determinant.
+          Djac(1,ipt)=Dcoords(1,2)-Dcoords(1,1)
+          Djac(2,ipt)=Dcoords(2,2)-Dcoords(2,1)
+          Djac(3,ipt)=Dcoords(3,2)-Dcoords(3,1)
+          Djac(4,ipt)=Dcoords(1,3)-Dcoords(1,1)
+          Djac(5,ipt)=Dcoords(2,3)-Dcoords(2,1)
+          Djac(6,ipt)=Dcoords(3,3)-Dcoords(3,1)
+          Djac(7,ipt)=Dcoords(1,4)-Dcoords(1,1)
+          Djac(8,ipt)=Dcoords(2,4)-Dcoords(2,1)
+          Djac(9,ipt)=Dcoords(3,4)-Dcoords(3,1)
+          
+          Ddetj(ipt) = Djac(1,ipt)*(Djac(5,ipt)*Djac(9,ipt) &
+                              - Djac(6,ipt)*Djac(8,ipt)) &
+                     + Djac(2,ipt)*(Djac(6,ipt)*Djac(7,ipt) &
+                              - Djac(4,ipt)*Djac(9,ipt)) &
+                     + Djac(3,ipt)*(Djac(4,ipt)*Djac(8,ipt) &
+                              - Djac(5,ipt)*Djac(7,ipt))
+            
+          ! Calculation of the real coordinates is also easy.
+          DpointsReal(1,ipt) = DpointsRef(1,ipt)*Dcoords(1,1) &
+                             + DpointsRef(2,ipt)*Dcoords(1,2) &
+                             + DpointsRef(3,ipt)*Dcoords(1,3) &
+                             + DpointsRef(4,ipt)*Dcoords(1,4)
+          DpointsReal(2,ipt) = DpointsRef(1,ipt)*Dcoords(2,1) &
+                             + DpointsRef(2,ipt)*Dcoords(2,2) &
+                             + DpointsRef(3,ipt)*Dcoords(2,3) &
+                             + DpointsRef(4,ipt)*Dcoords(2,4)
+          DpointsReal(3,ipt) = DpointsRef(1,ipt)*Dcoords(3,1) &
+                             + DpointsRef(2,ipt)*Dcoords(3,2) &
+                             + DpointsRef(3,ipt)*Dcoords(3,3) &
+                             + DpointsRef(4,ipt)*Dcoords(3,4)
+        END DO
+      END IF
+
     CASE (TRAFO_ID_MLINCUBE)
     
       ! Prepare the calculation of the Jacobi determinants
@@ -1394,6 +1498,85 @@ CONTAINS
     ! ID how to transform.
   
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+
+      ! 3D simplex -> linear tetrahedral transformation.
+      !
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointsReal)) THEN
+      
+        ! Loop over the elements
+        DO iel=1, nelements
+
+          ! Loop over the points
+          DO ipt=1,npointsPerEl
+          
+            ! Calculate the Jacobian matrix and determinant.
+            Djac(1,ipt,iel)=Dcoords(1,2,iel)-Dcoords(1,1,iel)
+            Djac(2,ipt,iel)=Dcoords(2,2,iel)-Dcoords(2,1,iel)
+            Djac(3,ipt,iel)=Dcoords(3,2,iel)-Dcoords(3,1,iel)
+            Djac(4,ipt,iel)=Dcoords(1,3,iel)-Dcoords(1,1,iel)
+            Djac(5,ipt,iel)=Dcoords(2,3,iel)-Dcoords(2,1,iel)
+            Djac(6,ipt,iel)=Dcoords(3,3,iel)-Dcoords(3,1,iel)
+            Djac(7,ipt,iel)=Dcoords(1,4,iel)-Dcoords(1,1,iel)
+            Djac(8,ipt,iel)=Dcoords(2,4,iel)-Dcoords(2,1,iel)
+            Djac(9,ipt,iel)=Dcoords(3,4,iel)-Dcoords(3,1,iel)
+            
+            Ddetj(ipt,iel) = Djac(1,ipt,iel)*(Djac(5,ipt,iel)*Djac(9,ipt,iel) &
+                                - Djac(6,ipt,iel)*Djac(8,ipt,iel)) &
+                           + Djac(2,ipt,iel)*(Djac(6,ipt,iel)*Djac(7,ipt,iel) &
+                                - Djac(4,ipt,iel)*Djac(9,ipt,iel)) &
+                           + Djac(3,ipt,iel)*(Djac(4,ipt,iel)*Djac(8,ipt,iel) &
+                                - Djac(5,ipt,iel)*Djac(7,ipt,iel))
+           END DO
+           
+        END DO
+        
+      ELSE    
+        
+        ! Loop over the elements
+        DO iel=1, nelements
+
+          ! Loop over the points
+          DO ipt=1,npointsPerEl
+          
+            ! Calculate the Jacobian matrix and determinant.
+            Djac(1,ipt,iel)=Dcoords(1,2,iel)-Dcoords(1,1,iel)
+            Djac(2,ipt,iel)=Dcoords(2,2,iel)-Dcoords(2,1,iel)
+            Djac(3,ipt,iel)=Dcoords(3,2,iel)-Dcoords(3,1,iel)
+            Djac(4,ipt,iel)=Dcoords(1,3,iel)-Dcoords(1,1,iel)
+            Djac(5,ipt,iel)=Dcoords(2,3,iel)-Dcoords(2,1,iel)
+            Djac(6,ipt,iel)=Dcoords(3,3,iel)-Dcoords(3,1,iel)
+            Djac(7,ipt,iel)=Dcoords(1,4,iel)-Dcoords(1,1,iel)
+            Djac(8,ipt,iel)=Dcoords(2,4,iel)-Dcoords(2,1,iel)
+            Djac(9,ipt,iel)=Dcoords(3,4,iel)-Dcoords(3,1,iel)
+            
+            Ddetj(ipt,iel) = Djac(1,ipt,iel)*(Djac(5,ipt,iel)*Djac(9,ipt,iel) &
+                                - Djac(6,ipt,iel)*Djac(8,ipt,iel)) &
+                           + Djac(2,ipt,iel)*(Djac(6,ipt,iel)*Djac(7,ipt,iel) &
+                                - Djac(4,ipt,iel)*Djac(9,ipt,iel)) &
+                           + Djac(3,ipt,iel)*(Djac(4,ipt,iel)*Djac(8,ipt,iel) &
+                                - Djac(5,ipt,iel)*Djac(7,ipt,iel))
+              
+            ! Calculation of the real coordinates is also easy.
+            DpointsReal(1,ipt,iel) = DpointsRef(1,ipt,iel)*Dcoords(1,1,iel) &
+                                   + DpointsRef(2,ipt,iel)*Dcoords(1,2,iel) &
+                                   + DpointsRef(3,ipt,iel)*Dcoords(1,3,iel) &
+                                   + DpointsRef(4,ipt,iel)*Dcoords(1,4,iel)
+            DpointsReal(2,ipt,iel) = DpointsRef(1,ipt,iel)*Dcoords(2,1,iel) &
+                                   + DpointsRef(2,ipt,iel)*Dcoords(2,2,iel) &
+                                   + DpointsRef(3,ipt,iel)*Dcoords(2,3,iel) &
+                                   + DpointsRef(4,ipt,iel)*Dcoords(2,4,iel)
+            DpointsReal(3,ipt,iel) = DpointsRef(1,ipt,iel)*Dcoords(3,1,iel) &
+                                   + DpointsRef(2,ipt,iel)*Dcoords(3,2,iel) &
+                                   + DpointsRef(3,ipt,iel)*Dcoords(3,3,iel) &
+                                   + DpointsRef(4,ipt,iel)*Dcoords(3,4,iel)
+          END DO
+          
+        END DO
+        
+      END IF
+
     CASE (TRAFO_ID_MLINCUBE)
     
       ! Calculate with or without coordinates?
