@@ -3357,6 +3357,18 @@ CONTAINS
       CALL lsyssc_getbase_double (rx,p_Dx)
       CALL lsyssc_getbase_double (ry,p_Dy)
       
+      ! By commenting in the following two lines,
+      ! one can gain a slight speedup in the matrix vector
+      ! multiplication by avoiding some checks and by using
+      ! arrays with undefined length.
+      ! Makes a difference of 57 to 40 MFLOP/s, but should only
+      ! be used in RELEASE-mode!
+      !
+      ! #ifdef RELEASE
+      ! CALL lsyssc_qLAX79doubledouble (p_DA,p_Kcol,p_Kld,p_Dx,p_Dy,cx,cy,NEQ)
+      ! RETURN
+      ! #endif
+      
       ! Perform the multiplication
       IF (cx .NE. 0.0_DP) THEN
       
@@ -3428,6 +3440,108 @@ CONTAINS
       ELSE 
         ! cx = 0. The formula is just a scaling of the vector ry!
         CALL lalg_scaleVectorDble(p_Dy,cy)
+      ENDIF
+   
+    END SUBROUTINE
+    
+    !**************************************************************
+    ! Format 7 and Format 9 multiplication
+    ! double precision matrix,
+    ! double precision vectors
+    ! 'Quick' method avoiding some checks, thus being faster.
+    
+    SUBROUTINE lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ)
+
+    ! The matrix
+    INTEGER(PREC_VECIDX), DIMENSION(*), INTENT(IN) :: KCOL
+    INTEGER(PREC_MATIDX), DIMENSION(*), INTENT(IN) :: KLD
+    REAL(DP), DIMENSION(*), INTENT(IN) :: DA
+    
+    ! Size of the vectors
+    INTEGER(PREC_VECIDX) :: NEQ
+
+    ! The vectors
+    REAL(DP), DIMENSION(*), INTENT(IN) :: Dx
+    REAL(DP), DIMENSION(*), INTENT(INOUT) :: Dy
+    
+    ! Multiplication factors for the vectors.
+    REAL(DP) :: cx,cy
+    
+    INTEGER(PREC_MATIDX) :: ia
+    INTEGER(PREC_VECIDX) :: irow,icol
+    REAL(DP) :: dtmp
+
+      ! Perform the multiplication
+      IF (cx .NE. 0.0_DP) THEN
+      
+        IF (cy .EQ. 0.0_DP) THEN
+        
+          ! cy = 0. We have simply to make matrix*vector without adding ry.
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to ry.
+          ! Don't multiply with cy, this comes later.
+          !
+          ! What is this complicated IF-THEN structure for?
+          ! Well, to prevent an initialisation of rx with zero in case cy=0!
+       
+!$omp parallel do default(shared) private(irow,icol,ia)
+          DO irow=1,NEQ
+            ia   = Kld(irow)
+            icol = Kcol(ia)
+            Dy(irow) = Dx(icol) * DA(ia)
+          END DO
+!$omp end parallel do
+
+          ! Now we have an initial ry where we can do a usual MV
+          ! with the rest of the matrix...
+          
+        ELSE 
+        
+          ! cy <> 0. We have to perform matrix*vector + vector.
+          ! What we actually calculate here is:
+          !    ry  =  cx * A * x  +  cy * y
+          !        =  cx * ( A * x  +  cy/cx * y).
+          !
+          ! Scale down y:
+        
+          dtmp = cy/cx
+          IF (dtmp .NE. 1.0_DP) THEN
+            CALL lalg_scaleVectorDble(Dy(1:NEQ),dtmp)
+          END IF
+          
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to the (scaled) ry.
+          
+!$omp parallel do default(shared) private(irow,icol,ia)
+          DO irow=1,NEQ
+            ia   = Kld(irow)
+            icol = Kcol(ia)
+            Dy(irow) = Dx(icol)*DA(ia) + Dy(irow) 
+          END DO
+!$omp end parallel do
+          
+        ENDIF
+        
+        ! Multiply the rest of rx with the matrix and add it to ry:
+        
+!$omp parallel do default(shared) private(irow,icol,ia)
+        DO irow=1,NEQ
+          DO ia = Kld(irow)+1,Kld(irow+1)-1
+            icol = Kcol(ia)
+            Dy(irow) = Dy(irow) + DA(ia)*Dx(icol)
+          END DO
+        END DO
+!$omp end parallel do
+        
+        ! Scale by cx, finish.
+        
+        IF (cx .NE. 1.0_DP) THEN
+          CALL lalg_scaleVectorDble (Dy(1:NEQ),cx)
+        END IF
+        
+      ELSE 
+        ! cx = 0. The formula is just a scaling of the vector ry!
+        CALL lalg_scaleVectorDble(Dy(1:NEQ),cy)
       ENDIF
    
     END SUBROUTINE
