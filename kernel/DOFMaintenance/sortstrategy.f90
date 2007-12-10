@@ -775,10 +775,16 @@ CONTAINS
   !</subroutine>
   
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords,p_Dcoords2
     INTEGER(PREC_EDGEIDX), DIMENSION(2) :: Isize
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: hhandle
     INTEGER :: idir
+    INTEGER(PREC_VERTEXIDX) :: ivt,nvt
+    INTEGER(PREC_EDGEIDX) :: imt,nmt
+    INTEGER(PREC_ELEMENTIDX) :: iel,nel
+    INTEGER :: idim,ivtlocal
     
     IF (rdiscretisation%ndimension .EQ. 0) THEN
       CALL output_line ('Discretisation not initialised.', &
@@ -804,6 +810,55 @@ CONTAINS
             
         CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
       
+      CASE (EL_Q2)
+      
+        ! $Q_2$-element. Allocate an array for all the coordinates
+        nvt = rdiscretisation%p_rtriangulation%NVT
+        nmt = rdiscretisation%p_rtriangulation%NMT
+        nel = rdiscretisation%p_rtriangulation%NEL
+        
+        Isize(1) = rdiscretisation%p_rtriangulation%ndim
+        Isize(2) = nvt+nmt+nel
+        CALL storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+                            hhandle, ST_NEWBLOCK_NOINIT)
+        CALL storage_getbase_double2d (hhandle,p_Dcoords)
+        
+        ! Get triangulation information
+        CALL storage_getbase_double2d (&
+          rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords2)
+        CALL storage_getbase_int2d ( &
+          rdiscretisation%p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+        CALL storage_getbase_int2d ( &
+          rdiscretisation%p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+        
+        ! Copy the vertex coordinates
+        DO ivt = 1,nvt
+          DO idim = 1,UBOUND(p_Dcoords,1)
+            p_Dcoords(idim,ivt) = p_Dcoords2(idim,ivt)
+          END DO
+        END DO
+        
+        ! Calculate edge midpoint coordinates
+        DO imt = 1,nmt
+          p_Dcoords(:,nvt+imt) = &
+              0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(1,imt)) + &
+              0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(2,imt)) 
+        END DO
+        
+        ! Calculate element midpoint coordinates
+        DO iel = 1,nel
+          p_Dcoords(:,nvt+nmt+iel) = 0.0_DP
+          DO ivtlocal = 1,UBOUND(p_IverticesAtElement,1)
+            ivt = p_IverticesAtElement (ivtlocal,iel)
+            p_Dcoords(:,nvt+nmt+iel) = &
+                p_Dcoords(:,nvt+nmt+iel) &
+                + 0.25_DP*p_Dcoords2(:,ivt) 
+          END DO
+        END DO
+        
+        ! Sort for the coordinates
+        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+
       CASE (EL_Q1T)
       
         ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF's
@@ -892,6 +947,10 @@ CONTAINS
           CALL arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
         END DO
       
+      CASE DEFAULT
+        CALL output_line ('Invalid direction!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcXYZsorting')
+        CALL sys_halt()
       END SELECT
       
       ! The first element in each ndim+2-tupel is now the permutation.
