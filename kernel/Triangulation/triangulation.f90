@@ -333,6 +333,9 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**18  ! KMBDI 
   INTEGER(I32), PARAMETER :: TR_SHARE_DELEMENTAREA           = 2**19  ! DAREA 
   
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**22  ! K???
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
@@ -473,8 +476,8 @@ MODULE triangulation
     ! Number of edges per element 4 for quad, 12 for hexas
     INTEGER             :: NEE = 0
     
-    ! Number of areas per element... one hexa has 6 areas
-    INTEGER             :: NAE
+    ! Maximum number of areas per element... one hexa has 6 areas
+    INTEGER             :: NAE = 0
     
     ! Number of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
@@ -773,6 +776,15 @@ MODULE triangulation
     
     ! the verticesAtFace
     INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
+    
+    ! the elementsAtFace
+    INTEGER        :: h_IelementsAtFace = ST_NOHANDLE
+    
+    ! a pair of arrays thats builds a list of the edges at a face
+    INTEGER        :: h_IfacesAtEdgeIdx = ST_NOHANDLE
+    INTEGER        :: h_IfacesAtEdge    = ST_NOHANDLE
+     
+    
     
   END TYPE
 
@@ -1757,6 +1769,13 @@ CONTAINS
     ! Bit  6: KMEL   is a copy of another structure
     CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
           rtriangulation%h_IelementsAtEdge)
+    ! Bit  5: KMEL  3d Version          
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d)
+          
+    ! Bit  5: KMEL  3d Version      
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d)
 
     ! Bit 16: KEAN   is a copy of another structure
     CALL checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
@@ -1811,6 +1830,19 @@ CONTAINS
     ! Bit  1: DCORMG is a copy of another structure
     CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
           rtriangulation%h_DfreeVertexCoordinates)
+
+    ! Bit 20: KVAR          
+    call checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
+           rtriangulation%h_IverticesAtFace)
+           
+    ! Bit 21: KAREA           
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
+           rtriangulation%h_IFacesAtElement)
+    
+    ! Bit 22: K????       
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
+           rtriangulation%h_IelementsAtFace)
+          
     
     ! Clean up the rest of the structure
 
@@ -2591,9 +2623,9 @@ CONTAINS
     call tria_genFacesAtElement       (rtriangulation)
     call tria_genVerticesAtFace       (rtriangulation)
     call tria_genElementsAtFace       (rtriangulation) 
-    
-    ! call FacesAtEdge(list)
-    ! call EdgesAtFace(global face, global edge)
+    call tria_genEdgesAtFace          (rtriangulation)
+    call tria_genFacesAtEdge          (rtriangulation)
+    ! 
     
     ! call FacesAtVertex(liste)
     
@@ -7946,8 +7978,152 @@ CONTAINS
 !<inputoutput>  
   type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
+
+!</subroutine>
   
-!</subroutine>    
+  ! local variables
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtFace
+  
+  
+  integer(prec_vertexidx)  :: ifaceNeighbour
+  integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
+  
+  integer, dimension(2) :: Isize
+
+  ! size of target array  
+  Isize = (/2,rtriangulation%NAT/)
+  
+  ! get pointers to some needed connectivity information
+  call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+      p_IneighboursAtElement)
+      
+  call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
+      p_IfacesAtElement)
+
+  ! allocate memory
+  if(rtriangulation%h_IelementsAtFace == ST_NOHANDLE) then
+    call storage_new2d('tria_genElementsAtFace', 'IelementsAtFace', &
+        Isize, ST_INT, &
+        rtriangulation%h_IelementsAtFace, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,&
+      p_IelementsAtFace)
+  
+
+  ! loop over all elements
+  do iel=1,rtriangulation%NEL
+    ! loop over all faces of this element
+    do iface=1,rtriangulation%NAE
+    
+      ! if there is no neighbour at this element
+      if(p_IneighboursAtElement(iface,iel) == 0) then
+        
+        ifaceNumber = p_IfacesAtElement(iface,iel) - &
+                      rtriangulation%NVT - &
+                      rtriangulation%NMT
+                      
+        p_IelementsAtFace(1,ifaceNumber) = iel
+        p_IelementsAtFace(2,ifaceNumber) = 0
+      
+      else if (p_IneighboursAtElement(iface,iel) < iel) then
+        
+        ! There is a neighbour and it has a smaller number than the current element --
+        ! so we haven't had that face! Store the two adjacent elements.
+        
+        ifaceNumber = p_IfacesAtElement(iface,iel) - &
+                      rtriangulation%NVT - &
+                      rtriangulation%NMT
+        
+        p_IelementsAtFace(1,ifaceNumber) = iel
+        
+        p_IelementsAtFace(2,ifaceNumber) = &
+        p_IneighboursAtElement(iface,iel)      
+      
+      end if
+    
+    end do ! end iface
+  end do ! end iel  
+  
   end subroutine ! end tria_genElementsAtFace
+  
+  
+!====================================================================          
+!<subroutine>    
+  subroutine tria_genEdgesAtFace(rtriangulation)  
+!<description>
+  ! this routine builds the EdgesAtFace array 
+!</description>
+  
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+  
+!</subroutine>
+  ! local variables
+  
+  integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
+  
+    
+  end subroutine ! end tria_genEdgesAtFace
+!====================================================================        
+  
+!<subroutine>    
+  subroutine tria_genFacesAtEdge(rtriangulation) 
+  
+!<description>
+  ! this routine builds the FacesAtEdge array 
+!</description>
+
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+
+!</subroutine>
+    
+  ! local parameters
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtElementIdx  
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
+  
+  
+  
+!  ! allocate memory
+!  if(rtriangulation%h_IelementsAtEdge3d == ST_NOHANDLE) then
+!    call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtEdge3d', &
+!        int(Isize), ST_INT, &
+!        rtriangulation%h_IelementsAtEdge3d, ST_NEWBLOCK_NOINIT)
+!  end if      
+!    
+!  ! Fill the index array with zero.
+!  call storage_clear (rtriangulation%h_IelementsAtEdge3d)
+!    
+!  ! get the pointer  
+!  call storage_getbase_int(rtriangulation%h_IelementsAtEdge3d,p_IelementsAtEdge3d)
+!  
+  ! allocate memory for the index array
+!  if(rtriangulation%p_IfacesAtElementIdx == ST_NOHANDLE) then
+!    call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtElementIdx', &
+!        int(rtriangulation%NAT+1,I32), ST_INT, &
+!        rtriangulation%h_IfacesAtElementIdx, ST_NEWBLOCK_NOINIT)
+!  end if      
+!    
+!  ! Fill the index array with zero.
+!  call storage_clear (rtriangulation%h_IfacesAtElementIdx)
+!    
+!  ! get the pointer  
+!  call storage_getbase_int(rtriangulation%h_IfacesAtElementIdx,p_IfacesAtElementIdx)
+  
+      
+
+  end subroutine ! end tria_genFacesAtEdge
 
 END MODULE
