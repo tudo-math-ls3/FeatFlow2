@@ -50,7 +50,6 @@ MODULE afcstabilisation
   USE genoutput
   USE linearsystemscalar
   USE paramlist
-  USE sorting
   USE storage
   USE triangulation
 
