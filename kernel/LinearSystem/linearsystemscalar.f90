@@ -6755,7 +6755,8 @@ CONTAINS
     
     ! Do we have to sort back before resorting?
     IF ((h_Iperm .NE. rvector%h_IsortPermutation) .AND. &
-        (rvector%h_IsortPermutation .NE. ST_NOHANDLE)) THEN
+        (rvector%h_IsortPermutation .NE. ST_NOHANDLE) .AND. &
+        (rvector%isortStrategy .GT. 0)) THEN
         
       ! Sort back at first - with the associated permutation
       CALL storage_getbase_int(rvector%h_IsortPermutation,p_Iperm)
@@ -7005,7 +7006,8 @@ CONTAINS
     
     ! Do we have to sort back before resorting?
     IF ((h_Iperm .NE. rmatrix%h_IsortPermutation) .AND. &
-        (rmatrix%h_IsortPermutation .NE. ST_NOHANDLE)) THEN
+        (rmatrix%h_IsortPermutation .NE. ST_NOHANDLE) .AND. &
+        (rmatrix%isortStrategy .GT. 0)) THEN
 
       ! That's a little bit tricky now if structure and/or content of rmatrix
       ! is shared with another matrix!
