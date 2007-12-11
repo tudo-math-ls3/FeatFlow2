@@ -316,6 +316,11 @@ CONTAINS
       ! the right boundary we need the second DOF.
       CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
       iDOF = IDOFs(idx)
+    
+    CASE (EL_S31_1D)
+      ! S31_1L element
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(idx)
             
     END SELECT
         
@@ -384,7 +389,12 @@ CONTAINS
       ! the right boundary we need the second DOF.
       CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
       iDOF = IDOFs(idx)
-            
+
+    CASE (EL_S31_1D)
+      ! S31_1L element
+      CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+      iDOF = IDOFs(idx)
+
     END SELECT
         
     ! Store the DOF

@@ -369,7 +369,7 @@ CONTAINS
     IF ((NVE .NE. 8) .OR. (idim .NE. NDIM3D)) bcompatible = .FALSE.
   END IF
   
-  ! 3D: Tetraa?
+  ! 3D: Tetra?
   IF ((ccubType .GE. 350) .AND. (ccubType .LE. 499)) THEN
     IF ((NVE .NE. 4) .OR. (idim .NE. NDIM3D)) bcompatible = .FALSE.
   END IF
@@ -422,17 +422,9 @@ CONTAINS
         ! Use Gauss-2
         ccubType = CUB_G2_1D
 
-!      CASE (EL_Q0)
-!        ! Use Gauss-1
-!        ccubType = CUB_G1_1D
-!
-!      CASE (EL_Q1)
-!        ! Use trapezoidal rule
-!        ccubType = CUB_TRZ_1D
-!
-!      CASE (EL_Q1T)
-!        ! Use midpoint rule = Gauss-1
-!        ccubType = CUB_G1_1D
+      CASE (EL_S31_1D)
+        ! Use Gauss-4
+        ccubType = CUB_G4_1D
       
       CASE DEFAULT
         ccubType = 0
@@ -517,17 +509,9 @@ CONTAINS
         ! 3-point Gauss
         ccubType = CUB_G3_1D
 
-!      CASE (EL_Q0)
-!        ! 1-point Gauss
-!        ccubType = CUB_G2_1D
-!
-!      CASE (EL_Q1)
-!        ! 2-point Gauss
-!        ccubType = CUB_G2_1D
-!
-!      CASE (EL_Q1T)
-!        ! 2-point Gauss
-!        ccubType = CUB_G2_1D
+      CASE (EL_S31_1D)
+        ! 4-point Gauss
+        ccubType = CUB_G4_1D
       
       CASE DEFAULT
         ccubType = 0
