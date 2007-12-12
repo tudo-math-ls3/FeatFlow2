@@ -25,8 +25,11 @@
 !# 2.) sstrat_calcXYZsorting
 !#     -> Calculates rowwise renumbering based on Cartesian coordinates
 !#
-!# 2.) sstrat_calcFEASTsorting
+!# 3.) sstrat_calcFEASTsorting
 !#     -> Calculates FEAST rowwise renumbering based cell adjacencies
+!#
+!# 4.) sstrat_calcStochastic
+!#     -> Calculates stoastic renumbering (i.e. a random permutation)
 !#
 !# Auxiliary routines:
 !#
@@ -44,6 +47,17 @@
 !#
 !# 4.) sstrat_calcInversePermutation
 !#     -> Calculates an inverse permutation
+!#
+!#
+!# The renumbering routines in this module always calculate a
+!# permutation as well as its inverse permutation. The calculated
+!# permutation Ipermutation given as a parameter to the routines
+!# has length 2*N for N numbers. It contains the permutation in the
+!# first N and its inverse at the second N entries. Here, the
+!# exact meaning of the word 'permutation' is as follows:
+!#
+!#  Ipermutation (position in sorted vector) = position in unsorted vector.
+!#  Ipermutation (N+position in unsorted vector) = position in sorted vector.
 !#
 !# </purpose>
 !#########################################################################
@@ -63,7 +77,7 @@ MODULE sortstrategy
   
 !<constants>
 
-!<constantblock description="Sort strategy identifiers">
+!<constantblock description="Sort strategy identifiers.">
 
   ! No sort strategy; this must be =0!
   INTEGER, PARAMETER :: SSTRAT_UNSORTED     = 0
@@ -94,12 +108,66 @@ MODULE sortstrategy
   ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
   INTEGER, PARAMETER :: SSTRAT_FEAST        = 5
   
+  ! Stochastic renumbering / Random permutation.
+  ! The permutation is completely random.
+  INTEGER, PARAMETER :: SSTRAT_STOCHASTIC   = 6
+  
 !</constantblock>
 
 !</constants>
 
 CONTAINS
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sstrat_calcStochastic (Ipermutation)
+  
+  !<description>
+    ! Generates a random permutation.
+    !
+    ! The used algorithm is Knuth shuffle.
+    ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed., 
+    !  145–146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
+  !</description>
+    
+  !<output>
+    ! The permutation vector for sorting and its inverse.
+    ! With NEQ=NEQ(matrix):
+    !   Ipermutation(1:NEQ)       = permutation,
+    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+  !</output>    
+
+  !</subroutine>
+  
+    REAL(DP) :: d
+    INTEGER(I32) :: i,k,n
+    INTEGER(PREC_VECIDX) :: j
+
+    ! Fill the array with 1,2,3,...
+    n = SIZE(Ipermutation) / 2
+    
+    DO i = 1,n
+      Ipermutation(i) = i
+    END DO
+    
+    ! Loop through the array and randomly swap element i with element [i,...,n]
+    DO i = 1,n-1
+      CALL RANDOM_NUMBER(d)
+      k = i + INT(REAL(n-i,DP) * d + 0.5_DP)
+      
+      j = Ipermutation(i)
+      Ipermutation(i) = Ipermutation(k)
+      Ipermutation(k) = j
+    END DO
+
+    ! Calculate the inverse permutation, that's it.
+    CALL sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+
+  END SUBROUTINE
+  
   ! ***************************************************************************
 
 !<subroutine>

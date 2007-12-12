@@ -48,6 +48,7 @@ MODULE sort
   USE fsystem
   USE error
   USE genoutput
+  USE storage
 
   IMPLICIT NONE
 
@@ -95,7 +96,7 @@ MODULE sort
 CONTAINS
 
 !<subroutine>
-  subroutine sort_int(Iarray, csortMethod, Imapping)
+  subroutine sort_int(Iarray, csortMethod, Imapping, Itemp)
 
     !<description>
     !Sorting routine for integer data type. If more than one vector must be
@@ -112,6 +113,11 @@ CONTAINS
     ! sort algorithm: SORT_HEAP, SORT_QUICK, SORT_INSERT
     integer, optional :: csortMethod
 
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Ielem(1..inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    INTEGER, DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
+
     !</input>
 
     !<inoutput>
@@ -121,8 +127,11 @@ CONTAINS
 
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), optional :: Imapping
+
     !</inoutput>
 !</subroutine>
+
+    INTEGER, DIMENSION(:), POINTER :: p_Itemp,p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -137,8 +146,27 @@ CONTAINS
         call insertsort(Iarray, Imapping)
       case(SORT_INSERT)
         call insertsort(Iarray, Imapping)
-      case(SORT_MERGE)
-        call mergesort(Iarray, Imapping)
+      CASE (SORT_MERGE,SORT_STABLE)
+
+        ! We need temporary storage, that algorithm is not in-situ!
+        IF (PRESENT(Imapping)) THEN
+          ALLOCATE(p_Itemp2(SIZE(Iarray)))
+        ELSE
+          ! Dummy
+          NULLIFY(p_Itemp2)
+        END IF
+
+        IF (PRESENT(Itemp)) THEN
+          p_Itemp => Itemp
+          call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
+        ELSE
+          ALLOCATE(p_Itemp(SIZE(Iarray)))
+          call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
+          DEALLOCATE(p_Itemp)
+        END IF
+
+        IF (PRESENT(Imapping)) DEALLOCATE(p_Itemp2)
+
       case default
         CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
@@ -466,11 +494,13 @@ CONTAINS
     !----------------------------------------------------------------
 
 
-    recursive subroutine mergesort(Iarray, Imapping)
+    recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
       integer,dimension(:)::Iarray
-      integer, dimension(:), optional :: Imapping
+      integer,dimension(:)::Itemp
+      integer, dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
+      INTEGER :: idest
 
       ilen = ubound(Iarray,1)
       ! Nothing to sort
@@ -486,42 +516,93 @@ CONTAINS
 
       ! Recursive sorting with mergesort
       if (present(Imapping)) then
-        call mergesort(Iarray(1:imid),Imapping(1:imid))
-        call mergesort(Iarray(imid+1:ilen),Imapping(imid+1:ilen))
+        call mergesort(Iarray(1:imid),Itemp(1:imid),&
+            Imapping(1:imid),ImappingTemp(1:imid))
+        call mergesort(Iarray(imid+1:ilen),Itemp(imid+1:ilen),&
+            Imapping(imid+1:ilen),ImappingTemp(imid+1:ilen))
       else
-        call mergesort(Iarray(1:imid))
-        call mergesort(Iarray(imid+1:ilen))
+        call mergesort(Iarray(1:imid),Itemp(1:imid))
+        call mergesort(Iarray(imid+1:ilen),Itemp(imid+1:ilen))
       endif
 
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       ilo = 1
       iend_lo   = imid
       istart_hi = imid+1
+      idest = 1
       ! Test of presence of Imapping was moved out of loop
       ! for performance reasons
       if (present(Imapping)) then
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Iarray(ilo) .le. Iarray(istart_hi)) then
+      
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+            Itemp(idest) = Iarray(ilo)
+            ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else
-            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Itemp(idest) = Iarray(istart_hi)
+            ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Itemp(idest) = Iarray(ilo)
+          ImappingTemp(idest) = Imapping(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Itemp(idest) = Iarray(istart_hi)
+          ImappingTemp(idest) = Imapping(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Iarray(idest) = Itemp(idest)
+          Imapping(idest) = ImappingTemp(idest)
+        END DO
+      
       else
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Iarray(ilo) .le. Iarray(istart_hi)) then
+
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+            Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          else
-            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Itemp(idest) = Iarray(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Itemp(idest) = Iarray(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Iarray(idest) = Itemp(idest)
+        END DO
+
       endif
     end subroutine mergesort
 
@@ -532,7 +613,7 @@ CONTAINS
 
 
 !<subroutine>
-  subroutine sort_i32(iarray, csortMethod, Imapping)
+  subroutine sort_i32(iarray, csortMethod, Imapping, Itemp)
 
 
     !<description>
@@ -551,6 +632,11 @@ CONTAINS
     ! sort algorithm: SORT_HEAP, SORT_QUICK, SORT_INSERT
     integer, optional :: csortMethod
 
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Ielem(1..inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    INTEGER(I32), DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
+
     !</input>
 
     !<inoutput>
@@ -563,6 +649,9 @@ CONTAINS
     !</inoutput>
 !</subroutine>
 
+    INTEGER :: hhandle,hhandle2
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Itemp,p_Itemp2
+
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
       select case (csortMethod)
@@ -574,8 +663,33 @@ CONTAINS
         call insertsort(Iarray, Imapping)
       case(SORT_INSERT)
         call insertsort(Iarray, Imapping)
-      case(SORT_MERGE)
-        call mergesort(Iarray, Imapping)
+      CASE (SORT_MERGE,SORT_STABLE)
+
+        ! We need temporary storage, that algorithm is not in-situ!
+        IF (PRESENT(Imapping)) THEN
+          CALL storage_new ('sort_i32', 'temp', SIZE(Iarray), ST_INT, hhandle2, &
+              ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (hhandle2,p_Itemp2)
+        ELSE
+          ! Dummy
+          hhandle2 = ST_NOHANDLE
+          NULLIFY(p_Itemp2)
+        END IF
+
+        IF (PRESENT(Itemp)) THEN
+          p_Itemp => Itemp
+          call mergesort(Iarray, p_Itemp, Imapping,p_Itemp2)
+        ELSE
+          CALL storage_new ('sort_i32', 'temp', SIZE(Iarray), ST_INT, hhandle, &
+              ST_NEWBLOCK_NOINIT)
+          ! Probably allocate memory for shifting the Imapping array
+          CALL storage_getbase_int (hhandle,p_Itemp)
+          call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
+          CALL storage_free (hhandle)
+        END IF
+
+        IF (PRESENT(Imapping)) CALL storage_free (hhandle2)
+
       case default
         CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
@@ -858,11 +972,13 @@ CONTAINS
     !----------------------------------------------------------------
 
 
-    recursive subroutine mergesort(Iarray, Imapping)
-      integer(i32),dimension(:)::Iarray
-      integer, dimension(:), optional :: Imapping
+    recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
+      integer(I32),dimension(:)::Iarray
+      integer(I32),dimension(:)::Itemp
+      integer(I32), dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
+      INTEGER :: idest
 
       ilen = ubound(Iarray,1)
       ! Nothing to sort
@@ -878,42 +994,93 @@ CONTAINS
 
       ! Recursive sorting with mergesort
       if (present(Imapping)) then
-        call mergesort(Iarray(1:imid),Imapping(1:imid))
-        call mergesort(Iarray(imid+1:ilen),Imapping(imid+1:ilen))
+        call mergesort(Iarray(1:imid),Itemp(1:imid),&
+            Imapping(1:imid),ImappingTemp(1:imid))
+        call mergesort(Iarray(imid+1:ilen),Itemp(imid+1:ilen),&
+            Imapping(imid+1:ilen),ImappingTemp(imid+1:ilen))
       else
-        call mergesort(Iarray(1:imid))
-        call mergesort(Iarray(imid+1:ilen))
+        call mergesort(Iarray(1:imid),Itemp(1:imid))
+        call mergesort(Iarray(imid+1:ilen),Itemp(imid+1:ilen))
       endif
 
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       ilo = 1
       iend_lo   = imid
       istart_hi = imid+1
+      idest = 1
       ! Test of presence of Imapping was moved out of loop
       ! for performance reasons
       if (present(Imapping)) then
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Iarray(ilo) .le. Iarray(istart_hi)) then
+      
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+            Itemp(idest) = Iarray(ilo)
+            ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else
-            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Itemp(idest) = Iarray(istart_hi)
+            ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Itemp(idest) = Iarray(ilo)
+          ImappingTemp(idest) = Imapping(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Itemp(idest) = Iarray(istart_hi)
+          ImappingTemp(idest) = Imapping(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Iarray(idest) = Itemp(idest)
+          Imapping(idest) = ImappingTemp(idest)
+        END DO
+      
       else
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Iarray(ilo) .le. Iarray(istart_hi)) then
+
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+            Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          else
-            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Itemp(idest) = Iarray(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Itemp(idest) = Iarray(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Iarray(idest) = Itemp(idest)
+        END DO
+
       endif
     end subroutine mergesort
 
@@ -1139,7 +1306,7 @@ CONTAINS
 
 
 !<subroutine>
-  subroutine sort_dp(Darray, csortMethod, Imapping)
+  subroutine sort_dp(Darray, csortMethod, Imapping, Dtemp)
 
     !<description>
     !Sorting routine for double precision arrays. If more than one vector must be
@@ -1158,16 +1325,25 @@ CONTAINS
 
     !</input>
 
-    !<inoutput>
+    !<inputoutput>
 
     ! double precision array to be sorted
-    real(dp), dimension(:) :: Darray
+    real(dp), dimension(:), INTENT(INOUT) :: Darray
 
     !optional mapping vector (if more than 1 vector may be sorted)
-    integer, dimension(:), optional :: Imapping
+    integer(i32), dimension(:), INTENT(INOUT), optional :: Imapping
 
-    !</inoutput>
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Ielem(1..inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    REAL(DP), DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Dtemp
+
+    !</inputoutput>
 !</subroutine>
+
+    INTEGER :: hhandle,hhandle2
+    REAL(DP), DIMENSION(:), POINTER :: p_Dtemp
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -1184,12 +1360,35 @@ CONTAINS
 
         call insertsort(Darray, Imapping)
 
-      case(SORT_MERGE)
-        call mergesort(Darray, Imapping)
+      CASE (SORT_MERGE,SORT_STABLE)
+
+        ! We need temporary storage, that algorithm is not in-situ!
+        IF (PRESENT(Imapping)) THEN
+          CALL storage_new ('sort_dp', 'temp', SIZE(Darray), ST_INT, hhandle2, &
+              ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (hhandle2,p_Itemp2)
+        ELSE
+          ! Dummy
+          hhandle2 = ST_NOHANDLE
+          NULLIFY(p_Itemp2)
+        END IF
+
+        IF (PRESENT(Dtemp)) THEN
+          p_Dtemp => Dtemp
+          call mergesort(Darray, p_Dtemp, Imapping,p_Itemp2)
+        ELSE
+          CALL storage_new ('sort_dp', 'temp', SIZE(Darray), ST_DOUBLE, hhandle, &
+              ST_NEWBLOCK_NOINIT)
+          ! Probably allocate memory for shifting the Imapping array
+          CALL storage_getbase_double (hhandle,p_Dtemp)
+          call mergesort(Darray, p_Dtemp, Imapping, p_Itemp2)
+          CALL storage_free (hhandle)
+        END IF
+        IF (PRESENT(Imapping)) CALL storage_free (hhandle2)
 
       case default
         CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
-            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
+            OU_CLASS_ERROR,OU_MODE_STD,'sort_dp')        
       end select
     else
 
@@ -1204,7 +1403,7 @@ CONTAINS
     subroutine reheap(Darray, istart, istop, Imapping)
       integer::istart,istop
       real(dp),dimension(1:istop)::Darray
-      integer,dimension(1:istop), optional:: Imapping
+      integer(i32),dimension(1:istop), optional:: Imapping
       real(dp)::t1,t2
       integer :: i1, i2
       integer::i,j
@@ -1276,7 +1475,7 @@ CONTAINS
 
     subroutine heapsort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer, dimension(:), optional :: Imapping
+      integer(i32), dimension(:), optional :: Imapping
       real(dp)::t
       integer :: t2
       integer :: i,n
@@ -1319,7 +1518,7 @@ CONTAINS
 
     recursive subroutine quicksort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer, dimension(:), optional :: Imapping
+      integer(i32), dimension(:), optional :: Imapping
       real(dp)::t, temp
       integer :: t2, temp2
       integer::l,u,i,j
@@ -1427,7 +1626,7 @@ CONTAINS
 
     subroutine insertsort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer, dimension(:), optional :: Imapping
+      integer(i32), dimension(:), optional :: Imapping
 
       real(dp)::t
       integer :: t2
@@ -1470,11 +1669,13 @@ CONTAINS
     !----------------------------------------------------------------
 
 
-    recursive subroutine mergesort(Darray, Imapping)
-      real(DP), dimension(:) :: Darray
-      integer, dimension(:), optional :: Imapping
+    recursive subroutine mergesort(Darray, Dtemp, Imapping, ImappingTemp)
+      REAL(DP),dimension(:)::Darray
+      REAL(DP),dimension(:)::Dtemp
+      integer(i32), dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
+      INTEGER :: idest
 
       ilen = ubound(Darray,1)
       ! Nothing to sort
@@ -1490,42 +1691,93 @@ CONTAINS
 
       ! Recursive sorting with mergesort
       if (present(Imapping)) then
-        call mergesort(Darray(1:imid),Imapping(1:imid))
-        call mergesort(Darray(imid+1:ilen),Imapping(imid+1:ilen))
+        call mergesort(Darray(1:imid),Dtemp(1:imid),&
+            Imapping(1:imid),ImappingTemp(1:imid))
+        call mergesort(Darray(imid+1:ilen),Dtemp(imid+1:ilen),&
+            Imapping(imid+1:ilen),ImappingTemp(imid+1:ilen))
       else
-        call mergesort(Darray(1:imid))
-        call mergesort(Darray(imid+1:ilen))
+        call mergesort(Darray(1:imid),Dtemp(1:imid))
+        call mergesort(Darray(imid+1:ilen),Dtemp(imid+1:ilen))
       endif
 
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       ilo = 1
       iend_lo   = imid
       istart_hi = imid+1
+      idest = 1
       ! Test of presence of Imapping was moved out of loop
       ! for performance reasons
       if (present(Imapping)) then
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Darray(ilo) .le. Darray(istart_hi)) then
+      
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Darray(ilo) .le. Darray(istart_hi)) THEN
+            Dtemp(idest) = Darray(ilo)
+            ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else
-            Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
-            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Dtemp(idest) = Darray(istart_hi)
+            ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Dtemp(idest) = Darray(ilo)
+          ImappingTemp(idest) = Imapping(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Dtemp(idest) = Darray(istart_hi)
+          ImappingTemp(idest) = Imapping(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Darray(idest) = Dtemp(idest)
+          Imapping(idest) = ImappingTemp(idest)
+        END DO
+      
       else
-        do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
-          if (Darray(ilo) .le. Darray(istart_hi)) then
+
+        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
+          IF (Darray(ilo) .le. Darray(istart_hi)) THEN
+            Dtemp(idest) = Darray(ilo)
             ilo = ilo+1
-          else
-            Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
-            ilo       = ilo+1
-            iend_lo   = iend_lo+1
+          ELSE        
+            Dtemp(idest) = Darray(istart_hi)
             istart_hi = istart_hi+1
-          endif
-        enddo
+          END IF
+          idest = idest+1
+        END DO
+        
+        ! Copy the rest of the array. Only one of them may still 
+        ! contain data!
+        DO WHILE (ilo .LE. imid) 
+          Dtemp(idest) = Darray(ilo)
+          ilo = ilo+1
+          idest = idest+1
+        END DO  
+        
+        DO WHILE (istart_hi .LE. ilen) 
+          Dtemp(idest) = Darray(istart_hi)
+          istart_hi = istart_hi+1
+          idest = idest+1
+        END DO
+        
+        ! Copy back from the temp array.
+        DO idest = 1,ilen
+          Darray(idest) = Dtemp(idest)
+        END DO
+
       endif
     end subroutine mergesort
 
@@ -1558,7 +1810,7 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_int (Ielem, iindex, cmethod)
+  SUBROUTINE arraySort_sortByIndex_int (Ielem, iindex, cmethod, Itemp)
     
     IMPLICIT NONE
     
@@ -1575,6 +1827,11 @@ CONTAINS
     
     ! Method to use for sorting (optional). Defaults to Heapsort
     INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Ielem(1..nindex,inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    INTEGER(I32), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
   !</input>
     
   !<inputoutput>
@@ -1584,6 +1841,9 @@ CONTAINS
 !</subroutine>
 
     INTEGER(I32) :: nindex,nnode
+    INTEGER, DIMENSION(2) :: Isize
+    INTEGER :: hhandle
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Itemp
         
     nindex = UBOUND(Ielem,1)
     nnode = UBOUND(Ielem,2)
@@ -1599,7 +1859,19 @@ CONTAINS
         CASE (SORT_INSERT)
           CALL insertSort(1,nnode)
         CASE (SORT_MERGE,SORT_STABLE)
-          CALL mergeSort(1,nnode)
+          ! We need temporary storage, that algorithm is not in-situ!
+          IF (PRESENT(Itemp)) THEN
+            p_Itemp => Itemp
+            CALL mergeSort(1,nnode)
+          ELSE
+            Isize = UBOUND(Ielem)
+            CALL storage_new2D ('arraySort_sortByIndex_int', &
+                'Itemp', Isize, ST_INT, hhandle, &
+                ST_NEWBLOCK_NOINIT)
+            CALL storage_getbase_int2d (hhandle,p_Itemp)
+            CALL mergeSort(1,nnode) 
+            CALL storage_free (hhandle)
+          END IF
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
@@ -1739,7 +2011,7 @@ CONTAINS
       INTEGER(I32), INTENT(IN) :: ilow, ihigh
       
       INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      
+      INTEGER(I32) :: idx,idest
       
       ! Nothing to sort
       IF (ilow .GE. ihigh) RETURN
@@ -1756,21 +2028,52 @@ CONTAINS
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,      imid)
+      CALL mergesort(ilow,   imid)
       CALL mergesort(imid+1, ihigh )
       
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       istart_hi = imid+1
-      iend_lo = imid
-      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+      idest = ilow
+      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
         IF (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) THEN
+          DO idx = 1,UBOUND(Ielem,1)
+            p_Itemp(idx,idest) = Ielem(idx,ilo)
+          END DO
           ilo = ilo+1
-        ELSE
-          CALL circShiftRight(ilo, istart_hi)
-          ilo = ilo+1
-          iend_lo = iend_lo+1
+        ELSE        
+          DO idx = 1,UBOUND(Ielem,1)
+            p_Itemp(idx,idest) = Ielem(idx,istart_hi)
+          END DO
           istart_hi = istart_hi+1
-        ENDIF
+        END IF
+        idest = idest+1
+      END DO
+      
+      ! Copy the rest of the array. Only one of them may still 
+      ! contain data!
+      DO WHILE (ilo .LE. imid) 
+        DO idx = 1,UBOUND(Ielem,1)
+          p_Itemp(idx,idest) = Ielem(idx,ilo)
+        END DO
+        ilo = ilo+1
+        idest = idest+1
+      END DO  
+      
+      DO WHILE (istart_hi .LE. ihigh) 
+        DO idx = 1,UBOUND(Ielem,1)
+          p_Itemp(idx,idest) = Ielem(idx,istart_hi)
+        END DO
+        istart_hi = istart_hi+1
+        idest = idest+1
+      END DO
+      
+      ! Copy back from the temp array.
+      DO idest = ilow,ihigh
+        DO idx = 1,UBOUND(Ielem,1)
+          Ielem(idx,idest) = p_Itemp(idx,idest)
+        END DO
       END DO
     
     END SUBROUTINE mergesort
@@ -1811,7 +2114,7 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_dp (Delem, iindex, cmethod)
+  SUBROUTINE arraySort_sortByIndex_dp (Delem, iindex, cmethod, Dtemp)
     
     IMPLICIT NONE
     
@@ -1828,6 +2131,11 @@ CONTAINS
     
     ! Method to use for sorting (optional). Defaults to Heapsort
     INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Delem(1..nindex,inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    REAL(DP), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Dtemp
   !</input>
     
   !<inputoutput>
@@ -1837,6 +2145,9 @@ CONTAINS
 !</subroutine>
 
     INTEGER(I32) :: nindex,nnode
+    INTEGER, DIMENSION(2) :: Isize
+    INTEGER :: hhandle
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dtemp
         
     nindex = UBOUND(Delem,1)
     nnode = UBOUND(Delem,2)
@@ -1852,7 +2163,20 @@ CONTAINS
         CASE (SORT_INSERT)
           CALL insertSort(1,nnode)
         CASE (SORT_MERGE,SORT_STABLE)
-          CALL mergeSort(1,nnode)
+          ! We need temporary storage, that algorithm is not in-situ!
+          IF (PRESENT(Dtemp)) THEN
+            p_Dtemp => Dtemp
+            CALL mergeSort(1,nnode)
+          ELSE
+            Isize = UBOUND(Delem)
+            CALL storage_new2D ('arraySort_sortByIndex_dp', &
+                'Dtemp', Isize, ST_DOUBLE, hhandle, &
+                ST_NEWBLOCK_NOINIT)
+            CALL storage_getbase_double2d (hhandle,p_Dtemp)
+            CALL mergeSort(1,nnode) 
+            CALL storage_free (hhandle)
+          END IF
+            
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
@@ -1994,7 +2318,7 @@ CONTAINS
       INTEGER(I32), INTENT(IN) :: ilow, ihigh
       
       INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      
+      INTEGER(I32) :: idx,idest
       
       ! Nothing to sort
       IF (ilow .GE. ihigh) RETURN
@@ -2011,21 +2335,52 @@ CONTAINS
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,      imid)
+      CALL mergesort(ilow,   imid)
       CALL mergesort(imid+1, ihigh )
       
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       istart_hi = imid+1
-      iend_lo = imid
-      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+      idest = ilow
+      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
         IF (Delem(iindex,ilo) .le. Delem(iindex,istart_hi)) THEN
+          DO idx = 1,UBOUND(Delem,1)
+            p_Dtemp(idx,idest) = Delem(idx,ilo)
+          END DO
           ilo = ilo+1
-        ELSE
-          CALL circShiftRight(ilo, istart_hi)
-          ilo = ilo+1
-          iend_lo = iend_lo+1
+        ELSE        
+          DO idx = 1,UBOUND(Delem,1)
+            p_Dtemp(idx,idest) = Delem(idx,istart_hi)
+          END DO
           istart_hi = istart_hi+1
-        ENDIF
+        END IF
+        idest = idest+1
+      END DO
+      
+      ! Copy the rest of the array. Only one of them may still 
+      ! contain data!
+      DO WHILE (ilo .LE. imid) 
+        DO idx = 1,UBOUND(Delem,1)
+          p_Dtemp(idx,idest) = Delem(idx,ilo)
+        END DO
+        ilo = ilo+1
+        idest = idest+1
+      END DO  
+      
+      DO WHILE (istart_hi .LE. ihigh) 
+        DO idx = 1,UBOUND(Delem,1)
+          p_Dtemp(idx,idest) = Delem(idx,istart_hi)
+        END DO
+        istart_hi = istart_hi+1
+        idest = idest+1
+      END DO
+      
+      ! Copy back from the temp array.
+      DO idest = ilow,ihigh
+        DO idx = 1,UBOUND(Delem,1)
+          Delem(idx,idest) = p_Dtemp(idx,idest)
+        END DO
       END DO
     
     END SUBROUTINE mergesort
@@ -2068,7 +2423,7 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_sp (Selem, iindex, cmethod)
+  SUBROUTINE arraySort_sortByIndex_sp (Selem, iindex, cmethod, Stemp)
     
     IMPLICIT NONE
     
@@ -2085,15 +2440,23 @@ CONTAINS
     
     ! Method to use for sorting (optional). Defaults to Heapsort
     INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    
+    ! OPTIONAL: Temporary 2D array containing n nodes 
+    ! Delem(1..nindex,inode). If not specified, the array is 
+    ! automatically allocated if necessary.
+    REAL(SP), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Stemp
   !</input>
     
   !<inputoutput>
-    ! 2D array containing the n nodes Selem(1..nindex,inode)
+    ! 2D array containing the n nodes Delem(1..nindex,inode)
     REAL(SP), DIMENSION(:,:), INTENT(INOUT) :: Selem
   !</inputoutput>
 !</subroutine>
 
     INTEGER(I32) :: nindex,nnode
+    INTEGER, DIMENSION(2) :: Isize
+    INTEGER :: hhandle
+    REAL(SP), DIMENSION(:,:), POINTER :: p_Stemp
         
     nindex = UBOUND(Selem,1)
     nnode = UBOUND(Selem,2)
@@ -2109,7 +2472,19 @@ CONTAINS
         CASE (SORT_INSERT)
           CALL insertSort(1,nnode)
         CASE (SORT_MERGE,SORT_STABLE)
-          CALL mergeSort(1,nnode)
+          ! We need temporary storage, that algorithm is not in-situ!
+          IF (PRESENT(Stemp)) THEN
+            p_Stemp => Stemp
+            CALL mergeSort(1,nnode)
+          ELSE
+            Isize = UBOUND(Selem)
+            CALL storage_new2D ('arraySort_sortByIndex_sp', &
+                'Stemp', Isize, ST_SINGLE, hhandle, &
+                ST_NEWBLOCK_NOINIT)
+            CALL storage_getbase_single2d (hhandle,p_Stemp)
+            CALL mergeSort(1,nnode) 
+            CALL storage_free (hhandle)
+          END IF
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
@@ -2251,7 +2626,7 @@ CONTAINS
       INTEGER(I32), INTENT(IN) :: ilow, ihigh
       
       INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      
+      INTEGER(I32) :: idx,idest
       
       ! Nothing to sort
       IF (ilow .GE. ihigh) RETURN
@@ -2271,20 +2646,51 @@ CONTAINS
       CALL mergesort(ilow,      imid)
       CALL mergesort(imid+1, ihigh )
       
-      ! Merge the two sorted lists in a stable way
+      ! Merge the two sorted lists in a stable way.
+      ! Put the result in the temp array, copy back later to the
+      ! original array.
       istart_hi = imid+1
-      iend_lo = imid
-      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+      idest = ilow
+      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
         IF (Selem(iindex,ilo) .le. Selem(iindex,istart_hi)) THEN
+          DO idx = 1,UBOUND(Selem,1)
+            p_Stemp(idx,idest) = Selem(idx,ilo)
+          END DO
           ilo = ilo+1
-        ELSE
-          CALL circShiftRight(ilo, istart_hi)
-          ilo = ilo+1
-          iend_lo = iend_lo+1
+        ELSE        
+          DO idx = 1,UBOUND(Selem,1)
+            p_Stemp(idx,idest) = Selem(idx,istart_hi)
+          END DO
           istart_hi = istart_hi+1
-        ENDIF
+        END IF
+        idest = idest+1
       END DO
-    
+      
+      ! Copy the rest of the array. Only one of them may still 
+      ! contain data!
+      DO WHILE (ilo .LE. imid) 
+        DO idx = 1,UBOUND(Selem,1)
+          p_Stemp(idx,idest) = Selem(idx,ilo)
+        END DO
+        ilo = ilo+1
+        idest = idest+1
+      END DO  
+      
+      DO WHILE (istart_hi .LE. ihigh) 
+        DO idx = 1,UBOUND(Selem,1)
+          p_Stemp(idx,idest) = Selem(idx,istart_hi)
+        END DO
+        istart_hi = istart_hi+1
+        idest = idest+1
+      END DO
+      
+      ! Copy back from the temp array.
+      DO idest = ilow,ihigh
+        DO idx = 1,UBOUND(Selem,1)
+          Selem(idx,idest) = p_Stemp(idx,idest)
+        END DO
+      END DO
+          
     END SUBROUTINE mergesort
 
     SUBROUTINE swapNode(i,j)
