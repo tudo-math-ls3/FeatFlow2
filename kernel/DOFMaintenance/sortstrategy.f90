@@ -927,6 +927,9 @@ CONTAINS
         ! Sort for the coordinates
         CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
 
+        ! Release temp memory
+        CALL storage_free (hhandle)
+
       CASE (EL_Q1T)
       
         ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF's
