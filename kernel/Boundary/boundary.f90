@@ -945,7 +945,7 @@ MODULE boundary
 !</input>
 
 !<output>
-    ! Segment number of the segment that contains dpar
+    ! Segment number (1,2,3,...) of the segment that contains dpar
     INTEGER, INTENT(OUT) :: iseg
 
     ! Start index of the segment in IsegInfo that contains dpar
@@ -984,18 +984,20 @@ MODULE boundary
       ! (0 .le. dparloc .le. length(segment))
       dparloc = dpar - dcurrentpar
       
-      IF ((iorientation .NE. 0.0_DP) .AND. (dparloc .EQ. 0.0_DP)) THEN
+      IF ((iorientation .NE. 0) .AND. (dparloc .EQ. 0.0_DP)) THEN
         ! We are in a point where the segment is not unique and
         ! the caller wants to have the 'previous' segment. Find it!
 
         iseg = AINT(dpar)-1
-        IF (iseg .EQ. 0) THEN
+        IF (iseg .EQ. -1) THEN
           ! Get the last segment!
           iseg = AINT(DmaxPar(iboundCompIdx))-1
+          dcurrentpar = REAL(iseg,DP)
+          dparloc = dpar + DmaxPar(iboundCompIdx) - dcurrentpar
+        ELSE
+          dcurrentpar = REAL(iseg,DP)
+          dparloc = dpar - dcurrentpar
         END IF
-        
-        dcurrentpar = REAL(iseg,DP)
-        dparloc = dpar - dcurrentpar
         
       END IF
 
@@ -1004,7 +1006,7 @@ MODULE boundary
 
       dendpar     = iseg + 1.0_DP
       dseglength  = DsegInfo(2+istartidx)
-
+      
     CASE (BDR_PAR_LENGTH)
 
       ! In the length-parametrisation, we have to search.
@@ -1064,6 +1066,9 @@ MODULE boundary
     ! the coordinate. Remember that the segment type is noted
     ! in the first element of the integer block of each segment!
     isegtype = IsegInfo(1+2*iseg)
+
+    ! iseg is 0-based at the moment. Normalise it to be 1-based.
+    iseg = iseg + 1
 
   END SUBROUTINE
 
