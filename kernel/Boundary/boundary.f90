@@ -945,7 +945,7 @@ MODULE boundary
 !</input>
 
 !<output>
-    ! Segment number (1,2,3,...) of the segment that contains dpar
+    ! Segment number (0,1,2,...) of the segment that contains dpar
     INTEGER, INTENT(OUT) :: iseg
 
     ! Start index of the segment in IsegInfo that contains dpar
@@ -1067,9 +1067,6 @@ MODULE boundary
     ! in the first element of the integer block of each segment!
     isegtype = IsegInfo(1+2*iseg)
 
-    ! iseg is 0-based at the moment. Normalise it to be 1-based.
-    iseg = iseg + 1
-
   END SUBROUTINE
 
 !************************************************************************
@@ -1151,7 +1148,7 @@ MODULE boundary
   CALL boundary_getSegmentInfo2D(&
       p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
       iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-  
+      
   IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
 
   ! Use the segment type to determine how to calculate
