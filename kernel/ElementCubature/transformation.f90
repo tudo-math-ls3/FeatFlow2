@@ -146,7 +146,7 @@ MODULE transformation
 !<constantblock description="Constants for size of auxiliary arrays.">
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 2D
-  INTEGER, PARAMETER :: TRAFO_NAUXJAC2D = 4
+  INTEGER, PARAMETER :: TRAFO_NAUXJAC2D = 8
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 3D
   INTEGER, PARAMETER :: TRAFO_NAUXJAC3D = 24
@@ -789,13 +789,13 @@ CONTAINS
       IF (.NOT. PRESENT(DpointReal)) THEN
       
         ! Calculate the Jacobian matrix and determinant
-        CALL trafo_calcJac2D (Dcoords,DjacPrep,Djac(:),ddetj, &
+        CALL trafo_calcJac2D (DjacPrep,Djac(:),ddetj, &
                               DpointRef(1),DpointRef(2))
       
       ELSE
 
         ! Calculate the Jacobian matrix and determinant
-        CALL trafo_calcTrafo_quad2d (Dcoords,DjacPrep,Djac(:),ddetj, &
+        CALL trafo_calcTrafo_quad2d (DjacPrep,Djac(:),ddetj, &
                                 DpointRef(1),DpointRef(2), &
                                 DpointReal(1),DpointReal(2))
       END IF
@@ -1079,7 +1079,7 @@ CONTAINS
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcJac2D (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcJac2D (DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                DpointsRef(1,ipt),DpointsRef(2,ipt))
         END DO ! ipt
       
@@ -1088,7 +1088,7 @@ CONTAINS
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcTrafo_quad2d (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcTrafo_quad2d (DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                  DpointsRef(1,ipt),DpointsRef(2,ipt), &
                                  DpointsReal(1,ipt),DpointsReal(2,ipt))
         END DO ! ipt
@@ -1462,7 +1462,7 @@ CONTAINS
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcJac2D (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcJac2D (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                 DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel))
           END DO ! ipt
           
@@ -1480,7 +1480,7 @@ CONTAINS
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcTrafo_quad2d (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcTrafo_quad2d (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                   DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel), &
                                   DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel))
           END DO ! ipt
@@ -1665,26 +1665,8 @@ CONTAINS
 ! the corners of the quadrilateral, not of the current point. So they
 ! are constant for all points we want to map from the reference
 ! element to the real one. We call them here "auxiliary Jacobian factors".
-! They can be calculated with trafo_calcJacPrepare in advance for all points that
-! have to be mapped. To be more exact, trafo_calcJacPrepare calculates:
-!
-!  J1 = 1/2 * (-x1 - x2 + x3 + x4)
-!  J2 = 1/2 * ( x1 - x2 + x3 - x4)
-!
-!  J3 = 1/2 * (-y1 + y2 - y3 + y4)
-!  J4 = 1/2 * (-y1 + y2 + y3 - y4)
-!
-! Using these factors, one can write:
-!
-!  a1  =  1/4 * ( x1 + x2 + x3 + x4)  =  1/2 * (x1 + x2 + J1)
-!  a2  =  1/4 * (-x1 + x2 + x3 - x4)  =  1/2 * (x2 - x1 + J3)
-!  a3  =  1/4 * (-x1 - x2 + x3 + x4)  =  1/2 * J1 
-!  a4  =  1/4 * ( x1 - x2 + x3 - x4)  =  1/2 * J2
-!
-!  b1  =  1/4 * ( y1 + y2 + y3 + y4)  =  1/2 * (y1 + y3 + J3)
-!  b2  =  1/4 * (-y1 + y2 + y3 - y4)  =  1/2 * J4
-!  b3  =  1/4 * (-y1 - y2 + y3 + y4)  =  1/2 * (y3 - y1 - J4)
-!  b4  =  1/4 * ( y1 - y2 + y3 - y4)  =  1/2 * J3
+! They can be calculated with trafo_calcJacPrepare in advance for all points
+! that have to be mapped.
 !
 ! The Jacobian matrix of the bilinear transformation is now 
 ! calculated as usual by partial differentiation. Thing above 
@@ -1692,9 +1674,6 @@ CONTAINS
 !
 ! DPhi ( xi1 )  =  ( a2 + a4*xi2    a3 + a4*xi1 )
 !      ( xi2 )     ( b2 + b4*xi2    b3 + b4*xi1 )
-!
-!               =  ( 1/2*(x2-x1+J2) + 1/2*J2*xi2           1/2*J1 + 1/2*J2*xi1 )
-!                  (         1/2*J4 + 1/2*J3*xi2   1/2*(y3-y1-J4) + 1/2*J3*xi1 )
 !
 ! which gives the Jacobian determinant of the 2x2-matrix:
 !
@@ -1732,10 +1711,14 @@ CONTAINS
 
 !</subroutine>
 
-  DjacPrep(1) = 0.5_DP * (-Dcoords(1,1) - Dcoords(1,2) + Dcoords(1,3) + Dcoords(1,4))
-  DjacPrep(2) = 0.5_DP * ( Dcoords(1,1) - Dcoords(1,2) + Dcoords(1,3) - Dcoords(1,4))
-  DjacPrep(3) = 0.5_DP * (-Dcoords(2,1) + Dcoords(2,2) - Dcoords(2,3) + Dcoords(2,4))
-  DjacPrep(4) = 0.5_DP * (-Dcoords(2,1) + Dcoords(2,2) + Dcoords(2,3) - Dcoords(2,4))
+  DjacPrep(1) = 0.25_DP*(Dcoords(1,1)+Dcoords(1,2)+Dcoords(1,3)+Dcoords(1,4))
+  DjacPrep(2) = 0.25_DP*(-Dcoords(1,1)+Dcoords(1,2)+Dcoords(1,3)-Dcoords(1,4))
+  DjacPrep(3) = 0.25_DP*(-Dcoords(1,1)-Dcoords(1,2)+Dcoords(1,3)+Dcoords(1,4))
+  DjacPrep(4) = 0.25_DP*(Dcoords(1,1)-Dcoords(1,2)+Dcoords(1,3)-Dcoords(1,4))
+  DjacPrep(5) = 0.25_DP*(Dcoords(2,1)+Dcoords(2,2)+Dcoords(2,3)+Dcoords(2,4))
+  DjacPrep(6) = 0.25_DP*(-Dcoords(2,1)+Dcoords(2,2)+Dcoords(2,3)-Dcoords(2,4))
+  DjacPrep(7) = 0.25_DP*(-Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)+Dcoords(2,4))
+  DjacPrep(8) = 0.25_DP*(Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)-Dcoords(2,4))
 
   END SUBROUTINE 
 
@@ -1743,7 +1726,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcTrafo_quad2d (Dcoord,DjacPrep,Djac,ddetj, &
+  PURE SUBROUTINE trafo_calcTrafo_quad2d (DjacPrep,Djac,ddetj, &
                                    dparx,dpary,dxreal,dyreal)
 
 !<description>
@@ -1762,16 +1745,9 @@ CONTAINS
 !</description>  
 
 !<input>
-  
-  ! Coordinates of the four points forming the element.
-  ! Dcoord(1,.) = x-coordinates,
-  ! Dcoord(2,.) = y-coordinates.
-  ! DIMENSION(#space dimensions,NVE)
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord 
-  
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by trafo_calcJacPrepare.
+  ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1801,35 +1777,28 @@ CONTAINS
   
 !</subroutine>
 
-  Djac(1) = 0.5E0_DP * ((Dcoord(1,2)-Dcoord(1,1)+DjacPrep(2)) &
-                          + DjacPrep(2)*dpary )
-  Djac(2) = 0.5E0_DP * ( DjacPrep(4) - DjacPrep(3)*dpary )
-  Djac(3) = 0.5E0_DP * ( DjacPrep(1) + DjacPrep(2)*dparx )
-  Djac(4) = 0.5E0_DP * ((Dcoord(2,3)-Dcoord(2,1)-DjacPrep(4)) &
-                          - DjacPrep(3)*dparx )
+  ! Jacobian matrix of the mapping
+  Djac(1) = DjacPrep(2) + DjacPrep(4)*dpary
+  Djac(2) = DjacPrep(6) + DjacPrep(8)*dpary
+  Djac(3) = DjacPrep(3) + DjacPrep(4)*dparx
+  Djac(4) = DjacPrep(7) + DjacPrep(8)*dparx
 
   ! Determinant of the mapping
-
   ddetj = Djac(1)*Djac(4) - Djac(3)*Djac(2)
   
   ! Map the point to the real element
-  
-  dxreal = 0.5E0_DP*((Dcoord(1,1)+Dcoord(1,2)+DjacPrep(1)) + &
-                     (Dcoord(1,2)-Dcoord(1,1)+DjacPrep(2))*dparx + &
-                     DjacPrep(1)*dpary + &
-                     DjacPrep(2)*dparx*dpary )
-  dyreal = 0.5E0_DP*((Dcoord(2,1)+Dcoord(2,3)+DjacPrep(3)) + &
-                     DjacPrep(4)*dparx + &
-                     (Dcoord(2,3)-Dcoord(2,1)-DjacPrep(4))*dpary - &
-                     DjacPrep(3)*dparx*dpary )
-  
+  dxreal = DjacPrep(1) + DjacPrep(2)*dparx + DjacPrep(3)*dpary &
+         + DjacPrep(4)*dparx*dpary
+  dyreal = DjacPrep(5) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+         + DjacPrep(8)*dparx*dpary
+    
   END SUBROUTINE
 
   !************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcJac2D (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
+  PURE SUBROUTINE trafo_calcJac2D (DjacPrep,Djac,ddetj,dparx,dpary)
 
 !<description>
   ! Calculate Jacobian determinant of mapping from reference- to
@@ -1846,15 +1815,9 @@ CONTAINS
 !</description>  
 
 !<input>
-  ! Coordinates of the four points forming the element.
-  ! Dcoord(1,.) = x-coordinates,
-  ! Dcoord(2,.) = y-coordinates.
-  ! DIMENSION(#space dimensions,NVE)
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord
-  
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by trafo_calcJacPrepare.
+  ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1877,17 +1840,13 @@ CONTAINS
   
 !</subroutine>
 
-  ! Jacobian matrix of the mapping:
-
-  Djac(1) = 0.5E0_DP * (Dcoord(1,2)-Dcoord(1,1)+DjacPrep(2)) &
-            + 0.5E0_DP * DjacPrep(2)*dpary
-  Djac(2) = 0.5E0_DP * DjacPrep(4) - 0.5E0_DP * DjacPrep(3)*dpary
-  Djac(3) = 0.5E0_DP * DjacPrep(1) + 0.5E0_DP * DjacPrep(2)*dparx
-  Djac(4) = 0.5E0_DP * (Dcoord(2,3)-Dcoord(2,1)-DjacPrep(4)) &
-            - 0.5E0_DP * DjacPrep(3)*dparx
+  ! Jacobian matrix of the mapping
+  Djac(1) = DjacPrep(2) + DjacPrep(4)*dpary
+  Djac(2) = DjacPrep(6) + DjacPrep(8)*dpary
+  Djac(3) = DjacPrep(3) + DjacPrep(4)*dparx
+  Djac(4) = DjacPrep(7) + DjacPrep(8)*dparx
 
   ! Determinant of the mapping
-
   ddetj = Djac(1)*Djac(4) - Djac(3)*Djac(2)
   
   END SUBROUTINE
@@ -1896,7 +1855,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcRealCoords2D (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
+  PURE SUBROUTINE trafo_calcRealCoords2D (DjacPrep,dparx,dpary,dxreal,dyreal)
 
 !<description>
   ! This subroutine computes the real coordinates of a point which 
@@ -1906,15 +1865,9 @@ CONTAINS
 !</description>  
 
 !<input>
-  ! Coordinates of the four points forming the element.
-  ! Dcoord(1,.) = x-coordinates,
-  ! Dcoord(2,.) = y-coordinates.
-  ! DIMENSION(#space dimensions,NVE)
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord
-  
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by trafo_calcJacPrepare.
+  ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1933,15 +1886,10 @@ CONTAINS
 !</subroutine>
 
   ! Map the point to the real element
-  
-  dxreal = 0.5E0_DP*((Dcoord(1,1)+Dcoord(1,2)+DjacPrep(1)) + &
-                     (Dcoord(1,2)-Dcoord(1,1)+DjacPrep(2))*dparx + &
-                     DjacPrep(1)*dpary + &
-                     DjacPrep(2)*dparx*dpary )
-  dyreal = 0.5E0_DP*((Dcoord(2,1)+Dcoord(2,3)+DjacPrep(3)) + &
-                     DjacPrep(4)*dparx + &
-                     (Dcoord(2,3)-Dcoord(2,1)-DjacPrep(4))*dpary - &
-                     DjacPrep(3)*dparx*dpary )
+  dxreal = DjacPrep(1) + DjacPrep(2)*dparx + DjacPrep(3)*dpary &
+         + DjacPrep(4)*dparx*dpary
+  dyreal = DjacPrep(5) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+         + DjacPrep(8)*dparx*dpary
   
   END SUBROUTINE
 

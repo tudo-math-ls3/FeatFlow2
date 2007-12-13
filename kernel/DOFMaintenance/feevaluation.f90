@@ -129,7 +129,6 @@ CONTAINS
     REAL(DP), DIMENSION(4) :: Djac
     REAL(DP) :: ddetj
     INTEGER(I32) :: ctrafoType
-    REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
     REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint
     
     ! Values of basis functions and DOF's
@@ -290,10 +289,9 @@ CONTAINS
       ! the mapping between the reference and the real element.
       ! In case we use a nonparametric element, we need the 
       ! coordinates of the points on the real element, too.
-      CALL trafo_calcJacPrepare2D(Dcoord, DjacPrep)
       CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
-          Dcoord,DjacPrep,Djac,ddetj,DparPoint)
-    
+          Dcoord,DparPoint,Djac,ddetj)
+
       ! Call the element to calculate the values of the basis functions
       ! in the point.
       IF (bnonpar) THEN
@@ -400,7 +398,6 @@ CONTAINS
     REAL(DP), DIMENSION(4) :: Djac
     REAL(DP) :: ddetj
     INTEGER(I32) :: ctrafoType
-    REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
     REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint,DrealPoint
     
     ! Values of basis functions and DOF's
@@ -500,8 +497,6 @@ CONTAINS
       ! the mapping between the reference and the real element.
       ! In case we use a nonparametric element, we need the 
       ! coordinates of the points on the real element, too.
-      CALL trafo_calcJacPrepare2D(Dcoord, DjacPrep)
-
       ! If the world coordinates of the point are given, take them
       ! If not, compute them in the transformation.
       IF (PRESENT(Dpoints)) THEN
