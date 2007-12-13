@@ -991,9 +991,9 @@ MODULE boundary
         iseg = AINT(dpar)-1
         IF (iseg .EQ. -1) THEN
           ! Get the last segment!
-          iseg = AINT(DmaxPar(iboundCompIdx))-1
+          iseg = IsegCount(iboundCompIdx)-1
           dcurrentpar = REAL(iseg,DP)
-          dparloc = dpar + DmaxPar(iboundCompIdx) - dcurrentpar
+          dparloc = dpar + REAL(IsegCount(iboundCompIdx),DP) - dcurrentpar
         ELSE
           dcurrentpar = REAL(iseg,DP)
           dparloc = dpar - dcurrentpar
