@@ -332,10 +332,12 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**17  ! KVBDI 
   INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**18  ! KMBDI 
   INTEGER(I32), PARAMETER :: TR_SHARE_DELEMENTAREA           = 2**19  ! DAREA 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IREFINEMENTPATCH       = 2**20   
+  INTEGER(I32), PARAMETER :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**21  
   
-  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
-  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**22  ! K???
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**22  ! KVAR 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**23  ! KAREA
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**24  ! K???
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
@@ -435,6 +437,8 @@ MODULE triangulation
     ! Bit 17: KVBDI  is a copy of another structure
     ! Bit 18: KMBDI  is a copy of another structure
     ! Bit 19: DAREA  is a copy of another structure
+    ! Bit 20: IrefinementPatch/IrefinementPatchIndex is a copy of another structure
+    ! Bit 21: IcoarseGridElement is a copy of another structure
     INTEGER(I32)             :: iduplicationFlag
   
     ! Dimension of the triangulation.
@@ -627,6 +631,46 @@ MODULE triangulation
     ! contains the number of the adjacent element in a vertex.
     ! This replaces the old KVEL array.
     INTEGER        :: h_IelementsAtVertex = ST_NOHANDLE
+    
+    ! This array defines a patch index and is created during the
+    ! refinement. For a mesh that does not stem from a refinement,
+    ! this array is undefined. For a mesh that stems from a refinement,
+    ! this array defines a pointer into p_IrefinementPatch.
+    ! Using p_IrefinementPatchIndex in combination with p_IrefinementPatch
+    ! allows to get the element numbers of the fine grid elements
+    ! that were created from a coarse grid element.
+    ! Handle to 
+    !       p_IrefinementPatchIndex=array [1..NELcoarse+1] of integer.
+    ! So if IEL is the number of a coarse grid element, the fine grid 
+    ! elements are to be found in
+    ! p_IrefinementPatch ( p_IrefinementPatchIndex(IEL)..p_IrefinementPatchIndex(IEL+1)-1 )
+    ! By subtracting
+    !     p_IrefinementPatchIndex(IVT+1)-p_IrefinementPatchIndex(IVT)
+    ! one can get the number of elements that a coarse grid element
+    ! was refined to.
+    INTEGER        :: h_IrefinementPatchIndex = ST_NOHANDLE
+    
+    ! This array defines patches that were created during the
+    ! refinement. For a mesh that does not step from a refinement,
+    ! this array is undefined. For a mesh that stems from a refinement,
+    ! this array defines for every coarse grid element the number
+    ! of the fine grid elements that were created from that coarse
+    ! grid element.
+    ! Handle to
+    !       p_IrefinementPatches = array(1..*) of integer
+    ! p_IrefinementPatch ( p_IrefinementPatchIndex(IEL)..p_IrefinementPatchIndex(IEL+1)-1 )
+    ! contains the numbers of the elements, a coarse grid element
+    ! was divided into.
+    INTEGER        :: h_IrefinementPatch = ST_NOHANDLE
+    
+    ! If a mesh stems from a refinement of a coarse mesh, this array
+    ! defines for every element on the fine mesh the element
+    ! number on the coarse mesh where the fine grid element comes from.
+    ! Handle to
+    !       p_IcoarseGridElement = array(1..NEL) of integer
+    ! For a mesh that does not come from a refinement, this handle is 
+    ! undefined.
+    INTEGER        :: h_IcoarseGridElement = ST_NOHANDLE
     
     ! Boundary component index vector of length NBCT+1 for 
     ! p_IverticesAtBoundary / p_IedgesAtBoundary / ... arrays.
@@ -1693,6 +1737,19 @@ CONTAINS
     CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
           rtriangulation%h_DfreeVertexCoordinates, &
           rbackupTriangulation%h_DfreeVertexCoordinates)
+
+    ! Bit 20: IrefinementPatch
+    CALL checkAndCopy(idupflag, TR_SHARE_IREFINEMENTPATCH,&
+          rtriangulation%h_IrefinementPatch, &
+          rbackupTriangulation%h_IrefinementPatch)
+    CALL checkAndCopy(idupflag, TR_SHARE_IREFINEMENTPATCH,&
+          rtriangulation%h_IrefinementPatchIndex, &
+          rbackupTriangulation%h_IrefinementPatchIndex)
+
+    ! Bit 21: IcoarseGridElement 
+    CALL checkAndCopy(idupflag, TR_SHARE_ICOARSEGRIDELEMENT,&
+          rtriangulation%h_IcoarseGridElement, &
+          rbackupTriangulation%h_IcoarseGridElement)
     
   CONTAINS
   
@@ -1831,18 +1888,27 @@ CONTAINS
     CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
           rtriangulation%h_DfreeVertexCoordinates)
 
-    ! Bit 20: KVAR          
-    call checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
+    ! Bit 20: IrefinementPatch          
+    CALL checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
+           rtriangulation%h_IrefinementPatch)
+    CALL checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
+           rtriangulation%h_IrefinementPatchIndex)
+
+    ! Bit 21: IcoarseGridElement
+    CALL checkAndRelease(idupflag, TR_SHARE_ICOARSEGRIDELEMENT, &
+           rtriangulation%h_IcoarseGridElement)
+
+    ! Bit 22: KVAR          
+    CALL checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
            rtriangulation%h_IverticesAtFace)
            
-    ! Bit 21: KAREA           
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
+    ! Bit 23: KAREA           
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
            rtriangulation%h_IFacesAtElement)
     
-    ! Bit 22: K????       
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
+    ! Bit 24: K????       
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
            rtriangulation%h_IelementsAtFace)
-          
     
     ! Clean up the rest of the structure
 
@@ -4860,6 +4926,9 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordDest
       INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementSource
       INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IcoarseGridElement
       INTEGER(PREC_ELEMENTIDX) :: iel,iel2
       INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
       INTEGER(I32), DIMENSION(2) :: Isize
@@ -4904,6 +4973,46 @@ CONTAINS
       CALL storage_getbase_double2D(&
           rdestTriangulation%h_DvertexCoords,p_DcoordDest)
       
+      ! Allocate memory for the refinement information arrays.
+      ! These arrays define for every coarse grid element the fine
+      ! grid elements and for every fine grid element the coarse
+      ! grid element where it comes from.
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatchIndex', &
+          rsourceTriangulation%NEL+1, ST_INT, &
+          rdestTriangulation%h_IrefinementPatchIndex, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IrefinementPatchIndex,p_IrefinementPatchIndex)
+
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatch', &
+          rdestTriangulation%NEL, ST_INT, &
+          rdestTriangulation%h_IrefinementPatch, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IrefinementPatch,p_IrefinementPatch)
+    
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IcoarseGridElement', &
+          rdestTriangulation%NEL, ST_INT, &
+          rdestTriangulation%h_IcoarseGridElement, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IcoarseGridElement,p_IcoarseGridElement)
+
+      ! The p_IrefinementPatchIndex array can directly be initialised
+      ! as every coarse grid element gets 4 fine grid elements.
+      DO iel = 0,rsourceTriangulation%NEL
+        p_IrefinementPatchIndex(1+iel) = 1 + iel*2
+      END DO
+      
+      ! Also the p_IcoarseGridElement array can directly be initialised.
+      ! The coarse grid element number of element 1..NEL(coarse) stays
+      ! the same. The number of the other coarse grid elements can
+      ! be calculated by a formula.
+      DO iel = 1,rsourceTriangulation%NEL
+        p_IcoarseGridElement(iel) = iel
+      END DO
+
+      DO iel = rsourceTriangulation%NEL+1,rdestTriangulation%NEL
+        p_IcoarseGridElement(iel) = iel-rsourceTriangulation%NEL
+      END DO
+    
       ! Ok, let's start the refinement. In the first step, we copy the
       ! corner coordinates of the coarse mesh to the fine mesh; they
       ! don't change during the refinement.
@@ -4965,6 +5074,10 @@ CONTAINS
         ! Determine number of subelements.
         iel2 = rsourceTriangulation%NEL + iel
         
+        ! Save them
+        p_IrefinementPatch(1+(iel-1)*2) = iel
+        p_IrefinementPatch(1+(iel-1)*2+1) = iel2
+
         ! IEL1
         p_IvertAtElementDest(1,iel) = p_IvertAtElementSource(1, iel)
         p_IvertAtElementDest(2,iel) = ivtoffset + iel
@@ -5014,6 +5127,9 @@ CONTAINS
       INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
       INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementSource
       INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtEdgeSource
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IcoarseGridElement
       INTEGER(PREC_ELEMENTIDX) :: nquads,iel,iel1,iel2,iel3
       INTEGER(PREC_EDGEIDX) :: imt
       INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
@@ -5112,6 +5228,46 @@ CONTAINS
           rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int2D(&
           rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
+
+      ! Allocate memory for the refinement information arrays.
+      ! These arrays define for every coarse grid element the fine
+      ! grid elements and for every fine grid element the coarse
+      ! grid element where it comes from.
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatchIndex', &
+          rsourceTriangulation%NEL+1, ST_INT, &
+          rdestTriangulation%h_IrefinementPatchIndex, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IrefinementPatchIndex,p_IrefinementPatchIndex)
+
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatch', &
+          rdestTriangulation%NEL, ST_INT, &
+          rdestTriangulation%h_IrefinementPatch, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IrefinementPatch,p_IrefinementPatch)
+    
+      CALL storage_new ('tria_refineMesh2lv2D', 'h_IcoarseGridElement', &
+          rdestTriangulation%NEL, ST_INT, &
+          rdestTriangulation%h_IcoarseGridElement, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(&
+          rdestTriangulation%h_IcoarseGridElement,p_IcoarseGridElement)
+    
+      ! The p_IrefinementPatchIndex array can directly be initialised
+      ! as every coarse grid element gets 4 fine grid elements.
+      DO iel = 0,rsourceTriangulation%NEL
+        p_IrefinementPatchIndex(1+iel) = 1 + iel*4
+      END DO
+      
+      ! Also the p_IcoarseGridElement array can directly be initialised.
+      ! The coarse grid element number of element 1..NEL(coarse) stays
+      ! the same. The number of the other coarse grid elements can
+      ! be calculated by a formula.
+      DO iel = 1,rsourceTriangulation%NEL
+        p_IcoarseGridElement(iel) = iel
+      END DO
+
+      DO iel = rsourceTriangulation%NEL+1,rdestTriangulation%NEL
+        p_IcoarseGridElement(iel) = (iel-rsourceTriangulation%NEL-1)/3 + 1
+      END DO
     
       ! Are there quads in the mesh? They produce additional element midpoints
       ! which get numbers NVT+NMT+1..*
@@ -5219,6 +5375,12 @@ CONTAINS
           iel2 = iel1+1
           iel3 = iel1+2
           
+          ! Save them
+          p_IrefinementPatch(1+(iel-1)*4) = iel
+          p_IrefinementPatch(1+(iel-1)*4+1) = iel1
+          p_IrefinementPatch(1+(iel-1)*4+2) = iel2
+          p_IrefinementPatch(1+(iel-1)*4+3) = iel3
+          
           ! Step 1: Initialise IverticesOnElement for element IEL
           p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
           p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
@@ -5253,6 +5415,12 @@ CONTAINS
           iel2 = iel1+1
           iel3 = iel1+2
           
+          ! Save them
+          p_IrefinementPatch(1+(iel-1)*4) = iel
+          p_IrefinementPatch(1+(iel-1)*4+1) = iel1
+          p_IrefinementPatch(1+(iel-1)*4+2) = iel2
+          p_IrefinementPatch(1+(iel-1)*4+3) = iel3
+
           ! In nquads we count the number of the quad +NVT+NMT we process.
           ! That's the number of the midpoint of that element!
           ! As we reached a new quad, we increase nquads
@@ -5303,6 +5471,12 @@ CONTAINS
             iel2 = iel1+1
             iel3 = iel1+2
             
+            ! Save them
+            p_IrefinementPatch(1+(iel-1)*4) = iel
+            p_IrefinementPatch(1+(iel-1)*4+1) = iel1
+            p_IrefinementPatch(1+(iel-1)*4+2) = iel2
+            p_IrefinementPatch(1+(iel-1)*4+3) = iel3
+
             ! Step 1: Initialise IverticesOnElement for element IEL
             p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
             p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
@@ -5332,6 +5506,12 @@ CONTAINS
             iel2 = iel1+1
             iel3 = iel1+2
             
+            ! Save them
+            p_IrefinementPatch(1+(iel-1)*4) = iel
+            p_IrefinementPatch(1+(iel-1)*4+1) = iel1
+            p_IrefinementPatch(1+(iel-1)*4+2) = iel2
+            p_IrefinementPatch(1+(iel-1)*4+3) = iel3
+
             ! In nquads we count the number of the quad +NVT+NMT we process.
             ! That's the number of the midpoint of that element!
             ! As we reached a new quad, we increase nquads
