@@ -37,7 +37,7 @@
 !#     -> assemble the residual vector for semi-implicit FEM-FCT stabilisation
 !#
 !# 7.) gfsc_buildResidual_FCT_PC = gfsc_buildResidualScalar_FCT_PC /
-!#                              gfsc_buildResidualBlock_FCT_PC
+!#                                 gfsc_buildResidualBlock_FCT_PC
 !#     -> assemble the residual vector for FEM-FCT stabilisation of
 !#        predictor corrector type
 !#
@@ -2786,8 +2786,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualBlock_FCT_PC(rmatrixMC, rmatrixML, rmatrixL, ru,&
-      theta, tstep, rres, rafcstab)
+  SUBROUTINE gfsc_buildResidualBlock_FCT_PC(rmatrixMC, rmatrixML,&
+      rmatrixL, ru, tstep, rres, rrhs, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector 
@@ -2810,16 +2810,13 @@ CONTAINS
     ! solution vector
     TYPE(t_vectorBlock), INTENT(IN)    :: ru
 
-    ! implicitness parameter
-    REAL(DP), INTENT(IN)               :: theta
-
     ! time step size
     REAL(DP), INTENT(IN)               :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rres
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rres,rrhs
 
     ! stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT)     :: rafcstab
@@ -2836,7 +2833,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildResidualScalar_FCT_PC(rmatrixMC, rmatrixML, rmatrixL, &
-          ru%RvectorBlock(1), theta, tstep, rres%RvectorBlock(1), rafcstab)
+          ru%RvectorBlock(1), tstep, rres%RvectorBlock(1), rrhs%RvectorBlock(1), rafcstab)
 
     END IF
   END SUBROUTINE gfsc_buildResidualBlock_FCT_PC
@@ -2845,8 +2842,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualScalar_FCT_PC(rmatrixMC, rmatrixML, rmatrixL, ru,&
-      theta, tstep, rres, rafcstab)
+  SUBROUTINE gfsc_buildResidualScalar_FCT_PC(rmatrixMC, rmatrixML,&
+      rmatrixL, ru, tstep, rres, rrhs, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector 
@@ -2866,16 +2863,13 @@ CONTAINS
     ! solution vector
     TYPE(t_vectorScalar), INTENT(IN)    :: ru
 
-    ! implicitness parameter
-    REAL(DP), INTENT(IN)                :: theta
-
     ! time step size
     REAL(DP), INTENT(IN)                :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rres
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rres,rrhs
 
     ! stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT)      :: rafcstab
@@ -2918,21 +2912,35 @@ CONTAINS
     CALL lsyssc_getbase_double(rmatrixML, p_ML)
     CALL lsyssc_getbase_double(ru,   p_u)
     CALL lsyssc_getbase_double(rres, p_res)
-
-    ! Compute predictor
+    
+    ! Compute explicit predictor  
+    !
+    !     u^{n+1/2} = M_L^{-1}*[M_L+0.5*dt*L]*u
+    !
     ruLow => rafcstab%RnodalVectors(5)
-    CALL lsyssc_invertedDiagMatVec(rmatrixML, rres, 1._DP, ruLow)
-    CALL lsyssc_vectorLinearComb(ru, ruLow, 1._DP, 1._DP-theta)
-    CALL lsyssc_getbase_double(ruLow, p_ulow)
+    CALL lsyssc_invertedDiagMatVec(rmatrixML, rrhs, 1._DP, ruLow)
 
+!!$    CALL lsyssc_invertedDiagMatVec(rmatrixML, rres, 0.5_DP, ruLow)
+!!$    CALL lsyssc_vectorLinearComb(ru, ruLow, 1._DP, 1._DP)
+    CALL lsyssc_getbase_double(ruLow, p_ulow)
+    
     ! Compute time approximation
+    !
+    !     v^{n+1/2} = M_L^{-1}*[dt*L*u^{n+1/2}]
+    !
     rv => rafcstab%RnodalVectors(6)
-    CALL lsyssc_scalarMatVec(rmatrixL, ruLow, rv, tstep, 0._DP)
+    CALL lsyssc_scalarMatVec(rmatrixL, ruLow, rv, 1._DP, 0._DP)
     CALL lsyssc_invertedDiagMatVec(rmatrixML, rv, 1._DP, rv)
     CALL lsyssc_getbase_double(rv, p_v)
 
+    ! Set residual to explicit low-order part
+    !
+    !     res = [M_L+0.5*dt*L]*u
+    !
+!    CALL lsyssc_scalarMatVec(rmatrixML, ru ,rres, 1._DP, 0.5_DP)
+
     CALL do_femfct_limit(p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-        p_ulow, p_v, theta, tstep, rafcstab%NEDGE, (rafcstab%imass .NE. 0),&
+        p_ulow, p_v, tstep, rafcstab%NEDGE, (rafcstab%imass .NE. 0),&
         p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
 
   CONTAINS
@@ -2943,13 +2951,13 @@ CONTAINS
     ! The predictor corrector FEM-FCT limiting procedure
 
     SUBROUTINE do_femfct_limit(IverticesAtEdge, DcoefficientsAtEdge, MC, ML,&
-        u, v, theta, tstep, NEDGE, bmass, pp, pm, qp, qm, rp, rm, flux, res)
+        u, v, tstep, NEDGE, bmass, pp, pm, qp, qm, rp, rm, flux, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdge
       REAL(DP), DIMENSION(:,:), INTENT(IN)             :: DcoefficientsAtEdge
       REAL(DP), DIMENSION(:), INTENT(IN)               :: MC,ML
       REAL(DP), DIMENSION(:), INTENT(IN)               :: u,v
-      REAL(DP), INTENT(IN)                             :: theta,tstep
+      REAL(DP), INTENT(IN)                             :: tstep
       INTEGER(PREC_MATIDX), INTENT(IN)                 :: NEDGE
       LOGICAL, INTENT(IN)                              :: bmass
       REAL(DP), DIMENSION(:), INTENT(INOUT)            :: pp,pm
@@ -2983,7 +2991,7 @@ CONTAINS
           d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
 
           ! Determine fluxes
-          f_ij = m_ij*(v(i)-v(j)) + tstep*d_ij*(u(i)-u(j))
+          f_ij = tstep*(m_ij*(v(i)-v(j)) + d_ij*(u(i)-u(j)))
           flux(iedge) = f_ij
 
           ! Sum of positive/negative fluxes
@@ -3025,9 +3033,13 @@ CONTAINS
         
       END IF
 
-      ! Apply the nodal limiter
-      rp = ML*qp; rp = afcstab_limit( pp, rp, 0._DP, 1._DP)
-      rm =-ML*qm; rm = afcstab_limit(-pm, rm, 0._DP, 1._DP)
+      rp = 0; rm = 0
+      WHERE (pp > SYS_EPSREAL) rp = MIN(1d0,ML*qp/pp)
+      WHERE (pm <-SYS_EPSREAL) rm = MIN(1d0,ML*qm/pm)
+
+!!$      ! Apply the nodal limiter
+!!$      rp = ML*qp; rp = afcstab_limit( pp, rp, 0._DP, 1._DP)
+!!$      rm =-ML*qm; rm = afcstab_limit(-pm, rm, 0._DP, 1._DP)
 
       ! Apply symmetric flux limiting
       DO iedge = 1, NEDGE
