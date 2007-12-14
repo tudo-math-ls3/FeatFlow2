@@ -4631,8 +4631,13 @@ CONTAINS
     ! local variables
     INTEGER :: iblock
 
+    CALL output_lbrk()
+    CALL output_line ('Vector is a ('&
+        //TRIM(sys_siL(rvector%nblocks,3))//') vector.')
+
     DO iblock = 1, rvector%nblocks
-      CALL output_line ('Vector-block #'//TRIM(sys_siL(iblock,0)))
+      CALL output_lbrk()
+      CALL output_line ('Vector-block #'//TRIM(sys_siL(iblock,15)))
       CALL lsyssc_infoVector(rvector%RvectorBlock(iblock))
     END DO
 
@@ -4656,16 +4661,20 @@ CONTAINS
 
     ! local variables
     INTEGER :: iblock,jblock
-    
+
+    CALL output_lbrk()
     CALL output_line ('Matrix is a ('&
         //TRIM(sys_siL(rmatrix%ndiagBlocks,3))//','&
         //TRIM(sys_siL(rmatrix%ndiagBlocks,3))//') matrix.')
+
     DO jblock=1,rmatrix%ndiagBlocks
       DO iblock=1,rmatrix%ndiagBlocks
         IF ((rmatrix%RmatrixBlock(iblock,jblock)%NEQ /= 0) .AND.&
             (rmatrix%RmatrixBlock(iblock,jblock)%NCOLS /= 0)) THEN
+          CALL output_lbrk()
           CALL output_line ('Matrix-block #('//TRIM(sys_siL(iblock,2))//','//&
               TRIM(sys_siL(jblock,2))//')')
+          CALL output_lbrk()
           CALL lsyssc_infoMatrix(rmatrix%RmatrixBlock(iblock,jblock))
         END IF
       END DO
