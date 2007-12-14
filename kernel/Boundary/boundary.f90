@@ -1860,7 +1860,7 @@ MODULE boundary
     !   normal vector. This is the standard setting
     ! BDR_NORMAL_LEFT calculates the 'left' normal vector (which arises
     !   in the limit when appoximating dt by 0->dt).
-    ! BDR-NORMAL_RIGHT calculates the 'right' normal vector (which arises
+    ! BDR_NORMAL_RIGHT calculates the 'right' normal vector (which arises
     !   in the limit when approximating dt by dtmax->dt).
     INTEGER, INTENT(IN), OPTIONAL :: cnormalMean
     
