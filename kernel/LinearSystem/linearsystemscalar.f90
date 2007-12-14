@@ -891,15 +891,36 @@ CONTAINS
   END IF
 
   ! Matrices must have the same sparsity pattern
-  IF ((rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) .OR. &
-      (rmatrix1%cinterleavematrixFormat .NE. rmatrix2%cinterleavematrixFormat)) THEN
-    IF (PRESENT(bcompatible)) THEN
-      bcompatible = .FALSE.
-      RETURN
-    ELSE
-      PRINT *,'Matrices not compatible, different sparsity pattern!'
-      CALL sys_halt()
+  IF (rmatrix1%NVAR .EQ. rmatrix2%NVAR) THEN
+    
+    ! We can perform restrictive checks, since both matrices have the
+    ! same number of internal variables
+    IF ((rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) .OR. &
+        (rmatrix1%cinterleavematrixFormat .NE. rmatrix2%cinterleavematrixFormat)) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Matrices not compatible, different sparsity pattern!'
+        CALL sys_halt()
+      END IF
     END IF
+
+  ELSE
+
+    ! We have to be more careful.
+    IF ((rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) .AND.&
+        (rmatrix1%cmatrixFormat .NE. 10*rmatrix2%cmatrixFormat) .AND.&
+        (10*rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat)) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Matrices not compatible, different sparsity pattern!'
+        CALL sys_halt()
+      END IF
+    END IF
+
   END IF
 
   ! isortStrategy < 0 means unsorted. Both unsorted is ok.
@@ -17075,7 +17096,16 @@ CONTAINS
     CALL output_line ('h_DA:                    '//TRIM(sys_siL(rmatrix%h_DA,15)))
     IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
       CALL storage_getsize(rmatrix%h_DA,isize)
-      CALL output_line ('DA memory usage:         '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA,2))//'%')
+      SELECT CASE(rmatrix%cinterleaveMatrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          CALL output_line ('DA memory usage:         '//&
+              TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR,2))//'%')
+        CASE (LSYSSC_MATRIXD)
+          CALL output_line ('DA memory usage:         '//&
+              TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA*rmatrix%NVAR,2))//'%')
+        CASE DEFAULT
+          CALL output_line ('DA memory usage:         '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA,2))//'%')
+        END SELECT
     END IF
     CALL output_line ('h_Kcol:                  '//TRIM(sys_siL(rmatrix%h_Kcol,15)))
     IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
