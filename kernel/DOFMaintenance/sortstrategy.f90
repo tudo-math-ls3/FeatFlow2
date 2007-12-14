@@ -31,6 +31,10 @@
 !# 4.) sstrat_calcStochastic
 !#     -> Calculates stoastic renumbering (i.e. a random permutation)
 !#
+!# 5.) sstrat_calcHierarchical
+!#     -> Calculates a renumbering strategy based on element patches
+!#        in a level hierarchy
+!#
 !# Auxiliary routines:
 !#
 !# 1.) sstrat_calcColNumberingCM7
@@ -115,6 +119,38 @@ MODULE sortstrategy
 !</constantblock>
 
 !</constants>
+
+!<types>
+
+!<typeblock description="Level hierarchy structure for te hierarchically calculated permutation">
+
+  ! A local structure for the hierarchical sorting strategy.
+  ! Represents one level in the hierarchy.
+  TYPE t_levelHirarchy
+  
+    ! Pointer to the refinement-patch array of the level
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
+    
+    ! Pointer to the refinement-patch-index array of the level
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+
+    ! Whether the corresponding discretisation on that level is uniform or not.
+    LOGICAL :: bisUniform
+    
+    ! Element type; only valid if the corresponding discretisation is uniform.
+    INTEGER(I32) :: ieltype
+    
+    ! Pointer to the identifier for the element distribution of an element.
+    ! Only valid if the corresponding discretisation is not uniform.
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
+    
+  END TYPE
+
+!</typeblock>
+
+!<types>
+
+  PRIVATE :: t_levelHirarchy
 
 CONTAINS
 
@@ -1402,6 +1438,254 @@ CONTAINS
     END SUBROUTINE
 
   END SUBROUTINE     
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sstrat_calcHierarchical (Rdiscretisation,Ipermutation)
+  
+!<description>
+  ! This subroutine calculates a hierarchical renumbering strategy.
+  ! Based on a set of discretisation structures defining different levels
+  ! of a level hierarchy coming from a refinement process, the permutation
+  ! calculated by this routine tries to group DOF's by element macros.
+!</description>
+    
+!<input>
+  
+  ! Array of discretisation structures identifying the different levels
+  ! of refinement. The discretisation structures must stem from a standard
+  ! 2-level refinement.
+  ! The last element in this array must correspond
+  ! to the permutation which is to be computed.
+  TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: Rdiscretisation
+  
+!</input>
+    
+!<output>
+  ! The permutation vector for sorting and its inverse.
+  ! With NEQ=NEQ(matrix):
+  !   Ipermutation(1:NEQ)       = permutation,
+  !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+!</output>    
+
+!</subroutine>
+  
+    INTEGER(PREC_VECIDX) :: N
+    
+    ! Length of the permutation. Must correspond to the #DOF's
+    ! on the finest level.
+    N = SIZE(Ipermutation)/2
+    
+    IF (N .NE. dof_igetNDofGlob(Rdiscretisation(SIZE(Rdiscretisation)))) THEN
+      CALL output_line ('Permutation target vector has the wrong size!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
+      CALL sys_halt()
+    END IF
+  
+    SELECT CASE (Rdiscretisation(1)%p_rtriangulation%ndim)
+    CASE (NDIM2D)
+      ! Regular 2-level refinement in 2D.
+      CALL calcHierarch(Rdiscretisation,Ipermutation)
+    
+    CASE DEFAULT
+      CALL output_line ('Invalid dimension.', &
+          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
+      CALL sys_halt()
+    END SELECT
+
+    ! Calculate the inverse permutation, that's it.
+    CALL sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+
+  CONTAINS
+  
+    SUBROUTINE calcHierarch(Rdiscretisation,Ipermutation)
+  
+    ! Array of discretisation structures identifying the different levels
+    ! of refinement. The discretisation structures must stem from a standard
+    ! 2-level refinement.
+    ! The last element in this array must correspond
+    ! to the permutation which is to be computed.
+    TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN), TARGET :: Rdiscretisation
+  
+    ! The permutation vector for sorting and its inverse.
+    ! With NEQ=NEQ(matrix):
+    !   Ipermutation(1:NEQ)       = permutation,
+    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+
+      ! local variables      
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+      TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtria
+      INTEGER(PREC_DOFIDX) :: NEQ
+      INTEGER :: hmarker
+      INTEGER(I32), DIMENSION(:), POINTER :: p_Imarker
+      INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
+      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: IpatchIndex
+      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: ImaxIndex
+      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: Ielement
+      TYPE(t_levelHirarchy), DIMENSION(SIZE(Rdiscretisation)) :: Rhierarchy
+      INTEGER :: ilev,ndof,ieldistr,idof
+      INTEGER(I32) :: ieltype
+      INTEGER(PREC_DOFIDX) :: ipos
+      INTEGER(PREC_ELEMENTIDX) :: ielcoarse
+      LOGICAL :: bisUniform
+      
+      ! Save pointers to the element patch arrays for all levels.
+      ! We'll frequently need them.
+      DO ilev=1,SIZE(Rhierarchy)
+        ! Refinement information
+        IF (ilev .GT. 1) THEN
+          p_rtria => Rdiscretisation(ilev)%p_rtriangulation
+          CALL storage_getbase_int (p_rtria%h_IrefinementPatch,&
+              Rhierarchy(ilev)%p_IrefinementPatch)
+          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIndex,&
+              Rhierarchy(ilev)%p_IrefinementPatchIndex)
+        END IF
+            
+        ! Information about the discretisation: Arrays that allow
+        ! to determine the type of an element.
+        bisUniform = Rdiscretisation(ilev)%ccomplexity .EQ. SPDISC_UNIFORM
+        Rhierarchy(ilev)%bisUniform = bisUniform
+        
+        IF (bisUniform) THEN
+          ! One element type for all elements
+          Rhierarchy(ilev)%ieltype = &
+              Rdiscretisation(ilev)%RelementDistribution(1)%itrialElement
+        ELSE
+          ! A different element type for every element.
+          ! Get a pointer to the array that defines the element distribution
+          ! of the element. This allows us later to determine the element type.
+          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIndex,&
+              Rhierarchy(ilev)%p_IelementDistr)
+        END IF
+      END DO
+
+      p_rtriaCoarse => Rdiscretisation(1)%p_rtriangulation
+
+      ! Get the number of DOF's on the finest level. This is the
+      ! size of the permutation.          
+      NEQ = dof_igetNDofGlob(Rdiscretisation(SIZE(Rdiscretisation)))
+
+      ! Set up a marker array where we remember whether we processed
+      ! a DOF or not. Initialise with zero; all DOF's we already
+      ! processed are marked here with a 1.
+      CALL storage_new ('calcHierarch2Level2D', &
+          'mark', NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int (hmarker,p_Imarker)
+
+      ipos = 0
+      ilev = 1
+
+      ! IelementPatch(i) saves an index into the IrefinementPatch
+      ! array. When being on element iel on the coarser mesh i-1,
+      ! IelementPatch(i) is a pointer to the current subelement
+      ! in the finer mesh on level i.
+      !
+      ! Ielement(i) on the other hand saves the current element number
+      ! on level i.
+      !
+      ! Loop through all elements on the coarse mesh
+      DO ielcoarse = 1,p_rtriaCoarse%NEL
+      
+        Ielement(1) = ielcoarse
+      
+        patchcycle: DO
+      
+          ! From this element, figure out the DOF's of all subelements.
+          ! This has to be done patchwise on the finest level.
+          ! Thus, as long as we aren't on the fines level, we have to
+          ! increase the current one.
+          DO WHILE (ilev .LT. SIZE(Rdiscretisation))
+          
+            ! Go up
+            ilev = ilev + 1
+            
+            ! Ielement(ilev-1) is not the patch number for level ilev.
+            ! Set the start index to the first element in that patch
+            ! of the finer mesh. Remember the maximum index 'where the patch ends).
+            IpatchIndex(ilev) = &
+              Rhierarchy(ilev)%p_IrefinementPatchIndex(Ielement(ilev-1))
+            ImaxIndex(ilev) = &
+              Rhierarchy(ilev)%p_IrefinementPatchIndex(Ielement(ilev-1)+1)-1
+              
+            ! Get the element number of the first element in the patch.
+            Ielement(ilev) = &
+              Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
+          
+          END DO
+          
+          ! We are now on the maximum level on element Ielement(max).
+          ! Get the DOF's of that element.
+          ! For that purpose, we need the element type.
+          IF (Rhierarchy(ilev)%bisUniform) THEN
+            ieltype = Rhierarchy(ilev)%ieltype
+          ELSE
+            ! Get the element distribution and from that the element type.
+            ieldistr = Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
+            ieltype = Rdiscretisation(ilev)%RelementDistribution(ieldistr)%itrialElement
+          END IF
+          
+          ndof = elem_igetNDofLoc(ieltype)
+          CALL dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev), .FALSE., Idofs)
+          
+          ! Check the DOF's. All DOF's we don't have yet, we collect into the
+          ! permutation.
+          DO idof = 1,ndof
+            IF (p_Imarker(Idofs(idof)) .EQ. 0) THEN
+              ipos = ipos + 1
+              Ipermutation(ipos) = Idofs(idof)
+              
+              ! Mark the DOF as being handled.
+              p_Imarker(Idofs(idof)) = 1
+            END IF
+          END DO
+        
+          ! Now we have to proceed to the next element. How to do that depends
+          ! on 'where we are'.
+          IF (ilev .GT. 1) THEN
+          
+            ! Go to the next element in the current patch.
+            IpatchIndex(ilev) = IpatchIndex(ilev) + 1
+          
+            DO WHILE ((ilev .GT. 1) .AND. &
+                    (IpatchIndex(ilev) .GT. ImaxIndex(ilev)))
+            
+              ! All elements of the patch completed. Go down one level
+              ! and proceed there to the next element patch.
+              ilev = ilev - 1  
+              IpatchIndex(ilev) = IpatchIndex(ilev) + 1
+            
+            END DO
+          END IF
+          
+          ! As long as we don't reach level 1, there are elements left
+          ! in the patch to proceed. So cycle the patchloop
+          ! to proceed to the next element.
+          IF (ilev .EQ. 1) THEN
+            EXIT patchcycle
+          ELSE
+            ! Get the new current element number
+            Ielement(ilev) = &
+              Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
+          END IF
+          
+        END DO patchcycle
+      
+      END DO
+      
+      ! Release temp memory.
+      CALL storage_free (hmarker)
+
+      ! Calculate the inverse permutation, that's it.
+      CALL sstrat_calcInversePermutation (Ipermutation(1:NEQ), Ipermutation(NEQ+1:) )
+
+    END SUBROUTINE
+
+  END SUBROUTINE
 
   ! ***************************************************************************
 
