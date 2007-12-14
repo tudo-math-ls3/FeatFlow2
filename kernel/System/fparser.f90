@@ -555,9 +555,6 @@ MODULE fparser
     
     ! Number of parser components
     INTEGER :: nComp                                        = 0
-
-    ! Evaluation error code: =0: no error occured, >0
-    INTEGER :: EvalErrType                                  = 0
   END TYPE t_fparser
 
 !</typeblock>
@@ -922,7 +919,7 @@ CONTAINS
 
 !<inputoutput>
     ! Function parser
-    TYPE (t_fparser),  INTENT(INOUT) :: rparser
+    TYPE (t_fparser),  INTENT(IN) :: rparser
 !</inputoutput>
 
 !<output>
@@ -930,6 +927,9 @@ CONTAINS
     REAL(DP), INTENT(OUT)  :: Res
 !</output>
 !</subroutine>
+
+    ! local variables
+    INTEGER :: EvalErrType
 
     IF (h_Stack .EQ. ST_NOHANDLE) THEN
       PRINT *, "*** Parser error: Parser not initialised!"
@@ -949,7 +949,13 @@ CONTAINS
     END IF
     
     ! Invoke working routine
-    CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val,rparser%EvalErrType,Res)
+    CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val,EvalErrType,Res)
+
+    ! Check if evaluation was successful
+    IF (EvalErrType .NE. 0) THEN
+      PRINT *, "*** Parser error: An error occured during function evaluation!"
+      CALL sys_halt()
+    END IF
   END SUBROUTINE fparser_evalFunctionScalar
 
   ! *****************************************************************************
@@ -1013,6 +1019,7 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), ALLOCATABLE :: ValTemp
     INTEGER :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock,sizeValBlock,sizeValScalar
+    INTEGER :: EvalErrType
 
     ! Get total number of variable sets
     nVal=SIZE(ValBlock,iDim)
@@ -1050,7 +1057,7 @@ CONTAINS
           
           ! Invoke working routine
           CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
-              ValBlock(iVal:jVal,:),iDim,rparser%EvalErrType,Res(iVal:jVal),ValScalar)
+              ValBlock(iVal:jVal,:),iDim,EvalErrType,Res(iVal:jVal),ValScalar)
         END DO
       ELSE
         DO iVal=1,nVal,iBlockSize
@@ -1061,7 +1068,7 @@ CONTAINS
           
           ! Invoke working routine
           CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
-              ValBlock(:,iVal:jVal),iDim,rparser%EvalErrType,Res(iVal:jVal),ValScalar)
+              ValBlock(:,iVal:jVal),iDim,EvalErrType,Res(iVal:jVal),ValScalar)
         END DO
       END IF
       
@@ -1099,7 +1106,7 @@ CONTAINS
 
             ! Invoke working routine
             CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
-                rparser%EvalErrType,Res(iVal))
+                EvalErrType,Res(iVal))
           END DO
         ELSE
           DO iVal=1,nVal
@@ -1109,7 +1116,7 @@ CONTAINS
             
             ! Invoke working routine
             CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
-                rparser%EvalErrType,Res(iVal))
+                EvalErrType,Res(iVal))
           END DO
         END IF
 
@@ -1123,18 +1130,24 @@ CONTAINS
             
             ! Invoke working routine
             CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(iVal,:),&
-                rparser%EvalErrType,Res(iVal))
+                EvalErrType,Res(iVal))
           END DO
         ELSE
           DO iVal=1,nVal
             
             ! Invoke working routine
             CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(:,iVal),&
-                rparser%EvalErrType,Res(iVal))
+                EvalErrType,Res(iVal))
           END DO
         END IF
 
       END IF
+    END IF
+
+    ! Check if evaluation was successful
+    IF (EvalErrType .NE. 0) THEN
+      PRINT *, "*** Parser error: An error occured during function evaluation!"
+      CALL sys_halt()
     END IF
   END SUBROUTINE fparser_evalFunctionBlock
 
@@ -1867,7 +1880,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION fparser_ErrorMsg (rparser) RESULT (msg)
+  FUNCTION fparser_ErrorMsg (EvalErrType) RESULT (msg)
 
 !<description>
     ! Return error message of function parser
@@ -1882,8 +1895,8 @@ CONTAINS
                                                          'Argument of ATANH illegal         ' /)
 
 !<input>
-    ! Function parser
-    TYPE(t_fparser), INTENT(IN) :: rparser
+    ! Error identifier
+    INTEGER, INTENT(IN) :: EvalErrType
 !</input>   
     
 !<result>
@@ -1892,12 +1905,10 @@ CONTAINS
 !</result>
 !</function>
 
-    
-    
-    IF (rparser%EvalErrType < 1 .OR. rparser%EvalErrType > SIZE(m)) THEN
+    IF (EvalErrType < 1 .OR. EvalErrType > SIZE(m)) THEN
       msg = ''
     ELSE
-      msg = m(rparser%EvalErrType)
+      msg = m(EvalErrType)
     ENDIF
   END FUNCTION fparser_ErrorMsg
 
