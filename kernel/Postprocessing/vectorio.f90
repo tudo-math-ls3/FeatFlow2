@@ -27,6 +27,11 @@
 !# 6.) vecio_readVectorHR
 !#     -> Reads a scalar vector from a (text or binary) file
 !#
+!# 7.) vecio_writeVectorMaple
+!#     -> Writes a scalar vector into a text file in Maple syntax
+!#
+!# 7.) vecio_writeBlockVectorMaple
+!#     -> Writes a block vector into a text file in Maple syntax
 !# </purpose>
 !#########################################################################
 
@@ -772,5 +777,287 @@ MODULE vectorio
     IF (ifile .EQ. 0) CLOSE(cf)
     
   END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE vecio_writeVectorMaple (rvector, sarray, bunsort,&
+                                     ifile, sfile, sformat)
+  
+  !<description>
+    ! This routine writes a (scalar) vector into a file in the MAPLE syntax.
+  !</description>
+    
+  !<input>
+    ! The vector to be written out
+    TYPE(t_vectorScalar), INTENT(IN) :: rvector
+    
+    ! Name of the vector
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! Output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! Write unsorted vector.
+    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =FALSE: Write vector as it is.
+    LOGICAL, INTENT(IN) :: bunsort
+
+    ! Format string to use for the output; e.g. '(E20.10)'.
+    ! If not specified, data is written to the file unformatted 
+    ! (i.e. in a computer dependent, not human readable form).
+    CHARACTER(len=*), INTENT(IN) :: sformat
+  !</input>
+    
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
+    INTEGER :: cf,nchar
+
+    CHARACTER(len=128) :: S
+    CHARACTER(len=6) :: sformatChar
+
+    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+
+    ! Open the file
+    IF (ifile .EQ. 0) THEN
+      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.TRUE.)
+      IF (cf .EQ. -1) THEN
+        PRINT *, 'vecio_writeVectorHR: Could not open file '// &
+                 trim(sfile)
+        CALL sys_halt()
+      END IF
+    ELSE
+      cf = ifile
+    END IF
+
+    ! Get length of output strings
+    S(:) = ' '
+    WRITE (S,sformat) 0.0_DP
+    nchar = LEN(trim(S))
+    
+    ! Build array format string
+    sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+    
+    ! Write a header:
+    WRITE (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
+    
+    ! Vector precision?
+    SELECT CASE (rvector%cdataType)
+    CASE (ST_DOUBLE)
+      ! Permuted?
+      NULLIFY(p_Ipermutation)
+      IF (bunsort .AND. (lsyssc_isVectorSorted (rvector))) THEN
+        CALL storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+        ! We must use the inverse permutation
+        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      END IF
+
+      CALL lsyssc_getbase_double (rvector,p_Ddata)
+      
+      IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
+        CALL writeArray_Dble (p_Ddata, cf, sformat)
+      ELSE 
+        CALL writeArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+      END IF
+      
+      ! Footer
+      WRITE (cf,'(A)') '):';
+      
+    CASE DEFAULT
+      PRINT *,'vecio_writeVectorHR: Unsupported vector precision.'
+      CALL sys_halt()
+    END SELECT
+    
+    ! Close the file if necessary
+    IF (ifile .EQ. 0) CLOSE(cf)
+
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE vecio_writeBlockVectorMaple (rvector, sarray, bunsort,&
+                                          ifile, sfile, sformat)
+  
+  !<description>
+    ! This routine writes a (block) vector into a file in the MAPLE syntax.
+  !</description>
+    
+  !<input>
+    ! The vector to be written out
+    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    
+    ! Name of the vector
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! Output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! Write unsorted vector.
+    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =FALSE: Write vector as it is.
+    LOGICAL, INTENT(IN) :: bunsort
+
+    ! Format string to use for the output; e.g. '(E20.10)'.
+    ! If not specified, data is written to the file unformatted 
+    ! (i.e. in a computer dependent, not human readable form).
+    CHARACTER(len=*), INTENT(IN) :: sformat
+  !</input>
+    
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
+    INTEGER :: cf,nchar,iblock
+
+    CHARACTER(len=128) :: S
+    CHARACTER(len=6) :: sformatChar
+
+    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+
+    ! Open the file
+    IF (ifile .EQ. 0) THEN
+      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.TRUE.)
+      IF (cf .EQ. -1) THEN
+        PRINT *, 'vecio_writeBlockVectorMaple: Could not open file '// &
+                 trim(sfile)
+        CALL sys_halt()
+      END IF
+    ELSE
+      cf = ifile
+    END IF
+
+    ! Get length of output strings
+    S(:) = ' '
+    WRITE (S,sformat) 0.0_DP
+    nchar = LEN(trim(S))
+    
+    ! Build array format string
+    sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+    
+    ! Write a header:
+    WRITE (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
+    
+    ! Vector precision?
+    SELECT CASE (rvector%cdataType)
+    CASE (ST_DOUBLE)
+      ! Loop over the blocks
+      DO iblock = 1,rvector%nblocks
+        ! Permuted?
+        NULLIFY(p_Ipermutation)
+        IF (bunsort .AND. (lsyssc_isVectorSorted (rvector%RvectorBlock(iblock)))) THEN
+          CALL storage_getbase_int (&
+            rvector%RvectorBlock(iblock)%h_IsortPermutation,p_Ipermutation)
+          ! We must use the inverse permutation
+          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(iblock)%NEQ+1:)
+        END IF
+
+        CALL lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
+        
+        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
+          CALL writeArray_Dble (p_Ddata, cf, sformat)
+        ELSE 
+          CALL writeArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+        END IF
+        
+        ! If this is not the last block, attach more data
+        IF (iblock .NE. rvector%nblocks) THEN
+          WRITE (cf,'(A)', ADVANCE='NO') ','
+        END IF
+        
+      END DO
+      ! Footer
+      WRITE (cf,'(A)') '):';
+      
+    CASE DEFAULT
+      PRINT *,'vecio_writeBlockVectorMaple: Unsupported vector precision.'
+      CALL sys_halt()
+    END SELECT
+    
+    ! Close the file if necessary
+    IF (ifile .EQ. 0) CLOSE(cf)
+
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecio_writeMapleArray_Dble (Ddata, ifile, sformat, Ipermutation)
+
+!<description>  
+  ! INTERNAL SUBROUTINE.
+  ! Writes the data of an array to the Maple output file iodentified by the
+  ! output channel ifile.
+!</description>
+  
+!<input>
+  ! vector: array [:] of double
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddata
+  
+  ! output channel to use for output
+  INTEGER(I32), INTENT(IN) :: ifile
+  
+  ! Format string to use for the output; e.g. '(E20.10)'.
+  ! If not specified, data is written to the file unformatted 
+  ! (i.e. in a computer dependent, not human readable form).
+  CHARACTER(len=*), INTENT(IN) :: sformat
+  
+  ! OPTIONAL: Permutation for unsorting.
+  ! If specified, this permutation tells how to unsort a vector before
+  ! writing it to the file.
+  INTEGER(PREC_VECIDX), DIMENSION(:), OPTIONAL :: Ipermutation
+!</input>
+
+!</subroutine>
+    
+    !local variables
+    INTEGER :: i, cf
+    CHARACTER(LEN=32) :: sdata
+    REAL(DP) :: dval
+    
+    cf = ifile
+    
+    IF (SIZE(Ddata) .LE. 0) RETURN
+
+    ! Write the vector.
+    ! Unsort the vector on the fly if necessary.
+    IF (PRESENT(Ipermutation)) THEN
+      DO i=1, SIZE(Ddata)-1
+        dval = Ddata(Ipermutation(i))
+        WRITE (sdata,sformat) dval
+        WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata))//','
+      END DO
+      dval = Ddata(Ipermutation(i))
+      WRITE (sdata,sformat) dval
+      WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata));
+    ELSE
+      DO i=1, SIZE(Ddata)-1
+        dval = Ddata(i)
+        WRITE (sdata,sformat) dval
+        WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata))//','
+      END DO
+      dval = Ddata(i)
+      WRITE (sdata,sformat) dval
+      WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata));
+    END IF
+
+  END SUBROUTINE
 
 END MODULE

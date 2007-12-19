@@ -12,7 +12,7 @@
 !# 1.) matio_writeMatrixHR
 !#     -> Writes a matrix in human readable form into a text file
 !#
-!# 1.) matio_writeBlockMatrixHR
+!# 2.) matio_writeBlockMatrixHR
 !#     -> Writes a block matrix in human readable form into a text file
 !#
 !# 3.) matio_spyMatrix
@@ -22,6 +22,12 @@
 !# 4.) matio_spyBlockMatrix
 !#     -> Writes a block matrix in CSR format into a file which can be 
 !#        visualized by means of the MATLAB command SPY
+!#
+!# 5.) matio_writeMatrixMaple
+!#     -> Writes a matrix into a text file using the MAPLE syntax
+!#
+!# 2.) matio_writeBlockMatrixMaple
+!#     -> Writes a block matrix in MAPLE format into a text file
 !#
 !# The following auxiliary functions can be found here:
 !#
@@ -421,6 +427,241 @@ MODULE matrixio
     IF (ifile .EQ. 0) CLOSE(cf)
   
   END SUBROUTINE
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE matio_writeMatrixMaple (rmatrix, sarray,&
+                                     ifile, sfile, sformat)
+  
+  !<description>
+    ! This routine writes a scalar matrix into a text file using the MAPLE
+    ! syntax.
+  !</description>
+    
+  !<input>
+    ! The matrix to be written out
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+    
+    ! Name of the matrix
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! Output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! Format string to use for the output; e.g. '(E20.10)'
+    CHARACTER(len=*), INTENT(IN) :: sformat
+    
+  !</input>
+    
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_DA
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+
+  ! Depending on the matrix format, choose the right routine for writing
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    ! Matrix precision?
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data arrays and write the matrix
+      IF (.NOT.lsyssc_hasMatrixContent(rmatrix)) THEN
+        CALL output_line('Matrix has no data',&
+            OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
+        CALL sys_halt()
+      END IF
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      CALL matio_writeMapleMatrix79_D (p_Da, p_Kcol, p_Kld, &
+                                       rmatrix%NEQ, rmatrix%NEQ, sarray, &
+                                       ifile, sfile, sformat)
+    CASE DEFAULT
+      CALL output_line ('Unsupported matrix precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
+      CALL sys_halt()
+    END SELECT
+  CASE DEFAULT
+    CALL output_line ('Unknown matrix format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
+    CALL sys_halt()
+  END SELECT
+    
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE matio_writeMapleMatrix79_D (Da, Icol, Irow, &
+                                        nrow, ncol, sarray, &
+                                        ifile, sfile, sformat)
+  
+  !<description>
+    ! Write sparse double precision matrix in matrix format 9 or
+    ! matrix format 9 into a text file using the Maple syntax.
+    !
+    ! Double-precision version
+  !</description>
+    
+  !<input>
+    ! number of rows
+    INTEGER(I32), INTENT(IN) :: nrow
+    
+    ! number of columns; must be =nrow for structure-7 matrices
+    INTEGER(I32), INTENT(IN) :: ncol
+    
+    ! matrix: array [1..na] of double
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Da
+    
+    ! Column structure of the matrix
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Icol
+    
+    ! Row structure of the matrix
+    INTEGER(I32), DIMENSION(nrow+1), INTENT(IN) :: Irow
+    
+    ! name of the matrix
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! format string to use for the output; e.g. '(D20.10)'
+    CHARACTER(len=*), INTENT(IN) :: sformat
+  !</input>
+    
+!</subroutine>
+    
+    !local variables
+    INTEGER :: i, j, k, cf, nchar
+    CHARACTER(len=32) :: S
+    CHARACTER(len=6) :: sformatChar
+    INTEGER :: h_DrowVec
+    REAL(DP), DIMENSION(:), POINTER :: p_DrowVec
+    
+    IF (ifile .EQ. 0) THEN
+      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
+      IF (cf .EQ. -1) THEN
+        CALL output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix79_D')
+        CALL sys_halt()
+      END IF
+    ELSE
+      cf = ifile
+    END IF
+    
+    ! Get length of output strings
+    S(:) = ' '
+    WRITE (S,sformat) 0.0_DP
+    nchar = LEN(trim(S))
+    
+    ! Build array format string
+    sformatChar = '(A'//sys_i3(nchar)//')'
+    
+    IF (nrow .LE. 0) RETURN
+    IF (ncol .LE. 0) RETURN
+    
+    ! Write a header to the file that declares the matrix.
+    WRITE (cf,'(6A)') sarray,' := matrix(',&
+        TRIM(sys_siL(nrow,10)),',',TRIM(sys_siL(ncol,10)),',0):'
+        
+    ! Now the entries. This is a sparse matrix, so we insert commands 
+    ! only for the entries.
+    DO i=1, nrow
+    
+      DO j=Irow(i),Irow(i+1)-1
+        WRITE (s,sformat) Da(j)
+        WRITE (cf,'(A)') &
+            sarray//'['//TRIM(sys_siL(i,10))//','//TRIM(sys_siL(Icol(j),10))//']:='//&
+            TRIM(ADJUSTL(s))//':'
+      END DO
+      
+    END DO
+    
+    ! Close the file if necessary
+    IF (ifile .EQ. 0) CLOSE(cf)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE matio_writeBlockMatrixMaple (rmatrix, sarray,&
+                                          ifile, sfile, sformat,dthreshold)
+  
+  !<description>
+    ! This routine writes a block matrix into a text file using the MAPLE 
+    ! syntax.
+    ! Note that for this purpose, a new matrix is temporarily created in memory!
+  !</description>
+    
+  !<input>
+    ! The matrix to be written out
+    TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+    
+    ! Name of the matrix
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! Output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! Format string to use for the output; e.g. '(E20.10)'
+    CHARACTER(len=*), INTENT(IN) :: sformat
+    
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    REAL(DP), INTENT(IN), OPTIONAL :: dthreshold
+  !</input>
+    
+!</subroutine>
+
+    ! local variables
+    TYPE(t_matrixBlock) :: rtempMatrix
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    REAL(DP) :: dthres 
+
+    ! We have to create a global matrix first!
+    CALL glsys_assembleGlobal (rmatrix,rtempMatrix,.TRUE.,.TRUE.)
+                              
+    ! Replace small values by zero
+    dthres = 1E-12_DP
+    IF (PRESENT(dthreshold)) dthres = dthreshold
+    IF (ABS(dthres) .GT. 0.0_DP) THEN
+      CALL lsyssc_getbase_double (rtempMatrix%RmatrixBlock(1,1),p_DA)
+      WHERE (abs(p_Da) .LT. dthres) p_Da = 0.0_DP
+    END IF
+    
+    ! Write matrix to the file
+    CALL matio_writeMatrixMaple (rtempMatrix%RmatrixBlock(1,1), sarray,&
+                                     ifile, sfile, sformat)
+
+    ! Release the temporary matrix
+    CALL lsysbl_releaseMatrix (rtempMatrix)
+
+  END SUBROUTINE 
+
 
   ! ***************************************************************************
 
