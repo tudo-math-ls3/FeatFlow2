@@ -24,6 +24,8 @@
 !# - another collection
 !# - small, fixed-size integer arrays
 !# - small, fixed-size double precision arrays
+!# - a grid adaptation structure
+!# - a stabilisation structure
 !#
 !# The list supports 'level tags' and 'section tags" to group values:
 !# 
@@ -244,6 +246,8 @@ MODULE collection
   USE fparser
   USE genoutput
   USE geometry
+  USE hadaptaux
+  USE afcstabilisation
   
   IMPLICIT NONE
 
@@ -356,6 +360,12 @@ MODULE collection
   ! The collection structure itself
   INTEGER, PARAMETER :: COLLCT_COLLECTION   = 25
 
+  ! Grid adaptation object
+  INTEGER, PARAMETER :: COLLCT_HADAPT       = 26
+
+  ! Stabilisation structure
+  INTEGER, PARAMETER :: COLLCT_AFCSTAB      = 27
+
 !</constantblock>
 
 !</constants>
@@ -449,6 +459,11 @@ MODULE collection
     ! Pointer to a collection structure
     TYPE(t_collection), POINTER                 :: p_rcollection => NULL()
 
+    ! Pointer to a grid adaptation structure
+    TYPE(t_hadapt), POINTER                     :: p_rhadapt => NULL()
+
+    ! Pointer to a stabilisation structure
+    TYPE(t_afcstab), POINTER                    :: p_rafcstab => NULL()
   END TYPE
   
 !</typeblock>
@@ -1565,6 +1580,8 @@ CONTAINS
     NULLIFY(p_rvalue%p_rparser)
     NULLIFY(p_rvalue%p_RfilterChain)
     NULLIFY(p_rvalue%p_rcollection)
+    NULLIFY(p_rvalue%p_rhadapt)
+    NULLIFY(p_rvalue%p_rafcstab)
     
     IF (ASSOCIATED(p_rvalue%p_Iarray)) DEALLOCATE(p_rvalue%p_Iarray)
     IF (ASSOCIATED(p_rvalue%p_Darray)) DEALLOCATE(p_rvalue%p_Darray)
@@ -3505,6 +3522,130 @@ CONTAINS
 
   ! ***************************************************************************
   
+!<function>
+
+  FUNCTION collct_getvalue_hadapt (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a grid adaptation structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_hadapt), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    value => p_rvalue%p_rhadapt
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  FUNCTION collct_getvalue_afcstab (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a stabilisation structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_afcstab), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    value => p_rvalue%p_rafcstab
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   SUBROUTINE collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -4990,6 +5131,128 @@ CONTAINS
   
   ! Set the value
   p_rvalue%p_RfilterChain => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_hadapt (rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_hadapt), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+  
+  ! Set the value
+  p_rvalue%p_rhadapt => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_afcstab (rcollection, sparameter, value, badd, &
+                                      ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_afcstab), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+  
+  ! Set the value
+  p_rvalue%p_rafcstab => value
 
   END SUBROUTINE
 
