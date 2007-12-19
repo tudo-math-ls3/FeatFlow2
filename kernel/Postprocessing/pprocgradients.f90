@@ -717,8 +717,8 @@ CONTAINS
     ! local variables
     INTEGER :: IVE,NVE,NVEMax
     INTEGER :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
-    INTEGER :: i,j,k,icubp,ipoint,idx,icoordSystem
-    INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax,PATCHGlobal
+    INTEGER :: i,j,k,ipoint,idx,icoordSystem
+    INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax
     LOGICAL :: bnonparTrial
     INTEGER(PREC_ELEMENTIDX)    :: IEL,JEL,KEL
     INTEGER(PREC_VERTEXIDX)     :: IVT
@@ -733,9 +733,6 @@ CONTAINS
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
     REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-
-    ! Value/derivative of basis functions
-    REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
 
     ! Flag if discretisation is uniform
     LOGICAL :: bisuniform
@@ -867,9 +864,6 @@ CONTAINS
 
     ! Number of elements in a block
     INTEGER :: nelementsPerBlock
-
-    ! Number of elements in a distribution
-    INTEGER :: nelementsPerDiscr
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there's the same information in the triangulation, but that's not
