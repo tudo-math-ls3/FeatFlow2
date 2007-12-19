@@ -36,7 +36,7 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
@@ -117,7 +117,12 @@
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/>
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\nonlinearsolver.f90"/></Filter>
 		<Filter Name="PDEOperators">
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabilisation.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\convection.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemscalar.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemsystem.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsccallback.inc"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsyscallback.inc"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\jumpstabilisation.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\l2projection.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\matrixrestriction.f90"/>
