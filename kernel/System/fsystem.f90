@@ -888,7 +888,7 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     !number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     !</input>
 !</function>
 
@@ -933,10 +933,10 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     ! number of positions in the string
-    integer              :: ipositions
+    integer, intent(in)  :: ipositions
 
     ! number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     !</input>
 !</function>
 
@@ -990,7 +990,7 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     !number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     !</input>
 !</function>
 
@@ -1036,10 +1036,10 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     ! number of positions in the string
-    integer              :: ipositions
+    integer, intent(in)  :: ipositions
 
     ! number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     
     !</input>
 !</function>
@@ -1092,7 +1092,7 @@ CONTAINS
     integer, intent(in) :: ivalue
 
     !number of decimals
-    integer             :: idigits
+    integer, intent(in) :: idigits
     !</input>
 !</function>
 
@@ -1140,7 +1140,7 @@ CONTAINS
     integer, intent(in) :: ivalue
 
     !number of decimals
-    integer             :: idigits
+    integer, intent(in) :: idigits
     !</input>
 !</function>
 
@@ -1186,7 +1186,7 @@ CONTAINS
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
-    integer                  :: idigits
+    integer, intent(in)      :: idigits
     !</input>
 !</function>
 
@@ -1232,7 +1232,7 @@ CONTAINS
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
-    integer                  :: idigits
+    integer, intent(in)      :: idigits
     !</input>
 !</function>
 
@@ -1285,7 +1285,7 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     !number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     !</input>
 !</function>
 
@@ -1315,7 +1315,7 @@ CONTAINS
     real(DP), intent(in) :: dvalue
 
     !number of decimals
-    integer              :: idigits
+    integer, intent(in)  :: idigits
     !</input>
 !</function>
 
@@ -1346,7 +1346,7 @@ CONTAINS
     integer, intent(in) :: ivalue
 
     !number of decimals
-    integer  :: idigits
+    integer, intent(in) :: idigits
     !</input>
 !</function>
 
@@ -1377,7 +1377,7 @@ CONTAINS
     integer, intent(in) :: ivalue
 
     !number of decimals
-    integer             :: idigits
+    integer, intent(in) :: idigits
     !</input>
 !</function>
 
@@ -1407,7 +1407,7 @@ CONTAINS
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
-    integer                  :: idigits
+    integer, intent(in)      :: idigits
     !</input>
 !</function>
 
@@ -1437,7 +1437,7 @@ CONTAINS
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
-    integer                  :: idigits
+    integer, intent(in)      :: idigits
     !</input>
 !</function>
 
