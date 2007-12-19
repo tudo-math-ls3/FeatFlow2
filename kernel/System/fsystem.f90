@@ -1327,7 +1327,7 @@ CONTAINS
 
 
 !<function>
-  character (len=idigits) function sys_siL(ivalue, idigits) result(soutput)
+  function sys_siL(ivalue, idigits) result(soutput)
 
     !<description>
     ! This routine converts an integer value to a string of length idigits,
@@ -1337,6 +1337,7 @@ CONTAINS
     !<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
+    character (len=idigits) :: soutput
     !</result>
 
     !<input>
@@ -1357,7 +1358,7 @@ CONTAINS
 
 
 !<function>
-  character (len=idigits) function sys_si0L(ivalue, idigits) result(soutput)
+  function sys_si0L(ivalue, idigits) result(soutput)
 
     !<description>
     ! This routine converts an integer value to a string of length idigits,
@@ -1367,6 +1368,7 @@ CONTAINS
     !<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
+    character (len=idigits) :: soutput
     !</result>
 
     !<input>
@@ -1387,7 +1389,7 @@ CONTAINS
 
 
 !<function>
-  character (len=idigits) function sys_sliL(ivalue, idigits) result(soutput)
+  function sys_sliL(ivalue, idigits) result(soutput)
 
     !<description>
     ! This routine converts a long integer value to a string of length idigits.
@@ -1396,6 +1398,7 @@ CONTAINS
     !<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
+    character (len=idigits) :: soutput
     !</result>
 
     !<input>
@@ -1416,7 +1419,7 @@ CONTAINS
 
 
 !<function>
-  character (len=idigits) function sys_sli0L(ivalue, idigits) result(soutput)
+  function sys_sli0L(ivalue, idigits) result(soutput)
 
     !<description>
     ! This routine converts a long integer value to a string of length idigits.
@@ -1425,6 +1428,7 @@ CONTAINS
     !<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
+    character (len=idigits) :: soutput
     !</result>
 
     !<input>
