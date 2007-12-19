@@ -310,6 +310,9 @@ CONTAINS
     CASE (EL_P1_3D, EL_Q1_3D)
       ! DOF's in the vertices
       NDFG_uniform3D = rtriangulation%NVT
+    CASE (EL_Q1T_3D)
+      ! DOF's in the face midpoints
+      NDFG_uniform3D = rtriangulation%NAT
     END SELECT
     
     END FUNCTION
@@ -652,6 +655,11 @@ CONTAINS
           ! DOF's in the vertices
           CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           CALL dof_locGlobUniMult_P1Q1_3D(p_2darray, IelIdx, IdofGlob)
+          RETURN
+        CASE (EL_Q1T_3D)
+          ! DOF's in the face midpoints
+          CALL storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
+          CALL dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
           RETURN
         END SELECT
         
@@ -1377,6 +1385,53 @@ CONTAINS
     ! Calculate the global DOF's - which are simply the vertex numbers of the 
     ! corners.
     IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  PURE SUBROUTINE dof_locGlobUniMult_Q1T_3D(IfacesAtElement, IelIdx,&
+                                             IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q1~.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IfacesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  INTEGER(I32) :: i
+  
+  ! Loop through the elements to handle
+  DO i=1,SIZE(IelIdx)
+    ! Calculate the global DOF's - which are simply the face numbers.
+    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
   END DO
 
   END SUBROUTINE

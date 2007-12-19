@@ -111,7 +111,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
     ! The number of sub-intervals for the discretisation
-    INTEGER :: nintervals = 16
+    INTEGER :: nintervals = 4
     
     ! Ok, let's start. 
     ! At first, create the basic triangulation.
@@ -147,6 +147,9 @@ CONTAINS
                                    EL_P1_1D,CUB_TRZ_1D,rtriangulation)
     ! Setting up a quadratic element and 3-point Gauss rule would be...
                                    !EL_P2_1D,CUB_G3_1D,rtriangulation)
+    ! Setting up a cubic spline element and 4-point Gauss rule would be...
+                                   !EL_S31_1D,CUB_G4_1D,rtriangulation)
+                                   
                  
     ! We will set the evaluation cubature formula to 3-point Gauss.
     ! If we don't do this, then the L2-error, which is calculated in the
@@ -182,6 +185,8 @@ CONTAINS
     ! the framework will call the callback routine to get analytical
     ! data.
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
+    
+    CALL matio_writeMatrixHR (rmatrix, 'matrix',.TRUE., 0, 'matrix.txt','(E20.10)')
     
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
