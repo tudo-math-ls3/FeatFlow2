@@ -46,6 +46,18 @@
 !# 6.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
 !#                              gfsys_buildDivJacobianBlock
 !#     -> assemble the Jacobian matrix
+!#
+!# The following internal routines are available:
+!#
+!# 1.) gfsys_getbase_double
+!#     -> assign the pointers of an array to a given block matrix
+!#
+!# 2.) gfsys_getbase_single
+!#     -> assign the pointers of an array to a given block matrix
+!#
+!# 3.) gfsys_getbase_int
+!#     -> assign the pointers of an array to a given block matrix
+!#
 !# </purpose>
 !##############################################################################
 
@@ -61,6 +73,7 @@ MODULE groupfemsystem
   IMPLICIT NONE
   
   PRIVATE
+
   PUBLIC :: gfsys_initStabilisation
   PUBLIC :: gfsys_isMatrixCompatible
   PUBLIC :: gfsys_isVectorCompatible
@@ -69,6 +82,27 @@ MODULE groupfemsystem
   PUBLIC :: gfsys_buildResidual_Upwind
   PUBLIC :: gfsys_buildResidual_TVD
   PUBLIC :: gfsys_buildDivJacobian
+
+!<types>
+!<typeblock>
+
+  ! An auxiliary array that is used to store the content of all
+  ! scalar submatrices simultaneously. Note that this derived type
+  ! is PRIVATE and cannot be accessed from outside of this module.
+  PRIVATE :: t_array
+  TYPE t_array
+
+    ! Pointer to the double-valued matrix data
+    REAL(DP), DIMENSION(:), POINTER :: Da
+
+    ! Pointer to the single-valued matrix data
+    REAL(SP), DIMENSION(:), POINTER :: Fa
+
+    ! Pointer to the integer-valued matrix data
+    INTEGER, DIMENSION(:), POINTER  :: Ia
+  END TYPE t_array
+!</typeblock>
+!</types>
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -158,6 +192,10 @@ CONTAINS
     ! This subroutine initialises the discrete stabilisation structure
     ! for use as a scalar stabilisation. The template matrix is used
     ! to determine the number of equations and the number of edges.
+    !
+    ! Note that the matrix is required as block matrix. If this matrix
+    ! contains only one block, then the scalar counterpart of this
+    ! subroutine is called with the corresponding scalar submatrix.
 !</description>
 
 !<input>
@@ -228,6 +266,9 @@ CONTAINS
     ! This subroutine initialises the discrete stabilisation structure
     ! for use as a scalar stabilisation. The template matrix is used
     ! to determine the number of equations and the number of edges.
+    !
+    ! Note that the matrix is required as scalar matrix. It can be
+    ! stored in interleave format.
 !</description>
 
 !<input>
@@ -285,6 +326,10 @@ CONTAINS
     ! This subroutine checks whether a block matrix and a discrete 
     ! stabilisation structure are compatible to each other, 
     ! i.e. if they share the same structure, size and so on.
+    !
+    ! If the matrix has only one block, then the scalar counterpart of this
+    ! subroutine is called with the corresponding scalar submatrix.
+    ! Otherwise, the matrix is required to possess group structure.
 !</description>
 
 !<input>
@@ -303,6 +348,13 @@ CONTAINS
     LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
 !</output>
 !</subroutine>
+
+    ! Check if matrix has only one block
+    IF (rmatrixBlock%ndiagblocks .EQ. 1) THEN
+      CALL gfsys_isMatrixCompatibleScalar(rafcstab,&
+          rmatrixBlock%RmatrixBlock(1,1), bcompatible)
+      RETURN
+    END IF
 
     ! Check if matrix exhibits group structure
     IF (rmatrixBlock%imatrixSpec .NE. LSYSBS_MSPEC_GROUPMATRIX) THEN
@@ -342,6 +394,9 @@ CONTAINS
     ! This subroutine checks whether a scalar matrix and a discrete 
     ! stabilisation structure are compatible to each other, 
     ! i.e. if they share the same structure, size and so on.
+    !
+    ! Note that the matrix is required as scalar matrix. It can be
+    ! stored in interleave format.
 !</description>
 
 !<input>
@@ -386,6 +441,9 @@ CONTAINS
     ! This subroutine checks whether a block vector and a stabilisation
     ! structure are compatible to each other, i.e., share the same
     ! structure, size and so on.
+    !
+    ! If the vectors has only one block, then the scalar counterpart of
+    ! this subroutine is called with the corresponding scalar subvector.
 !</description>
 
 !<input>
@@ -435,6 +493,9 @@ CONTAINS
     ! This subroutine checks whether a vector and a stabilisation
     ! structure are compatible to each other, i.e., share the same
     ! structure, size and so on.
+    !
+    ! Note that the vector is required as scalar vector. It can be
+    ! stored in interleave format.
 !</description>
 
 !<input>
@@ -486,6 +547,8 @@ CONTAINS
     ! Note that this routine is designed for block matrices/vectors. 
     ! If there is only one block, then the corresponding scalar routine 
     ! is called. Otherwise, the global operator is treated as block matrix.
+    ! This block matrix has to be in group structure, that is, the structure
+    ! of subblock(1,1) will serve as template for all other submatrices.
 !</description>
 
 !<input>
@@ -519,39 +582,37 @@ CONTAINS
     TYPE(t_matrixBlock), INTENT(INOUT)             :: rmatrixL
 !</inputoutput>
 !</subroutine>
-
-    ! local type
-    TYPE t_rarray
-      REAL(DP), DIMENSION(:), POINTER :: Da
-    END TYPE t_rarray
-
+    
     ! local variables
-    TYPE(t_rarray), DIMENSION(ru%nblocks,ru%nblocks) :: rarray
+    TYPE(t_array), DIMENSION(ru%nblocks,ru%nblocks)  :: rarray
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER      :: p_Kld,p_Ksep
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER      :: p_Kdiagonal
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER      :: p_Kcol
     REAL(DP), DIMENSION(:), POINTER                  :: p_Cx,p_Cy,p_Cz,p_u
-    INTEGER :: h_Ksep,ivar,jvar
-    INTEGER :: idim,ndim
+    INTEGER :: h_Ksep
+    INTEGER :: idim,ndim,ivar,jvar
+    LOGICAL :: bisFullMatrix
 
     ! Check if block vector contains only one block and if
     ! global operator is stored in interleave format.
-    IF ((ru%nblocks .EQ. 1) .AND. &
-        (rmatrixL%ndiagblocks .EQ. 1) ) THEN
+    IF (ru%nblocks .EQ. 1   .AND.&
+        rmatrixL%ndiagblocks .EQ. 1) THEN
       CALL gfsys_buildDivOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
           fcb_getRoeMatrix, fcb_getDissipation, iassembly,&
           bclear, rmatrixL%RmatrixBlock(1,1))
-       RETURN       
+      RETURN       
     END IF
 
-    ! Check if all matrices/vectors are compatible
+    ! Check if matrix/vector is compatible
     CALL lsysbl_isMatrixCompatible(ru, rmatrixL)
 
+    ! Check if all coefficient matrices are comptible
     ndim = SIZE(RmatrixC,1)
     DO idim = 1, ndim
       CALL lsyssc_isMatrixCompatible(RmatrixC(idim), rmatrixL%RmatrixBlock(1,1))
     END DO
 
+    ! Check if block matrix exhibits group structure
     IF (rmatrixL%imatrixSpec .NE. LSYSBS_MSPEC_GROUPMATRIX) THEN
       CALL output_line('Block matrix must have group structure!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
@@ -565,6 +626,7 @@ CONTAINS
     CALL lsyssc_getbase_Kld   (RmatrixC(1),p_Kld)
     CALL lsyssc_getbase_Kcol  (RmatrixC(1),p_Kcol)
     CALL lsysbl_getbase_double(ru, p_u)
+    CALL gfsys_getbase_double (rmatrixL, rarray, bisFullMatrix)
 
     ! How many dimensions do we have?
     SELECT CASE(ndim)
@@ -585,13 +647,6 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       CALL sys_halt()
     END SELECT
-
-    ! Prepare auxiliary data structure
-    DO ivar = 1, ru%nblocks
-      DO jvar = 1, ru%nblocks
-        CALL lsyssc_getbase_double(rmatrixL%RmatrixBlock(ivar,jvar), rarray(ivar,jvar)%Da)
-      END DO
-    END DO
     
     ! What kind of matrix are we?
     SELECT CASE(rmatrixL%RmatrixBlock(1,1)%cmatrixFormat)
@@ -600,7 +655,7 @@ CONTAINS
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-      CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
       ! What type of assembly should be performed
       SELECT CASE(iassembly)
@@ -620,6 +675,11 @@ CONTAINS
         
 
        CASE (GFSYS_GALERKIN)     ! Galerkin
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
            CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
@@ -648,6 +708,11 @@ CONTAINS
          
          
        CASE (GFSYS_SCALAR)       ! scalar dissipation
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
            CALL do_scalardissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
@@ -676,6 +741,11 @@ CONTAINS
          
          
        CASE (GFSYS_TENSOR)       ! tensorial dissipation
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
            CALL do_tensordissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
@@ -707,7 +777,7 @@ CONTAINS
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-      CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
 
       ! What type of assembly should be performed
       SELECT CASE(iassembly)
@@ -715,27 +785,32 @@ CONTAINS
       CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat9Diag_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+          CALL do_galerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
         CASE (NDIM2D)
-          CALL do_galerkinMat9Diag_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+          CALL do_galerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
         CASE (NDIM3D)
-          CALL do_galerkinMat9Diag_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+          CALL do_galerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
         END SELECT
         
 
        CASE (GFSYS_GALERKIN)     ! Galerkin
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
           
@@ -743,27 +818,32 @@ CONTAINS
        CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat9Diag_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat9Diag_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat9Diag_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
          
        CASE (GFSYS_SCALAR)       ! scalar dissipation
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat9_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat9_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat9_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_scalardissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
            
@@ -771,27 +851,32 @@ CONTAINS
        CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat9Diag_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat9Diag_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat9Diag_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
          
        CASE (GFSYS_TENSOR)       ! tensorial dissipation
+         IF (.NOT.bisFullMatrix) THEN
+           CALL output_line('Block matrix has some empty blocks!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+           CALL sys_halt()
+         END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat9_1D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat9_2D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat9_3D(p_Kld, p_Kcol, p_Ksep, p_Kdiagonal,&
+           CALL do_tensordissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
 
@@ -819,7 +904,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE do_galerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -828,7 +914,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -883,7 +969,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE do_galerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -892,7 +979,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -949,7 +1036,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE do_galerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -958,7 +1046,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -1017,7 +1105,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE do_galerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1027,7 +1116,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -1082,7 +1171,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE do_galerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1092,7 +1182,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -1103,7 +1193,7 @@ CONTAINS
 
       ! Loop over all rows
       DO i = 1, NEQ
-        
+
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
@@ -1149,7 +1239,8 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE do_galerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1159,7 +1250,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
@@ -1218,7 +1309,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1227,7 +1319,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1286,7 +1378,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1295,7 +1388,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1356,7 +1449,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1365,7 +1459,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1428,7 +1522,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1438,7 +1533,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1497,7 +1592,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1507,7 +1603,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1568,7 +1664,8 @@ CONTAINS
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1578,7 +1675,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: K
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
@@ -1642,7 +1739,8 @@ CONTAINS
     ! with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE do_scalardissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1651,7 +1749,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -1705,7 +1803,8 @@ CONTAINS
     ! with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE do_scalardissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1714,7 +1813,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -1769,7 +1868,8 @@ CONTAINS
     ! with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE do_scalardissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1778,7 +1878,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -1845,7 +1945,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -1909,7 +2009,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -1974,7 +2074,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
@@ -2028,7 +2128,8 @@ CONTAINS
     ! Assemble low-order operator L with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE do_scalardissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2037,7 +2138,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2102,7 +2203,8 @@ CONTAINS
     ! Assemble low-order operator L with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE do_scalardissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2111,7 +2213,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2177,7 +2279,8 @@ CONTAINS
     ! Assemble low-order operator L with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE do_scalardissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2186,7 +2289,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2264,7 +2367,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2340,7 +2443,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2417,7 +2520,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
@@ -2484,7 +2587,8 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE do_tensordissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2493,7 +2597,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2548,7 +2652,8 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE do_tensordissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2557,7 +2662,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2613,7 +2718,8 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE do_tensordissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2622,7 +2728,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2690,7 +2796,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2756,7 +2862,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2823,7 +2929,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij
@@ -2879,7 +2985,8 @@ CONTAINS
     ! Assemble low-order operator L with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE do_tensordissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2888,7 +2995,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -2944,7 +3051,8 @@ CONTAINS
     ! Assemble low-order operator L with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE do_tensordissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -2953,7 +3061,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -3010,7 +3118,8 @@ CONTAINS
     ! Assemble low-order operator L with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE do_tensordissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3019,7 +3128,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -3088,7 +3197,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -3155,7 +3264,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -3223,7 +3332,7 @@ CONTAINS
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_rarray), DIMENSION(:,:), INTENT(INOUT)     :: L
+      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)       :: L
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
@@ -3291,6 +3400,9 @@ CONTAINS
     ! $${\bf F}_j-{\bf F}_i=\hat{\bf A}_{ij}(u_j-u_i)$$
     ! and the matrix $\hat{\bf A}$ corresponds to the Jacobian tensor
     ! evaluated for some special set of averaged variables.
+    !
+    ! Note that this routine requires scalar matrices stored in the interleave
+    ! format. 
 !</description>
 
 !<input>
@@ -3377,7 +3489,7 @@ CONTAINS
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-      CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
       ! What type of assembly should be performed
       SELECT CASE(iassembly)
@@ -3484,7 +3596,7 @@ CONTAINS
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-      CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
       ! What type of assembly should be performed
       SELECT CASE(iassembly)
@@ -5791,7 +5903,10 @@ CONTAINS
       fcb_getRoeMatrix, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for standard Galerkin scheme
+    ! This subroutine assembles the residual vector for standard
+    ! Galerkin scheme. If the vectors contain only one block,
+    ! then the scalar counterpart of this routine is called with
+    ! the scalar subvectors.
 !</description>
 
 !<input>
@@ -5814,8 +5929,514 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    PRINT *, "Not implemented yet!"
-    STOP
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    INTEGER :: h_Ksep
+
+    
+    ! Check if block vectors contain only one block.
+    IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
+      CALL gfsys_buildResidualScalar_Galerkin(RmatrixC, ru%RvectorBlock(1),&
+          fcb_getRoeMatrix, dscale, rres%RvectorBlock(1))
+      RETURN       
+    END IF
+
+    ! Check if vectors are compatible
+    CALL lsysbl_isVectorCompatible(ru, rres)
+
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
+    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsysbl_getbase_double(ru,   p_u)
+    CALL lsysbl_getbase_double(rres, p_res)
+
+    ! Create diagonal Ksep=Kld
+    h_Ksep = ST_NOHANDLE
+    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+    
+    
+    ! What kind of matrix are we?
+    SELECT CASE(RmatrixC(1)%cmatrixFormat)
+    CASE(LSYSSC_MATRIX7)
+      
+      ! How many dimensions do we have?
+      SELECT CASE(SIZE(RmatrixC,1))
+      CASE (NDIM1D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+        
+      CASE (NDIM2D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+         CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+        
+      CASE (NDIM3D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+        CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+        CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+        CALL sys_halt()
+      END SELECT
+    
+
+    CASE (LSYSSC_MATRIX9)
+
+      ! Set pointer
+      CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
+
+      ! How many dimensions do we have?
+      SELECT CASE(SIZE(RmatrixC,1))
+      CASE (NDIM1D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+        
+      CASE (NDIM2D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+         CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+        
+      CASE (NDIM3D)
+        CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+        CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+        CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+        CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+            RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+        CALL sys_halt()
+      END SELECT
+      
+
+    CASE DEFAULT
+      CALL output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+      CALL sys_halt()
+    END SELECT
+    
+    ! Release Ksep
+    CALL storage_free(h_Ksep)
+    
+  CONTAINS
+    
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 1D
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat7_1D
+
+
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 2D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+          C_ij(2) = C_ij(2)+Cy(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat7_2D
+
+    
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 3D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+          C_ij(2) = C_ij(2)+Cy(ij)
+          C_ij(3) = C_ij(3)+Cz(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat7_3D
+
+    
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 1D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat9_1D
+
+
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 2D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+          C_ij(2) = C_ij(2)+Cy(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat9_2D
+
+
+    !**************************************************************
+    ! Assemble residual for high-order Galerkin operator in 3D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+      
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+   
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute averaged coefficients for boundary contribution
+          C_ij(1) = C_ij(1)+Cx(ij)
+          C_ij(2) = C_ij(2)+Cy(ij)
+          C_ij(3) = C_ij(3)+Cz(ij)
+
+          ! Compute local Roe matrix for boundary contribution
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rB_ij
+          res(j,:) = res(j,:)+rA_ij-rB_ij
+        END DO
+      END DO
+    END SUBROUTINE do_galerkinMat9_3D
   END SUBROUTINE gfsys_buildResidualBlock_Galerkin
   
   ! *****************************************************************************
@@ -5826,7 +6447,9 @@ CONTAINS
       fcb_getRoeMatrix, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for standard Galerkin scheme
+    ! This subroutine assembles the residual vector for standard
+    ! Galerkin scheme. Note that the vectors are required as scalar
+    ! vectors which are stored in the interleave format.
 !</description>
 
 !<input>
@@ -5856,7 +6479,7 @@ CONTAINS
     INTEGER :: h_Ksep
 
     ! Check if vectors are compatible
-    CALL lsyssc_isVectorCompatible(ru,rres)
+    CALL lsyssc_isVectorCompatible(ru, rres)
 
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -6335,7 +6958,10 @@ CONTAINS
       fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for discrete upwinding schemes
+    ! This subroutine assembles the residual vector for discrete
+    ! upwinding schemes. If the vectors contain only one block,
+    ! then the scalar counterpart of this routine is called with
+    ! the scalar subvectors.
 !</description>
 
 !<input>
@@ -6363,8 +6989,966 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    PRINT *, "Not implemented yet!"
-    STOP
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    INTEGER :: h_Ksep
+
+
+    ! Check if block vectors contain only one block.
+    IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
+      CALL gfsys_buildResidualScalar_Upwind(RmatrixC, ru%RvectorBlock(1),&
+          fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres%RvectorBlock(1))
+      RETURN       
+    END IF
+    
+    ! Check if vectors are compatible
+    CALL lsysbl_isVectorCompatible(ru, rres)
+
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
+    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsysbl_getbase_double(ru,   p_u)
+    CALL lsysbl_getbase_double(rres, p_res)
+
+    ! Create diagonal Ksep=Kld
+    h_Ksep = ST_NOHANDLE
+    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+    
+
+    ! What kind of dissipation should be applied?
+    SELECT CASE(idissipation)
+    CASE (AFCSTAB_SCALARDISSIPATION)
+      
+      ! What kind of matrix are we?
+      SELECT CASE(RmatrixC(1)%cmatrixFormat)
+      CASE(LSYSSC_MATRIX7)
+        
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_scalardissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_scalardissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_scalardissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+          CALL sys_halt()
+        END SELECT
+        
+        
+      CASE (LSYSSC_MATRIX9)
+        
+        ! Set pointer
+        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
+        
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_scalardissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_scalardissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_scalardissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+          CALL sys_halt()
+        END SELECT
+      
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+        CALL sys_halt()
+      END SELECT
+
+
+    CASE (AFCSTAB_TENSORDISSIPATION)
+      
+      ! What kind of matrix are we?
+      SELECT CASE(RmatrixC(1)%cmatrixFormat)
+      CASE(LSYSSC_MATRIX7)
+        
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_tensordissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_tensordissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_tensordissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+          CALL sys_halt()
+        END SELECT
+        
+        
+      CASE (LSYSSC_MATRIX9)
+        
+        ! Set pointer
+        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
+        
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_tensordissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_tensordissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_tensordissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+          CALL sys_halt()
+        END SELECT
+      
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+        CALL sys_halt()
+      END SELECT
+
+
+    CASE DEFAULT
+      CALL output_line('Unsupported type of dissipation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+      CALL sys_halt()
+    END SELECT
+    
+    ! Release Ksep
+    CALL storage_free(h_Ksep)
+    
+  CONTAINS
+
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 1D
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE do_scalardissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat7_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 2D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_scalardissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat7_2D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 3D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_scalardissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat7_3D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 1D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_scalardissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat9_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 2D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_scalardissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat9_2D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator with scalar dissipation in 3D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_scalardissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+      
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(1)         :: d_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+
+          ! Compute scalar dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
+          rD_ij = dscale*d_ij(1)*diff
+          
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_scalardissMat9_3D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 1D
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE do_tensordissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat7_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 2D
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE do_tensordissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat7_2D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 3D
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE do_tensordissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat7_3D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 1D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_tensordissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat9_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 2D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_tensordissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat9_2D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator
+    ! with tensorial dissipation in 3D
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE do_tensordissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      ! local variables
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j
+      
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          
+          ! Compute local Roe matrix
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Compute tensorial dissipation
+          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
+
+          ! Assemble residual vector
+          res(i,:) = res(i,:)+rA_ij+rD_ij
+          res(j,:) = res(j,:)+rA_ij-rD_ij
+        END DO
+      END DO
+    END SUBROUTINE do_tensordissMat9_3D
   END SUBROUTINE gfsys_buildResidualBlock_Upwind
 
   ! *****************************************************************************
@@ -6375,7 +7959,9 @@ CONTAINS
       fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for discrete upwinding schemes
+    ! This subroutine assembles the residual vector for discrete
+    ! upwinding schemes. Note that the vectors are required as scalar
+    ! vectors which are stored in the interleave format.
 !</description>
 
 !<input>
@@ -6587,7 +8173,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, dscale, res)
+    SUBROUTINE do_scalardissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6645,7 +8232,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, dscale, res)
+    SUBROUTINE do_scalardissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6704,7 +8292,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+    SUBROUTINE do_scalardissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6764,7 +8353,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, dscale, res)
+    SUBROUTINE do_scalardissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6823,7 +8413,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, dscale, res)
+    SUBROUTINE do_scalardissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6883,7 +8474,8 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+    SUBROUTINE do_scalardissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6945,7 +8537,8 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, dscale, res)
+    SUBROUTINE do_tensordissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -6997,12 +8590,14 @@ CONTAINS
       END DO
     END SUBROUTINE do_tensordissMat7_1D
 
+
     !**************************************************************
     ! Assemble residual for low-order operator
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, dscale, res)
+    SUBROUTINE do_tensordissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -7061,7 +8656,8 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+    SUBROUTINE do_tensordissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -7121,7 +8717,8 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, dscale, res)
+    SUBROUTINE do_tensordissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -7180,7 +8777,8 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, dscale, res)
+    SUBROUTINE do_tensordissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -7240,7 +8838,8 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+    SUBROUTINE do_tensordissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -7305,7 +8904,9 @@ CONTAINS
       rafcstab, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for FEM-TVD schemes
+    ! This subroutine assembles the residual vector for FEM-TVD schemes.
+    ! If the vectors contain only one block, then the scalar counterpart
+    ! of this routine is called with the scalar subvectors.
 !</description>
 
 !<input>
@@ -7330,10 +8931,1701 @@ CONTAINS
     TYPE(t_vectorBlock), INTENT(INOUT)             :: rres
 !</inputoutput>
 !</subroutine>
+    
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_L,p_u,p_res
+    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    INTEGER :: h_Ksep
 
-    PRINT *, "Not implemented yet!"
-    STOP
+    
+    ! Check if block vectors contain only one block.
+    IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
+      CALL gfsys_buildResidualScalar_TVD(RmatrixC, ru%RvectorBlock(1),&
+          fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
+          rafcstab, dscale, rres%RvectorBlock(1))
+      RETURN       
+    END IF
 
+    ! Check if vectors are compatible
+    CALL lsysbl_isVectorCompatible(ru, rres)
+    CALL gfsys_isVectorCompatible(rafcstab, ru)
+    
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
+    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsysbl_getbase_double(ru,   p_u)
+    CALL lsysbl_getbase_double(rres, p_res)
+
+    ! Create diagonal Ksep=Kld
+    h_Ksep = ST_NOHANDLE
+    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+       
+
+    ! What kind of stabilisation should be applied?
+    SELECT CASE(rafcstab%ctypeAFCstabilisation)
+      
+    CASE (AFCSTAB_FEMTVD)
+      
+      ! Check if stabilisation is prepeared
+      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALIZED) .EQ. 0) THEN
+        CALL output_line('Stabilisation has not been initialized',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+        CALL sys_halt()
+      END IF
+      
+      ! Set pointers
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+      
+      ! Set specifiers for Ps, Qs and Rs
+      rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_LIMITER)
+
+       ! What kind of matrix are we?
+      SELECT CASE(RmatrixC(1)%cmatrixFormat)
+      CASE(LSYSSC_MATRIX7)
+        
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_femtvdMat7_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+              p_Cx, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_femtvdMat7_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+              p_Cx, p_Cy, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_femtvdMat7_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+              p_Cx, p_Cy, p_Cz, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+          CALL sys_halt()
+        END SELECT
+        
+        
+      CASE (LSYSSC_MATRIX9)
+        
+        ! Set pointer
+        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
+
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL do_femtvdMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL do_femtvdMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          CALL do_femtvdMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+        CALL sys_halt()
+      END SELECT
+      
+    CASE DEFAULT
+      CALL output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+      CALL sys_halt()
+    END SELECT
+    
+    ! Release Ksep
+    CALL storage_free(h_Ksep)
+
+  CONTAINS
+
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 1D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_femtvdMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! X-Direction
+      XDir = (/1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat7_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 2D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_femtvdMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+      
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat7_2D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 3D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE do_femtvdMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP, 0._DP/)
+      ZDir = (/0._DP, 0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Z-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+            
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Z-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficients
+          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat7_3D
+    
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 1D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! X-Direction
+      XDir = (/1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_1D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 2D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+      
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_2D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 3D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP, 0._DP/)
+      ZDir = (/0._DP, 0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute solution difference
+          diff = u_j-u_i
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(i,:) = res(i,:)+rA_ij
+          res(j,:) = res(j,:)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+          
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Z-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+            
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Z-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+
+          ! Get solution values at nodes
+          u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute averaged coefficients
+          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_3D
   END SUBROUTINE gfsys_buildResidualBlock_TVD
 
   ! *****************************************************************************
@@ -7378,8 +10670,10 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
     INTEGER :: h_Ksep
 
+
     ! Check if vectors are compatible
-    CALL lsyssc_isVectorCompatible(ru,rres)
+    CALL lsyssc_isVectorCompatible(ru, rres)
+    CALL gfsys_isVectorCompatible(rafcstab, ru)
     
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -7456,21 +10750,24 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-!!$          CALL do_femtvdMat9_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
-!!$              p_Cx, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          CALL do_femtvdMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-!!$          CALL do_femtvdMat9_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
-!!$              p_Cx, p_Cy, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          CALL do_femtvdMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-!!$          CALL do_femtvdMat9_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
-!!$              p_Cx, p_Cy, p_Cz, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+          CALL do_femtvdMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
@@ -7480,7 +10777,7 @@ CONTAINS
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Galerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
         CALL sys_halt()
       END SELECT
       
@@ -8242,6 +11539,756 @@ CONTAINS
         END DO
       END DO
     END SUBROUTINE do_femtvdMat7_3D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 1D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
+      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! X-Direction
+      XDir = (/1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+                   
+          ! Compute solution difference
+          diff = u(:,j)-u(:,i)
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(:,i) = res(:,i)+rA_ij
+          res(:,j) = res(:,j)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+          
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_1D
+
+    
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 2D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Compute solution difference
+          diff = u(:,j)-u(:,i)
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(:,i) = res(:,i)+rA_ij
+          res(:,j) = res(:,j)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+      
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+          
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_2D
+
+
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 3D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE do_femtvdMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
+      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+      
+      ! Directional splitting
+      XDir = (/1._DP, 0._DP, 0._DP/)
+      YDir = (/0._DP, 1._DP, 0._DP/)
+      ZDir = (/0._DP, 0._DP, 1._DP/)
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+                   
+          ! Compute solution difference
+          diff = u(:,j)-u(:,i)
+          
+          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute local Roe matrix and multiply it with the solution difference
+          !
+          !   rA_ij:=A_ij*(U_j-U_i),
+          !
+          ! where A_ij denotes the cumulated Roe matrix 
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
+          
+          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
+          ! contribution of A_ji to node j is identical to that of A_ij to node i
+          res(:,i) = res(:,i)+rA_ij
+          res(:,j) = res(:,j)+rA_ij
+                   
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(1)*Lbd_ij
+          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for X-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Y-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+          
+          ! Compute averaged coefficient
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          
+          ! Compute characteristic fluxes in X-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij  =  C_ij(1)*Lbd_ij
+          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij   =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar = 1, NVAR
+            
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+          
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Y-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Clear P's and Q's for Z-direction
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute averaged coefficients
+          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic fluxes in Y-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(2)*Lbd_ij
+          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij)
+
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+
+          ! Update sums of downstream/upstream edge contributions
+          DO ivar = 1, NVAR
+            
+            ! Set node orientation
+            IF (ka_ij(ivar) > 0) THEN
+              iloc = j; jloc = i
+              F_ij(ivar) = -F_ij(ivar)
+            ELSE
+              iloc = i; jloc = j
+            END IF
+            
+            ! Assemble P's and Q's
+            IF (F_ij(ivar) > 0) THEN
+              pp(ivar,iloc) = pp(ivar,iloc)+F_ij(ivar)
+              qm(ivar,iloc) = qm(ivar,iloc)-F_ij(ivar)
+              qp(ivar,jloc) = qp(ivar,jloc)+F_ij(ivar)
+            ELSE
+              pm(ivar,iloc) = pm(ivar,iloc)+F_ij(ivar)
+              qp(ivar,iloc) = qp(ivar,iloc)-F_ij(ivar)
+              qm(ivar,jloc) = qm(ivar,jloc)+F_ij(ivar)
+            END IF
+          END DO
+
+        END DO
+      END DO
+
+      ! Compute nodal correction factors for Z-direction
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+
+          ! Compute averaged coefficients
+          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
+
+          ! Compute characteristic fluxes in Z-direction
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij, R_ij)
+          
+          ! Compute antidiffusive fluxes
+          ka_ij =  C_ij(3)*Lbd_ij
+          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          W_ij  =  ABS(ka_ij)*W_ij
+          
+          ! Construct characteristic fluxes
+          DO ivar =1, NVAR
+
+            ! Limit characteristic fluxes
+            IF (ka_ij(ivar) < 0) THEN
+              IF (F_ij(ivar) > 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,i)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,i)*F_ij(ivar)
+              END IF
+            ELSE
+              IF (F_ij(ivar) < 0) THEN
+                W_ij(ivar) = W_ij(ivar)+rp(ivar,j)*F_ij(ivar)
+              ELSE
+                W_ij(ivar) = W_ij(ivar)+rm(ivar,j)*F_ij(ivar)
+              END IF
+            END IF
+          END DO
+          
+          ! Transform back into conservative variables
+          CALL DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, W_ij, 1, 0._DP, F_ij, 1)
+          
+          ! Assemble high-resolution residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+        END DO
+      END DO
+    END SUBROUTINE do_femtvdMat9_3D
   END SUBROUTINE gfsys_buildResidualScalar_TVD
 
   !*****************************************************************************
@@ -8252,7 +12299,13 @@ CONTAINS
       fcb_getRoeMatrix, fcb_getDissipation, iassembly, hstep, bclear, rmatrixJ)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix
+    ! This subroutine assembles the Jacobian matrix.
+    !
+    ! Note that this routine is designed for block matrices/vectors. 
+    ! If there is only one block, then the corresponding scalar routine 
+    ! is called. Otherwise, the global operator is treated as block matrix.
+    ! This block matrix has to be in group structure, that is, the structure
+    ! of subblock(1,1) will serve as template for all other submatrices.
 !</description>
 
 !<input>
@@ -8289,7 +12342,17 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    PRINT *, "Not implemented yet"
+    ! Check if block vector contains only one block and if
+    ! global operator is stored in interleave format.
+    IF (ru%nblocks .EQ. 1    .AND.&
+        rmatrixJ%ndiagblocks .EQ. 1) THEN
+      CALL gfsys_buildDivJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
+          fcb_getRoeMatrix, fcb_getDissipation, iassembly, hstep, bclear,&
+          rmatrixJ%RmatrixBlock(1,1))
+      RETURN       
+    END IF
+
+    PRINT *, "Jacobian matrix for systems is not yet implemented!"
     STOP
   END SUBROUTINE gfsys_buildDivJacobianBlock
 
@@ -8338,8 +12401,184 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    PRINT *, "Not implemented yet"
+
+    PRINT *, "Jacobian matrix for systems is not yet implemented!"
     STOP
   END SUBROUTINE gfsys_buildDivJacobianScalar
 
+  !*****************************************************************************
+  !*****************************************************************************
+  !*****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE gfsys_getbase_double(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the block matrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    TYPE(t_matrixBlock), INTENT(IN)            :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    TYPE(t_array), DIMENSION(:,:), INTENT(OUT) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    LOGICAL, INTENT(OUT), OPTIONAL             :: bisFullMatrix
+!</output>
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: iblock,jblock
+    LOGICAL :: bisFull
+    
+    ! Check if array is compatible
+    IF (rmatrix%ndiagblocks .NE. SIZE(rarray,1) .OR.&
+        rmatrix%ndiagblocks .NE. SIZE(rarray,2)) THEN
+      CALL output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_double')
+      CALL sys_halt()
+    END IF
+
+    ! Assign pointers
+    bisFull = .TRUE.
+    DO iblock = 1, rmatrix%ndiagblocks
+      DO jblock = 1, rmatrix%ndiagblocks
+        IF (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) THEN
+          CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),&
+                                     rarray(iblock,jblock)%Da)
+        ELSE
+          NULLIFY(rarray(iblock,jblock)%Da)
+          bisFull = .FALSE.
+        END IF
+      END DO
+    END DO
+
+    IF (PRESENT(bisFullMatrix)) bisFullMatrix = bisFull
+  END SUBROUTINE gfsys_getbase_double
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE gfsys_getbase_single(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the block matrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    TYPE(t_matrixBlock), INTENT(IN)            :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    TYPE(t_array), DIMENSION(:,:), INTENT(OUT) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    LOGICAL, INTENT(OUT), OPTIONAL             :: bisFullMatrix
+!</output>
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: iblock,jblock
+    LOGICAL :: bisFull
+    
+    ! Check if array is compatible
+    IF (rmatrix%ndiagblocks .NE. SIZE(rarray,1) .OR.&
+        rmatrix%ndiagblocks .NE. SIZE(rarray,2)) THEN
+      CALL output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_single')
+      CALL sys_halt()
+    END IF
+
+    ! Assign pointers
+    bisFull = .TRUE.
+    DO iblock = 1, rmatrix%ndiagblocks
+      DO jblock = 1, rmatrix%ndiagblocks
+        IF (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) THEN
+          CALL lsyssc_getbase_single(rmatrix%RmatrixBlock(iblock,jblock),&
+                                     rarray(iblock,jblock)%Fa)
+        ELSE
+          NULLIFY(rarray(iblock,jblock)%Fa)
+          bisFull = .FALSE.
+        END IF
+      END DO
+    END DO
+
+    IF (PRESENT(bisFullMatrix)) bisFullMatrix = bisFull
+  END SUBROUTINE gfsys_getbase_single
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE gfsys_getbase_int(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the block matrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    TYPE(t_matrixBlock), INTENT(IN)            :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    TYPE(t_array), DIMENSION(:,:), INTENT(OUT) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    LOGICAL, INTENT(OUT), OPTIONAL             :: bisFullMatrix
+!</output>
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: iblock,jblock
+    LOGICAL :: bisFull
+    
+    ! Check if array is compatible
+    IF (rmatrix%ndiagblocks .NE. SIZE(rarray,1) .OR.&
+        rmatrix%ndiagblocks .NE. SIZE(rarray,2)) THEN
+      CALL output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_int')
+      CALL sys_halt()
+    END IF
+
+    ! Assign pointers
+    bisFull = .TRUE.
+    DO iblock = 1, rmatrix%ndiagblocks
+      DO jblock = 1, rmatrix%ndiagblocks
+        IF (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) THEN
+          CALL lsyssc_getbase_int(rmatrix%RmatrixBlock(iblock,jblock),&
+                                  rarray(iblock,jblock)%Ia)
+        ELSE
+          NULLIFY(rarray(iblock,jblock)%Da)
+          bisFull = .FALSE.
+        END IF
+      END DO
+    END DO
+
+    IF (PRESENT(bisFullMatrix)) bisFullMatrix = bisFull
+  END SUBROUTINE gfsys_getbase_int
 END MODULE groupfemsystem
