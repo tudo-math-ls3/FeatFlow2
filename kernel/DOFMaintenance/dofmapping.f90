@@ -659,7 +659,8 @@ CONTAINS
         CASE (EL_Q1T_3D)
           ! DOF's in the face midpoints
           CALL storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_Q1T_3D(p_rtriangulation%NVT,&
+            p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           RETURN
         END SELECT
         
@@ -1393,7 +1394,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_Q1T_3D(IfacesAtElement, IelIdx,&
+  PURE SUBROUTINE dof_locGlobUniMult_Q1T_3D(iNVT,iNMT,IfacesAtElement, IelIdx,&
                                              IdofGlob)
   
 !<description>
@@ -1405,6 +1406,12 @@ CONTAINS
 !</description>
 
 !<input>
+
+  ! Number of vertices in the triangulation
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: iNVT
+
+  ! Number of edges in the triangulation
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: iNMT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
@@ -1427,11 +1434,16 @@ CONTAINS
 
   ! local variables 
   INTEGER(I32) :: i
+  INTEGER(PREC_DOFIDX) :: ioffset
+  
+  ioffset = iNVT+iNMT
   
   ! Loop through the elements to handle
   DO i=1,SIZE(IelIdx)
     ! Calculate the global DOF's - which are simply the face numbers.
-    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
+    ! Substract the number of vertices and edges as the face numbers
+    ! begin at NVT+NMT+1!
+    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i)) - ioffset
   END DO
 
   END SUBROUTINE
