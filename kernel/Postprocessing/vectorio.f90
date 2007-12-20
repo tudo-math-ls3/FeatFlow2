@@ -864,9 +864,9 @@ MODULE vectorio
       CALL lsyssc_getbase_double (rvector,p_Ddata)
       
       IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-        CALL writeArray_Dble (p_Ddata, cf, sformat)
+        CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
       ELSE 
-        CALL writeArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+        CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
       END IF
       
       ! Footer
@@ -971,9 +971,9 @@ MODULE vectorio
         CALL lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
         
         IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL writeArray_Dble (p_Ddata, cf, sformat)
+          CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
         ELSE 
-          CALL writeArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+          CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
         END IF
         
         ! If this is not the last block, attach more data
