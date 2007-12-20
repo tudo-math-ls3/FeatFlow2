@@ -407,7 +407,7 @@ CONTAINS
     
   !</subroutine>
 
-    !    u(x) = 1/64*x*(1-x)*y*(1-y)*z*(1-z)
+    !    u(x) = 1/4*x*(1-x)
     ! => f(x) = 8
     Dcoefficients(1,:,:) = 8.0_DP
 
