@@ -83,6 +83,38 @@ MODULE groupfemsystem
   PUBLIC :: gfsys_buildResidual_TVD
   PUBLIC :: gfsys_buildDivJacobian
 
+  ! *****************************************************************************
+  ! *****************************************************************************
+  ! *****************************************************************************
+
+!<constants>
+!<constantblock description="Global constants for directional splitting">
+
+  ! unit vector in X-direction in 1D
+  REAL(DP), DIMENSION(NDIM1D) :: XDir1D = (/ 1._DP /)
+
+  ! unit vector in X-direction in 2D
+  REAL(DP), DIMENSION(NDIM2D) :: XDir2D = (/ 1._DP, 0._DP /)
+
+  ! unit vector in Y-direction in 2D
+  REAL(DP), DIMENSION(NDIM2D) :: YDir2D = (/ 0._DP, 1._DP /)
+
+  ! unit vector in X-direction in 3D
+  REAL(DP), DIMENSION(NDIM3D) :: XDir3D = (/ 1._DP, 0._DP, 0._DP /)
+
+  ! unit vector in Y-direction in 3D
+  REAL(DP), DIMENSION(NDIM3D) :: YDir3D = (/ 0._DP, 1._DP, 0._DP /)
+
+  ! unit vector in Z-direction in 3D
+  REAL(DP), DIMENSION(NDIM3D) :: ZDir3D = (/ 0._DP, 0._DP, 1._DP /)
+
+!</constantblock>
+!</constants>
+
+  ! *****************************************************************************
+  ! *****************************************************************************
+  ! *****************************************************************************
+
 !<types>
 !<typeblock>
 
@@ -228,7 +260,7 @@ CONTAINS
     END IF
     
     ! Set atomic data from first block
-    rafcstab%NVAR  = rmatrixBlockTemplate%RmatrixBlock(1,1)%NVAR
+    rafcstab%NVAR  = rmatrixBlockTemplate%ndiagblocks
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
     rafcstab%NEDGE = INT(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
                      rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ), I32)
@@ -255,7 +287,7 @@ CONTAINS
     END SELECT
 
     ! Set specifier
-    rafcstab%iSpec = AFCSTAB_INITIALIZED
+    rafcstab%iSpec = AFCSTAB_INITIALISED
   END SUBROUTINE gfsys_initStabilisationBlock
 
   ! *****************************************************************************
@@ -313,7 +345,7 @@ CONTAINS
     END SELECT
     
     ! Set specifier
-    rafcstab%iSpec = AFCSTAB_INITIALIZED
+    rafcstab%iSpec = AFCSTAB_INITIALISED
   END SUBROUTINE gfsys_initStabilisationScalar
 
   ! *****************************************************************************
@@ -8970,8 +9002,8 @@ CONTAINS
     CASE (AFCSTAB_FEMTVD)
       
       ! Check if stabilisation is prepeared
-      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALIZED) .EQ. 0) THEN
-        CALL output_line('Stabilisation has not been initialized',&
+      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALISED) .EQ. 0) THEN
+        CALL output_line('Stabilisation has not been initialised',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
         CALL sys_halt()
       END IF
@@ -9093,13 +9125,11 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! X-Direction
-      XDir = (/1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -9140,7 +9170,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -9195,7 +9225,7 @@ CONTAINS
           C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -9255,15 +9285,11 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP/)
-
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
       qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
@@ -9304,7 +9330,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -9364,7 +9390,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -9399,7 +9425,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -9455,7 +9481,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -9515,16 +9541,11 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP, 0._DP/)
-      ZDir = (/0._DP, 0._DP, 1._DP/)
-
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
       qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
@@ -9565,7 +9586,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -9625,7 +9646,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -9660,7 +9681,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -9720,7 +9741,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -9755,7 +9776,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -9810,7 +9831,7 @@ CONTAINS
           C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -9871,13 +9892,11 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! X-Direction
-      XDir = (/1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -9918,7 +9937,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -9973,7 +9992,7 @@ CONTAINS
           C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -10034,14 +10053,10 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
-
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -10083,7 +10098,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -10143,7 +10158,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -10178,7 +10193,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -10234,7 +10249,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -10295,16 +10310,11 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP, 0._DP/)
-      ZDir = (/0._DP, 0._DP, 1._DP/)
-
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
       qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
@@ -10345,7 +10355,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -10405,7 +10415,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -10440,7 +10450,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -10500,7 +10510,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -10535,7 +10545,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -10590,7 +10600,7 @@ CONTAINS
           C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -10693,8 +10703,8 @@ CONTAINS
     CASE (AFCSTAB_FEMTVD)
       
       ! Check if stabilisation is prepeared
-      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALIZED) .EQ. 0) THEN
-        CALL output_line('Stabilisation has not been initialized',&
+      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALISED) .EQ. 0) THEN
+        CALL output_line('Stabilisation has not been initialised',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
         CALL sys_halt()
       END IF
@@ -10815,13 +10825,11 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! X-Direction
-      XDir = (/1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -10859,7 +10867,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -10911,7 +10919,7 @@ CONTAINS
           C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -10970,14 +10978,11 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11016,7 +11021,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -11073,7 +11078,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -11108,7 +11113,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11161,7 +11166,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11220,15 +11225,11 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP, 0._DP/)
-      ZDir = (/0._DP, 0._DP, 1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11267,7 +11268,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -11324,7 +11325,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -11359,7 +11360,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11416,7 +11417,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11451,7 +11452,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -11503,7 +11504,7 @@ CONTAINS
           C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -11563,13 +11564,11 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,XDir
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! X-Direction
-      XDir = (/1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11607,7 +11606,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -11659,7 +11658,7 @@ CONTAINS
           C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -11719,14 +11718,10 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,XDir,YDir
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
-
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11765,7 +11760,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -11822,7 +11817,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -11857,7 +11852,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11910,7 +11905,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -11970,15 +11965,11 @@ CONTAINS
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
       REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,XDir,YDir,ZDir
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
       
-      ! Directional splitting
-      XDir = (/1._DP, 0._DP, 0._DP/)
-      YDir = (/0._DP, 1._DP, 0._DP/)
-      ZDir = (/0._DP, 0._DP, 1._DP/)
 
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -12017,7 +12008,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(1)*Lbd_ij
@@ -12074,7 +12065,7 @@ CONTAINS
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij  =  C_ij(1)*Lbd_ij
@@ -12109,7 +12100,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -12166,7 +12157,7 @@ CONTAINS
           C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(2)*Lbd_ij
@@ -12201,7 +12192,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij
@@ -12253,7 +12244,7 @@ CONTAINS
           C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir, W_ij, Lbd_ij, R_ij)
+          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
           ka_ij =  C_ij(3)*Lbd_ij

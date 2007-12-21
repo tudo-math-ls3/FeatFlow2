@@ -76,23 +76,29 @@ MODULE afcstabilisation
 !<constants>
 !<constantblock description="Global format flags for AFC stabilisation">
 
-  ! No stabilisation: use standard high-order Galerkin discretization
+  ! No stabilisation: use standard high-order Galerkin discretisation
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_GALERKIN        = 0
   
-  ! Stabilisation of discrete upwind type
+  ! Stabilisation of discrete upwind type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UPWIND          = 1
   
-  ! Stabilisation of semi-implicit FEM-FCT type
+  ! Stabilisation of semi-implicit FEM-FCT type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT          = 2
   
-  ! Stabilisation of general purpose type
+  ! Stabilisation of general purpose type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMGP           = 3
   
-  ! Stabilisation of FEM-TVD type
+  ! Stabilisation of FEM-TVD type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 4
   
-  ! Stabilisation of predictor-corrector FEM-FCT type
+  ! Stabilisation of predictor-corrector FEM-FCT type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_PC       = 5
+
+  ! Stabilisation of discrete maximum principle preserving type for diffusion operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_DMP    = 6
+
+  ! Stabilisation of symmetric type for diffusion operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SYMMETRIC       = 7
   
 !</constantblock>
 
@@ -111,8 +117,8 @@ MODULE afcstabilisation
   ! Stabilisation is undefined
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UNDEFINED       = 2**0
 
-  ! Stabilisation has been initialized
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_INITIALIZED     = 2**1
+  ! Stabilisation has been initialised
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_INITIALISED     = 2**1
 
   ! Edge-based structure generated: KEDGE
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_EDGESTRUCTURE   = 2**2
@@ -141,10 +147,10 @@ MODULE afcstabilisation
 
 !<constantblock description="Global type of mass matrix treatment">
 
-  ! Adopt the lumped-mass discretization
+  ! Adopt the lumped-mass discretisation
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_LUMPEDMASS      = 0
 
-  ! Adopt the consistent-mass discretization
+  ! Adopt the consistent-mass discretisation
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_CONSISTENTMASS  = 1
 !</constantblock>
 !</constants>
@@ -307,11 +313,13 @@ CONTAINS
       
       RETURN   ! -> high-order Galerkin
       
-    ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND) .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT) .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMTVD) .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMGP)  .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT_PC)) THEN 
+    ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND)    .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT)    .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMTVD)    .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMGP)     .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT_PC) .AND. &
+        (    istabilisation .NE. AFCSTAB_DMP)       .AND. &
+        (    istabilisation .NE. AFCSTAB_SYMMETRIC)) THEN 
       
       CALL output_line('Invalid AFC type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initFromParameterlist')
@@ -328,7 +336,7 @@ CONTAINS
       CALL parlst_getvalue_int(rparlist, ssectionName,&
           "idissipation", rafcstab%idissipation, AFCSTAB_SCALARDISSIPATION)
       CALL parlst_getvalue_int(rparlist, ssectionName,&
-          "imass", rafcstab%imass, 0)
+          "imass", rafcstab%imass, AFCSTAB_LUMPEDMASS)
     END IF
   END SUBROUTINE afcstab_initFromParameterlist
 
@@ -847,7 +855,7 @@ CONTAINS
 
 !<function>
   
-  ELEMENTAL FUNCTION afcstab_limit_unbounded(p,q,default) RESULT(r)
+  ELEMENTAL FUNCTION afcstab_limit_unbounded(p, q, default) RESULT(r)
 
 !<description>
     ! This function computes the ratio Q/P. If the denominator is
@@ -869,9 +877,9 @@ CONTAINS
 !</function>
 
     IF (p > SYS_EPSREAL) THEN
-      r=q/p
+      r = q/p
     ELSE
-      r=default
+      r = default
     END IF
   END FUNCTION afcstab_limit_unbounded
 
@@ -879,7 +887,7 @@ CONTAINS
 
 !<function>
   
-  ELEMENTAL FUNCTION afcstab_limit_bounded(p,q,default,dbound) RESULT(r)
+  ELEMENTAL FUNCTION afcstab_limit_bounded(p, q, default, dbound) RESULT(r)
 
 !<description>
     ! This function computes the limited ratio Q/P and bounds the
@@ -905,9 +913,9 @@ CONTAINS
 !</function>
     
     IF (p > SYS_EPSREAL) THEN
-      r=MIN(q/p,dbound)
+      r = MIN(q/p, dbound)
     ELSE
-      r=default
+      r = default
     END IF
   END FUNCTION afcstab_limit_bounded
 END MODULE afcstabilisation
