@@ -163,6 +163,14 @@
 !# 47.) lsysbl_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or 
 !#         with a defined value
+!#
+!# 48.) lsysbl_convertVecFromScalar
+!#      -> Converts a scalar vector to a 1-block vector, whereby the
+!#         block vector takes over leadership of the data.
+!#
+!# 49.) lsysbl_convertMatFromScalar
+!#      -> Converts a scalar matrix to a 1x1 block vector, whereby the
+!#         block matrix takes over leadership of the data.
 !# </purpose>
 !##############################################################################
 
@@ -4680,5 +4688,145 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE lsysbl_infoMatrix
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_convertVecFromScalar (rscalarVec,rvector,&
+                                          rblockDiscretisation,nblocks)
+  
+!<description>
+  ! This routine creates a 1-block vector rvector from a scalar vector
+  ! rscalarVec. Both, rscalarVec and rvector will share the same handles,
+  ! so changing the content of rvector will change rscalarVec, too.
+  ! In contrast to lsysbl_createVecFromScalar, the 1-block vector rvector
+  ! is marked as template vector, whereas the bisCopy flag of the original
+  ! scalar vector rscalarVec is set to TRUE. This allows to release the
+  ! scalar vector without releasing the 1-block vector.
+!</description>
+  
+!<input>
+  ! OPTIONAL: A block discretisation structure.
+  ! A pointer to this will be saved to the vector.
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
+  
+  ! OPTIONAL: Number of blocks to reserve.
+  ! Normally, the created scalar vector has only one block. If nblocks
+  ! is specified, the resulting vector will have more blocks while only
+  ! the first block vector is used.
+  INTEGER, INTENT(IN), OPTIONAL :: nblocks
+!</input>
+
+!<inputoutput>
+  ! The scalar vector which should provide the data
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rscalarVec
+!</inputoutput>
+
+!<output>
+  ! The block vector, created from rscalarVec.
+  TYPE(t_vectorBlock), INTENT(OUT) :: rvector
+!</output>
+  
+!</subroutine>
+
+    INTEGER :: nactblocks
+    
+    nactblocks = 1
+    IF (PRESENT(nblocks)) nactblocks = MAX(nblocks,nactblocks)
+    IF (PRESENT(rblockDiscretisation)) &
+      nactblocks = MAX(rblockDiscretisation%ncomponents,nactblocks)
+
+    ! Fill the rvector structure with data.
+    rvector%NEQ         = rscalarVec%NEQ * rscalarVec%NVAR
+    rvector%cdataType   = rscalarVec%cdataType
+    rvector%h_Ddata     = rscalarVec%h_Ddata
+    rvector%nblocks     = nactblocks
+    
+    ! Copy the content of the scalar matrix structure into the
+    ! first block of the block vector.
+    ALLOCATE(rvector%RvectorBlock(nactblocks))
+    rvector%RvectorBlock(1) = rscalarVec
+    
+    ! Copy the starting address of the scalar vector to our block vector.
+    rvector%iidxFirstEntry  = rscalarVec%iidxFirstEntry
+
+    ! Adopt the copyFlag from the template vector
+    rvector%bisCopy = rscalarVec%bisCopy
+
+    ! The handle of the scalar subvector belongs to the block vector.
+    rvector%RvectorBlock(1)%bisCopy = .TRUE.
+
+    ! The handle of the template vector no longer belongs to it.
+    rscalarVec%bisCopy = .TRUE.
+    
+    ! Save a pointer to the discretisation structure if that one
+    ! is specified.
+    IF (PRESENT(rblockDiscretisation)) THEN
+      rvector%p_rblockDiscretisation => rblockDiscretisation
+    ELSE
+      NULLIFY(rvector%p_rblockDiscretisation)
+    END IF
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_convertMatFromScalar (rscalarMat,rmatrix,&
+                                          rblockDiscretisation)
+  
+!<description>
+  ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
+  ! rscalarMat. Both, rscalarMat and rmatrix will share the same handles,
+  ! so changing the content of rmatrix will change rscalarMat, too.
+  ! In contrast to lsysbl_createMatFromScalar, the 1x1 block matrix rmatrix
+  ! is marked as template matrix, whereas the imatrixSpec flag of the original
+  ! scalar matrix rscalarMat is set to LSYSSC_MSPEC_ISCOPY. This allows to 
+  ! release the scalar matrix without releasing the 1x1 block matrix.
+!</description>
+  
+!<input>
+  ! OPTIONAL: A block discretisation structure.
+  ! A pointer to this will be saved to the matrix.
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
+!</input>
+
+!<inputoutput>
+  ! The scalar matrix which should provide the data
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rscalarMat
+!</inputoutput>
+
+!<output>
+  ! The 1x1 block matrix, created from rscalarMat.
+  TYPE(t_matrixBlock), INTENT(OUT) :: rmatrix
+!</output>
+  
+!</subroutine>
+
+    ! Fill the rmatrix structure with data.
+    rmatrix%NEQ         = rscalarMat%NEQ * rscalarMat%NVAR
+    rmatrix%NCOLS       = rscalarMat%NCOLS * rscalarMat%NVAR
+    rmatrix%ndiagBlocks = 1
+    rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+    
+    ! Copy the content of the scalar matrix structure into the
+    ! first block of the block matrix
+    ALLOCATE(rmatrix%RmatrixBlock(1,1))
+    rmatrix%RmatrixBlock(1,1) = rscalarMat
+
+    ! The handles of the template matrix no longer belong to it.
+    rscalarMat%imatrixSpec = IOR(rscalarMat%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+      
+    ! Save a pointer to the discretisation structure if that one
+    ! is specified.
+    IF (PRESENT(rblockDiscretisation)) THEN
+      rmatrix%p_rblockDiscretisation => rblockDiscretisation
+    ELSE
+      NULLIFY(rmatrix%p_rblockDiscretisation)
+    END IF
+    
+  END SUBROUTINE
   
 END MODULE
