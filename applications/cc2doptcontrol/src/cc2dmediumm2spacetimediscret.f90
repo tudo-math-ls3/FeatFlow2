@@ -469,6 +469,7 @@ CONTAINS
     ! Pointer to the space time discretisation structure.
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     REAL(DP) :: dnewton
+    REAL(DP) :: dsmooth
     
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
@@ -485,6 +486,10 @@ CONTAINS
         ! Newton is only to be assembled in Navier-Stokes!
         dnewton = 1.0_DP
       END IF
+      dsmooth = 1.0_DP
+    ELSE 
+      ! Activate smoothing in the last timestep.
+      dsmooth = 1.0_DP
     END IF
 
     ! The first and last substep is a little bit special concerning
@@ -857,31 +862,32 @@ CONTAINS
         ! The diagonal matrix.
 
         rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
+        rmatrixComponents%diota2 = (1.0_DP-dsmooth) !0.0_DP
 
         rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%dkappa2 = (1.0_DP-dsmooth) !0.0_DP
         
         rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = (1.0_DP-dsmooth) + &
+            dsmooth*dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dtheta
+        rmatrixComponents%dtheta2 = dsmooth * dtheta
         
         rmatrixComponents%dgamma1 = &
             dtheta * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = &
-            - dtheta * REAL(1-rproblem%iequation,DP)
+            - dsmooth * dtheta * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = dtheta * dnewton
         rmatrixComponents%dnewton2 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dsmooth * dtheta * REAL(1-rproblem%iequation,DP)
 
         rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = 1.0_DP
+        rmatrixComponents%deta2 = dsmooth
         
         rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = 1.0_DP
+        rmatrixComponents%dtau2 = dsmooth
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
@@ -1074,9 +1080,12 @@ CONTAINS
     ! subvector 1, 2 and 3.
     CALL sptivec_getTimestepData(rx, 0, rtempVector1)
     IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
-      CALL sptivec_getTimestepData(rx, 1, rtempVector2)
-    IF (p_rspaceTimeDiscretisation%niterations .GT. 1) &
+      CALL sptivec_getTimestepData(rx, 1, rtempVector2) 
+    IF (p_rspaceTimeDiscretisation%niterations .GT. 1) THEN
       CALL sptivec_getTimestepData(rx, 2, rtempVector3)
+    ELSE
+      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
+    END IF
       
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
     ! account as the actual matrix multiplication routine c2d2_assembleDefect
@@ -1109,8 +1118,11 @@ CONTAINS
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval1)
       IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval2)
-      IF (p_rspaceTimeDiscretisation%niterations .GT. 1) &
+      IF (p_rspaceTimeDiscretisation%niterations .GT. 1) THEN
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval3)
+      ELSE
+        CALL lsysbl_copyVector (rtempVectorEval2,rtempVectorEval3)
+      END IF
     END IF
     
     ! DEBUG!!!
@@ -1369,6 +1381,13 @@ CONTAINS
               isubstep+2, rtempVectorEval3)
         END IF
         
+      ELSE IF (isubstep .EQ. p_rspaceTimeDiscretisation%niterations-1) THEN
+      
+        ! Only one timestep. Copy vector-1 to vector-2 so that the above assembly
+        ! routine for the last timestep will work.
+        CALL lsysbl_copyVector (rtempVector1,rtempVector2)
+        CALL lsysbl_copyVector (rtempVectorEval1,rtempVectorEval2)
+        
       END IF
     
     END DO
@@ -1465,8 +1484,12 @@ CONTAINS
         rtempVector2, .TRUE., .FALSE.)
 
     ! Assemble the 3rd RHS vector in the defect temp vector
-    CALL generateRHS (rproblem,2,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
-        rtempVector3, .TRUE., .FALSE.)
+    IF (rspaceTimeDiscr%niterations .GE. 2) THEN
+      CALL generateRHS (rproblem,2,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
+          rtempVector3, .TRUE., .FALSE.)
+    ELSE
+      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
+    END IF
         
     ! Create a copy of the X temp vector (RHS0). That vector will be
     ! our destination vector for assembling the RHS in all timesteps.

@@ -2073,7 +2073,7 @@ CONTAINS
 
       ! ---------------------------------------------------
       ! Subtract Ix ?
-      IF (diota .NE. 0.0_DP) THEN
+      IF (diota*dcx .NE. 0.0_DP) THEN
         CALL lsyssc_vectorLinearComb (&
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
@@ -2087,7 +2087,7 @@ CONTAINS
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
-      IF (dalpha .NE. 0.0_DP) THEN
+      IF (dalpha*dcx .NE. 0.0_DP) THEN
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
@@ -2101,7 +2101,7 @@ CONTAINS
       
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
-      IF (dtheta .NE. 0.0_DP) THEN
+      IF (dtheta*dcx .NE. 0.0_DP) THEN
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
@@ -2115,7 +2115,7 @@ CONTAINS
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      IF (dgamma .NE. 0.0_DP) THEN
+      IF (dgamma*dcx .NE. 0.0_DP) THEN
       
         SELECT CASE (iupwind)
         CASE (0)

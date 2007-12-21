@@ -1142,8 +1142,11 @@ CONTAINS
     CALL sptivec_getTimestepData(rx, 0, rtempVector1)
     IF (p_rspaceTimeDiscr%niterations .GT. 0) &
       CALL sptivec_getTimestepData(rx, 1, rtempVector2)
-    IF (p_rspaceTimeDiscr%niterations .GT. 1) &
+    IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
       CALL sptivec_getTimestepData(rx, 2, rtempVector3)
+    ELSE
+      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
+    END IF
       
     ! Create temp vectors for the evaluation point of the nonlinearity.
     ! If ry is not specified, share the vector content with rx, thus
@@ -1157,8 +1160,11 @@ CONTAINS
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval1)
       IF (p_rspaceTimeDiscr%niterations .GT. 0) &
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval2)
-      IF (p_rspaceTimeDiscr%niterations .GT. 1) &
+      IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval3)
+      ELSE
+        CALL lsysbl_copyVector (rtempVectorEval2,rtempVectorEval3)
+      END IF
     ELSE
       CALL lsysbl_duplicateVector (rtempVector1,rtempVectorEval1,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -1296,8 +1302,10 @@ CONTAINS
           isubstep,-1,rmatrixComponents)
             
         ! Subtract: rd = rd - Aii-1 xi-1
+        ! Note that at this point, the nonlinearity must be evaluated
+        ! at xi due to the discretisation scheme!!!
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVector1,rtempVectorD,&
-            1.0_DP,rtempVectorEval1)
+            1.0_DP,rtempVectorEval2)
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
@@ -1356,8 +1364,10 @@ CONTAINS
           isubstep,-1,rmatrixComponents)
           
         ! Subtract: rd = rd - Ann-1 xn-1
+        ! Note that at this point, the nonlinearity must be evaluated
+        ! at xn due to the discretisation scheme!!!
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD,&
-            1.0_DP,rtempVectorEval2)
+            1.0_DP,rtempVectorEval3)
      
         ! -----
         
@@ -1419,6 +1429,13 @@ CONTAINS
           CALL lsysbl_copyVector (rtempVectorEval3, rtempVectorEval2)
           CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, isubstep+2, rtempVectorEval3)
         END IF
+        
+      ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%niterations-1) THEN
+      
+        ! Only one timestep. Put vector-1 to vector-2 so the above
+        ! assembly routine for the last timestep will work.
+        CALL lsysbl_copyVector (rtempVector1,rtempVector2)
+        CALL lsysbl_copyVector (rtempVectorEval1,rtempVectorEval2)
         
       END IF
     
@@ -2096,6 +2113,8 @@ CONTAINS
     TYPE(t_sptilsNode), POINTER :: p_rprecond,p_rsolverNode
     TYPE(t_sptilsNode), POINTER :: p_rmgSolver,p_rsmoother,p_rcgrSolver
     TYPE(t_sptilsNode), POINTER :: p_rpresmoother,p_rpostsmoother
+    
+    TYPE(t_spaceTimeVector) :: rtemp
 
     REAL(DP) :: ddefNorm,dinitDefNorm
     
@@ -2190,7 +2209,7 @@ CONTAINS
       END IF
       
       SELECT CASE (i)
-      CASE (0,1,2,3,4,5)
+      CASE (0:)
         ! Initialise the spatial preconditioner for Block Jacobi
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
@@ -2249,7 +2268,8 @@ CONTAINS
 
         CASE (2)
           ! Forward backward Gauss Seidel
-          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
+            domega,domegaPrecond,RspatialPrecond(ilev))
 
           ! Defect correction solver
           CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
@@ -2268,12 +2288,21 @@ CONTAINS
 
         CASE (5)
           ! Forward backward Gauss Seidel as preconditioner
-          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
+            domegaPrecond,domegaPrecond,RspatialPrecond(ilev))
           !CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
 
           ! BiCGStab solver        
           CALL sptils_initBiCGStab (rproblem,p_rcgrSolver,p_rprecond)
 
+        CASE (6)
+          ! UMFPACK
+          CALL sptils_initUMFPACK4 (rproblem,p_rprecond)
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+          p_rcgrSolver%domega = domega
+          
         CASE DEFAULT
           PRINT *,'Unknown solver: ',ctypeCoarseGridSolver
           STOP
@@ -2309,20 +2338,25 @@ CONTAINS
         SELECT CASE (cspaceTimeSmoother)
         CASE (0)
           ! Block Jacobi
-          CALL sptils_initBlockJacobi (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rsmoother,&
+            domega,RspatialPrecond(ilev))
         CASE (1)
           ! Block SOR
-          CALL sptils_initBlockSOR (rproblem,p_rsmoother,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockSOR (rproblem,p_rsmoother,&
+            domegaPrecond,RspatialPrecond(ilev))
         CASE (2)
           ! Block Forward-Backward Gauss-Seidel
-          CALL sptils_initBlockFBGS (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBGS (rproblem,p_rsmoother,&
+            domega,domegaPrecond,RspatialPrecond(ilev))
         CASE (3)
           ! CG with Block Jacobi as preconditioner
-          CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,&
+            domegaPrecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
         CASE (4)
           ! CG with Block Jacobi as preconditioner
-          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,&
+            domegaPrecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
         CASE DEFAULT
           PRINT *,'Unknown smoother: ',cspaceTimeSmoother
@@ -2447,6 +2481,9 @@ CONTAINS
     ! Assemble the defect.
     CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
         rx, rd, ddefNorm)
+    CALL sptivec_copyVector (rb,rd)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm)
         
     dinitDefNorm = ddefNorm
     CALL output_separator (OU_SEP_EQUAL)
@@ -2478,7 +2515,7 @@ CONTAINS
     iglobIter = 0
     
     DO WHILE ((iglobIter .LT. nminIterations) .OR. &
-              ((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GT. depsAbs) &
+              (((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GT. depsAbs)) &
               .AND. (iglobIter .LT. nmaxIterations)))
     
       iglobIter = iglobIter+1
@@ -2550,6 +2587,8 @@ CONTAINS
       END IF
       
       CALL stat_clearTimer (rtimerMGStep)
+
+      !CALL sptivec_copyVector (rd,rtemp)
       
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
@@ -2562,6 +2601,10 @@ CONTAINS
         CALL stat_stopTimer (rtimerMGStep)
       END IF
       
+      !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
+      !    rd, rtemp, ddefNorm)
+      !PRINT *,'************************* ',ddefNorm
+
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
       ! afterwards, the initial conditions can be seen more clearly!

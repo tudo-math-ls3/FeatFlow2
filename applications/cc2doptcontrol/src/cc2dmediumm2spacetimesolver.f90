@@ -564,6 +564,9 @@ MODULE cc2dmediumm2spacetimesolver
 
     ! A temporary space-time vector.
     TYPE(t_spacetimeVector)           :: rtempVector
+    
+    ! SOR-Damping parameter for damping the time dependence
+    REAL(DP) :: domegaSOR
 
   END TYPE
   
@@ -1845,7 +1848,7 @@ CONTAINS
         ! Add it (damped) to the current iterate p_x to get
         !   $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$
 
-        CALL sptivec_vectorLinearComb (p_rdef ,p_rx,1.0_DP,1.0_DP)
+        CALL sptivec_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
 
         ! Calculate the residuum for the next step : (b-Ax)
         CALL sptivec_copyVector (rd,p_rdef)
@@ -2231,7 +2234,7 @@ CONTAINS
     TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd,p_Dsol
     
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
@@ -2316,6 +2319,9 @@ CONTAINS
       IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
         CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
             isubstep, rtempVectorX)
+        
+        ! DEBUG!!!
+        CALL lsysbl_getbase_double (rtempVectorX,p_Dsol)
       END IF
       CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
 
@@ -2812,7 +2818,7 @@ CONTAINS
 !<subroutine>
   
   RECURSIVE SUBROUTINE sptils_initBlockFBGS (rproblem,p_rsolverNode,&
-      domega,rspatialPrecond)
+      domega,domegaSOR,rspatialPrecond)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the block 
@@ -2827,6 +2833,9 @@ CONTAINS
   
   ! Relaxation parameter. =1.0: Full block FBGS.
   REAL(DP), INTENT(IN) :: domega
+
+  ! Relaxation parameter for the time dependence. =1.0=Standard.
+  REAL(DP), INTENT(IN) :: domegaSOR
   
   ! A spatial preconditioner structure that defines how to perform the preconditioning
   ! in each substep.
@@ -2860,6 +2869,9 @@ CONTAINS
     ! to this solver.
     ALLOCATE(p_rsolverNode%p_rsubnodeBlockFBGS)
     
+    ! Save the relaxation parameter for the SOR-aproach
+    p_rsolverNode%p_rsubnodeBlockFBGS%domegaSOR = domegaSOR
+
     ! Attach the preconditioner if given. 
     p_rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner => &
         rspatialPrecond
@@ -3087,9 +3099,10 @@ CONTAINS
     TYPE(t_vectorBlock) :: rtempVectorSol
     TYPE(t_vectorBlock) :: rtempVectorRHS
     TYPE(t_spacetimeVector), POINTER :: p_rx
+    REAL(DP) :: domegaSOR
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dd,p_Dx3
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Dd1,p_Dd2,p_Dd3,p_Dd,p_Dsol
         
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
@@ -3098,6 +3111,8 @@ CONTAINS
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%dtstep
+    
+    domegaSOR = rsolverNode%p_rsubnodeBlockFBGS%domegaSOR
 
     ! Create temp vectors
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
@@ -3124,11 +3139,20 @@ CONTAINS
     CALL lsysbl_getbase_double (rtempVectorX1,p_Dx1)
     CALL lsysbl_getbase_double (rtempVectorX2,p_Dx2)
     CALL lsysbl_getbase_double (rtempVectorX3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVectorD1,p_Dd1)
+    CALL lsysbl_getbase_double (rtempVectorD2,p_Dd2)
+    CALL lsysbl_getbase_double (rtempVectorD3,p_Dd3)
     CALL lsysbl_getbase_double (rtempVectorRHS,p_Dd)
         
     ! Attach the boundary conditions to the temp vectors.
+    rtempVectorD1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorD1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+
     rtempVectorD2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorD2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+
+    rtempVectorD3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorD3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     rtempVectorSol%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorSol%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
@@ -3270,7 +3294,8 @@ CONTAINS
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,rtempVectorRHS)
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
+            rtempVectorRHS,domegaSOR)
           
         END IF
 
@@ -3281,7 +3306,8 @@ CONTAINS
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,rtempVectorRHS)
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
+            rtempVectorRHS,domegaSOR)
           
         END IF
 
@@ -3289,7 +3315,10 @@ CONTAINS
         IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
           CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
               isubstep, rtempVectorSol)
-        END IF
+
+          ! DEBUG!!!
+          CALL lsysbl_getbase_double (rtempVectorSol,p_Dsol)
+        END IF  
 
         ! Set up the matrix weights for the diagonal matrix
         CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -3376,7 +3405,8 @@ CONTAINS
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,rtempVectorRHS)
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
+            rtempVectorRHS,domegaSOR)
           
         END IF
 
@@ -3391,7 +3421,8 @@ CONTAINS
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,rtempVectorRHS)
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
+            rtempVectorRHS,domegaSOR)
           
         END IF
 
@@ -4309,6 +4340,8 @@ CONTAINS
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
     !                               .TRUE., 0, 'matrix.txt', '(E10.2)')
+    !CALL matio_writeBlockMatrixMaple (rtempMatrix, 'A',&
+    !                             0, 'matrix.txt', '(E20.10)')
 
     ! Now start to modify the temp matrix for UMFPACK's needs.  
     p_rmatrix => rtempMatrix%RmatrixBlock(1,1)

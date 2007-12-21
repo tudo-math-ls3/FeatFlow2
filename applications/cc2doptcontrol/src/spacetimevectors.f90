@@ -568,6 +568,11 @@ CONTAINS
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
     
+    IF ((ry%NEQ .EQ. 0) .AND. (ry%ntimesteps .EQ. 0)) THEN
+      ! Destination vector does not exist. Create it.
+      CALL sptivec_initVector (ry,rx%NEQ,rx%ntimesteps)
+    END IF
+    
     IF (rx%NEQ .NE. ry%NEQ) THEN
       CALL output_line('Space-time vectors have different size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
