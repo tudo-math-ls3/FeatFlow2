@@ -6,11 +6,54 @@
 !# <purpose>
 !# This module provides the basic routines for applying the group-finite
 !# element formulation to scalar problems, i.e. conservation laws.
-!# The group finite element formulation introduced by Fletcher uses the
-!# same basis functions for the unknown solution and the fluxes.
+!# The technique was proposed by C.A.J. Fletcher in:
+!#
+!#     C.A.J. Fletcher, "The group finite element formulation"
+!#     Computer Methods in Applied Mechanics and Engineering (ISSN 0045-7825),
+!#     vol. 37, April 1983, p. 225-244.
+!#
+!# The group finite element formulation uses the same basis functions for the
+!# unknown solution and the fluxes. This allows for an efficient matrix assemble,
+!# whereby the constant coefficient matrices can be assembled once and for all
+!# at the beginning of the simulation and each time the grid is modified.
+!#
 !# Moreover, this module allows to modifying discrete operators by means of
-!# the algebraic flux correction (AFC) methodology by Kuzmin, Möller and Turek.
+!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Möller
+!# and Turek in a series of publications. As a starting point for scalar
+!# conservation laws, the reader is referred to the book chapter
+!#
+!#     D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar conservation
+!#     laws", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
+!#     Algorithms, and Applications, Springer, 2005, 155-206.
+!#
+!# A more detailed description of the algorithms is given in the comments of the
+!# subroutine implementing the corresponding discretisation schemes. All methods
+!# are based on the stabilisation structure t_afcstab which is defined in the 
+!# underlying module "afcstabilisation". The initialisation as a scalar stabilisation
+!# structure is done by the routine gfsc_initStabilisation. 
 !# 
+!# There are three types of routines. The gfsc_buildXXXOperator routines can be
+!# used to assemble the discrete convection or diffusion operators resulting
+!# from the standard Galerkin finite element discretisation plus some discretely
+!# defined artificial diffusion. For convective terms, this technique is termed
+!# "discrete upwinding", whereas for physical diffusion operators this approach
+!# ensures that the discrete maximum principle holds. Consequently, the term
+!# DMP is adopted.
+!#
+!# The second type of routines is given by gfsc_buildResidual_XXX. They can be
+!# used to update/initialise the residual term applying some sort of algebraic
+!# flux correction. Importantly, the family of AFC schemes gives rise to nonlinear
+!# algebraic equations that need to be solved iteratively. Thus, it is usefull to
+!# build the compensating antidiffusion into the residual vector rather than the
+!# right hand side. However, it is still possible to give a negative scaling factor.
+!#
+!# The third type of routines is used to assemble the Jacobian matrix for Newton's
+!# method. Here, the exact Jacobian matrix is approximated by means of second-order
+!# divided differences whereby the "perturbation parameter" is specified by the
+!# user. You should be aware of the fact, that in general the employed  flux limiters
+!# are not differentiable globally so that the construction of the Jacobian matrix
+!# is somehow "delicate". Even though the routines will produce some matrix without
+!# warnings, this matrix may be singular and/or ill-conditioned.
 !#
 !# The following routines are available:
 !#
@@ -30,7 +73,7 @@
 !#
 !# 5.) gfsc_buildDiffusionOperator
 !#     -> assemble the diffusive part of the transport operator for
-!#        scalar convection equation
+!#        scalar convection-diffusion equation 
 !#
 !# 6.) gfsc_buildResidual_FCT = gfsc_buildResidualScalar_FCT /
 !#                              gfsc_buildResidualBlock_FCT
@@ -188,15 +231,21 @@ CONTAINS
     ! This subroutine initialises the discrete stabilisation structure
     ! for use as a scalar stabilisation. The template matrix is used
     ! to determine the number of equations and the number of edges.
+    ! Note that there exists an edge between two nodes i and j of their
+    ! basis functions have overlapping support. For linear finite elements
+    ! the number of physical edges coincides with the number of edges used
+    ! in the stabilisation structure. In general the number of edges equals
+    ! (NA-NEQ)/2, that is, it is the number of nonzero matrix entries not
+    ! counting the diagonal divided by two.
 !</description>
 
 !<input>
-    ! template matrix
+    ! The template matrix
     TYPE(t_matrixScalar), INTENT(IN) :: rmatrixTemplate
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
+    ! The stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT)   :: rafcstab
 !</inputoutput>
 !</subroutine>
@@ -342,16 +391,16 @@ CONTAINS
   SUBROUTINE gfsc_isMatrixCompatible(rafcstab, rmatrix, bcompatible)
 
 !<description>
-    ! This subroutine checks whether a scalar matrix and a discrete 
+    ! This subroutine checks if a scalar matrix and a discrete 
     ! stabilisation structure are compatible to each other, 
     ! i.e. if they share the same structure, size and so on.
 !</description>
 
 !<input>
-    ! scalar matrix
+    ! The scalar matrix
     TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
 
-    ! stabilisation structure
+    ! The stabilisation structure
     TYPE(t_afcstab), INTENT(IN)      :: rafcstab
 !</input>
 
@@ -386,16 +435,16 @@ CONTAINS
   SUBROUTINE gfsc_isVectorCompatible(rafcstab, rvector, bcompatible)
 
 !<description>
-    ! This subroutine checks whether a vector and a stabilisation
-    ! structure are compatible to each other, i.e., share the same
-    ! structure, size and so on.
+    ! This subroutine checks if a vector and a stabilisation
+    ! structure are compatible to each other, i.e., share the
+    ! same structure, size and so on.
 !</description>
 
 !<input>
-    ! scalar vector
+    ! The scalar vector
     TYPE(t_vectorScalar), INTENT(IN) :: rvector
 
-    ! stabilisation structure
+    ! Teh stabilisation structure
     TYPE(t_afcstab), INTENT(IN)      :: rafcstab
 !</input>
 
@@ -432,18 +481,21 @@ CONTAINS
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
-    ! $$ \nabla\cdot({\bf v}u-d\nabla u)$$
+    !
+    !     $$ \nabla\cdot({\bf v}u)$$
+    !
     ! Note that this routine serves as a wrapper for block vectors. If there
     ! is only one block, then the corresponding scalar routine is called.
     ! Otherwise, an error is thrown.
 !</description>
 
 !<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
+    ! The array of coefficient matrices C = (phi_i,D phi_j)
     TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
 
-    ! scalar solution vector
-    ! Note: this vector is only required for nonlinear problems.
+    ! The solution vector
+    ! Note that this vector is only required for nonlinear
+    ! problems which require the evaluation of the velocity
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
     
     ! Switch for stabilisation
@@ -461,10 +513,10 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-    ! transport operator
+    ! The transport operator
     TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrixL
     
-    ! stabilisation structure
+    ! OPTIONAL: the stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT), OPTIONAL       :: rafcstab
 !</inputoutput>
 !</subroutine>
@@ -494,15 +546,42 @@ CONTAINS
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
-    ! $$ \nabla\cdot({\bf v}u-d\nabla u)$$
+    !
+    !     $$ \nabla\cdot({\bf v}u)$$
+    !
+    ! This routine can be used to apply the following discretisations:
+    !
+    ! (1) the standard Galerkin finite element method
+    !     which will be referred to as high-order approximation
+    !
+    ! (2) the discrete upwinding operator which results from the conservative
+    !     elimination of negative off-diagonal entries from the Galerkin
+    !     operator. This technique is for instance described in the reference:
+    !
+    !     D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar
+    !     conservation laws", In: D. Kuzmin et al. (eds), Flux-Corrected
+    !     Transport: Principles,  Algorithms, and Applications,
+    !     Springer, 2005, 155-206.
+    !
+    ! (3) In addition to (2), discrete upwinding is performed and auxiliary
+    !     data required for flux limiting is generated in the optional 
+    !     stabilisation structure rafcstab. For symmetric flux limiters,
+    !     the artificil diffusio coefficient d_ij and the entries of the
+    !     low-order operator l_ij=k_ij+d_ij are stored as well as the node
+    !     numbers i and j and the matrix positions ij/ji of the edge (i,j).
+    !     For upwind-biased flux limiters the same data are stored but the
+    !     following orientation convention is applied. Node i is located 
+    !     "upwind" and corresponds to the column number whose entry has been
+    !     eliminated.
 !</description>
 
 !<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
+    ! The array of coefficient matrices C = (phi_i,D phi_j)
     TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: rmatrixC
 
-    ! scalar solution vector
-    ! Note: this vector is only required for nonlinear problems.
+    ! The solution vector
+    ! Note that this vector is only required for nonlinear
+    ! problems which require the evaluation of the velocity
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
     
     ! Switch for stabilisation
@@ -520,10 +599,10 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-    ! transport operator
+    ! The transport operator
     TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrixL
     
-    ! OPTIONAL: stabilisation structure
+    ! OPTIONAL: the stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT), OPTIONAL       :: rafcstab
 !</inputoutput>
 !</subroutine>
@@ -607,11 +686,14 @@ CONTAINS
           ! Perform discrete upwinding without generating edge structure
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
           CASE (NDIM2D)
-            CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
           CASE (NDIM3D)
-            CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
           END SELECT
           
 
@@ -624,14 +706,17 @@ CONTAINS
           ! Adopt no orientation convention and generate edge structure
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwind_afcMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM2D)
-            CALL do_upwind_afcMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM3D)
-            CALL do_upwind_afcMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           END SELECT
           
           ! Set state of stabilisation
@@ -649,14 +734,17 @@ CONTAINS
           ! generate edge structure for the flux limiter
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwind_afc_orientationMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM2D)
-            CALL do_upwind_afc_orientationMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM3D)
-            CALL do_upwind_afc_orientationMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           END SELECT
 
           ! Set state of stabilisation
@@ -676,11 +764,14 @@ CONTAINS
         ! Perform discrete upwinding without generating edge structure
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                                rmatrixL%NEQ, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
       ELSE
@@ -688,11 +779,14 @@ CONTAINS
         ! Apply standard Galerkin discretisation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
 
       END IF
@@ -732,11 +826,14 @@ CONTAINS
           ! Perform discrete upwinding without generating edge structure
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
           CASE (NDIM2D)
-            CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
           CASE (NDIM3D)
-            CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
           END SELECT
           
 
@@ -749,14 +846,17 @@ CONTAINS
           ! Adopt no orientation convention and generate edge structure
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwind_afcMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM2D)
-            CALL do_upwind_afcMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM3D)
-            CALL do_upwind_afcMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afcMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           END SELECT
 
           ! Set state of stabilisation
@@ -774,14 +874,17 @@ CONTAINS
           ! generate edge structure for the flux limiter
           SELECT CASE(ndim)
           CASE (NDIM1D)
-            CALL do_upwind_afc_orientationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM2D)
-            CALL do_upwind_afc_orientationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           CASE (NDIM3D)
-            CALL do_upwind_afc_orientationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L,&
-                p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            CALL do_upwind_afc_orientationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge)
           END SELECT
           
           ! Set state of stabilisation
@@ -801,11 +904,14 @@ CONTAINS
         ! Perform discrete upwinding without generating edge structure
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              ^                 rmatrixL%NEQ, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
       ELSE
@@ -813,11 +919,14 @@ CONTAINS
         ! Apply standard Galerkin discretisation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
 
       END IF
@@ -2413,38 +2522,53 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildDiffusionOperator(rmatrixS, dscale,&
-      bStabilise, bclear, rmatrixL, rafcstab)
+      bStabilise, bclear, rafcstab, rmatrixDest)
 
 !<description>
-    ! This subroutine assembles the diffusive part of the discrete transport
-    ! operator which results from the discretisation of the scalar
-    ! convection-diffusion-reaction equation.
+    ! This subroutine assembles the diffusive part of the discrete
+    ! transport operator which results from the discretisation of
+    ! the scalar convection-diffusion-reaction equation.
+    ! The matrix rmatrixS holds the unmodified diffusion operator
+    ! which is possible modified by this routine. If the optional
+    ! argument rmatrixDest is given, then the content of rmatrixS
+    ! is first copied/added to the destination matrix prior to
+    ! performing further modifications.
+    ! If the parameter bclear is TRUE the destination matrix is cleared,
+    ! that is, the content of rmatrixS is copied. Otherwise, the its
+    ! content is combined linearly with that of the destination matrix.
+    ! If the parameter bStabilse is TRUE, then symmetric stabilisation
+    ! is applied so that the resulting diffusion operator is guaranted
+    ! to ensure the discrete maximum principle. 
+    ! If the optional parameter rafcstab is given, then the auxiliary
+    ! data structures for of the stabilisation structure are updated.
+    !
+    ! At the moment, there is not yet any reference for this technique.
 !</description>
 
 !<input>
-    ! (anisotropic) diffusion operator
-    TYPE(t_matrixScalar), INTENT(IN)         :: rmatrixS
-
     ! scaling parameter by which the diffusion operator is scaled
-    REAL(DP), INTENT(IN)                     :: dscale
+    REAL(DP), INTENT(IN)                          :: dscale
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    LOGICAL, INTENT(IN)                      :: bStabilise
+    LOGICAL, INTENT(IN)                           :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    LOGICAL, INTENT(IN)                      :: bclear
+    LOGICAL, INTENT(IN)                           :: bclear
 !</input>
 
 !<inputoutput>
-    ! transport operator
-    TYPE(t_matrixScalar), INTENT(INOUT)      :: rmatrixL
+    ! (anisotropic) diffusion operator
+    TYPE(t_matrixScalar), INTENT(INOUT)           :: rmatrixS
 
     ! OPTIONAL: stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT), OPTIONAL :: rafcstab
+    TYPE(t_afcstab), INTENT(INOUT), OPTIONAL      :: rafcstab
+
+    ! OPTIONAL: destination matrix
+    TYPE(t_matrixScalar), INTENT(INOUT), OPTIONAL :: rmatrixDest
 !</inputoutput>
 !</subroutine>
 
@@ -2456,27 +2580,42 @@ CONTAINS
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_Kdiagonal
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER   :: p_Kcol
     REAL(DP), DIMENSION(:,:), POINTER             :: p_DcoefficientsAtEdge
-    REAL(DP), DIMENSION(:), POINTER               :: p_L,p_S
+    REAL(DP), DIMENSION(:), POINTER               :: p_S,p_L
     INTEGER :: h_Ksep
 
+    
+    ! Is destination matrix given?
+    IF (PRESENT(rmatrixDest)) THEN
 
-    ! Check if matrices are compatible
-    CALL lsyssc_isMatrixCompatible(rmatrixS, rmatrixL)
+      ! Check if matrices are compatible
+      CALL lsyssc_isMatrixCompatible(rmatrixS, rmatrixDest)
 
-    ! Get pointers
-    CALL lsyssc_getbase_Kld   (rmatrixL, p_Kld)
-    CALL lsyssc_getbase_Kcol  (rmatrixL, p_Kcol)
-    CALL lsyssc_getbase_double(rmatrixL, p_L)
-    CALL lsyssc_getbase_double(rmatrixS, p_S)
+      ! Set pointers
+      CALL lsyssc_getbase_double(rmatrixS,    p_S)
+      CALL lsyssc_getbase_double(rmatrixDest, p_L)      
 
-    ! Apply standard diffusion operator
-    IF (bclear) THEN
-      CALL lalg_copyVectorDble (p_S, p_L)
-      IF (dscale .NE. 1.0_DP) CALL lalg_scaleVectorDble(p_L, dscale)
+      ! Should matrix be cleared?
+      IF (bclear) THEN
+        CALL lalg_copyVectorDble (p_S, p_L)
+        IF (dscale .NE. 1.0_DP) CALL lalg_scaleVectorDble(p_L, dscale)
+      ELSE
+        CALL lalg_vectorLinearCombDble(p_S, p_L, dscale, 1._DP)
+      END IF
+
     ELSE
-      CALL lalg_vectorLinearCombDble(p_S, p_L, dscale, 1._DP)      
+
+      ! Set pointers
+      CALL lsyssc_getbase_double(rmatrixS, p_S)
+      CALL lsyssc_getbase_double(rmatrixS, p_L)
+
+      ! Scale matrix if required
+      IF (dscale .NE. 1.0_DP) CALL lalg_scaleVectorDble(p_L, dscale)
+
     END IF
 
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (rmatrixS, p_Kld)
+    CALL lsyssc_getbase_Kcol  (rmatrixS, p_Kcol)
     
     ! Do we have to stabilise?
     IF (PRESENT(rafcstab)) THEN
@@ -2490,22 +2629,22 @@ CONTAINS
 
       ! Check if matrix and stabilisation
       ! structure are compatible to each other
-      CALL gfsc_isMatrixCompatible(rafcstab, rmatrixL)
+      CALL gfsc_isMatrixCompatible(rafcstab, rmatrixS)
 
       ! What kind of stabilisation are we?
       SELECT CASE (rafcstab%ctypeAFCstabilisation)
       CASE (AFCSTAB_DMP)
 
         ! What kind of matrix are we?
-        SELECT CASE(rmatrixL%cmatrixFormat)
+        SELECT CASE(rmatrixS%cmatrixFormat)
         CASE(LSYSSC_MATRIX7)
           
           ! Create diagonal separator
           h_Ksep = ST_NOHANDLE
-          CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+          CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
           
-          CALL do_loworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_S, p_L)
+          CALL do_loworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ, p_S, p_L)
           
           ! Release diagonal separator
           CALL storage_free(h_Ksep)
@@ -2514,14 +2653,15 @@ CONTAINS
         CASE(LSYSSC_MATRIX9)
           
           ! Set pointers
-          CALL lsyssc_getbase_Kdiagonal(rmatrixL, p_Kdiagonal)
+          CALL lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
           
           ! Create diagonal separator
           h_Ksep = ST_NOHANDLE
-          CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+          CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
           
-          CALL do_loworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_S, p_L)
+          CALL do_loworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                               rmatrixS%NEQ, p_S, p_L)
           
           ! Release diagonal separator
           CALL storage_free(h_Ksep)
@@ -2541,16 +2681,17 @@ CONTAINS
         CALL afcstab_getbase_DcoeffsAtEdge(rafcstab,    p_DcoefficientsAtEdge)
         
         ! What kind of matrix are we?
-        SELECT CASE(rmatrixL%cmatrixFormat)
+        SELECT CASE(rmatrixS%cmatrixFormat)
         CASE(LSYSSC_MATRIX7)
           
           ! Create diagonal separator
           h_Ksep = ST_NOHANDLE
-          CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+          CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
           
-          CALL do_loworder_afcMat7(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_S, p_L,&
-              p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          CALL do_loworder_afcMat7(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ,&
+                                   p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                   p_IverticesAtEdge, p_DcoefficientsAtEdge)
 
           ! Set state of stabilisation
           rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
@@ -2563,15 +2704,16 @@ CONTAINS
         CASE(LSYSSC_MATRIX9)
 
           ! Set pointers
-          CALL lsyssc_getbase_Kdiagonal(rmatrixL, p_Kdiagonal)
+          CALL lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
           
           ! Create diagonal separator
           h_Ksep = ST_NOHANDLE
-          CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+          CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+          CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
           
-          CALL do_loworder_afcMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_S, p_L,&
-              p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          CALL do_loworder_afcMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                   rmatrixS%NEQ, p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                   p_IverticesAtEdge, p_DcoefficientsAtEdge)
 
           ! Set state of stabilisation
           rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
@@ -2597,15 +2739,15 @@ CONTAINS
     ELSEIF (bStabilise) THEN
       
       ! What kind of matrix are we?
-      SELECT CASE(rmatrixL%cmatrixFormat)
+      SELECT CASE(rmatrixS%cmatrixFormat)
       CASE(LSYSSC_MATRIX7)
         
         ! Create diagonal separator
         h_Ksep = ST_NOHANDLE
-        CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-        CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+        CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+        CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
         
-        CALL do_loworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixL%NEQ, p_S, p_L)
+        CALL do_loworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ, p_S, p_L)
         
         ! Release diagonal separator
         CALL storage_free(h_Ksep)
@@ -2614,14 +2756,15 @@ CONTAINS
       CASE(LSYSSC_MATRIX9)
         
         ! Set pointers
-        CALL lsyssc_getbase_Kdiagonal(rmatrixL, p_Kdiagonal)
+        CALL lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
         
         ! Create diagonal separator
         h_Ksep = ST_NOHANDLE
-        CALL storage_copy(rmatrixL%h_Kld, h_Ksep)
-        CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+        CALL storage_copy(rmatrixS%h_Kld, h_Ksep)
+        CALL storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
         
-        CALL do_loworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rmatrixL%NEQ, p_S, p_L)
+        CALL do_loworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                             rmatrixS%NEQ, p_S, p_L)
         
         ! Release diagonal separator
         CALL storage_free(h_Ksep)
