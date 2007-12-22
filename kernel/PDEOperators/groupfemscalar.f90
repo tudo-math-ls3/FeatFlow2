@@ -905,7 +905,7 @@ CONTAINS
         SELECT CASE(ndim)
         CASE (NDIM1D)
           CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              ^                 rmatrixL%NEQ, p_Cx, p_u, p_L)
+                                rmatrixL%NEQ, p_Cx, p_u, p_L)
         CASE (NDIM2D)
           CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                 rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
