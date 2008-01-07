@@ -801,7 +801,7 @@ CONTAINS
             
           ! DEBUG!!!
           !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
-          !                              .TRUE., 0, 'matrix.txt','(1X,E20.10)')
+          !                              .TRUE., 0, 'matrix.txt','(E20.10)')
 
         END DO
         

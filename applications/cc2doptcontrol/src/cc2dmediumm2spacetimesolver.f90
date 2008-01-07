@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmediumm2timesupersystem </name>
+!# <name> cc2dmediumm2spacetimesolver </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -1729,7 +1729,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: ite
-  REAL(DP) :: dres,dfr
+  REAL(DP) :: dres,dfr,dresnorm
   TYPE(t_spacetimeVector), POINTER :: p_rx,p_rdef
   TYPE(t_sptilsNode), POINTER :: p_rprecSubnode
   
@@ -1853,7 +1853,7 @@ CONTAINS
         ! Calculate the residuum for the next step : (b-Ax)
         CALL sptivec_copyVector (rd,p_rdef)
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_rx,p_rdef, -1.0_DP,1.0_DP)
+            p_rx,p_rdef, -1.0_DP,1.0_DP,dresnorm,.TRUE.)
         
         ! Filter the defect for boundary conditions in space and time.
         CALL c2d2_implementInitCondDefect (&
@@ -2225,7 +2225,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep
+    INTEGER :: isubstep,iidxNonlin
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -2327,7 +2327,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents)
+        isubstep,0,rmatrixComponents,iidxNonlin)
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.
@@ -2608,7 +2608,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep
+    INTEGER :: isubstep,iidxNonlin
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -2770,7 +2770,7 @@ CONTAINS
       
         ! Create d2 = RHS - Mx1 
         CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
+          isubstep,-1,rmatrixComponents,iidxNonlin)
           
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorD1,rtempVectorD2,rsolverNode%domega)
         
@@ -2786,7 +2786,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents)
+        isubstep,0,rmatrixComponents,iidxNonlin)
 
       ! Perform preconditioning of the spatial defect with the method 
       ! provided by the core equation module.
@@ -3088,7 +3088,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iiteration
+    INTEGER :: isubstep,iiteration,iidxNonlin
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -3292,7 +3292,7 @@ CONTAINS
 
           ! Create d2 = RHS - Mx1 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rmatrixComponents,iidxNonlin)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
             rtempVectorRHS,domegaSOR)
@@ -3304,7 +3304,7 @@ CONTAINS
           
           ! Create d2 = RHS - Ml3 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rmatrixComponents,iidxNonlin)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
             rtempVectorRHS,domegaSOR)
@@ -3322,7 +3322,7 @@ CONTAINS
 
         ! Set up the matrix weights for the diagonal matrix
         CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rmatrixComponents,iidxNonlin)
           
         ! Create d2 = RHS - A(solution) X2
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
@@ -3403,7 +3403,7 @@ CONTAINS
         
           ! Create d2 = RHS - Mx1 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rmatrixComponents,iidxNonlin)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
             rtempVectorRHS,domegaSOR)
@@ -3419,7 +3419,7 @@ CONTAINS
         
           ! Create d2 = RHS - Ml3 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rmatrixComponents,iidxNonlin)
             
           CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
             rtempVectorRHS,domegaSOR)
@@ -3434,7 +3434,7 @@ CONTAINS
 
         ! Set up the matrix weights for the diagonal matrix
         CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rmatrixComponents,iidxNonlin)
           
         ! Create d2 = RHS - A(solution) X2
         CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
@@ -4492,7 +4492,7 @@ CONTAINS
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_vectorBlock) :: rvector
-    INTEGER :: isubstep,ileft,iright,ix
+    INTEGER :: isubstep,ileft,iright,ix,iidxNonlin
     INTEGER(PREC_VECIDX), DIMENSION(1) :: Irows
     INTEGER(PREC_VECIDX) :: idiag
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
@@ -4560,14 +4560,11 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,&
-          p_rspaceTimeDiscr%dtimeStepTheta,isubstep,ix,rmatrixComponents)
+          p_rspaceTimeDiscr%dtimeStepTheta,isubstep,ix,rmatrixComponents,iidxNonlin)
           
         ! If there is a nonlinearity involved, get the evaluation point.
-        IF ((rmatrixComponents%dgamma1 .NE. 0.0_DP) .OR. &
-            (rmatrixComponents%dgamma2 .NE. 0.0_DP) .OR. &
-            (rmatrixComponents%dnewton1 .NE. 0.0_DP) .OR. &
-            (rmatrixComponents%dnewton2 .NE. 0.0_DP))  THEN
-          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, isubstep+ix, rvector)
+        IF (iidxNonlin .GT. 0)  THEN
+          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, iidxNonlin-1, rvector)
         END IF
       
         ! Assemble the matrix in rblockTemp.
@@ -4622,6 +4619,12 @@ CONTAINS
         ! Include the current matrix into the global matrix 
         CALL insertMatrix (rblockTemp,rmatrix,(isubstep+ix)*6+1,isubstep*6+1,.FALSE.)
         
+        ! DEBUG!!!
+        !IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) THEN
+        !  CALL matio_writeBlockMatrixHR (rblockTemp, 'matrix',&
+        !    .TRUE., 0, 'matrix'//TRIM(sys_siL(ix,10))//'.txt', '(E20.10)')
+        !END IF
+        
       END DO  
 
       IF (.NOT. p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) THEN
@@ -4635,6 +4638,7 @@ CONTAINS
           CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
               rmatrix%RmatrixBlock(isubstep*6+3,isubstep*6+3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         END IF
+        
       END IF
       
     END DO

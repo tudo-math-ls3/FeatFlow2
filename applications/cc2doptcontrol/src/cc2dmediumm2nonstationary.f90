@@ -54,7 +54,7 @@ MODULE cc2dmediumm2nonstationary
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
-  USE cc2dmediumm2timesupersystem
+  USE cc2dmediumm2oneshot
   USE cc2dmediumm2discretisation
     
   IMPLICIT NONE

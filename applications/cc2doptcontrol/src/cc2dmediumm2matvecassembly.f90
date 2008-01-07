@@ -1960,6 +1960,16 @@ CONTAINS
     ! from above!
     CALL lsysbl_blockMatVec (rmatrix, rx, rd, -dcx, 1.0_DP)
     
+    ! If we have a reactive coupling mass matrix, it gets interesting...
+    IF ((rmatrixComponents%dr21 .NE. 0.0_DP) .OR. &
+        (rmatrixComponents%dr22 .NE. 0.0_DP)) THEN
+    
+      ! Assemble the defect of the reactive coupling mass matrices
+      CALL assembleReactiveMassDefect (rmatrixComponents,rx,&
+          rd,dcx,p_ry,1.0_DP)
+    
+    END IF
+    
     ! Release the temporary matrix, we don't need it anymore.
     CALL lsysbl_releaseMatrix (rmatrix)
 
@@ -2295,6 +2305,116 @@ CONTAINS
       CALL lsysbl_releaseVector (rtempVector)
       CALL lsysbl_releaseVector (rtempDefect)
     
+    END SUBROUTINE
+
+    SUBROUTINE assembleReactiveMassDefect (rmatrixComponents,&
+        rvector,rdefect,dcx,rvelocityVector,dvectorWeight)
+        
+    ! Assembles the defect arising from the reactive coupling mass
+    ! matrices. rdefect must have been initialised with the right hand side 
+    ! vector.
+    !
+    ! This special matrix is added in case that Newton is active. It has the
+    ! form
+    !        $$ M~ = dr_{21} N(\lambda) + dr_{22}   N*(\lambda) $$
+    !
+    ! the routine will construct
+    !
+    !       rdefect = r(dual)defect - dcx * (dtheta M~ r(primal)vector)
+    
+    ! A t_ccmatrixComponents structure providing all necessary 'source' information
+    ! about how the mass matrix part is weighted (dr21, dr22).
+    TYPE(t_ccmatrixComponents), INTENT(IN) :: rmatrixComponents
+
+    ! Solution vector. Provides the dual equation for the assembly.
+    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    
+    ! On entry: RHS vector.
+    ! Is overwritten by the defect vector in the velocity subsystem.
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
+    
+    ! Multiplication factor for the whole operator A*rvector
+    REAL(DP), INTENT(IN) :: dcx
+    
+    ! Weight for the velocity vector rvelocityVector; usually = 1.0
+    REAL(DP), INTENT(IN) :: dvectorWeight
+    
+    ! Velocity vector field that should be used for the assembly of the
+    ! nonlinearity. The first two blocks in that block vector are
+    ! used as velocity field.
+    TYPE(t_vectorBlock), INTENT(IN) :: rvelocityVector
+
+      ! local variables
+      TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+      TYPE(t_matrixBlock) :: rtempmatrix
+      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
+      
+      ! If we have a reactive coupling mass matrix, it gets interesting...
+      IF ((rmatrixComponents%dr21 .NE. 0.0_DP) .OR. &
+          (rmatrixComponents%dr22 .NE. 0.0_DP)) THEN
+
+        CALL lsysbl_createEmptyMatrix (rtempMatrix,2)
+
+        ! Create a matrix with the structure we need. Share the structure
+        ! of the mass matrix. Entries are not necessary for the assembly      
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+            
+        ! Switch the matrices on.
+        rtempMatrix%RmatrixBlock(1:2,1:2)%dscaleFactor = 1.0_DP
+        
+        CALL lsysbl_updateMatStrucInfo (rtempMatrix)
+      
+        ! The reactive part is: "dr2 * . * grad(lambda)".
+        ! This is exactly the 'Newton' part assembled by the streamline diffusion
+        ! method if we use the dual velocity as velocity field!
+        ! So prepare to call streamline diffusion.
+
+        ! Viscosity; ok, actually not used.
+        rstreamlineDiffusion%dnu = rmatrixComponents%dnu
+        
+        ! Set stabilisation parameter
+        rstreamlineDiffusion%dupsam = rmatrixComponents%dupsam2
+        
+        ! Weight dr21 of the convective part.
+        rstreamlineDiffusion%ddelta = rmatrixComponents%dr21*dcx
+        
+        ! Weight for the Newton part; here, this is the dr22 weight.
+        rstreamlineDiffusion%dnewton = rmatrixComponents%dr22*dcx
+        
+        ! Create a temporary block vector that points to the dual velocity.
+        ! This has to be evaluated during the assembly.
+        CALL lsysbl_deriveSubvector (rvelocityVector,rtempvectorEval,4,5,.TRUE.)
+        
+        ! Create a temporary block vector for the dual defect.
+        ! Matrix*primal velocity is subtracted from this.
+        CALL lsysbl_deriveSubvector (rdefect,rtempvectorDef,4,5,.TRUE.)
+        
+        ! Call the SD method to calculate the nonlinearity.
+        ! As velocity vector, specify rtempvector, which points to
+        ! the dual velocity.
+        CALL conv_streamlineDiffusionBlk2d (&
+                            rtempvectorEval, rtempvectorEval, &
+                            dvectorWeight, 0.0_DP,&
+                            rstreamlineDiffusion, CONV_MODDEFECT, &
+                            rtempMatrix,rsolution=rvector,rdefect=rtempvectorDef)
+
+        ! Release the temp matrix and temp vector.
+        CALL lsysbl_releaseVector (rtempVectorEval)
+        CALL lsysbl_releaseVector (rtempVectorDef)
+        CALL lsysbl_releaseMatrix (rtempMatrix)
+      
+      END IF
+      
     END SUBROUTINE
 
   END SUBROUTINE

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmediumm2timesupersystem </name>
+!# <name> cc2dmediumm2oneshot </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -33,7 +33,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2timesupersystem
+MODULE cc2dmediumm2oneshot
 
   USE fsystem
   USE storage
@@ -74,6 +74,8 @@ MODULE cc2dmediumm2timesupersystem
   USE cc2dmediumm2matvecassembly
   USE cc2dmediumm2spacetimediscret
   USE cc2dmediumm2spacetimesolver
+  
+  USE cc2dminim2scriptfile
   
   USE spacetimevectors
   USE dofmapping
@@ -654,7 +656,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel,ierror,i
+    INTEGER :: isubstep,ilevel,ierror,i,iidxNonlin
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_vectorBlock) :: rxGlobal, rbGlobal, rdGlobal
     TYPE(t_vectorBlock) :: rxGlobalSolve, rbGlobalSolve, rdGlobalSolve
@@ -749,7 +751,7 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rmatrixComponents,iidxNonlin)
           
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -772,7 +774,7 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
+          isubstep,1,rmatrixComponents,iidxNonlin)
       
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -811,7 +813,7 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
+          isubstep,-1,rmatrixComponents,iidxNonlin)
 
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -845,7 +847,7 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rmatrixComponents,iidxNonlin)
             
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -863,7 +865,7 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
+          isubstep,1,rmatrixComponents,iidxNonlin)
 
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -900,7 +902,7 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
+          isubstep,-1,rmatrixComponents,iidxNonlin)
       
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -931,7 +933,7 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rmatrixComponents,iidxNonlin)
         
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -1051,414 +1053,431 @@ CONTAINS
     
   END SUBROUTINE
 
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, &
-      dnorm, rb)
-
-!<description>
-  ! This routine assembles the space-time defect d=b-Ax. rd must have been
-  ! initialised by the space-time RHS vector b. The routine will then
-  ! calculate rd = rd - A rx to get the space-time defect.
-!</description>
-
-!<input>
-  ! A problem structure that provides information about matrices on all
-  ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A structure defining the space time matrix of the corresponding system.
-  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
-!</input>
-
-!<inputoutput>
-  ! A space-time vector defining the current solution.
-  ! Is replaced by the new solution
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
-  ! A space-time vector with the space-time RHS b. Is overwritten by
-  ! d=b-Ax.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
-
-  ! OPTIONAL: A space-time vector with the space-time RHS b. 
-  ! If not specified, the routine assumes that rd contains the RHS.
-  TYPE(t_spacetimeVector), INTENT(INOUT), OPTIONAL :: rb
-!</inputoutput>
-
-!<output>
-  ! OPTIONAL: If specified, returns the $l_2$-norm if the defect.
-  REAL(DP), INTENT(OUT), OPTIONAL :: dnorm
-!<output>
-
-!</subroutine>
-
-    ! local variables
-    INTEGER :: isubstep,ilevel,icp
-    TYPE(t_vectorBlock) :: rtempVectorD, rtempVector1, rtempVector2, rtempVector3
-    TYPE(t_vectorBlock) :: rtempVectorEval1, rtempVectorEval2, rtempVectorEval3
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
-    REAL(DP) :: dtheta
-    TYPE(t_matrixBlock) :: rblockTemp
-    TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
-    
-    ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
-    
-    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
-    
-    ! Level of the discretisation
-    ilevel = p_rspaceTimeDiscr%ilevel
-
-    ! Theta-scheme identifier.
-    ! =1: implicit Euler.
-    ! =0.5: Crank Nicolson
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
-    
-    ! Create a temp vector that contains the part of rd which is to be modified.
-    p_rdiscr => p_rspaceTimeDiscr%p_RlevelInfo%p_rdiscretisation
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
-    
-    ! The vector will be a defect vector. Assign the boundary conditions so
-    ! that we can implement them.
-    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    
-    ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector1,.FALSE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector2,.FALSE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector3,.FALSE.)
-    
-    ! DEBUG!!!
-    CALL lsysbl_getbase_double (rtempVector1,p_Dx1)
-    CALL lsysbl_getbase_double (rtempVector2,p_Dx2)
-    CALL lsysbl_getbase_double (rtempVector3,p_Dx3)
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-    
-    ! Get the parts of the X-vector which are to be modified at first --
-    ! subvector 1, 2 and 3.
-    CALL sptivec_getTimestepData(rx, 0, rtempVector1)
-    IF (p_rspaceTimeDiscr%niterations .GT. 0) &
-      CALL sptivec_getTimestepData(rx, 1, rtempVector2)
-    IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
-      CALL sptivec_getTimestepData(rx, 2, rtempVector3)
-    ELSE
-      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
-    END IF
-      
-    ! Create temp vectors for the evaluation point of the nonlinearity.
-    ! If ry is not specified, share the vector content with rx, thus
-    ! use ry=rx.
-    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval1,.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval2,.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval3,.FALSE.)
-      
-      ! Get the first three evaluation points
-      CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval1)
-      IF (p_rspaceTimeDiscr%niterations .GT. 0) &
-        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval2)
-      IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
-        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval3)
-      ELSE
-        CALL lsysbl_copyVector (rtempVectorEval2,rtempVectorEval3)
-      END IF
-    ELSE
-      CALL lsysbl_duplicateVector (rtempVector1,rtempVectorEval1,&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsysbl_duplicateVector (rtempVector2,rtempVectorEval2,&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsysbl_duplicateVector (rtempVector3,rtempVectorEval3,&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    END IF
-    
-    ! If dnorm is specified, clear it.
-    IF (PRESENT(dnorm)) THEN
-      dnorm = 0.0_DP
-    END IF
-
-    ! Basic initialisation of rmatrixComponents with the pointers to the
-    ! matrices / discretisation structures on the current level.
-    !
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-    
-    ! Loop through the substeps
-    
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-
-      ! Get the part of rd which is to be modified.
-      IF (PRESENT(rb)) THEN
-        ! The RHS is in rb
-        CALL sptivec_getTimestepData(rb, isubstep, rtempVectorD)
-      ELSE
-        ! The RHS is in rd
-        CALL sptivec_getTimestepData(rd, isubstep, rtempVectorD)
-      END IF
-
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! The first and last substep is a little bit special concerning
-      ! the matrix!
-      IF (isubstep .EQ. 0) THEN
-        
-        ! We are in the first substep. Here, we have to handle the following
-        ! part of the supersystem:
-        !
-        !  ( A11 A12   0   0 ... )  ( x1 )  =  ( f1 )
-        !  ( ... ... ... ... ... )  ( .. )     ( .. )
-        !
-        ! So we have to compute:
-        !
-        !  d1  :=  f1  -  A11 x1  -  A12 x2
-        !
-        ! -----
-        
-        ! The diagonal matrix.
-      
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
-          
-        ! Subtract: rd = rd - A11 x1
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector1,rtempVectorD,&
-            1.0_DP,rtempVectorEval1)
-
-        ! -----
-      
-        ! Create the matrix
-        !   A12  :=  -M/dt + dtheta*[-nu\Laplace u + u \grad u]
-        ! and subtract A12 x2 from rd.
-        !
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
-
-        ! Subtract: rd = rd - A12 x2
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD,&
-            1.0_DP,rtempVectorEval2)
-
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
-        
-        ! The primal defect is =0 because of the initial condition.
-        ! This is important, otherwise the nonlinear loop will not converge
-        ! because of a lack in the defect in the 0th timestep!!!
-        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(1))
-        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(2))
-        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(3))
-
-      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
-
-        ! We are sonewhere in the middle of the matrix. There is a substep
-        ! isubstep+1 and a substep isubstep-1!  Here, we have to handle the following
-        ! part of the supersystem:
-        !
-        !  ( ... ...   ... ...   ... )  ( .. )     ( .. )
-        !  ( ... Aii-1 Aii Aii+1 ... )  ( xi )  =  ( fi )
-        !  ( ... ...   ... ...   ... )  ( .. )     ( .. )
-        !
-        ! So we have to compute:
-        !
-        !  dn  :=  fn  -  Aii-1 xi-1  -  Aii xi  -  Aii+1 xi+1
-        
-        ! -----
-        
-        ! Create the matrix
-        !   Aii-1 := -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        ! and include that into the global matrix for the primal velocity.
-
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
-            
-        ! Subtract: rd = rd - Aii-1 xi-1
-        ! Note that at this point, the nonlinearity must be evaluated
-        ! at xi due to the discretisation scheme!!!
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector1,rtempVectorD,&
-            1.0_DP,rtempVectorEval2)
-
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
-
-        ! -----      
-
-        ! Now the diagonal matrix.
-      
-        ! Assemble the nonlinear defect.
-      
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
-
-        ! Subtract: rd = rd - Aii xi
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD,&
-            1.0_DP,rtempVectorEval2)
-            
-        ! -----
-        
-        ! Create the matrix
-        !   Aii+1 := -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        ! and include that into the global matrix for the dual velocity.
-
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
-          
-        ! Subtract: rd = rd - Aii+1 xi+1
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector3,rtempVectorD,&
-            1.0_DP,rtempVectorEval3)
-        
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
-
-      ELSE 
-        
-        ! We are in the last substep. Here, we have to handle the following
-        ! part of the supersystem:
-        !
-        !  ( ... ... ... ...   ... )  ( .. )     ( .. )
-        !  ( ... ...   0 Ann-1 Ann )  ( xn )  =  ( fn )
-        !
-        ! So we have to compute:
-        !
-        !  dn  :=  fn  -  Ann-1 xn-1  -  Ann xn
-        
-        ! -----
-        
-        ! Create the matrix
-        !   Ann-1 = -M/dt + dtheta*[-nu\Laplace u + u \grad u]
-        ! and include that into the global matrix for the dual velocity.
-
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
-          
-        ! Subtract: rd = rd - Ann-1 xn-1
-        ! Note that at this point, the nonlinearity must be evaluated
-        ! at xn due to the discretisation scheme!!!
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD,&
-            1.0_DP,rtempVectorEval3)
-     
-        ! -----
-        
-        ! Now the diagonal matrix.
-      
-        ! Assemble the nonlinear defect.
-      
-        ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
-
-        ! Subtract: rd = rd - Ann xn
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector3,rtempVectorD,&
-            1.0_DP,rtempVectorEval3)
-      
-      END IF
-      
-      ! Implement the boundary conditions into the defect.
-      CALL vecfil_discreteBCdef (rtempVectorD)
-      CALL vecfil_discreteFBCdef (rtempVectorD)      
-      
-      ! Save the defect vector back to rd.
-      CALL sptivec_setTimestepData(rd, isubstep, rtempVectorD)
-      
-      ! If dnorm is specified, calculate the norm of the sub-defect vector and
-      ! add it to dnorm.
-      IF (PRESENT(dnorm)) THEN
-        IF (rproblem%MT_outputLevel .GE. 2) THEN
-          CALL output_line ('||D_'//TRIM(sys_siL(isubstep,10))//'|| = '//&
-              TRIM(sys_sdEL(&
-                  SQRT(lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)&
-                  ),10)) )
-          DO icp=1,6
-            CALL output_line ('  ||D_'//TRIM(sys_siL(isubstep,10))//'^'//TRIM(sys_siL(icp,2))&
-                //'|| = '//&
-                TRIM(sys_sdEL(&
-                    SQRT(lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2)&
-                    ),10)) )
-          END DO
-        END IF
-        dnorm = dnorm + lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)**2
-      END IF
-      
-      IF ((isubstep .GT. 0) .AND. &
-          (isubstep .LT. p_rspaceTimeDiscr%niterations-1)) THEN
-      
-        ! Shift the timestep data: x_n+1 -> x_n -> x_n-1
-        CALL lsysbl_copyVector (rtempVector2, rtempVector1)
-        CALL lsysbl_copyVector (rtempVector3, rtempVector2)
-        
-        ! Get the new x_n+1 for the next pass through the loop.
-        CALL sptivec_getTimestepData(rx, isubstep+2, rtempVector3)
-        
-        ! The same for the 'evaluation vector' ry -- if it's specified.
-        ! If not specified, rtempVectorX and rtempVectorEvalX share the
-        ! same memory, so we don't have to do anything.
-        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-          CALL lsysbl_copyVector (rtempVectorEval2, rtempVectorEval1)
-          CALL lsysbl_copyVector (rtempVectorEval3, rtempVectorEval2)
-          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, isubstep+2, rtempVectorEval3)
-        END IF
-        
-      ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%niterations-1) THEN
-      
-        ! Only one timestep. Put vector-1 to vector-2 so the above
-        ! assembly routine for the last timestep will work.
-        CALL lsysbl_copyVector (rtempVector1,rtempVector2)
-        CALL lsysbl_copyVector (rtempVectorEval1,rtempVectorEval2)
-        
-      END IF
-    
-    END DO
-    
-    ! If dnorm is specified, normalise it.
-    ! It was calculated from p_rspaceTimeDiscr%niterations+1 subvectors.
-    IF (PRESENT(dnorm)) THEN
-      dnorm = SQRT(dnorm) / REAL(p_rspaceTimeDiscr%niterations+1,DP)
-    END IF
-    
-    ! Release the temp vectors.
-    CALL lsysbl_releaseVector (rtempVectorEval3)
-    CALL lsysbl_releaseVector (rtempVectorEval2)
-    CALL lsysbl_releaseVector (rtempVectorEval1)
-    CALL lsysbl_releaseVector (rtempVector3)
-    CALL lsysbl_releaseVector (rtempVector2)
-    CALL lsysbl_releaseVector (rtempVector1)
-    CALL lsysbl_releaseVector (rtempVectorD)
-    
-  END SUBROUTINE 
-   
-  ! ***************************************************************************
+!  ! ***************************************************************************
+!  
+!!<subroutine>
+!
+!  SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, &
+!      dnorm, rb)
+!
+!!<description>
+!  ! This routine assembles the space-time defect d=b-Ax. rd must have been
+!  ! initialised by the space-time RHS vector b. The routine will then
+!  ! calculate rd = rd - A rx to get the space-time defect.
+!!</description>
+!
+!!<input>
+!  ! A problem structure that provides information about matrices on all
+!  ! levels as well as temporary vectors.
+!  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!
+!  ! A structure defining the space time matrix of the corresponding system.
+!  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
+!!</input>
+!
+!!<inputoutput>
+!  ! A space-time vector defining the current solution.
+!  ! Is replaced by the new solution
+!  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+!
+!  ! A space-time vector with the space-time RHS b. Is overwritten by
+!  ! d=b-Ax.
+!  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+!
+!  ! OPTIONAL: A space-time vector with the space-time RHS b. 
+!  ! If not specified, the routine assumes that rd contains the RHS.
+!  TYPE(t_spacetimeVector), INTENT(INOUT), OPTIONAL :: rb
+!!</inputoutput>
+!
+!!<output>
+!  ! OPTIONAL: If specified, returns the $l_2$-norm if the defect.
+!  REAL(DP), INTENT(OUT), OPTIONAL :: dnorm
+!!<output>
+!
+!!</subroutine>
+!
+!    ! local variables
+!    INTEGER :: isubstep,ilevel,icp,iidxNonlin,irelnonl
+!    TYPE(t_vectorBlock) :: rtempVectorD
+!    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVector
+!    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorEval, rtempVectorEval2, rtempVectorEval3
+!    TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
+!    REAL(DP) :: dtheta
+!    TYPE(t_matrixBlock) :: rblockTemp
+!    TYPE(t_ccmatrixComponents) :: rmatrixComponents
+!    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+!    
+!    ! DEBUG!!!
+!    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
+!    REAL(DP), DIMENSION(:), POINTER :: p_Deval1,p_Deval2,p_Deval3
+!    
+!    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+!    
+!    ! Level of the discretisation
+!    ilevel = p_rspaceTimeDiscr%ilevel
+!
+!    ! Theta-scheme identifier.
+!    ! =1: implicit Euler.
+!    ! =0.5: Crank Nicolson
+!    dtheta = rproblem%rtimedependence%dtimeStepTheta
+!    
+!    ! Create a temp vector that contains the part of rd which is to be modified.
+!    p_rdiscr => p_rspaceTimeDiscr%p_RlevelInfo%p_rdiscretisation
+!    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
+!    
+!    ! The vector will be a defect vector. Assign the boundary conditions so
+!    ! that we can implement them.
+!    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+!    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+!    
+!    ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
+!    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(1),.FALSE.)
+!    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(2),.FALSE.)
+!    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(3),.FALSE.)
+!    
+!    ! DEBUG!!!
+!    CALL lsysbl_getbase_double (rtempVector(1),p_Dx1)
+!    CALL lsysbl_getbase_double (rtempVector(2),p_Dx2)
+!    CALL lsysbl_getbase_double (rtempVector(3),p_Dx3)
+!    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+!    
+!    ! Get the parts of the X-vector which are to be modified at first --
+!    ! subvector 1, 2 and 3.
+!    CALL sptivec_getTimestepData(rx, 0, rtempVector(1))
+!    IF (p_rspaceTimeDiscr%niterations .GT. 0) &
+!      CALL sptivec_getTimestepData(rx, 1, rtempVector(2))
+!    IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
+!      CALL sptivec_getTimestepData(rx, 2, rtempVector(3))
+!    ELSE
+!      CALL lsysbl_copyVector (rtempVector(2),rtempVector(3))
+!    END IF
+!      
+!    ! Create temp vectors for the evaluation point of the nonlinearity.
+!    ! If ry is not specified, share the vector content with rx, thus
+!    ! use ry=rx.
+!    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+!      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(1),.FALSE.)
+!      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(2),.FALSE.)
+!      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(3),.FALSE.)
+!      
+!      ! Get the first three evaluation points
+!      CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval(1))
+!      IF (p_rspaceTimeDiscr%niterations .GT. 0) &
+!        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval(2))
+!      IF (p_rspaceTimeDiscr%niterations .GT. 1) THEN
+!        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval(3))
+!      ELSE
+!        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(3))
+!      END IF
+!      
+!      ! DEBUG!!!
+!      CALL lsysbl_getbase_double (rtempVectorEval(1),p_Deval1)
+!      CALL lsysbl_getbase_double (rtempVectorEval(2),p_Deval2)
+!      CALL lsysbl_getbase_double (rtempVectorEval(3),p_Deval3)
+!    ELSE
+!      CALL lsysbl_duplicateVector (rtempVector(1),rtempVectorEval(1),&
+!          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!      CALL lsysbl_duplicateVector (rtempVector(2),rtempVectorEval(2),&
+!          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!      CALL lsysbl_duplicateVector (rtempVector(3),rtempVectorEval(3),&
+!          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!    END IF
+!    
+!    ! If dnorm is specified, clear it.
+!    IF (PRESENT(dnorm)) THEN
+!      dnorm = 0.0_DP
+!    END IF
+!
+!    ! Basic initialisation of rmatrixComponents with the pointers to the
+!    ! matrices / discretisation structures on the current level.
+!    !
+!    ! The weights in the rmatrixComponents structure are later initialised
+!    ! according to the actual situation when the matrix is to be used.
+!    rmatrixComponents%p_rdiscretisation         => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
+!    rmatrixComponents%p_rmatrixStokes           => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
+!    rmatrixComponents%p_rmatrixB1             => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
+!    rmatrixComponents%p_rmatrixB2             => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
+!    rmatrixComponents%p_rmatrixMass           => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
+!    rmatrixComponents%p_rmatrixIdentityPressure => &
+!        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+!    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+!    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+!    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+!    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+!    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
+!    
+!    ! Loop through the substeps
+!    
+!    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+!    
+!      ! Current point in time
+!      rproblem%rtimedependence%dtime = &
+!          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%dtstep
+!      rproblem%rtimedependence%itimestep = isubstep
+!
+!      ! Get the part of rd which is to be modified.
+!      IF (PRESENT(rb)) THEN
+!        ! The RHS is in rb
+!        CALL sptivec_getTimestepData(rb, isubstep, rtempVectorD)
+!      ELSE
+!        ! The RHS is in rd
+!        CALL sptivec_getTimestepData(rd, isubstep, rtempVectorD)
+!      END IF
+!
+!      ! -----
+!      ! Discretise the boundary conditions at the new point in time -- 
+!      ! if the boundary conditions are nonconstant in time!
+!      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+!        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+!      END IF
+!      
+!      ! The first and last substep is a little bit special concerning
+!      ! the matrix!
+!      IF (isubstep .EQ. 0) THEN
+!        
+!        ! We are in the first substep. Here, we have to handle the following
+!        ! part of the supersystem:
+!        !
+!        !  ( A11 A12   0   0 ... )  ( x1 )  =  ( f1 )
+!        !  ( ... ... ... ... ... )  ( .. )     ( .. )
+!        !
+!        ! So we have to compute:
+!        !
+!        !  d1  :=  f1  -  A11 x1  -  A12 x2
+!        !
+!        ! -----
+!        
+!        ! The diagonal matrix.
+!      
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,0,rmatrixComponents,iidxNonlin)
+!          
+!        ! Subtract: rd = rd - A11 x1
+!        irelnonl = ABS(iidxNonlin)-isubstep + 1
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!
+!        ! -----
+!      
+!        ! Create the matrix
+!        !   A12  :=  -M/dt + dtheta*[-nu\Laplace u + u \grad u]
+!        ! and subtract A12 x2 from rd.
+!        !
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,1,rmatrixComponents,iidxNonlin)
+!
+!        ! Subtract: rd = rd - A12 x2
+!        irelnonl = ABS(iidxNonlin)-isubstep + 1
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!
+!        ! Release the block mass matrix.
+!        CALL lsysbl_releaseMatrix (rblockTemp)
+!        
+!        ! The primal defect is =0 because of the initial condition.
+!        ! This is important, otherwise the nonlinear loop will not converge
+!        ! because of a lack in the defect in the 0th timestep!!!
+!        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(1))
+!        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(2))
+!        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(3))
+!
+!      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+!
+!        ! We are sonewhere in the middle of the matrix. There is a substep
+!        ! isubstep+1 and a substep isubstep-1!  Here, we have to handle the following
+!        ! part of the supersystem:
+!        !
+!        !  ( ... ...   ... ...   ... )  ( .. )     ( .. )
+!        !  ( ... Aii-1 Aii Aii+1 ... )  ( xi )  =  ( fi )
+!        !  ( ... ...   ... ...   ... )  ( .. )     ( .. )
+!        !
+!        ! So we have to compute:
+!        !
+!        !  dn  :=  fn  -  Aii-1 xi-1  -  Aii xi  -  Aii+1 xi+1
+!        
+!        ! -----
+!        
+!        ! Create the matrix
+!        !   Aii-1 := -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+!        ! and include that into the global matrix for the primal velocity.
+!
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,-1,rmatrixComponents,iidxNonlin)
+!            
+!        ! Subtract: rd = rd - Aii-1 xi-1
+!        ! Note that at this point, the nonlinearity must be evaluated
+!        ! at xi due to the discretisation scheme!!!
+!        irelnonl = ABS(iidxNonlin)-isubstep + 2
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!
+!        ! Release the block mass matrix.
+!        CALL lsysbl_releaseMatrix (rblockTemp)
+!
+!        ! -----      
+!
+!        ! Now the diagonal matrix.
+!      
+!        ! Assemble the nonlinear defect.
+!      
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,0,rmatrixComponents,iidxNonlin)
+!
+!        ! Subtract: rd = rd - Aii xi
+!        irelnonl = ABS(iidxNonlin)-isubstep + 2
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!            
+!        ! -----
+!        
+!        ! Create the matrix
+!        !   Aii+1 := -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+!        ! and include that into the global matrix for the dual velocity.
+!
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,1,rmatrixComponents,iidxNonlin)
+!          
+!        ! Subtract: rd = rd - Aii+1 xi+1
+!        irelnonl = ABS(iidxNonlin)-isubstep + 2
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!        
+!        ! Release the block mass matrix.
+!        CALL lsysbl_releaseMatrix (rblockTemp)
+!
+!      ELSE 
+!        
+!        ! We are in the last substep. Here, we have to handle the following
+!        ! part of the supersystem:
+!        !
+!        !  ( ... ... ... ...   ... )  ( .. )     ( .. )
+!        !  ( ... ...   0 Ann-1 Ann )  ( xn )  =  ( fn )
+!        !
+!        ! So we have to compute:
+!        !
+!        !  dn  :=  fn  -  Ann-1 xn-1  -  Ann xn
+!        
+!        ! -----
+!        
+!        ! Create the matrix
+!        !   Ann-1 = -M/dt + dtheta*[-nu\Laplace u + u \grad u]
+!        ! and include that into the global matrix for the dual velocity.
+!
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,-1,rmatrixComponents,iidxNonlin)
+!          
+!        ! Subtract: rd = rd - Ann-1 xn-1
+!        ! Note that at this point, the nonlinearity must be evaluated
+!        ! at xn due to the discretisation scheme!!!
+!        irelnonl = ABS(iidxNonlin)-isubstep + 3
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!     
+!        ! -----
+!        
+!        ! Now the diagonal matrix.
+!      
+!        ! Assemble the nonlinear defect.
+!      
+!        ! Set up the matrix weights of that submatrix.
+!        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+!          isubstep,0,rmatrixComponents,iidxNonlin)
+!
+!        ! Subtract: rd = rd - Ann xn
+!        irelnonl = ABS(iidxNonlin)-isubstep + 3
+!        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+!            1.0_DP,rtempVectorEval(irelnonl))
+!      
+!      END IF
+!      
+!      ! Implement the boundary conditions into the defect.
+!      CALL vecfil_discreteBCdef (rtempVectorD)
+!      CALL vecfil_discreteFBCdef (rtempVectorD)      
+!      
+!      ! Save the defect vector back to rd.
+!      CALL sptivec_setTimestepData(rd, isubstep, rtempVectorD)
+!      
+!      ! If dnorm is specified, calculate the norm of the sub-defect vector and
+!      ! add it to dnorm.
+!      IF (PRESENT(dnorm)) THEN
+!        IF (rproblem%MT_outputLevel .GE. 2) THEN
+!          CALL output_line ('||D_'//TRIM(sys_siL(isubstep,10))//'|| = '//&
+!              TRIM(sys_sdEL(&
+!                  SQRT(lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)&
+!                  ),10)) )
+!          DO icp=1,6
+!            CALL output_line ('  ||D_'//TRIM(sys_siL(isubstep,10))//'^'//TRIM(sys_siL(icp,2))&
+!                //'|| = '//&
+!                TRIM(sys_sdEL(&
+!                    SQRT(lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2)&
+!                    ),10)) )
+!          END DO
+!        END IF
+!        dnorm = dnorm + lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)**2
+!      END IF
+!      
+!      IF ((isubstep .GT. 0) .AND. &
+!          (isubstep .LT. p_rspaceTimeDiscr%niterations-1)) THEN
+!      
+!        ! Shift the timestep data: x_n+1 -> x_n -> x_n-1
+!        CALL lsysbl_copyVector (rtempVector(2), rtempVector(1))
+!        CALL lsysbl_copyVector (rtempVector(3), rtempVector(2))
+!        
+!        ! Get the new x_n+1 for the next pass through the loop.
+!        CALL sptivec_getTimestepData(rx, isubstep+2, rtempVector(3))
+!        
+!        ! The same for the 'evaluation vector' ry -- if it's specified.
+!        ! If not specified, rtempVectorX and rtempVectorEvalX share the
+!        ! same memory, so we don't have to do anything.
+!        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+!          CALL lsysbl_copyVector (rtempVectorEval(2), rtempVectorEval(1))
+!          CALL lsysbl_copyVector (rtempVectorEval(3), rtempVectorEval(2))
+!          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, isubstep+2, rtempVectorEval(3))
+!        END IF
+!        
+!      ELSE IF ((p_rspaceTimeDiscr%niterations .EQ. 1) .AND. (isubstep .EQ. 0)) THEN
+!      
+!        ! Only one timestep. Put vector-1 -> vector-2 -> vector-3 so the above
+!        ! assembly routine for the last timestep will work.
+!        CALL lsysbl_copyVector (rtempVector(2),rtempVector(3))
+!        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(3))
+!
+!        CALL lsysbl_copyVector (rtempVector(1),rtempVector(2))
+!        CALL lsysbl_copyVector (rtempVectorEval(1),rtempVectorEval(2))
+!        
+!      END IF
+!    
+!    END DO
+!    
+!    ! If dnorm is specified, normalise it.
+!    ! It was calculated from p_rspaceTimeDiscr%niterations+1 subvectors.
+!    IF (PRESENT(dnorm)) THEN
+!      dnorm = SQRT(dnorm) / REAL(p_rspaceTimeDiscr%niterations+1,DP)
+!    END IF
+!    
+!    ! Release the temp vectors.
+!    CALL lsysbl_releaseVector (rtempVectorEval(3))
+!    CALL lsysbl_releaseVector (rtempVectorEval(2))
+!    CALL lsysbl_releaseVector (rtempVectorEval(1))
+!    CALL lsysbl_releaseVector (rtempVector(3))
+!    CALL lsysbl_releaseVector (rtempVector(2))
+!    CALL lsysbl_releaseVector (rtempVector(1))
+!    CALL lsysbl_releaseVector (rtempVectorD)
+!    
+!  END SUBROUTINE 
+!   
+!  ! ***************************************************************************
   
 !<subroutine>
 
@@ -1589,7 +1608,9 @@ CONTAINS
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
     
@@ -1610,7 +1631,9 @@ CONTAINS
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
@@ -1686,7 +1709,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel
+    INTEGER :: isubstep,ilevel,iidxNonlin
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -1756,7 +1779,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents)
+        isubstep,0,rmatrixComponents,iidxNonlin)
         
       ! Perform preconditioning of the defect with the method provided by the
       ! core equation module.
@@ -1939,7 +1962,9 @@ CONTAINS
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
     
@@ -1982,7 +2007,9 @@ CONTAINS
           
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)
-      CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+      !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+      CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+        -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
@@ -2005,7 +2032,9 @@ CONTAINS
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
@@ -2085,7 +2114,7 @@ CONTAINS
   TYPE(t_spacetimeVector), INTENT(INOUT), TARGET :: rx
 
   ! A temporary space-time vector that receives the RHS during the calculation.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+  TYPE(t_spacetimeVector), INTENT(INOUT), TARGET :: rb
 
   ! A temporary space-time vector that receives the defect during the calculation.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
@@ -2119,6 +2148,9 @@ CONTAINS
     REAL(DP) :: ddefNorm,dinitDefNorm
     
     CHARACTER(LEN=SYS_STRLEN) :: slinearSolver,sstring
+    
+    INTEGER :: inpos, innextrec
+    CHARACTER :: ctest
     
     TYPE(t_timer) :: rtimerMGStep
     
@@ -2479,11 +2511,11 @@ CONTAINS
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
-        rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
+    !    rx, rd, ddefNorm)
     CALL sptivec_copyVector (rb,rd)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm)
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
     CALL output_separator (OU_SEP_EQUAL)
@@ -2599,6 +2631,7 @@ CONTAINS
         CALL sptils_doneData (p_rsolverNode)
 
         CALL stat_stopTimer (rtimerMGStep)
+        
       END IF
       
       !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
@@ -2632,10 +2665,24 @@ CONTAINS
         
       END IF
 
+      ! Call a parser that parses the script file commandfile.txt.
+      ! This allows in-program modification of the problem sructure.
+      rproblem%rdataOneshot%iglobIter = iglobIter
+      rproblem%rdataOneshot%ddefNorm = ddefNorm
+      rproblem%rdataOneshot%p_rx => rx
+      rproblem%rdataOneshot%p_rb => rb
+      
+      CALL scr_readScript ('commandfile.txt',0,rproblem)
+      
+      iglobIter = rproblem%rdataOneshot%iglobIter
+      ddefNorm = rproblem%rdataOneshot%ddefNorm
+      
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)
-      CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
-          rx, rd, ddefNorm)
+      !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
+      !    rx, rd, ddefNorm)
+      CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+        -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       ! Filter the defect for boundary conditions in space and time.
       CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
@@ -2647,7 +2694,7 @@ CONTAINS
       CALL output_line ('Time for computation of this iterate: '//&
           TRIM(sys_sdL(rtimerMGStep%delapsedReal,10)))
       CALL output_separator (OU_SEP_EQUAL)
-      
+
     END DO
     
     CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
@@ -2658,8 +2705,10 @@ CONTAINS
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &  
-        rx, rd, ddefNorm)
+    !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &  
+    !    rx, rd, ddefNorm)
+    CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))

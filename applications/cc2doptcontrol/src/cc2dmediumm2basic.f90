@@ -241,6 +241,31 @@ MODULE cc2dmediumm2basic
 
 
 !<typeblock>
+  
+  ! Structure with some pointers to internal variables of a special algorithm.
+  ! Used to provide data to the parser so the user can advice the program to do
+  ! something with this data.
+  ! Only valid during the execution of the command parser.
+  TYPE t_problem_oneshot
+  
+    ! Current global iteration
+    INTEGER :: iglobIter
+  
+    ! Norm of the defect vector
+    REAL(DP) :: ddefNorm
+    
+    ! Pointer to the current space-time solution vector
+    TYPE(t_spaceTimeVector), POINTER :: p_rx
+
+    ! Pointer to the current space-time RHS vector
+    TYPE(t_spaceTimeVector), POINTER :: p_rb
+    
+  END TYPE
+
+!</typeblock>
+
+
+!<typeblock>
 
   ! Application-specific type block for the Nav.St. problem
   TYPE t_problem
@@ -322,6 +347,10 @@ MODULE cc2dmediumm2basic
     
     ! A param list that saves all parameters from the DAT/INI file(s).
     TYPE(t_parlist)                       :: rparamList
+
+    ! A t_problem_oneshot structure that is only valid during the
+    ! execution of the command parser.
+    TYPE(t_problem_oneshot)               :: rdataOneshot
 
   END TYPE
 
