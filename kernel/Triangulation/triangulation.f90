@@ -338,6 +338,14 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**22  ! KVAR 
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**23  ! KAREA
   INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**24  ! K???
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATFACE           = 2**23 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGEIDX        = 2**24
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**25
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEXIDX      = 2**26
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**27
+  
+  
+  
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
@@ -827,8 +835,15 @@ MODULE triangulation
     ! a pair of arrays thats builds a list of the edges at a face
     INTEGER        :: h_IfacesAtEdgeIdx = ST_NOHANDLE
     INTEGER        :: h_IfacesAtEdge    = ST_NOHANDLE
-     
     
+    ! the edges that make up a particular face
+    INTEGER        :: h_IedgesAtFace
+
+    ! a pair of arrays thats builds a list of the faces at a vertex
+    INTEGER        :: h_IfacesAtVertexIdx = ST_NOHANDLE
+    INTEGER        :: h_IfacesAtVertex    = ST_NOHANDLE
+     
+   
     
   END TYPE
 
@@ -1909,6 +1924,30 @@ CONTAINS
     ! Bit 24: K????       
     CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
            rtriangulation%h_IelementsAtFace)
+           
+    ! Bit 23: K????       
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
+           rtriangulation%h_IelementsAtFace)
+           
+    ! Bit 24: K????       
+    call checkAndRelease(idupflag, TR_SHARE_IEDGESATFACE, &
+           rtriangulation%h_IedgesAtFace)
+           
+    ! Bit 25: K????       
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGEIDX, &
+           rtriangulation%h_IfacesAtEdgeIdx)
+       
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEXIDX, &
+           rtriangulation%h_IfacesAtVertexIdx)
+
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertex)
+    
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
+           rtriangulation%h_IfacesAtEdge)
+
+           
+           
     
     ! Clean up the rest of the structure
 
@@ -2691,21 +2730,20 @@ CONTAINS
     call tria_genElementsAtFace       (rtriangulation) 
     call tria_genEdgesAtFace          (rtriangulation)
     call tria_genFacesAtEdge          (rtriangulation)
-    ! 
+    call tria_genFacesAtVertex        (rtriangulation)
+
+    !----Properties----!
+!    call tria_genEdgeNodalProperty3d   (rtriangulation)
+!    call tria_genFaceNodalProperty3d   (rtriangulation)
+
     
-    ! call FacesAtVertex(liste)
-    
-    
+    !----BOUNDARY------
     ! call verticesAtBoundary
     ! call edgesAtBoundary
     ! call facesAtBoundary
-    ! call indexArrays(vertices)
-    ! call indexArrays(faces)
-    ! call indexArrays(edges)
+    !----BOUNDARY------
+    
     ! CALL tria_genElementVolume3d       (rtriangulation)
-    ! CALL tria_genEdgeNodalProperty3d   (rtriangulation)
-    ! call tria_genFaceNodalProperty3d
-    ! I_elementsAtEdge als liste    
     
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
@@ -4133,11 +4171,17 @@ CONTAINS
     END IF
 
     ! Get the arrays.
+    ! get the vertices at the element
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    ! get the neighbours at the element
     CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+    ! get the vertices on the boundary
     CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+    ! get the index array for the boundary component
     CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    ! get the elements at a vertex
     CALL storage_getbase_int (rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    ! get the elements at vertex index array
     CALL storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
     
     ! Do we have (enough) memory for that array?
@@ -4161,7 +4205,6 @@ CONTAINS
     nnve = tria_getNNVE(rtriangulation)
 
     ! Loop through all boundary components
-    !$OMP PARALLEL DO PRIVATE(ivbd,ivt,iadjElement,iel,ive)
     DO ibct = 1,rtriangulation%NBCT
     
       ! On each boundary component, loop through all vertices
@@ -4209,7 +4252,6 @@ CONTAINS
       END DO
     
     END DO
-    !$OMP END PARALLEL DO
     
   END SUBROUTINE
 
@@ -4762,6 +4804,73 @@ CONTAINS
             
       END DO
       
+      CASE (NDIM3D)
+       DO ifine = 1,nfine     
+       
+        IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtVertex3D    (rtriangulation)
+          
+   
+        IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genNeighboursAtElement3D (rtriangulation)
+          
+        IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genEdgesAtElement3D      (rtriangulation)
+
+        IF (rtriangulation%h_IelementsAtEdge3d .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtEdge3D      (rtriangulation)
+          
+        IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
+          CALL tria_genVerticesAtEdge3D      (rtriangulation)
+ 
+        IF (rtriangulation%h_IfacesAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genFacesAtElement        (rtriangulation)
+           
+        IF (rtriangulation%h_IverticesAtFace .EQ. ST_NOHANDLE) &
+          CALL tria_genVerticesAtFace        (rtriangulation)          
+          
+          
+          
+
+!    call tria_genNeighboursAtElement3D(rtriangulation)
+!    call tria_genEdgesAtElement3D     (rtriangulation)
+!    call tria_genElementsAtEdge3D     (rtriangulation)
+!    call tria_genVerticesAtEdge3D     (rtriangulation)
+        
+        
+!    call tria_genElementsAtVertex3D   (rtriangulation)
+!    call tria_genFacesAtElement3D     (rtriangulation)
+!    call tria_genNeighboursAtElement3D(rtriangulation)
+!    call tria_genEdgesAtElement3D     (rtriangulation)
+!    call tria_genElementsAtEdge3D     (rtriangulation)
+!    call tria_genVerticesAtEdge3D     (rtriangulation)
+!    
+!    ! faces have global numbers
+!    ! nvt+nmt+1 = first face
+!    call tria_genFacesAtElement       (rtriangulation)
+!    call tria_genVerticesAtFace       (rtriangulation)
+!    call tria_genElementsAtFace       (rtriangulation) 
+!    call tria_genEdgesAtFace          (rtriangulation)
+!    call tria_genFacesAtEdge          (rtriangulation)
+!    call tria_genFacesAtVertex        (rtriangulation)
+        
+        
+          
+!  p_IvertAtElementSource
+!  p_IedgesAtElementSource
+!  p_IvertAtEdgeSource
+!  p_IverticesAtFace
+!  p_IfacesAtElement
+!  
+    ! the verticesAtFace
+!    INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
+      
+          
+       
+       
+        CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
+            cflags=cflags)
+       END DO
     END SELECT
     
   CONTAINS
@@ -4888,7 +4997,8 @@ CONTAINS
       END IF
       
     CASE (NDIM3D)
-    
+      ! refine the basic mesh
+      call tria_refineMesh2lv3D(rsourceTriangulation, rdestTria)
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
@@ -5301,7 +5411,7 @@ CONTAINS
       END IF
       
       ! Ok, that was easy up to here. Now the interesting part: 
-      ! the two-level ordeting.
+      ! the two-level ordering.
       !
       ! Look at the following triangular and quad element with local
       ! and global vertex and edge numbers:
@@ -5321,7 +5431,7 @@ CONTAINS
       ! The two-level ordering refinement strategy says now:
       !  - Every edge produces an edge midpoint. Connect opposite midpoints to get
       !    the fine grid.
-      !  - The vertex numbers in the coars grid are transferred to the fine grid
+      !  - The vertex numbers in the coarse grid are transferred to the fine grid
       !    without change.
       !  - The edge numbers in the coarse grid define the vertex numbers of the
       !    edge midpoints in the fine grid.
@@ -7939,7 +8049,8 @@ CONTAINS
   
   end subroutine ! end tria_genVerticesAtEdge3D
 
-!====================================================================    
+!==================================================================== 
+   
 !<subroutine>  
   subroutine tria_genFacesAtElement(rtriangulation)
 !<description>
@@ -8057,7 +8168,7 @@ CONTAINS
 !</subroutine>    
 
   ! local variables
-  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+  integer(prec_vertexidx), dimension(:,:), pointer  :: p_IverticesAtElement
   
   integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
   integer(prec_elementidx), dimension(:,:), pointer :: p_IverticesAtFace
@@ -8129,7 +8240,7 @@ CONTAINS
         
         ! number of the face
         do 
-         if(iel /= p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
+         if(iel == p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
          ifaceNeighbour = ifaceNeighbour + 1
         end do
         
@@ -8246,10 +8357,109 @@ CONTAINS
 !</subroutine>
   ! local variables
   
-  integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
+  integer(prec_edgeidx), dimension(:,:), pointer    :: p_IedgesAtElement
   
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtFace
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtFace
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
+  
+  integer :: iface, iel, ilocalFace,iglobalFace
+  
+  ! list of local edges
+  integer, dimension(2) :: Isize
+  
+  Isize = (/4,rtriangulation%NAT/)
+  
+  ! allocate memory
+  if(rtriangulation%h_IedgesAtFace == ST_NOHANDLE) then
+    call storage_new2d('tria_genEdgesAtFace', 'IedgesAtFace', &
+        Isize, ST_INT, &
+        rtriangulation%h_IedgesAtFace, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  
+  ! get pointers to some needed connectivity information
+  call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,&
+      p_IedgesAtElement)
+      
+  call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,&
+      p_IelementsAtFace)
+      
+  call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
+      p_IfacesAtElement)
+
+  call storage_getbase_int2D (rtriangulation%h_IedgesAtFace,&
+      p_IedgesAtFace)
+
+      
+  ! loop over all Faces
+  do iface=1,rtriangulation%NAT
+  
+    ! get a face this element is conncected to
+    iel = p_IelementsAtFace(1,iface)
     
+    ! determine which local face is iface 
+    do ilocalFace=1,rtriangulation%NAE
+     iglobalFace = p_IfacesAtElement(ilocalFace,iel) - &
+                   rtriangulation%NVT - &
+                   rtriangulation%NMT
+     if(iglobalFace == iface) exit
+    end do
+    
+    ! now I need the edge numbers for this face
+    ! get them by edgesAtElement
+    
+    select case (ilocalFace)
+    
+      case (1)
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(1,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(2,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(3,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(4,iel)
+      case (2)    
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(1,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(5,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(6,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(9,iel)
+      
+      case (3)    
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(2,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(6,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(7,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(10,iel)
+      
+      case (4)    
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(3,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(7,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(8,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(11,iel)
+      
+      case (5)    
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(4,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(8,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(5,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(12,iel)
+      
+      case (6)    
+        ! assign the edges
+        p_IedgesAtFace(1,iface)=p_IedgesAtElement(9,iel)
+        p_IedgesAtFace(2,iface)=p_IedgesAtElement(10,iel)
+        p_IedgesAtFace(3,iface)=p_IedgesAtElement(11,iel)
+        p_IedgesAtFace(4,iface)=p_IedgesAtElement(12,iel)
+    
+    end select
+    
+  end do ! end iface
+     
   end subroutine ! end tria_genEdgesAtFace
+  
 !====================================================================        
   
 !<subroutine>    
@@ -8268,42 +8478,718 @@ CONTAINS
   ! local parameters
   integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
   
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtFace
+  
   integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtElementIdx  
   
-  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
+  integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdgeIdx
   
-  integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
+  integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdge
+  
+  integer :: iface, iel, ilocalFace, iglobalEdge, iedge
+  
+  integer(i32) :: haux1
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_Iaux1
+  
+  ! list of local edges
+  integer, dimension(2) :: Isize
+  
+  Isize = (/4,rtriangulation%NAT/)
+  
+  ! allocate memory
+  if(rtriangulation%h_IfacesAtEdgeIdx == ST_NOHANDLE) then
+    call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtEdgeIdx', &
+        int(rtriangulation%NMT+1,I32), ST_INT, &
+        rtriangulation%h_IfacesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+  end if      
+    
+  ! Fill the index array with zero.
+  call storage_clear (rtriangulation%h_IfacesAtEdgeIdx)
+    
+  ! get the pointer  
+  call storage_getbase_int(rtriangulation%h_IfacesAtEdgeIdx,p_IfacesAtEdgeIdx)
+    
+  ! Fill the index array with zero.
+  call storage_clear(rtriangulation%h_IfacesAtEdgeIdx)
+    
+  ! get the pointer  
+  call storage_getbase_int(rtriangulation%h_IfacesAtEdgeIdx,p_IfacesAtEdgeIdx)
+  
+  ! get the pointer  
+  call storage_getbase_int2d(rtriangulation%h_IedgesAtFace,p_IedgesAtFace)
   
   
+  p_IfacesAtEdgeIdx(1) = 1;
   
-!  ! allocate memory
-!  if(rtriangulation%h_IelementsAtEdge3d == ST_NOHANDLE) then
-!    call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtEdge3d', &
-!        int(Isize), ST_INT, &
-!        rtriangulation%h_IelementsAtEdge3d, ST_NEWBLOCK_NOINIT)
-!  end if      
-!    
-!  ! Fill the index array with zero.
-!  call storage_clear (rtriangulation%h_IelementsAtEdge3d)
-!    
-!  ! get the pointer  
-!  call storage_getbase_int(rtriangulation%h_IelementsAtEdge3d,p_IelementsAtEdge3d)
-!  
-  ! allocate memory for the index array
-!  if(rtriangulation%p_IfacesAtElementIdx == ST_NOHANDLE) then
-!    call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtElementIdx', &
-!        int(rtriangulation%NAT+1,I32), ST_INT, &
-!        rtriangulation%h_IfacesAtElementIdx, ST_NEWBLOCK_NOINIT)
-!  end if      
-!    
-!  ! Fill the index array with zero.
-!  call storage_clear (rtriangulation%h_IfacesAtElementIdx)
-!    
-!  ! get the pointer  
-!  call storage_getbase_int(rtriangulation%h_IfacesAtElementIdx,p_IfacesAtElementIdx)
+  ! create the index array
+  do iface=1, rtriangulation%NAT
   
-      
+    ! increase the facecount at these edges by one
+    do iedge=1,4
+    iglobalEdge = p_IedgesAtFace(iedge,iface) - &
+                  rtriangulation%NVT
+                
+    p_IfacesAtEdgeIdx(iglobalEdge+1) = &
+    p_IfacesAtEdgeIdx(iglobalEdge+1) + 1 
+    end do ! end iedge
+  
+  end do ! end iface
 
+  ! create the actual index array  
+  do iedge = 2,rtriangulation%NMT+1
+    p_IfacesAtEdgeIdx(iedge) = p_IfacesAtEdgeIdx(iedge) + p_IfacesAtEdgeIdx(iedge-1);
+  end do ! end iedge
+  
+  Isize(1) = p_IfacesAtEdgeIdx(rtriangulation%NMT+1)-1
+  
+  ! allocate memory
+  if(rtriangulation%h_IfacesAtEdge == ST_NOHANDLE) then
+    call storage_new ('tria_genFacesAtEdge3D', 'IfacesAtEdge', &
+        int(Isize(1)), ST_INT, &
+        rtriangulation%h_IfacesAtEdge, ST_NEWBLOCK_NOINIT)
+  end if      
+  
+  ! get the pointer
+  call storage_getbase_int(rtriangulation%h_IfacesAtEdge, p_IfacesAtEdge)
+  
+  haux1 = ST_NOHANDLE
+  call storage_copy (rtriangulation%h_IfacesAtEdgeIdx,haux1)
+  call storage_getbase_int (haux1,p_Iaux1) 
+  
+  ! assign the connectivity info
+  do iface=1, rtriangulation%NAT
+  
+    ! increase the facecount at these edges by one
+    do iedge=1,4
+    
+      ! iglobalFace is the iedge-th edge at face iface
+      iglobalEdge = p_IedgesAtFace(iedge,iface) - &
+             rtriangulation%NVT
+
+       
+      ! store the adjacency information at position p_Iaux1(ivt)        
+      p_IfacesAtEdge( p_Iaux1(iglobalEdge) ) = iface
+      ! increase the position of the next element in p_Iaux1(ivt)
+      p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1    
+     
+    end do ! end iedge
+  
+  end do ! end iface
+  
+  call storage_free(haux1)   
+  
   end subroutine ! end tria_genFacesAtEdge
 
+!====================================================================        
+  
+!<subroutine>    
+  subroutine tria_genFacesAtVertex(rtriangulation)
+!<description>
+  ! this routine builds the FacesAtVertex list 
+!</description>
+
+!<inputoutput>  
+  type(t_triangulation), intent(inout) :: rtriangulation  
+!</inputoutput>
+
+
+!</subroutine>
+  ! local variables
+  
+  integer(prec_elementidx), dimension(:,:), pointer :: p_IverticesAtFace
+  
+  integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertexIdx
+  integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertex
+  
+  integer :: iface, iglobalFace, ivt, iGlobalVertex
+  
+  integer(i32) :: haux1
+  
+  integer(prec_edgeidx), dimension(:), pointer :: p_Iaux1
+  
+  ! list of local edges
+  integer :: Isize
+  
+  Isize = rtriangulation%NVT+1
+  
+  ! allocate memory
+  if(rtriangulation%h_IfacesAtVertexIdx == ST_NOHANDLE) then
+    call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtVertexIdx', &
+        int(Isize,I32), ST_INT, &
+        rtriangulation%h_IfacesAtVertexIdx, ST_NEWBLOCK_NOINIT)
+  end if      
+    
+  ! Fill the index array with zero.
+  call storage_clear (rtriangulation%h_IfacesAtVertexIdx)
+    
+  ! get the pointer  
+  call storage_getbase_int(rtriangulation%h_IfacesAtVertexIdx,p_IfacesAtVertexIdx)
+  
+  call storage_getbase_int2D(rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
+    
+  ! Fill the index array with zero.
+  call storage_clear(rtriangulation%h_IfacesAtVertexIdx)
+    
+  ! set the first value to 1
+  p_IfacesAtVertexIdx(1) = 1;
+  
+  ! create the index array
+  do iface=1,rtriangulation%NAT
+    do ivt=1,4
+      ! get the global vertex number
+      iGlobalVertex = p_IverticesAtFace(ivt,iface)
+      ! increment the facecount for this vertex
+      p_IfacesAtVertexIdx(iGlobalVertex+1) = &
+      p_IfacesAtVertexIdx(iGlobalVertex+1) + 1
+    end do ! end ivt
+  end do ! end iface
+
+  
+  ! create the actual index array  
+  do iface = 2,rtriangulation%NVT+1
+    p_IfacesAtVertexIdx(iface) = p_IfacesAtVertexIdx(iface) + p_IfacesAtVertexIdx(iface-1);
+  end do ! end iface
+  
+  Isize = p_IfacesAtVertexIdx(rtriangulation%NVT+1)-1
+  
+  ! allocate memory
+  if(rtriangulation%h_IfacesAtVertex == ST_NOHANDLE) then
+    call storage_new ('tria_genFacesAtVertex', 'IfacesAtVertex', &
+        int(Isize), ST_INT, &
+        rtriangulation%h_IfacesAtVertex, ST_NEWBLOCK_NOINIT)
+  end if      
+
+  ! get the pointer  
+  call storage_getbase_int(rtriangulation%h_IfacesAtVertex,p_IfacesAtVertex)
+
+  ! build the auxilliary array  
+  haux1 = ST_NOHANDLE
+  call storage_copy (rtriangulation%h_IfacesAtVertexIdx,haux1)
+  call storage_getbase_int (haux1,p_Iaux1) 
+  
+  ! assign the connectivity info
+  do iface=1, rtriangulation%NAT
+  
+    ! get the global vertex number and assign the faces
+    do ivt=1,4
+    
+      ! iglobalFace is the iedge-th edge at face iface
+      iGlobalVertex = p_IverticesAtFace(ivt,iface)
+      
+      ! store the adjacency information at position p_Iaux1(ivt)        
+      p_IfacesAtVertex( p_Iaux1(iGlobalVertex) ) = iface
+      ! increase the position of the next element in p_Iaux1(ivt)
+      p_Iaux1(iGlobalVertex) = p_Iaux1(iGlobalVertex) + 1    
+     
+    end do ! end iedge
+  
+  end do ! end iface
+  
+  call storage_free(haux1)   
+  
+  end subroutine ! end tria_genFacesAtVertex
+
+!====================================================================        
+  
+!<subroutine>
+  subroutine tria_refineMesh2lv3D(rsourceTriangulation,rdestTriangulation)
+!<description>
+  ! This routine refines the given 2D mesh rsourceTriangulation according to
+  ! the 2-level ordering algorithm. The refined mesh is saved in 
+  ! rdestTriangulation. There will be no correction of boundary
+  ! vertices. Boundary parameter values are not handled here!
+!</description>
+
+!<inputoutput>
+  ! The source triangulation to be refined
+  type(t_triangulation), intent(INOUT) :: rsourceTriangulation
+!</inputoutput>
+
+!<output>
+  ! Destination triangulation structure that receives the refined mesg. 
+  type(t_triangulation), intent(OUT) :: rdestTriangulation
+!</output>
+  
+!</subroutine>      
+  ! local variables
+  
+  real(dp), dimension(:,:), pointer :: p_DcoordSource
+  real(dp), dimension(:,:), pointer :: p_DcoordDest
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IvertAtElementSource
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IvertAtElementDest
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IedgesAtElementSource
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IvertAtEdgeSource
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtFace
+  integer(prec_vertexidx), dimension(:,:), pointer :: p_IfacesAtElement
+  integer(prec_elementidx) :: nquads,iel,iel1,iel2,iel3
+  integer(prec_edgeidx) :: imt
+  integer(prec_vertexidx) :: ivt1, ivt2, ivt3, ivtoffset, ivt, iae
+  integer(prec_vertexidx) :: iel4, iel5, iel6, iel7, midPointOfIel
+  integer(prec_vertexidx) :: midpointFaceA, midpointFaceB, midpointFaceC
+  integer(prec_vertexidx) :: midpointFaceD, midpointFaceE, midpointFaceF
+  
+  integer(i32), dimension(2) :: Isize
+  integer :: nnve, ive
+  real(dp) :: x,y,z, invNVE
+  
+  invNVE = rsourceTriangulation%NVE
+      
+  ! Get the arrays with information of the source mesh.
+  call storage_getbase_double2D (rsourceTriangulation%h_DvertexCoords,&
+      p_DcoordSource)
+  call storage_getbase_int2D (rsourceTriangulation%h_IverticesAtElement,&
+      p_IvertAtElementSource)
+  call storage_getbase_int2D (rsourceTriangulation%h_IedgesAtElement,&
+      p_IedgesAtElementSource)
+  call storage_getbase_int2D (rsourceTriangulation%h_IverticesAtEdge,&
+      p_IvertAtEdgeSource)
+
+  call storage_getbase_int2D (rsourceTriangulation%h_IverticesAtFace,&
+      p_IverticesAtFace)
+      
+  call storage_getbase_int2d(rsourceTriangulation%h_IfacesAtElement, &
+      p_IfacesAtElement)
+      
+      
+      
+      ! The 2-level ordering has the following properties:
+      !
+      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      !   with the same number. Coordinates of coarse mesh vertices
+      !   stay unchanged in the fine mesh.
+      ! - Edges in the coarse mesh produce vertices in the fine mesh
+      !   at the midpoints of the edges in the coarse mesh.
+      !   Edge numbers in the coarse mesh get vertex numbers in
+      !   the fine mesh.
+      ! - For quad meshes: Element midpoints in the coarse mesh
+      !   get vertices in the fine mesh. They are appended to the
+      !   vertices generated by the edges.
+      !
+      ! So at first, get the number of quads in the mesh (may be =0 which is ok).
+      
+  nquads = rsourceTriangulation%NEL
+  nnve = 8
+      
+  ! Initialise the basic mesh data in rdestTriangulation:
+      
+  ! 3D mesh
+  rdestTriangulation%ndim = NDIM3D
+     
+  ! Every element is divided into 8 subelements
+  rdestTriangulation%NEL = 8 * rsourceTriangulation%NEL
+  rdestTriangulation%InelOfType(:) = 8 * rsourceTriangulation%InelOfType(:)
+
+  ! We expect NVT+NMT+NAT+nquads new points.
+  rdestTriangulation%NVT = &
+  rsourceTriangulation%NVT + &
+  rsourceTriangulation%NMT + &
+  rsourceTriangulation%NAT + &
+  nquads
+      
+  ! Allocate memory for the new vertex coordinates and
+  ! get the pointers to the coordinate array
+  Isize = (/NDIM3D,int(rdestTriangulation%NVT,I32)/)
+  call storage_new2D ('tria_refineMesh2lv3D', 'DCORVG', Isize, ST_DOUBLE, &
+       rdestTriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+  call storage_getbase_double2D(&
+       rdestTriangulation%h_DvertexCoords,p_DcoordDest)
+      
+  ! Ok, let's start the refinement. In the first step, we copy the
+  ! corner coordinates of the coarse mesh to the fine mesh; they
+  ! don't change during the refinement.
+  do ivt=1,rsourceTriangulation%NVT
+     p_DcoordDest(1,ivt) = p_DcoordSource(1,ivt)
+     p_DcoordDest(2,ivt) = p_DcoordSource(2,ivt)
+     p_DcoordDest(3,ivt) = p_DcoordSource(3,ivt)
+  end do
+      
+  ! Each edge produces an edge midpoint which is stored as new
+  ! point in the fine mesh. To calculate the coordinates, take
+  ! the mean of the coordinates in the coarse mesh.
+  ivtoffset = rsourceTriangulation%NVT
+  do imt=1,rsourceTriangulation%NMT
+     ivt1 = p_IvertAtEdgeSource (1,imt)
+     ivt2 = p_IvertAtEdgeSource (2,imt)
+     p_DcoordDest(1,ivtoffset+imt) = &
+     0.5_DP * ( p_DcoordSource (1,ivt1) + p_DcoordSource (1,ivt2) )
+     p_DcoordDest(2,ivtoffset+imt) = &
+     0.5_DP * ( p_DcoordSource (2,ivt1) + p_DcoordSource (2,ivt2) )
+     p_DcoordDest(3,ivtoffset+imt) = &
+     0.5_DP * ( p_DcoordSource (3,ivt1) + p_DcoordSource (3,ivt2) )     
+  end do
+  
+  ivtoffset = rsourceTriangulation%NVT+rsourceTriangulation%NMT
+
+  ! each midpoint of a face produces a vertex on the next level
+  do iae=1,rsourceTriangulation%NAT
+    p_DcoordDest(:,ivtoffset+iae) = 0
+    do ive=1,4
+      ! sum up all x y z coordinates
+        ivt1 = p_IverticesAtFace(ive,iae)
+        p_DcoordDest(1,ivtoffset+iae) = &
+        p_DcoordDest(1,ivtoffset+iae) + &
+        p_DcoordSource(1,ivt1)
+        
+        p_DcoordDest(2,ivtoffset+iae) = &
+        p_DcoordDest(2,ivtoffset+iae) + &
+        p_DcoordSource(2,ivt1)
+        
+        p_DcoordDest(3,ivtoffset+iae) = &
+        p_DcoordDest(3,ivtoffset+iae) + &
+        p_DcoordSource(3,ivt1)
+    end do ! end ive
+    
+    p_DcoordDest(1,ivtoffset+iae) = &
+    p_DcoordDest(1,ivtoffset+iae) * 0.25_DP
+    p_DcoordDest(2,ivtoffset+iae) = &
+    p_DcoordDest(2,ivtoffset+iae) * 0.25_DP
+    p_DcoordDest(3,ivtoffset+iae) = &
+    p_DcoordDest(3,ivtoffset+iae) * 0.25_DP
+  end do ! end iae
+     
+      
+  ! Allocate memory for IverticesAtElement and get a pointer to it.
+  ! Fill the array with zero, so we won't have problems when mixing
+  ! triangles into a quad mesh.
+  Isize = (/rsourceTriangulation%NVE,int(rdestTriangulation%NEL,I32)/)
+  call storage_new2D ('tria_refineMesh2lv3D', 'KVERT', Isize, ST_INT, &
+       rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
+  call storage_getbase_int2D(&
+       rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
+    
+  ! increase the offset.
+  ivtoffset = rsourceTriangulation%NVT + rsourceTriangulation%NMT + &
+              rsourceTriangulation%NAT
+              
+  do iel = 1,rsourceTriangulation%NEL
+        
+    ! New element midpoint
+    ivtoffset = ivtoffset+1
+           
+    ! Sum up the coordinates of the corners to get the midpoint.
+    x = 0.0_DP
+    y = 0.0_DP
+    z = 0.0_DP
+    do ive = 1,rsourceTriangulation%NVE
+      x = x + p_DcoordSource (1,p_IvertAtElementSource(ive,iel))
+      y = y + p_DcoordSource (2,p_IvertAtElementSource(ive,iel))
+      z = z + p_DcoordSource (3,p_IvertAtElementSource(ive,iel))
+    end do
+
+    ! Store the midpoint
+    p_DcoordDest(1,ivtoffset) = x * 0.125_DP
+    p_DcoordDest(2,ivtoffset) = y * 0.125_DP
+    p_DcoordDest(3,ivtoffset) = z * 0.125_DP
+        
+  end do
+      
+      
+  ! Ok, that was easy up to here. Now the interesting part: 
+  ! the two-level ordering.
+  !
+  ! Look at the following triangular and quad element with local
+  ! and global vertex and edge numbers:
+  !
+      !    102                               104           203           103
+      !       X__                               X-----------------------X
+      !       |2 \__                            |4                     3|
+      !       |     \__                         |                       |
+      !       |        \__201                   |                       |
+      !    202|           \__                204|          IEL          |202
+      !       |     IEL      \__                |                       |
+      !       |                 \__             |                       |
+      !       | 3                 1\_           |1                     2|
+      !       X----------------------+X         X-----------------------X
+      !    103          203           101    101           201           102
+      !
+      ! The two-level ordering refinement strategy says now:
+      !  - Every edge produces an edge midpoint. Connect opposite midpoints to get
+      !    the fine grid.
+      !  - The vertex numbers in the coarse grid are transferred to the fine grid
+      !    without change.
+      !  - The edge numbers in the coarse grid define the vertex numbers of the
+      !    edge midpoints in the fine grid.
+      !  - For triangles: The element number IEL in the coarse grid is transferred
+      !    to the inner element of the three subelements in the fine grid.
+      !    The midpoint of edge 1 gets local vertex 1 of the inner triangle.
+      !    The other three elements get the numbers NEL+3*(iel-1)+1, +2 and +3
+      !    according to which edge of the inner triangle they touch.
+      !    The first vertex of each subtriangle is the vertex with
+      !    local number 1, 2 or 3, respectively, in the coarse grid.
+      !  - For quads: The element number IEL in the coarse grid is transferred
+      !    to the subelement at local vertex 1. The other elements
+      !    get element numbers NEL+3*(iel-1)+1, +2 and +3 in counterclockwise
+      !    order. The first vertex on every subelement is the old (corner) vertex
+      !    in the coarse mesh.
+      !
+      ! In the above picture, we therefore have:
+      !
+      !    102                               104           203           103
+      !       X__                               X-----------X-----------X
+      !       |1 \__                            |1          |          1|
+      !       | IEL2\__                         |    IEL3   |   IEL2    |
+      !       |        \_ 201                   |           |           |
+      !    202X----------X___                204X-----------X-----------X202
+      !       | \__ IEL 1|   \__                |           |           |
+      !       |    \__   |      \__             |    IEL    |   IEL1    |
+      !       |1 IEL3 \__|  IEL1  1\_           |1          |          1|
+      !       X----------X-----------X          X-----------X-----------X
+      !    103          203           101    101           201           102
+      !
+      ! IEL1 = NEL+3*(IEL-1)+1
+      ! IEL2 = NEL+3*(IEL-1)+2
+      ! IEL3 = NEL+3*(IEL-1)+3
+      !
+      ! Ok, to produce all that, we have to set up IverticesOnElement correctly!
+      ! Let's loop over the vertices on the coarse grid. Everyone produces
+      ! four elements on the fine grid:
+      !
+      ! In nquads we count the number of quads +NVT+NMT we reach.
+      ! That's the number of the midpoint of that element!
+      
+   do iel = 1,rsourceTriangulation%NEL
+      
+     ! Determine number of subelements.
+     iel1 = rsourceTriangulation%NEL+7*(iel-1)+1
+     iel2 = iel1+1
+     iel3 = iel1+2
+     iel4 = iel1+3
+     iel5 = iel1+4
+     iel6 = iel1+5
+     iel7 = iel1+6
+     
+     ! the vertex number of the midpoint is
+     ! the old face number
+     midpointFaceA = p_IfacesAtElement(1,iel)
+     midpointFaceB = p_IfacesAtElement(2,iel)
+     midpointFaceC = p_IfacesAtElement(3,iel)
+     midpointFaceD = p_IfacesAtElement(4,iel)
+     midpointFaceE = p_IfacesAtElement(5,iel)
+     midpointFaceF = p_IfacesAtElement(6,iel)
+     
+     ! In nquads we count the number of the quad +NVT+NMT+NAT we process.
+     ! That's the number of the midpoint of that element!
+     ! As we reached a new quad, we increase nquads
+     
+     ! nquads should be the index of the vertex that is the midpoint of
+     ! the old hexahedron
+     midPointOfIel = rsourceTriangulation%NVT + rsourceTriangulation%NMT &
+            + rsourceTriangulation%NAT + iel
+          
+     ! Step 1: Initialise IverticesOnElement for element IEL
+     ! the first vertex of the original hexahedron
+     p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
+     ! the index of the first edge is now the number of the 2nd vertex
+     p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+     ! the midpoint of face A is the 3rd vertex 
+     p_IvertAtElementDest(3,iel) = midpointFaceA
+     ! the index of the 4th edge is now the index of the 4th vertex
+     p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+     
+     ! the index of the 5th edge is now the index of the 5th vertex     
+     p_IvertAtElementDest(5,iel) = p_IedgesAtElementSource (5,iel)
+     ! the index of the 6th vertex is the index of the midpoint of face B
+     p_IvertAtElementDest(6,iel) = midpointFaceB
+     ! the index of the 7th vertex is the index of the midpoint of the old
+     ! hexahedron
+     p_IvertAtElementDest(7,iel) = midPointOfIel
+     ! the index of the 8th vertex is the index of the midpoint of face E
+     p_IvertAtElementDest(8,iel) = midpointFaceE
+
+         
+     ! Step 2: Initialise IverticesOnElement for element IEL1
+     p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
+     p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+     p_IvertAtElementDest(3,iel1) = midPointFaceA
+     p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+
+     p_IvertAtElementDest(5,iel1) = p_IedgesAtElementSource (6,iel)
+     p_IvertAtElementDest(6,iel1) = midpointFaceC
+     p_IvertAtElementDest(7,iel1) = midPointOfIel
+     p_IvertAtElementDest(8,iel1) = midpointFaceB
+        
+     ! Step 3: Initialise IverticesOnElement for element IEL2
+     p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
+     p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+     p_IvertAtElementDest(3,iel2) = midpointFaceA
+     p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+     
+     p_IvertAtElementDest(5,iel2) = p_IedgesAtElementSource (7,iel)
+     p_IvertAtElementDest(6,iel2) = midpointFaceD
+     p_IvertAtElementDest(7,iel2) = midPointOfIel
+     p_IvertAtElementDest(8,iel2) = midpointFaceC
+     
+     ! Step 4: Initialise IverticesOnElement for element IEL3
+     p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
+     p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+     p_IvertAtElementDest(3,iel3) = midpointFaceA
+     p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+
+     p_IvertAtElementDest(5,iel3) = p_IedgesAtElementSource (8,iel)
+     p_IvertAtElementDest(6,iel3) = midpointFaceE
+     p_IvertAtElementDest(7,iel3) = midPointOfIel
+     p_IvertAtElementDest(8,iel3) = midpointFaceD
+
+     ! Step 5: Initialise IverticesOnElement for element IEL
+     p_IvertAtElementDest(1,iel4) = p_IvertAtElementSource (5,iel)
+     p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource (9,iel)
+     p_IvertAtElementDest(3,iel4) = midpointFaceF
+     p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource (12,iel)
+
+     p_IvertAtElementDest(5,iel4) = p_IedgesAtElementSource (5,iel)
+     p_IvertAtElementDest(6,iel4) = midpointFaceB
+     p_IvertAtElementDest(7,iel4) = midPointOfIel
+     p_IvertAtElementDest(8,iel4) = midpointFaceE
+         
+     ! Step 6: Initialise IverticesOnElement for element IEL1
+     p_IvertAtElementDest(1,iel5) = p_IvertAtElementSource (6,iel)
+     p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource (10,iel)
+     p_IvertAtElementDest(3,iel5) = midpointFaceF
+     p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource (9,iel)
+     
+     p_IvertAtElementDest(5,iel5) = p_IedgesAtElementSource (6,iel)
+     p_IvertAtElementDest(6,iel5) = midpointFaceC
+     p_IvertAtElementDest(7,iel5) = midPointOfIel
+     p_IvertAtElementDest(8,iel5) = midpointFaceB
+     
+        
+     ! Step 7: Initialise IverticesOnElement for element IEL2
+     p_IvertAtElementDest(1,iel6) = p_IvertAtElementSource (7,iel)
+     p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource (11,iel)
+     p_IvertAtElementDest(3,iel6) = midpointFaceF
+     p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource (10,iel)
+     
+     p_IvertAtElementDest(5,iel6) = p_IedgesAtElementSource (7,iel)
+     p_IvertAtElementDest(6,iel6) = midpointFaceD
+     p_IvertAtElementDest(7,iel6) = midPointOfIel
+     p_IvertAtElementDest(8,iel6) = midpointFaceC
+     
+     ! Step 8: Initialise IverticesOnElement for element IEL3
+     p_IvertAtElementDest(1,iel7) = p_IvertAtElementSource(8,iel)
+     p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(12,iel)
+     p_IvertAtElementDest(3,iel7) = midpointFaceF
+     p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource (11,iel)
+     
+     p_IvertAtElementDest(5,iel7) = p_IedgesAtElementSource (8,iel)
+     p_IvertAtElementDest(6,iel7) = midpointFaceE
+     p_IvertAtElementDest(7,iel7) = midPointOfIel
+     p_IvertAtElementDest(8,iel7) = midpointFaceD
+     
+     
+        
+   end do ! iel
+      
+      ! The last step of setting up the raw mesh on the finer level:
+      ! Set up InodalProperty. But that's the most easiest thing: Simply
+      ! copy the nodal property array from the coarse mesh to the fine mesh.
+      ! The nodal information of the edges and faces (number NVT+1...NVT+NMT+NAT)
+      ! that way converts into the nodal information about the new vertices
+      ! on the fine mesh!
+   call storage_copy (rsourceTriangulation%h_InodalProperty,&
+          rdestTriangulation%h_InodalProperty)
+  
+    rdestTriangulation%nve = rsourceTriangulation%nve
+    rdestTriangulation%nee = rsourceTriangulation%nee
+    rdestTriangulation%nae = rsourceTriangulation%nae
+  
+  end subroutine
+  
+!==================================================================== 
+
+  subroutine tria_genEdgeNodalProperty3d(rtriangulation)
+  
+!<description>
+  ! This routine generates the nodal property tags for all edges 
+  ! InodalProperty(NVT+1:NVT+NMT) (KNPR). 
+  ! For this purpose, the following arrays are used:
+  ! InodalProperty(1:NVT), IedgesAtElement, IneighboursAtElement.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    integer(I32), dimension(:), pointer :: p_InodalProperty
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: ive
+    integer(PREC_ELEMENTIDX) :: iel
+    integer(PREC_VERTEXIDX) :: isize
+
+    ! Is everything here we need?
+    if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
+      call output_line ('InodalPropertys not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
+      call output_line ('IedgesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
+      call sys_halt()
+    end if
+    
+    if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
+      call output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
+      call sys_halt()
+    end if
+    
+    ! Do we have (enough) memory for that array?
+    call storage_getsize (rtriangulation%h_InodalProperty, isize)
+    if (isize .LT. rtriangulation%NVT+rtriangulation%NMT) then
+      ! If the size is wrong, reallocate memory.
+      ! Copy the old content as we mustn't destroy the old nodal property
+      ! tags of the vertices.
+      call storage_realloc ('tria_genEdgeNodalProperty3d', &
+          rtriangulation%NVT+rtriangulation%NMT, &
+          rtriangulation%h_InodalProperty, &
+          ST_NEWBLOCK_NOINIT, .TRUE.)
+    end if
+    
+    ! Get the arrays.
+    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
+    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
+        p_IneighboursAtElement)
+        
+    ! Initialise the nodal property with 0 by default.
+    call lalg_clearVectorInt (&
+        p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
+    
+    ! Loop through all elements and all edges on the elements
+    do iel = 1,ubound(p_IedgesAtElement,2)
+    
+      do ive = 1,ubound(p_IedgesAtElement,1)
+      
+        ! Stop if we handled all edges; this is important if there are triangles
+        ! in a quad mesh e.g.
+        if (p_IedgesAtElement(ive,iel) .EQ. 0) exit
+        
+        ! The edge nodal property is initialised with 0 by default -- inner edge.
+        ! Is there a neighbour? If yes, we have an inner edge. If not, this is 
+        ! a boundary edge. 
+        if (p_IneighboursAtElement(ive,iel) .EQ. 0) then
+        
+          ! Get the number of the boundary component from the vertex preceeding
+          ! the edge and store it as information for the edge. 
+          p_InodalProperty(p_IedgesAtElement(ive,iel)) = &
+              p_InodalProperty(p_IverticesAtElement(ive,iel))
+        
+        end if
+        
+      end do ! end ive
+      
+    end do ! end iel
+           
+  end subroutine ! end tria_genEdgeNodalProperty3d
+  
 END MODULE
