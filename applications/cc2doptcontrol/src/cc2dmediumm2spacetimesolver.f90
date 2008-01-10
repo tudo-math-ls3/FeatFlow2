@@ -1574,11 +1574,11 @@ CONTAINS
     
     ! Allocate memory for the two temp vectors.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector,&
-        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%NEQtime,&
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
 
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector2,&
-        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%NEQtime,&
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
         
     ! and memory for a spatial temp vector.
@@ -1686,9 +1686,9 @@ CONTAINS
 
     ! Release the temp vectors.
     ! Note that the vectors may already be released from a previous call.
-    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector2%ntimesteps .NE. 0) &
+    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector2%NEQtime .NE. 0) &
       CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
-    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector%ntimesteps .NE. 0) &
+    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector%NEQtime .NE. 0) &
       CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
     IF (rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%NEQ .NE. 0) &
       CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
@@ -1757,7 +1757,7 @@ CONTAINS
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF (rd%ntimesteps .EQ. 0) THEN
+    IF (rd%NEQtime .EQ. 0) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -2289,7 +2289,7 @@ CONTAINS
     !
     ! For this purpose, loop through the substeps.
     
-    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current time step?
       rsolverNode%p_rproblem%rtimedependence%dtime = &
@@ -2319,12 +2319,12 @@ CONTAINS
       ! zero by initialisation.
       IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
         CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-            isubstep, rtempVectorX)
+            1+isubstep, rtempVectorX)
         
         ! DEBUG!!!
         CALL lsysbl_getbase_double (rtempVectorX,p_Dsol)
       END IF
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
+      CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
       ! Set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -2341,7 +2341,7 @@ CONTAINS
       CALL lsysbl_scaleVector (rtempVectorD,rsolverNode%domega)
     
       ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
+      CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD)
       
     END DO
     
@@ -2729,10 +2729,10 @@ CONTAINS
     ! missing), but a similar thing...
     
     ! Load the solution of the 0th timestep.
-    CALL sptivec_getTimestepData (rd, 0, rtempVectorD2)
+    CALL sptivec_getTimestepData (rd, 1+0, rtempVectorD2)
     
     ! Loop through the substeps we have to update
-    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current time step?
       rsolverNode%p_rproblem%rtimedependence%dtime = &
@@ -2762,7 +2762,7 @@ CONTAINS
       ! zero by initialisation.
       IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
         CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-            isubstep, rtempVectorX)
+            1+isubstep, rtempVectorX)
       END IF
       
 
@@ -2778,10 +2778,10 @@ CONTAINS
       END IF
 
       ! Is this the last timestep or not?
-      IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+      IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
 
         ! Read the RHS of the next timestep
-        CALL sptivec_getTimestepData (rd, isubstep+1, rtempVectorD3)
+        CALL sptivec_getTimestepData (rd, 1+isubstep+1, rtempVectorD3)
       
       END IF
 
@@ -2797,7 +2797,7 @@ CONTAINS
           rtempVectorD2,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
     
       ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD2)
+      CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD2)
       
       ! Shift the RHS vectors: 1 <- 2 <- 3
       CALL lsysbl_copyVector (rtempVectorD2,rtempVectorD1)
@@ -2967,7 +2967,7 @@ CONTAINS
 
     ! Allocate memory for a temp vector.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeBlockFBGS%rtempVector,&
-        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%NEQtime,&
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
 
     ! A-priori we have no error...
@@ -3049,7 +3049,7 @@ CONTAINS
   
 !</subroutine>
 
-    IF (rsolverNode%p_rsubnodeBlockFBGS%rtempVector%ntimesteps .NE. 0) &
+    IF (rsolverNode%p_rsubnodeBlockFBGS%rtempVector%NEQtime .NE. 0) &
       CALL sptivec_releaseVector(rsolverNode%p_rsubnodeBlockFBGS%rtempVector)
 
   END SUBROUTINE
@@ -3255,17 +3255,17 @@ CONTAINS
 
       ! Load the RHS and solution of the 0th timestep.
       CALL sptivec_getTimestepData (rd, &
-          p_rspaceTimeDiscr%rtimeDiscr%nintervals, rtempVectorD2)
+          p_rspaceTimeDiscr%NEQtime, rtempVectorD2)
       
       ! Current iterate
       CALL sptivec_getTimestepData (p_rx, &
-          p_rspaceTimeDiscr%rtimeDiscr%nintervals, rtempVectorX2)
+          p_rspaceTimeDiscr%NEQtime, rtempVectorX2)
 
       ! Loop through the substeps we have to update
-      DO isubstep = p_rspaceTimeDiscr%rtimeDiscr%nintervals,0,-1
+      DO isubstep = p_rspaceTimeDiscr%NEQtime-1,0,-1
       
         ! Current point in time
-        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + iiteration * dtstep
+        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
         rsolverNode%p_rproblem%rtimedependence%dtime = dtime
 
@@ -3291,8 +3291,8 @@ CONTAINS
         IF (isubstep .GT. 0) THEN
         
           ! Read the RHS and solution of the next timestep
-          CALL sptivec_getTimestepData (rd, isubstep-1, rtempVectorD1)
-          CALL sptivec_getTimestepData (p_rx, isubstep-1, rtempVectorX1)
+          CALL sptivec_getTimestepData (rd, 1+isubstep-1, rtempVectorD1)
+          CALL sptivec_getTimestepData (p_rx, 1+isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -3304,7 +3304,7 @@ CONTAINS
         END IF
 
         ! Is this the last timestep or not?
-        IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+        IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
           
           ! Create d2 = RHS - Ml3 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -3318,7 +3318,7 @@ CONTAINS
         ! Read in the solution vector of the current timestep (for nonlinear problems).
         IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
           CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-              isubstep, rtempVectorSol)
+              1+isubstep, rtempVectorSol)
 
           ! DEBUG!!!
           CALL lsysbl_getbase_double (rtempVectorSol,p_Dsol)
@@ -3335,7 +3335,7 @@ CONTAINS
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
           CALL tbc_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
-        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%NEQtime-1) THEN
           CALL tbc_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
         END IF
 
@@ -3356,7 +3356,7 @@ CONTAINS
             rsolverNode%domega,1.0_DP)
       
         ! Save the new solution.
-        CALL sptivec_setTimestepData (p_rx, isubstep, rtempVectorX2)
+        CALL sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
         
         ! Shift the RHS/solution vectors: 1 -> 2 -> 3
         CALL lsysbl_copyVector (rtempVectorD2,rtempVectorD3)
@@ -3372,16 +3372,16 @@ CONTAINS
       ! -----
 
       ! Load the RHS and solution of the 0th timestep.
-      CALL sptivec_getTimestepData (rd, 0, rtempVectorD2)
+      CALL sptivec_getTimestepData (rd, 1+0, rtempVectorD2)
       
       ! Current iterate
-      CALL sptivec_getTimestepData (p_rx, 0, rtempVectorX2)
+      CALL sptivec_getTimestepData (p_rx, 1+0, rtempVectorX2)
 
       ! Loop through the substeps we have to update
-      DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + iiteration * dtstep
+        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
         rsolverNode%p_rproblem%rtimedependence%dtime = dtime
 
@@ -3416,11 +3416,11 @@ CONTAINS
         END IF
 
         ! Is this the last timestep or not?
-        IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+        IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
           
           ! Read the RHS and solution of the next timestep
-          CALL sptivec_getTimestepData (rd, isubstep+1, rtempVectorD3)
-          CALL sptivec_getTimestepData (p_rx, isubstep+1, rtempVectorX3)
+          CALL sptivec_getTimestepData (rd, 1+isubstep+1, rtempVectorD3)
+          CALL sptivec_getTimestepData (p_rx, 1+isubstep+1, rtempVectorX3)
         
           ! Create d2 = RHS - Ml3 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -3434,7 +3434,7 @@ CONTAINS
         ! Read in the solution vector of the current timestep (for nonlinear problems).
         IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
           CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-              isubstep, rtempVectorSol)
+              1+isubstep, rtempVectorSol)
         END IF
 
         ! Set up the matrix weights for the diagonal matrix
@@ -3448,7 +3448,7 @@ CONTAINS
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
           CALL tbc_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
-        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%NEQtime-1) THEN
           CALL tbc_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
         END IF
 
@@ -3469,7 +3469,7 @@ CONTAINS
             rsolverNode%domega,1.0_DP)
       
         ! Save the new solution.
-        CALL sptivec_setTimestepData (p_rx, isubstep, rtempVectorX2)
+        CALL sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
         
         ! Shift the RHS/solution vectors: 1 <- 2 <- 3
         CALL lsysbl_copyVector (rtempVectorD2,rtempVectorD1)
@@ -3620,7 +3620,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: i,ntimesteps
+    INTEGER :: i,NEQtime
     TYPE(t_sptilsSubnodeCG), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -3641,9 +3641,9 @@ CONTAINS
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
+    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%NEQtime
     DO i=1,4
-      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),ntimesteps,&
+      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
         rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
     END DO
   
@@ -3772,7 +3772,7 @@ CONTAINS
     
     ! Release temporary data if associated
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    IF (p_rsubnode%RtempVectors(1)%ntimesteps .NE. 0) THEN
+    IF (p_rsubnode%RtempVectors(1)%NEQtime .NE. 0) THEN
       DO i=4,1,-1
         CALL sptivec_releaseVector (p_rsubnode%RtempVectors(i))
       END DO
@@ -3884,9 +3884,8 @@ CONTAINS
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF ((rd%ntimesteps .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .NE. rd%ntimesteps) ) THEN
+    IF ((rd%NEQtime .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0) ) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -4455,11 +4454,11 @@ CONTAINS
       ! Create an array containing all the rows where a unit vector is to be
       ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
       ! (primal + dual pressure, not the initial condition)
-      ALLOCATE(Iidx(0:2*p_rspaceTimeDiscr%rtimeDiscr%nintervals))
+      ALLOCATE(Iidx(0:2*(p_rspaceTimeDiscr%NEQtime-1)))
       
       ! Add the row of the first primal/dual pressure DOF to that array.
       Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
-      DO i=1,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO i=1,p_rspaceTimeDiscr%NEQtime-1
         Iidx(2*i-1) = i*neq+ivelSize+1
         Iidx(2*i  ) = i*neq+neq-ipSize+1
       END DO
@@ -4504,7 +4503,7 @@ CONTAINS
     p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
    
     ! Create a global matrix:
-    CALL lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%rtimeDiscr%nintervals+1))
+    CALL lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%NEQtime))
   
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -4539,7 +4538,7 @@ CONTAINS
     CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
     
     ! Loop through the substeps
-    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
@@ -4557,7 +4556,7 @@ CONTAINS
       ileft = -1
       iright = 1
       IF (isubstep .EQ. 0) ileft = 0
-      IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) iright = 0
+      IF (isubstep .EQ. p_rspaceTimeDiscr%NEQtime-1) iright = 0
       
       ! Loop over the matrix bands in the current row isubstep
       DO ix = ileft,iright
@@ -4568,7 +4567,7 @@ CONTAINS
           
         ! If there is a nonlinearity involved, get the evaluation point.
         IF (iidxNonlin .GT. 0)  THEN
-          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, iidxNonlin-1, rvector)
+          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, 1+iidxNonlin-1, rvector)
         END IF
       
         ! Assemble the matrix in rblockTemp.
@@ -5117,7 +5116,7 @@ END SUBROUTINE
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubgroup,i,ntimesteps
+    INTEGER :: isubgroup,i,NEQtime
     TYPE(t_sptilsSubnodeBiCGStab), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -5139,9 +5138,9 @@ END SUBROUTINE
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
+    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%NEQtime
     DO i=1,6
-      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),ntimesteps,&
+      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
         rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
     END DO
     
@@ -5401,9 +5400,8 @@ END SUBROUTINE
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF ((rd%ntimesteps .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .NE. rd%ntimesteps) ) THEN
+    IF ((rd%NEQtime .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0)) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -5910,7 +5908,7 @@ END SUBROUTINE
 !</subroutine>
 
     ! local variables
-    INTEGER :: ilev,NLMAX,ntimesteps
+    INTEGER :: ilev,NLMAX,NEQtime
     INTEGER(PREC_VECIDX) :: NEQ
     TYPE(t_sptilsMGLevelInfo), POINTER :: p_rmgLevel
     
@@ -5955,22 +5953,22 @@ END SUBROUTINE
       !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
       !        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
               
-      ntimesteps = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
+      NEQtime = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%NEQtime
               
       ! On all levels except for the maximum one, create a solution vector
       IF (ilev .LT. NLMAX) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rsolutionVector,ntimesteps,p_rmgLevel%&
+            p_rmgLevel%rsolutionVector,NEQtime,p_rmgLevel%&
             rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       
       ! On all levels except for the first one, create a RHS and a temp vector
       IF (ilev .GT. 1) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rrhsVector,ntimesteps,p_rmgLevel%&
+            p_rmgLevel%rrhsVector,NEQtime,p_rmgLevel%&
             rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
         CALL sptivec_initVector (&
-            p_rmgLevel%rtempVector,ntimesteps,p_rmgLevel%&
+            p_rmgLevel%rtempVector,NEQtime,p_rmgLevel%&
             rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       
@@ -5979,7 +5977,7 @@ END SUBROUTINE
       IF (rsolverNode%p_rsubnodeMultigrid%dalphamin .NE. &
           rsolverNode%p_rsubnodeMultigrid%dalphamax) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rtempCGCvector,ntimesteps,p_rmgLevel%&
+            p_rmgLevel%rtempCGCvector,NEQtime,p_rmgLevel%&
             rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       

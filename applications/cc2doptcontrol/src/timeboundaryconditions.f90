@@ -151,7 +151,7 @@ CONTAINS
     CASE (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -167,11 +167,11 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rx, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rx, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
       END DO
       
@@ -194,11 +194,11 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rx, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rx, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
       END DO
 
@@ -272,7 +272,7 @@ CONTAINS
     CASE (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -288,18 +288,18 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rb, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rb, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
       END DO
       
     CASE (TDISCR_DG0)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -315,11 +315,11 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rb, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rb, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
       END DO
 
@@ -388,7 +388,7 @@ CONTAINS
     CASE (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -404,7 +404,7 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rd, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
         
@@ -416,7 +416,7 @@ CONTAINS
           CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
         END IF
         
-        CALL sptivec_setTimestepData(rd, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
       END DO
     
@@ -424,7 +424,7 @@ CONTAINS
 
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -440,7 +440,7 @@ CONTAINS
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rd, isubstep, rtempVector)
+        CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
         CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
         
@@ -452,7 +452,7 @@ CONTAINS
           CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
         END IF
         
-        CALL sptivec_setTimestepData(rd, isubstep, rtempVector)
+        CALL sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
       END DO
 
@@ -504,14 +504,14 @@ CONTAINS
     END IF
 
     ! Normalise the primal and dual pressure to zero.
-    DO isubstep = 0,rx%p_rtimeDiscretisation%nintervals
+    DO isubstep = 0,rx%NEQtime-1
     
-      CALL sptivec_getTimestepData(rx, isubstep, rtempVector)
+      CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
       
       CALL vecfil_subvectorToL20 (rtempVectorX,3)
       CALL vecfil_subvectorToL20 (rtempVectorX,6)
       
-      CALL sptivec_setTimestepData(rx, isubstep, rtempVector)
+      CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
       
     END DO
   
@@ -574,7 +574,7 @@ CONTAINS
 
     ! Overwrite the primal RHS with the initial primal solution vector.
     ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
+    CALL sptivec_getTimestepData(rx, 1+0, rtempVectorX)
     
 !    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
@@ -582,7 +582,7 @@ CONTAINS
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
 
     ! Save the modified RHS.
-    CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
+    CALL sptivec_setTimestepData(rb, 1+0, rtempVectorD)
     
     ! DEBUG!!!
     !CALL sptivec_getTimestepData(rx, 2, rtempVectorX)
@@ -627,9 +627,9 @@ CONTAINS
 
     ! Overwrite the primal defect with 0 -- as the solution must not be changed.
     ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rd, 0, rtempVectorD)
+    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
     CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
-    CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
+    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
 
     IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
       ! That's a special case, we have the terminal condition "lambda(T)=0".
@@ -641,11 +641,11 @@ CONTAINS
       ! play by the mass matrix term in the system matrix of the last timestep,
       ! so this does not have to be treated explicitly.
       
-      CALL sptivec_getTimestepData(rd, rd%ntimesteps, rtempVectorD)
+      CALL sptivec_getTimestepData(rd, rd%NEQtime, rtempVectorD)
       
       CALL tbc_implementTermCondDefSingle (rspaceTimeDiscr, rtempvectorD)
       
-      CALL sptivec_setTimestepData(rd, rd%ntimesteps, rtempVectorD)
+      CALL sptivec_setTimestepData(rd, rd%NEQtime, rtempVectorD)
       
     END IF
 

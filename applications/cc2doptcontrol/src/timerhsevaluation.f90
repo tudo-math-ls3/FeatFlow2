@@ -109,7 +109,7 @@ CONTAINS
 
 !</subroutine>
 
-    IF (rb%ntimesteps .EQ. 0) THEN
+    IF (rb%NEQtime .EQ. 0) THEN
       ! Create a new vector if rb is undefined.
       CALL sptivec_initVectorDiscr (rb,rspaceTimeDiscr%rtimeDiscr,&
           rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
@@ -352,7 +352,7 @@ CONTAINS
       END IF
       
       ! Save the RHS.
-      CALL sptivec_setTimestepData(rb, isubstep, rtempVectorRHS)
+      CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVectorRHS)
       
     END DO
     
@@ -415,8 +415,8 @@ CONTAINS
     ! The assembly for dG0-RHS is rather easy.
     ! The i'th time DOF belongs to the i'th time interval Ti and
     ! has the following form:
-    !
-    !  f_i  =  int_Ti f(.,t) dt  ~  f(.,T_i(midpoint)) * |Ti|
+    !  ___
+    !  f_i  =  1/|Ti| int_Ti f(.,t) dt  ~  f(.,T_i(midpoint))
     !
     ! by the midpoint rule in time! So we just make a loop
     ! over the timesteps and calculate the f()-values in the
@@ -430,10 +430,7 @@ CONTAINS
       CALL trhsevl_assembleSpatialRHS (rproblem,isubstep,&
         (REAL(isubstep,DP)+0.5_DP)*dtstep,rtempVector)
         
-      ! Weight the result by the interval length and save it.
-      CALL lsysbl_scaleVector (rtempVector,dtstep)
-      
-      CALL sptivec_setTimestepData(rb, isubstep, rtempVector)
+      CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
     END DO
       
     ! Release the temp vector.

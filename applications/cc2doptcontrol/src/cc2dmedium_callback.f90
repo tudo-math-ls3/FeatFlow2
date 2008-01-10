@@ -168,7 +168,7 @@ CONTAINS
     ! from the space-time vector.    
     IF ((rproblem%roptcontrol%itypeTargetFlow .EQ. 2) .OR. &
         (rproblem%roptcontrol%itypeTargetFlow .EQ. 4))  THEN
-      IF (rproblem%roptcontrol%rtargetFlowNonstat%ntimesteps .GT. 0) THEN
+      IF (rproblem%roptcontrol%rtargetFlowNonstat%NEQtime .GT. 1) THEN
         
         !CALL sptivec_getTimestepData (rproblem%roptcontrol%rtargetFlowNonstat, &
         !    rproblem%rtimedependence%itimeStep, rproblem%roptcontrol%rtargetFlow)

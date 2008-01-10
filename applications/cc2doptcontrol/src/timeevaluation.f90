@@ -92,14 +92,14 @@ CONTAINS
         ! Nice coincidence, we have exactly timestep itimestep. Ok, then we 
         ! can call the routine to get that timestep; this saves us some
         ! time as the interpolation can be omitted.
-        CALL sptivec_getTimestepData (rspaceTimeVector, itimestep, rvector)
+        CALL sptivec_getTimestepData (rspaceTimeVector, 1+itimestep, rvector)
         RETURN
       END IF
       
       ! Get the 'relative' evaluation time; this in the interval -1..1
       dreltime = dabstime-REAL(itimestep,DP)
       
-      IF (rspaceTimeVector%ntimesteps .EQ. 1) THEN
+      IF (rspaceTimeVector%NEQtime .EQ. 2) THEN
         ! Special case: only one timestep!
         ! Interpolate linearly.
         CALL interpolateLinear (dreltime,0,1,rspaceTimeVector,rvector)
@@ -131,19 +131,19 @@ CONTAINS
         ! Nice coincidence, we have exactly timestep itimestep. Ok, then we 
         ! can call the routine to get that timestep; this saves us some
         ! time as the interpolation can be omitted.
-        CALL sptivec_getTimestepData (rspaceTimeVector, itimestep, rvector)
+        CALL sptivec_getTimestepData (rspaceTimeVector, 1+itimestep, rvector)
         RETURN
       END IF
         
       ! Get the 'relative' evaluation time; this in the interval -1..1
       dreltime = dabstime-0.5_DP-REAL(itimestep,DP)
       
-      IF (rspaceTimeVector%ntimesteps .EQ. 1) THEN
+      IF (rspaceTimeVector%NEQtime .EQ. 2) THEN
         ! Special case: only one timestep!
         ! Get the one and only solution
-        CALL sptivec_getTimestepData (rspaceTimeVector, 0, rvector)
+        CALL sptivec_getTimestepData (rspaceTimeVector, 1+0, rvector)
         
-      ELSE IF (rspaceTimeVector%ntimesteps .EQ. 2) THEN
+      ELSE IF (rspaceTimeVector%NEQtime .EQ. 3) THEN
         ! Special case: only two timestep!
         ! Interpolate linearly.
         CALL interpolateLinear (dreltime,0,1,rspaceTimeVector,rvector)
@@ -203,8 +203,8 @@ CONTAINS
       CALL lsysbl_createVecBlockIndirect (rvector,rvec,.FALSE.)
       
       ! Get the two timesteps
-      CALL sptivec_getTimestepData (rspaceTimeVector, istep1, rvec)
-      CALL sptivec_getTimestepData (rspaceTimeVector, istep2, rvector)
+      CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep1, rvec)
+      CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep2, rvector)
       
       ! Interpolate
       CALL lsysbl_vectorLinearComb (rvec,rvector,&
@@ -251,9 +251,9 @@ CONTAINS
       CALL lsysbl_createVecBlockIndirect (rvector,rvec2,.FALSE.)
       
       ! Get the two timesteps
-      CALL sptivec_getTimestepData (rspaceTimeVector, istep1, rvec1)
-      CALL sptivec_getTimestepData (rspaceTimeVector, istep2, rvec2)
-      CALL sptivec_getTimestepData (rspaceTimeVector, istep3, rvector)
+      CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep1, rvec1)
+      CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep2, rvec2)
+      CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep3, rvector)
 
       ! Get the data arrays
       CALL lsysbl_getbase_double (rvec1,p_Ddata1)

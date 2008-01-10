@@ -727,7 +727,7 @@ CONTAINS
     
     ! Loop through the substeps
     
-    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
@@ -802,7 +802,7 @@ CONTAINS
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
         
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! isubstep+1 and a substep isubstep-1!
@@ -1747,7 +1747,7 @@ CONTAINS
     !
     ! For this purpose, loop through the substeps.
     
-    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
+    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current time step?
       rproblem%rtimedependence%dtime = &
@@ -1770,8 +1770,8 @@ CONTAINS
       CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
 
       ! Read in the RHS/solution/defect vector of the current timestep.
-      CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
+      CALL sptivec_getTimestepData (rx, 1+isubstep, rtempVectorX)
+      CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
       ! Set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
@@ -1783,7 +1783,7 @@ CONTAINS
         rtempVectorD,rtempVectorX,bsuccess,rproblem%rcollection)      
     
       ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
+      CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD)
       
     END DO
     
@@ -2467,7 +2467,7 @@ CONTAINS
     DO ilev=1,SIZE(RspatialPrecond)-1
       ALLOCATE(RspaceTimePrecondMatrix(ilev)%p_rsolution)
       CALL sptivec_initVector (RspaceTimePrecondMatrix(ilev)%p_rsolution,&
-        RspaceTimeDiscr(ilev)%rtimeDiscr%nintervals,&
+        RspaceTimeDiscr(ilev)%NEQtime,&
         RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation)
     END DO
 

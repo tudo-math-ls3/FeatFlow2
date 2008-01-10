@@ -237,7 +237,7 @@ CONTAINS
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals
+    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%NEQtime-1
     
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &

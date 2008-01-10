@@ -166,10 +166,9 @@ CONTAINS
     REAL(DP),DIMENSION(2) :: Derr
     
     Derror(1:4) = 0.0_DP
-    dtstep = (rproblem%rtimedependence%dtimeMax-rproblem%rtimedependence%dtimeInit) / &
-        rsolution%ntimesteps
+    dtstep = rsolution%p_rtimeDiscretisation%dtstep
 
-    DO isubstep = 0,rsolution%ntimesteps
+    DO isubstep = 0,rsolution%NEQtime-1
       ! Current point in time
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &
@@ -180,7 +179,7 @@ CONTAINS
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
-      !CALL sptivec_getTimestepData (rsolution, isubstep, rtempVector)
+      !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
       CALL tmevl_evaluate(rsolution,rproblem%rtimedependence%dtime,rtempVector)
 
       ! Initialise the collection for the assembly process with callback routines.
@@ -202,7 +201,7 @@ CONTAINS
 
       ! Compute:
       ! Derror(3) = ||y(T)-z(T)||^2
-      IF (isubstep .EQ. rsolution%ntimesteps) THEN
+      IF (isubstep .EQ. rsolution%NEQtime-1) THEN
         Derror(3) = 0.5_DP*(Derr(1)**2+Derr(2)**2)
       END IF
       
@@ -219,8 +218,8 @@ CONTAINS
     END DO
     
     ! Normalise...
-    Derror(1) = Derror(1) / REAL(rsolution%ntimesteps+1,DP)
-    Derror(2) = Derror(2) / REAL(rsolution%ntimesteps+1,DP)
+    Derror(1) = Derror(1) / REAL(rsolution%NEQtime,DP)
+    Derror(2) = Derror(2) / REAL(rsolution%NEQtime,DP)
     
     ! Calculate J(.)
     Derror(4) = 0.5_DP * Derror(1)  +  0.5_DP * dgamma * Derror(3)
