@@ -478,6 +478,12 @@ MODULE triangulation
     ! the vertex in mathematical positive sense.
     INTEGER             :: NVBD = 0
     
+    ! the number of edges on the boundary
+    INTEGER             :: NEBD = 0
+    
+    ! the number of faces on the boundary
+    INTEGER             :: NABD = 0
+    
     ! Number of edges on the boundary; coincides with NVBD
     ! for 2D domains.
     INTEGER             :: NMBD = 0
@@ -2743,8 +2749,9 @@ CONTAINS
     
     !----BOUNDARY------
     ! call verticesAtBoundary
-    ! call edgesAtBoundary
+    
       call tria_genFacesAtBoundary      (rtriangulation)
+      call tria_genEdgesAtBoundary      (rtriangulation)
     !----BOUNDARY------
     
     ! CALL tria_genElementVolume3d       (rtriangulation)
@@ -4836,7 +4843,21 @@ CONTAINS
         IF (rtriangulation%h_IelementsAtFace .EQ. ST_NOHANDLE) &
           CALL tria_genElementsAtFace        (rtriangulation)             
           
+        IF (rtriangulation%h_IfacesAtBoundary .EQ. ST_NOHANDLE) &
+          CALL tria_genFacesAtBoundary       (rtriangulation)             
+
+        IF (rtriangulation%h_IedgesAtFace .EQ. ST_NOHANDLE) &
+          CALL tria_genEdgesAtFace           (rtriangulation)             
+
           
+        IF (rtriangulation%h_IfacesAtEdge .EQ. ST_NOHANDLE) &
+          CALL tria_genFacesAtEdge           (rtriangulation)             
+
+        IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
+          CALL tria_genEdgesAtBoundary       (rtriangulation)             
+
+
+!    call tria_genFacesAtEdge          (rtriangulation)          
 
 !    call tria_genNeighboursAtElement3D(rtriangulation)
 !    call tria_genEdgesAtElement3D     (rtriangulation)
@@ -4859,20 +4880,7 @@ CONTAINS
 !    call tria_genEdgesAtFace          (rtriangulation)
 !    call tria_genFacesAtEdge          (rtriangulation)
 !    call tria_genFacesAtVertex        (rtriangulation)
-        
-        
-          
-!  p_IvertAtElementSource
-!  p_IedgesAtElementSource
-!  p_IvertAtEdgeSource
-!  p_IverticesAtFace
-!  p_IfacesAtElement
-!  
-    ! the verticesAtFace
-!    INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
-      
-          
-       
+   
        
         CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
             cflags=cflags)
@@ -5007,7 +5015,7 @@ CONTAINS
       call tria_refineMesh2lv3D(rsourceTriangulation, rdestTria)
       
       ! Refine the boundary
-      !CALL tria_refineBdry2lv3D(rsourceTriangulation,rdestTria,rboundary)
+      call tria_refineBdry2lv3D(rsourceTriangulation,rdestTria,rboundary)
       
       
     CASE DEFAULT
@@ -8491,8 +8499,6 @@ CONTAINS
   
   integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtFace
   
-  integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtElementIdx  
-  
   integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdgeIdx
   
   integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdge
@@ -9283,7 +9289,7 @@ CONTAINS
         end if
       end do ! end iel
 
-      if(inumVertices == 4 .and. inumVertices < 2) then
+      if(inumVertices == 4 .and. inumElements < 2) then
       ! boundary face
         NFBD = NFBD + 1
       else
@@ -9291,6 +9297,9 @@ CONTAINS
       end if
       
     end do ! end iface
+
+    ! assign the number of faces on the boundary
+    rtriangulation%NABD = NFBD
 
     ! allocate memory
     if(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) then
@@ -9376,52 +9385,211 @@ CONTAINS
       real(DP), dimension(:,:), pointer :: p_DcornerCoordDest
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IvertAtBoundartySource
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundartySource
+      integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalPropertySource
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IvertAtBoundartyDest
+      integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalPropertyDest
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdxSource
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdxDest
-      integer :: ivbd,ibct
+      
+      integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
+      integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundary
+      
+      integer :: ivbd,ibct,isize
       
       ! Get the definition of the boundary vertices and -edges.
       call storage_getbase_int (rsourceTriangulation%h_IverticesAtBoundary,&
           p_IvertAtBoundartySource)
       call storage_getbase_int (rsourceTriangulation%h_IedgesAtBoundary,&
           p_IedgesAtBoundartySource)
+          
+      call storage_getbase_int (rsourceTriangulation%h_InodalProperty,&
+          p_InodalPropertySource)
+
       call storage_getbase_int (rsourceTriangulation%h_IboundaryCpIdx,&
           p_IboundaryCpIdxSource)
 
-!      ! The number of boundary vertices is doubled.
-       rdestTriangulation%NVBD = rsourceTriangulation%NVBD ! + &
-!                                rsourceTriangulation%NEBD + &      
-!                                rsourceTriangulation%NABD &      
+      call storage_getbase_int (rsourceTriangulation%h_IfacesAtBoundary,&
+          p_IfacesAtBoundary)
+
+      call storage_getbase_int (rsourceTriangulation%h_IedgesAtBoundary,&
+          p_IedgesAtBoundary)
+
+
+
+      ! calculate the new value of NVBD
+      rdestTriangulation%NVBD =  rsourceTriangulation%NVBD + &
+                                 rsourceTriangulation%NEBD + &      
+                                 rsourceTriangulation%NABD       
                                                 
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
           
-!      ! Create new arrays in the fine grid for the vertices and indices.
-!      CALL storage_new ('tria_refineBdry2lv2D', &
-!          'KVBD', INT(rdestTriangulation%NVBD,I32), &
-!          ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
-!
-      CALL storage_new ('tria_generateBasicBoundary', &
-          'KBCT', INT(rdestTriangulation%NBCT+1,I32), &
-          ST_INT, rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
+      ! Create new arrays in the fine grid for the vertices and indices.
+      CALL storage_new ('tria_refineBdry2lv2D', &
+          'KVBD', INT(rdestTriangulation%NVBD,I32), &
+          ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
 
-      CALL storage_getbase_int (rdestTriangulation%h_IverticesAtBoundary,&
-          p_IvertAtBoundartyDest)
-      CALL storage_getbase_int (rdestTriangulation%h_IboundaryCpIdx,&
-          p_IboundaryCpIdxDest)
-          
-          
-     ! calculate the number of faces on the boundary
+      ! update the h_IverticesAtBoundary 
+      
+      ! assume we are at lvl "r" then:
+      ! there are NVBD boundary vertices from lvl (r-1)
+      ! there are NEBD new boundary vertices from the edges
+      ! there are NABD new boundary vertices from the faces
+      
+      CALL storage_getsize (rdestTriangulation%h_InodalProperty,isize)
+      IF (isize .NE. rdestTriangulation%NVT) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_refineBdry2lv3D', &
+            INT(rdestTriangulation%NVT,I32),&
+            rdestTriangulation%h_InodalProperty, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF      
+      
+      call storage_getbase_int (rdestTriangulation%h_InodalProperty,&
+          p_InodalPropertyDest)
+      
      
-     ! calculate the number of edges on the boundary
-     
-     ! allocate memory for the KVDB array
-     
-     ! update the h_IverticesAtBoundary and p_IboundaryCpIdx arrays        
-
-  
+      ! p_Inodalproperties
+      ! 1:old_NVT = p_InodalpropertiesSource(1:old_NVT)
+      p_InodalPropertyDest(1:rsourceTriangulation%NVT) = &        
+      p_InodalPropertySource(1:rdestTriangulation%NVT)
   
   end subroutine ! end tria_refineBdry2lv3D
+
+!====================================================================
+  
+  subroutine tria_genEdgesAtBoundary(rtriangulation)
+!<description>
+  ! This routine generates the edgesAtBoundary information
+  ! by using a simple conditions:
+  !                          1) a boundary edge has a boundary face attached to it
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    integer(I32), dimension(:), pointer :: p_InodalProperty
+    
+    integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtEdgeIdx
+    integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtEdge
+    
+    integer(prec_vertexidx), dimension(:), pointer :: p_IedgesAtBoundary
+    integer(prec_vertexidx), dimension(:), pointer :: p_Iaux
+    integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtBoundary
+    integer :: ive
+    integer(prec_elementidx) :: iface,iface1,iface2, ifaceIndex
+    integer(prec_vertexidx) :: isize, iglobIndex, NEBD, eIndex
+    
+    NEBD = 0
+    
+    ! Is everything here we need?
+    if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
+      call output_line ('InodalPropertys not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IfacesAtBoundary .EQ. ST_NOHANDLE) then
+      call output_line ('IfacesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+      call sys_halt()
+    end if
+
+
+    if (rtriangulation%h_IfacesAtEdgeIdx .EQ. ST_NOHANDLE) then
+      call output_line ('IfacesAtEdgeIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IfacesAtEdge .EQ. ST_NOHANDLE) then
+      call output_line ('IfacesAtEdge not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+      call sys_halt()
+    end if
+
+
+    ! Get the arrays.
+    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
+    call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,p_IfacesAtBoundary)
+    call storage_getbase_int (rtriangulation%h_IfacesAtEdgeIdx,p_IfacesAtEdgeIdx)
+    call storage_getbase_int (rtriangulation%h_IfacesAtEdge,p_IfacesAtEdge)
+    
+    ! create an auxilliary array
+    allocate(p_Iaux(rtriangulation%NAT))
+    
+    iface1=1
+    
+    do iface=1,rtriangulation%NAT
+    
+      if(p_IfacesAtBoundary(iface1) == iface) then
+        p_Iaux(iface) = 1
+        iface1 = iface1 + 1
+      else
+        p_Iaux(iface) = 0
+      end if
+    
+    end do ! end iface
+    
+    ! check all edges
+    do ive=1,rtriangulation%NMT
+    
+      iface1 = p_IfacesAtEdgeIdx(ive)
+      iface2 = p_IfacesAtEdgeIdx(ive+1) - 1
+      
+      ! check all connected faces
+      do iface=iface1,iface2
+        ifaceIndex = p_IfacesAtEdge(iface)
+        if(p_Iaux(ifaceIndex) == 1) then
+          NEBD = NEBD + 1
+          exit
+        end if
+      end do ! end iface
+    
+    end do ! end iface
+    
+    ! assign the number of faces on the boundary
+    rtriangulation%NEBD = NEBD
+
+    ! allocate memory
+    if(rtriangulation%h_IedgesAtBoundary == ST_NOHANDLE) then
+      call storage_new ('tria_genEdgesAtBoundary', 'IedgesAtBoundary', &
+          int(NEBD,I32), ST_INT, &
+          rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
+    end if      
+    
+    ! get the pointer
+    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    
+    eIndex = 1
+    
+    ! check all edges
+    do ive=1,rtriangulation%NMT
+    
+      iface1 = p_IfacesAtEdgeIdx(ive)
+      iface2 = p_IfacesAtEdgeIdx(ive+1) - 1
+      
+      ! check all connected faces
+      do iface=iface1,iface2
+        ifaceIndex = p_IfacesAtEdge(iface)
+        if(p_Iaux(ifaceIndex) == 1) then
+          p_IedgesAtBoundary(eIndex) = ive
+          eIndex = eIndex + 1
+          exit  
+        end if
+      end do ! end iface
+    
+    end do ! end iface
+    
+    
+    ! free memory
+    deallocate(p_Iaux)
+    
+  end subroutine ! end tria_genEdgesAtBoundary
   
 END MODULE
 
