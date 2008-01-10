@@ -168,6 +168,7 @@ MODULE cc2dmediumm2spacetimesolver
   USE spacetimevectors
   USE spacetimeinterlevelprojection
   USE dofmapping
+  USE timeboundaryconditions
   
   USE matrixio
     
@@ -1573,12 +1574,12 @@ CONTAINS
     
     ! Allocate memory for the two temp vectors.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector,&
-        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        p_rspaceTimeDiscr%niterations)
+        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
 
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector2,&
-        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        p_rspaceTimeDiscr%niterations)
+        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
         
     ! and memory for a spatial temp vector.
     CALL lsysbl_createVecBlockByDiscr (&
@@ -1853,12 +1854,12 @@ CONTAINS
         ! Calculate the residuum for the next step : (b-Ax)
         CALL sptivec_copyVector (rd,p_rdef)
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_rx,p_rdef, -1.0_DP,1.0_DP,dresnorm,.TRUE.)
+            p_rx,p_rdef, -1.0_DP,1.0_DP,dresnorm,.FALSE.)
         
         ! Filter the defect for boundary conditions in space and time.
-        CALL c2d2_implementInitCondDefect (&
+        CALL tbc_implementInitCondDefect (&
             p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
-        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+        CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
            p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
         
         ! Get the norm of the new (final?) residuum
@@ -2242,7 +2243,7 @@ CONTAINS
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
-    dtstep = p_rspaceTimeDiscr%dtstep
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! Create temp vectors for X, B and D.
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
@@ -2288,7 +2289,7 @@ CONTAINS
     !
     ! For this purpose, loop through the substeps.
     
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
     
       ! Current time step?
       rsolverNode%p_rproblem%rtimedependence%dtime = &
@@ -2625,7 +2626,7 @@ CONTAINS
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
-    dtstep = p_rspaceTimeDiscr%dtstep
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! Create temp vectors
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
@@ -2731,7 +2732,7 @@ CONTAINS
     CALL sptivec_getTimestepData (rd, 0, rtempVectorD2)
     
     ! Loop through the substeps we have to update
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
     
       ! Current time step?
       rsolverNode%p_rproblem%rtimedependence%dtime = &
@@ -2777,7 +2778,7 @@ CONTAINS
       END IF
 
       ! Is this the last timestep or not?
-      IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+      IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
 
         ! Read the RHS of the next timestep
         CALL sptivec_getTimestepData (rd, isubstep+1, rtempVectorD3)
@@ -2966,8 +2967,8 @@ CONTAINS
 
     ! Allocate memory for a temp vector.
     CALL sptivec_initVector (rsolverNode%p_rsubnodeBlockFBGS%rtempVector,&
-        dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
-        p_rspaceTimeDiscr%niterations)
+        p_rspaceTimeDiscr%rtimeDiscr%nintervals,&
+        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
 
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
@@ -3089,7 +3090,7 @@ CONTAINS
 
     ! local variables
     INTEGER :: isubstep,iiteration,iidxNonlin
-    REAL(DP) :: dtheta,dtstep
+    REAL(DP) :: dtheta,dtstep,dtime
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
@@ -3110,7 +3111,7 @@ CONTAINS
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
-    dtstep = p_rspaceTimeDiscr%dtstep
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
     
     domegaSOR = rsolverNode%p_rsubnodeBlockFBGS%domegaSOR
 
@@ -3240,12 +3241,12 @@ CONTAINS
     CALL sptivec_clearVector (p_rx)
     
     DO iiteration = 1,rsolverNode%nminIterations
-    
+
       ! Filter the current solution for boundary conditions in space and time.
       ! rtempVectorRHS is used as temp vector here.
-      CALL c2d2_implementInitCondDefect (&
+      CALL tbc_implementInitCondDefect (&
           p_rspaceTimeDiscr,p_rx,rtempVectorRHS)
-      CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+      CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
          p_rspaceTimeDiscr,p_rx,rtempVectorRHS)
 
       ! -----
@@ -3253,17 +3254,20 @@ CONTAINS
       ! -----
 
       ! Load the RHS and solution of the 0th timestep.
-      CALL sptivec_getTimestepData (rd, p_rspaceTimeDiscr%niterations, rtempVectorD2)
+      CALL sptivec_getTimestepData (rd, &
+          p_rspaceTimeDiscr%rtimeDiscr%nintervals, rtempVectorD2)
       
       ! Current iterate
-      CALL sptivec_getTimestepData (p_rx, p_rspaceTimeDiscr%niterations, rtempVectorX2)
+      CALL sptivec_getTimestepData (p_rx, &
+          p_rspaceTimeDiscr%rtimeDiscr%nintervals, rtempVectorX2)
 
       ! Loop through the substeps we have to update
-      DO isubstep = p_rspaceTimeDiscr%niterations,0,-1
+      DO isubstep = p_rspaceTimeDiscr%rtimeDiscr%nintervals,0,-1
       
-        ! Current time step?
-        rsolverNode%p_rproblem%rtimedependence%dtime = &
-            rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
+        ! Current point in time
+        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + iiteration * dtstep
+
+        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
 
         IF (rsolverNode%ioutputLevel .GE. 1) THEN
           CALL output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
@@ -3300,7 +3304,7 @@ CONTAINS
         END IF
 
         ! Is this the last timestep or not?
-        IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+        IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
           
           ! Create d2 = RHS - Ml3 
           CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
@@ -3330,13 +3334,13 @@ CONTAINS
             
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
-          CALL c2d2_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
-        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) THEN
-          CALL c2d2_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+          CALL tbc_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+          CALL tbc_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
         END IF
 
-        CALL c2d2_implementBCdefectSingle (&
-            rsolverNode%p_rproblem,isubstep,p_rspaceTimeDiscr,rtempVectorRHS)
+        CALL tbc_implementSpatialBCdefect (&
+            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         !
@@ -3374,11 +3378,12 @@ CONTAINS
       CALL sptivec_getTimestepData (p_rx, 0, rtempVectorX2)
 
       ! Loop through the substeps we have to update
-      DO isubstep = 0,p_rspaceTimeDiscr%niterations
+      DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
       
-        ! Current time step?
-        rsolverNode%p_rproblem%rtimedependence%dtime = &
-            rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
+        ! Current point in time
+        dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + iiteration * dtstep
+
+        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
 
         IF (rsolverNode%ioutputLevel .GE. 1) THEN
           CALL output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
@@ -3411,7 +3416,7 @@ CONTAINS
         END IF
 
         ! Is this the last timestep or not?
-        IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+        IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
           
           ! Read the RHS and solution of the next timestep
           CALL sptivec_getTimestepData (rd, isubstep+1, rtempVectorD3)
@@ -3442,13 +3447,13 @@ CONTAINS
             
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
-          CALL c2d2_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
-        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) THEN
-          CALL c2d2_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+          CALL tbc_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+          CALL tbc_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
         END IF
 
-        CALL c2d2_implementBCdefectSingle (&
-            rsolverNode%p_rproblem,isubstep,p_rspaceTimeDiscr,rtempVectorRHS)
+        CALL tbc_implementSpatialBCdefect (&
+            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         !
@@ -3616,7 +3621,6 @@ CONTAINS
 
     ! local variables
     INTEGER :: i,ntimesteps
-    INTEGER(PREC_VECIDX) :: NEQ
     TYPE(t_sptilsSubnodeCG), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -3637,11 +3641,10 @@ CONTAINS
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%niterations
-    NEQ = dof_igetNDofGlobBlock(rsolverNode%rmatrix%p_rspaceTimeDiscretisation%&
-        p_rlevelInfo%p_rdiscretisation)
+    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
     DO i=1,4
-      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQ,ntimesteps)
+      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),ntimesteps,&
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
     END DO
   
     ! Allocate memory for a spatial temp vector.
@@ -3881,8 +3884,9 @@ CONTAINS
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF ((rd%ntimesteps .EQ. 0) .OR. (p_rspaceTimeDiscr%niterations .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%niterations .NE. rd%ntimesteps) ) THEN
+    IF ((rd%ntimesteps .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .NE. rd%ntimesteps) ) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -3940,9 +3944,9 @@ CONTAINS
     CALL sptivec_copyVector(rd,p_DR)
     
     ! Filter the defect for boundary conditions in space and time.
-    CALL c2d2_implementInitCondDefect (&
+    CALL tbc_implementInitCondDefect (&
         p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-    CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+    CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
         p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
     
     ! Get the norm of the residuum
@@ -4037,9 +4041,9 @@ CONTAINS
         CALL sptivec_vectorLinearComb (p_DP, p_DR, -dalpha, 1.0_DP)
 
         ! Filter the defect for boundary conditions in space and time.
-        CALL c2d2_implementInitCondDefect (&
+        CALL tbc_implementInitCondDefect (&
             p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+        CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
            p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
 
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -4451,11 +4455,11 @@ CONTAINS
       ! Create an array containing all the rows where a unit vector is to be
       ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
       ! (primal + dual pressure, not the initial condition)
-      ALLOCATE(Iidx(0:2*p_rspaceTimeDiscr%niterations))
+      ALLOCATE(Iidx(0:2*p_rspaceTimeDiscr%rtimeDiscr%nintervals))
       
       ! Add the row of the first primal/dual pressure DOF to that array.
       Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
-      DO i=1,p_rspaceTimeDiscr%niterations
+      DO i=1,p_rspaceTimeDiscr%rtimeDiscr%nintervals
         Iidx(2*i-1) = i*neq+ivelSize+1
         Iidx(2*i  ) = i*neq+neq-ipSize+1
       END DO
@@ -4500,7 +4504,7 @@ CONTAINS
     p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
    
     ! Create a global matrix:
-    CALL lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%niterations+1))
+    CALL lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%rtimeDiscr%nintervals+1))
   
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -4535,11 +4539,11 @@ CONTAINS
     CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
     
     ! Loop through the substeps
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%rtimeDiscr%dtstep
       rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
@@ -4553,14 +4557,14 @@ CONTAINS
       ileft = -1
       iright = 1
       IF (isubstep .EQ. 0) ileft = 0
-      IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) iright = 0
+      IF (isubstep .EQ. p_rspaceTimeDiscr%rtimeDiscr%nintervals) iright = 0
       
       ! Loop over the matrix bands in the current row isubstep
       DO ix = ileft,iright
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,&
-          p_rspaceTimeDiscr%dtimeStepTheta,isubstep,ix,rmatrixComponents,iidxNonlin)
+          p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rmatrixComponents,iidxNonlin)
           
         ! If there is a nonlinearity involved, get the evaluation point.
         IF (iidxNonlin .GT. 0)  THEN
@@ -5113,7 +5117,7 @@ END SUBROUTINE
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubgroup,i,ntimesteps,NEQ
+    INTEGER :: isubgroup,i,ntimesteps
     TYPE(t_sptilsSubnodeBiCGStab), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -5135,11 +5139,10 @@ END SUBROUTINE
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%niterations
-    NEQ = dof_igetNDofGlobBlock(rsolverNode%rmatrix%p_rspaceTimeDiscretisation%&
-        p_rlevelInfo%p_rdiscretisation)
+    ntimesteps = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
     DO i=1,6
-      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),NEQ,ntimesteps)
+      CALL sptivec_initVector (p_rsubnode%RtempVectors(i),ntimesteps,&
+        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
     END DO
     
     ! Allocate memory for a spatial temp vector.
@@ -5398,8 +5401,9 @@ END SUBROUTINE
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
-    IF ((rd%ntimesteps .EQ. 0) .OR. (p_rspaceTimeDiscr%niterations .EQ. 0) .OR. &
-        (p_rspaceTimeDiscr%niterations .NE. rd%ntimesteps) ) THEN
+    IF ((rd%ntimesteps .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .EQ. 0) .OR. &
+        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .NE. rd%ntimesteps) ) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -5455,9 +5459,9 @@ END SUBROUTINE
     CALL sptivec_copyVector(rd,p_DR)
     
     ! Filter the defect for boundary conditions in space and time.
-    CALL c2d2_implementInitCondDefect (&
+    CALL tbc_implementInitCondDefect (&
         p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-    CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+    CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
         p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
 
     IF (bprec) THEN
@@ -5530,9 +5534,9 @@ END SUBROUTINE
             p_DP,p_DPA, 1.0_DP,0.0_DP)
         
         ! Filter the defect for boundary conditions in space and time.
-        CALL c2d2_implementInitCondDefect (&
+        CALL tbc_implementInitCondDefect (&
             p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
-        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+        CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
             p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
 
         IF (bprec) THEN
@@ -5561,9 +5565,9 @@ END SUBROUTINE
             p_DR,p_DSA, 1.0_DP,0.0_DP)
         
         ! Filter the defect for boundary conditions in space and time.
-        CALL c2d2_implementInitCondDefect (&
+        CALL tbc_implementInitCondDefect (&
             p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
-        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+        CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
             p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
 
         IF (bprec) THEN
@@ -5951,22 +5955,23 @@ END SUBROUTINE
       !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
       !        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
               
-      ntimesteps = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%niterations
-      NEQ = dof_igetNDofGlobBlock(p_rmgLevel%&
-              rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
+      ntimesteps = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
               
       ! On all levels except for the maximum one, create a solution vector
       IF (ilev .LT. NLMAX) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rsolutionVector,NEQ,ntimesteps)
+            p_rmgLevel%rsolutionVector,ntimesteps,p_rmgLevel%&
+            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       
       ! On all levels except for the first one, create a RHS and a temp vector
       IF (ilev .GT. 1) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rrhsVector,NEQ,ntimesteps)
+            p_rmgLevel%rrhsVector,ntimesteps,p_rmgLevel%&
+            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
         CALL sptivec_initVector (&
-            p_rmgLevel%rtempVector,NEQ,ntimesteps)
+            p_rmgLevel%rtempVector,ntimesteps,p_rmgLevel%&
+            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       
       ! If adaptive coarse grid correction is activated, we need a temporary
@@ -5974,7 +5979,8 @@ END SUBROUTINE
       IF (rsolverNode%p_rsubnodeMultigrid%dalphamin .NE. &
           rsolverNode%p_rsubnodeMultigrid%dalphamax) THEN
         CALL sptivec_initVector (&
-            p_rmgLevel%rtempCGCvector,NEQ,ntimesteps)
+            p_rmgLevel%rtempCGCvector,ntimesteps,p_rmgLevel%&
+            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation)
       END IF
       
       ! Create a block temp vector for the interlevel projection
@@ -6420,9 +6426,9 @@ END SUBROUTINE
           rx,rtemp, -1.0_DP,1.0_DP,dres)
       
       ! Implement boundary conditions into the defect
-      CALL c2d2_implementInitCondDefect (&
+      CALL tbc_implementInitCondDefect (&
           p_rspaceTimeDiscr,rtemp,rspatialTemp)
-      CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+      CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
           p_rspaceTimeDiscr,rtemp,rspatialTemp)
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
@@ -6537,6 +6543,11 @@ END SUBROUTINE
         CALL output_line ('Space-Time-Multigrid: Only one level. '//&
              'Switching back to standard solver.')
       END IF
+
+      ! DEBUG!!!
+      CALL sptivec_saveToFileSequence (rd,&
+          '(''./debugdata/vector2.txt.'',I5.5)',.TRUE.)
+
       CALL sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,rd)
       
       ! Take the statistics from the coarse grid solver.
@@ -6640,11 +6651,11 @@ END SUBROUTINE
                 p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP)
           
             ! Implement boundary conditions into the defect
-            CALL c2d2_implementInitCondDefect (&
+            CALL tbc_implementInitCondDefect (&
                 p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
-            CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+            CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
                 p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
@@ -6711,11 +6722,11 @@ END SUBROUTINE
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
                 ! Implement boundary conditions into the defect
-                CALL c2d2_implementInitCondDefect (&
+                CALL tbc_implementInitCondDefect (&
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
-                CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+                CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
@@ -6749,12 +6760,16 @@ END SUBROUTINE
                       p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
+                ! DEBUG!!!
+                CALL sptivec_saveToFileSequence (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
+                    '(''./debugdata/vector1.txt.'',I5.5)',.TRUE.)
+
                 ! Implement boundary conditions into the defect
-                CALL c2d2_implementInitCondDefect (&
+                CALL tbc_implementInitCondDefect (&
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
-                CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+                CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
@@ -6821,14 +6836,14 @@ END SUBROUTINE
                     p_rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     rsolverNode%p_rproblem)
-
+                    
               ! Implement boundary conditions into the vector.
               ! It's still a defect, although a preconditioned one.
-              CALL c2d2_implementInitCondDefect (&
+              CALL tbc_implementInitCondDefect (&
                   p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
-              CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+              CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
                   p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
@@ -7134,10 +7149,10 @@ END SUBROUTINE
           rsolutionVector,rtempVector, -1.0_DP,1.0_DP)
 
       ! Implement boundary conditions into the vector.
-      CALL c2d2_implementInitCondDefect (&
+      CALL tbc_implementInitCondDefect (&
           rmatrix%p_rspaceTimeDiscretisation,&
           rtempVector, rtempSpaceVector)
-      CALL c2d2_implementBCdefect (rproblem,&
+      CALL tbc_implementBCdefect (rproblem,&
           rmatrix%p_rspaceTimeDiscretisation,&
           rtempVector, rtempSpaceVector)
 
@@ -7148,10 +7163,10 @@ END SUBROUTINE
           rcorrectionVector,rtempVector, 1.0_DP,0.0_DP)
       
       ! Implement boundary conditions into the vector.
-      CALL c2d2_implementInitCondDefect (&
+      CALL tbc_implementInitCondDefect (&
           rmatrix%p_rspaceTimeDiscretisation,&
           rtempVector, rtempSpaceVector)
-      CALL c2d2_implementBCdefect (rproblem,&
+      CALL tbc_implementBCdefect (rproblem,&
           rmatrix%p_rspaceTimeDiscretisation,&
           rtempVector, rtempSpaceVector)
 

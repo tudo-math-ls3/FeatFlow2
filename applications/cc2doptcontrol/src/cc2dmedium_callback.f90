@@ -104,6 +104,8 @@ MODULE cc2dmedium_callback
   USE spacetimevectors
   USE triasearch
   
+  USE timeevaluation
+  
   USE cc2dmediumm2basic
   USE cc2dmediumm2boundarydef
   
@@ -174,13 +176,18 @@ CONTAINS
         ! Get the timestep based on the time stamp. If necessary, the routine will
         ! interpolate between timesteps. drelTime is the 'relative' time in the range
         ! 0..1 with 0 corresponding to dtimeInit and 1 corresponding to dtimeMax.
-        dreltime = (rproblem%rtimedependence%dtime - &
-                    rproblem%rtimedependence%dtimeInit) / &
-                   (rproblem%rtimedependence%dtimeMax - &
-                    rproblem%rtimedependence%dtimeInit) 
-                    
-        CALL sptivec_getTimestepDataByTime (rproblem%roptcontrol%rtargetFlowNonstat, &
-            dreltime, rproblem%roptcontrol%rtargetFlow)
+        !dreltime = (rproblem%rtimedependence%dtime - &
+        !            rproblem%rtimedependence%dtimeInit) / &
+        !           (rproblem%rtimedependence%dtimeMax - &
+        !            rproblem%rtimedependence%dtimeInit) 
+        !CALL sptivec_getTimestepDataByTime (rproblem%roptcontrol%rtargetFlowNonstat, &
+        !    dreltime, rproblem%roptcontrol%rtargetFlow)
+        
+        ! New implementation: Use tmevl_evaluate!
+        
+        CALL tmevl_evaluate(rproblem%roptcontrol%rtargetFlowNonstat,&
+            rproblem%rtimedependence%dtime,&
+            rproblem%roptcontrol%rtargetFlow)
             
       END IF
       ! Otherwise, there is no vector.

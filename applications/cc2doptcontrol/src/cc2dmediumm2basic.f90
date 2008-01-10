@@ -29,6 +29,7 @@ MODULE cc2dmediumm2basic
   USE nonlinearsolver
   USE paramlist
   USE timestepping
+  USE timediscretisation
   USE spacetimevectors
   
   USE collection
@@ -170,7 +171,7 @@ MODULE cc2dmediumm2basic
     REAL(DP) :: dtimeMax           = 0.0_DP
     
     ! Time-stepping scheme (IFRSTP);
-    ! 0=one step scheme, 1=fractional step
+    ! 0=one step scheme, 1=fractional step, 2=dG(0)
     INTEGER :: ctimeStepScheme     = 0
     
     ! Parameter for one step scheme (THETA) if ctimeStepScheme=0;
@@ -223,6 +224,10 @@ MODULE cc2dmediumm2basic
     ! Only used if itypeTargetFlow <> 0.
     TYPE(t_vectorBlock) :: rtargetFlow
   
+    ! Time discretisation for a nonstationary target flow.
+    ! Only used if itypeTargetFlow = 2 or 4
+    TYPE(t_timeDiscretisation) :: rtargetTimeDiscr
+    
     ! Solution vector containing a nonstationary target flow.
     ! Only used if itypeTargetFlow = 2 or 4
     TYPE(t_spaceTimeVector) :: rtargetFlowNonstat

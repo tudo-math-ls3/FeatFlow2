@@ -14,7 +14,10 @@
 !#
 !# The module provides the following subroutines:
 !#
-!# 1.) sptivec_initVector
+!# 1.) sptivec_initVector = 
+!#     sptivec_initVectorPlain, 
+!#     sptivec_initVectorDirect,
+!#     sptivec_initVectorDiscr
 !#     -> Initialise a space-time vector for a given time discretisation
 !#        configuration
 !#
@@ -72,10 +75,13 @@ MODULE spacetimevectors
   USE fsystem
   USE genoutput
   USE externalstorage
+  USE spatialDiscretisation
   USE linearsystemscalar
   USE linearsystemblock
   USE collection
   USE vectorio
+  
+  USE timediscretisation
 
   IMPLICIT NONE
 
@@ -101,6 +107,18 @@ MODULE spacetimevectors
     ! The whole vector is zero if it's new and if it's cleared by clearVector.
     REAL(DP), DIMENSION(:), POINTER :: p_Dscale => NULL()
     
+    ! Pointer to a time discretisation structure that defines the
+    ! discretisation in time.
+    TYPE(t_timeDiscretisation), POINTER :: p_rtimeDiscretisation => NULL()
+    
+    ! Pointer to the underlying block discretisation that defines the
+    ! spatial discretisation.
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation => NULL()
+    
+    ! Whether to use the test space of the spatial discretisation for the
+    ! shape of the spatial vectors or nor.
+    LOGICAL :: btestfctSpace = .FALSE.
+    
     ! Number of equations in each subvector of the 'global time-step vector'.
     INTEGER(PREC_VECIDX) :: NEQ = 0
     
@@ -119,18 +137,25 @@ MODULE spacetimevectors
 
 !</types>
 
+  INTERFACE sptivec_initVector
+    MODULE PROCEDURE sptivec_initVectorPlain
+    MODULE PROCEDURE sptivec_initVectorDirect 
+    MODULE PROCEDURE sptivec_initVectorDiscr
+  END INTERFACE
+    
 CONTAINS
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVector (rspaceTimeVector,NEQ,ntimesteps)
+  SUBROUTINE sptivec_initVectorPlain (rspaceTimeVector,NEQ,ntimesteps)
 
 !<description>
-  ! Initialises a space time vector. rvectorTemplate is a template vector that
-  ! defines the basic shape of the data vectors in all time steps that are
-  ! to be maintained. ntimesteps defines the number of timesteps to maintain.
+  ! Initialises a space time vector. NEQ defines the size of each spatial
+  ! subvector. ntimesteps defines the number of timesteps to maintain.
+  ! The subvectors have no special block structure, they are just plain
+  ! data.
 !</desctiprion>
 
 !<input>
@@ -164,6 +189,136 @@ CONTAINS
     DO i=0,ntimesteps
       CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
         NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), ST_NEWBLOCK_ZERO)
+    END DO
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_initVectorDirect (rspaceTimeVector,ntimesteps,rblockDiscr,btestFctSpace)
+
+!<description>
+  ! Initialises a space time vector. rblockDiscr is a block discretisation 
+  ! structure that defines the basic shape of the data vectors in all time 
+  ! steps that are to be maintained. ntimesteps defines the number of 
+  ! timesteps to maintain.
+!</desctiprion>
+
+!<input>
+  ! Number of timesteps to maintain.
+  ! The number of subvectors that is reserved is therefore ntimesteps+1!
+  INTEGER, INTENT(IN) :: ntimesteps
+
+  ! Block discretisation structure of the spatial discretisation.
+  ! A pointer to this structure is saved in the space time vector.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+  
+  ! OPTIONAL: If set to TRUE, the test space in rblockDiscr defines
+  ! the shape of the spatial vectors rather than the trial space.
+  LOGICAL, INTENT(IN), OPTIONAL :: btestFctSpace
+  
+!</input>
+
+!<output>
+  ! Space-time vector structure to be initialised.
+  TYPE(t_spacetimeVector), INTENT(OUT) :: rspaceTimeVector
+!</output>
+
+!</subroutine>
+
+    INTEGER :: i
+
+    ! Initialise the data.
+    rspaceTimeVector%ntimesteps = ntimesteps
+    ALLOCATE(rspaceTimeVector%p_IdataHandleList(0:ntimesteps))
+    ALLOCATE(rspaceTimeVector%p_Dscale(0:ntimesteps))
+    rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
+    rspaceTimeVector%p_Dscale(:) = 0.0_DP
+    
+    ! Get NEQ and save a pointer to the spatial discretisation structure
+    ! to the vector.
+    rspaceTimeVector%p_rblockDiscretisation => rblockDiscr
+    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr,btestFctSpace)
+    
+    rspaceTimeVector%btestFctSpace = PRESENT(btestFctSpace)
+    IF (rspaceTimeVector%btestFctSpace) rspaceTimeVector%btestFctSpace = btestFctSpace
+    
+    ! Allocate memory for every subvector
+    DO i=0,ntimesteps
+      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+        rspaceTimeVector%NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), &
+        ST_NEWBLOCK_ZERO)
+    END DO
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_initVectorDiscr (rspaceTimeVector,rtimeDiscr,rblockDiscr,btestFctSpace)
+
+!<description>
+  ! Initialises a space time vector according to a time discretisation
+  ! structure. rblockDiscr is a block discretisation 
+  ! structure that defines the basic shape of the data vectors in all time 
+  ! steps that are to be maintained. 
+!</desctiprion>
+
+!<input>
+
+  ! Time discretisation structure that defines the discrtetisation
+  ! in time. A pointer to this is saved to rspaceTimeVector.
+  TYPE(t_timeDiscretisation), INTENT(IN), TARGET :: rtimeDiscr
+
+  ! Block discretisation structure of the spatial discretisation.
+  ! A pointer to this structure is saved in the space time vector.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+  
+  ! OPTIONAL: If set to TRUE, the test space in rblockDiscr defines
+  ! the shape of the spatial vectors rather than the trial space.
+  LOGICAL, INTENT(IN), OPTIONAL :: btestFctSpace
+  
+!</input>
+
+!<output>
+  ! Space-time vector structure to be initialised.
+  TYPE(t_spacetimeVector), INTENT(OUT) :: rspaceTimeVector
+!</output>
+
+!</subroutine>
+
+    INTEGER :: i,ntimesteps
+
+    ! Initialise the data.
+    
+    ! We must subtract 1 from the number of DOF's returned by tdiscr_igetNDofGlob
+    ! as timestep number 0 is not counted in ntimesteps.
+    ntimesteps = tdiscr_igetNDofGlob(rtimediscr)-1
+    
+    rspaceTimeVector%ntimesteps = ntimesteps
+    rspaceTimeVector%p_rtimeDiscretisation => rtimeDiscr 
+    
+    ALLOCATE(rspaceTimeVector%p_IdataHandleList(0:ntimesteps))
+    ALLOCATE(rspaceTimeVector%p_Dscale(0:ntimesteps))
+    rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
+    rspaceTimeVector%p_Dscale(:) = 0.0_DP
+    
+    ! Get NEQ and save a pointer to the spatial discretisation structure
+    ! to the vector.
+    rspaceTimeVector%p_rblockDiscretisation => rblockDiscr
+    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr,btestFctSpace)
+    
+    rspaceTimeVector%btestFctSpace = PRESENT(btestFctSpace)
+    IF (rspaceTimeVector%btestFctSpace) rspaceTimeVector%btestFctSpace = btestFctSpace
+    
+    ! Allocate memory for every subvector
+    DO i=0,ntimesteps
+      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+        rspaceTimeVector%NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), &
+        ST_NEWBLOCK_ZERO)
     END DO
     
   END SUBROUTINE
@@ -570,7 +725,8 @@ CONTAINS
     
     IF ((ry%NEQ .EQ. 0) .AND. (ry%ntimesteps .EQ. 0)) THEN
       ! Destination vector does not exist. Create it.
-      CALL sptivec_initVector (ry,rx%NEQ,rx%ntimesteps)
+      CALL sptivec_initVector (ry,rx%ntimesteps,rx%p_rblockDiscretisation,&
+        rx%btestFctSpace)
     END IF
     
     IF (rx%NEQ .NE. ry%NEQ) THEN
@@ -1099,7 +1255,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
-      bformatted,brepeatLast)
+      bformatted,brepeatLast,rblockDiscretisation)
 
 !<description>
   ! This routine loads a space-time vector from a sequence of files on the
@@ -1149,18 +1305,26 @@ CONTAINS
   ! Standard value = false = missing solutions are set to zero.
   LOGICAL, OPTIONAL :: brepeatLast
   
+  ! OPTIONAL: A block discretisation structure that defines the shape of the spatial
+  ! vectors. If not specified, the vectors will be read in as pure data vectors
+  ! without a discretisation attached.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rblockDiscretisation
+
 !</input>
 
 !<inputoutput>
   ! Space-time vector where store data to.
-  ! The vector is created from the scratch.
-  TYPE(t_spaceTimeVector), INTENT(OUT) :: rx
+  ! If empty, the vector is created from the scratch.
+  ! If the vector is not empty, it must be large enough to hold all data.
+  ! The content is ovrwritten.
+  TYPE(t_spaceTimeVector), INTENT(INOUT) :: rx
 !</inputoutput>
 
 !</subroutine>
 
     ! Local variables
-    TYPE(t_vectorScalar) :: rvector
+    TYPE(t_vectorBlock) :: rvector
+    TYPE(t_vectorScalar) :: rvectorScalar
     CHARACTER(SYS_STRLEN) :: sfile,sarray
     INTEGER :: i,ilast
     LOGICAL :: bexists,brepeat
@@ -1183,22 +1347,39 @@ CONTAINS
         ! Remember this solution as the last available one
         ilast = i
       
-        ! Read the file into rvector. The first read command creates rvector
-        ! in the correct size.
-        CALL vecio_readVectorHR (rvector, sarray, .FALSE.,&
-          0, sfile, bformatted)
+        IF (.NOT. PRESENT(rblockDiscretisation)) THEN
+          ! Read the file into rvector. The first read command creates rvector
+          ! in the correct size.
+          CALL vecio_readVectorHR (rvectorScalar, sarray, .FALSE.,&
+            0, sfile, bformatted)
 
-        IF (i .EQ. istart) THEN
-          ! At the first file, create a space-time vector holding the data.
-          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart)
-        END IF         
+          IF ((i .EQ. istart) .AND. (rx%ntimesteps .EQ. 0)) THEN
+            ! At the first file, create a space-time vector holding the data.
+            CALL sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart)
+          END IF         
+
+          ! Save the data
+          CALL exstor_setdata_storage (rx%p_IdataHandleList(i),rvectorScalar%h_Ddata)
+    
+        ELSE
+  
+          CALL vecio_readBlockVectorHR (rvector, sarray, .FALSE.,&
+            0, sfile, bformatted)
+
+          IF (i .EQ. istart) THEN
+            ! At the first file, create a space-time vector holding the data.
+            CALL sptivec_initVector (rx,iend-istart,rblockDiscretisation)
+          END IF         
+          ! Save the data
+          CALL exstor_setdata_storage (rx%p_IdataHandleList(i),rvector%h_Ddata)
+          
+        END IF
         
-        ! Save the data
-        CALL exstor_setdata_storage (rx%p_IdataHandleList(i),rvector%h_Ddata)
       ELSE
         IF (i .EQ. istart) THEN
-          ! At the first file, create a space-time vector holding the data.
-          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1)
+          ! The first file must exist!
+          CALL output_line ('The first file must exist!', &
+              ssubroutine='sptivec_loadFromFileSequence')
         END IF         
 
         IF (brepeat) THEN
@@ -1226,7 +1407,11 @@ CONTAINS
     CALL lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
-    CALL lsyssc_releaseVector (rvector)
+    IF (PRESENT(rblockDiscretisation)) THEN
+      CALL lsysbl_releaseVector (rvector)
+    ELSE
+      CALL lsyssc_releaseVector (rvectorScalar)
+    END IF
 
   END SUBROUTINE
 
@@ -1267,8 +1452,9 @@ CONTAINS
 
 !<inputoutput>
   ! Temporary vector. This vector must prescribe the block structure of the
-  ! subvectors in the space-time vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  ! subvectors in the space-time vector. If not specified, the data is written
+  ! out without a block structure.
+  TYPE(t_vectorBlock), INTENT(INOUT), TARGET, OPTIONAL :: rtempVector
 !</inputoutput>
 
 !</subroutine>
@@ -1279,31 +1465,48 @@ CONTAINS
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx
+    TYPE(t_vectorBlock), POINTER :: p_rx
+    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    
+    IF (PRESENT(rtempVector)) THEN
+      p_rx => rtempVector
+    ELSE
+      ! Create a 1-block temp vector for the data    
+      ALLOCATE(p_rx)
+      Isize(1) = rx%NEQ
+      CALL lsysbl_createVecBlockDirect (p_rx,Isize(1:1),.FALSE.)
+    END IF
 
-    CALL lsysbl_getbase_double (rtempVector,p_Dx)
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (p_rx,p_Dx)
 
     ! Loop over the files
     DO i=0,rx%ntimesteps
     
       ! Get the data from the space-time vector.
-      CALL sptivec_getTimestepData (rx, i, rtempVector)
+      CALL sptivec_getTimestepData (rx, i, p_rx)
       
       ! Form the filename
       WRITE(sfile,sfilename) i
       
       ! Save that to disc.
       IF (.NOT. bformatted) THEN
-        CALL vecio_writeBlockVectorHR (rtempVector, 'vector', .TRUE.,&
+        CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
                                       0, sfile)
       ELSE IF (.NOT. PRESENT(sformat)) THEN
-          CALL vecio_writeBlockVectorHR (rtempVector, 'vector', .TRUE.,&
+          CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
                                         0, sfile, '(E24.16)')
       ELSE
-        CALL vecio_writeBlockVectorHR (rtempVector, 'vector', .TRUE.,&
+        CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
                                        0, sfile, sformat)
       END IF
     
     END DO
+    
+    IF (.NOT. PRESENT(rtempVector)) THEN
+      CALL lsysbl_releaseVector (p_rx)
+      DEALLOCATE(p_rx)
+    END IF
     
   END SUBROUTINE
 

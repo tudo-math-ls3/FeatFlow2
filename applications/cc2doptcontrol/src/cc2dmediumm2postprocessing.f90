@@ -753,13 +753,17 @@ CONTAINS
     rvectorTmp%p_rdiscreteBCfict => rdiscr%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,rdiscr%niterations
+    DO i = 0,rdiscr%rtimeDiscr%nintervals
     
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + i*rdiscr%dtstep
+          rproblem%rtimedependence%dtimeInit + i*rdiscr%rtimeDiscr%dtstep
       rproblem%rtimedependence%itimeStep = i
     
-      CALL sptivec_getTimestepData (rvector, i, rvectorTmp)
+      ! Evaluate the space time function in rvector in the point
+      ! in time dtime. Independent of the discretisation in time,
+      ! this will give us a vector in space.
+      !CALL sptivec_getTimestepData (rvector, i, rvectorTmp)
+      CALL tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
     
       ! The solution vector is probably not in the way, GMV likes it!
       ! GMV for example does not understand Q1~ vectors!

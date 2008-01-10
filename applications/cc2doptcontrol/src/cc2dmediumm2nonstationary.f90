@@ -154,7 +154,10 @@ CONTAINS
         rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
 
     ! Read the target flow -- stationary or nonstationary
-    CALL c2d2_initTargetFlow (rproblem,RspaceTimeDiscr(TIMENLMAX)%niterations)
+    CALL c2d2_initTargetFlow (rproblem,&
+        RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeInit,&
+        RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeMax,&
+        RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals)
         
     ! Figure out which type of solver we should use to solve
     ! the problem. 
@@ -202,7 +205,7 @@ CONTAINS
         DO i=TIMENLMIN,TIMENLMAX-1
           CALL c2d2_initParamsSupersystem (rproblem,i,&
               MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              RspaceTimeDiscr(i), rx, rb, rd)
+              RspaceTimeDiscr(i))
         END DO
         
       CASE (2)
@@ -234,14 +237,18 @@ CONTAINS
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%niterations
+    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals
     
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &
-          i*RspaceTimeDiscr(TIMENLMAX)%dtstep
+          i*RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtstep
       rproblem%rtimedependence%itimeStep = i
     
-      CALL sptivec_getTimestepData (rx, i, rvectorTmp)
+      ! Evaluate the space time function in rvector in the point
+      ! in time dtime. Independent of the discretisation in time,
+      ! this will give us a vector in space.
+      !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
+      CALL tmevl_evaluate(rx,rproblem%rtimedependence%dtime,rvectorTmp)
     
       CALL c2d2_postprocessingNonstat (rproblem,rvectorTmp)  
       

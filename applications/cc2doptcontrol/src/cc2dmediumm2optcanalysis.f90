@@ -176,8 +176,12 @@ CONTAINS
           isubstep*dtstep
       rproblem%rtimedependence%itimestep = isubstep
 
-      ! Get the solution
-      CALL sptivec_getTimestepData (rsolution, isubstep, rtempVector)
+      ! Get the solution.
+      ! Evaluate the space time function in rvector in the point
+      ! in time dtime. Independent of the discretisation in time,
+      ! this will give us a vector in space.
+      !CALL sptivec_getTimestepData (rsolution, isubstep, rtempVector)
+      CALL tmevl_evaluate(rsolution,rproblem%rtimedependence%dtime,rtempVector)
 
       ! Initialise the collection for the assembly process with callback routines.
       ! This stores the simulation time in the collection and sets the

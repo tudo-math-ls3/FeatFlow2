@@ -78,6 +78,7 @@ MODULE cc2dmediumm2oneshot
   USE cc2dminim2scriptfile
   
   USE spacetimevectors
+  USE timerhsevaluation
   USE dofmapping
   
   USE matrixio
@@ -682,18 +683,19 @@ CONTAINS
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     ! Assemble the space-time RHS into rd.
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvectorD, .TRUE.)
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
+    !  rtempvectorX, rtempvectorB, rtempvectorD, .TRUE.)
+    CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .TRUE.)
       
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
         rx, rd, rtempvectorX, rtempvectorD)    
 
     ! ----------------------------------------------------------------------
     ! 2.) Generate the matrix A
     !
     ! Create a global matrix:
-    CALL lsysbl_createEmptyMatrix (rglobalA,6*(p_rspaceTimeDiscr%niterations+1))
+    CALL lsysbl_createEmptyMatrix (rglobalA,6*(p_rspaceTimeDiscr%rtimeDiscr%nintervals+1))
 
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -725,11 +727,11 @@ CONTAINS
     
     ! Loop through the substeps
     
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%rtimeDiscr%dtstep
       rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
@@ -800,7 +802,7 @@ CONTAINS
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+      ELSE IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
         
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! isubstep+1 and a substep isubstep-1!
@@ -1554,32 +1556,34 @@ CONTAINS
     rtempVectorB%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorB%p_rdiscreteBCfict => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    ! Implement the bondary conditions into all initial solution vectors
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
+!    ! Implement the bondary conditions into all initial solution vectors
+!    DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+!    
+!      ! Current point in time
+!      rproblem%rtimedependence%dtime = &
+!          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%rtimeDiscr%dtstep
+!      rproblem%rtimedependence%itimestep = isubstep
+!
+!      ! -----
+!      ! Discretise the boundary conditions at the new point in time -- 
+!      ! if the boundary conditions are nonconstant in time!
+!      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+!        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+!      END IF
+!      
+!      ! Implement the boundary conditions into the global solution vector.
+!      CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
+!      
+!      ! DEBUG!!!
+!      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+!      
+!      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
+!      
+!      CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
+!      
+!    END DO
 
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! Implement the boundary conditions into the global solution vector.
-      CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-      
-      ! DEBUG!!!
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-      
-      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
-      
-      CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-      
-    END DO
+    CALL tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx)
     
     ddefNorm = 1.0_DP
 
@@ -1597,11 +1601,12 @@ CONTAINS
     ! Get the initial defect: d=b-Ax
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
-      rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
+    !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
         rx, rb, rtempvectorX, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
@@ -1623,11 +1628,12 @@ CONTAINS
       rtempvectorX, rtempvectorB, rtempVector)
 
     ! Calculate the final defect    
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
+    !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
@@ -1643,18 +1649,8 @@ CONTAINS
     bneumann = rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
     
     IF (.NOT. bneumann) THEN
-      ! Normalise the primal and dual pressure to zero.
-      DO isubstep = 0,rspaceTimeDiscr%niterations
-      
-        CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-        
-        CALL vecfil_subvectorToL20 (rtempVectorX,3)
-        CALL vecfil_subvectorToL20 (rtempVectorX,6)
-        
-        CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-        
-      END DO
-      
+      ! Normalise the primal and dual pressure to integral mean value zero.
+      CALL tbc_pressureToL20 (rx,rtempVectorX)
     END IF
     
     CALL lsysbl_releaseVector (rtempVectorB)
@@ -1721,7 +1717,7 @@ CONTAINS
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
     dtheta = rproblem%rtimedependence%dtimeStepTheta
-    dtstep = p_rspaceTimeDiscr%dtstep
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! Level of the discretisation
     ilevel = p_rspaceTimeDiscr%ilevel
@@ -1751,7 +1747,7 @@ CONTAINS
     !
     ! For this purpose, loop through the substeps.
     
-    DO isubstep = 0,p_rspaceTimeDiscr%niterations
+    DO isubstep = 0,p_rspaceTimeDiscr%rtimeDiscr%nintervals
     
       ! Current time step?
       rproblem%rtimedependence%dtime = &
@@ -1898,32 +1894,33 @@ CONTAINS
     CALL c2d2_configPreconditioner (rproblem,rpreconditioner,slinearSolver,&
         ctypePreconditioner)
 
-    ! Implement the bondary conditions into all initial solution vectors
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! Implement the boundary conditions into the global solution vector.
-      CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-      
-      ! DEBUG!!!
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-      
-      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
-      
-      CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-      
-    END DO
+!    ! Implement the bondary conditions into all initial solution vectors
+!    DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+!    
+!      ! Current point in time
+!      rproblem%rtimedependence%dtime = &
+!          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%rtimeDiscr%dtstep
+!      rproblem%rtimedependence%itimestep = isubstep
+!
+!      ! -----
+!      ! Discretise the boundary conditions at the new point in time -- 
+!      ! if the boundary conditions are nonconstant in time!
+!      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+!        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+!      END IF
+!      
+!      ! Implement the boundary conditions into the global solution vector.
+!      CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
+!      
+!      ! DEBUG!!!
+!      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+!      
+!      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
+!      
+!      CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
+!      
+!    END DO
+    CALL tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx)
     
     ddefNorm = 1.0_DP
     
@@ -1951,11 +1948,12 @@ CONTAINS
     ! Get the initial defect: d=b-Ax
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
-      rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
+    !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
         rx, rb, rtempvectorX, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
@@ -2024,11 +2022,12 @@ CONTAINS
     
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
+    !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
@@ -2044,18 +2043,8 @@ CONTAINS
     bneumann = rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
     
     IF (.NOT. bneumann) THEN
-      ! Normalise the primal and dual pressure to zero.
-      DO isubstep = 0,rspaceTimeDiscr%niterations
-      
-        CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-        
-        CALL vecfil_subvectorToL20 (rtempVectorX,3)
-        CALL vecfil_subvectorToL20 (rtempVectorX,6)
-        
-        CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-        
-      END DO
-      
+      ! Normalise the primal and dual pressure to integral mean value zero.
+      CALL tbc_pressureToL20 (rx,rtempVectorX)
     END IF
     
     CALL lsysbl_releaseVector (rtempVectorB)
@@ -2189,7 +2178,7 @@ CONTAINS
     rtempVectorB%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! Implement the bondary conditions into all initial solution vectors
-    CALL c2d2_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
+    CALL tbc_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
     
     ! Type of smoother to use?
     CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
@@ -2390,6 +2379,10 @@ CONTAINS
           CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,&
             domegaPrecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
+        CASE (6)
+          ! CG with Block Jacobi as preconditioner
+          CALL sptils_initUMFPACK4 (rproblem,p_rprecond)
+          CALL sptils_initDefCorr (rproblem,p_rsmoother,p_rprecond)
         CASE DEFAULT
           PRINT *,'Unknown smoother: ',cspaceTimeSmoother
           STOP
@@ -2467,15 +2460,15 @@ CONTAINS
         RspaceTimePrecondMatrix(ilev)%cmatrixType = 1
       END SELECT
       
-    END DO
+    END DO 
     
     ! Allocate space-time vectors on all lower levels that hold the solution vectors
     ! for the evaluation of the nonlinearity (if we have a nonlinearity).
     DO ilev=1,SIZE(RspatialPrecond)-1
       ALLOCATE(RspaceTimePrecondMatrix(ilev)%p_rsolution)
       CALL sptivec_initVector (RspaceTimePrecondMatrix(ilev)%p_rsolution,&
-        dof_igetNDofGlobBlock(RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
-        RspaceTimeDiscr(ilev)%niterations)   
+        RspaceTimeDiscr(ilev)%rtimeDiscr%nintervals,&
+        RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation)
     END DO
 
     ! On the maximum level attach the solution vector.
@@ -2499,13 +2492,19 @@ CONTAINS
     ! Solve the global space-time coupled system.
     !
     ! Get the initial defect: d=b-Ax
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, &
-      RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
-      rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, &
+    !  RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
+    !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    CALL trhsevl_assembleRHS (rproblem, &
+      RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
         rx, rb, rtempvectorX, rtempvector)    
+        
+    ! DEBUG!!!
+    CALL sptivec_saveToFileSequence (rb,&
+        '(''./debugdata/initrhs.txt.'',I5.5)',.TRUE.)
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -2516,6 +2515,10 @@ CONTAINS
     CALL sptivec_copyVector (rb,rd)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
       -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+
+    ! DEBUG!!!
+    CALL sptivec_saveToFileSequence (rb,&
+        '(''./debugdata/initdef.txt.'',I5.5)',.TRUE.)
         
     dinitDefNorm = ddefNorm
     CALL output_separator (OU_SEP_EQUAL)
@@ -2582,7 +2585,7 @@ CONTAINS
             rtempVecCoarse,rtempVecFine)
             
         ! Set boundary conditions
-        CALL c2d2_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
+        CALL tbc_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
             RspaceTimePrecondMatrix(ilev)%p_rsolution,rtempVecCoarse)
       END DO
       
@@ -2641,8 +2644,8 @@ CONTAINS
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
       ! afterwards, the initial conditions can be seen more clearly!
-      !CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-      !CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       ! Add the defect: x = x + omega*d          
       CALL sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
@@ -2651,18 +2654,8 @@ CONTAINS
       bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
       
       IF (.NOT. bneumann) THEN
-        ! Normalise the primal and dual pressure to zero.
-        DO isubstep = 0,p_rspaceTimeDiscr%niterations
-        
-          CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-          
-          CALL vecfil_subvectorToL20 (rtempVectorX,3)
-          CALL vecfil_subvectorToL20 (rtempVectorX,6)
-          
-          CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-          
-        END DO
-        
+        ! Normalise the primal and dual pressure to integral mean value zero.
+        CALL tbc_pressureToL20 (rx,rtempVectorX)
       END IF
 
       ! Call a parser that parses the script file commandfile.txt.
@@ -2685,8 +2678,8 @@ CONTAINS
         -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       ! Filter the defect for boundary conditions in space and time.
-      CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-      CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
@@ -2697,11 +2690,12 @@ CONTAINS
 
     END DO
     
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    !CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
+    !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
+    CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
+    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
         rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
@@ -2728,18 +2722,8 @@ CONTAINS
     bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
     
     IF (.NOT. bneumann) THEN
-      ! Normalise the primal and dual pressure to zero.
-      DO isubstep = 0,p_rspaceTimeDiscr%niterations
-      
-        CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-        
-        CALL vecfil_subvectorToL20 (rtempVectorX,3)
-        CALL vecfil_subvectorToL20 (rtempVectorX,6)
-        
-        CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-        
-      END DO
-      
+      ! Normalise the primal and dual pressure to integral mean value zero.
+      CALL tbc_pressureToL20 (rx,rtempVectorX)
     END IF
     
     ! Release the space-time and spatial preconditioner. 

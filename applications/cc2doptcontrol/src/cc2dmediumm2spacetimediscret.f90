@@ -22,22 +22,6 @@
 !#     -> Matrix-Vector multiplication of a space-time vector with the
 !#        global matrix.
 !#
-!# 4.) c2d2_assembleSpaceTimeRHS
-!#     -> Assemble the space-time RHS vector. 
-!#
-!# 5.) c2d2_implementInitCondRHS
-!#     -> Implements initial conditions into a given space-time RHS vector.
-!#
-!# 5.) c2d2_implementInitCondDefect
-!#     -> Implements initial conditions into a given space-time defect vector.
-!#
-!# 7.) c2d2_implementBCsolution
-!#     -> Implements boundary conditions into a given space-time solution vector.
-!#
-!# 8.) c2d2_implementBCdefect
-!#     -> Implements initial and boundary conditions into a fiven space-time
-!#        defect vector.
-!#
 !# Auxiliary routines:
 !#
 !# 1.) c2d2_setupMatrixWeights
@@ -175,6 +159,7 @@ MODULE cc2dmediumm2spacetimediscret
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2matvecassembly
   
+  USE timediscretisation
   USE spacetimevectors
   USE dofmapping
   
@@ -194,25 +179,29 @@ MODULE cc2dmediumm2spacetimediscret
     INTEGER :: ilevel = 0
   
     ! Number of time steps
-    INTEGER :: niterations         = 0
+    !INTEGER :: niterations         = 0
 
     ! Absolute start time of the simulation
-    REAL(DP) :: dtimeInit          = 0.0_DP     
+    !REAL(DP) :: dtimeInit          = 0.0_DP     
     
     ! Maximum time of the simulation
-    REAL(DP) :: dtimeMax           = 1.0_DP
+    !REAL(DP) :: dtimeMax           = 1.0_DP
     
-    ! Time-stepping scheme (IFRSTP);
-    ! 0=one step scheme
-    INTEGER :: ctimeStepScheme     = 0
+    ! Time step length of the time discretisation
+    !REAL(DP) :: dtstep
+
+    ! Defines the discretisation in time
+    TYPE(t_timeDiscretisation) :: rtimeDiscr
+
+    ! Time-stepping scheme;
+    ! 0=one step FD scheme (Euler, CN)
+    ! 2=dG(0)
+    !INTEGER :: ctimeStepScheme     = 0
     
     ! Parameter for one step scheme (THETA) if itimeStepScheme=0;
     ! =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
-    REAL(DP) :: dtimeStepTheta     = 1.0_DP
+    !REAL(DP) :: dtimeStepTheta     = 1.0_DP
     
-    ! Time step length of the time discretisation
-    REAL(DP) :: dtstep
-
     ! Regularisation parameter for the control $\alpha$. Must be <> 0.
     ! A value of 0.0 disables the terminal condition.
     REAL(DP) :: dalphaC = 1.0_DP
@@ -306,44 +295,47 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dtstep
+    INTEGER :: niterations
 
     ! Copy most relevant data from the problem structure.
     rspaceTimeDiscr%ilevel          = ilevelSpace
     rspaceTimeDiscr%p_rlevelInfo    => rproblem%RlevelInfo(ilevelSpace)
-    rspaceTimeDiscr%niterations     = &
-        rproblem%rtimedependence%niterations * 2**MAX(0,ilevelTime-1)
-    rspaceTimeDiscr%dtimeInit       = rproblem%rtimedependence%dtimeInit
-    rspaceTimeDiscr%dtimeMax        = rproblem%rtimedependence%dtimeMax
-    rspaceTimeDiscr%ctimeStepScheme = rproblem%rtimedependence%ctimeStepScheme
-    rspaceTimeDiscr%dtimeStepTheta  = rproblem%rtimedependence%dtimeStepTheta
+    niterations = rproblem%rtimedependence%niterations * 2**MAX(0,ilevelTime-1)
+    
+    ! Initialise the time discretisation
+    SELECT CASE (rproblem%rtimedependence%ctimeStepScheme)
+    CASE (0) 
+      CALL tdiscr_initTheta(&
+          rproblem%rtimedependence%dtimeInit,&
+          rproblem%rtimedependence%dtimeMax,&
+          niterations,rproblem%rtimedependence%dtimeStepTheta,&
+          rspaceTimeDiscr%rtimeDiscr)
+    CASE (2)
+      CALL tdiscr_initdG0(rproblem%rtimedependence%dtimeInit,&
+          rproblem%rtimedependence%dtimeMax,&
+          niterations, rspaceTimeDiscr%rtimeDiscr)
+    CASE DEFAULT
+      PRINT *,'c2d2_initParamsSupersystem: Unsupported time discretisation.'
+      CALL sys_halt()
+    END SELECT
     
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dalphaC',rspaceTimeDiscr%dalphaC,1.0_DP)
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dgammaC',rspaceTimeDiscr%dgammaC,0.0_DP)
 
-    ! The complete time interval is divided into niteration iterations
-    dtstep = (rspaceTimeDiscr%dtimemax-rspaceTimeDiscr%dtimeInit) &
-             / REAL(MAX(rspaceTimeDiscr%niterations,1),DP)
-             
-    rspaceTimeDiscr%dtstep = dtstep
-    
     ! Initialise the global solution- and defect- vector.
     IF (PRESENT(rx)) THEN
       CALL sptivec_initVector (rx,&
-          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
-          rspaceTimeDiscr%niterations)
+          rspaceTimeDiscr%rtimeDiscr,rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
     END IF
     IF (PRESENT(rb)) THEN
       CALL sptivec_initVector (rb,&
-          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
-          rspaceTimeDiscr%niterations)
+          rspaceTimeDiscr%rtimeDiscr,rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
     END IF
     IF (PRESENT(rd)) THEN
       CALL sptivec_initVector (rd,&
-          dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,.FALSE.),&
-          rspaceTimeDiscr%niterations)
+          rspaceTimeDiscr%rtimeDiscr,rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
     END IF
 
   END SUBROUTINE
@@ -475,6 +467,7 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     REAL(DP) :: dnewton
     REAL(DP) :: dsmooth
+    REAL(DP) :: dtstep
     
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
@@ -497,6 +490,8 @@ CONTAINS
       dsmooth = 1.0_DP
     END IF
 
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
+
     ! The first and last substep is a little bit special concerning
     ! the matrix!
     IF (isubstep .EQ. 0) THEN
@@ -515,7 +510,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = dtheta
@@ -577,7 +572,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -605,7 +600,7 @@ CONTAINS
             
       END IF
     
-    ELSE IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+    ELSE IF (isubstep .LT. p_rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
       
       ! We are sonewhere in the middle of the matrix. There is a substep
       ! isubstep+1 and a substep isubstep-1!
@@ -629,7 +624,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -666,8 +661,8 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
@@ -717,7 +712,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -848,7 +843,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -885,9 +880,9 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = (1.0_DP-dsmooth) !0.0_DP
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
         rmatrixComponents%dalpha2 = (1.0_DP-dsmooth) + &
-            dsmooth*dtimeCoupling * 1.0_DP/p_rspaceTimeDiscr%dtstep
+            dsmooth*dtimeCoupling * 1.0_DP/dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dsmooth * dtheta
@@ -1078,6 +1073,7 @@ CONTAINS
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation
+    REAL(DP) :: dtstep
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
@@ -1111,9 +1107,9 @@ CONTAINS
     ! Get the parts of the X-vector which are to be modified at first --
     ! subvector 1, 2 and 3.
     CALL sptivec_getTimestepData(rx, 0, rtempVector(1))
-    IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
+    IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 0) &
       CALL sptivec_getTimestepData(rx, 1, rtempVector(2)) 
-    IF (p_rspaceTimeDiscretisation%niterations .GT. 1) THEN
+    IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 1) THEN
       CALL sptivec_getTimestepData(rx, 2, rtempVector(3))
     ELSE
       CALL lsysbl_copyVector (rtempVector(2),rtempVector(3))
@@ -1148,9 +1144,9 @@ CONTAINS
 
     IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 0, rtempVectorEval(1))
-      IF (p_rspaceTimeDiscretisation%niterations .GT. 0) &
+      IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 0) &
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 1, rtempVectorEval(2))
-      IF (p_rspaceTimeDiscretisation%niterations .GT. 1) THEN
+      IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 1) THEN
         CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, 2, rtempVectorEval(3))
       ELSE
         CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(3))
@@ -1194,13 +1190,15 @@ CONTAINS
       dnorm = 0.0_DP
     END IF
 
+    dtstep = p_rspaceTimeDiscretisation%rtimeDiscr%dtstep
+    
     ! Loop through the substeps
     
-    DO isubstep = 0,p_rspaceTimeDiscretisation%niterations
+    DO isubstep = 0,p_rspaceTimeDiscretisation%rtimeDiscr%nintervals
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscretisation%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
       ! Get the part of rd which is to be modified.
       IF (cy .NE. 0.0_DP) THEN
@@ -1266,7 +1264,7 @@ CONTAINS
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE IF (isubstep .LT. p_rspaceTimeDiscretisation%niterations) THEN
+      ELSE IF (isubstep .LT. p_rspaceTimeDiscretisation%rtimeDiscr%nintervals) THEN
 
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! isubstep+1 and a substep isubstep-1!  Here, we have to handle the following
@@ -1410,7 +1408,7 @@ CONTAINS
       END IF
       
       IF ((isubstep .GT. 0) .AND. &
-          (isubstep .LT. p_rspaceTimeDiscretisation%niterations-1)) THEN
+          (isubstep .LT. p_rspaceTimeDiscretisation%rtimeDiscr%nintervals-1)) THEN
       
         ! Shift the timestep data: x_n+1 -> x_n -> x_n-1
         IF (rtempVector(2)%NEQ .NE. 0) &
@@ -1437,7 +1435,7 @@ CONTAINS
               isubstep+2, rtempVectorEval(3))
         END IF
         
-      ELSE IF ((p_rspaceTimeDiscretisation%niterations .EQ. 1) .AND. &
+      ELSE IF ((p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .EQ. 1) .AND. &
                (isubstep .EQ. 0)) THEN
       
         ! Only one timestep. Copy vector-1 -> vector-2 -> vector-3 so that the above
@@ -1455,7 +1453,7 @@ CONTAINS
     ! If dnorm is specified, normalise it.
     ! It was calculated from rspaceTimeDiscr%niterations+1 subvectors.
     IF (PRESENT(dnorm)) THEN
-      dnorm = SQRT(dnorm / REAL(p_rspaceTimeDiscretisation%niterations+1,DP))
+      dnorm = SQRT(dnorm / REAL(p_rspaceTimeDiscretisation%rtimeDiscr%nintervals+1,DP))
     END IF
     
     ! Release the temp vectors.
@@ -1469,721 +1467,310 @@ CONTAINS
     
   END SUBROUTINE 
    
-  ! ***************************************************************************
+!  ! ***************************************************************************
+!  
+!!<subroutine>
+!
+!  SUBROUTINE c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
+!      rtempvector1, rtempvector2, rtempvector3, bimplementBC)
+!
+!!<description>
+!  ! Assembles the space-time RHS vector rb. Bondary conditions are NOT
+!  ! implemented!
+!  !
+!  ! Note: rproblem%rtimedependence%dtime will be undefined at the end of
+!  ! this routine!
+!!</description>
+!
+!!<input>
+!  ! A problem structure that provides information on all
+!  ! levels as well as temporary vectors.
+!  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!  
+!  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
+!  ! coupled space-time system.
+!  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+!!</input>
+!
+!!<inputoutput>
+!  ! A temporary vector in the size of a spatial vector.
+!  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector1
+!
+!  ! A second temporary vector in the size of a spatial vector.
+!  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector2
+!
+!  ! A third temporary vector in the size of a spatial vector.
+!  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector3
+!
+!  ! A space-time vector that receives the RHS.
+!  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+!  
+!  ! Whether to implement boundary conditions into the RHS or not.
+!  LOGICAL, INTENT(IN) :: bimplementBC
+!!</inputoutput>
+!
+!!</subroutine>
+!
+!    ! local variables
+!    INTEGER :: isubstep
+!    REAL(DP) :: dtheta
+!    TYPE(t_ccmatrixComponents) :: rmatrixComponents
+!    
+!    ! A temporary vector for the creation of the RHS.
+!    TYPE(t_vectorBlock) :: rtempVectorRHS
+!    
+!    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd, p_Drhs
+!
+!    ! Theta-scheme identifier.
+!    ! =1: impliciz Euler.
+!    ! =0.5: Crank Nicolson
+!    dtheta = rproblem%rtimedependence%dtimeStepTheta
+!    
+!    ! ----------------------------------------------------------------------
+!    ! Generate the global RHS vector
+!    
+!    CALL lsysbl_getbase_double (rtempVector1,p_Dx)
+!    CALL lsysbl_getbase_double (rtempVector2,p_Db)
+!    CALL lsysbl_getbase_double (rtempVector3,p_Dd)
+!
+!    ! Assemble 1st RHS vector in X temp vector.
+!    CALL generateRHS (rproblem,0,rb%ntimesteps,rspaceTimeDiscr%rtimeDiscr%dtstep,&
+!        rtempVector1, .TRUE., .FALSE.)
+!        
+!    ! Assemble the 2nd RHS vector in the RHS temp vector
+!    CALL generateRHS (rproblem,1,rb%ntimesteps,rspaceTimeDiscr%rtimeDiscr%dtstep,&
+!        rtempVector2, .TRUE., .FALSE.)
+!
+!    ! Assemble the 3rd RHS vector in the defect temp vector
+!    IF (rspaceTimeDiscr%rtimeDiscr%nintervals .GE. 2) THEN
+!      CALL generateRHS (rproblem,2,rb%ntimesteps,rspaceTimeDiscr%rtimeDiscr%dtstep,&
+!          rtempVector3, .TRUE., .FALSE.)
+!    ELSE
+!      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
+!    END IF
+!        
+!    ! Create a copy of the X temp vector (RHS0). That vector will be
+!    ! our destination vector for assembling the RHS in all timesteps.
+!    CALL lsysbl_copyVector (rtempVector1,rtempVectorRHS)
+!    
+!    ! DEBUG!!!
+!    CALL lsysbl_getbase_double (rtempVectorRHS,p_Drhs)
+!    
+!    ! RHS 0,1,2 -> 1-2-3
+!    
+!    DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
+!    
+!      IF (isubstep .EQ. 0) THEN
+!      
+!        ! Primal RHS comes from rtempVector1. The dual from the
+!        ! isubstep+1'th RHS in rtempVector2.
+!        !
+!        ! primal RHS(0) = PRIMALRHS(0)
+!        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
+!
+!        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(1),rtempVectorRHS%RvectorBlock(1))
+!        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
+!        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
+!
+!        CALL lsyssc_vectorLinearComb (&
+!            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(4))
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(5))
+!        ! Pressure is fully implicit
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(6))
+!
+!        ! In the 0'th timestep, there is no RHS in the dual equation!
+!        ! That is because of the initial condition, which fixes the primal solution
+!        ! => dual solution has no influence on the primal one
+!        ! => setting up a dual RHS in not meaningful as the dual RHS cannot
+!        !    influence the primal solution
+!        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
+!        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
+!        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
+!            
+!      ELSE IF (isubstep .LT. rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
+!      
+!        ! We are somewhere 'in the middle'.
+!        !
+!        ! Dual RHS comes from rtempVector3. The primal from the
+!        ! isubstep-1'th RHS.
+!        !
+!        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+!        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
+!        
+!        CALL lsyssc_vectorLinearComb (&
+!            rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(1))                                        
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(2))                                        
+!        ! Pressure is fully implicit
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(3))
+!
+!        CALL lsyssc_vectorLinearComb (&
+!            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(4))
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(5))
+!        ! Pressure is fully implicit
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(6))
+!        
+!        IF (isubstep .LT. rspaceTimeDiscr%rtimeDiscr%nintervals-1) THEN
+!          ! Shift the RHS vectors and generate the RHS for the next time step.
+!          ! (Yes, I know, this could probably be solved more elegant without copying anything
+!          ! using a ring buffer ^^)
+!          CALL lsysbl_copyVector(rtempVector2,rtempVector1)
+!          CALL lsysbl_copyVector(rtempVector3,rtempVector2)
+!          CALL generateRHS (rproblem,isubstep+2,&
+!              rspaceTimeDiscr%rtimeDiscr%nintervals,&
+!              rspaceTimeDiscr%rtimeDiscr%dtstep,rtempVector3, .TRUE., .FALSE.)
+!        END IF
+!        
+!      ELSE
+!      
+!        ! We are 'at the end'.
+!        !
+!        ! Dual RHS comes from rtempVector3. The primal from the
+!        ! isubstep-1'th RHS and rtempVector3.
+!        !
+!        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+!        ! dual RHS(0)   = DUALRHS(0)
+!      
+!        CALL lsyssc_vectorLinearComb (&
+!            rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(1))                                        
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(2))                                        
+!        ! Pressure is fully implicit
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
+!            (1.0_DP-dtheta),dtheta,&
+!            rtempVectorRHS%RvectorBlock(3))
+!
+!        !CALL generateRHS (rproblem,isubstep+1,rspaceTimeDiscr%niterations,&
+!        !    rtempVector3, .TRUE., .FALSE.)
+!
+!        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
+!        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
+!        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
+!
+!        ! Multiply the last RHS of the dual equation -z by gamma, that's it.
+!        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),rspaceTimeDiscr%dgammaC)
+!        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),rspaceTimeDiscr%dgammaC)
+!
+!      END IF
+!
+!      ! Implement the boundary conditions into the RHS vector        
+!      IF (bimplementBC) THEN
+!        CALL generateRHS (rproblem,isubstep,&
+!            rspaceTimeDiscr%rtimeDiscr%nintervals,&
+!            rspaceTimeDiscr%rtimeDiscr%dtstep, rtempVectorRHS, .FALSE., .TRUE.)
+!      END IF
+!      
+!      ! Save the RHS.
+!      CALL sptivec_setTimestepData(rb, isubstep, rtempVectorRHS)
+!      
+!    END DO
+!    
+!    ! Release the temp vector for generating the RHS.
+!    CALL lsysbl_releaseVector (rtempVectorRHS)
+!
+!  CONTAINS
+!  
+!    SUBROUTINE generateRHS (rproblem,isubstep,nsubsteps,dtstep,&
+!        rvector, bgenerate, bincludeBC)
+!    
+!    ! Generate the RHS vector of timestep isubstep and/or include boundary
+!    ! conditions.
+!    
+!    ! Problem structure.
+!    TYPE(t_problem), INTENT(INOUT) :: rproblem
+!    
+!    ! Number of the substep where to generate the RHS vector
+!    INTEGER, INTENT(IN) :: isubstep
+!    
+!    ! Total number of substeps
+!    INTEGER, INTENT(IN) :: nsubsteps
+!    
+!    ! Length od one timestep
+!    REAL(DP), INTENT(IN) :: dtstep
+!    
+!    ! Destination vector
+!    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!    
+!    ! Whether to generate the RHS vector or not
+!    LOGICAL, INTENT(IN) :: bgenerate
+!    
+!    ! Whether to include boundary conditions
+!    LOGICAL, INTENT(IN) :: bincludeBC
+!    
+!    ! DEBUG!!!
+!    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!    
+!      ! DEBUG!!!
+!      CALL lsysbl_getbase_double (rvector,p_Ddata)
+!
+!      ! Set the time where we are at the moment
+!      rproblem%rtimedependence%dtime = &
+!          rproblem%rtimedependence%dtimeInit + isubstep*dtstep
+!      rproblem%rtimedependence%itimestep = isubstep
+!          
+!      ! Assemble the RHS?
+!      IF (bgenerate) THEN
+!      
+!        ! Generate the RHS of that point in time into the vector.
+!        CALL c2d2_generateBasicRHS (rproblem,rvector)
+!
+!      END IF
+!      
+!      ! Include BC's?
+!      IF (bincludeBC) THEN
+!        
+!        ! Initialise the collection for the assembly process with callback routines.
+!        ! Basically, this stores the simulation time in the collection if the
+!        ! simulation is nonstationary.
+!        CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+!
+!        ! Discretise the boundary conditions at the new point in time -- 
+!        ! if the boundary conditions are nonconstant in time!
+!        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+!          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+!        END IF
+!
+!        ! Implement the boundary conditions into the RHS.
+!        ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
+!        ! as Dirichlet values mustn't be multiplied with GAMMA!
+!        CALL vecfil_discreteBCsol (rvector)
+!        CALL vecfil_discreteFBCsol (rvector)      
+!      
+!        ! Clean up the collection (as we are done with the assembly, that's it.
+!        CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+!        
+!      END IF
+!    
+!    END SUBROUTINE
+!    
+!  END SUBROUTINE
   
-!<subroutine>
-
-  SUBROUTINE c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
-      rtempvector1, rtempvector2, rtempvector3, bimplementBC)
-
-!<description>
-  ! Assembles the space-time RHS vector rb. Bondary conditions are NOT
-  ! implemented!
-  !
-  ! Note: rproblem%rtimedependence%dtime will be undefined at the end of
-  ! this routine!
-!</description>
-
-!<input>
-  ! A problem structure that provides information on all
-  ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-  
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
-  ! coupled space-time system.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-!</input>
-
-!<inputoutput>
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector1
-
-  ! A second temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector2
-
-  ! A third temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector3
-
-  ! A space-time vector that receives the RHS.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
-  
-  ! Whether to implement boundary conditions into the RHS or not.
-  LOGICAL, INTENT(IN) :: bimplementBC
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    INTEGER :: isubstep
-    REAL(DP) :: dtheta
-    TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    
-    ! A temporary vector for the creation of the RHS.
-    TYPE(t_vectorBlock) :: rtempVectorRHS
-    
-    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd, p_Drhs
-
-    ! Theta-scheme identifier.
-    ! =1: impliciz Euler.
-    ! =0.5: Crank Nicolson
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
-    
-    ! ----------------------------------------------------------------------
-    ! Generate the global RHS vector
-    
-    CALL lsysbl_getbase_double (rtempVector1,p_Dx)
-    CALL lsysbl_getbase_double (rtempVector2,p_Db)
-    CALL lsysbl_getbase_double (rtempVector3,p_Dd)
-
-    ! Assemble 1st RHS vector in X temp vector.
-    CALL generateRHS (rproblem,0,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
-        rtempVector1, .TRUE., .FALSE.)
-        
-    ! Assemble the 2nd RHS vector in the RHS temp vector
-    CALL generateRHS (rproblem,1,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
-        rtempVector2, .TRUE., .FALSE.)
-
-    ! Assemble the 3rd RHS vector in the defect temp vector
-    IF (rspaceTimeDiscr%niterations .GE. 2) THEN
-      CALL generateRHS (rproblem,2,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
-          rtempVector3, .TRUE., .FALSE.)
-    ELSE
-      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
-    END IF
-        
-    ! Create a copy of the X temp vector (RHS0). That vector will be
-    ! our destination vector for assembling the RHS in all timesteps.
-    CALL lsysbl_copyVector (rtempVector1,rtempVectorRHS)
-    
-    ! DEBUG!!!
-    CALL lsysbl_getbase_double (rtempVectorRHS,p_Drhs)
-    
-    ! RHS 0,1,2 -> 1-2-3
-    
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      IF (isubstep .EQ. 0) THEN
-      
-        ! Primal RHS comes from rtempVector1. The dual from the
-        ! isubstep+1'th RHS in rtempVector2.
-        !
-        ! primal RHS(0) = PRIMALRHS(0)
-        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
-
-        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(1),rtempVectorRHS%RvectorBlock(1))
-        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
-        CALL lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
-
-        CALL lsyssc_vectorLinearComb (&
-            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(4))
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(6))
-
-        ! In the 0'th timestep, there is no RHS in the dual equation!
-        ! That is because of the initial condition, which fixes the primal solution
-        ! => dual solution has no influence on the primal one
-        ! => setting up a dual RHS in not meaningful as the dual RHS cannot
-        !    influence the primal solution
-        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
-        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
-        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
-            
-      ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
-      
-        ! We are somewhere 'in the middle'.
-        !
-        ! Dual RHS comes from rtempVector3. The primal from the
-        ! isubstep-1'th RHS.
-        !
-        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
-        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
-        
-        CALL lsyssc_vectorLinearComb (&
-            rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(3))
-
-        CALL lsyssc_vectorLinearComb (&
-            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(4))
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(6))
-        
-        IF (isubstep .LT. rspaceTimeDiscr%niterations-1) THEN
-          ! Shift the RHS vectors and generate the RHS for the next time step.
-          ! (Yes, I know, this could probably be solved more elegant without copying anything
-          ! using a ring buffer ^^)
-          CALL lsysbl_copyVector(rtempVector2,rtempVector1)
-          CALL lsysbl_copyVector(rtempVector3,rtempVector2)
-          CALL generateRHS (rproblem,isubstep+2,rspaceTimeDiscr%niterations,&
-              rspaceTimeDiscr%dtstep,rtempVector3, .TRUE., .FALSE.)
-        END IF
-        
-      ELSE
-      
-        ! We are 'at the end'.
-        !
-        ! Dual RHS comes from rtempVector3. The primal from the
-        ! isubstep-1'th RHS and rtempVector3.
-        !
-        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
-        ! dual RHS(0)   = DUALRHS(0)
-      
-        CALL lsyssc_vectorLinearComb (&
-            rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
-            (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(3))
-
-        !CALL generateRHS (rproblem,isubstep+1,rspaceTimeDiscr%niterations,&
-        !    rtempVector3, .TRUE., .FALSE.)
-
-        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
-        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-        CALL lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
-
-        ! Multiply the last RHS of the dual equation -z by gamma, that's it.
-        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),rspaceTimeDiscr%dgammaC)
-        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),rspaceTimeDiscr%dgammaC)
-
-      END IF
-
-      ! Implement the boundary conditions into the RHS vector        
-      IF (bimplementBC) THEN
-        CALL generateRHS (rproblem,isubstep,rspaceTimeDiscr%niterations,&
-            rspaceTimeDiscr%dtstep, rtempVectorRHS, .FALSE., .TRUE.)
-      END IF
-      
-      ! Save the RHS.
-      CALL sptivec_setTimestepData(rb, isubstep, rtempVectorRHS)
-      
-    END DO
-    
-    ! Release the temp vector for generating the RHS.
-    CALL lsysbl_releaseVector (rtempVectorRHS)
-
-  CONTAINS
-  
-    SUBROUTINE generateRHS (rproblem,isubstep,nsubsteps,dtstep,&
-        rvector, bgenerate, bincludeBC)
-    
-    ! Generate the RHS vector of timestep isubstep and/or include boundary
-    ! conditions.
-    
-    ! Problem structure.
-    TYPE(t_problem), INTENT(INOUT) :: rproblem
-    
-    ! Number of the substep where to generate the RHS vector
-    INTEGER, INTENT(IN) :: isubstep
-    
-    ! Total number of substeps
-    INTEGER, INTENT(IN) :: nsubsteps
-    
-    ! Length od one timestep
-    REAL(DP), INTENT(IN) :: dtstep
-    
-    ! Destination vector
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-    
-    ! Whether to generate the RHS vector or not
-    LOGICAL, INTENT(IN) :: bgenerate
-    
-    ! Whether to include boundary conditions
-    LOGICAL, INTENT(IN) :: bincludeBC
-    
-    ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    
-      ! DEBUG!!!
-      CALL lsysbl_getbase_double (rvector,p_Ddata)
-
-      ! Set the time where we are at the moment
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-          
-      ! Assemble the RHS?
-      IF (bgenerate) THEN
-      
-        ! Generate the RHS of that point in time into the vector.
-        CALL c2d2_generateBasicRHS (rproblem,rvector)
-
-      END IF
-      
-      ! Include BC's?
-      IF (bincludeBC) THEN
-        
-        ! Initialise the collection for the assembly process with callback routines.
-        ! Basically, this stores the simulation time in the collection if the
-        ! simulation is nonstationary.
-        CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-        END IF
-
-        ! Implement the boundary conditions into the RHS.
-        ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
-        ! as Dirichlet values mustn't be multiplied with GAMMA!
-        CALL vecfil_discreteBCsol (rvector)
-        CALL vecfil_discreteFBCsol (rvector)      
-      
-        ! Clean up the collection (as we are done with the assembly, that's it.
-        CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
-        
-      END IF
-    
-    END SUBROUTINE
-    
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementInitCondRHS (rproblem,rspaceTimeDiscr, &
-      rx, rb, rtempvectorX, rtempvectorD)
-
-!<description>
-  ! Implements the initial condition into the RHS vector rb.
-  ! Overwrites the rb of the first time step.
-  !
-  ! Does not implement boundary conditions!
-!</description>
-
-!<input>
-  ! A problem structure that provides information on all
-  ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
-  ! coupled space-time system. Must correspond to rb.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-!</input>
-
-!<inputoutput>
-  ! A space-time vector containing the initial condition in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
-
-  ! A space-time vector with the RHS. The initial condition is implemented into
-  ! this vector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
-!</inputoutput>
-
-!</subroutine>
-
-    REAL(DP) :: dtheta
-    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd, p_Drhs
-    TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-
-    ! Theta-scheme identifier.
-    ! =1: impliciz Euler.
-    ! =0.5: Crank Nicolson
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
-
-    ! Overwrite the primal RHS with the initial primal solution vector.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
-    
-!    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
-
-    ! Save the modified RHS.
-    CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
-    
-    ! DEBUG!!!
-    !CALL sptivec_getTimestepData(rx, 2, rtempVectorX)
-    !CALL sptivec_getTimestepData(rb, 2, rtempVectorD)
-    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(4),rtempVectorD%RvectorBlock(4))
-    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),rtempVectorD%RvectorBlock(5))
-    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
-    !CALL sptivec_setTimestepData(rb, 2, rtempVectorD)
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementInitCondDefect (rspaceTimeDiscr, rd, rtempvectorD)
-
-!<description>
-  ! Implements the initial and terminal condition into a defect vector rd.
-  ! Overwrites the rd of the first time step.
-  !
-  ! Does not implement boundary conditions!
-!</description>
-
-!<inputoutput>
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-  ! A space-time vector containing the defect in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
-!</inputoutput>
-
-!</subroutine>
-
-    REAL(DP) :: dtheta
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-
-    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rd, 0, rtempVectorD)
-    CALL c2d2_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
-    CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
-
-    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
-      ! That's a special case, we have the terminal condition "lambda(T)=0".
-      ! This case must be treated like the initial condition, i.e. the
-      ! dual defect in the last timestep must be overwritten by zero.
-      !
-      ! If gamma<>0, the terminal condition is implemented implicitely
-      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
-      ! play by the mass matrix term in the system matrix of the last timestep,
-      ! so this does not have to be treated explicitly.
-      
-      CALL sptivec_getTimestepData(rd, rd%ntimesteps, rtempVectorD)
-      
-      CALL c2d2_implementTermCondDefSingle (rspaceTimeDiscr, rtempvectorD)
-      
-      CALL sptivec_setTimestepData(rd, rd%ntimesteps, rtempVectorD)
-      
-    END IF
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementInitCondDefSingle (rspaceTimeDiscr, rd)
-
-!<description>
-  ! Implements the initial condition into a defect vector rd,
-  ! representing the defect in the first timestep.
-  !
-  ! Does not implement boundary conditions!
-!</description>
-
-!<inputoutput>
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-  ! A vector containing the defect in the first subvector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
-!</inputoutput>
-
-!</subroutine>
-
-    REAL(DP) :: dtheta
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rd,p_Db)
-    
-    CALL lsyssc_clearVector(rd%RvectorBlock(1))
-    CALL lsyssc_clearVector(rd%RvectorBlock(2))
-    CALL lsyssc_clearVector(rd%RvectorBlock(3))
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementTermCondDefSingle (rspaceTimeDiscr, rd)
-
-!<description>
-  ! Implements the terminal condition into a defect vector rd,
-  ! representing the defect in the last timestep.
-  !
-  ! Does not implement boundary conditions!
-!</description>
-
-!<inputoutput>
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-  ! A vector containing the defect in the last subvector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
-!</inputoutput>
-
-!</subroutine>
-
-    REAL(DP) :: dtheta
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rd,p_Db)
-
-    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
-      ! That's a special case, we have the terminal condition "lambda(T)=0".
-      ! This case must be treated like the initial condition, i.e. the
-      ! dual defect in the last timestep must be overwritten by zero.
-      !
-      ! If gamma<>0, the terminal condition is implemented implicitely
-      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
-      ! play by the mass matrix term in the system matrix of the last timestep,
-      ! so this does not have to be treated explicitly.
-      
-      CALL lsyssc_clearVector(rd%RvectorBlock(4))
-      CALL lsyssc_clearVector(rd%RvectorBlock(5))
-      CALL lsyssc_clearVector(rd%RvectorBlock(6))
-      
-    END IF
-
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementBCsolution (rproblem,rspaceTimeDiscr,rx,rtempvectorX)
-
-!<description>
-  ! Implements the boundary conditions of all timesteps into the solution rx.
-!</description>
-
-!<input>
-  ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
-  
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-!</input>
-
-!<inputoutput>
-  ! A space-time vector with the solution where the BC's should be implemented
-  ! to.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
-!</inputoutput>
-
-!</subroutine>
-
-    INTEGER :: isubstep
-    
-    ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    CALL lsyssc_getbase_double (rtempVectorX%RvectorBlock(1),p_Ddata)
-
-    ! Implement the bondary conditions into all initial solution vectors
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + &
-          isubstep*rspaceTimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! Implement the boundary conditions into the global solution vector.
-      CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-      
-      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
-      
-      CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
-      
-    END DO
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementBCdefect (rproblem,rspaceTimeDiscr,rd,rtempvectorX)
-
-!<description>
-  ! Implements the boundary conditions of all timesteps into the defect rd.
-!</description>
-
-!<input>
-  ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
-  
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-!</input>
-
-!<inputoutput>
-  ! A space-time vector with the solution where the BC's should be implemented
-  ! to.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
-!</inputoutput>
-
-!</subroutine>
-
-    INTEGER :: isubstep
-    TYPE(t_vectorBlock) :: rtempVector
-    
-    CALL lsysbl_duplicateVector(rtempVectorX,rtempVector,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-
-    ! Implement the bondary conditions into all initial solution vectors
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + &
-          isubstep*rspaceTimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! Implement the boundary conditions into the global solution vector.
-      CALL sptivec_getTimestepData(rd, isubstep, rtempVector)
-      
-      CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
-      
-      ! In the very first time step, we have the initial condition for the
-      ! solution. The defect is =0 there!
-      IF (isubstep .EQ. 0) THEN
-        CALL lsyssc_clearVector (rtempVector%RvectorBlock(1))
-        CALL lsyssc_clearVector (rtempVector%RvectorBlock(2))
-        CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
-      END IF
-      
-      CALL sptivec_setTimestepData(rd, isubstep, rtempVector)
-      
-    END DO
-    
-    CALL lsysbl_releaseVector(rtempVector)
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_implementBCdefectSingle (rproblem,isubstep,rspaceTimeDiscr,rd)
-
-!<description>
-  ! Implements the boundary conditions at timestep isubstep into the defect rd.
-!</description>
-
-!<input>
-  ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
-  
-  ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-
-!</input>
-
-!<inputoutput>
-  ! A space-time vector with the solution where the BC's should be implemented to.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
-!</inputoutput>
-
-!</subroutine>
-
-    INTEGER :: isubstep
-    TYPE(t_vectorBlock) :: rtempVector
-    
-    CALL lsysbl_duplicateVector(rd,rtempVector,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-
-    ! Current point in time
-    rproblem%rtimedependence%dtime = &
-        rproblem%rtimedependence%dtimeInit + &
-        isubstep*rspaceTimeDiscr%dtstep
-    rproblem%rtimedependence%itimestep = isubstep
-
-    ! -----
-    ! Discretise the boundary conditions at the new point in time -- 
-    ! if the boundary conditions are nonconstant in time!
-    IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-    END IF
-    
-    CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
-    
-    ! In the very first time step, we have the initial condition for the
-    ! solution. The defect is =0 there!
-    IF (isubstep .EQ. 0) THEN
-      CALL lsyssc_clearVector (rd%RvectorBlock(1))
-      CALL lsyssc_clearVector (rd%RvectorBlock(2))
-      CALL lsyssc_clearVector (rd%RvectorBlock(3))
-    END IF
-    
-    CALL lsysbl_releaseVector(rtempVector)
-
-  END SUBROUTINE
-
 END MODULE

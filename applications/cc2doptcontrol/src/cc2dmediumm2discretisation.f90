@@ -1379,13 +1379,23 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initTargetFlow (rproblem,ntimesteps)
+  SUBROUTINE c2d2_initTargetFlow (rproblem,dstartTime,dendTime,ntimesteps)
   
 !<description>
   ! Reads in the target flow of the optimal control problem.
 !</description>
 
 !<input>
+  ! OPTIONAL: Start time in a nonstationary simulation.
+  ! This parameter must be present in a nonstatinoary simulation. In a stationary
+  ! simulation, the parameter can be skipped.
+  REAL(DP), INTENT(IN), OPTIONAL :: dstartTime
+
+  ! OPTIONAL: Start time in a nonstationary simulation.
+  ! This parameter must be present in a nonstatinoary simulation. In a stationary
+  ! simulation, the parameter can be skipped.
+  REAL(DP), INTENT(IN), OPTIONAL :: dendTime
+
   ! OPTIONAL: Total number of timesteps in a nonstationary simulation.
   ! This parameter must be present in a nonstatinoary simulation. In a stationary
   ! simulation, the parameter can be skipped.
@@ -1403,6 +1413,7 @@ CONTAINS
     ! local variables
     CHARACTER(SYS_STRLEN) :: sarray
     INTEGER :: iref
+    INTEGER :: nactTimesteps
     
     ! At first, what is with the triangulation and discretisation?
     ! Is the triangulation inside of the bounds specified by NLMIN/NLMAX
@@ -1478,22 +1489,32 @@ CONTAINS
       !rproblem%roptcontrol%rtargetFlow%p_rblockDiscretisation => &
       !    rproblem%roptcontrol%p_rdiscrTargetFlow
 
-      ! Read them in into a space-time vector.
+      ! How many timesteps does the target flow have?      
       IF (rproblem%roptcontrol%itargetFlowTimesteps .EQ. -1) THEN
         ! As many files as we have timesteps
-        CALL sptivec_loadFromFileSequence (&
-            rproblem%roptcontrol%rtargetFlowNonstat,&
-            '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
-            0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
+        nactTimesteps = ntimesteps
       ELSE
         ! Exactly itargetFlowDelta timesteps, the values inbetween
         ! must be calculated by interpolation.
-        CALL sptivec_loadFromFileSequence (&
-            rproblem%roptcontrol%rtargetFlowNonstat,&
-            '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
-            0,rproblem%roptcontrol%itargetFlowTimesteps,&
-            rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
+        nactTimesteps = rproblem%roptcontrol%itargetFlowTimesteps
       END IF
+      
+      ! Create a time discretisation structure for the target flow and
+      ! create the target flow vector. We assume the target flow to be given
+      ! in the endpoints of the subintervals -- which corresponds to the
+      ! implicit Euler scheme.
+      CALL tdiscr_initTheta (dstartTime, dendTime, nacttimesteps, 1.0_DP, &
+          rproblem%roptcontrol%rtargetTimeDiscr)
+          
+      CALL sptivec_initVectorDiscr (rproblem%roptcontrol%rtargetFlowNonstat,&
+          rproblem%roptcontrol%rtargetTimeDiscr,&
+          rproblem%roptcontrol%p_rdiscrTargetFlow)
+
+      CALL sptivec_loadFromFileSequence (&
+          rproblem%roptcontrol%rtargetFlowNonstat,&
+          '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
+          0,nacttimesteps,&
+          rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
 
     END SELECT
 
