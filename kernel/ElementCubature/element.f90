@@ -10031,9 +10031,9 @@ CONTAINS
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC3D)) then
     Dbas(1,DER_FUNC3D) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
-    Dbas(2,DER_FUNC3D) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+    Dbas(2,DER_FUNC3D) = R16 - 0.25_DP*(dxy - dyz) - 0.5_DP*dy
     Dbas(3,DER_FUNC3D) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
-    Dbas(4,DER_FUNC3D) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+    Dbas(4,DER_FUNC3D) = R16 - 0.25_DP*(dxy - dyz) + 0.5_DP*dy
     Dbas(5,DER_FUNC3D) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
     Dbas(6,DER_FUNC3D) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
 !  endif
@@ -10051,26 +10051,26 @@ CONTAINS
     djx = -0.5_DP * dx
     Dhelp(1,1) = djx
     Dhelp(2,1) = djx
-    Dhelp(3,1) = dx + 0.75_DP
+    Dhelp(3,1) = dx + 0.5_DP
     Dhelp(4,1) = djx
-    Dhelp(5,1) = dx - 0.75_DP
+    Dhelp(5,1) = dx - 0.5_DP
     Dhelp(6,1) = djx
     
     djy = -0.5_DP * dy
     Dhelp(1,2) = djy
-    Dhelp(2,2) = dy - 0.75_DP
+    Dhelp(2,2) = dy - 0.5_DP
     Dhelp(3,2) = djy
-    Dhelp(4,2) = dy + 0.75_DP
+    Dhelp(4,2) = dy + 0.5_DP
     Dhelp(5,2) = djy
     Dhelp(6,2) = djy
     
     djz = -0.5_DP * dz
-    Dhelp(1,3) = dz - 0.75_DP
+    Dhelp(1,3) = dz - 0.5_DP
     Dhelp(2,3) = djz
     Dhelp(3,3) = djz
     Dhelp(4,3) = djz
     Dhelp(5,3) = djz
-    Dhelp(6,3) = dz + 0.75_DP
+    Dhelp(6,3) = dz + 0.5_DP
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV3D_X)) then
@@ -10233,9 +10233,9 @@ CONTAINS
       dxy = dx**2 - dy**2
       dyz = dy**2 - dz**2
       Dbas(1,DER_FUNC3D,i) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
-      Dbas(2,DER_FUNC3D,i) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+      Dbas(2,DER_FUNC3D,i) = R16 - 0.25_DP*(dxy - dyz) - 0.5_DP*dy
       Dbas(3,DER_FUNC3D,i) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
-      Dbas(4,DER_FUNC3D,i) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+      Dbas(4,DER_FUNC3D,i) = R16 - 0.25_DP*(dxy - dyz) + 0.5_DP*dy
       Dbas(5,DER_FUNC3D,i) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
       Dbas(6,DER_FUNC3D,i) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
     END DO
@@ -10254,24 +10254,24 @@ CONTAINS
       djx = -0.5_DP * dx
       Dhelp(1,1,i) = djx
       Dhelp(2,1,i) = djx
-      Dhelp(3,1,i) = dx + 0.75_DP
+      Dhelp(3,1,i) = dx + 0.5_DP
       Dhelp(4,1,i) = djx
-      Dhelp(5,1,i) = dx - 0.75_DP
+      Dhelp(5,1,i) = dx - 0.5_DP
       Dhelp(6,1,i) = djx
       djy = -0.5_DP * dy
       Dhelp(1,2,i) = djy
-      Dhelp(2,2,i) = dy - 0.75_DP
+      Dhelp(2,2,i) = dy - 0.5_DP
       Dhelp(3,2,i) = djy
-      Dhelp(4,2,i) = dy + 0.75_DP
+      Dhelp(4,2,i) = dy + 0.5_DP
       Dhelp(5,2,i) = djy
       Dhelp(6,2,i) = djy
       djz = -0.5_DP * dz
-      Dhelp(1,3,i) = dz - 0.75_DP
+      Dhelp(1,3,i) = dz - 0.5_DP
       Dhelp(2,3,i) = djz
       Dhelp(3,3,i) = djz
       Dhelp(4,3,i) = djz
       Dhelp(5,3,i) = djz
-      Dhelp(6,3,i) = dz + 0.75_DP
+      Dhelp(6,3,i) = dz + 0.5_DP
     END DO
       
     !x-derivatives on current element
@@ -10460,9 +10460,9 @@ CONTAINS
         dxy = dx**2 - dy**2
         dyz = dy**2 - dz**2
         Dbas(1,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
-        Dbas(2,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+        Dbas(2,DER_FUNC3D,i,j) = R16 - 0.25_DP*(dxy - dyz) - 0.5_DP*dy
         Dbas(3,DER_FUNC3D,i,j) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
-        Dbas(4,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+        Dbas(4,DER_FUNC3D,i,j) = R16 - 0.25_DP*(dxy - dyz) + 0.5_DP*dy
         Dbas(5,DER_FUNC3D,i,j) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
         Dbas(6,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
       END DO
@@ -10486,24 +10486,24 @@ CONTAINS
         djx = -0.5_DP * dx
         Dhelp(1,1,i) = djx
         Dhelp(2,1,i) = djx
-        Dhelp(3,1,i) = dx + 0.75_DP
+        Dhelp(3,1,i) = dx + 0.5_DP
         Dhelp(4,1,i) = djx
-        Dhelp(5,1,i) = dx - 0.75_DP
+        Dhelp(5,1,i) = dx - 0.5_DP
         Dhelp(6,1,i) = djx
         djy = -0.5_DP * dy
         Dhelp(1,2,i) = djy
-        Dhelp(2,2,i) = dy - 0.75_DP
+        Dhelp(2,2,i) = dy - 0.5_DP
         Dhelp(3,2,i) = djy
-        Dhelp(4,2,i) = dy + 0.75_DP
+        Dhelp(4,2,i) = dy + 0.5_DP
         Dhelp(5,2,i) = djy
         Dhelp(6,2,i) = djy
         djz = -0.5_DP * dz
-        Dhelp(1,3,i) = dz - 0.75_DP
+        Dhelp(1,3,i) = dz - 0.5_DP
         Dhelp(2,3,i) = djz
         Dhelp(3,3,i) = djz
         Dhelp(4,3,i) = djz
         Dhelp(5,3,i) = djz
-        Dhelp(6,3,i) = dz + 0.75_DP
+        Dhelp(6,3,i) = dz + 0.5_DP
       END DO
         
       !x-derivatives on current element
