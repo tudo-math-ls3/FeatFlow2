@@ -40,7 +40,7 @@
 !# ensures that the discrete maximum principle holds. Consequently, the term
 !# DMP is adopted.
 !#
-!# The second type of routines is given by gfsc_buildResidual_XXX. They can be
+!# The second type of routines is given by gfsc_buildResidualXXX. They can be
 !# used to update/initialise the residual term applying some sort of algebraic
 !# flux correction. Importantly, the family of AFC schemes gives rise to nonlinear
 !# algebraic equations that need to be solved iteratively. Thus, it is usefull to
@@ -69,28 +69,27 @@
 !# 4.) gfsc_buildConvectionOperator = gfsc_buildConvOperatorScalar /
 !#                                    gfsc_buildConvOperatorBlock
 !#     -> assemble the convective part of the transport operator for 
-!#        scalar convection equation
+!#        a scalar convection-diffusion-reaction equation
 !#
 !# 5.) gfsc_buildDiffusionOperator
 !#     -> assemble the diffusive part of the transport operator for
-!#        scalar convection-diffusion equation 
+!#        scalar convection-diffusion-reaction equation 
 !#
-!# 6.) gfsc_buildResidual_FCT = gfsc_buildResidualScalar_FCT /
-!#                              gfsc_buildResidualBlock_FCT
-!#     -> assemble the residual vector for semi-implicit FEM-FCT stabilisation
+!# 6.) gfsc_buildResidualFCT = gfsc_buildResScalarFCT /
+!#                             gfsc_buildResBlockFCT
+!#     -> assemble the residual vector for AFC stabilisation of FCT type
 !#
 !# 7.) gfsc_buildResidual_FCT_PC = gfsc_buildResidualScalar_FCT_PC /
 !#                                 gfsc_buildResidualBlock_FCT_PC
 !#     -> assemble the residual vector for FEM-FCT stabilisation of
 !#        predictor corrector type
 !#
-!# 8.) gfsc_buildResidual_GPTVD = gfsc_buildResidualScalar_GPTVD /
-!#                                gfsc_buildResidualBlock_GPTVD
-!#     -> assemble the residual vector for FEM-TVD stabilisation or
-!#        of apply the general purpose limiter for consistent mass matrix
+!# 8.) gfsc_buildResidualTVD = gfsc_buildResScalarTVD /
+!#                             gfsc_buildResBlockTVD
+!#     -> assemble the residual vector for AFC stabilisation of TVD type
 !#
-!# 9.) gfsc_buildResidual_Symmetric = gfsc_buildResidualScalar_Symm /
-!#                                    gfsc_buildResidualblock_Symm
+!# 9.) gfsc_buildResidualSymmetric = gfsc_buildResScalarSymmetric /
+!#                                    gfsc_buildResBlockSymmetric
 !#     -> assemble the residual vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
@@ -145,9 +144,9 @@ MODULE groupfemscalar
   PUBLIC :: gfsc_isVectorCompatible
   PUBLIC :: gfsc_buildConvectionOperator
   PUBLIC :: gfsc_buildDiffusionOperator
-  PUBLIC :: gfsc_buildResidual_FCT
+  PUBLIC :: gfsc_buildResidualFCT
   PUBLIC :: gfsc_buildResidual_FCT_PC
-  PUBLIC :: gfsc_buildResidual_GPTVD
+  PUBLIC :: gfsc_buildResidualTVD
   PUBLIC :: gfsc_buildResidual_Symmetric
   PUBLIC :: gfsc_buildConvectionJacobian
   PUBLIC :: gfsc_buildStabLinearJacobian_FCT
@@ -165,9 +164,9 @@ MODULE groupfemscalar
     MODULE PROCEDURE gfsc_buildConvOperatorBlock
   END INTERFACE
 
-  INTERFACE gfsc_buildResidual_FCT
-    MODULE PROCEDURE gfsc_buildResidualScalar_FCT
-    MODULE PROCEDURE gfsc_buildResidualBlock_FCT
+  INTERFACE gfsc_buildResidualFCT
+    MODULE PROCEDURE gfsc_buildResScalarFCT
+    MODULE PROCEDURE gfsc_buildResBlockFCT
   END INTERFACE
 
   INTERFACE gfsc_buildResidual_FCT_PC
@@ -175,9 +174,9 @@ MODULE groupfemscalar
     MODULE PROCEDURE gfsc_buildResidualBlock_FCT_PC
   END INTERFACE
 
-  INTERFACE gfsc_buildResidual_GPTVD
-    MODULE PROCEDURE gfsc_buildResidualScalar_GPTVD
-    MODULE PROCEDURE gfsc_buildResidualBlock_GPTVD
+  INTERFACE gfsc_buildResidualTVD
+    MODULE PROCEDURE gfsc_buildResScalarTVD
+    MODULE PROCEDURE gfsc_buildResBlockTVD
   END INTERFACE
 
   INTERFACE gfsc_buildResidual_Symmetric
@@ -3000,7 +2999,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualBlock_FCT(rmatrixMC, rmatrixML, ru,&
+  SUBROUTINE gfsc_buildResBlockFCT(rmatrixMC, rmatrixML, ru,&
       theta, tstep, binitResidual, rres, rafcstab)
 
 !<description>
@@ -3046,22 +3045,22 @@ CONTAINS
     IF (ru%nblocks .NE. 1 .OR. rres%nblocks .NE. 1) THEN
 
       CALL output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualBlock_FCT')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockFCT')
       CALL sys_halt()
 
     ELSE
 
-      CALL gfsc_buildResidualScalar_FCT(rmatrixMC, rmatrixML, ru%RvectorBlock(1),&
+      CALL gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru%RvectorBlock(1),&
           theta, tstep, binitResidual, rres%RvectorBlock(1), rafcstab)
 
     END IF
-  END SUBROUTINE gfsc_buildResidualBlock_FCT
+  END SUBROUTINE gfsc_buildResBlockFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualScalar_FCT(rmatrixMC, rmatrixML, ru,&
+  SUBROUTINE gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru,&
       theta, tstep, binitResidual, rres, rafcstab)
 
 !<description>
@@ -3115,7 +3114,7 @@ CONTAINS
         IAND(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .EQ. 0   .OR.&
         IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .EQ. 0) THEN
       CALL output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_FCT')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       CALL sys_halt()
     END IF
 
@@ -3172,7 +3171,7 @@ CONTAINS
         IAND(rafcstab%iSpec, AFCSTAB_FLUXES)  .EQ. 0) THEN
       CALL output_line('Stabilisation does not provide precomputed fluxes &
           &and/or nodal correction factors',OU_CLASS_ERROR,OU_MODE_STD,&
-          'gfsc_buildResidualScalar_FCT')
+          'gfsc_buildResScalarFCT')
       CALL sys_halt()
     END IF
     
@@ -3380,7 +3379,7 @@ CONTAINS
         
       END IF
     END SUBROUTINE do_femfct_limit
-  END SUBROUTINE gfsc_buildResidualScalar_FCT
+  END SUBROUTINE gfsc_buildResScalarFCT
 
   !*****************************************************************************
 
@@ -3666,12 +3665,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualBlock_GPTVD(rmatrixMC, ru, ru0,&
+  SUBROUTINE gfsc_buildResBlockTVD(rmatrixMC, ru, ru0,&
       theta, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies stabilisation
-    ! of TVD type and/or employes the general purpose limiter.
+    ! This subroutine assembles the residual vector
+    ! and applies stabilisation of FEM-TVD type.
     ! Note that this routine serves as a wrapper for block vectors. If there
     ! is only one block, then the corresponding scalar routine is called.
     ! Otherwise, an error is thrown.
@@ -3709,27 +3708,43 @@ CONTAINS
         rres%nblocks .NE. 1) THEN
 
       CALL output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualBlock_GPTVD')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockTVD')
       CALL sys_halt()
 
     ELSE
 
-      CALL gfsc_buildResidualScalar_GPTVD(rmatrixMC, ru%RvectorBlock(1),&
+      CALL gfsc_buildResScalarTVD(rmatrixMC, ru%RvectorBlock(1),&
           ru0%RvectorBlock(1), theta, tstep, rres%RvectorBlock(1), rafcstab)
       
     END IF
-  END SUBROUTINE gfsc_buildResidualBlock_GPTVD
+  END SUBROUTINE gfsc_buildResBlockTVD
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualScalar_GPTVD(rmatrixMC, ru, ru0,&
+  SUBROUTINE gfsc_buildResScalarTVD(rmatrixMC, ru, ru0,&
       theta, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies stabilisation
-    ! of TVD type and/or employes the general purpose limiter.
+    ! This subroutine assembles the residual vector 
+    ! and applies stabilisation of FEM-TVD type and/or 
+    ! employes the general purpose limiter.
+    !
+    ! A detailed description of the FEM-TVD limiter is given in:
+    !
+    !     D. Kuzmin and S. Turek, "Multidimensional FEM-TVD paradigm
+    !     for convection-dominated flows" In:  Proceedings of the 
+    !     IV European Congress on Computational Methods in Applied Sciences
+    !     and Engineering (ECCOMAS 2004). Vol. II, ISBN 951-39-1869-6.
+    !
+    ! The general-purpose (GP) flux limiter is introduced in:
+    !
+    !     D. Kuzmin, "On the design of general-purpose flux 
+    !     limiters for implicit FEM with a consistent mass matrix.
+    !     I. Scalar convection."
+    !     J. Comput. Phys.  219  (2006) 513-531.
+    !
 !</description>
 
 !<input>
@@ -3779,7 +3794,7 @@ CONTAINS
           IAND(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).EQ.0 .OR. &
           IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .EQ.0) THEN
         CALL output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_GPTVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
         CALL sys_halt()
       END IF
 
@@ -3813,7 +3828,7 @@ CONTAINS
           IAND(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).EQ.0 .OR. &
           IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .EQ.0) THEN
         CALL output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_GPTVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
         CALL sys_halt()
       END IF
 
@@ -3850,7 +3865,7 @@ CONTAINS
 
     CASE DEFAULT
       CALL output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_GPTVD')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
       CALL sys_halt()
     END SELECT
 
@@ -3859,7 +3874,7 @@ CONTAINS
     ! Here, the working routine follow
     
     !**************************************************************
-    ! FEM-TVD limiting procedure
+    ! The FEM-TVD limiting procedure
     
     SUBROUTINE do_femtvd_limit(IverticesAtEdge, DcoefficientsAtEdge,&
         u, tstep, NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
@@ -3936,7 +3951,7 @@ CONTAINS
 
 
     !**************************************************************
-    ! FEM-GP limiting procedure
+    ! The FEM-GP limiting procedure
 
     SUBROUTINE do_femgp_limit(IverticesAtEdge, DcoefficientsAtEdge, MC,&
         u, u0, theta, tstep, NEDGE, pp, pm, qp, qm, rp, rm, flux, flux0, res)
@@ -4043,7 +4058,7 @@ CONTAINS
         res(j) = res(j)-f_ij
       END DO
     END SUBROUTINE do_femgp_limit
-  END SUBROUTINE gfsc_buildResidualScalar_GPTVD
+  END SUBROUTINE gfsc_buildResScalarTVD
 
   !*****************************************************************************
 
