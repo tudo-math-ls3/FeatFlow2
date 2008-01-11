@@ -30,6 +30,7 @@ MODULE poisson_method7
   USE spatialdiscretisation
   USE ucd
   USE pprocerror
+  USE matrixio
 
   USE poisson_callback
   USE spdiscprojection
@@ -143,6 +144,7 @@ CONTAINS
 
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
+    !CALL tria_readTriFile2D (rtriangulation, './pre/QUAD2.tri', p_rboundary)
     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,p_rboundary)
@@ -154,7 +156,7 @@ CONTAINS
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
+    CALL spdiscr_initBlockDiscr (rdiscretisation,1,&
                                    rtriangulation, p_rboundary)
 
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
@@ -162,7 +164,7 @@ CONTAINS
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   EL_EM30,CUB_G2X2,rtriangulation, p_rboundary)
+                                   EL_EM31,CUB_G2X2,rtriangulation, p_rboundary)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -399,7 +401,7 @@ CONTAINS
       
     ! Call the GMV library to write out a GMV file for our solution.
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u7.gmv')
+    CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u7.vtk')
     
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

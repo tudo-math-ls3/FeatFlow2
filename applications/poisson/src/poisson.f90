@@ -57,6 +57,7 @@ PROGRAM poisson
   USE poisson_method7
   USE poisson_method8
   USE poisson3d_method1
+  USE poisson3d_method7
   
   IMPLICIT NONE
   
@@ -144,6 +145,12 @@ PROGRAM poisson
   CALL output_line ('Calculating 3D Poisson-Problem with method 1')
   CALL output_line ('--------------------------------------------')
   CALL poisson3d_1
+
+  ! Call the problem to solve. Poisson3D-7:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating 3D Poisson-Problem with method 7')
+  CALL output_line ('--------------------------------------------')
+  CALL poisson3d_7
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
