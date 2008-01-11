@@ -1,19 +1,17 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method7 </name>
+!# <name> poisson3d_method7 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
 !# This module is a demonstation program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
-!#
-!# The module is the same as poisson_method1 but with different element
-!# implementation that is, EL_EM30. The different focuses on writing the
-!# solution vector into the way that GMV can read it.
+!# This module is a (provizorical) equivalent to the 2D example
+!# poisson_method7.
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method7
+MODULE poisson3d_method7
 
   USE fsystem
   USE genoutput
@@ -30,11 +28,12 @@ MODULE poisson_method7
   USE spatialdiscretisation
   USE ucd
   USE pprocerror
+  USE genoutput
   USE matrixio
-
+    
   USE poisson_callback
   USE spdiscprojection
-
+  
   IMPLICIT NONE
 
 CONTAINS
@@ -43,22 +42,21 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson7
-
+  SUBROUTINE poisson3d_7
+  
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
   ! problem without making use of special features like collections
   ! and so on. The routine performs the following tasks:
   !
-  ! 1.) Read in parametrisation
-  ! 2.) Read in triangulation
-  ! 3.) Set up RHS
-  ! 4.) Set up matrix
-  ! 5.) Create solver structure
-  ! 6.) Solve the problem
-  ! 7.) Convert the solution vector into GMV's style
-  ! 8.) Write solution to GMV file
-  ! 9.) Release all variables, finish
+  ! 1.) Read in triangulation
+  ! 2.) Set up RHS
+  ! 3.) Set up matrix
+  ! 4.) Create solver structure
+  ! 5.) Solve the problem
+  ! 6.) Convert the solution vector into GMV's style
+  ! 7.) Write solution to GMV file
+  ! 8.) Release all variables, finish
 !</description>
 
 !</subroutine>
@@ -67,20 +65,17 @@ CONTAINS
     !
     ! We need a couple of variables for this problem. Let's see...
     !
-    ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
-
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     TYPE(t_blockDiscretisation) :: rdiscretisation
-
+    
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
     TYPE(t_linearForm) :: rlinform
-
+    
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
     TYPE(t_matrixScalar) :: rmatrix
@@ -89,16 +84,13 @@ CONTAINS
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     TYPE(t_matrixBlock) :: rmatrixBlock
-    TYPE(t_vectorBlock)  :: rvectorBlock,rrhsBlock,rtempBlock
+    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
-    ! A set of variables describing the analytic and discrete boundary
-    ! conditions.
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
-    TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_bcRegion), POINTER :: p_rbcRegion
+    ! A variable describing the discrete boundary conditions.    
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBCDirichlet), POINTER :: p_rdirichlet
 
-    ! A solver node that accepts parameters for the linear solver
+    ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -110,84 +102,83 @@ CONTAINS
     ! boundary conditions.
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-
+    
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
-
+    !INTEGER :: NLMAX
+    
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror
-
-    ! We need some more variables for pre/postprocessing.
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    
+    ! Error of FE function to reference function
+    REAL(DP) :: derror
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
-
-    ! Error of FE function to reference function
-    REAL(DP) :: derror
-
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    
     ! Declarations for projecting a vector to the Q1 space for GMV export
     TYPE(t_vectorBlock) :: rprjVector
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     TYPE(t_discreteBC), POINTER ::p_rdiscreteBC_Q1
 
-    ! Ok, let's start.
+    ! Some temporary variables for the manual boundary condition assembly
+    INTEGER :: inumDofsAtBnd, i, idof
+    INTEGER, DIMENSION(:), POINTER :: p_InodalProperty, p_IdirichletDOFs
+    INTEGER, DIMENSION(:,:), POINTER :: p_IverticesAtFace
+
+    ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 7
-
-    ! At first, read in the parametrisation of the boundary and save
-    ! it to rboundary.
-    ! Set p_rboundary to NULL to create a new structure on the heap.
-    NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
-
-    ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
+    !NLMAX = 7
     
-    ! Refine it.
-    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,p_rboundary)
+    ! At first, read in the basic triangulation.
+    ! As we cannot refine a 3D grid yet, read in a 8x8x8 cube grid.
+    CALL tria_readTriFile3D (rtriangulation, './pre/CUBE8.tri')
+    
+    ! Refine it. No, wait, we cannot refine a 3D grid yet...
+    !CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+    CALL tria_initStandardMeshFromRaw (rtriangulation)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    CALL spdiscr_initBlockDiscr (rdiscretisation,1,&
-                                   rtriangulation, p_rboundary)
-
+    CALL spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
+    
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   EL_EM30,CUB_G2X2,rtriangulation, p_rboundary)
-
+                                   EL_E030_3D,CUB_G3_3D,rtriangulation)
+                 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
     CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
                                      LSYSSC_MATRIX9,rmatrix)
-
+    
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+    ! scalar system matrix in 3D.
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV3D_X
+    rform%Idescriptors(2,1) = DER_DERIV3D_X
+    rform%Idescriptors(1,2) = DER_DERIV3D_Y
+    rform%Idescriptors(2,2) = DER_DERIV3D_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .TRUE.
     rform%BconstantCoeff = .TRUE.
-    rform%Dcoefficients(1)  = 1.0
-    rform%Dcoefficients(2)  = 1.0
+    rform%Dcoefficients(1)  = 1.0 
+    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(3)  = 1.0 
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -196,108 +187,117 @@ CONTAINS
     ! the framework will call the callback routine to get analytical
     ! data.
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-
+                                  
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC
-
+    rlinform%Idescriptors(1) = DER_FUNC3D
+    
     ! ... and then discretise the RHS to get a discrete version of it.
     ! Again we simply create a scalar vector based on the one and only
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
-                                 rlinform,.TRUE.,rrhs,coeff_RHS)
-
+                                 rlinform,.TRUE.,rrhs,coeff_RHS_3D)
+    
     ! The linear solver only works for block matrices/vectors - but above,
     ! we created scalar ones. So the next step is to make a 1x1 block
     ! system from the matrices/vectors above which the linear solver
     ! understands.
     CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
     CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
-
-    ! Now we have the raw problem. What is missing is the definition of the boudary
-    ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
-    ! a discrete version of the analytic BC, which we can implement into the
-    ! solution/RHS vectors using the corresponding filter.
-    !
-    ! At first, we need the analytic description of the boundary conditions.
-    ! Initialise a structure for boundary conditions which accepts this:
-    !
-    ! Set p_rboundaryConditions to create a new structure on the heap.
-    NULLIFY (p_rboundaryConditions)
-    CALL bcond_initBC (p_rboundaryConditions,p_rboundary)
-
-    ! We 'know' already (from the problem definition) that we have four boundary
-    ! segments in the domain. Each of these, we want to use for inforcing
-    ! some kind of boundary condition.
-    !
-    ! We ask the bondary routines to create a 'boundary region' - which is
-    ! simply a part of the boundary corresponding to a boundary segment.
-    ! A boundary region roughly contains the type, the min/max parameter value
-    ! and whether the endpoints are inside the region or not.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-
-    ! We use this boundary region and specify that we want to have Dirichlet
-    ! boundary there. The following routine adds a new 'boundary condition region'
-    ! for the first segment to the boundary condition structure.
-    ! The region will be set up as 'Dirichlet boundary'.
-    ! We specify icomponent='1' to indicate that we set up the
-    ! Dirichlet BC's for the first (here: one and only) component in the solution
-    ! vector.
-    ! The routine also returns the created object in p_rbcRegion so that we can
-    ! modify it - but accept it as it is, so we can ignore that.
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-
-    ! Now to the edge 2 of boundary component 1 the domain. We use the
-    ! same two routines to add the boundary condition to p_rboundaryConditions.
-    CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-
-    ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-
-    ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-
-    ! The boundary conditions are set up, but still the block discretisation
-    ! does not know about it. So inform the discretisation which
-    ! analytic boundary conditions to use:
-    rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
-
-    ! For the discrete problem, we need a discrete version of the above
-    ! boundary conditions. So we have to discretise them.
-    ! The following routine gives back p_rdiscreteBC, a pointer to a
-    ! discrete version of the boundary conditions. Remark that
-    ! the pointer has to be nullified before calling the routine,
-    ! otherwise, the routine tries to update the boundary conditions
-    ! in p_rdiscreteBC!
+    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! As there currently is no boundary structure for 3D, we have to set
+    ! up the discrete boundary conditions by hand for now...
     NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rdiscretisation,p_rdiscreteBC,.FALSE., &
-                             getBoundaryValues)
+    ALLOCATE(p_rdiscreteBC)
+    
+    ! Currently we have only 1 Dirichlet boundary condition for the whole
+    ! boundary.
+    ALLOCATE(p_rdiscreteBC%p_RdiscBCList(1))
+    p_rdiscreteBC%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
+    p_rdirichlet => p_rdiscreteBC%p_RdiscBCList(1)%rdirichletBCs
+    
+    ! Get the nodal property array
+    CALL storage_getbase_int(rtriangulation%h_InodalProperty,p_InodalProperty)
+
+    ! First we need to find out how many DOFs are on the boundary.
+    ! This is the not-so-easy case: Since we currently do not have
+    ! any information about which faces belong to the boundary in
+    ! the triangulation structure we need to find out by hand.
+    ! The idea is quite simple:
+    ! We'll loop through all faces in the triangulation, check if
+    ! all 4 vertices of the face belong to the boundary, because then
+    ! the face is a boundary face!
+    CALL storage_getbase_int2D(rtriangulation%h_IverticesAtFace,&
+                               p_IverticesAtFace)
+    
+    inumDofsAtBnd = 0
+    
+    ! Loop through all faces
+    DO i=1, rtriangulation%NAT
+    
+      ! Multiply the nodal properties of the face's vertices
+      idof = p_InodalProperty(p_IverticesAtFace(1,i)) &
+           * p_InodalProperty(p_IverticesAtFace(2,i)) &
+           * p_InodalProperty(p_IverticesAtFace(3,i)) &
+           * p_InodalProperty(p_IverticesAtFace(4,i))
+      
+      ! If the product is 0, then at least one of the face's vertices
+      ! is an inner vertice - so the face is not a boundary face.
+      IF (idof .NE. 0) THEN
+        inumDofsAtBnd = inumDofsAtBnd + 1
+      END IF
+    END DO
+  
+    ! For now, we only have 1 boundary component...
+    p_rdirichlet%icomponent = 1
+    p_rdirichlet%nDOF = inumDofsAtBnd
+    
+    ! Allocate the arrays for the boundary conditions
+    CALL storage_new1D('poisson3d_method1', 'h_DdirichletValues',&
+        inumDofsAtBnd, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
+        ST_NEWBLOCK_ZERO)
+    CALL storage_new1D('poisson3d_method1', 'h_IdirichletDOFs',&
+        inumDofsAtBnd, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
+        ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
+    
+    ! Loop through all faces
+    idof = 1
+    DO i=1, rtriangulation%NAT
+      ! Multiply the nodal properties of the face's vertices
+      inumDofsAtBnd = p_InodalProperty(p_IverticesAtFace(1,i)) &
+                    * p_InodalProperty(p_IverticesAtFace(2,i)) &
+                    * p_InodalProperty(p_IverticesAtFace(3,i)) &
+                    * p_InodalProperty(p_IverticesAtFace(4,i))
+                    
+      ! If the product is 0, then at least one of the face's vertices
+      ! is an inner vertice - so the face is not a boundary face.
+      IF (inumDofsAtBnd .NE. 0) THEN
+        ! It's a boundary face, so add it to the Dirichlet-DOF array
+        p_IdirichletDOFs(idof) = i
+        idof = idof + 1
+      END IF
+    END DO
+    ! That's it for the discrete boundary conditions
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
     rmatrixBlock%p_rdiscreteBC => p_rdiscreteBC
     rrhsBlock%p_rdiscreteBC => p_rdiscreteBC
-
+                             
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
     ! Fill the solution vector with 0:
     CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
     CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
-
+    
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
@@ -323,13 +323,13 @@ CONTAINS
     NULLIFY(p_rpreconditioner)
     !CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     CALL linsol_initUMFPACK4 (p_rsolverNode)
-
+    
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
-
+    
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
+    ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
     ! Remark: Don't make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -337,7 +337,7 @@ CONTAINS
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrixBlock/)
     CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
-
+    
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
@@ -345,14 +345,14 @@ CONTAINS
     IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     CALL linsol_initData (p_rsolverNode, ierror)
     IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-
+    
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
     CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
-
+    
     ! -------------------------------------------------------------------------
     ! Solution vector projection for projecting a solution vector of
     ! an arbitrary element to Q1 such that it can be written into a GMV file
@@ -367,7 +367,7 @@ CONTAINS
     CALL spdiscr_duplicateBlockDiscr(rvectorBlock%p_rblockDiscretisation,rprjDiscretisation)
     CALL spdiscr_deriveSimpleDiscrSc (&
                  rvectorBlock%p_rblockDiscretisation%RspatialDiscretisation(1), &
-                 EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(1))
+                 EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscretisation(1))
 
     ! Step 2: Setup a new solution vector based on this discretisation,
     ! allocate memory.
@@ -379,10 +379,53 @@ CONTAINS
 
     ! Step 4: Discretise the boundary condition according to the Q1
     ! discretisation:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! As there currently is no boundary structure for 3D, we have to set
+    ! up the discrete boundary conditions by hand for now...
     NULLIFY(p_rdiscreteBC_Q1)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC_Q1, &
-                            .FALSE.,getBoundaryValues)
-                            
+    ALLOCATE(p_rdiscreteBC_Q1)
+    
+    ! Currently we have only 1 Dirichlet boundary condition for the whole
+    ! boundary.
+    ALLOCATE(p_rdiscreteBC_Q1%p_RdiscBCList(1))
+    p_rdiscreteBC_Q1%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
+    p_rdirichlet => p_rdiscreteBC_Q1%p_RdiscBCList(1)%rdirichletBCs
+    
+    ! Get the nodal property array
+    CALL storage_getbase_int(rtriangulation%h_InodalProperty,p_InodalProperty)
+
+    ! First we need to find out how many DOFs are on the boundary.
+    ! Every DOF that belongs to a boundary vertice belongs to the
+    ! discrete boundary conditions.
+    inumDofsAtBnd = rtriangulation%NVBD
+
+    ! For now, we only have 1 boundary component...
+    p_rdirichlet%icomponent = 1
+    p_rdirichlet%nDOF = inumDofsAtBnd
+    
+    ! Allocate the arrays for the boundary conditions
+    CALL storage_new1D('poisson3d_method7', 'h_DdirichletValues',&
+        inumDofsAtBnd, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
+        ST_NEWBLOCK_ZERO)
+    CALL storage_new1D('poisson3d_method7', 'h_IdirichletDOFs',&
+        inumDofsAtBnd, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
+        ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
+    
+    ! Now go through all vertices and map the DOFs
+    idof = 1
+    DO i=1, rtriangulation%NVT
+      ! Is this a boundary vertex?
+      IF (p_InodalProperty(i) > 0) THEN
+        ! Then add it to the Dirichlet-DOF array
+        p_IdirichletDOFs(idof) = i
+        idof = idof + 1
+      END IF
+    END DO
+
+    ! That's it for the discrete boundary conditions
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC_Q1
 
@@ -400,7 +443,10 @@ CONTAINS
       
     ! Call the GMV library to write out a GMV file for our solution.
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u7.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_7.gmv')
+    
+    ! Export to VTK would be:
+    !CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_7.vtk')
     
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -424,11 +470,11 @@ CONTAINS
 
     ! Calculate the error to the reference function.
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_3D)
     CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_3D)
     CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! We are finished - but not completely!
@@ -437,10 +483,10 @@ CONTAINS
     ! Release solver data and structure
     CALL linsol_doneData (p_rsolverNode)
     CALL linsol_doneStructure (p_rsolverNode)
-
+    
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
-
+    
     ! Release the block matrix/vectors
     CALL lsysbl_releaseVector (rtempBlock)
     CALL lsysbl_releaseVector (rvectorBlock)
@@ -453,23 +499,17 @@ CONTAINS
     ! only 'copies' of the scalar ones, sharing the same handles!
     CALL lsyssc_releaseVector (rrhs)
     CALL lsyssc_releaseMatrix (rmatrix)
-
+    
     ! Release our discrete version of the boundary conditions
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-
-    ! ...and also the corresponding analytic description.
-    CALL bcond_doneBC (p_rboundaryConditions)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
     CALL spdiscr_releaseBlockDiscr(rdiscretisation)
-
+    
     ! Release the triangulation. 
     CALL tria_done (rtriangulation)
-
-    ! Finally release the domain, that's it.
-    CALL boundary_release (p_rboundary)
-
+    
   END SUBROUTINE
 
 END MODULE
