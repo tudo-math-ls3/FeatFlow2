@@ -127,12 +127,15 @@ CONTAINS
     ! We want to solve our Poisson problem on level...
     !NLMAX = 7
     
-    ! Set the element type. Currently we have 2 supported element types:
+    ! Set the element type. Currently we have 3 supported element types:
     ! 1. conforming parametric trilinear element (EL_Q1_3D)
     ! 2. non-conforming parametric rotated trilinear element, fixed by
     !    face-midpoint function values (EL_E031_3D)
-    ielemType = EL_Q1_3D
-    !ielemType = EL_E031_3D
+    ! 3. non-conforming parametric rotated trilinear element, fixed by
+    !    integral means over the faces (EL_E030_3D)
+    !ielemType = EL_Q1_3D
+    ielemType = EL_E031_3D
+    !ielemType = EL_E030_3D
 
     ! At first, read in the basic triangulation.
     ! As we cannot refine a 3D grid yet, read in a 8x8x8 cube grid.
@@ -155,7 +158,7 @@ CONTAINS
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   ielemType,CUB_G2_3D,rtriangulation)
+                                   ielemType,CUB_G3_3D,rtriangulation)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -235,7 +238,7 @@ CONTAINS
       ! discrete boundary conditions.
       inumDofsAtBnd = rtriangulation%NVBD
       
-    CASE (EL_E031_3D)
+    CASE (EL_E030_3D,EL_E031_3D)
       ! This is the not-so-easy case: Since we currently do not have
       ! any information about which faces belong to the boundary in
       ! the triangulation structure we need to find out by hand.
@@ -297,7 +300,7 @@ CONTAINS
         END IF
       END DO
       
-    CASE (EL_E031_3D)
+    CASE (EL_E030_3D,EL_E031_3D)
       ! Loop through all faces
       idof = 1
       DO i=1, rtriangulation%NAT
@@ -392,7 +395,7 @@ CONTAINS
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.gmv')
     
     ! Export to VTK would be:
-    ! CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.vtk')
+    !CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.vtk')
 
     ! If the element type is Q1, we can print the solution
     IF (ielemType .EQ. EL_Q1_3D) THEN
