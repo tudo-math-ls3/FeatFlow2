@@ -6500,8 +6500,8 @@ CONTAINS
 !  if (el_bder(DER_FUNC)) then
     Dbas(1,DER_FUNC) = 0.125E0_DP*(-3.0_DP*(dx**2-dy**2)-4.0_DP*dy+2.0_DP) 
     Dbas(2,DER_FUNC) = 0.125E0_DP*( 3.0_DP*(dx**2-dy**2)+4.0_DP*dx+2.0_DP)
-    Dbas(3,DER_FUNC) = 0.125E0_DP*( 3.0_DP*(dx**2-dy**2)-4.0_DP*dy-2.0_DP)
-    Dbas(4,DER_FUNC) = 0.125E0_DP*(-3.0_DP*(dx**2-dy**2)+4.0_DP*dx-2.0_DP)
+    Dbas(3,DER_FUNC) = -0.125E0_DP*( 3.0_DP*(dx**2-dy**2)-4.0_DP*dy-2.0_DP)
+    Dbas(4,DER_FUNC) = -0.125E0_DP*(-3.0_DP*(dx**2-dy**2)+4.0_DP*dx-2.0_DP)
 !  endif
   
   ! If x-or y-derivatives are desired, calculate them.
@@ -6631,9 +6631,9 @@ CONTAINS
           (-3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)-4.0_DP*Dpoints(2,i)+2.0_DP) 
       Dbas(2,DER_FUNC,i) = 0.125E0_DP* &
           ( 3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)+4.0_DP*Dpoints(1,i)+2.0_DP)
-      Dbas(3,DER_FUNC,i) = 0.125E0_DP* &
+      Dbas(3,DER_FUNC,i) = -0.125E0_DP* &
           ( 3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)-4.0_DP*Dpoints(2,i)-2.0_DP)
-      Dbas(4,DER_FUNC,i) = 0.125E0_DP* &
+      Dbas(4,DER_FUNC,i) = -0.125E0_DP* &
           (-3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)+4.0_DP*Dpoints(1,i)-2.0_DP)
     END DO
   !ENDIF
@@ -6795,9 +6795,9 @@ CONTAINS
             (-3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)-4.0_DP*Dpoints(2,i,j)+2.0_DP) 
         Dbas(2,DER_FUNC,i,j) = 0.125E0_DP* &
             ( 3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)+4.0_DP*Dpoints(1,i,j)+2.0_DP)
-        Dbas(3,DER_FUNC,i,j) = 0.125E0_DP* &
+        Dbas(3,DER_FUNC,i,j) = -0.125E0_DP* &
             ( 3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)-4.0_DP*Dpoints(2,i,j)-2.0_DP)
-        Dbas(4,DER_FUNC,i,j) = 0.125E0_DP* &
+        Dbas(4,DER_FUNC,i,j) = -0.125E0_DP* &
             (-3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)+4.0_DP*Dpoints(1,i,j)-2.0_DP)
       END DO
       
