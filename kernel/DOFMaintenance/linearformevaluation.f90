@@ -504,7 +504,7 @@ CONTAINS
       ! coordinates of the points on the real element, too.
       ! Unfortunately, we need the real coordinates of the cubature points
       ! anyway for the function - so calculate them all.
-      CALL trafo_calctrafo_sim (&
+      CALL trafo_calctrafoabs_sim (&
             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
             IELmax-IELset+1,ncubp,Dcoords,&
             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
@@ -1035,7 +1035,7 @@ CONTAINS
       ! coordinates of the points on the real element, too.
       ! Unfortunately, we need the real coordinates of the cubature points
       ! anyway for the function - so calculate them all.
-      CALL trafo_calctrafo_sim (&
+      CALL trafo_calctrafoabs_sim (&
             p_elementDistribution%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&

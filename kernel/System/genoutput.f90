@@ -209,8 +209,11 @@ MODULE genoutput
   ! Standard value = 80 characters
   INTEGER :: OU_LINE_LENGTH         = 80
 
-  ! Global device number for terminal
+  ! Global device number for terminal output
   INTEGER :: OU_TERMINAL            = 6
+
+  ! Global device number for terminal input
+  INTEGER :: IN_TERMINAL            = 5
 
   ! Global device number for errors on terminal
   INTEGER :: OU_ERROR               = 6

@@ -23,18 +23,24 @@
 !#        specify the transformation from the reference to the real element
 !#        (=number of degrees of freedom of the transformation formula)
 !#
-!# 6.) trafo_calctrafo
+!# 6.) trafo_calctrafo / trafo_calctrafoabs
 !#     -> Calculates the transformation of one point (from reference to the 
 !#        real element).
 !#        Supports triangular and quadrilateral mapping.
+!#        trafo_calctrafoabs calculates the absolute value of the Jacobian 
+!#        determinant.
 !#
-!# 7.) trafo_calctrafo_mult
+!# 7.) trafo_calctrafo_mult / trafo_calctrafoabs_mult
 !#     -> Calculates the transformation for multiple points on one element.
 !#        Supports triangular and quadrilateral mapping.
+!#        trafo_calctrafoabs_mult calculates the absolute value of the Jacobian
+!#        determinant.
 !#
-!# 8.) trafo_calctrafo_sim
+!# 8.) trafo_calctrafo_sim / trafo_calctrafoabs_sim
 !#     -> Calculate the transformation for multiple points on multiple
 !#        elements. Supports triangular and quadrilateral mapping.
+!#        trafo_calctrafoabs_sim calculates the absolute value of the Jacobian
+!#        determinant.
 !#
 !# 10.) trafo_calcJacPrepare
 !#     -> calculates auxiliary Jacobian factors for the transformation
@@ -1622,6 +1628,231 @@ CONTAINS
   END SELECT ! Dimension
 
   END SUBROUTINE
+  
+! **********************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calctrafoabs (ctrafoType,Dcoords,&
+                              DpointRef,Djac,ddetj,DpointReal)
+!<description>
+  ! General transformation.
+  !
+  ! The aim of this routine is to calculate the transformation between the
+  ! reference element for one point. The element is given
+  ! as a list of corner points in Dcoords.
+  !
+  ! For the point DpointsRef, the following information is calculated:
+  ! 1.) Determinant of the mapping from the reference to the real element,
+  ! 2.) the Jacobian matrix of the mapping,
+  ! 3.) if the parameter DpointsReal is present: coordinates of the mapped
+  !     points on the real element(s).
+!</description>
+
+!<input>
+  ! ID of transformation to calculate
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+
+  ! Coordinates of the corners of the element
+  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(2,i) = y-coordinates of corner i on an element.
+  ! DIMENSION(#space dimensions,NVE)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+
+  ! Coordinates of the point on the reference element 
+  !  DpointRef(1) = x-coordinates of point i on an element, 
+  !  DpointRef(2) = y-coordinates of point i on an element.
+  ! DIMENSION(#space dimension)
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DpointRef
+!</input>
+
+!<output>
+  ! The Jacobian matrix of the mapping for each point.
+  ! DIMENSION(number of entries in the matrix,npointsPerEl)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Djac
+  
+  ! Absolute value of the Jacobian determinant of the mapping.
+  ! DIMENSION(npointsPerEl)
+  REAL(DP), INTENT(OUT) :: ddetj
+  
+  ! OPTIONAL: Array receiving the coordinates of the points in DpointRef,
+  ! mapped from the reference element to the real element.
+  ! If not specified, they are not computed.
+  ! DIMENSION(#space dimension,npointsPerEl)
+  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: DpointReal
+!</output>
+
+!</subroutine>
+
+    CALL trafo_calctrafo (ctrafoType,Dcoords,&
+                          DpointRef,Djac,ddetj,DpointReal)
+
+    ! In 1D and 2D, the Jacobian determinant must always be positive.
+    ! In 3D it can be negative.
+  
+    ddetj = ABS(ddetj)
+
+  END SUBROUTINE
+
+! **********************************************************************
+
+!<subroutine>
+
+  SUBROUTINE trafo_calctrafoabs_mult (ctrafoType,npointsPerEl,Dcoords,&
+                                      DpointsRef,Djac,Ddetj,DpointsReal)
+!<description>
+  ! General transformation support for multiple points on one element.
+  !
+  ! The aim of this routine is to calculate the transformation between the
+  ! reference element for multiple points. The element is given
+  ! as a list of corner points in Dcoords.
+  !
+  ! For every of these npointsPerEl points in the element specified 
+  ! by DpointsRef, the following information is calculated:
+  ! 1.) Determinant of the mapping from the reference to the real element,
+  ! 2.) the Jacobian matrix of the mapping,
+  ! 3.) if the parameter DpointsReal is present: coordinates of the mapped
+  !     points on the real element(s).
+!</description>
+
+!<input>
+  ! ID of transformation to calculate
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+
+  ! Number of points in each element where to calculate the transformation
+  INTEGER, INTENT(IN) :: npointsPerEl
+
+  ! Coordinates of the corners of all the elements
+  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(2,i) = y-coordinates of corner i on an element.
+  ! DIMENSION(#space dimensions,NVE)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+
+  ! Coordinates of the points on the reference element for each element 
+  ! where to calculate the mapping.
+  !  DpointsRef(1,i) = x-coordinates of point i on an element, 
+  !  DpointsRef(2,i) = y-coordinates of point i on an element.
+  ! ! DIMENSION(#space dimension,npointsPerEl)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DpointsRef
+!</input>
+
+!<output>
+  ! The Jacobian matrix of the mapping for each point.
+  ! DIMENSION(number of entries in the matrix,npointsPerEl)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Djac
+  
+  ! Absolute values of the Jacobian determinants of the mapping for all
+  ! the points from the reference element to the real element.                                            
+  ! DIMENSION(npointsPerEl)                                                           
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddetj                                        
+  
+  ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
+  ! mapped from the reference element to the real element.
+  ! If not specified, they are not computed.
+  ! DIMENSION(#space dimension,npointsPerEl)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT), OPTIONAL :: DpointsReal
+!</output>
+
+!</subroutine>
+
+    CALL trafo_calctrafo_mult (ctrafoType,npointsPerEl,Dcoords,&
+                               DpointsRef,Djac,Ddetj,DpointsReal)
+
+    ! In 1D and 2D, the Jacobian determinant must always be positive.
+    ! In 3D it can be negative.
+
+    IF (trafo_igetDimension(ctrafoType) .EQ. NDIM3D) &
+      Ddetj = ABS(Ddetj)
+
+  END SUBROUTINE
+
+! **********************************************************************
+
+!<subroutine>
+
+  SUBROUTINE trafo_calctrafoabs_sim (ctrafoType,nelements,npointsPerEl,Dcoords,&
+                                     DpointsRef,Djac,Ddetj,DpointsReal)
+
+!<description>
+  ! General transformation support for multiple points on multiple
+  ! elements. 
+  !
+  ! The aim of this routine is to calculate the transformation between the
+  ! reference element and multiple real elements. The elements are given
+  ! as a list of corner points in Dcoords.
+  !
+  ! On every of the nelements elements given in this list, there are
+  ! npointsPerEl points inside the element given in reference coordinates.
+  ! For every of these npointsPerEl*nelements points, the following 
+  ! information is calculated:
+  ! 1.) Determinant of the mapping from the reference to the real element,
+  ! 2.) the Jacobian matrix of the mapping,
+  ! 3.) if the parameter DpointsReal is present: coordinates of the mapped
+  !     points on the real element(s).
+!</description>
+
+!<input>
+  ! ID of transformation to calculate
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+
+  ! Number of elements where to calculate the transformation
+  INTEGER, INTENT(IN) :: nelements
+  
+  ! Number of points in each element where to calculate the transformation
+  INTEGER, INTENT(IN) :: npointsPerEl
+
+  ! Coordinates of the corners of all the elements
+  !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
+  !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
+
+  ! Coordinates of the points on the reference element for each element 
+  ! where to calculate the mapping.
+  ! DIMENSION(#space dimensions,npointsPerEl,nelements) for quadrilateral elements and
+  ! DIMENSION(#space dimensions+1,npointsPerEl,nelements) for triangular elements.
+  !
+  ! For QUAD elements:
+  !  DpointsRef(1,i,.) = x-coordinates of point i on an element, 
+  !  DpointsRef(2,i,.) = y-coordinates of point i on an element.
+  !
+  ! For triangular elements:
+  !  DpointsRef(1,i,.) = First barycentric coordinate of point i on an element
+  !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
+  !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: DpointsRef
+!</input>
+
+!<output>
+  ! The Jacobian matrix of the mapping for each point.
+  ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
+  REAL(DP), DIMENSION(:,:,:), INTENT(OUT) :: Djac
+  
+  ! Absolute values of the Jacobian determinants of the mapping for
+  ! all the points from the reference element to the real element.
+  ! DIMENSION(npointsPerEl,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Ddetj
+  
+  ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
+  ! mapped from the reference element to the real element.
+  ! If not specified, they are not computed.
+  ! DIMENSION(#space dimensions,npointsPerEl,nelements)
+  REAL(DP), DIMENSION(:,:,:), INTENT(OUT), OPTIONAL :: DpointsReal
+!</output>
+
+!</subroutine>
+
+    CALL trafo_calctrafo_sim (ctrafoType,nelements,npointsPerEl,Dcoords,&
+                              DpointsRef,Djac,Ddetj,DpointsReal)
+            
+    ! In 1D and 2D, the Jacobian determinant must always be positive.
+    ! In 3D it can be negative.
+
+    IF (trafo_igetDimension(ctrafoType) .EQ. NDIM3D) &
+      Ddetj = ABS(Ddetj)
+
+  END SUBROUTINE
+  
 
 ! <!---------------------------------------------------------------------------
 ! Explaination of the quadrilateral transformation:

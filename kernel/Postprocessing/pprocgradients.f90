@@ -609,7 +609,7 @@ CONTAINS
         ! the mapping between the reference and the real element.
         ! In case we use a nonparametric element, we need the 
         ! coordinates of the points on the real element, too.
-        CALL trafo_calctrafo_sim (&
+        CALL trafo_calctrafoabs_sim (&
               p_rdiscrSource%RelementDistribution(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
@@ -1391,9 +1391,9 @@ CONTAINS
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType, nelementsPerBlock, &
-              ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj, p_DcubPtsReal)
-          
+          CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType, &
+              nelementsPerBlock, ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, &
+              p_Ddetj, p_DcubPtsReal)
           
           !---------------------------------------------------------------------
           ! Step 2:  Perform sampling of consistent gradient values
@@ -1451,8 +1451,8 @@ CONTAINS
           
           ! Next, we need to convert the physical coordinates of the curvature points
           ! to the local coordinates of the constant Jacobian "patch" elements
-          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
-              NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
+          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, &
+              npatchesInCurrentBlock, NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
           
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
@@ -1460,8 +1460,8 @@ CONTAINS
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType, nelementsPerBlock, &
-              ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
+          CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType, &
+              nelementsPerBlock, ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
           
           ! Allocate memory for the patch interpolants matrices
           ALLOCATE(Dpolynomials(indofTrial,1,ncubp,nelementsPerBlock))
@@ -1569,21 +1569,23 @@ CONTAINS
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          CALL trafo_calctrafo_sim (p_elementDistrDest%ctrafoType, nelementsPerBlock, &
-              nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj, p_DcubPtsReal)
+          CALL trafo_calctrafoabs_sim (p_elementDistrDest%ctrafoType, &
+              nelementsPerBlock, nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, &
+              p_Ddetj, p_DcubPtsReal)
           
           ! Next, we need to convert the physical coordinates of the curvature points
           ! to the local coordinates of the constant Jacobian "patch" elements
-          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
-              NVE,  p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
+          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, &
+              npatchesInCurrentBlock, NVE,  p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
           
           ! We do not need the corner coordinates of the elements in the destination
           ! FE space but that of the "patch" elements in the source FE space
           p_Dcoords => rintSubset%p_Dcoords
 
           ! Calculate the transformation from the reference elements to the real ones
-          CALL trafo_calctrafo_sim (p_elementDistrDest%ctrafoType, nelementsPerBlock, &
-              nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
+          CALL trafo_calctrafoabs_sim (p_elementDistrDest%ctrafoType, &
+              nelementsPerBlock, nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, &
+              p_Ddetj)
           
           ! Reallocate memory for the patch interpolants
           IF (ncubp .LT. nlocalDOFsDest) THEN
@@ -1974,8 +1976,8 @@ CONTAINS
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType, nelementsPerBlock, &
-              ncubpMax, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
+          CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType, &
+              nelementsPerBlock, ncubpMax, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
 
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial 
@@ -1983,7 +1985,6 @@ CONTAINS
           CALL elem_generic_sim(p_elementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
               nelementsPerBlock, p_DcubPtsTrial)
-
 
           !-----------------------------------------------------------------------
           ! Step 4: Perform least-squares fitting
