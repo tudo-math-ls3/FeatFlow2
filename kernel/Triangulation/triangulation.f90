@@ -343,6 +343,7 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**25
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEXIDX      = 2**26
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**27
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATBOUNDARY       = 2**28
   
   
   
@@ -1956,7 +1957,8 @@ CONTAINS
     call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
            rtriangulation%h_IfacesAtEdge)
 
-           
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATBOUNDARY, &
+           rtriangulation%h_IfacesAtBoundary)
            
     
     ! Clean up the rest of the structure
@@ -4856,7 +4858,6 @@ CONTAINS
         IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
           CALL tria_genEdgesAtBoundary       (rtriangulation)             
 
-
 !    call tria_genFacesAtEdge          (rtriangulation)          
 
 !    call tria_genNeighboursAtElement3D(rtriangulation)
@@ -6818,7 +6819,7 @@ CONTAINS
   
   ! Allocate memory for IverticesAtBoundary.
   call storage_new('tri_genRawBoundary3d', &
-       'KVBD', int(rtriangulation%NVBD+1, i32), &
+       'KVBD', int(rtriangulation%NVBD, i32), &
        ST_INT, rtriangulation%h_IverticesAtBoundary, &
        ST_NEWBLOCK_NOINIT)
   
@@ -9393,8 +9394,19 @@ CONTAINS
       
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundary
+      integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+      integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
-      integer :: ivbd,ibct,isize
+      integer :: ivbd,ibct,isize,IboundaryComponent,ive,NEBD,NABD,iface,NMT,NAT
+      integer :: NVT,NEL,ivt
+      
+      ! these names are just too long...
+      NEBD = rsourceTriangulation%NEBD
+      NABD = rsourceTriangulation%NABD
+      NVT = rsourceTriangulation%NVT
+      NMT = rsourceTriangulation%NMT
+      NAT = rsourceTriangulation%NAT
+      NEL = rsourceTriangulation%NEL
       
       ! Get the definition of the boundary vertices and -edges.
       call storage_getbase_int (rsourceTriangulation%h_IverticesAtBoundary,&
@@ -9414,6 +9426,11 @@ CONTAINS
       call storage_getbase_int (rsourceTriangulation%h_IedgesAtBoundary,&
           p_IedgesAtBoundary)
 
+      call storage_getbase_int2d (rsourceTriangulation%h_IverticesAtEdge,&
+          p_IverticesAtEdge)
+
+      call storage_getbase_int2d (rsourceTriangulation%h_IverticesAtFace,&
+          p_IverticesAtFace)
 
 
       ! calculate the new value of NVBD
@@ -9428,6 +9445,10 @@ CONTAINS
           'KVBD', INT(rdestTriangulation%NVBD,I32), &
           ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
 
+      call storage_getbase_int (rdestTriangulation%h_IverticesAtBoundary,&
+          p_IvertAtBoundartyDest)
+
+      
       ! update the h_IverticesAtBoundary 
       
       ! assume we are at lvl "r" then:
@@ -9452,8 +9473,125 @@ CONTAINS
       ! 1:old_NVT = p_InodalpropertiesSource(1:old_NVT)
       p_InodalPropertyDest(1:rsourceTriangulation%NVT) = &        
       p_InodalPropertySource(1:rdestTriangulation%NVT)
+      
+      do ive=1,rsourceTriangulation%NMT
+        
+        ! check if edge is on border
+        if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NEBD)==1) then
+           
+           ! get the boundary component index of the vertices
+           ! that build the edge
+           
+           IboundaryComponent = p_IverticesAtEdge(1,ive)
+           
+           IboundaryComponent = p_InodalPropertyDest( &
+           IboundaryComponent)
+           
+           p_InodalPropertyDest(rsourceTriangulation%NVT+ive) = &
+           IboundaryComponent
+         else
+           p_InodalPropertyDest(rsourceTriangulation%NVT+ive) = 0
+         end if
+         
+      end do ! end ive
+      
+      do iface=1,rsourceTriangulation%NAT
+      
+        ! check if face is on border
+        if(tria_BinSearch(p_IfacesAtBoundary,iface,1,NABD)==1) then
+           
+           ! get the boundary component index of the vertices
+           ! that build the edge
+           IboundaryComponent = p_IverticesAtFace(1,iface)
+           
+           IboundaryComponent = p_InodalPropertyDest( &
+           IboundaryComponent)
+           
+           p_InodalPropertyDest(rsourceTriangulation%NVT+NMT+iface) = &
+           IboundaryComponent
+         else
+           p_InodalPropertyDest(rsourceTriangulation%NVT+NMT+iface) = 0
+         end if
+      
+      end do ! end iface
+      
+      ! allocate memory
+      if(rdestTriangulation%h_IboundaryCpIdx == ST_NOHANDLE) then
+        call storage_new ('tria_genFacesAtBoundary', 'IboundaryCpIdx', &
+            int(rdestTriangulation%NBCT+1,I32), ST_INT, &
+            rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
+      end if      
+      
+      
+      ! the remaining vertices are not boundary vertices
+      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
+      
+      ivbd = 1
+      do ivt=1,rdestTriangulation%NVT
+        if(p_InodalPropertyDest(ivt) > 0) then
+          p_IvertAtBoundartyDest(ivbd) = ivt
+          ivbd = ivbd + 1
+        end if
+      end do
+      
+    call storage_getbase_int (rdestTriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdxDest)
+      
+    p_IboundaryCpIdxDest(:) = 0  
+    ! the first element in p_IboundaryCpIdx is always 1
+    p_IboundaryCpIdxDest(1) = 1
+  
+    ! assign the indices of the boundary vertices
+    ! first save the number of vertices in each boundary component in
+    ! p_IboundaryCpIdx(2:NBCT+1)
+    do ivt = 1,rdestTriangulation%NVT
+      if(p_InodalPropertyDest(ivt) /= 0) then
+          ibct = p_InodalPropertyDest(ivt)
+          p_IboundaryCpIdxDest(ibct+1) = p_IboundaryCpIdxDest(ibct+1) + 1
+      end if
+    end do
+ 
+    ! now create the actual index array
+    do ibct = 2, rdestTriangulation%NBCT+1
+        p_IboundaryCpIdxDest(ibct) = p_IboundaryCpIdxDest(ibct)+p_IboundaryCpIdxDest(ibct-1)
+    end do      
   
   end subroutine ! end tria_refineBdry2lv3D
+
+!====================================================================
+
+  function tria_BinSearch(p_Iarray, Ivalue, Ilbound, Iubound)
+  
+    integer(PREC_VERTEXIDX), dimension(:),intent(IN), pointer :: p_Iarray
+    integer(PREC_VERTEXIDX) :: Ivalue
+    integer(PREC_VERTEXIDX), intent(IN) :: Ilbound, Iubound
+    
+    ! local variables
+    integer :: Imid, tria_BinSearch,Ilboundloc, Iuboundloc
+    
+    Ilboundloc = Ilbound
+    Iuboundloc = Iubound
+    
+    ! standard binary search scheme...
+    do while( Ilboundloc <= Iuboundloc )
+    
+      Imid = (Ilboundloc + Iuboundloc) / 2
+    
+      if(p_Iarray(Imid) > Ivalue) then
+        Iuboundloc = Imid-1
+      else if(p_Iarray(Imid) < Ivalue) then
+        Ilboundloc = Imid+1
+      else ! found Ivalue
+        tria_BinSearch = 1
+        return
+      end if
+    
+    end do ! end while
+    
+    ! Ivalue was not found...
+    tria_BinSearch = 0
+  
+  end function ! end tria_BinSearch
 
 !====================================================================
   
