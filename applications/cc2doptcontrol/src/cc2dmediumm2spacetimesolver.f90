@@ -162,8 +162,9 @@ MODULE cc2dmediumm2spacetimesolver
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
   USE cc2dmediumm2matvecassembly
-  USE cc2dmediumm2spacetimediscret
   USE cc2dmediumm2nonlinearcore
+  USE spacetimediscretisation
+  USE spacetimelinearsystem
   
   USE spacetimevectors
   USE spacetimeinterlevelprojection
@@ -1854,13 +1855,13 @@ CONTAINS
         ! Calculate the residuum for the next step : (b-Ax)
         CALL sptivec_copyVector (rd,p_rdef)
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_rx,p_rdef, -1.0_DP,1.0_DP,dresnorm,.FALSE.)
+            p_rx,p_rdef, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dresnorm,.FALSE.)
         
         ! Filter the defect for boundary conditions in space and time.
-        CALL tbc_implementInitCondDefect (&
-            p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
-        CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
-           p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
+        !CALL tbc_implementInitCondDefect (&
+        !    p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
+        !CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
+        !   p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
         
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_rdef,rsolverNode%iresNorm)
@@ -4008,7 +4009,7 @@ CONTAINS
         ! the matrix-vector-multiplication A * d_k.
         ! Using this trick, we can save one temporary vector.
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_DD,p_DP, 1.0_DP,0.0_DP)
+            p_DD,p_DP, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Calculate alpha for the CG iteration
         dalpha = dgamma / sptivec_scalarProduct (p_DD, p_DP)
@@ -5529,7 +5530,7 @@ END SUBROUTINE
         CALL sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
 
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_DP,p_DPA, 1.0_DP,0.0_DP)
+            p_DP,p_DPA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Filter the defect for boundary conditions in space and time.
         CALL tbc_implementInitCondDefect (&
@@ -5560,7 +5561,7 @@ END SUBROUTINE
         CALL sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
 
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_DR,p_DSA, 1.0_DP,0.0_DP)
+            p_DR,p_DSA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Filter the defect for boundary conditions in space and time.
         CALL tbc_implementInitCondDefect (&
@@ -6421,7 +6422,7 @@ END SUBROUTINE
     
       CALL sptivec_copyVector(rb,rtemp)
       CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-          rx,rtemp, -1.0_DP,1.0_DP,dres)
+          rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
       
       ! Implement boundary conditions into the defect
       CALL tbc_implementInitCondDefect (&
@@ -6445,7 +6446,7 @@ END SUBROUTINE
     IF (rsolverNode%ioutputLevel .GE. 2) THEN
       CALL sptivec_copyVector(rb,rtemp)
       CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-          rx,rtemp, -1.0_DP,1.0_DP,dres)
+          rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
       
       IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
                 
@@ -6646,7 +6647,8 @@ END SUBROUTINE
           IF (ite .NE. 1) THEN   ! initial solution vector is zero!
             CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                 p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP)
+                p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                SPTID_FILTER_DEFECT)
           
             ! Implement boundary conditions into the defect
             CALL tbc_implementInitCondDefect (&
@@ -6683,7 +6685,8 @@ END SUBROUTINE
                   p_rsubnode%p_Rlevels(ilev)%rtempVector)
               CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                   p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                  p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,dres)
+                  p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                  SPTID_FILTER_DEFECT,dres)
               
               ! Extended output
               IF (ASSOCIATED(p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother) .AND. &
@@ -6888,7 +6891,8 @@ END SUBROUTINE
                                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
                 CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                     p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                    p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,dres)
+                    p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                    SPTID_FILTER_DEFECT,dres)
 
                 IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                           (dres .LE. 1E99_DP))) dres = 0.0_DP
@@ -6914,7 +6918,8 @@ END SUBROUTINE
                                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
                 CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                     p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                    p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,dres)
+                    p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                    SPTID_FILTER_DEFECT,dres)
 
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
@@ -6975,7 +6980,8 @@ END SUBROUTINE
                                     p_rsubnode%p_Rlevels(ilev)%rtempVector)
           CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
               p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-              p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,dres)
+              p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+              SPTID_FILTER_DEFECT,dres)
 
           IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                     (dres .LE. 1E99_DP))) dres = 0.0_DP
@@ -7144,29 +7150,29 @@ END SUBROUTINE
       ! Calculate the nominator
       CALL sptivec_copyVector (rrhsVector,rtempVector)
       CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
-          rsolutionVector,rtempVector, -1.0_DP,1.0_DP)
+          rsolutionVector,rtempVector, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT)
 
       ! Implement boundary conditions into the vector.
-      CALL tbc_implementInitCondDefect (&
-          rmatrix%p_rspaceTimeDiscretisation,&
-          rtempVector, rtempSpaceVector)
-      CALL tbc_implementBCdefect (rproblem,&
-          rmatrix%p_rspaceTimeDiscretisation,&
-          rtempVector, rtempSpaceVector)
+      !CALL tbc_implementInitCondDefect (&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+      !CALL tbc_implementBCdefect (rproblem,&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
 
       ! Calculate the denominator:
       
       CALL sptivec_clearVector (rtempVector)
       CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
-          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP)
+          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP,SPTID_FILTER_DEFECT)
       
       ! Implement boundary conditions into the vector.
-      CALL tbc_implementInitCondDefect (&
-          rmatrix%p_rspaceTimeDiscretisation,&
-          rtempVector, rtempSpaceVector)
-      CALL tbc_implementBCdefect (rproblem,&
-          rmatrix%p_rspaceTimeDiscretisation,&
-          rtempVector, rtempSpaceVector)
+      !CALL tbc_implementInitCondDefect (&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+      !CALL tbc_implementBCdefect (rproblem,&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
 
       ! Get the denominator      
       ddenom = sptivec_scalarProduct (rtempVector,rcorrectionVector)

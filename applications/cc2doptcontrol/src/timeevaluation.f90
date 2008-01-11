@@ -154,11 +154,11 @@ CONTAINS
           ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
           ! near timestep 0.
           CALL interpolateQuadratic (dreltime,0,1,2,rspaceTimeVector,rvector)
-        ELSE IF (itimestep .EQ. ntimesteps) THEN
+        ELSE IF (itimestep .EQ. ntimesteps-1) THEN
           ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
           ! near timestep n.
           CALL interpolateQuadratic (dreltime,&
-            ntimesteps-2,ntimesteps-1,ntimesteps,rspaceTimeVector,rvector)
+            ntimesteps-1-2,ntimesteps-1-1,ntimesteps-1,rspaceTimeVector,rvector)
         ELSE
           ! Somewhere in the inner. Get the number of the previous and next timestep
           ! and interpolate there.

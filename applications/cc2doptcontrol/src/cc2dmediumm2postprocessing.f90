@@ -46,7 +46,7 @@ MODULE cc2dmediumm2postprocessing
   USE cc2dmediumm2optcanalysis
   USE cc2dmedium_callback
   
-  USE cc2dmediumm2spacetimediscret
+  USE spacetimediscretisation
   
   IMPLICIT NONE
   

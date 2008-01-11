@@ -72,7 +72,7 @@ MODULE cc2dmediumm2oneshot
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
   USE cc2dmediumm2matvecassembly
-  USE cc2dmediumm2spacetimediscret
+  USE spacetimediscretisation
   USE cc2dmediumm2spacetimesolver
   
   USE cc2dminim2scriptfile
@@ -1615,7 +1615,7 @@ CONTAINS
     ! Assemble the defect.
     !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
     
@@ -1639,7 +1639,7 @@ CONTAINS
     ! Assemble the defect
     !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
@@ -1962,7 +1962,7 @@ CONTAINS
     ! Assemble the defect.
     !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
     
@@ -2007,7 +2007,7 @@ CONTAINS
       CALL sptivec_copyVector (rb,rd)
       !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
       CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-        -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
@@ -2033,7 +2033,7 @@ CONTAINS
     ! Assemble the defect
     !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
@@ -2514,7 +2514,7 @@ CONTAINS
     !    rx, rd, ddefNorm)
     CALL sptivec_copyVector (rb,rd)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
 
     ! DEBUG!!!
     CALL sptivec_saveToFileSequence (rb,&
@@ -2675,11 +2675,11 @@ CONTAINS
       !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
       !    rx, rd, ddefNorm)
       CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-        -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       ! Filter the defect for boundary conditions in space and time.
-      CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-      CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
@@ -2692,7 +2692,7 @@ CONTAINS
     
     !CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
     !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
-    CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .FALSE.)
+    CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .TRUE.)
 
     ! Implement the initial condition into the RHS.
     CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
@@ -2702,7 +2702,7 @@ CONTAINS
     !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &  
     !    rx, rd, ddefNorm)
     CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))

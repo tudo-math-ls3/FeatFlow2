@@ -40,7 +40,7 @@ MODULE spacetimeinterlevelprojection
   USE spacetimevectors
   USE multilevelprojection
 
-  USE cc2dmediumm2spacetimediscret
+  USE spacetimediscretisation
   USE cc2dmediumm2postprocessing
 
   IMPLICIT NONE

@@ -150,8 +150,15 @@ CONTAINS
     ! the finest time level as well as the finest space level.
     ALLOCATE(RspaceTimeDiscr(TIMENLMIN:TIMENLMAX))
     
-    CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
-        rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
+    CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
+        rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX))
+        
+    CALL sptivec_initVector (rx,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
+    CALL sptivec_initVector (rb,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
+    CALL sptivec_initVector (rd,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
 
     ! Read the target flow -- stationary or nonstationary
     CALL c2d2_initTargetFlow (rproblem,&
@@ -196,14 +203,14 @@ CONTAINS
       CASE (0)
         ! Everywhere the same space level
         DO i=TIMENLMIN,TIMENLMAX-1
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
+          CALL sptidis_initDiscretisation (rproblem,i,&
               rproblem%NLMAX,RspaceTimeDiscr(i))
         END DO
         
       CASE (1) 
         ! Space level NLMAX-i = Time level TIMENLMAX-i
         DO i=TIMENLMIN,TIMENLMAX-1
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
+          CALL sptidis_initDiscretisation (rproblem,i,&
               MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
               RspaceTimeDiscr(i))
         END DO
@@ -212,7 +219,7 @@ CONTAINS
         ! Space level NLMAX-i = Time level TIMENLMAX-i,
         ! but no restriction in time
         DO i=TIMENLMIN,TIMENLMAX-1
-          CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
+          CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
               MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
               RspaceTimeDiscr(i))
         END DO
@@ -260,9 +267,11 @@ CONTAINS
     CALL c2d2_doneTargetFlow (rproblem)
     
     DO i=TIMENLMIN,TIMENLMAX-1
-      CALL c2d2_doneParamsSupersystem (RspaceTimeDiscr(i))
+      CALL sptidis_doneDiscretisation (RspaceTimeDiscr(i))
     END DO
-    CALL c2d2_doneParamsSupersystem (RspaceTimeDiscr(TIMENLMAX),rx,rb,rd)
+    CALL sptivec_releaseVector (rb)
+    CALL sptivec_releaseVector (rd)
+    CALL sptivec_releaseVector (rx)
 
   END SUBROUTINE
   

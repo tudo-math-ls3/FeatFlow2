@@ -69,7 +69,7 @@ MODULE timerhsevaluation
   USE dofmapping
   USE timeboundaryconditions
   
-  USE cc2dmediumm2spacetimediscret
+  USE spacetimediscretisation
 
   IMPLICIT NONE
 
@@ -411,6 +411,8 @@ CONTAINS
     ! Create a temp vector for the assembly
     CALL lsysbl_createVecBlockByDiscr (&
         rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+
+    CALL lsysbl_getbase_double (rtempVector,p_Db)
 
     ! The assembly for dG0-RHS is rather easy.
     ! The i'th time DOF belongs to the i'th time interval Ti and

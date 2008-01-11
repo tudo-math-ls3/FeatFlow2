@@ -88,7 +88,7 @@ MODULE timeboundaryconditions
   USE spacetimevectors
   USE dofmapping
   
-  USE cc2dmediumm2spacetimediscret
+  USE spacetimediscretisation
 
   IMPLICIT NONE
 
@@ -544,11 +544,11 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! A space-time vector containing the initial condition in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
-
   ! A space-time vector with the RHS. The initial condition is implemented into
   ! this vector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+
+  ! A space-time vector containing the initial condition in the first subvector.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
 
   ! A temporary vector in the size of a spatial vector.
@@ -576,7 +576,7 @@ CONTAINS
     ! This realises the inital condition.
     CALL sptivec_getTimestepData(rx, 1+0, rtempVectorX)
     
-!    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
+    CALL sptivec_getTimestepData(rb, 1+0, rtempVectorD)
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
