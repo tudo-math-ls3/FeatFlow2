@@ -10000,6 +10000,7 @@ CONTAINS
   ! auxiliary variables
   REAL(DP) :: dx,dy,dz,dxy,dyz, djx, djy, djz
   REAL(DP) :: dxj
+  REAL(DP), PARAMETER :: R16 = 0.166666666666667_DP
 
   ! The Q1~ element is specified by six polynomials on the reference element.
   ! These six polynomials are:
@@ -10029,12 +10030,12 @@ CONTAINS
       
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC3D)) then
-    Dbas(1,DER_FUNC3D) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dz + dyz)
-    Dbas(2,DER_FUNC3D) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dy - dyz)
-    Dbas(3,DER_FUNC3D) = 0.25_DP*(1.0_DP + dyz) + 0.5_DP*(dx + dxy)
-    Dbas(4,DER_FUNC3D) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dy + dyz)
-    Dbas(5,DER_FUNC3D) = 0.25_DP*(1.0_DP + dyz) - 0.5_DP*(dx - dxy)
-    Dbas(6,DER_FUNC3D) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dz - dyz)
+    Dbas(1,DER_FUNC3D) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
+    Dbas(2,DER_FUNC3D) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+    Dbas(3,DER_FUNC3D) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
+    Dbas(4,DER_FUNC3D) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+    Dbas(5,DER_FUNC3D) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
+    Dbas(6,DER_FUNC3D) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
 !  endif
   
   ! If x-, y- or z-derivatives are desired, calculate them.
@@ -10044,7 +10045,7 @@ CONTAINS
   ! stated above.
 !  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
 !      (Bder(DER_DERIV3D_Z))) then
-    dxj = 0.125_DP / ddetj
+    dxj = 1.0_DP / ddetj
     
     ! x-, y- and z-derivatives on reference element
     djx = -0.5_DP * dx
@@ -10213,6 +10214,7 @@ CONTAINS
   ! auxiliary variables
   REAL(DP) :: dx,dy,dz,dxy,dyz, djx, djy, djz
   REAL(DP), DIMENSION(npoints) :: Dxj
+  REAL(DP), PARAMETER :: R16 = 0.166666666666667_DP
   INTEGER :: i   ! point counter
     
   ! Clear the output array
@@ -10230,19 +10232,19 @@ CONTAINS
       dz = Dpoints(3,i)
       dxy = dx**2 - dy**2
       dyz = dy**2 - dz**2
-      Dbas(1,DER_FUNC3D,i) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dz + dyz)
-      Dbas(2,DER_FUNC3D,i) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dy - dyz)
-      Dbas(3,DER_FUNC3D,i) = 0.25_DP*(1.0_DP + dyz) + 0.5_DP*(dx + dxy)
-      Dbas(4,DER_FUNC3D,i) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dy + dyz)
-      Dbas(5,DER_FUNC3D,i) = 0.25_DP*(1.0_DP + dyz) - 0.5_DP*(dx - dxy)
-      Dbas(6,DER_FUNC3D,i) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dz - dyz)
+      Dbas(1,DER_FUNC3D,i) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
+      Dbas(2,DER_FUNC3D,i) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+      Dbas(3,DER_FUNC3D,i) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
+      Dbas(4,DER_FUNC3D,i) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+      Dbas(5,DER_FUNC3D,i) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
+      Dbas(6,DER_FUNC3D,i) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
     END DO
   !ENDIF
   
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
 !      (Bder(DER_DERIV3D_Z))) THEN
-    Dxj = 0.125E0_DP / Ddetj
+    Dxj = 1.0_DP / Ddetj
     
     !x-, y- and z-derivatives on reference element
     DO i=1,npoints
@@ -10435,6 +10437,7 @@ CONTAINS
   ! auxiliary variables
   REAL(DP) :: dx,dy,dz,dxy,dyz, djx, djy, djz
   REAL(DP),DIMENSION(npoints) :: Dxj
+  REAL(DP), PARAMETER :: R16 = 0.166666666666667_DP
   INTEGER :: i   ! point counter
   INTEGER :: j   ! element counter
     
@@ -10456,12 +10459,12 @@ CONTAINS
         dz = Dpoints(3,i,j)
         dxy = dx**2 - dy**2
         dyz = dy**2 - dz**2
-        Dbas(1,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dz + dyz)
-        Dbas(2,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP - dxy) - 0.5_DP*(dy - dyz)
-        Dbas(3,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP + dyz) + 0.5_DP*(dx + dxy)
-        Dbas(4,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dy + dyz)
-        Dbas(5,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP + dyz) - 0.5_DP*(dx - dxy)
-        Dbas(6,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP - dxy) + 0.5_DP*(dz - dyz)
+        Dbas(1,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy - 0.5_DP*(dz + dyz)
+        Dbas(2,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy - 0.5_DP*(dy - dyz)
+        Dbas(3,DER_FUNC3D,i,j) = R16 + 0.25_DP*dyz + 0.5_DP*(dx + dxy)
+        Dbas(4,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy + 0.5_DP*(dy + dyz)
+        Dbas(5,DER_FUNC3D,i,j) = R16 + 0.25_DP*dyz - 0.5_DP*(dx - dxy)
+        Dbas(6,DER_FUNC3D,i,j) = R16 - 0.25_DP*dxy + 0.5_DP*(dz - dyz)
       END DO
       
     END DO
@@ -10473,7 +10476,7 @@ CONTAINS
       (Bder(DER_DERIV3D_Z))) THEN
   
     DO j=1,nelements
-      Dxj = 0.125_DP / Ddetj(:,j)
+      Dxj = 1.0_DP / Ddetj(:,j)
       
       !x-, y- and z-derivatives on reference element
       DO i=1,npoints
@@ -10698,7 +10701,7 @@ CONTAINS
   ! stated above.
 !  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
 !      (Bder(DER_DERIV3D_Z))) then
-    dxj = 0.125_DP / ddetj
+    dxj = 1.0_DP / ddetj
     
     ! x-, y- and z-derivatives on reference element
     djx = -R13*dx
@@ -10899,7 +10902,7 @@ CONTAINS
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
 !      (Bder(DER_DERIV3D_Z))) THEN
-    Dxj = 0.125E0_DP / Ddetj
+    Dxj = 1.0_DP / Ddetj
     
     !x-, y- and z-derivatives on reference element
     DO i=1,npoints
@@ -11133,7 +11136,7 @@ CONTAINS
       (Bder(DER_DERIV3D_Z))) THEN
   
     DO j=1,nelements
-      Dxj = 0.125_DP / Ddetj(:,j)
+      Dxj = 1.0_DP / Ddetj(:,j)
       
       !x-, y- and z-derivatives on reference element
       DO i=1,npoints
