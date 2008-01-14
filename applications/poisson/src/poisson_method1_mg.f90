@@ -493,6 +493,9 @@ CONTAINS
     CALL linsol_doneData (p_rsolverNode)
     CALL linsol_doneStructure (p_rsolverNode)
     
+    ! Release the interlevel projection structure
+    CALL mlprj_doneProjection (rprojection)
+    
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
     
