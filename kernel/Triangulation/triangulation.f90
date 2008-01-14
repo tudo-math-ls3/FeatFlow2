@@ -9664,6 +9664,8 @@ CONTAINS
     
     do iface=1,rtriangulation%NAT
     
+      if(iface1 > rtriangulation%NABD) exit
+    
       if(p_IfacesAtBoundary(iface1) == iface) then
         p_Iaux(iface) = 1
         iface1 = iface1 + 1
