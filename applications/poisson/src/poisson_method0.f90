@@ -111,7 +111,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
     ! The number of sub-intervals for the discretisation
-    INTEGER :: nintervals = 4
+    INTEGER :: nintervals = 16
     
     ! Ok, let's start. 
     ! At first, create the basic triangulation.
@@ -185,8 +185,6 @@ CONTAINS
     ! the framework will call the callback routine to get analytical
     ! data.
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-    
-    CALL matio_writeMatrixHR (rmatrix, 'matrix',.TRUE., 0, 'matrix.txt','(E20.10)')
     
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
