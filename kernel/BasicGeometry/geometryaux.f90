@@ -9,30 +9,36 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) gaux_getAspectRatio_quad2D
-!#     -> Calculate the aspect ratio of a 2D quadrilateral
+!#  1.) gaux_getAspectRatio_quad2D
+!#      -> Calculate the aspect ratio of a 2D quadrilateral
 !#
-!# 2.) gaux_getArea_tria2D
-!#     -> Calculate the signed area of a 2D triangle
+!#  2.) gaux_getArea_tria2D
+!#      -> Calculate the signed area of a 2D triangle
 !#
-!# 3.) gaux_getArea_quad2D
-!#     -> Calculate the area of a 2D quadrilateral
+!#  3.) gaux_getArea_quad2D
+!#      -> Calculate the area of a 2D quadrilateral
 !#
-!# 4.) gaux_isIntersection_line2D
-!#     -> Checks if two (finite) lines in 2D intersect
+!#  4.) gaux_getVolume_tetra3D
+!#      -> Calculate the volume of a 3D tetrahedron
 !#
-!# 5.) gaux_getIntersection_ray2D
-!#     -> Calculates the intersection point of two rays (if they intersect)
+!#  5.) gaux_getVolume_hexa3D
+!#      -> Calculate the volume of a 3D hexahedron.
 !#
-!# 6.) gaux_isInElement_quad2D
-!#     -> Checks if a point is inside of a 2D quadrilateral
+!#  6.) gaux_isIntersection_line2D
+!#      -> Checks if two (finite) lines in 2D intersect
 !#
-!# 7.) gaux_isInElement_tri2D
-!#     -> Checks if a point is inside of a 2D triangle
+!#  7.) gaux_getIntersection_ray2D
+!#      -> Calculates the intersection point of two rays (if they intersect)
 !#
-!# 8.) gaux_getBarycentricCoords_tri2D
-!#     -> Calculates the barycentric coordinates of a point relative
-!#        to a specified triangle in 2D
+!#  8.) gaux_isInElement_quad2D
+!#      -> Checks if a point is inside of a 2D quadrilateral
+!#
+!#  9.) gaux_isInElement_tri2D
+!#      -> Checks if a point is inside of a 2D triangle
+!#
+!# 10.) gaux_getBarycentricCoords_tri2D
+!#      -> Calculates the barycentric coordinates of a point relative
+!#         to a specified triangle in 2D
 !# </purpose>
 !##############################################################################
 
@@ -255,6 +261,99 @@ CONTAINS
                            
   END FUNCTION gaux_getArea_quad2D
 
+!************************************************************************
+
+!<function>
+
+  PURE REAL(DP) FUNCTION gaux_getVolume_tetra3D (Dpoints)
+
+!<description>
+  ! This function calculates the volume of a 3D tetrahedron. The
+  ! tetrahedron is given by the coordinates of its four corners.
+!</description>
+
+!<input>
+  ! The coordinates of the four corners of the tetrahedron.
+  ! Dpoints(1,.) = x-coordinates,
+  ! Dpoints(2,.) = y-coordinates,
+  ! Dpoints(3,.) = z-coordinates
+  REAL(DP), DIMENSION(3,4), INTENT(IN) :: Dpoints
+!</input>
+
+!<result>
+  ! The volume of the tetrahedron.
+!</result>
+!</function>
+
+    ! A temporary array for the edge lengths
+    REAL(DP), DIMENSION(3,3) :: Dv
+    
+    Dv(1:3,1) = Dpoints(1:3,1) - Dpoints(1:3,4)
+    Dv(1:3,2) = Dpoints(1:3,2) - Dpoints(1:3,4)
+    Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,4)
+    
+    ! Return the absolute volume
+    gaux_getVolume_tetra3D = 0.1666666666666667_DP * (&
+        Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
+        Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
+        Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
+        
+  END FUNCTION gaux_getVolume_tetra3D
+
+!************************************************************************
+
+!<function>
+
+  PURE REAL(DP) FUNCTION gaux_getVolume_hexa3D (Dpoints)
+
+!<description>
+  ! This function calculates the volume of a 3D hexahedron. The
+  ! hexahedron is given by the coordinates of its eight corners.
+!</description>
+
+!<input>
+  ! The coordinates of the eight corners of the hexahedron.
+  ! Dpoints(1,.) = x-coordinates,
+  ! Dpoints(2,.) = y-coordinates,
+  ! Dpoints(3,.) = z-coordinates
+  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dpoints
+!</input>
+
+!<result>
+  ! The volume of the hexahedron.
+!</result>
+!</function>
+
+    ! A temporary array for the edge lengths
+    REAL(DP), DIMENSION(3,3) :: Dv
+    REAL(DP) :: dvol
+    
+    ! The method that is used here to calculate the volume of a 3D hexahedron
+    ! is based on the paper "Efficient Computation of Volume of Hexahedral Cells"
+    ! by Jeffrey Grandy.
+    
+    Dv(1:3,1) = Dpoints(1:3,7) - Dpoints(1:3,1)
+    Dv(1:3,2) = Dpoints(1:3,2) - Dpoints(1:3,1)
+    Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,6)
+    dvol = (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
+            Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
+            Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
+    Dv(1:3,2) = Dpoints(1:3,5) - Dpoints(1:3,1)
+    Dv(1:3,3) = Dpoints(1:3,6) - Dpoints(1:3,8)
+    dvol = dvol + (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
+                   Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
+                   Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
+    Dv(1:3,2) = Dpoints(1:3,4) - Dpoints(1:3,1)
+    Dv(1:3,3) = Dpoints(1:3,8) - Dpoints(1:3,3)
+    dvol = dvol + (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
+                   Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
+                   Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
+
+    ! Return the absolute volume
+    gaux_getVolume_hexa3D = 0.1666666666666667_DP * dvol
+        
+  END FUNCTION gaux_getVolume_hexa3D
+    
 !************************************************************************
 
 !<subroutine>
