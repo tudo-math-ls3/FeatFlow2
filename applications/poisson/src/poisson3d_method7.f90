@@ -104,7 +104,7 @@ CONTAINS
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
     ! NLMAX receives the level where we want to solve.
-    !INTEGER :: NLMAX
+    INTEGER :: NLMAX
     
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror
@@ -122,21 +122,20 @@ CONTAINS
     TYPE(t_discreteBC), POINTER ::p_rdiscreteBC_Q1
 
     ! Some temporary variables for the manual boundary condition assembly
-    INTEGER :: inumDofsAtBnd, i, idof
-    INTEGER, DIMENSION(:), POINTER :: p_InodalProperty, p_IdirichletDOFs
-    INTEGER, DIMENSION(:,:), POINTER :: p_IverticesAtFace
+    INTEGER :: i
+    INTEGER, DIMENSION(:), POINTER :: p_IverticesAtBoundary, &
+                                      p_IfacesAtBoundary, p_IdirichletDOFs
 
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level...
-    !NLMAX = 7
+    NLMAX = 4
     
     ! At first, read in the basic triangulation.
-    ! As we cannot refine a 3D grid yet, read in a 8x8x8 cube grid.
-    CALL tria_readTriFile3D (rtriangulation, './pre/CUBE8.tri')
+    CALL tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
     
-    ! Refine it. No, wait, we cannot refine a 3D grid yet...
-    !CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
+    ! Refine it.
+    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -220,68 +219,29 @@ CONTAINS
     p_rdiscreteBC%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
     p_rdirichlet => p_rdiscreteBC%p_RdiscBCList(1)%rdirichletBCs
     
-    ! Get the nodal property array
-    CALL storage_getbase_int(rtriangulation%h_InodalProperty,p_InodalProperty)
-
-    ! First we need to find out how many DOFs are on the boundary.
-    ! This is the not-so-easy case: Since we currently do not have
-    ! any information about which faces belong to the boundary in
-    ! the triangulation structure we need to find out by hand.
-    ! The idea is quite simple:
-    ! We'll loop through all faces in the triangulation, check if
-    ! all 4 vertices of the face belong to the boundary, because then
-    ! the face is a boundary face!
-    CALL storage_getbase_int2D(rtriangulation%h_IverticesAtFace,&
-                               p_IverticesAtFace)
-    
-    inumDofsAtBnd = 0
-    
-    ! Loop through all faces
-    DO i=1, rtriangulation%NAT
-    
-      ! Multiply the nodal properties of the face's vertices
-      idof = p_InodalProperty(p_IverticesAtFace(1,i)) &
-           * p_InodalProperty(p_IverticesAtFace(2,i)) &
-           * p_InodalProperty(p_IverticesAtFace(3,i)) &
-           * p_InodalProperty(p_IverticesAtFace(4,i))
-      
-      ! If the product is 0, then at least one of the face's vertices
-      ! is an inner vertice - so the face is not a boundary face.
-      IF (idof .NE. 0) THEN
-        inumDofsAtBnd = inumDofsAtBnd + 1
-      END IF
-    END DO
-  
-    ! For now, we only have 1 boundary component...
+    ! For now, we only have 1 boundary component, and the number of boundary 
+    ! DOFs is equal to the number of faces at the boundary.
     p_rdirichlet%icomponent = 1
-    p_rdirichlet%nDOF = inumDofsAtBnd
+    p_rdirichlet%nDOF = rtriangulation%NABD
     
     ! Allocate the arrays for the boundary conditions
-    CALL storage_new1D('poisson3d_method1', 'h_DdirichletValues',&
-        inumDofsAtBnd, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
+    CALL storage_new1D('poisson3d_method7', 'h_DdirichletValues',&
+        p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
         ST_NEWBLOCK_ZERO)
-    CALL storage_new1D('poisson3d_method1', 'h_IdirichletDOFs',&
-        inumDofsAtBnd, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
+    CALL storage_new1D('poisson3d_method7', 'h_IdirichletDOFs',&
+        p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
         ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
     
-    ! Loop through all faces
-    idof = 1
-    DO i=1, rtriangulation%NAT
-      ! Multiply the nodal properties of the face's vertices
-      inumDofsAtBnd = p_InodalProperty(p_IverticesAtFace(1,i)) &
-                    * p_InodalProperty(p_IverticesAtFace(2,i)) &
-                    * p_InodalProperty(p_IverticesAtFace(3,i)) &
-                    * p_InodalProperty(p_IverticesAtFace(4,i))
-                    
-      ! If the product is 0, then at least one of the face's vertices
-      ! is an inner vertice - so the face is not a boundary face.
-      IF (inumDofsAtBnd .NE. 0) THEN
-        ! It's a boundary face, so add it to the Dirichlet-DOF array
-        p_IdirichletDOFs(idof) = i
-        idof = idof + 1
-      END IF
+    ! Get the faces-at-boundary array
+    CALL storage_getbase_int(rtriangulation%h_IfacesAtBoundary, &
+                             p_IfacesAtBoundary)
+    
+    ! Now go through all faces at the boundary
+    DO i = 1, rtriangulation%NABD
+      p_IdirichletDOFs(i) = p_IfacesAtBoundary(i)
     END DO
+
     ! That's it for the discrete boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -391,36 +351,27 @@ CONTAINS
     p_rdiscreteBC_Q1%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
     p_rdirichlet => p_rdiscreteBC_Q1%p_RdiscBCList(1)%rdirichletBCs
     
-    ! Get the nodal property array
-    CALL storage_getbase_int(rtriangulation%h_InodalProperty,p_InodalProperty)
-
-    ! First we need to find out how many DOFs are on the boundary.
-    ! Every DOF that belongs to a boundary vertice belongs to the
-    ! discrete boundary conditions.
-    inumDofsAtBnd = rtriangulation%NVBD
-
-    ! For now, we only have 1 boundary component...
+    ! For now, we only have 1 boundary component, and the number of boundary 
+    ! DOFs is equal to the number of vertices at the boundary.
     p_rdirichlet%icomponent = 1
-    p_rdirichlet%nDOF = inumDofsAtBnd
+    p_rdirichlet%nDOF = rtriangulation%NVBD
     
     ! Allocate the arrays for the boundary conditions
     CALL storage_new1D('poisson3d_method7', 'h_DdirichletValues',&
-        inumDofsAtBnd, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
+        p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
         ST_NEWBLOCK_ZERO)
     CALL storage_new1D('poisson3d_method7', 'h_IdirichletDOFs',&
-        inumDofsAtBnd, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
+        p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
         ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
     
-    ! Now go through all vertices and map the DOFs
-    idof = 1
-    DO i=1, rtriangulation%NVT
-      ! Is this a boundary vertex?
-      IF (p_InodalProperty(i) > 0) THEN
-        ! Then add it to the Dirichlet-DOF array
-        p_IdirichletDOFs(idof) = i
-        idof = idof + 1
-      END IF
+    ! Get the vertices-at-boundary array
+    CALL storage_getbase_int(rtriangulation%h_IverticesAtBoundary, &
+                             p_IverticesAtBoundary)
+    
+    ! Now go through all vertices at the boundary
+    DO i = 1, rtriangulation%NVBD
+      p_IdirichletDOFs(i) = p_IverticesAtBoundary(i)
     END DO
 
     ! That's it for the discrete boundary conditions
