@@ -1266,8 +1266,7 @@ CONTAINS
         IF (PRESENT(bprintRes)) THEN
           IF (bprintRes) THEN
             CALL output_line ('||D_'//TRIM(sys_siL(1+ieqTime,10))//'|| = '//&
-                TRIM(sys_sdEL(&
-                    lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2),10)) )
+                TRIM(sys_sdEL(SQRT(dnormpart),10)) )
             DO icp=1,rtempVectorD%nblocks
               CALL output_line ('  ||D_'//&
                   TRIM(sys_siL(1+ieqTime,10))//'^'//TRIM(sys_siL(icp,2))&
