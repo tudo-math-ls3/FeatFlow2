@@ -291,6 +291,9 @@ MODULE triangulation
 
   ! kind value for indexing the edges in a triangulation
   INTEGER, PARAMETER :: PREC_EDGEIDX    = I32
+  
+  ! kind value for indexing the faces in a triangulation
+  INTEGER, PARAMETER :: PREC_FACEIDX    = I32
 
   ! kind value for indexing the elements in a triangulation
   INTEGER, PARAMETER :: PREC_ELEMENTIDX = I32
