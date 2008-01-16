@@ -18,7 +18,7 @@
 # Type identifier of the solver.
 # 9=Multigrid, 11=UMFPACK
 
-isolverType = 9
+isolverType = 11 9
 
 # Minimum number of steps
 
@@ -31,7 +31,7 @@ nmaxIterations     = 20 100
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 1E-8 0.001
+depsRel            = 1E-2 15 2 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -97,8 +97,8 @@ spostSmootherName  = 'CC-BICGSTABSMOOTHER'
 # Name of the coarse grid solver. This is the name of another 
 # subsection in this file which describes the actual smoother.
 
-scoarseGridSolver  = 'CC-UMFPACK'
-#scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
+#scoarseGridSolver  = 'CC-UMFPACK'
+scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
 
 # ========================================================================
 # The following section describes the parameters of the VANCA smoother.
