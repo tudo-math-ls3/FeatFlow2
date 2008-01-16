@@ -1267,15 +1267,13 @@ CONTAINS
           IF (bprintRes) THEN
             CALL output_line ('||D_'//TRIM(sys_siL(1+ieqTime,10))//'|| = '//&
                 TRIM(sys_sdEL(&
-                    SQRT(lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)&
-                    ),10)) )
+                    lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2),10)) )
             DO icp=1,rtempVectorD%nblocks
               CALL output_line ('  ||D_'//&
                   TRIM(sys_siL(1+ieqTime,10))//'^'//TRIM(sys_siL(icp,2))&
                   //'|| = '//&
                   TRIM(sys_sdEL(&
-                      SQRT(lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2)&
-                      ),10)) )
+                      lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2),10)) )
             END DO
           END IF
         END IF
