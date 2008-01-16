@@ -909,7 +909,8 @@ CONTAINS
   TYPE(t_interlevelProjectionScalar) :: ractProjection
   
   ! Pointers into the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse,&
+      p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
@@ -1053,18 +1054,28 @@ CONTAINS
           ! Q1 prolongation
           SELECT CASE (ractProjection%iprolVariant)
           CASE (:1) ! Standard prolongation
+            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                                p_IverticesAtEdgeCoarse)
             CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                 p_IverticesAtElementCoarse)
             CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                                 p_IverticesAtElementFine)
-            CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                                p_IneighboursAtElementCoarse)
-            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                                p_IneighboursAtElementFine)
-            CALL mlprj_prolUniformQ1_double (p_DuCoarse,p_DuFine, &
-                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,p_rtriaCoarse%NEL)
-                
+            CALL mlprj_prolUniformQ1_double (p_DuCoarse, p_DuFine, &
+                      p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
+                      p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
+             ! 'old' implementation
+!            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+!                                p_IverticesAtElementCoarse)
+!            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+!                                p_IverticesAtElementFine)
+!            CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+!                                p_IneighboursAtElementCoarse)
+!            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+!                                p_IneighboursAtElementFine)
+!            CALL mlprj_prolUniformQ1_double (p_DuCoarse,p_DuFine, &
+!                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+!                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,p_rtriaCoarse%NEL)
+
           CASE (2:) !Experimental FEAST MIRROR prolongation with zero boundary
             CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                 p_IverticesAtElementCoarse)
@@ -1161,7 +1172,22 @@ CONTAINS
                       ractProjection%iprolARIndicatorEX3Y)
             END IF
           END SELECT
-               
+
+        CASE (EL_Q1_3D)
+          ! Q1 prolongation
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                              p_IverticesAtEdgeCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
+                              p_IverticesAtFaceCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                              p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                              p_IverticesAtElementFine)
+          CALL mlprj_prolUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
+                    p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
+                    p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
+                    p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
+              
         CASE DEFAULT
           PRINT *,'Unsupported prolongation!'
           CALL sys_halt()
@@ -1221,7 +1247,8 @@ CONTAINS
   TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
   
   ! Pointers into the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse,&
+      p_IverticesAtEdgeCoarse,p_IverticesAtFaceCoarse
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
@@ -1367,13 +1394,23 @@ CONTAINS
           ! Type of restriction? 
           SELECT CASE (ractProjection%irestVariant)
           CASE (:0) ! Standard restriction
+            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                                p_IverticesAtEdgeCoarse)
+            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                                p_IverticesAtElementCoarse)
             CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                                 p_IverticesAtElementFine)
-            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                                p_IneighboursAtElementFine)
-            CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
-                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
-                p_rtriaFine%NEL)
+            CALL mlprj_restUniformQ1_double (p_DuCoarse, p_DuFine, &
+                      p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
+                      p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
+             ! 'old' implementation
+!            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+!                                p_IverticesAtElementFine)
+!            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+!                                p_IneighboursAtElementFine)
+!            CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
+!                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
+!                p_rtriaFine%NEL)
           CASE (1) ! All boundaries are FEAST mirror boundaries
             CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                                 p_IverticesAtElementFine)
@@ -1482,7 +1519,22 @@ CONTAINS
                       ractProjection%iprolARIndicatorEX3Y)
             END IF
           END SELECT
-               
+
+        CASE (EL_Q1_3D)
+          ! Q1 prolongation
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                              p_IverticesAtEdgeCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
+                              p_IverticesAtFaceCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                              p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                              p_IverticesAtElementFine)
+          CALL mlprj_restUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
+                    p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
+                    p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
+                    p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
+
         CASE DEFAULT
           PRINT *,'Unsupported restriction!'
           CALL sys_halt()
@@ -1670,7 +1722,11 @@ CONTAINS
                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
-               
+
+        CASE (EL_Q1_3D)
+          ! Q1 interpolation
+          CALL mlprj_interpUniformQ1_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
         CASE DEFAULT
           PRINT *,'Unsupported interpolation!'
           CALL sys_halt()
@@ -3295,8 +3351,11 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_prolUniformQ1_double (DuCoarse,DuFine, &
-               IverticesAtElementCoarse,IverticesAtElementFine,&
-               IneighboursAtElementCoarse,IneighboursAtElementFine,NELcoarse)
+               IverticesAtEdgeCoarse, IverticesAtElementCoarse, &
+               NVTcoarse, NMTcoarse, NELcoarse)
+! 'old' parameter list
+!               IverticesAtElementCoarse,IverticesAtElementFine,&
+!               IneighboursAtElementCoarse,IneighboursAtElementFine,NELcoarse)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -3307,17 +3366,26 @@ CONTAINS
   ! Coarse grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
+  ! IverticesAtEdge array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdgeCoarse
+
   ! IverticesAtElement array (KVERT) on the coarse grid
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
 
-  ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
-  
-  ! IneighboursAtElement array on the coarse grid
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
-  
-  ! IneighboursAtElement array on the fine grid
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+!  ! IverticesAtElement array (KVERT) on the fine grid
+!  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+!  
+!  ! IneighboursAtElement array on the coarse grid
+!  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+!  
+!  ! IneighboursAtElement array on the fine grid
+!  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
 
   ! Number of elements in the coarse grid
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
@@ -3331,48 +3399,76 @@ CONTAINS
 !</subroutine>
   
   ! local variables
-  REAL(DP), PARAMETER :: Q2 = .5_DP
-  REAL(DP), PARAMETER :: Q4 = .25_DP
-  
-  INTEGER(PREC_ELEMENTIDX) :: iel,ielh1,ielh2,ielh3,ielh4
-  REAL(DP) :: duh1,duh2,duh3,duh4
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_EDGEIDX) :: iedge
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:NVTcoarse))
+
+    ! Loop over the edges
+    DO iedge = 1, NMTcoarse
+      ! Calculate the edge midpoint DOF
+      DuFine(NVTcoarse + iedge) = 0.5_DP * (&
+          DuCoarse(IverticesAtEdgeCoarse(1,iedge))+&
+          DuCoarse(IverticesAtEdgeCoarse(2,iedge)))
+    
+    END DO
 
     ! Loop over the elements
-    DO iel=1,NELCoarse
-
-      duh1=DuCoarse(IverticesAtElementCoarse(1,iel))
-      duh2=DuCoarse(IverticesAtElementCoarse(2,iel))
-      duh3=DuCoarse(IverticesAtElementCoarse(3,iel))
-      duh4=DuCoarse(IverticesAtElementCoarse(4,iel))
-
-      ielh1=iel
-      ielh2=IneighboursAtElementFine(2,ielh1)
-      ielh3=IneighboursAtElementFine(2,ielh2)
-      ielh4=IneighboursAtElementFine(2,ielh3)
-
-      ! Now check on every of the edges, if we already computed
-      ! the value in the midpoint: Compute only if the neighbour
-      ! element has smaller number.
-      IF (IneighboursAtElementCoarse(1,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,ielh1)) = Q2*(duh1+duh2)
-
-      IF (IneighboursAtElementCoarse(2,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,ielh2)) = Q2*(duh2+duh3)
-
-      IF (IneighboursAtElementCoarse(3,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,ielh3)) = Q2*(duh3+duh4)
-
-      IF (IneighboursAtElementCoarse(4,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,ielh4)) = Q2*(duh4+duh1)
-        
-      ! Don't forget the DOF in the midpoint of the element
-      DuFine(IverticesAtElementFine(3,iel)) = Q4*(duh1+duh2+duh3+duh4)
-
+    DO iel = 1, NELcoarse
+      ! Calculate the quad cell midpoint DOF
+      DuFine(NVTcoarse + NMTcoarse + iel) = 0.25_DP * (&
+          DuCoarse(IverticesAtElementCoarse(1,iel))+&
+          DuCoarse(IverticesAtElementCoarse(2,iel))+&
+          DuCoarse(IverticesAtElementCoarse(3,iel))+&
+          DuCoarse(IverticesAtElementCoarse(4,iel)))
     END DO
+
+!  This is the 'old' implemention, based on Feat 1.x
+!  ! local variables
+!  REAL(DP), PARAMETER :: Q2 = .5_DP
+!  REAL(DP), PARAMETER :: Q4 = .25_DP
+!  
+!  INTEGER(PREC_ELEMENTIDX) :: iel,ielh1,ielh2,ielh3,ielh4
+!  REAL(DP) :: duh1,duh2,duh3,duh4
+!
+!    ! Copy the first NVT entries - they belong to the coarse grid vertices
+!    ! that are fine grid vertices at the same time.
+!    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+!
+!    ! Loop over the elements
+!    DO iel=1,NELCoarse
+!
+!      duh1=DuCoarse(IverticesAtElementCoarse(1,iel))
+!      duh2=DuCoarse(IverticesAtElementCoarse(2,iel))
+!      duh3=DuCoarse(IverticesAtElementCoarse(3,iel))
+!      duh4=DuCoarse(IverticesAtElementCoarse(4,iel))
+!
+!      ielh1=iel
+!      ielh2=IneighboursAtElementFine(2,ielh1)
+!      ielh3=IneighboursAtElementFine(2,ielh2)
+!      ielh4=IneighboursAtElementFine(2,ielh3)
+!
+!      ! Now check on every of the edges, if we already computed
+!      ! the value in the midpoint: Compute only if the neighbour
+!      ! element has smaller number.
+!      IF (IneighboursAtElementCoarse(1,iel) .LT. iel) &
+!        DuFine(IverticesAtElementFine(2,ielh1)) = Q2*(duh1+duh2)
+!
+!      IF (IneighboursAtElementCoarse(2,iel) .LT. iel) &
+!        DuFine(IverticesAtElementFine(2,ielh2)) = Q2*(duh2+duh3)
+!
+!      IF (IneighboursAtElementCoarse(3,iel) .LT. iel) &
+!        DuFine(IverticesAtElementFine(2,ielh3)) = Q2*(duh3+duh4)
+!
+!      IF (IneighboursAtElementCoarse(4,iel) .LT. iel) &
+!        DuFine(IverticesAtElementFine(2,ielh4)) = Q2*(duh4+duh1)
+!        
+!      ! Don't forget the DOF in the midpoint of the element
+!      DuFine(IverticesAtElementFine(3,iel)) = Q4*(duh1+duh2+duh3+duh4)
+!
+!    END DO
 
   END SUBROUTINE
 
@@ -3381,8 +3477,10 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_restUniformQ1_double (DuCoarse,DuFine, &
-               IverticesAtElementFine,IneighboursAtElementFine,&
-               NELfine)
+             IverticesAtEdgeCoarse, IverticesAtElementCoarse, &
+             NVTcoarse, NMTcoarse, NELcoarse)
+!               IverticesAtElementFine,IneighboursAtElementFine,&
+!               NELfine)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
@@ -3393,14 +3491,30 @@ CONTAINS
   ! Fine grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
-  ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  ! IverticesAtEdge array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdgeCoarse
   
-  ! IneighboursAtElement array on the coarse grid
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
   
-  ! Number of elements in the fine grid
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+! 'old' parameters
+!  ! IverticesAtElement array (KVERT) on the fine grid
+!  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+!  
+!  ! IneighboursAtElement array on the coarse grid
+!  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+!  
+!  ! Number of elements in the fine grid
+!  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
 !</input>
   
 !<output>
@@ -3409,36 +3523,77 @@ CONTAINS
 !</output>
   
 !</subroutine>
-  
+
   ! local variables
-  REAL(DP), PARAMETER :: Q2 = .5_DP
-  REAL(DP), PARAMETER :: Q4 = .25_DP
-  
   INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(PREC_VERTEXIDX) :: i1,i2,i3,i4
+  INTEGER(PREC_EDGEIDX) :: iedge
+  INTEGER(PREC_VERTEXIDX) :: ivt
+  REAL(DP) :: dx
   
     ! The information that was 'distributed' in the prolongation has to
     ! be 'collected'.
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+    CALL lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
     
-    ! Loop over the elements to collect the missing additive contributions:
-    DO iel=1,NELfine
-      i1=IverticesAtElementFine(1,iel)
-      i2=IverticesAtElementFine(2,iel)
-      i3=IverticesAtElementFine(3,iel)
-      i4=IverticesAtElementFine(4,iel)
+    ! Loop over the edges
+    DO iedge = 1, NMTcoarse
+      ! get the fine grid DOF
+      dx = 0.5_DP * DuFine(NVTcoarse + iedge)
 
-      ! Additive contribution of the midpoint
-      DuCoarse(i1) = DuCoarse(i1)+Q4*(DuFine(i2)+DuFine(i3)+DuFine(i4))
-
-      ! Additional contribution on the boundary:
-      IF (IneighboursAtElementFine(1,iel) .EQ. 0) &
-        DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i2)
-      IF (IneighboursAtElementFine(4,iel) .EQ. 0) &
-        DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i4)
+      ! distribute it to the coarse grid DOFs
+      ivt = IverticesAtEdgeCoarse(1,iedge)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtEdgeCoarse(2,iedge)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
     END DO
+    
+    ! Loop over the elements
+    DO iel = 1, NELcoarse
+      ! get the fine grid DOF
+      dx = 0.25_DP * DuFine(NVTcoarse + NMTcoarse + iel)
+      
+      ! distribute it to the coarse grid DOFs
+      ivt = IverticesAtElementCoarse(1, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(2, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(3, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(4, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+    END DO
+    
+! This is the 'old' implementation, based on Feat 1.x
+!  ! local variables
+!  REAL(DP), PARAMETER :: Q2 = .5_DP
+!  REAL(DP), PARAMETER :: Q4 = .25_DP
+!  
+!  INTEGER(PREC_ELEMENTIDX) :: iel
+!  INTEGER(PREC_VERTEXIDX) :: i1,i2,i3,i4
+!  
+!    ! The information that was 'distributed' in the prolongation has to
+!    ! be 'collected'.
+!    !
+!    ! Copy the first NVT entries - this gives the first additive contribution.
+!    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+!    
+!    ! Loop over the elements to collect the missing additive contributions:
+!    DO iel=1,NELfine
+!      i1=IverticesAtElementFine(1,iel)
+!      i2=IverticesAtElementFine(2,iel)
+!      i3=IverticesAtElementFine(3,iel)
+!      i4=IverticesAtElementFine(4,iel)
+!
+!      ! Additive contribution of the midpoint
+!      DuCoarse(i1) = DuCoarse(i1)+Q4*(DuFine(i2)+DuFine(i3)+DuFine(i4))
+!
+!      ! Additional contribution on the boundary:
+!      IF (IneighboursAtElementFine(1,iel) .EQ. 0) &
+!        DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i2)
+!      IF (IneighboursAtElementFine(4,iel) .EQ. 0) &
+!        DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i4)
+!    END DO
     
   END SUBROUTINE
 
@@ -6533,4 +6688,238 @@ CONTAINS
 
   END SUBROUTINE
 
+ ! ***************************************************************************
+  ! Support for 3D Q1 element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformQ1_3D_double (DuCoarse, DuFine, &
+             IverticesAtEdgeCoarse, IverticesAtFaceCoarse, &
+             IverticesAtElementCoarse, NVTcoarse, NMTcoarse, NATcoarse,NELcoarse)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! $Q_1$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! IverticesAtEdge array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdgeCoarse
+  
+  ! IverticesAtFace array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtFaceCoarse
+
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
+  
+  ! Number of faces in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NATcoarse
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_EDGEIDX) :: iedge, iface
+
+    ! Copy the first NVT entries - they belong to the coarse grid vertices
+    ! that are fine grid vertices at the same time.
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:NVTcoarse))
+    
+    ! Loop over the edges
+    DO iedge = 1, NMTcoarse
+      ! Calculate the edge midpoint DOF
+      DuFine(NVTcoarse + iedge) = 0.5_DP * (&
+          DuCoarse(IverticesAtEdgeCoarse(1,iedge))+&
+          DuCoarse(IverticesAtEdgeCoarse(2,iedge)))
+    
+    END DO
+    
+    ! Loop over the faces
+    DO iface = 1, NATcoarse
+      ! Calculate the face midpoint DOF
+      DuFine(NVTCoarse + NMTCoarse + iface) = 0.25_DP * (&
+          DuCoarse(IverticesAtFaceCoarse(1,iface))+&
+          DuCoarse(IverticesAtFaceCoarse(2,iface))+&
+          DuCoarse(IverticesAtFaceCoarse(3,iface))+&
+          DuCoarse(IverticesAtFaceCoarse(4,iface)))
+    END DO
+
+    ! Loop over the elements
+    DO iel = 1, NELcoarse
+      ! Calculate the hexahedron cell midpoint DOF
+      DuFine(NVTcoarse + NMTcoarse + NATcoarse + iel) = 0.125_DP * (&
+          DuCoarse(IverticesAtElementCoarse(1,iel))+&
+          DuCoarse(IverticesAtElementCoarse(2,iel))+&
+          DuCoarse(IverticesAtElementCoarse(3,iel))+&
+          DuCoarse(IverticesAtElementCoarse(4,iel))+&
+          DuCoarse(IverticesAtElementCoarse(5,iel))+&
+          DuCoarse(IverticesAtElementCoarse(6,iel))+&
+          DuCoarse(IverticesAtElementCoarse(7,iel))+&
+          DuCoarse(IverticesAtElementCoarse(8,iel)))
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformQ1_3D_double (DuCoarse,DuFine, &
+             IverticesAtEdgeCoarse, IverticesAtFaceCoarse, &
+             IverticesAtElementCoarse, NVTcoarse, NMTcoarse, NATcoarse,NELcoarse)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! Q1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! IverticesAtEdge array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdgeCoarse
+  
+  ! IverticesAtFace array on the coarse grid.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtFaceCoarse
+
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
+  
+  ! Number of faces in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NATcoarse
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_EDGEIDX) :: iedge, iface
+  INTEGER(PREC_VERTEXIDX) :: ivt
+  REAL(DP) :: dx
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    !
+    ! Copy the first NVT entries - this gives the first additive contribution.
+    CALL lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
+    
+    ! Loop over the edges
+    DO iedge = 1, NMTcoarse
+      ! get the fine grid DOF
+      dx = 0.5_DP * DuFine(NVTcoarse + iedge)
+
+      ! distribute it to the coarse grid DOFs
+      ivt = IverticesAtEdgeCoarse(1,iedge)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtEdgeCoarse(2,iedge)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+    END DO
+    
+    ! Loop over the faces
+    DO iface = 1, NATcoarse
+      ! get the fine grid DOF
+      dx = 0.25_DP * DuFine(NVTcoarse + NMTcoarse + iface)
+      
+      ! distribute it to the coarse grid DOFs
+      ivt = IverticesAtFaceCoarse(1,iface)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtFaceCoarse(2,iface)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtFaceCoarse(3,iface)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtFaceCoarse(4,iface)
+    END DO
+    
+    ! Loop over the elements
+    DO iel = 1, NELcoarse
+      ! get the fine grid DOF
+      dx = 0.125_DP * DuFine(NVTcoarse + NMTcoarse + NATcoarse + iel)
+      
+      ! distribute it to the coarse grid DOFs
+      ivt = IverticesAtElementCoarse(1, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(2, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(3, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(4, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(5, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(6, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(7, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+      ivt = IverticesAtElementCoarse(8, iel)
+      DuCoarse(ivt) = DuCoarse(ivt) + dx
+    END DO
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformQ1_3D_double (DuCoarse,DuFine, NVTcoarse)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! Q1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+    ! The first coase.NVT entries of the fine grid vector define the values
+    ! on the coarse grid - because of the two-level ordering!
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    
+  END SUBROUTINE
+  
 END MODULE
