@@ -7160,6 +7160,9 @@ END SUBROUTINE
       !    rmatrix%p_rspaceTimeDiscretisation,&
       !    rtempVector, rtempSpaceVector)
 
+      ! Get the nominator      
+      dnom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
+
       ! Calculate the denominator:
       
       CALL sptivec_clearVector (rtempVector)
@@ -7180,9 +7183,6 @@ END SUBROUTINE
       ! Trick to avoid div/0
       IF (ddenom .EQ. 0.0_DP) ddenom = 1.0_DP
       
-      ! Get the nominator      
-      dnom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
-
       ! Result...
       dstep = dnom / ddenom
                    
