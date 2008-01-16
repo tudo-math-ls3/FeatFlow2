@@ -910,12 +910,11 @@ CONTAINS
   
   ! Pointers into the triangulation
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse,&
-      p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
+      p_IverticesAtEdgeCoarse, p_IverticesAtElementFine, p_IverticesAtFaceCoarse
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse,&
+      p_IneighboursAtElementFine
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse,&
+      p_IfacesAtElementCoarse, p_IedgesAtElementFine, p_IfacesAtElementFine
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsCoarse
   REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
@@ -996,8 +995,7 @@ CONTAINS
           CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                                p_IverticesAtElementFine)
           CALL mlprj_prolUniformP2_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+               p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
 
         CASE (EL_S31_1D)
           ! S31 prolongation
@@ -1173,6 +1171,10 @@ CONTAINS
             END IF
           END SELECT
 
+        CASE (EL_Q0_3D)
+          ! Q0 prolongation
+          CALL mlprj_prolUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
+
         CASE (EL_Q1_3D)
           ! Q1 prolongation
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
@@ -1187,7 +1189,70 @@ CONTAINS
                     p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
                     p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
                     p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
-              
+
+        CASE (EL_Q1T_3D)
+          ! Q1~ prolongation, DOF's = integral mean value
+          CALL storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
+                               p_IfacesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
+                               p_IfacesAtElementCoarse)
+          !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+          !                     p_IneighboursAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                               p_IneighboursAtElementCoarse)
+          
+          ! Type of prolongation? Extended or not?
+!          SELECT CASE (ractProjection%iprolVariant)
+!          CASE (:1) ! Standard prolongation
+!            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
+!              ! DOF's = integral mean values
+!              CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
+!                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)
+!            ELSE
+              ! DOF's = face midpoint based
+              CALL mlprj_prolUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
+                  p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
+                  p_IneighboursAtElementCoarse,p_rtriaCoarse%NVT,p_rtriaFine%NVT,&
+                  p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL,&
+                  ractProjection%ielementTypeProlongation)
+!            END IF
+!                
+!          CASE (2:) ! Extended prolongation; modified weights, local switch
+!                    ! to constant prolongation
+!            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+!                                       p_IverticesAtElementCoarse)
+!            CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+!                                          p_DvertexCoordsCoarse)
+!            CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
+!                                        p_DelementAreaCoarse)
+!            ! (what a nasty call...)                                       
+!            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
+!              ! DOF's = integral mean values
+!              CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+!                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+!                      p_DelementAreaCoarse,&
+!                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                      p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+!                      MIN(4,ractProjection%iprolVariant)-2, &
+!                      ractProjection%dprolARboundEX3Y, &
+!                      ractProjection%iprolARIndicatorEX3Y)
+!            ELSE
+!              ! DOF's = edge midpoint based
+!              CALL mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
+!                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+!                      p_DelementAreaCoarse,&
+!                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                      p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+!                      MIN(4,ractProjection%iprolVariant)-2, &
+!                      ractProjection%dprolARboundEX3Y, &
+!                      ractProjection%iprolARIndicatorEX3Y)
+!            END IF
+!          END SELECT
+
         CASE DEFAULT
           PRINT *,'Unsupported prolongation!'
           CALL sys_halt()
@@ -1248,12 +1313,11 @@ CONTAINS
   
   ! Pointers into the triangulation
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse,&
-      p_IverticesAtEdgeCoarse,p_IverticesAtFaceCoarse
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
+      p_IverticesAtElementFine,p_IverticesAtEdgeCoarse,p_IverticesAtFaceCoarse
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse,&
+      p_IneighboursAtElementFine
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse,&
+      p_IedgesAtElementFine, p_IfacesAtElementCoarse, p_IfacesAtElementFine
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsCoarse
   REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
@@ -1334,8 +1398,7 @@ CONTAINS
           CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                                p_IverticesAtElementFine)
           CALL mlprj_restUniformP2_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
-               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+               p_IverticesAtElementCoarse,p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
 
         CASE (EL_S31_1D)
           ! S31 restriction
@@ -1520,6 +1583,10 @@ CONTAINS
             END IF
           END SELECT
 
+        CASE (EL_Q0_3D)
+          ! Q0 restriction
+          CALL mlprj_restUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
+
         CASE (EL_Q1_3D)
           ! Q1 prolongation
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
@@ -1534,6 +1601,69 @@ CONTAINS
                     p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
                     p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
                     p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
+
+        CASE (EL_Q1T_3D)
+          ! Q1~ restriction
+          CALL storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
+                               p_IfacesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
+                               p_IfacesAtElementCoarse)
+          !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+          !                     p_IneighboursAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                               p_IneighboursAtElementCoarse)
+
+!          ! Type of restriction? Extended or not?
+!          SELECT CASE (ractProjection%irestVariant)
+!          CASE (:1) ! Standard prolongation
+!            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
+!              ! DOF's = integral mean values
+!              CALL mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
+!                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
+!            ELSE
+              ! DOF's = face midpoint based
+              CALL mlprj_restUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
+                  p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
+                  p_IneighboursAtElementCoarse,p_rtriaCoarse%NVT,p_rtriaFine%NVT,&
+                  p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL,&
+                  ractProjection%ielementTypeRestriction)          
+!            END IF
+!                
+!          CASE (2:) ! Extended prolongation; modified weights, local switch
+!                    ! to constant prolongation
+!            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+!                                       p_IverticesAtElementCoarse)
+!            CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+!                                          p_DvertexCoordsCoarse)
+!            CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
+!                                        p_DelementAreaCoarse)
+!            ! (what a nasty call...)                                       
+!            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
+!              ! DOF's = integral mean values
+!              CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+!                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+!                      p_DelementAreaCoarse,&
+!                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                      p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+!                      MIN(4,ractProjection%irestVariant)-2, &
+!                      ractProjection%dprolARboundEX3Y, &
+!                      ractProjection%iprolARIndicatorEX3Y)
+!            ELSE
+!              ! DOF's = edge midpoint based
+!              CALL mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
+!                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+!                      p_DelementAreaCoarse,&
+!                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!                      p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+!                      MIN(4,ractProjection%irestVariant)-2, &
+!                      ractProjection%dprolARboundEX3Y, &
+!                      ractProjection%iprolARIndicatorEX3Y)
+!            END IF
+!          END SELECT
 
         CASE DEFAULT
           PRINT *,'Unsupported restriction!'
@@ -1671,7 +1801,7 @@ CONTAINS
 
         CASE (EL_S31_1D)
           ! S31 interpolation
-          CALL mlprj_interpUniformS31_1D_double (p_DuCoarse,p_DuFine,&
+          CALL mlprj_interpUniS31_1D_double (p_DuCoarse,p_DuFine,&
                p_rtriaCoarse%NVT, p_rtriaFine%NVT)
 
         CASE (EL_P1)
@@ -1723,9 +1853,30 @@ CONTAINS
                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
 
+        CASE (EL_Q0_3D)
+          ! Q0 interpolation
+          CALL mlprj_interpUniformQ0_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NEL)
+
         CASE (EL_Q1_3D)
           ! Q1 interpolation
           CALL mlprj_interpUniformQ1_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
+!        CASE (EL_Q1T_3D)
+!          ! Q1~ interpolation, DOF's = integral mean values
+!          ! We use the same routine also for interpolating Ex31 solutions - there's
+!          ! not too much difference...
+!          CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+!                               p_IedgesAtElementFine)
+!          CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+!                               p_IedgesAtElementCoarse)
+!          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+!                               p_IneighboursAtElementFine)
+!          CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+!                               p_IneighboursAtElementCoarse)
+!          CALL mlprj_interpUniformEx30_3D_double (p_DuCoarse,p_DuFine, &
+!               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+!               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+!               p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
 
         CASE DEFAULT
           PRINT *,'Unsupported interpolation!'
@@ -1935,7 +2086,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_prolUniformP2_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
-                                            IvertsAtElemFine,NVTcoarse,NELcoarse)
+                                            NVTcoarse,NELcoarse)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -1949,9 +2100,6 @@ CONTAINS
   ! IverticesAtElement array (KVERT) on the coarse grid
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
 
-  ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
-  
   ! Number of vertices in the coarse grid
   INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
 
@@ -2006,7 +2154,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_restUniformP2_1D_double (DuCoarse,DuFine,IvertsAtElemCoarse,&
-               IvertsAtElemFine,NVTcoarse,NELcoarse)
+               NVTcoarse,NELcoarse)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
@@ -2019,9 +2167,6 @@ CONTAINS
 
   ! IverticesAtElement array (KVERT) on the caorse grid
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemCoarse
-  
-  ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertsAtElemFine
   
   ! Number of vertices in the coarse grid
   INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
@@ -2303,7 +2448,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mlprj_interpUniformS31_1D_double (DuCoarse,DuFine,NVTcoarse,NVTfine)
+  SUBROUTINE mlprj_interpUniS31_1D_double (DuCoarse,DuFine,NVTcoarse,NVTfine)
   
 !<description>
   ! Interpolates a solution vector from a fine grid to a coarse grid.
@@ -6688,7 +6833,176 @@ CONTAINS
 
   END SUBROUTINE
 
- ! ***************************************************************************
+  ! ***************************************************************************
+  ! Support for 3D Q0 element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformQ0_3D_double (DuCoarse,DuFine,NELcoarse)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! $Q_0$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: ielf
+  REAL(DP) :: duh
+
+    ! Loop over the elements
+    DO iel = 1, NELCoarse
+
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      ielf(1) = iel
+      ielf(2) = NELcoarse + 7*(iel-1) + 1
+      ielf(3) = ielf(2) + 1
+      ielf(4) = ielf(3) + 1
+      ielf(5) = ielf(4) + 1
+      ielf(6) = ielf(5) + 1
+      ielf(7) = ielf(6) + 1
+      ielf(8) = ielf(7) + 1
+
+      ! Put the value on the coarse grid into all four child
+      ! elements
+      duh = DuCoarse(iel)
+      DuFine(ielf(1:8)) = duh
+    END DO
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformQ0_3D_double (DuCoarse,DuFine,NELcoarse)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! $Q_0$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: ielf
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      ielf(1) = iel
+      ielf(2) = NELcoarse + 7*(iel-1) + 1
+      ielf(3) = ielf(2) + 1
+      ielf(4) = ielf(3) + 1
+      ielf(5) = ielf(4) + 1
+      ielf(6) = ielf(5) + 1
+      ielf(7) = ielf(6) + 1
+      ielf(8) = ielf(7) + 1
+      
+      ! Sum up the values in these nodes to get the
+      ! value in the coarse grid element
+      DuCoarse(iel)= DuFine(ielf(1))+DuFine(ielf(2))+&
+                     DuFine(ielf(3))+DuFine(ielf(4))+DuFine(ielf(5))+&
+                     DuFine(ielf(6))+DuFine(ielf(7))+DuFine(ielf(8))
+      
+    END DO
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformQ0_3D_double (DuCoarse,DuFine,NELcoarse)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! $Q_0$, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: ielf
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      ielf(1) = iel
+      ielf(2) = NELcoarse + 7*(iel-1) + 1
+      ielf(3) = ielf(2) + 1
+      ielf(4) = ielf(3) + 1
+      ielf(5) = ielf(4) + 1
+      ielf(6) = ielf(5) + 1
+      ielf(7) = ielf(6) + 1
+      ielf(8) = ielf(7) + 1
+      
+      ! Sum up the values in these nodes to get the
+      ! value in the coarse grid element
+      DuCoarse(iel)= 0.125_DP * (DuFine(ielf(1))+DuFine(ielf(2))+&
+                     DuFine(ielf(3))+DuFine(ielf(4))+DuFine(ielf(5))+&
+                     DuFine(ielf(6))+DuFine(ielf(7))+DuFine(ielf(8)))
+      
+    END DO
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
   ! Support for 3D Q1 element
   ! ***************************************************************************
 
@@ -6921,5 +7235,484 @@ CONTAINS
     CALL lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
     
   END SUBROUTINE
+
+
+  ! ***************************************************************************
+  ! Support for 3D Q1~ element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformEx3x_3D_double (DuCoarse,DuFine, &
+               IfacesAtElementCoarse,IfacesAtElementFine,&
+               IneighboursAtElementCoarse,NVTcoarse,NVTfine,&
+               NMTcoarse,NMTfine,NELcoarse,ielType)
   
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! E030/E031/EM30/EM31, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! IfacesAtElement array on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IfacesAtElementCoarse
+  
+  ! IfacesAtElement array on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IfacesAtElementFine
+
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+  
+  ! IneighboursAtElement array on the fine grid
+  !INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of vertices in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
+  
+  ! Number of edges in the fine grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+  
+  ! Element type to use for prolongation
+  INTEGER, INTENT(IN) :: ielType
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP) :: dw, A1, A2, A3, A4, A5, A6, A7
+  REAL(DP), DIMENSION(6) :: Dx
+  INTEGER(PREC_EDGEIDX), DIMENSION(6) :: IM
+  INTEGER(PREC_EDGEIDX), DIMENSION(4) :: idx
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: ielf
+  
+    ! Weights for the restriction; all coefficients are halfed, so dividing
+    ! by 2 is not necessary in the calculation routines.
+    IF (IAND(ielType, 2**16) .EQ. 0) THEN
+      ! Weights for Ex31 element
+      A1 =  0.458333333333333_DP   ! = 11/24
+      A2 =  0.145833333333333_DP   ! =  7/48
+      A3 = -0.104166666666667_DP   ! = -5/48
+      A4 = -0.041666666666667_DP   ! = -1/24
+      A5 =  0.458333333333333_DP   ! = 11/24
+      A6 =  0.083333333333333_DP   ! =  1/12
+      A7 = -0.041666666666667_DP   ! = -1/24
+    ELSE
+      ! Weights for Ex30 element
+      A1 = 0.5_DP
+      A2 = 0.125_DP
+      A3 = -0.125_DP
+      A4 = 0.0_DP
+      A5 = 0.5_DP
+      A6 = 0.0_DP
+      A7 = 0.0_DP
+    END IF
+ 
+    ! Clear the output vector
+    CALL lalg_clearVectorDble(DuFine)
+  
+    ! Loop over the coarse grid elements
+    DO iel = 1, NELcoarse
+
+      ! Get the DOF's of the coarse grid element
+      IM(1) = IfacesAtElementCoarse(1,iel) - NVTcoarse - NMTcoarse
+      IM(2) = IfacesAtElementCoarse(2,iel) - NVTcoarse - NMTcoarse
+      IM(3) = IfacesAtElementCoarse(3,iel) - NVTcoarse - NMTcoarse
+      IM(4) = IfacesAtElementCoarse(4,iel) - NVTcoarse - NMTcoarse
+      IM(5) = IfacesAtElementCoarse(5,iel) - NVTcoarse - NMTcoarse
+      IM(6) = IfacesAtElementCoarse(6,iel) - NVTcoarse - NMTcoarse
+
+      ! Get the values of the corresponding DOF's
+      Dx(1) = DuCoarse(IM(1))
+      Dx(2) = DuCoarse(IM(2))
+      Dx(3) = DuCoarse(IM(3))
+      Dx(4) = DuCoarse(IM(4))
+      Dx(5) = DuCoarse(IM(5))
+      Dx(6) = DuCoarse(IM(6))
+
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      ielf(1) = iel
+      ielf(2) = NELcoarse + 7*(iel-1) + 1
+      ielf(3) = ielf(2) + 1
+      ielf(4) = ielf(3) + 1
+      ielf(5) = ielf(4) + 1
+      ielf(6) = ielf(5) + 1
+      ielf(7) = ielf(6) + 1
+      ielf(8) = ielf(7) + 1
+
+      ! First, we are going to prolongate the DOFs on the boundary of
+      ! the coarse grid hexahedron.
+      ! Face 1
+      ! Calculate scaling factor. If this face of the hexahedron belongs
+      ! to the domain's boundary (i.e. the hexahedron does not have a neighbour
+      ! at this face), then the scaling factor is 2, otherwise 1.
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(1,iel) .EQ. 0) dw = 2.0_DP
+      ! Calculate fine grid DOF indices for this coarse grid face
+      idx(1) = IfacesAtElementFine(1, ielf(1)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(1, ielf(2)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(1, ielf(3)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(1, ielf(4)) - NVTfine - NMTfine
+      ! distribute the DOF
+      DuFine(idx(1))=DuFine(idx(1))+&
+         dw*(A1*Dx(1)+A2*Dx(2)+A3*Dx(3)+A3*Dx(4)+A2*Dx(5)+A4*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+         dw*(A1*Dx(1)+A2*Dx(2)+A2*Dx(3)+A3*Dx(4)+A3*Dx(5)+A4*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+         dw*(A1*Dx(1)+A3*Dx(2)+A2*Dx(3)+A2*Dx(4)+A3*Dx(5)+A4*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+         dw*(A1*Dx(1)+A3*Dx(2)+A3*Dx(3)+A2*Dx(4)+A2*Dx(5)+A4*Dx(6))
+
+      ! Face 2
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(2,iel) .EQ. 0) dw = 2.0_DP
+      idx(1) = IfacesAtElementFine(2, ielf(1)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(5, ielf(2)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(5, ielf(6)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(2, ielf(5)) - NVTfine - NMTfine
+      DuFine(idx(1))=DuFine(idx(1))+&
+        dw*(A2*Dx(1)+A1*Dx(2)+A3*Dx(3)+A4*Dx(4)+A2*Dx(5)+A3*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+        dw*(A2*Dx(1)+A1*Dx(2)+A2*Dx(3)+A4*Dx(4)+A3*Dx(5)+A3*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+        dw*(A3*Dx(1)+A1*Dx(2)+A2*Dx(3)+A4*Dx(4)+A3*Dx(5)+A2*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+        dw*(A3*Dx(1)+A1*Dx(2)+A3*Dx(3)+A4*Dx(4)+A2*Dx(5)+A2*Dx(6))
+
+      ! Face 3
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(3,iel) .EQ. 0) dw = 2.0_DP
+      idx(1) = IfacesAtElementFine(2, ielf(2)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(5, ielf(3)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(5, ielf(7)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(2, ielf(6)) - NVTfine - NMTfine
+      DuFine(idx(1))=DuFine(idx(1))+&
+        dw*(A2*Dx(1)+A2*Dx(2)+A1*Dx(3)+A3*Dx(4)+A4*Dx(5)+A3*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+        dw*(A2*Dx(1)+A3*Dx(2)+A1*Dx(3)+A2*Dx(4)+A4*Dx(5)+A3*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+        dw*(A3*Dx(1)+A3*Dx(2)+A1*Dx(3)+A2*Dx(4)+A4*Dx(5)+A2*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+        dw*(A3*Dx(1)+A2*Dx(2)+A1*Dx(3)+A3*Dx(4)+A4*Dx(5)+A2*Dx(6))
+
+      ! Face 4
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(4,iel) .EQ. 0) dw = 2.0_DP
+      idx(1) = IfacesAtElementFine(2, ielf(3)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(5, ielf(4)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(5, ielf(8)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(2, ielf(7)) - NVTfine - NMTfine
+      DuFine(idx(1))=DuFine(idx(1))+&
+        dw*(A2*Dx(1)+A4*Dx(2)+A2*Dx(3)+A1*Dx(4)+A3*Dx(5)+A3*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+        dw*(A2*Dx(1)+A4*Dx(2)+A3*Dx(3)+A1*Dx(4)+A2*Dx(5)+A3*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+        dw*(A3*Dx(1)+A4*Dx(2)+A3*Dx(3)+A1*Dx(4)+A2*Dx(5)+A2*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+        dw*(A3*Dx(1)+A4*Dx(2)+A2*Dx(3)+A1*Dx(4)+A3*Dx(5)+A2*Dx(6))
+
+      ! Face 5
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(5,iel) .EQ. 0) dw = 2.0_DP
+      idx(1) = IfacesAtElementFine(2, ielf(4)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(5, ielf(1)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(5, ielf(5)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(2, ielf(8)) - NVTfine - NMTfine
+      DuFine(idx(1))=DuFine(idx(1))+&
+        dw*(A2*Dx(1)+A3*Dx(2)+A4*Dx(3)+A2*Dx(4)+A1*Dx(5)+A3*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+        dw*(A2*Dx(1)+A2*Dx(2)+A4*Dx(3)+A3*Dx(4)+A1*Dx(5)+A3*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+        dw*(A3*Dx(1)+A2*Dx(2)+A4*Dx(3)+A3*Dx(4)+A1*Dx(5)+A2*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+        dw*(A3*Dx(1)+A3*Dx(2)+A4*Dx(3)+A2*Dx(4)+A1*Dx(5)+A2*Dx(6))
+
+      ! Face 6
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(6,iel) .EQ. 0) dw = 2.0_DP
+      idx(1) = IfacesAtElementFine(1, ielf(5)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(1, ielf(6)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(1, ielf(7)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(1, ielf(8)) - NVTfine - NMTfine
+      DuFine(idx(1))=DuFine(idx(1))+&
+        dw*(A4*Dx(1)+A2*Dx(2)+A3*Dx(3)+A3*Dx(4)+A2*Dx(5)+A1*Dx(6))
+      DuFine(idx(2))=DuFine(idx(2))+&
+        dw*(A4*Dx(1)+A2*Dx(2)+A2*Dx(3)+A3*Dx(4)+A3*Dx(5)+A1*Dx(6))
+      DuFine(idx(3))=DuFine(idx(3))+&
+        dw*(A4*Dx(1)+A3*Dx(2)+A2*Dx(3)+A2*Dx(4)+A3*Dx(5)+A1*Dx(6))
+      DuFine(idx(4))=DuFine(idx(4))+&
+        dw*(A4*Dx(1)+A3*Dx(2)+A3*Dx(3)+A2*Dx(4)+A2*Dx(5)+A1*Dx(6))
+
+
+      ! Now we need to calculate the DOFs of the fine grid which lie
+      ! inside the coarse grid tetrahedron.
+      idx(1) = IfacesAtElementFine(3, ielf(1)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(3, ielf(2)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(3, ielf(3)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(3, ielf(4)) - NVTfine - NMTfine
+      DuFine(idx(1))=A5*Dx(1)+A5*Dx(2)+A6*Dx(3)+A7*Dx(4)+A6*Dx(5)+A7*Dx(6)
+      DuFine(idx(2))=A5*Dx(1)+A6*Dx(2)+A5*Dx(3)+A6*Dx(4)+A7*Dx(5)+A7*Dx(6)
+      DuFine(idx(3))=A5*Dx(1)+A7*Dx(2)+A6*Dx(3)+A5*Dx(4)+A6*Dx(5)+A7*Dx(6)
+      DuFine(idx(4))=A5*Dx(1)+A6*Dx(2)+A7*Dx(3)+A6*Dx(4)+A5*Dx(5)+A7*Dx(6)
+
+      idx(1) = IfacesAtElementFine(6, ielf(1)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(6, ielf(2)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(6, ielf(3)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(6, ielf(4)) - NVTfine - NMTfine
+      DuFine(idx(1))=A6*Dx(1)+A5*Dx(2)+A7*Dx(3)+A7*Dx(4)+A5*Dx(5)+A6*Dx(6)
+      DuFine(idx(2))=A6*Dx(1)+A5*Dx(2)+A5*Dx(3)+A7*Dx(4)+A7*Dx(5)+A6*Dx(6)
+      DuFine(idx(3))=A6*Dx(1)+A7*Dx(2)+A5*Dx(3)+A5*Dx(4)+A7*Dx(5)+A6*Dx(6)
+      DuFine(idx(4))=A6*Dx(1)+A7*Dx(2)+A7*Dx(3)+A5*Dx(4)+A5*Dx(5)+A6*Dx(6)
+
+      idx(1) = IfacesAtElementFine(3, ielf(5)) - NVTfine - NMTfine
+      idx(2) = IfacesAtElementFine(3, ielf(6)) - NVTfine - NMTfine
+      idx(3) = IfacesAtElementFine(3, ielf(7)) - NVTfine - NMTfine
+      idx(4) = IfacesAtElementFine(3, ielf(8)) - NVTfine - NMTfine
+      DuFine(idx(1))=A7*Dx(1)+A5*Dx(2)+A6*Dx(3)+A7*Dx(4)+A6*Dx(5)+A5*Dx(6)
+      DuFine(idx(2))=A7*Dx(1)+A6*Dx(2)+A5*Dx(3)+A6*Dx(4)+A7*Dx(5)+A5*Dx(6)
+      DuFine(idx(3))=A7*Dx(1)+A7*Dx(2)+A6*Dx(3)+A5*Dx(4)+A6*Dx(5)+A5*Dx(6)
+      DuFine(idx(4))=A7*Dx(1)+A6*Dx(2)+A7*Dx(3)+A6*Dx(4)+A5*Dx(5)+A5*Dx(6)
+
+    END DO
+
+  END SUBROUTINE
+
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformEx3x_3D_double (DuCoarse,DuFine, &
+               IfacesAtElementCoarse,IfacesAtElementFine,&
+               IneighboursAtElementCoarse,NVTcoarse,NVTfine,&
+               NMTcoarse,NMTfine,NELcoarse,ielType)
+  
+!<description>
+  ! Restrict a defect vector from a fine grid to a coarse grid.
+  ! E031/EM31, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! IfacesAtElement array on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IfacesAtElementCoarse
+  
+  ! IfacesAtElement array on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IfacesAtElementFine
+
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of vertices in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTcoarse
+  
+  ! Number of edges in the fine grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+  ! Element type to use for prolongation
+  INTEGER, INTENT(IN) :: ielType
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP) :: dw, A1, A2, A3, A4, A5, A6, A7
+  REAL(DP), DIMENSION(36) :: Dx
+  INTEGER(PREC_EDGEIDX), DIMENSION(6) :: IM
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: ielf
+  
+    ! Weights for the restriction; all coefficients are halfed, so dividing
+    ! by 2 is not necessary in the calculation routines.
+    IF (IAND(ielType, 2**16) .EQ. 0) THEN
+      ! Weights for Ex31 element
+      A1 =  0.458333333333333_DP   ! = 11/24
+      A2 =  0.145833333333333_DP   ! =  7/48
+      A3 = -0.104166666666667_DP   ! = -5/48
+      A4 = -0.041666666666667_DP   ! = -1/24
+      A5 =  0.458333333333333_DP   ! = 11/24
+      A6 =  0.083333333333333_DP   ! =  1/12
+      A7 = -0.041666666666667_DP   ! = -1/24
+    ELSE
+      ! Weights for Ex30 element
+      A1 =  0.5_DP
+      A2 =  0.125_DP
+      A3 = -0.125_DP
+      A4 =  0.0_DP
+      A5 =  0.5_DP
+      A6 =  0.0_DP
+      A7 =  0.0_DP
+    END IF
+  
+    ! Clear the output vector
+    CALL lalg_clearVectorDble(DuCoarse)
+  
+    ! Loop over the coarse grid elements
+    DO iel = 1, NELcoarse
+
+      ! Get the DOF's of the coarse grid element
+      IM(1) = IfacesAtElementCoarse(1,iel) - NVTcoarse - NMTcoarse
+      IM(2) = IfacesAtElementCoarse(2,iel) - NVTcoarse - NMTcoarse
+      IM(3) = IfacesAtElementCoarse(3,iel) - NVTcoarse - NMTcoarse
+      IM(4) = IfacesAtElementCoarse(4,iel) - NVTcoarse - NMTcoarse
+      IM(5) = IfacesAtElementCoarse(5,iel) - NVTcoarse - NMTcoarse
+      IM(6) = IfacesAtElementCoarse(6,iel) - NVTcoarse - NMTcoarse
+
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      ielf(1) = iel
+      ielf(2) = NELcoarse + 7*(iel-1) + 1
+      ielf(3) = ielf(2) + 1
+      ielf(4) = ielf(3) + 1
+      ielf(5) = ielf(4) + 1
+      ielf(6) = ielf(5) + 1
+      ielf(7) = ielf(6) + 1
+      ielf(8) = ielf(7) + 1
+
+      ! Get the fine grid DOFs
+      Dx( 1)=DuFine(IfacesAtElementFine(1,ielf(1))-NVTfine - NMTfine)
+      Dx( 2)=DuFine(IfacesAtElementFine(1,ielf(2))-NVTfine - NMTfine)
+      Dx( 3)=DuFine(IfacesAtElementFine(1,ielf(3))-NVTfine - NMTfine)
+      Dx( 4)=DuFine(IfacesAtElementFine(1,ielf(4))-NVTfine - NMTfine)
+      Dx( 5)=DuFine(IfacesAtElementFine(2,ielf(1))-NVTfine - NMTfine)
+      Dx( 6)=DuFine(IfacesAtElementFine(5,ielf(2))-NVTfine - NMTfine)
+      Dx( 7)=DuFine(IfacesAtElementFine(5,ielf(6))-NVTfine - NMTfine)
+      Dx( 8)=DuFine(IfacesAtElementFine(2,ielf(5))-NVTfine - NMTfine)
+      Dx( 9)=DuFine(IfacesAtElementFine(2,ielf(2))-NVTfine - NMTfine)
+      Dx(10)=DuFine(IfacesAtElementFine(5,ielf(3))-NVTfine - NMTfine)
+      Dx(11)=DuFine(IfacesAtElementFine(5,ielf(7))-NVTfine - NMTfine)
+      Dx(12)=DuFine(IfacesAtElementFine(2,ielf(6))-NVTfine - NMTfine)
+      Dx(13)=DuFine(IfacesAtElementFine(2,ielf(3))-NVTfine - NMTfine)
+      Dx(14)=DuFine(IfacesAtElementFine(5,ielf(4))-NVTfine - NMTfine)
+      Dx(15)=DuFine(IfacesAtElementFine(5,ielf(8))-NVTfine - NMTfine)
+      Dx(16)=DuFine(IfacesAtElementFine(2,ielf(7))-NVTfine - NMTfine)
+      Dx(17)=DuFine(IfacesAtElementFine(2,ielf(4))-NVTfine - NMTfine)
+      Dx(18)=DuFine(IfacesAtElementFine(5,ielf(1))-NVTfine - NMTfine)
+      Dx(19)=DuFine(IfacesAtElementFine(5,ielf(5))-NVTfine - NMTfine)
+      Dx(20)=DuFine(IfacesAtElementFine(2,ielf(8))-NVTfine - NMTfine)
+      Dx(21)=DuFine(IfacesAtElementFine(1,ielf(5))-NVTfine - NMTfine)
+      Dx(22)=DuFine(IfacesAtElementFine(1,ielf(6))-NVTfine - NMTfine)
+      Dx(23)=DuFine(IfacesAtElementFine(1,ielf(7))-NVTfine - NMTfine)
+      Dx(24)=DuFine(IfacesAtElementFine(1,ielf(8))-NVTfine - NMTfine)
+      Dx(25)=DuFine(IfacesAtElementFine(3,ielf(1))-NVTfine - NMTfine)
+      Dx(26)=DuFine(IfacesAtElementFine(3,ielf(2))-NVTfine - NMTfine)
+      Dx(27)=DuFine(IfacesAtElementFine(3,ielf(3))-NVTfine - NMTfine)
+      Dx(28)=DuFine(IfacesAtElementFine(3,ielf(4))-NVTfine - NMTfine)
+      Dx(29)=DuFine(IfacesAtElementFine(6,ielf(1))-NVTfine - NMTfine)
+      Dx(30)=DuFine(IfacesAtElementFine(6,ielf(2))-NVTfine - NMTfine)
+      Dx(31)=DuFine(IfacesAtElementFine(6,ielf(3))-NVTfine - NMTfine)
+      Dx(32)=DuFine(IfacesAtElementFine(6,ielf(4))-NVTfine - NMTfine)
+      Dx(33)=DuFine(IfacesAtElementFine(3,ielf(5))-NVTfine - NMTfine)
+      Dx(34)=DuFine(IfacesAtElementFine(3,ielf(6))-NVTfine - NMTfine)
+      Dx(35)=DuFine(IfacesAtElementFine(3,ielf(7))-NVTfine - NMTfine)
+      Dx(36)=DuFine(IfacesAtElementFine(3,ielf(8))-NVTfine - NMTfine)
+
+      ! Face 1
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(1,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(1))= DuCoarse(IM(1)) + dw * (&
+        +A1*(Dx(1)+Dx(2)+Dx(3)+Dx(4))&
+        +A2*(Dx(5)+Dx(6)+Dx(9)+Dx(10)+Dx(13)+Dx(14)+Dx(17)+Dx(18))&
+        +A3*(Dx(7)+Dx(8)+Dx(11)+Dx(12)+Dx(15)+Dx(16)+Dx(19)+Dx(20))&
+        +A4*(Dx(21)+Dx(22)+Dx(23)+Dx(24))&
+        +A5*(Dx(25)+Dx(26)+Dx(27)+Dx(28))&
+        +A6*(Dx(29)+Dx(30)+Dx(31)+Dx(32))&
+        +A7*(Dx(33)+Dx(34)+Dx(35)+Dx(36)))    
+
+      ! Face 2
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(2,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(2))= DuCoarse(IM(2)) + dw * (&
+        +A1*(Dx(5)+Dx(6)+Dx(7)+Dx(8))&
+        +A2*(Dx(1)+Dx(2)+Dx(9)+Dx(12)+Dx(21)+Dx(22)+Dx(18)+Dx(19))&
+        +A3*(Dx(3)+Dx(4)+Dx(10)+Dx(11)+Dx(23)+Dx(24)+Dx(17)+Dx(20))&
+        +A4*(Dx(13)+Dx(14)+Dx(15)+Dx(16))&
+        +A5*(Dx(25)+Dx(29)+Dx(30)+Dx(33))&
+        +A6*(Dx(26)+Dx(28)+Dx(34)+Dx(36))&
+        +A7*(Dx(27)+Dx(31)+Dx(32)+Dx(35)))    
+
+      ! Face 3
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(3,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(3))= DuCoarse(IM(3)) + dw * (&
+        +A1*(Dx(9)+Dx(10)+Dx(11)+Dx(12))&
+        +A2*(Dx(2)+Dx(3)+Dx(6)+Dx(7)+Dx(22)+Dx(23)+Dx(13)+Dx(16))&
+        +A3*(Dx(1)+Dx(4)+Dx(5)+Dx(8)+Dx(21)+Dx(24)+Dx(14)+Dx(15))&
+        +A4*(Dx(17)+Dx(18)+Dx(19)+Dx(20))&
+        +A5*(Dx(26)+Dx(30)+Dx(31)+Dx(34))&
+        +A6*(Dx(25)+Dx(27)+Dx(33)+Dx(35))&
+        +A7*(Dx(28)+Dx(29)+Dx(32)+Dx(36)))    
+
+      ! Face 4
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(4,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(4))= DuCoarse(IM(4)) + dw * (&
+        +A1*(Dx(13)+Dx(14)+Dx(15)+Dx(16))&
+        +A2*(Dx(3)+Dx(4)+Dx(10)+Dx(11)+Dx(23)+Dx(24)+Dx(17)+Dx(20))&
+        +A3*(Dx(1)+Dx(2)+Dx(9)+Dx(12)+Dx(21)+Dx(22)+Dx(18)+Dx(19))&
+        +A4*(Dx(5)+Dx(6)+Dx(7)+Dx(8))&
+        +A5*(Dx(27)+Dx(31)+Dx(32)+Dx(35))&
+        +A6*(Dx(26)+Dx(28)+Dx(34)+Dx(36))&
+        +A7*(Dx(25)+Dx(29)+Dx(30)+Dx(33)))
+
+      ! Face 5
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(5,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(5))= DuCoarse(IM(5)) + dw * (&
+        +A1*(Dx(17)+Dx(18)+Dx(19)+Dx(20))&
+        +A2*(Dx(1)+Dx(4)+Dx(5)+Dx(8)+Dx(21)+Dx(24)+Dx(14)+Dx(15))&
+        +A3*(Dx(2)+Dx(3)+Dx(6)+Dx(7)+Dx(22)+Dx(23)+Dx(13)+Dx(16))&
+        +A4*(Dx(9)+Dx(10)+Dx(11)+Dx(12))&
+        +A5*(Dx(28)+Dx(29)+Dx(32)+Dx(36))&     
+        +A6*(Dx(25)+Dx(27)+Dx(33)+Dx(35))&
+        +A7*(Dx(26)+Dx(30)+Dx(31)+Dx(34)))
+
+      ! Face 6
+      dw = 1.0_DP
+      IF (IneighboursAtElementCoarse(6,iel) .EQ. 0) dw = 2.0_DP
+      DuCoarse(IM(6))= DuCoarse(IM(6)) + dw * (&
+        +A1*(Dx(21)+Dx(22)+Dx(23)+Dx(24))&
+        +A2*(Dx(7)+Dx(8)+Dx(11)+Dx(12)+Dx(15)+Dx(16)+Dx(19)+Dx(20))&
+        +A3*(Dx(5)+Dx(6)+Dx(9)+Dx(10)+Dx(13)+Dx(14)+Dx(17)+Dx(18))&
+        +A4*(Dx(1)+Dx(2)+Dx(3)+Dx(4))&
+        +A5*(Dx(33)+Dx(34)+Dx(35)+Dx(36))&
+        +A6*(Dx(29)+Dx(30)+Dx(31)+Dx(32))&
+        +A7*(Dx(25)+Dx(26)+Dx(27)+Dx(28)))
+
+    END DO
+
+  END SUBROUTINE
+
+
 END MODULE
