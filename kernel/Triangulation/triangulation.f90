@@ -482,9 +482,6 @@ MODULE triangulation
     ! the vertex in mathematical positive sense.
     INTEGER             :: NVBD = 0
     
-    ! the number of edges on the boundary
-    INTEGER             :: NEBD = 0
-    
     ! the number of faces on the boundary
     INTEGER             :: NABD = 0
     
@@ -9400,11 +9397,11 @@ CONTAINS
       integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
       integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
-      integer :: ivbd,ibct,isize,IboundaryComponent,ive,NEBD,NABD,iface,NMT,NAT
+      integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
       integer :: NVT,NEL,ivt
       
       ! these names are just too long...
-      NEBD = rsourceTriangulation%NEBD
+      NMBD = rsourceTriangulation%NMBD
       NABD = rsourceTriangulation%NABD
       NVT = rsourceTriangulation%NVT
       NMT = rsourceTriangulation%NMT
@@ -9438,7 +9435,7 @@ CONTAINS
 
       ! calculate the new value of NVBD
       rdestTriangulation%NVBD =  rsourceTriangulation%NVBD + &
-                                 rsourceTriangulation%NEBD + &      
+                                 rsourceTriangulation%NMBD + &      
                                  rsourceTriangulation%NABD       
                                                 
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
@@ -9456,7 +9453,7 @@ CONTAINS
       
       ! assume we are at lvl "r" then:
       ! there are NVBD boundary vertices from lvl (r-1)
-      ! there are NEBD new boundary vertices from the edges
+      ! there are NMBD new boundary vertices from the edges
       ! there are NABD new boundary vertices from the faces
       
       CALL storage_getsize (rdestTriangulation%h_InodalProperty,isize)
@@ -9480,7 +9477,7 @@ CONTAINS
       do ive=1,rsourceTriangulation%NMT
         
         ! check if edge is on border
-        if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NEBD)==1) then
+        if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NMBD)==1) then
            
            ! get the boundary component index of the vertices
            ! that build the edge
@@ -9623,9 +9620,9 @@ CONTAINS
     integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtBoundary
     integer :: ive
     integer(prec_elementidx) :: iface,iface1,iface2, ifaceIndex
-    integer(prec_vertexidx) :: isize, iglobIndex, NEBD, eIndex
+    integer(prec_vertexidx) :: isize, iglobIndex, NMBD, eIndex
     
-    NEBD = 0
+    NMBD = 0
     
     ! Is everything here we need?
     if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
@@ -9688,7 +9685,7 @@ CONTAINS
       do iface=iface1,iface2
         ifaceIndex = p_IfacesAtEdge(iface)
         if(p_Iaux(ifaceIndex) == 1) then
-          NEBD = NEBD + 1
+          NMBD = NMBD + 1
           exit
         end if
       end do ! end iface
@@ -9696,12 +9693,12 @@ CONTAINS
     end do ! end iface
     
     ! assign the number of faces on the boundary
-    rtriangulation%NEBD = NEBD
+    rtriangulation%NMBD = NMBD
 
     ! allocate memory
     if(rtriangulation%h_IedgesAtBoundary == ST_NOHANDLE) then
       call storage_new ('tria_genEdgesAtBoundary', 'IedgesAtBoundary', &
-          int(NEBD,I32), ST_INT, &
+          int(NMBD,I32), ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
     end if      
     

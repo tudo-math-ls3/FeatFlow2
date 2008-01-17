@@ -3228,7 +3228,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: ireslength,ite,i
+  INTEGER :: ireslength,ite,i,j
   REAL(DP) :: dres,dfr
   TYPE(t_vectorBlock), POINTER :: p_rx,p_rdef
   TYPE(t_linsolNode), POINTER :: p_rprecSubnode
@@ -3405,6 +3405,14 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('DefCorr: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
           CALL output_line ('DefCorr: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
@@ -7058,7 +7066,7 @@ CONTAINS
 
   ! local variables
   REAL(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr
-  INTEGER :: ireslength,ite,i
+  INTEGER :: ireslength,ite,i,j
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -7288,6 +7296,14 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('CG: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
           CALL output_line('CG: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
@@ -8041,7 +8057,7 @@ CONTAINS
   ! local variables
   REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   REAL(DP) :: drho1,drho0,dfr
-  INTEGER :: ireslength,ite,i
+  INTEGER :: ireslength,ite,i,j
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -8296,6 +8312,14 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('BiCGStab: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
           CALL output_line ('BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
@@ -8445,7 +8469,7 @@ CONTAINS
   ! local variables
   REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   REAL(DP) :: drho1,drho0,dfr
-  INTEGER :: ireslength,ite,i
+  INTEGER :: ireslength,ite,i,j
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -8713,6 +8737,14 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('BiCGStab: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
           CALL output_line ('BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
@@ -9454,7 +9486,7 @@ CONTAINS
 
   ! local variables
   REAL(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
-  INTEGER :: ireslength,ite,i,k
+  INTEGER :: ireslength,ite,i,j,k
   
   ! Here come our 1D/2D arrays
   REAL(DP), DIMENSION(:), POINTER :: p_Dc, p_Ds, p_Dq
@@ -9858,6 +9890,14 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('GMRES: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
           CALL output_line ('GMRES('// TRIM(sys_siL(idim,10))//&
             '): Solution diverging!')
           rsolverNode%iresult = 1
@@ -11653,7 +11693,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput
-  INTEGER :: ite,ilev,nlmax,i,nblocks
+  INTEGER :: ite,ilev,nlmax,i,j,nblocks
   REAL(DP) :: dres,dstep
   LOGICAL :: bfilter,bsort
   TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
@@ -12320,6 +12360,14 @@ CONTAINS
           
           ! Test if the iteration is diverged
           IF (linsol_testDivergence(rsolverNode,dres)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('Multigrid: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
             CALL output_line ('Multigrid: Solution diverging!')
             rsolverNode%iresult = 1
             EXIT
@@ -13357,7 +13405,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput
-  INTEGER :: ite,ilev,nlmax,i,nblocks
+  INTEGER :: ite,ilev,nlmax,i,j,nblocks
   REAL(DP) :: dres,dstep
   LOGICAL :: bfilter,bsort
   TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
@@ -14028,6 +14076,14 @@ CONTAINS
           
           ! Test if the iteration is diverged
           IF (linsol_testDivergence(rsolverNode,dres)) THEN
+          IF (rsolverNode%ioutputLevel .LT. 2) THEN
+            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+              j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
+              CALL output_line ('Multigrid: Iteration '// &
+                  TRIM(sys_siL(j,10))//',  !!RES!! = '//&
+                  TRIM(sys_sdEL(Dresqueue(i),15)) )
+            END DO
+          END IF
             CALL output_line ('Multigrid: Solution diverging!')
             rsolverNode%iresult = 1
             EXIT
