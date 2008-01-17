@@ -1585,7 +1585,7 @@ CONTAINS
 
   !************************************************************************
 
-  SUBROUTINE mprim_SVD_backsubst(Da,mdim,ndim,Dd,Db,Dx,kdim,Df,btransposedOpt)
+  SUBROUTINE mprim_SVD_backsubst(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
     ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
@@ -1596,7 +1596,7 @@ CONTAINS
 
 !<input>
     ! Dimensions of the rectangular matrix
-    INTEGER, INTENT(IN)                           :: kdim,ndim,mdim
+    INTEGER, INTENT(IN)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
     LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
@@ -1611,7 +1611,7 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
 
     ! Right-hand side vector
-    REAL(DP), DIMENSION(kdim), INTENT(IN)         :: Df
+    REAL(DP), DIMENSION(*), INTENT(IN)            :: Df
 !</input>
 
 !<output>
