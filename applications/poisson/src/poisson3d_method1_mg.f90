@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple Poisson
+!# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !# This module is a (provizorical) equivalent to the 2D example
 !# poisson_method1_mg.
@@ -266,7 +266,7 @@ CONTAINS
     ! component in a block vector.
     CALL linf_buildVectorScalar (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
-        rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS)
+        rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_3D)
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     DO i = NLMIN, NLMAX

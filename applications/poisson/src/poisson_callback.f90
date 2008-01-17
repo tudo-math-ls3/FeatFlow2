@@ -19,7 +19,7 @@
 !#
 !# 2.) coeff_RHS
 !#     -> Returns analytical values for the right hand side of the Laplace
-!#        equation.
+!#        equation. 2D case.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
@@ -29,20 +29,26 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValues
+!# 4.) coeff_RHS_3D
+!#     -> Returns analytical values for the right hand side of the Laplace
+!#        equation for the 1D poisson-problem (i.e. poisson0). 3D case.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 5.) getBoundaryValues
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 5.) getBoundaryValuesFBC
+!# 6.) getBoundaryValuesFBC
 !#    
 !#     -> Returns analytic values in the inner of the domain on
 !#        fictitious boundary objects
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcfassembly.inc'
 !#
-!# 6.) getReferenceFunction
+!# 7.) getReferenceFunction
 !#
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS
@@ -50,13 +56,25 @@
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 7.) getReferenceFunction_1D
+!# 8.) getReferenceFunction_1D
 !#
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_1D for the 1D poisson-problem.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
+!#
+!# 9.) getReferenceFunction_3D
+!'
+!#     -> Returns the values of the analytic function and its derivatives,
+!#        corresponding to coeff_RHS_3D for the 3D poisson-problem.
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 10.) gethadaptMonitorFunction
+!#     -> Controls the grid adaption strategy in poisson_method8.
+!#
 !# </purpose>
 !##############################################################################
 

@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple 1D Poisson
+!# This module is a demonstration program how to solve a simple 1D Poisson
 !# problem with constant coefficients on a simple domain.
 !# </purpose>
 !##############################################################################

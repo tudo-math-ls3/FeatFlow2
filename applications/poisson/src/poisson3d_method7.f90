@@ -4,9 +4,9 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple Poisson
+!# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
-!# This module is a (provizorical) equivalent to the 2D example
+!# This module is a (provisional) equivalent to the 2D example
 !# poisson_method7.
 !# </purpose>
 !##############################################################################
