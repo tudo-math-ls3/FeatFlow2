@@ -771,7 +771,7 @@ MODULE linearsolver
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
     ! standard = 1E3
-    REAL(DP)                        :: ddivRel = 1E3_DP
+    REAL(DP)                        :: ddivRel = 1E6_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute divergence criterion.  Treat iteration as
@@ -3228,7 +3228,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: ireslength,ite,i,j
+  INTEGER :: ireslength,ite,i,j,niteAsymptoticCVR
   REAL(DP) :: dres,dfr
   TYPE(t_vectorBlock), POINTER :: p_rx,p_rdef
   TYPE(t_linsolNode), POINTER :: p_rprecSubnode
@@ -3271,7 +3271,8 @@ CONTAINS
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
 
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
  
@@ -3406,7 +3407,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('DefCorr: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -3469,10 +3470,10 @@ CONTAINS
     
       ! Calculate asymptotic convergence rate
     
-      IF (dresqueue(1) .GE. 1E-70_DP) THEN
-        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
       END IF
 
       ! If the initial defect was zero, the solver immediately
@@ -7066,7 +7067,7 @@ CONTAINS
 
   ! local variables
   REAL(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr
-  INTEGER :: ireslength,ite,i,j
+  INTEGER :: ireslength,ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -7109,7 +7110,8 @@ CONTAINS
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
 
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
  
@@ -7297,7 +7299,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('CG: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -7402,10 +7404,10 @@ CONTAINS
     
       ! Calculate asymptotic convergence rate
     
-      IF (dresqueue(1) .GE. 1E-70_DP) THEN
-        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
       END IF
 
       ! If the initial defect was zero, the solver immediately
@@ -8057,7 +8059,7 @@ CONTAINS
   ! local variables
   REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   REAL(DP) :: drho1,drho0,dfr
-  INTEGER :: ireslength,ite,i,j
+  INTEGER :: ireslength,ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -8100,7 +8102,8 @@ CONTAINS
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
 
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
  
@@ -8313,7 +8316,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('BiCGStab: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -8377,10 +8380,10 @@ CONTAINS
     
       ! Calculate asymptotic convergence rate
     
-      IF (dresqueue(1) .GE. 1E-70_DP) THEN
-        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
       END IF
 
       ! If the initial defect was zero, the solver immediately
@@ -8469,7 +8472,7 @@ CONTAINS
   ! local variables
   REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   REAL(DP) :: drho1,drho0,dfr
-  INTEGER :: ireslength,ite,i,j
+  INTEGER :: ireslength,ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
   REAL(DP), DIMENSION(32) :: Dresqueue
@@ -8512,7 +8515,8 @@ CONTAINS
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
 
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
  
@@ -8738,7 +8742,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('BiCGStab: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -8808,10 +8812,10 @@ CONTAINS
     
       ! Calculate asymptotic convergence rate
     
-      IF (dresqueue(1) .GE. 1E-70_DP) THEN
-        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
       END IF
 
       ! If the initial defect was zero, the solver immediately
@@ -9486,7 +9490,7 @@ CONTAINS
 
   ! local variables
   REAL(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
-  INTEGER :: ireslength,ite,i,j,k
+  INTEGER :: ireslength,ite,i,j,k,niteAsymptoticCVR
   
   ! Here come our 1D/2D arrays
   REAL(DP), DIMENSION(:), POINTER :: p_Dc, p_Ds, p_Dq
@@ -9536,7 +9540,8 @@ CONTAINS
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
 
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
  
@@ -9891,7 +9896,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('GMRES: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -9964,10 +9969,10 @@ CONTAINS
     IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
     
       ! Calculate asymptotic convergence rate
-      IF (dresqueue(1) .GE. 1E-70_DP) THEN
-        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
       END IF
 
       ! If the initial defect was zero, the solver immediately
@@ -11692,7 +11697,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput
+  INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput,niteAsymptoticCVR
   INTEGER :: ite,ilev,nlmax,i,j,nblocks
   REAL(DP) :: dres,dstep
   LOGICAL :: bfilter,bsort
@@ -11746,7 +11751,8 @@ CONTAINS
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum/maximum number of iterations
     nminIterations = MAX(rsolverNode%nminIterations,0)
@@ -12361,7 +12367,7 @@ CONTAINS
           ! Test if the iteration is diverged
           IF (linsol_testDivergence(rsolverNode,dres)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('Multigrid: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -12423,11 +12429,11 @@ CONTAINS
       
         ! Calculate asymptotic convergence rate
       
-        IF (dresqueue(1) .GE. 1E-70_DP) THEN
-          I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
-          rsolverNode%dasymptoticConvergenceRate = &
-            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
-        END IF
+      IF (niteAsymptoticCVR .NE. 0) THEN
+        I = MAX(33-ite,33-niteAsymptoticCVR)
+        rsolverNode%dasymptoticConvergenceRate = &
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
+      END IF
 
         ! If the initial defect was zero, the solver immediately
         ! exits - and so the final residuum is zero and we performed
@@ -13404,7 +13410,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput
+  INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput,niteAsymptoticCVR
   INTEGER :: ite,ilev,nlmax,i,j,nblocks
   REAL(DP) :: dres,dstep
   LOGICAL :: bfilter,bsort
@@ -13459,7 +13465,8 @@ CONTAINS
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum/maximum number of iterations
     nminIterations = MAX(rsolverNode%nminIterations,0)
@@ -14077,7 +14084,7 @@ CONTAINS
           ! Test if the iteration is diverged
           IF (linsol_testDivergence(rsolverNode,dres)) THEN
           IF (rsolverNode%ioutputLevel .LT. 2) THEN
-            DO i=MAX(1,SIZE(Dresqueue)-ite+1),SIZE(Dresqueue)
+            DO i=MAX(1,SIZE(Dresqueue)-ite-1+1),SIZE(Dresqueue)
               j = ITE-MAX(1,SIZE(Dresqueue)-ite+1)+i
               CALL output_line ('Multigrid: Iteration '// &
                   TRIM(sys_siL(j,10))//',  !!RES!! = '//&
@@ -14139,10 +14146,10 @@ CONTAINS
       
         ! Calculate asymptotic convergence rate
       
-        IF (dresqueue(1) .GE. 1E-70_DP) THEN
-          I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+        IF (niteAsymptoticCVR .NE. 0) THEN
+          I = MAX(33-ite,33-niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
-            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(33-I,DP))
         END IF
 
         ! If the initial defect was zero, the solver immediately
