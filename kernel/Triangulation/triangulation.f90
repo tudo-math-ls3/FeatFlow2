@@ -2658,7 +2658,7 @@ CONTAINS
     
     ! Set up nodal property
     p_Idata(1) = 1
-    p_Idata(nintv+1) = 1
+    p_Idata(nintv+1) = 2
 
     ! That's it
       
