@@ -2838,7 +2838,7 @@ CONTAINS
           p_Dcoefficients => Dcoefficients(icoeffFirst:icoeffLast,:,i)
           CALL mprim_SVD_backsubst(p_Dpolynomials, &
               indofTrial, Inpoints(ipatch), Dd, Dv, Dderivatives(:,ipatch,i), &
-              Inpoints(ipatch), p_Dcoefficients, .TRUE.)
+              p_Dcoefficients, .TRUE.)
         END DO
 
         ! Update position index
@@ -2907,7 +2907,7 @@ CONTAINS
           p_Dcoefficients => Dcoefficients(:,:,i)
           CALL mprim_SVD_backsubst(Dpolynomials(:,:,:,idxFirst:idxLast), &
               indofTrial, npoints, Dd, Dv, Dderivatives(:,ipatch,i), &
-              npoints, p_Dcoefficients(:,idxFirst:idxLast), .TRUE.)
+              p_Dcoefficients(:,idxFirst:idxLast), .TRUE.)
         END DO
       END DO
     END SUBROUTINE calc_patchAverages_sim
