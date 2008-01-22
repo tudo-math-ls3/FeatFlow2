@@ -29,14 +29,14 @@ dtimeMax = 1.0 1.0                           # TIMEMX
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 2                          # NITNS
+niterations = 5                          # NITNS
 
 # Minimum level in time.
-TIMENLMIN = 1
+TIMENLMIN = 2
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 5 # 5
+TIMENLMAX = 4 # 5
 
 # ----------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ nmaxIterations     = 1 0 0 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-15 2 10 2 5 1E-8 0.001
+depsRel            = 1E-2 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -115,7 +115,12 @@ ioutputLevel       = 0 3
 
 # Filename prefix for GMV output.
 
-sgmvFileName = 'gmv/u3_1.gmv'
+sgmvFileName = 'gmv/u4_1.gmv'
+
+# Filename prefix for output of the solution vector. If this is '',
+# the solution vector is not written out.
+
+sfinalSolutionFileName = ''
 
 ##############
 [TIME-DEFCORR]
@@ -215,7 +220,8 @@ dalphamax = 1.0
 # =3: CG (Jacobi)
 # =4: CG (Forward-Backward Gauss-Seidel)
 # =6: Defect correction with UMFPACK preconditioning
-cspaceTimeSmoother = 0 0 6
+# =7: BiCGStab with Block Forward-Backward Gauss-Seidel preconditioning
+cspaceTimeSmoother = 2 2 0 6
 
 # Damping parameter
 domega = 0.7 0.5 0.7
@@ -232,6 +238,22 @@ nsmSteps = 4
 # =0: don't do smoothing as pre- and/or postsmoother, respectively.
 ipresmoothing = 0
 ipostsmoothing = 1
+
+# Relative convergence criterion. If this is reached, the smoother
+# will stop the smoothing prematurely. Standard=0.0=always perform
+# nsmSteps smoothing steps.
+depsRel = 0.0
+
+# Absolute convergence criterion. If this is reached, the smoother
+# will stop the smoothing prematurely. Standard=0.0=always perform
+# nsmSteps smoothing steps.
+depsAbs = 0.0
+
+# Type of stopping criterion, if nsmSteps is not reached.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
 
 # Output level of the smoother
 
@@ -256,16 +278,16 @@ slinearSolver        = 'CC-MULTIGRID'
 # =4: direct (UMFPACK Gauss elimination)
 # =5: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
 # =6: Defect correction with UMFPACK preconditioning
-ctypeCoarseGridSolver = 5 4 0 2 5 4
+ctypeCoarseGridSolver = 4 4 0 2 5 4
 
 # Minimum number of time-iterations on the coarsest time-mesh
 nminIterations = 3
 
 # Maximum number of time-iterations on the coarsest time-mesh
-nmaxIterations = 100 20
+nmaxIterations = 10 20
 
 # Damping parameter
-domega = 0.7 1.0 1.0
+domega = 1.0 0.7 1.0 1.0
 
 # Damping parameter of a preconditioner; only used for cascaded solvers
 # (e.g. CG(...)) or SOR
@@ -274,13 +296,13 @@ domegaPrecond = 1.0 0.7 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-13 3 1E-10 
+depsRel            = 1E-3 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-13 13 5
+depsAbs            = 1E-5 13 13 5
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
@@ -294,11 +316,10 @@ ioutputLevel = 3
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
 
-istoppingCriterion = 1
+istoppingCriterion = 0
 
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
 slinearSolver        = 'CC-MULTIGRID'
-
