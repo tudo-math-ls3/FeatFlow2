@@ -473,7 +473,7 @@ CONTAINS
     
     CHARACTER(SYS_STRLEN) :: sgmvName,stemp
 
-    ! If we have a uniform discreisation, calculate the body forces on the
+    ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
     IF ((rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
          ccomplexity .EQ. SPDISC_UNIFORM) .AND. &

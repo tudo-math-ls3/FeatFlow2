@@ -199,4 +199,27 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE sptidis_infoDiscretisation (rspaceTimeDiscr)
+  
+!<description>
+  ! Prints statistical information about a time discretisation.
+!</description>
+
+!<inputoutput>
+  ! Supersystem-structure to be cleaned up.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+!</inputoutput>
+
+!</subroutine>
+    
+    CALL output_line ('NEQ in time   : '//sys_siL(rspaceTimeDiscr%NEQTime,10))
+    CALL output_line ('NEQ in space  : '//&
+      sys_siL(dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),10))
+
+  END SUBROUTINE
+
 END MODULE

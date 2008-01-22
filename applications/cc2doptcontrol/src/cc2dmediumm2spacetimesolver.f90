@@ -627,6 +627,33 @@ MODULE cc2dmediumm2spacetimesolver
     ! level 4).
     TYPE(t_sptiProjection)   :: rinterlevelProjection
     
+    ! Relative daptive cycle convergence criterion for coarse levels.
+    ! This value is usually =1E99_DP which deactivates adaptive cycles.
+    ! The user can set this variable on initialisation of Multigrid to
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! levels except for the fine grid is repeated until
+    !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
+    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! level before prolongating the solution to the fine grid.
+    ! This is an extension to the usual F/V/W-cycle scheme.
+    REAL(DP)                      :: depsRelCycle             = 1E99_DP
+
+    ! Absolute adaptive cycle convergence criterion for coarse levels.
+    ! This value is usually =1E99_DP which deactivates adaptive cycles.
+    ! The user can set this variable on initialisation of Multigrid to
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! levels except for the fine grid is repeated until
+    !  |res. after postsmoothing| < depsAbsCycle.
+    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! level before prolongating the solution to the fine grid.
+    ! This is an extension to the usual F/V/W-cycle scheme.
+    REAL(DP)                      :: depsAbsCycle             = 1E99_DP
+    
+    ! Maximum number of adaptive cycles performed on that level.
+    ! Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP. -1=infinity=standard
+    INTEGER                       :: nmaxAdaptiveCycles       = -1
+    
     ! STATUS/INTERNAL: A temporary vector used for prolongation/restriction
     TYPE(t_vectorBlock)      :: rprjVector
     
@@ -637,6 +664,11 @@ MODULE cc2dmediumm2spacetimesolver
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of remaining cycles to perform on this level.
     INTEGER                        :: ncyclesRemaining
+    
+    ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
+    ! level. Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    REAL(DP)                       :: dinitResCycle = 0.0_DP
     
     ! STATUS/INTERNAL: Number of current cycle on that level. 
     ! Only used if adaptive cycles are activated by setting 
@@ -3101,7 +3133,8 @@ CONTAINS
     TYPE(t_vectorBlock) :: rtempVectorSol
     TYPE(t_vectorBlock) :: rtempVectorRHS
     TYPE(t_spacetimeVector), POINTER :: p_rx
-    REAL(DP) :: domegaSOR
+    LOGICAL :: bcalcNorm
+    REAL(DP) :: domegaSOR,dres,dresInit
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Dd1,p_Dd2,p_Dd3,p_Dd,p_Dsol
@@ -3188,6 +3221,10 @@ CONTAINS
     rmatrixComponents%dupsam2 = &
         collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
 
+    ! Probably we have to calclate the norm of the residual while calculating...
+    bcalcNorm = (rsolverNode%nminIterations .NE. rsolverNode%nmaxIterations) .OR.&
+                (rsolverNode%ioutputLevel .GE. 2)
+
     ! ----------------------------------------------------------------------
     ! We use a Block-FBGS scheme for preconditioning.
     !
@@ -3241,7 +3278,32 @@ CONTAINS
     ! Ok, let's start. Initial solution is zero.
     CALL sptivec_clearVector (p_rx)
     
-    DO iiteration = 1,rsolverNode%nminIterations
+    ! Norm of the initial residuum
+    IF (bcalcNorm) THEN
+      dresInit = sptivec_vectorNorm (rd,LINALG_NORML2)
+      IF (dresInit .EQ. 0.0_DP) dresInit = 1.0_DP
+      rsolverNode%dinitialDefect = dresInit
+      dres = dresInit
+    END IF
+    
+    DO iiteration = 1,rsolverNode%nmaxIterations
+
+      ! Probably print the current residuum (of the previous step)
+      IF (rsolverNode%nminIterations .NE. rsolverNode%nmaxIterations) THEN
+        IF (rsolverNode%ioutputLevel .GE. 2) THEN
+          dres = SQRT(dres / REAL(p_rspaceTimeDiscr%NEQtime,DP))
+          CALL output_line ('Space-Time-Block-FBGS: Iteration '// &
+              TRIM(sys_siL(iiteration-1,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(dres,15)) )
+        END IF
+        
+        ! Check for convergence
+        IF ((iiteration .GT. rsolverNode%nminIterations) .AND. &
+            (iiteration .LT. rsolverNode%nmaxIterations)) THEN
+          IF (sptils_testConvergence (rsolverNode, dres)) EXIT
+          IF (sptils_testDivergence (rsolverNode, dres)) EXIT
+        END IF
+      END IF
 
       ! Filter the current solution for boundary conditions in space and time.
       ! rtempVectorRHS is used as temp vector here.
@@ -3372,6 +3434,9 @@ CONTAINS
       ! Forward in time
       ! -----
 
+      ! Norm of the residuum
+      dres = 0.0_DP
+
       ! Load the RHS and solution of the 0th timestep.
       CALL sptivec_getTimestepData (rd, 1+0, rtempVectorD2)
       
@@ -3457,7 +3522,10 @@ CONTAINS
             rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
-        !
+        ! Sum up the norm to the norm of the global vector.
+        IF (bcalcNorm) &
+          dres = dres + lsysbl_vectorNorm (rtempVectorRHS,LINALG_NORML2)**2
+        
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         CALL c2d2_precondDefect (&
@@ -3480,7 +3548,7 @@ CONTAINS
         CALL lsysbl_copyVector (rtempVectorX3,rtempVectorX2)
 
       END DO
-
+      
     END DO ! iiteration
     
     ! Overwrite the rd by our solution.
@@ -6386,7 +6454,7 @@ END SUBROUTINE
 
     INTEGER :: i
     INTEGER :: iiterations
-    REAL(DP) :: dres
+    REAL(DP) :: dres,dresInit
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
@@ -6424,6 +6492,9 @@ END SUBROUTINE
       CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
           rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
       
+      IF (iiterations .EQ. 1) dresInit = dres
+      IF (dresInit .EQ. 0) dresInit = 1.0_DP
+      
       ! Implement boundary conditions into the defect
       CALL tbc_implementInitCondDefect (&
           p_rspaceTimeDiscr,rtemp,rspatialTemp)
@@ -6437,6 +6508,15 @@ END SUBROUTINE
             ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
       END IF
       
+      ! Check for convergence
+      IF (rsolverNode%istoppingCriterion .EQ. 0) THEN
+        IF ((dres .LT. rsolverNode%depsAbs) .AND. &
+            (dres .LT. rsolverNode%depsRel*dresInit)) EXIT
+      ELSE
+        IF ((dres .LT. rsolverNode%depsAbs) .OR. &
+            (dres .LT. rsolverNode%depsRel*dresInit)) EXIT
+      END IF
+      
       CALL sptils_precondDefect(rsolverNode,rtemp)
       CALL sptivec_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
@@ -6444,14 +6524,17 @@ END SUBROUTINE
 
     ! Probably print the final residuum
     IF (rsolverNode%ioutputLevel .GE. 2) THEN
-      CALL sptivec_copyVector(rb,rtemp)
-      CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-          rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
-      
-      IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
-                
-      CALL output_line ('Space-Time-Smoother: Step '//TRIM(sys_siL(i-1,10))//&
-          ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+      IF (i .GE. iiterations) THEN
+        ! We only have to recalculate the residuum if we haven't stopped
+        ! prematurely.
+        CALL sptivec_copyVector(rb,rtemp)
+        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+            rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
+        IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
+                  
+        CALL output_line ('Space-Time-Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+            ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+      END IF
     END IF
     
   END SUBROUTINE
@@ -6743,6 +6826,15 @@ END SUBROUTINE
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
                             
+                  ! In case adaptive cycles are activated, save the 'initial' residual
+                  ! of that level into the level structure. Then we can later check
+                  ! if we have to repeat the cycle on the coarse mesh.
+                  IF ((p_rsubnode%p_Rlevels(ilev-1)%depsRelCycle .NE. 1E99_DP) .OR.&
+                      (p_rsubnode%p_Rlevels(ilev-1)%depsAbsCycle .NE. 1E99_DP)) THEN
+                    p_rsubnode%p_Rlevels(ilev-1)%dinitResCycle = dres
+                    p_rsubnode%p_Rlevels(ilev-1)%icycleCount = 1
+                  END IF
+
                   ! If the output level is high enough, print that residuum norm.   
                   IF (MOD(ite,niteResOutput).EQ. 0) THEN
                     CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
@@ -6914,12 +7006,12 @@ END SUBROUTINE
                 IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
                     (MOD(ite,niteResOutput).EQ.0)) THEN
                     
-                CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
-                                         p_rsubnode%p_Rlevels(ilev)%rtempVector)
-                CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-                    p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                    p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
-                    SPTID_FILTER_DEFECT,dres)
+                  CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
+                                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
+                  CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+                      p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
+                      p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                      SPTID_FILTER_DEFECT,dres)
 
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
@@ -6949,6 +7041,55 @@ END SUBROUTINE
                   ! Cycle finished. Reset counter for next cycle.
                   p_rsubnode%p_Rlevels(ilev)%ncyclesRemaining = &
                       p_rsubnode%p_Rlevels(ilev)%ncycles
+
+                  IF (((p_rsubnode%p_Rlevels(ilev)%depsRelCycle .NE. 1E99_DP) .OR. &
+                       (p_rsubnode%p_Rlevels(ilev)%depsRelCycle .NE. 1E99_DP)) .AND. &
+                      (ilev .LT. NLMAX)) THEN
+                      
+                    ! Adaptive cycles activated. 
+                    !
+                    ! We are on a level < nlmax.
+                    ! At first, calculate the residuum on that level.
+                    CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
+                                            p_rsubnode%p_Rlevels(ilev)%rtempVector)
+                    CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+                        p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
+                        p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
+                        SPTID_FILTER_DEFECT,dres)
+
+                    IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                              (dres .LE. 1E99_DP))) dres = 0.0_DP
+                              
+                    ! Compare it with the initial residuum. If it's not small enough
+                    ! and if we haven't reached the maximum number of cycles,
+                    ! repeat the complete cycle.
+                    IF ( ((p_rsubnode%p_Rlevels(ilev)%nmaxAdaptiveCycles .LE. -1) &
+                          .OR. &
+                          (p_rsubnode%p_Rlevels(ilev)%icycleCount .LT. &
+                           p_rsubnode%p_Rlevels(ilev)%nmaxAdaptiveCycles)) &
+                        .AND. &
+                        ((dres .GT. p_rsubnode%p_Rlevels(ilev)%depsRelCycle * &
+                                   p_rsubnode%p_Rlevels(ilev)%dinitResCycle) .AND. &
+                         (dres .GT. p_rsubnode%p_Rlevels(ilev)%depsAbsCycle) ) ) THEN
+
+                      IF (rsolverNode%ioutputLevel .GE. 3) THEN
+                        CALL output_line ( &
+                          TRIM( &
+                          sys_siL(p_rsubnode%p_Rlevels(ilev)%icycleCount,10)) &
+                          //'''th repetition of cycle on level '// &
+                          TRIM(sys_siL(ilev,5))//'.')
+                      END IF
+
+                      p_rsubnode%p_Rlevels(ilev)%icycleCount = &
+                          p_rsubnode%p_Rlevels(ilev)%icycleCount+1
+                      CYCLE cycleloop
+                    END IF
+                    
+                    ! Otherwise: The cycle(s) is/are finished; 
+                    ! the END DO goes up one level.
+                    
+                  END IF
+
                 END IF
               ELSE
 

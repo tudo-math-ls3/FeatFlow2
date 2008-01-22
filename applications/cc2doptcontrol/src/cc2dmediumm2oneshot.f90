@@ -2180,14 +2180,6 @@ CONTAINS
     ! Implement the bondary conditions into all initial solution vectors
     CALL tbc_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
     
-    ! Type of smoother to use?
-    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
-        'cspaceTimeSmoother', cspaceTimeSmoother, 0)
-        
-    ! Type of coarse grid solver?
-    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                              'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
-  
     ! We set up a space-time preconditioner, e.g. in the following configuration:
     ! Main Preconditioner: Multigrid
     !     -> Presmoother:  Block Jacobi/GS
@@ -2202,6 +2194,14 @@ CONTAINS
     
     ! Loop over the time levels.
     DO ilev=1,SIZE(RspatialPrecond)
+    
+      ! Type of smoother to use?
+      CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+          'cspaceTimeSmoother', cspaceTimeSmoother, 0)
+          
+      ! Type of coarse grid solver?
+      CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
     
       IF (RspaceTimeDiscr(ilev)%ilevel .LT. rproblem%NLMAX) THEN
         ispacelev = MAX(rproblem%nlmin,rproblem%nlmax-SIZE(RspatialPrecond)+ilev)
@@ -2356,6 +2356,13 @@ CONTAINS
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'nsmSteps', nsmSteps, 1)
 
+        ! DEBUG!!!
+!        IF (ilev .LE. SIZE(RspatialPrecond)-1) THEN
+!          cspaceTimeSmoother = 7
+!          ! nsmSteps = nsmSteps/2
+!        END IF
+        ! DEBUG!!!
+
         SELECT CASE (cspaceTimeSmoother)
         CASE (0)
           ! Block Jacobi
@@ -2380,9 +2387,16 @@ CONTAINS
             domegaPrecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
         CASE (6)
-          ! CG with Block Jacobi as preconditioner
+          ! DefCorr with UMFPACK as preconditioner
           CALL sptils_initUMFPACK4 (rproblem,p_rprecond)
           CALL sptils_initDefCorr (rproblem,p_rsmoother,p_rprecond)
+        CASE (7)
+          ! BiCGStab with FBGS as preconditioner
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
+            domega,domegaPrecond,RspatialPrecond(ilev))
+            p_rprecond%nminIterations = 1
+            p_rprecond%nmaxIterations = 1
+          CALL sptils_initBiCGStab (rproblem,p_rsmoother,p_rprecond)
         CASE DEFAULT
           PRINT *,'Unknown smoother: ',cspaceTimeSmoother
           STOP
@@ -2402,6 +2416,24 @@ CONTAINS
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
                                   'ipostsmoothing', itemp, 1)
         IF (itemp .EQ. 0) NULLIFY(p_rpostsmoother)
+        
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'depsRel', p_rsmoother%depsRel, 0.0_DP)
+
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'depsAbs', p_rsmoother%depsAbs, 0.0_DP)
+
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+            'istoppingCriterion', p_rsmoother%istoppingCriterion, 1)
+
+        ! DEBUG!!!
+!        IF (ilev .EQ. SIZE(RspatialPrecond)-1) THEN
+!          p_rmgSolver%p_rsubnodeMultigrid%p_Rlevels(&
+!            SIZE(p_rmgSolver%p_rsubnodeMultigrid%p_Rlevels)-1)%depsRelCycle = 1E-10_DP
+!          p_rmgSolver%p_rsubnodeMultigrid%p_Rlevels(&
+!            SIZE(p_rmgSolver%p_rsubnodeMultigrid%p_Rlevels)-1)%depsAbsCycle = 1E-14_DP
+!        END IF
+        ! DEBUG!!!
 
         IF ((.NOT. ASSOCIATED(p_rpresmoother)) .AND. &
             (.NOT. ASSOCIATED(p_rpostsmoother))) THEN

@@ -134,7 +134,6 @@ CONTAINS
 
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: RspaceTimeDiscr
     TYPE(t_spacetimeVector) :: rx,rd,rb
-    TYPE(t_vectorBlock) :: rvectorTmp
     INTEGER :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
     INTEGER :: ctypePreconditioner
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX
@@ -225,6 +224,24 @@ CONTAINS
         END DO
       END SELECT
       
+      ! Print some statistical information about the discretisation
+      CALL output_lbrk ()
+      CALL output_line ('Triangulation')
+      CALL output_line ('-------------')
+      DO i=rproblem%NLMIN,rproblem%NLMAX
+        CALL tria_infoStatistics (rproblem%RlevelInfo(i)%rtriangulation,&
+          i .EQ. rproblem%NLMIN,i)
+      END DO
+      
+      CALL output_lbrk ()
+      CALL output_line ('Time discretisation')
+      CALL output_line ('-------------------')
+      DO i=TIMENLMIN,TIMENLMAX
+        CALL output_line ('Level: '//sys_siL(i,10))
+        CALL sptidis_infoDiscretisation (RspaceTimeDiscr(i))
+        CALL output_lbrk ()
+      END DO
+      
       ! Call the multigrid solver to solve on all these levels
       CALL c2d2_solveSupersystemMultigrid (rproblem, &
           RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd, ctypePreconditioner)
@@ -232,37 +249,7 @@ CONTAINS
     
     ! POSTPROCESSING
     !
-    ! Create a temp vector
-    CALL lsysbl_createVecBlockByDiscr (&
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation,&
-        rvectorTmp,.TRUE.)
-    
-    ! Attach the boundary conditions to that vector
-    rvectorTmp%p_rdiscreteBC => &
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
-    rvectorTmp%p_rdiscreteBCfict => &
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
-      
-    ! Postprocessing of all solution vectors.
-    DO i = 0,RspaceTimeDiscr(TIMENLMAX)%NEQtime-1
-    
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + &
-          i*RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtstep
-      rproblem%rtimedependence%itimeStep = i
-    
-      ! Evaluate the space time function in rvector in the point
-      ! in time dtime. Independent of the discretisation in time,
-      ! this will give us a vector in space.
-      !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
-      CALL tmevl_evaluate(rx,rproblem%rtimedependence%dtime,rvectorTmp)
-    
-      CALL c2d2_postprocessingNonstat (rproblem,rvectorTmp)  
-      
-    END DO
-    
-    ! Release memory, finish.
-    CALL lsysbl_releaseVector (rvectorTmp)
+    CALL c2d2_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
     
     CALL c2d2_doneTargetFlow (rproblem)
     
@@ -273,6 +260,76 @@ CONTAINS
     CALL sptivec_releaseVector (rd)
     CALL sptivec_releaseVector (rx)
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_spacetimepostproc (rproblem,rspacetimediscr,rvector)
+  
+!<description>
+  ! Performs postprocessing of the space time solution vector rvector.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!<input>
+  ! The space-time solution vector on which postprocessing should be applied.
+  TYPE(t_spacetimevector), INTENT(IN) :: rvector
+  
+  ! The space-time discretisation structure belonging to that vector.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    CHARACTER(SYS_STRLEN) :: stemp,sfileName
+    TYPE(t_vectorBlock) :: rvectorTmp
+    
+    ! Create a temp vector
+    CALL lsysbl_createVecBlockByDiscr (&
+        rspacetimediscr%p_rlevelInfo%p_rdiscretisation,rvectorTmp,.TRUE.)
+
+    ! Attach the boundary conditions to that vector
+    rvectorTmp%p_rdiscreteBC => rspacetimediscr%p_rlevelInfo%p_rdiscreteBC
+    rvectorTmp%p_rdiscreteBCfict => rspacetimediscr%p_rlevelInfo%p_rdiscreteFBC
+
+    ! Postprocessing of all solution vectors.
+    DO i = 0,tdiscr_igetNDofGlob(rvector%p_rtimeDiscretisation)-1
+    
+      rproblem%rtimedependence%dtime = &
+          rvector%p_rtimeDiscretisation%dtimeInit + &
+          i * rvector%p_rtimeDiscretisation%dtstep
+      rproblem%rtimedependence%itimeStep = i
+    
+      ! Evaluate the space time function in rvector in the point
+      ! in time dtime. Independent of the discretisation in time,
+      ! this will give us a vector in space.
+      !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
+      CALL tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
+    
+      CALL c2d2_postprocessingNonstat (rproblem,rvectorTmp)  
+      
+    END DO
+    
+    ! If there's a ´filename for the solution file given,
+    ! write out the current solution.
+    CALL parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
+                                        'sfinalSolutionFileName', stemp, '')
+    READ (stemp,*) sfileName
+    IF (sfilename .NE. '') THEN
+      stemp = '('''//TRIM(ADJUSTL(sfilename))//''',I5.5)'
+      CALL sptivec_saveToFileSequence(rvector,stemp,.TRUE.)
+    END IF
+    
+    CALL lsysbl_releaseVector(rvectorTmp);
+    
   END SUBROUTINE
   
 END MODULE
