@@ -75,7 +75,7 @@ MODULE spacetimevectors
   USE fsystem
   USE genoutput
   USE externalstorage
-  USE spatialDiscretisation
+  USE spatialdiscretisation
   USE linearsystemscalar
   USE linearsystemblock
   USE collection
