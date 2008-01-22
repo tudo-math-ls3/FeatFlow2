@@ -75,8 +75,6 @@ MODULE cc2dmediumm2oneshot
   USE spacetimediscretisation
   USE cc2dmediumm2spacetimesolver
   
-  USE cc2dminim2scriptfile
-  
   USE spacetimevectors
   USE timerhsevaluation
   USE dofmapping
