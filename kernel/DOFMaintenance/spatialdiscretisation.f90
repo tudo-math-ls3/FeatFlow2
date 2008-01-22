@@ -1878,7 +1878,7 @@ CONTAINS
          //TRIM(sys_sl(rspatialDiscr%bidenticalTrialAndTest)))
      CALL output_line ('inumFESpaces:           '&
          //TRIM(sys_siL(rspatialDiscr%inumFESpaces,15)))
-     CALL output_line ('h_IelementDistr:       '&
+     CALL output_line ('h_IelementDistr:        '&
          //TRIM(sys_siL(rspatialDiscr%h_IelementDistr,15)))
      CALL output_line ('h_IelementCounter:      '&
          //TRIM(sys_siL(rspatialDiscr%h_IelementCounter,15)))
