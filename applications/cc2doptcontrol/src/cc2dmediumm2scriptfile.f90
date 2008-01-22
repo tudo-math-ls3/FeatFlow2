@@ -28,7 +28,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dminim2scriptfile
+MODULE cc2dmediumm2scriptfile
 
   USE fsystem
   USE storage
