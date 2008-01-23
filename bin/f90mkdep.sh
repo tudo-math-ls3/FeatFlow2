@@ -9,7 +9,7 @@
 # the order of the compilation of the .f90 files by hand.
 # MAKE to recompile all dependend .f90 files!
 #
-# For this meothod to work properly, it's necessary that each
+# For this method to work properly, it's necessary that each
 # module has the same name as the filename!
 
 # creates dependency as: if file xxx.f90 is using module yyy then
