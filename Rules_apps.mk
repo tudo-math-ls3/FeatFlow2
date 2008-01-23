@@ -108,6 +108,8 @@ purge_all: purge
 
 debug: all
 
+mpi: all
+
 run: all
 	@(time ./$(EXEC))
 
