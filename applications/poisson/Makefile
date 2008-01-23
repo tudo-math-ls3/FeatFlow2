@@ -8,7 +8,8 @@ include $(FEATFLOW)/Globals.mk
 
 # application include dirs
 INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
-        -I./src/triangulation -I./src -I./include
+        -I./src/triangulation -I./src -I./include \
+        -I$(MPI_HOME)/include
 
 # The source files 
 SRC =   poisson_callback.f90 \
@@ -29,6 +30,8 @@ vpath %.f90 src/geometry src/misc src/parametrization src/triangulation src
 
 vpath %.inc include \
       src/geometry src/misc src/parametrization src/triangulation src
+
+vpath %.h $(MPI_HOME)/include
 
 # The name of the final executable
 EXEC=poisson-$(ID)
