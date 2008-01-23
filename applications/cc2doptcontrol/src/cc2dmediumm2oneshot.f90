@@ -2535,8 +2535,8 @@ CONTAINS
         rx, rb, rtempvectorX, rtempvector)    
         
     ! DEBUG!!!
-    CALL sptivec_saveToFileSequence (rb,&
-        '(''./debugdata/initrhs.txt.'',I5.5)',.TRUE.)
+    !CALL sptivec_saveToFileSequence (rb,&
+    !    '(''./debugdata/initrhs.txt.'',I5.5)',.TRUE.)
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -2549,8 +2549,8 @@ CONTAINS
       -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
 
     ! DEBUG!!!
-    CALL sptivec_saveToFileSequence (rb,&
-        '(''./debugdata/initdef.txt.'',I5.5)',.TRUE.)
+    !CALL sptivec_saveToFileSequence (rb,&
+    !    '(''./debugdata/initdef.txt.'',I5.5)',.TRUE.)
         
     dinitDefNorm = ddefNorm
     CALL output_separator (OU_SEP_EQUAL)
