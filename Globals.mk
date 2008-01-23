@@ -126,6 +126,8 @@ LD=$(FC)   # linker (usually same as the Fortran Compiler)
 AR=ar      # library creation tool (archiver)
 ARC=       # for C libraries, if undifined AR is used
 
+MPIFC=mpif90 # Fortran 90 compiler with MPI support
+
 ########################################################################
 # compiler settings for various machine types, list to be extended
 # make sure to include some BLAS implementation like the one provided
@@ -309,6 +311,12 @@ debug: OPTFLAGSCPP=$(OPTFLAGSCPPDEBUG)
 debug: OPTFLAGSF=$(OPTFLAGSFDEBUG)
 
 ########################################################################
+# hack mpi flags if 'make mpi' is applied
+########################################################################
+
+mpi: FC=$(MPIFC)
+
+########################################################################
 # hack to have this target in all Makefiles, the dot is to not
 # consider it as a default rule when called without specific target
 ########################################################################
@@ -379,4 +387,5 @@ endif
 	@echo ' FFCORE=xxx    - overwrites the autodetected value for FFCORE by xxx'
 	@echo '                 (See Globals.mk for details)'
 	@echo ' HDF5=YES      - compile and link HDF5 libraries'
+	@echo '                 (See Globals.mk for details)'
 
