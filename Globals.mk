@@ -314,7 +314,7 @@ debug: OPTFLAGSF=$(OPTFLAGSFDEBUG)
 # hack mpi flags if 'make mpi' is applied
 ########################################################################
 
-mpi: FC=$(MPIFC)
+# mpi: FC=$(MPIFC)
 
 ########################################################################
 # hack to have this target in all Makefiles, the dot is to not
