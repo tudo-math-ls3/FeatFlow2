@@ -9,7 +9,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson1d_method1_simple
+MODULE poisson1d_method0_simple
 
   USE fsystem
   USE genoutput
@@ -40,7 +40,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson1d_1_simple
+  SUBROUTINE poisson1d_0_simple
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson

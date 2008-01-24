@@ -11,7 +11,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson3d_method1_simple
+MODULE poisson3d_method0_simple
 
   USE fsystem
   USE genoutput
@@ -41,7 +41,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson3d_1_simple
+  SUBROUTINE poisson3d_0_simple
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson

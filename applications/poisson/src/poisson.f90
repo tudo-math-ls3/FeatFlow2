@@ -45,9 +45,9 @@
 
 PROGRAM poisson
    
-  USE poisson1d_method1_simple
+  USE poisson1d_method0_simple
   USE poisson1d_method1_mg
-  USE poisson2d_method1_simple
+  USE poisson2d_method0_simple
   USE poisson2d_method1_mg
   USE poisson2d_method2
   USE poisson2d_method3
@@ -56,7 +56,7 @@ PROGRAM poisson
   USE poisson2d_method6
   USE poisson2d_method7
   USE poisson2d_method8
-  USE poisson3d_method1_simple
+  USE poisson3d_method0_simple
   USE poisson3d_method1_mg
   USE poisson3d_method7
   
@@ -77,9 +77,9 @@ PROGRAM poisson
   
   ! Call the problem to solve. Poisson 1D method 1 - simple:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-1D-Problem with method 1 - simple')
+  CALL output_line ('Calculating Poisson-1D-Problem with method 0 - simple')
   CALL output_line ('-----------------------------------------------------')
-  CALL poisson1d_1_simple
+  CALL poisson1d_0_simple
 
   ! Call the problem to solve. Poisson 1D method 1 - multigrid:
   CALL output_lbrk ()
@@ -89,9 +89,9 @@ PROGRAM poisson
 
   ! Call the problem to solve. Poisson 2D method 1 - simple:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 1')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_1_simple
+  CALL output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
+  CALL output_line ('-----------------------------------------------------')
+  CALL poisson2d_0_simple
   
   ! Call the problem to solve. Poisson 2D method 1 - multigrid:
   CALL output_lbrk ()
@@ -143,9 +143,9 @@ PROGRAM poisson
 
   ! Call the problem to solve. Poisson3D-1:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - simple')
+  CALL output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
   CALL output_line ('-----------------------------------------------------')
-  CALL poisson3d_1_simple
+  CALL poisson3d_0_simple
 
   ! Call the problem to solve. Poisson3D-1:
   CALL output_lbrk ()
