@@ -47,7 +47,7 @@
 !#        function
 !#
 !# 10.) gethadaptMonitorFunction_2D
-!#     -> Controls the grid adaption strategy in poisson_method8.
+!#     -> Controls the grid adaption strategy in poisson2d_method1_hadapt.
 !#
 !# </purpose>
 !##############################################################################
@@ -426,7 +426,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! Only for POISSON_METHOD6: Values in a fictitious boundary component:
+  ! Only for poisson2d_method1_fbc: Values in a fictitious boundary component:
 
 !<subroutine>
 
@@ -590,7 +590,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! Only for POISSON_METHOD8: Monitor function for adaptive grid refinement
+  ! Only for poisson2d_method1_hadapt: Monitor function for adaptive grid refinement
   
 !<subroutine>
 

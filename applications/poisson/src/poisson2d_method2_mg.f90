@@ -14,7 +14,7 @@
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#
-!# The routines here behave similar to poisson_method3. In difference,
+!# The routines here behave similar to poisson2d_method2. In difference,
 !# a multigrid-solver with ILU(0) smoother and BiCGStab coarse grid solver
 !# is used and matrices/vectors are sorted for Cuthill-McKee.
 !# </purpose>
@@ -45,9 +45,6 @@ MODULE poisson2d_method2_mg
   USE poisson2d_callback
   
   IMPLICIT NONE
-  
-  ! Maximum allowed level in this application.
-  INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
 
@@ -97,9 +94,8 @@ MODULE poisson2d_method2_mg
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
-    ! to one level of the discretisation. There is currently
-    ! only one level supported, identified by NLMAX!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    ! to one level of the discretisation. 
+    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
@@ -145,6 +141,7 @@ CONTAINS
     ! Initialise the level in the problem structure
     rproblem%ilvmin = ilvmin
     rproblem%ilvmax = ilvmax
+    ALLOCATE(rproblem%RlevelInfo(ilvmin:ilvmax))
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -646,7 +643,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -746,6 +743,7 @@ CONTAINS
     ! on all levels according to that array. Note that this does not
     ! allocate new memory, we create only 'links' to existing matrices
     ! into Rmatrices(:)!
+    ALLOCATE(Rmatrices(ilvmin:ilvmax))
     DO i=ilvmin,ilvmax
       CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -758,6 +756,7 @@ CONTAINS
     DO i=ilvmin,ilvmax
       CALL lsysbl_releaseMatrix (Rmatrices(i))
     END DO
+    DEALLOCATE(Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -984,6 +983,8 @@ CONTAINS
       ! Release the triangulation
       CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
+    
+    DEALLOCATE(rproblem%RlevelInfo)
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method4 </name>
+!# <name> poisson2d_method2_cmsort </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -14,7 +14,7 @@
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#
-!# The routines here do exactly the same as in poisson_method3. The only
+!# The routines here do exactly the same as in poisson2d_method2. The only
 !# difference is that the solver uses an ILU(0) decomposition as
 !# preconditioner and resorts the vectors using the Cuthill-McKee
 !# resorting algorithm.

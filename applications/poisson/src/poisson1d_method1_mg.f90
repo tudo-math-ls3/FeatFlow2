@@ -1,13 +1,14 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method0_mg </name>
+!# <name> poisson1d_method1_mg </name>
 !# ****************************************************************************
 !#
 !# <purpose>
 !# This module is a demonstration program how to solve a simple 1D Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# This module is based on poisson_method0, but using a multi-grid solver.
+!# This module is based on poisson1d_method0_simple, but using a multi-grid 
+!# solver.
 !# </purpose>
 !##############################################################################
 
