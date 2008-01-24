@@ -1,13 +1,14 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method6 </name>
+!# <name> poisson_method1_fbc </name>
 !# ****************************************************************************
 !#
 !# <purpose>
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# For simplicity, this example application is derived from poisson_method1.
+!# For simplicity, this example application is derived from 
+!# poisson2d_method0_simple.
 !#
 !# The boundary is like in the other applications. Additionally, inside of the 
 !# domain a fictitious boundary component is placed that introduces

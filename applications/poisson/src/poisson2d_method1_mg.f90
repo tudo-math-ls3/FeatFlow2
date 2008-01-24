@@ -7,7 +7,8 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# This module is based on poisson_method1, but using a multi-grid solver.
+!# This module is based on poisson2d_method0_simple, but using a multi-grid 
+!# solver.
 !# </purpose>
 !##############################################################################
 

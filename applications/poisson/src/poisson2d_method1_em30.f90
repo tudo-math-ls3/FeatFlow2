@@ -7,7 +7,7 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# The module is the same as poisson_method1 but with different element
+!# The module is the same as poisson2d_method0_simple but with different element
 !# implementation that is, EL_EM30. The different focuses on writing the
 !# solution vector into the way that GMV can read it.
 !# </purpose>

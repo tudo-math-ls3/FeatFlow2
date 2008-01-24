@@ -8,38 +8,21 @@
 !#
 !#              - Laplace(u) = f
 !#
-!# on a 2D domain for a scalar function u.
+!# for a scalar function u.
 !#
-!# There are a couple of examples provided how to solve this problem:
+!# There are a couple of examples provided how to solve this problem.
+!# Each example has its own characteristics how to solve the problem.
+!# 
+!# There are examples for 1D, 2D and 3D triangulations. The 
+!# poissonXd_method0_simple modules show the very basic steps how to solve the
+!# Poisson problem. On top of that, the poissonXd_method1_XXXX modules
+!# extend the poissonXd_method0_simple to more general situations (mmultigrid,
+!# fictitious boundary,...), still in the style of poissonXd_method0_simple.
+!# The poissonXd_method2_XXXX routines then decompose the different
+!# tasks of the problem into different subroutines, thus bringing more
+!# structure into the code and highlighting more and more features of the
+!# kernel.
 !#
-!# The first example (module poisson_method1) discretises and solves this 
-!# equation in a direct way, just listing all commands necessary for 
-!# initialisation, discretisation, solving and cleanup.
-!#
-!# The second example (module poisson_method2) separates the different stages
-!# of the solution process into different subroutines, which communicate
-!# via a collection-structure.
-!#
-!# The third example (module poisson_method3) separates the different stages
-!# of the solution process into different subroutines like example 2.
-!# The communication is done using a problem-related structure. For the
-!# communication with callback routines during the assembly, a
-!# collection structure is set up.
-!#
-!# The fourth example (module poisson_method4) demonstrates the use of a
-!# BiCGStab-solver with ILU(0) preconditioner.
-!#
-!# The fifth example (module poisson_method5) demonstrates the use of a
-!# Multigrid solver with with ILU(0) smoother and UMFPACK-coarse grid solver.
-!#
-!# The 6th example (module poisson_method6) demonstrates like poisson_method1
-!# a simple way of solving the Poisson-equation, but this time introduces
-!# an additional fictitious boundary object inside of the domain.
-!#
-!# The 7th example is based again on example 1 and shows how to transform
-!# a solution vector such that it gan be read by GMV. For this purpose,
-!# an appropriate interpolation routine is called, that transforms an
-!# arbitrary solution vector into a solution in the $Q_1$ space.
 !# </purpose>
 !##############################################################################
 

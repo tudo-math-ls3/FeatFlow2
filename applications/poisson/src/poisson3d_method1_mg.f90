@@ -1,13 +1,13 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson3d_method1 </name>
+!# <name> poisson3d_method1_mg </name>
 !# ****************************************************************************
 !#
 !# <purpose>
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !# This module is a (provizorical) equivalent to the 2D example
-!# poisson_method1_mg.
+!# poisson2d_method1_mg.
 !# </purpose>
 !##############################################################################
 
