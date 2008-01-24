@@ -31,7 +31,7 @@ MODULE poisson3d_method1_mg
   USE genoutput
   USE matrixio
     
-  USE poisson_callback
+  USE poisson3d_callback
   
   IMPLICIT NONE
 
@@ -243,7 +243,7 @@ CONTAINS
       ! the framework will call the callback routine to get analytical
       ! data.
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-           Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace)
+           Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_3D)
     
     END DO
       

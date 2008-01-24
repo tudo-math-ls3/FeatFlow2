@@ -11,7 +11,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method0_mg
+MODULE poisson1d_method1_mg
 
   USE fsystem
   USE genoutput
@@ -32,7 +32,7 @@ MODULE poisson_method0_mg
   USE matrixio
   USE vectorio
     
-  USE poisson_callback
+  USE poisson1d_callback
   
   IMPLICIT NONE
   
@@ -68,7 +68,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson0_mg
+  SUBROUTINE poisson1d_1_mg
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -238,7 +238,7 @@ CONTAINS
       ! the framework will call the callback routine to get analytical
       ! data.
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-           Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace)
+           Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_1D)
 
     END DO
     ! Keep in mind that now p_rdisc and p_rmatrix are pointers to the

@@ -20,7 +20,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method5
+MODULE poisson2d_method5
 
   USE fsystem
   USE genoutput
@@ -42,7 +42,7 @@ MODULE poisson_method5
   
   USE collection
     
-  USE poisson_callback
+  USE poisson2d_callback
   
   IMPLICIT NONE
   
@@ -322,7 +322,7 @@ CONTAINS
       ! so the callback routine has access to everything what is
       ! in the collection.
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                   p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
+                                   p_rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D,&
                                    rproblem%rcollection)
                                    
       ! Allocate an array for holding the resorting strategy.
@@ -378,7 +378,7 @@ CONTAINS
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS,&
+              p_rrhs%RvectorBlock(1),coeff_RHS_2D,&
               rproblem%rcollection)
                                 
     ! Clear the solution vector on the finest level.
@@ -535,7 +535,7 @@ CONTAINS
       ! in the collection.
       NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                              .FALSE.,getBoundaryValues,rproblem%rcollection)
+                              .FALSE.,getBoundaryValues_2D,rproblem%rcollection)
                                
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -846,11 +846,11 @@ CONTAINS
     
     ! Calculate the error to the reference function.
     CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_2D)
     CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_2D)
     CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
   END SUBROUTINE
@@ -994,7 +994,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson5
+  SUBROUTINE poisson2d_5
   
   include 'cmem.inc'
   

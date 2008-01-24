@@ -9,7 +9,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method0
+MODULE poisson1d_method1_simple
 
   USE fsystem
   USE genoutput
@@ -30,7 +30,7 @@ MODULE poisson_method0
   USE matrixio
   USE vectorio
     
-  USE poisson_callback
+  USE poisson1d_callback
   
   IMPLICIT NONE
 
@@ -40,7 +40,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson0
+  SUBROUTINE poisson1d_1_simple
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -184,7 +184,7 @@ CONTAINS
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace_1D)
     
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):

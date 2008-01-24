@@ -13,7 +13,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method8
+MODULE poisson2d_method8
 
   USE fsystem
   USE genoutput
@@ -33,7 +33,7 @@ MODULE poisson_method8
   USE hadaptaux
   USE hadaptivity
     
-  USE poisson_callback
+  USE poisson2d_callback
   
   IMPLICIT NONE
 
@@ -43,7 +43,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson8
+  SUBROUTINE poisson2d_8
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -234,7 +234,7 @@ CONTAINS
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical
       ! data.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
+      CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace_2D)
       
       ! The same has to be done for the right hand side of the problem.
       ! At first set up the corresponding linear form (f,Phi_j):
@@ -247,7 +247,7 @@ CONTAINS
       ! This scalar vector will later be used as the one and only first
       ! component in a block vector.
       CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
-          rlinform,.TRUE.,rrhs,coeff_RHS)
+          rlinform,.TRUE.,rrhs,coeff_RHS_2D)
       
       ! The linear solver only works for block matrices/vectors - but above,
       ! we created scalar ones. So the next step is to make a 1x1 block
@@ -326,7 +326,7 @@ CONTAINS
       ! in p_rdiscreteBC!
       NULLIFY(p_rdiscreteBC)
       CALL bcasm_discretiseBC (rdiscretisation,p_rdiscreteBC,.FALSE., &
-          getBoundaryValues)
+          getBoundaryValues_2D)
       
       ! Hang the pointer into the vector and matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -396,7 +396,7 @@ CONTAINS
 
       ! Perform a posteriori error estimation
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
-      CALL gethadaptMonitorFunction(rtriangulation,rvectorBlock%RvectorBlock(1),&
+      CALL gethadaptMonitorFunction_2D(rtriangulation,rvectorBlock%RvectorBlock(1),&
           -1,3,rindicator)
       
       ! Output error
@@ -471,11 +471,11 @@ CONTAINS
     
     ! Calculate the error to the reference function.
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_2D)
     CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
-                       getReferenceFunction)
+                       getReferenceFunction_2D)
     CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! +------------------------------------------------------------------------

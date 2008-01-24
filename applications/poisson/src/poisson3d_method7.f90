@@ -7,7 +7,9 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !# This module is a (provisional) equivalent to the 2D example
-!# poisson_method7.
+!# poisson2d_method7.
+!# The element used here is EM30. For GMV output, it's interpolated
+!# to Q1 and then written to the output file.
 !# </purpose>
 !##############################################################################
 
@@ -31,7 +33,7 @@ MODULE poisson3d_method7
   USE genoutput
   USE matrixio
     
-  USE poisson_callback
+  USE poisson3d_callback
   USE spdiscprojection
   
   IMPLICIT NONE
@@ -185,7 +187,7 @@ CONTAINS
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace_3D)
                                   
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):

@@ -12,12 +12,17 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I$(MPI_HOME)/include
 
 # The source files 
-SRC =   poisson_callback.f90 \
-        poisson_method0.f90 poisson_method0_mg.f90 poisson_method1.f90 \
-        poisson_method1_mg.f90 poisson_method2.f90 poisson_method3.f90 \
-        poisson_method4.f90 poisson_method5.f90 poisson_method6.f90 \
-        poisson_method7.f90 poisson_method8.f90 poisson3d_method1.f90 \
-        poisson3d_method1_mg.f90 poisson3d_method7.f90 poisson.f90
+SRC =   poisson1d_callback.f90 poisson2d_callback.f90 \
+        poisson3d_callback.f90 
+        poisson1d_method1_simple.f90 poisson1d_method1_mg.f90 \
+        poisson2d_method1_simple.f90 poisson2d_method1_mg.f90 \
+        poisson2d_method2.f90 poisson2d_method3.f90 \
+        poisson2d_method4.f90 poisson2d_method5.f90 \
+        poisson2d_method6.f90 poisson2d_method7.f90 \
+        poisson2d_method8.f90 \
+        poisson3d_method1_simple.f90 poisson3d_method1_mg.f90 \
+        poisson3d_method7.f90 \
+        poisson.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
