@@ -8,7 +8,7 @@
 !# problem with constant coefficients on a simple domain.
 !#
 !# The routine splits up the tasks of reading the domain, creating 
-!# triangulations, discretisation, solving, postprocessing and creanup into
+!# triangulations, discretisation, solving, postprocessing and cleanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
 !# as well as a collection structure for the communication with callback
