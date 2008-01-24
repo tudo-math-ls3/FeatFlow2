@@ -16,12 +16,13 @@ SRC =   poisson1d_callback.f90 poisson2d_callback.f90 \
         poisson3d_callback.f90 
         poisson1d_method0_simple.f90 poisson1d_method1_mg.f90 \
         poisson2d_method0_simple.f90 poisson2d_method1_mg.f90 \
-        poisson2d_method2.f90 poisson2d_method3.f90 \
-        poisson2d_method4.f90 poisson2d_method5.f90 \
-        poisson2d_method6.f90 poisson2d_method7.f90 \
-        poisson2d_method8.f90 \
+        poisson2d_method1_em30.f90 poisson2d_method1_hadapt.f90 \
+        poisson2d_method1_fbc.f90 \
+        poisson2d_method2.f90 \
+        poisson2d_method3.f90 \
+        poisson2d_method3_cmsort.f90 poisson2d_method3_mg.f90 \
         poisson3d_method0_simple.f90 poisson3d_method1_mg.f90 \
-        poisson3d_method7.f90 \
+        poisson3d_method1_em30.f90 \
         poisson.f90
 
 # include the standart kernel sources

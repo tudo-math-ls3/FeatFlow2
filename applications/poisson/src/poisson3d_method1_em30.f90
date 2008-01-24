@@ -13,7 +13,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson3d_method7
+MODULE poisson3d_method1_em30
 
   USE fsystem
   USE genoutput
@@ -44,7 +44,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson3d_7
+  SUBROUTINE poisson3d_1_em30
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson

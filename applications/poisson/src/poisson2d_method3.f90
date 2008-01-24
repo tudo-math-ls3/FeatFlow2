@@ -794,8 +794,6 @@ CONTAINS
 
   SUBROUTINE poisson2d_3
   
-  include 'cmem.inc'
-  
 !<description>
   ! This is a 'separated' poisson solver for solving a Poisson
   ! problem. The different tasks of the problem are separated into

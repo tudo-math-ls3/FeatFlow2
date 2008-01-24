@@ -49,16 +49,16 @@ PROGRAM poisson
   USE poisson1d_method1_mg
   USE poisson2d_method0_simple
   USE poisson2d_method1_mg
+  USE poisson2d_method1_em30
+  USE poisson2d_method1_fbc
+  USE poisson2d_method1_hadapt
   USE poisson2d_method2
   USE poisson2d_method3
-  USE poisson2d_method4
-  USE poisson2d_method5
-  USE poisson2d_method6
-  USE poisson2d_method7
-  USE poisson2d_method8
+  USE poisson2d_method3_cmsort
+  USE poisson2d_method3_mg
   USE poisson3d_method0_simple
   USE poisson3d_method1_mg
-  USE poisson3d_method7
+  USE poisson3d_method1_em30
   
   IMPLICIT NONE
   
@@ -99,6 +99,24 @@ PROGRAM poisson
   CALL output_line ('-----------------------------------------------')
   CALL poisson2d_1_mg
 
+  ! Call the problem to solve. Poisson 1: Support for nonconforming elements
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - EM30')
+  CALL output_line ('---------------------------------------------------')
+  CALL poisson2d_1_em30
+
+  ! Call the problem to solve. Poisson 1: Fictitious boundary support
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - FBC')
+  CALL output_line ('--------------------------------------------------')
+  CALL poisson2d_1_fbc
+
+  ! Call the problem to solve. Poisson 1: h-adaptivity
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - hadapt')
+  CALL output_line ('-----------------------------------------------------')
+  CALL poisson2d_1_hadapt
+
   ! Call the problem to solve. Poisson 2D method 2:
   CALL output_lbrk ()
   CALL output_line ('Calculating Poisson-2D-Problem with method 2')
@@ -111,35 +129,17 @@ PROGRAM poisson
   CALL output_line ('--------------------------------------------')
   CALL poisson2d_3
   
-  ! Call the problem to solve. Poisson 4:
+  ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 4')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_4
+  CALL output_line ('Calculating Poisson-2D-Problem with method 3 - CM-sorting')
+  CALL output_line ('---------------------------------------------------------')
+  CALL poisson2d_3_cmsort
   
   ! Call the problem to solve. Poisson 5:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 5')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_5
-
-  ! Call the problem to solve. Poisson 6:
-  CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 6')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_6
-
-  ! Call the problem to solve. Poisson 7:
-  CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 7')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_7
-
-  ! Call the problem to solve. Poisson 8:
-  CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 8')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_8
+  CALL output_line ('Calculating Poisson-2D-Problem with method 3 - Multigrid')
+  CALL output_line ('--------------------------------------------------------')
+  CALL poisson2d_3_mg
 
   ! Call the problem to solve. Poisson3D-1:
   CALL output_lbrk ()
@@ -157,7 +157,7 @@ PROGRAM poisson
   CALL output_lbrk ()
   CALL output_line ('Calculating Poisson-3D-Problem with method 7')
   CALL output_line ('--------------------------------------------')
-  CALL poisson3d_7
+  CALL poisson3d_1_em30
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

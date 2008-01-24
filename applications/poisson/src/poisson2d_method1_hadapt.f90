@@ -13,7 +13,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson2d_method8
+MODULE poisson2d_method1_hadapt
 
   USE fsystem
   USE genoutput
@@ -43,7 +43,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson2d_8
+  SUBROUTINE poisson2d_1_hadapt
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
