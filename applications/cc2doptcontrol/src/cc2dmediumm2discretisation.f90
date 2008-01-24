@@ -1348,6 +1348,9 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ispaceTimeFormulation',rproblem%roptcontrol%ispaceTimeFormulation,0)
     
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'itypeTerminalCondition',rproblem%roptcontrol%itypeTerminalCondition,0)
+
   END SUBROUTINE
 
   ! ***************************************************************************

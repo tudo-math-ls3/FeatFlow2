@@ -330,11 +330,28 @@ CONTAINS
         ! Newton is only to be assembled in Navier-Stokes!
         dnewton = 1.0_DP
       END IF
-      dsmooth = 1.0_DP
+      !dsmooth = 1.0_DP
     ELSE 
       ! Activate smoothing in the last timestep.
-      dsmooth = 1.0_DP
+      !dsmooth = 1.0_DP
     END IF
+    
+    ! Note: Introducing the Navier-Stokes operator to smooth the last time step
+    ! is a difficile task. The best combination found up to now is:
+    ! Always switch on the 'smoothing' (dsmooth=1) of the terminal condition 
+    ! to get a proper matrix and filter the defect of the last timestep to 
+    ! impose the terminal condition!
+    !dsmooth = 1.0_DP
+    !
+    ! We activate the smoothing in the matrix contrary to the filter.
+    ! If the filter is on (thus weakly imposing the terminal conditions
+    ! to the defect by filtering), we activate the Navier-Stokes-Operator in 
+    ! the last timestep. If the 'smoothing' is on (thus the defect vectors in 
+    ! the last timestep of the dual solution are not forced to be zero), we
+    ! deactivate the Navier-Stokes-operator.
+
+    ! Probably activate smoothing in the last timestep.
+    dsmooth = REAL(1-p_rspaceTimeDiscr%itypeTerminalCondition,DP)
 
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
@@ -389,16 +406,16 @@ CONTAINS
         !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         IF (dnewton .EQ. 0.0_DP) THEN
           rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              dtheta * (-1.0_DP)
+              dtheta * (-dequationType)
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
         ELSE
           rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              dtheta * (-1.0_DP)
+              dtheta * (-dequationType)
           rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              dtheta * ( 1.0_DP)
+              dtheta * ( dequationType)
           rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              dtheta * (-1.0_DP)
+              dtheta * (-dequationType)
         END IF
         rmatrixComponents%dmu1 = 0.0_DP
         !rmatrixComponents%dmu2 = 0.0_DP
@@ -441,8 +458,15 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
-        rmatrixComponents%dr21 = 0.0_DP
-        rmatrixComponents%dr22 = 0.0_DP
+        IF (dnewton .EQ. 0.0_DP) THEN
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
+        ELSE
+          rmatrixComponents%dr21 = ddualPrimalCoupling * &
+              (1.0_DP-dtheta) * ( dequationType)
+          rmatrixComponents%dr22 = ddualPrimalCoupling * &
+              (1.0_DP-dtheta) * (-dequationType)
+        END IF
             
       END IF
     
@@ -480,7 +504,7 @@ CONTAINS
             (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = 0.0_DP
         
-        rmatrixComponents%dnewton1 = 0.0_DP
+        rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
         rmatrixComponents%dnewton2 = 0.0_DP
 
         rmatrixComponents%deta1 = 0.0_DP
@@ -581,8 +605,15 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
-        rmatrixComponents%dr21 = 0.0_DP
-        rmatrixComponents%dr22 = 0.0_DP
+        IF (dnewton .EQ. 0.0_DP) THEN
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
+        ELSE
+          rmatrixComponents%dr21 = ddualPrimalCoupling * &
+              (1.0_DP-dtheta) * ( dequationType)
+          rmatrixComponents%dr22 = ddualPrimalCoupling * &
+              (1.0_DP-dtheta) * (-dequationType)
+        END IF
             
       END IF
     
@@ -699,7 +730,7 @@ CONTAINS
             (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = 0.0_DP
         
-        rmatrixComponents%dnewton1 = 0.0_DP
+        rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
         rmatrixComponents%dnewton2 = 0.0_DP
 
         rmatrixComponents%deta1 = 0.0_DP
@@ -721,17 +752,22 @@ CONTAINS
         ivecIndexNonlin = 1 + isubstep
 
         rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = (1.0_DP-dsmooth) !0.0_DP
+        rmatrixComponents%diota2 = 0.0_DP ! (1.0_DP-dsmooth) !0.0_DP
 
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = (1.0_DP-dsmooth) !0.0_DP
         
+        ! Current formulation:
+        ! -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
+        
         rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha2 = (1.0_DP-dsmooth) + &
-            dsmooth*dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%dalpha2 = 1.0_DP
+        !(1.0_DP-dsmooth) + dsmooth ! * 1.0_DP/dtstep
+        ! No 'time coupling' here; because of the terminal condition,
+        ! the mass matrix resembles not the time dependence!
         
         rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dsmooth * dtheta
+        rmatrixComponents%dtheta2 = dsmooth * dtheta * dtstep
         
         rmatrixComponents%dgamma1 = &
             dtheta * REAL(1-rproblem%iequation,DP)
@@ -743,7 +779,7 @@ CONTAINS
               dsmooth * dtheta * REAL(1-rproblem%iequation,DP)
 
         rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = dsmooth
+        rmatrixComponents%deta2 = dsmooth * dtstep
         
         rmatrixComponents%dtau1 = 1.0_DP
         rmatrixComponents%dtau2 = dsmooth

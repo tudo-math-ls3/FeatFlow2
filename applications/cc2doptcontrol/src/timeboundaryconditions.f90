@@ -722,10 +722,21 @@ CONTAINS
       ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
       ! play by the mass matrix term in the system matrix of the last timestep,
       ! so this does not have to be treated explicitly.
+      !
+      ! These command implement the terminal condition in a strong sense.
+      ! By commenting these lines out, the terminal condition would be
+      ! implemented in a weak sense, as the equation implemented in
+      ! spacetimelinearsystem.f90 reads:
+      !
+      !     -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
+      !
+      ! which adds a mass matrix to a 'smoothing' Laplace part.
       
-      CALL lsyssc_clearVector(rd%RvectorBlock(4))
-      CALL lsyssc_clearVector(rd%RvectorBlock(5))
-      CALL lsyssc_clearVector(rd%RvectorBlock(6))
+      IF (rspaceTimeDiscr%itypeTerminalCondition .EQ. 0) THEN
+        CALL lsyssc_clearVector(rd%RvectorBlock(4))
+        CALL lsyssc_clearVector(rd%RvectorBlock(5))
+        CALL lsyssc_clearVector(rd%RvectorBlock(6))
+      END IF
       
     END IF
 

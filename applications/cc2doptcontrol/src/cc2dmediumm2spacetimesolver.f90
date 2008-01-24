@@ -4411,7 +4411,7 @@ CONTAINS
         rsolverNode%rmatrix,rtempMatrix)
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
-    !                               .TRUE., 0, 'matrix.txt', '(E10.2)')
+    !                               .TRUE., 0, 'matrix.txt', '(E15.5)')
     !CALL matio_writeBlockMatrixMaple (rtempMatrix, 'A',&
     !                             0, 'matrix.txt', '(E20.10)')
 
@@ -4703,12 +4703,18 @@ CONTAINS
         ! Insert a 'point matrix' containing a zero in the pressure block.
         ! This allows the boundary condition implementation routine to
         ! insert a unit vector for the pressure if we have a pure-Dirichlet
-        ! problem
-        CALL createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
-            p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
-        IF (isubstep .NE. 0) THEN
-          CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
-              rmatrix%RmatrixBlock(isubstep*6+3,isubstep*6+3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        ! problem.
+        ! Don't insert the matrix if there is already one! An existing matrix
+        ! is always an identity matrix, as it happens to appear in the first
+        ! and last time strep.
+        ! IF (isubstep .NE. 0) THEN
+        IF (.NOT. lsysbl_isSubmatrixPresent (rmatrix,isubstep*6+3,isubstep*6+3)) THEN
+          CALL createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+3,isubstep*6+3),&
+              p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
+        END IF
+        IF (.NOT. lsysbl_isSubmatrixPresent (rmatrix,isubstep*6+6,isubstep*6+6)) THEN
+          CALL createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
+              p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
         END IF
         
       END IF

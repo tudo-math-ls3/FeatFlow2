@@ -324,7 +324,7 @@ CONTAINS
                                         'sfinalSolutionFileName', stemp, '')
     READ (stemp,*) sfileName
     IF (sfilename .NE. '') THEN
-      stemp = '('''//TRIM(ADJUSTL(sfilename))//''',I5.5)'
+      stemp = '('''//TRIM(ADJUSTL(sfilename))//'.'',I5.5)'
       CALL sptivec_saveToFileSequence(rvector,stemp,.TRUE.)
     END IF
     

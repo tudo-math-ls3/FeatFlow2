@@ -96,14 +96,18 @@ CONTAINS
         RETURN
       END IF
       
-      ! Get the 'relative' evaluation time; this in the interval -1..1
-      dreltime = dabstime-REAL(itimestep,DP)
-      
       IF (rspaceTimeVector%NEQtime .EQ. 2) THEN
         ! Special case: only one timestep!
-        ! Interpolate linearly.
+        !
+        ! Get the 'relative' evaluation time; this in the interval 0..1
+        dreltime = dabstime/dntimesteps
+        
+        ! Interpolate linearly. 
         CALL interpolateLinear (dreltime,0,1,rspaceTimeVector,rvector)
       ELSE
+        ! Get the 'relative' evaluation time; this in the interval -1..1
+        dreltime = dabstime-REAL(itimestep,DP)
+        
         ! Is this the first or the last timestep?
         IF (itimestep .EQ. 0) THEN
           ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
@@ -181,7 +185,7 @@ CONTAINS
     ! istep2 of the space time vector rspaceTimeVector. The result is
     ! written to rvector.
     
-    ! Interpolation weight; range -1..1 with -1~istep1 and 1~istep2.
+    ! Interpolation weight; range 0..1 with 0~istep1 and 1~istep2.
     REAL(DP), INTENT(IN) :: dt
     
     ! 'Left' time step corresponding to dt=0.
@@ -207,8 +211,7 @@ CONTAINS
       CALL sptivec_getTimestepData (rspaceTimeVector, 1+istep2, rvector)
       
       ! Interpolate
-      CALL lsysbl_vectorLinearComb (rvec,rvector,&
-          0.5_DP*(dt+1.0_DP),0.5_DP*(1.0_DP-dt))
+      CALL lsysbl_vectorLinearComb (rvec,rvector,(1.0_DP-dt),dt)
       
       ! Release unused data
       CALL lsysbl_releaseVector (rvec)

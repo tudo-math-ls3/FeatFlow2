@@ -208,6 +208,11 @@ MODULE cc2dmediumm2basic
     ! The two formulations differ in a "-"-sign in front of the dual velocity.
     INTEGER :: ispaceTimeFormulation = 0
   
+    ! Type of implementation of the terminal condition.
+    ! =0: implement terminal condition in a weak sense by filtering.
+    ! =1: implement terminal condition in a strong sense by modifying the matrix.
+    INTEGER :: itypeTerminalCondition = 0
+  
     ! Name of the file with the target flow
     CHARACTER(SYS_STRLEN) :: stargetFlow = ''
     

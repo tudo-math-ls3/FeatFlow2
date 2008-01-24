@@ -114,11 +114,11 @@ CONTAINS
   TYPE(t_timeDiscretisation), INTENT(OUT) :: rtimediscr
 !</output>
 
-    IF (dtheta .NE. 1.0_DP) THEN
-      CALL output_line ('Currently only implicit Euler is supported.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tdiscr_initTheta')
-      CALL sys_halt()
-    END IF
+    !IF (dtheta .NE. 1.0_DP) THEN
+    !  CALL output_line ('Currently only implicit Euler is supported.', &
+    !                    OU_CLASS_ERROR,OU_MODE_STD,'tdiscr_initTheta')
+    !  CALL sys_halt()
+    !END IF
 
     ! Initialise the parameters of the structure.
     rtimediscr%ctype = TDISCR_THETA
@@ -195,11 +195,9 @@ CONTAINS
 
     SELECT CASE(rtimediscr%ctype)
     CASE (TDISCR_THETA)
-      IF (rtimediscr%dtheta .EQ. 1.0_DP) THEN
-        ! Implicit Euler. We have as many DOF's as intervals + 1.
-        tdiscr_igetNDofGlob = rtimediscr%nintervals + 1
-        RETURN
-      END IF
+      ! One step scheme. We have as many DOF's as intervals + 1.
+      tdiscr_igetNDofGlob = rtimediscr%nintervals + 1
+      RETURN
 
     CASE (TDISCR_DG0)
       ! dG(0). The DOF's are in the interval midpoints.

@@ -2655,7 +2655,7 @@ CONTAINS
       
       CALL stat_clearTimer (rtimerMGStep)
 
-      !CALL sptivec_copyVector (rd,rtemp)
+      CALL sptivec_copyVector (rd,rtemp)
       
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
@@ -2669,10 +2669,11 @@ CONTAINS
         
       END IF
       
-      !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
-      !    rd, rtemp, ddefNorm)
-      !PRINT *,'************************* ',ddefNorm
-
+      CALL output_line('Linear defect:')
+      CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rd, rtemp, &
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,.TRUE.)
+      CALL output_separator (OU_SEP_MINUS)
+      
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
       ! afterwards, the initial conditions can be seen more clearly!
@@ -2706,6 +2707,7 @@ CONTAINS
       CALL sptivec_copyVector (rb,rd)
       !CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
       !    rx, rd, ddefNorm)
+      IF (rproblem%MT_outputLevel .GE. 2) CALL output_line('Nonlinear defect:')
       CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
         -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
