@@ -36,9 +36,9 @@ PROGRAM poisson
   USE poisson2d_method1_fbc
   USE poisson2d_method1_hadapt
   USE poisson2d_method2
-  USE poisson2d_method3
-  USE poisson2d_method3_cmsort
-  USE poisson2d_method3_mg
+  USE poisson2d_method2_collect
+  USE poisson2d_method2_cmsort
+  USE poisson2d_method2_mg
   USE poisson3d_method0_simple
   USE poisson3d_method1_mg
   USE poisson3d_method1_em30
@@ -106,24 +106,24 @@ PROGRAM poisson
   CALL output_line ('--------------------------------------------')
   CALL poisson2d_2
   
-  ! Call the problem to solve. Poisson 3:
-  CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 3')
-  CALL output_line ('--------------------------------------------')
-  CALL poisson2d_3
-  
   ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 3 - CM-sorting')
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - CM-sorting')
   CALL output_line ('---------------------------------------------------------')
-  CALL poisson2d_3_cmsort
+  CALL poisson2d_2_cmsort
   
   ! Call the problem to solve. Poisson 5:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 3 - Multigrid')
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - Multigrid')
   CALL output_line ('--------------------------------------------------------')
-  CALL poisson2d_3_mg
+  CALL poisson2d_2_mg
 
+  ! Call the problem to solve. Poisson 3: Collection support
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - Collection')
+  CALL output_line ('---------------------------------------------------------')
+  CALL poisson2d_2_collect
+  
   ! Call the problem to solve. Poisson3D-1:
   CALL output_lbrk ()
   CALL output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
