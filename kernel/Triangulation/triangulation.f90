@@ -2743,18 +2743,15 @@ CONTAINS
     call tria_genEdgesAtFace          (rtriangulation)
     call tria_genFacesAtEdge          (rtriangulation)
     call tria_genFacesAtVertex        (rtriangulation)
+    
+    !----BOUNDARY------
+    call tria_genFacesAtBoundary      (rtriangulation)
+    call tria_genEdgesAtBoundary      (rtriangulation)
 
     !----Properties----!
-!    call tria_genEdgeNodalProperty3d  (rtriangulation)
-!    call tria_genFaceNodalProperty3d  (rtriangulation)
+    call tria_genEdgeNodalProperty3d  (rtriangulation)
+    call tria_genFaceNodalProperty3d  (rtriangulation)
 
-    
-    !----BOUNDARY------
-    ! call verticesAtBoundary
-    
-      call tria_genFacesAtBoundary      (rtriangulation)
-      call tria_genEdgesAtBoundary      (rtriangulation)
-    !----BOUNDARY------
     
     ! CALL tria_genElementVolume3d       (rtriangulation)
     
@@ -4856,7 +4853,14 @@ CONTAINS
           CALL tria_genFacesAtEdge           (rtriangulation)             
 
         IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
-          CALL tria_genEdgesAtBoundary       (rtriangulation)             
+          CALL tria_genEdgesAtBoundary       (rtriangulation)
+          
+        call tria_genEdgeNodalProperty3d  (rtriangulation)
+        
+        call tria_genFaceNodalProperty3d  (rtriangulation)
+          
+          
+                       
 
 !    call tria_genFacesAtEdge          (rtriangulation)          
 
@@ -9113,103 +9117,6 @@ CONTAINS
   
   end subroutine
   
-!==================================================================== 
-
-!<subroutine>
-  subroutine tria_genEdgeNodalProperty3d(rtriangulation)
-!<description>
-  ! This routine generates the nodal property tags for all edges 
-  ! InodalProperty(NVT+1:NVT+NMT) (KNPR). 
-  ! For this purpose, the following arrays are used:
-  ! InodalProperty(1:NVT), IedgesAtElement, IneighboursAtElement.
-  ! If necessary, new memory is allocated.
-!</description>
-
-!<inputoutput>
-  ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
-!</inputoutput>
-  
-!</subroutine>
-
-    ! Local variables
-    integer(I32), dimension(:), pointer :: p_InodalProperty
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer :: ive
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_VERTEXIDX) :: isize
-
-    ! Is everything here we need?
-    if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
-      call output_line ('InodalPropertys not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
-      call sys_halt()
-    end if
-
-    if (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) then
-      call output_line ('IedgesAtElement not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
-      call sys_halt()
-    end if
-    
-    if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
-      call output_line ('IneighboursAtElement not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty3d')
-      call sys_halt()
-    end if
-    
-    ! Do we have (enough) memory for that array?
-    call storage_getsize (rtriangulation%h_InodalProperty, isize)
-    if (isize .LT. rtriangulation%NVT+rtriangulation%NMT) then
-      ! If the size is wrong, reallocate memory.
-      ! Copy the old content as we mustn't destroy the old nodal property
-      ! tags of the vertices.
-      call storage_realloc ('tria_genEdgeNodalProperty3d', &
-          rtriangulation%NVT+rtriangulation%NMT + rtriangulation%NAT + &
-          rtriangulation%NEL, &
-          rtriangulation%h_InodalProperty, &
-          ST_NEWBLOCK_NOINIT, .TRUE.)
-    end if
-    
-    ! Get the arrays.
-    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
-    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-        p_IneighboursAtElement)
-        
-    ! Initialise the nodal property with 0 by default.
-    call lalg_clearVectorInt (&
-        p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
-    
-    ! Loop through all elements and all edges on the elements
-    do iel = 1,ubound(p_IedgesAtElement,2)
-    
-      do ive = 1,ubound(p_IedgesAtElement,1)
-      
-        ! Stop if we handled all edges; this is important if there are triangles
-        ! in a quad mesh e.g.
-        if (p_IedgesAtElement(ive,iel) .EQ. 0) exit
-        
-        ! The edge nodal property is initialised with 0 by default -- inner edge.
-        ! Is there a neighbour? If yes, we have an inner edge. If not, this is 
-        ! a boundary edge. 
-        if (p_IneighboursAtElement(ive,iel) .EQ. 0) then
-        
-          ! Get the number of the boundary component from the vertex preceeding
-          ! the edge and store it as information for the edge. 
-          p_InodalProperty(p_IedgesAtElement(ive,iel)) = &
-              p_InodalProperty(p_IverticesAtElement(ive,iel))
-        
-        end if
-        
-      end do ! end ive
-      
-    end do ! end iel
-           
-  end subroutine ! end tria_genEdgeNodalProperty3d
   
 !==================================================================== 
  
@@ -9398,7 +9305,7 @@ CONTAINS
       integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
       integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
-      integer :: NVT,NEL,ivt
+      integer :: NVT,NEL,ivt,NVBD
       
       ! these names are just too long...
       NMBD = rsourceTriangulation%NMBD
@@ -9438,6 +9345,9 @@ CONTAINS
                                  rsourceTriangulation%NMBD + &      
                                  rsourceTriangulation%NABD       
                                                 
+      ! shorter name                                          
+      NVBD = rdestTriangulation%NVBD
+                                                
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
           
       ! Create new arrays in the fine grid for the vertices and indices.
@@ -9468,52 +9378,17 @@ CONTAINS
       call storage_getbase_int (rdestTriangulation%h_InodalProperty,&
           p_InodalPropertyDest)
       
-     
-      ! p_Inodalproperties
-      ! 1:old_NVT = p_InodalpropertiesSource(1:old_NVT)
-      p_InodalPropertyDest(1:rsourceTriangulation%NVT) = &        
-      p_InodalPropertySource(1:rdestTriangulation%NVT)
+
+      ! copy the nodal properties
+      ! the vertex, edge and face properties of the source mesh
+      ! are the vertex properties of the destination mesh
+      p_InodalPropertyDest(1:NVT+NMT+NAT) = &        
+      p_InodalPropertySource(1:NVT+NMT+NAT)
+
+      ! there are still NEL vertices remaining but these
+      ! are not boundary vertices so assign zeros there
+      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
       
-      do ive=1,rsourceTriangulation%NMT
-        
-        ! check if edge is on border
-        if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NMBD)==1) then
-           
-           ! get the boundary component index of the vertices
-           ! that build the edge
-           
-           IboundaryComponent = p_IverticesAtEdge(1,ive)
-           
-           IboundaryComponent = p_InodalPropertyDest( &
-           IboundaryComponent)
-           
-           p_InodalPropertyDest(rsourceTriangulation%NVT+ive) = &
-           IboundaryComponent
-         else
-           p_InodalPropertyDest(rsourceTriangulation%NVT+ive) = 0
-         end if
-         
-      end do ! end ive
-      
-      do iface=1,rsourceTriangulation%NAT
-      
-        ! check if face is on border
-        if(tria_BinSearch(p_IfacesAtBoundary,iface,1,NABD)==1) then
-           
-           ! get the boundary component index of the vertices
-           ! that build the edge
-           IboundaryComponent = p_IverticesAtFace(1,iface)
-           
-           IboundaryComponent = p_InodalPropertyDest( &
-           IboundaryComponent)
-           
-           p_InodalPropertyDest(rsourceTriangulation%NVT+NMT+iface) = &
-           IboundaryComponent
-         else
-           p_InodalPropertyDest(rsourceTriangulation%NVT+NMT+iface) = 0
-         end if
-      
-      end do ! end iface
       
       ! allocate memory
       if(rdestTriangulation%h_IboundaryCpIdx == ST_NOHANDLE) then
@@ -9521,11 +9396,7 @@ CONTAINS
             int(rdestTriangulation%NBCT+1,I32), ST_INT, &
             rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
       end if      
-      
-      
-      ! the remaining vertices are not boundary vertices
-      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
-      
+                
       ivbd = 1
       do ivt=1,rdestTriangulation%NVT
         if(p_InodalPropertyDest(ivt) > 0) then
@@ -9594,12 +9465,13 @@ CONTAINS
   end function ! end tria_BinSearch
 
 !====================================================================
-  
+
+!<subroutine>  
   subroutine tria_genEdgesAtBoundary(rtriangulation)
 !<description>
   ! This routine generates the edgesAtBoundary information
-  ! by using a simple conditions:
-  !                          1) a boundary edge has a boundary face attached to it
+  ! by using a simple condition:
+  ! -------a boundary edge has a boundary face attached to it-------
 !</description>
 
 !<inputoutput>
@@ -9730,6 +9602,225 @@ CONTAINS
     deallocate(p_Iaux)
     
   end subroutine ! end tria_genEdgesAtBoundary
+  
+!==================================================================== 
+
+!<subroutine>
+  subroutine tria_genEdgeNodalProperty3d(rtriangulation)
+!<description>
+  ! This routine generates the nodalproperty for the nodes that will be
+  ! formed by the current set of edges
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalProperty
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdx
+
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary      
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundary
+    
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+      
+    integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
+    integer :: NVT,NEL,ivt, NVBD, NBCT
+      
+    ! these names are just too long...
+    NMBD = rtriangulation%NMBD
+    NABD = rtriangulation%NABD
+    NVT = rtriangulation%NVT
+    NMT = rtriangulation%NMT
+    NAT = rtriangulation%NAT
+    NEL = rtriangulation%NEL
+      
+    ! Get the definition of the boundary vertices and -edges.
+    call storage_getbase_int (rtriangulation%h_IverticesAtBoundary,&
+        p_IverticesAtBoundary)
+        
+    call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,&
+        p_IfacesAtBoundary)
+
+    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
+        p_IedgesAtBoundary)
+        
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+        
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,&
+        p_IverticesAtEdge)
+        
+
+    ! calculate the new value of NVBD
+    NVBD =  rtriangulation%NVBD + &
+            rtriangulation%NMBD + &      
+            rtriangulation%NABD       
+                                                
+    NBCT = rtriangulation%NBCT 
+    
+    ! assume we are at lvl "r" then:
+    ! there are NVBD boundary vertices from lvl r 
+    ! there are NMBD new boundary vertices from the edges of lvl r
+    ! there are NABD new boundary vertices from the faces of lvl r
+      
+    CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
+    IF (isize .NE. NVT+NMT+NAT) THEN
+      ! If the size is wrong, reallocate memory.
+      CALL storage_realloc ('tria_genEdgeNodalProperty3d', &
+          INT(NVT+NMT+NAT,I32),&
+          rtriangulation%h_InodalProperty,ST_NEWBLOCK_NOINIT)
+    END IF      
+    
+    ! get the pointer
+    call storage_getbase_int (rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+
+
+    ! Loop over all edges to see if the current edge ive is on 
+    ! the boundary, if it is on the boundary we write the
+    ! number of the boundary component on position NVT+ive 
+    ! in the p_InodalProperty array
+    do ive=1,rtriangulation%NMT
+    
+      ! check if edge is on border
+      if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NMBD)==1) then
+           
+         ! get the boundary component index of the vertices
+         ! that build the edge
+         IboundaryComponent = p_IverticesAtEdge(1,ive)
+         
+         ! assign the boundary component number  
+         IboundaryComponent = p_InodalProperty( &
+         IboundaryComponent)
+         
+         ! write that number to the p_InodalProperty array 
+         p_InodalProperty(rtriangulation%NVT+ive) = &
+         IboundaryComponent
+       else
+         ! the edge is an inner edge assign a zero
+         p_InodalProperty(rtriangulation%NVT+ive) = 0
+       end if
+         
+    end do ! end ive
+           
+  end subroutine ! end tria_genEdgeNodalProperty3d
+  
+  
+!====================================================================
+  
+  subroutine tria_genFaceNodalProperty3d(rtriangulation)
+!<description>
+  ! This routine generates the edgesAtBoundary information
+  ! by using a simple conditions:
+  !                          1) a boundary edge has a boundary face attached to it
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+      
+    ! local variables
+
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalProperty
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdx
+
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary      
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundary
+    
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
+      
+    integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
+    integer :: NVT,NEL,ivt, NVBD, NBCT
+      
+    ! these names are just too long...
+    NMBD = rtriangulation%NMBD
+    NABD = rtriangulation%NABD
+    NVT = rtriangulation%NVT
+    NMT = rtriangulation%NMT
+    NAT = rtriangulation%NAT
+    NEL = rtriangulation%NEL
+      
+    ! Get the definition of the boundary vertices and -edges.
+    call storage_getbase_int (rtriangulation%h_IverticesAtBoundary,&
+        p_IverticesAtBoundary)
+        
+    call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,&
+        p_IfacesAtBoundary)
+
+    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
+        p_IedgesAtBoundary)
+        
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+        
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtFace,&
+        p_IverticesAtFace)
+
+    ! calculate the new value of NVBD
+    NVBD =  rtriangulation%NVBD + &
+            rtriangulation%NMBD + &      
+            rtriangulation%NABD       
+                                                
+    NBCT = rtriangulation%NBCT 
+    
+    ! assume we are at lvl "r" then:
+    ! there are NVBD boundary vertices from lvl r 
+    ! there are NMBD new boundary vertices from the edges of lvl r
+    ! there are NABD new boundary vertices from the faces of lvl r
+      
+    CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
+    IF (isize .NE. NVT+NMT+NAT) THEN
+      ! If the size is wrong, reallocate memory.
+      CALL storage_realloc ('tria_genEdgeNodalProperty3d', &
+          INT(NVT+NMT+NAT,I32),&
+          rtriangulation%h_InodalProperty, &
+          ST_NEWBLOCK_NOINIT)
+    END IF      
+    
+    call storage_getbase_int (rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+
+    ! Loop over all faces and check if the current face iface
+    ! is on the boundary, if it is on the boundary the
+    ! entry NVT+NMT+iface in the p_InodalProperty array will
+    ! contain the boundary component of the face iface
+    do iface=1,rtriangulation%NAT
+      
+      ! check if face is on border
+      if(tria_BinSearch(p_IfacesAtBoundary,iface,1,NABD)==1) then
+           
+         ! get the boundary component index of the vertices
+         ! that build the face
+         IboundaryComponent = p_IverticesAtFace(1,iface)
+         
+         ! get the boundary component number from the
+         ! p_InodalProperty array
+         IboundaryComponent = p_InodalProperty( &
+         IboundaryComponent)
+         
+         ! write the boundary component number to the
+         ! position NVT+NMT+iface
+         p_InodalProperty(rtriangulation%NVT+NMT+iface) = &
+         IboundaryComponent
+       else
+         ! the face is an inner face so assign zero
+         p_InodalProperty(rtriangulation%NVT+NMT+iface) = 0
+       end if
+      
+    end do ! end iface
+  
+  end subroutine ! end tria_genFaceNodalProperty3d
   
 END MODULE
 
