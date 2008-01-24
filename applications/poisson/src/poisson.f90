@@ -155,8 +155,8 @@ PROGRAM poisson
 
   ! Call the problem to solve. Poisson3D-7:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-3D-Problem with method 7')
-  CALL output_line ('--------------------------------------------')
+  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - EM30')
+  CALL output_line ('---------------------------------------------------')
   CALL poisson3d_1_em30
 
   ! Print out heap statistics - just to check if everything
