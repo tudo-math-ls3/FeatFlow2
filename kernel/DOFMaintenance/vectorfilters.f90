@@ -1153,7 +1153,8 @@ CONTAINS
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
       SELECT CASE (p_RdiscreteBC(i)%itype)
@@ -1249,7 +1250,8 @@ CONTAINS
     END IF
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
       SELECT CASE (p_RdiscreteBC(i)%itype)
@@ -1353,7 +1355,8 @@ CONTAINS
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete pressure drop BC's.
       IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPPRESSUREDROP) THEN
@@ -1430,7 +1433,8 @@ CONTAINS
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
       SELECT CASE (p_RdiscreteBC(i)%itype)
@@ -1537,7 +1541,8 @@ CONTAINS
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete slip BC's.
       IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPSLIP) THEN

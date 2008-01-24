@@ -469,7 +469,7 @@ CONTAINS
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,'gmv/u1_mg.gmv')
+        Rlevels(NLMAX)%rtriangulation,'gmv/u2d_1_mg.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

@@ -83,7 +83,13 @@ MODULE discretebc
   INTEGER, PARAMETER :: DISCBC_NEEDNORMALSTRESS = 4
 
 !</constantblock>
-  
+
+!<constantblock>
+
+  ! Default blocksize for allocating new structures in the p_RdiscBCList
+  ! list - if the list is full.
+  INTEGER, PARAMETER :: DISCBC_LISTBLOCKSIZE = 10
+
 !</constants>
 
 !<types>
@@ -286,6 +292,12 @@ MODULE discretebc
   ! boundary discretised in a special way).
   TYPE t_discreteBC
   
+    ! Total number of allocated t_discreteBCEntry structures in p_RdiscBCList.
+    INTEGER :: inumEntriesAlloc = 0
+    
+    ! Total number of used t_discreteBCEntry structures in p_RdiscBCList.
+    INTEGER :: inumEntriesUsed = 0
+  
     ! An array of t_discreteBCEntry structures. Each structure describes
     ! one discrete boundary condition - so one part of the boundary discretised
     ! in a special, discretisation-dependent way.
@@ -296,5 +308,5 @@ MODULE discretebc
 !</typeblock>
 
 !</types>
-  
+
 END MODULE

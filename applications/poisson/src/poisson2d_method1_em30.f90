@@ -400,7 +400,8 @@ CONTAINS
       
     ! Call the GMV library to write out a GMV file for our solution.
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u7.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                      'gmv/u2d_1_em30.gmv')
     
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

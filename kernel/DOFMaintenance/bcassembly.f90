@@ -75,6 +75,7 @@ MODULE bcassembly
   USE collection
   USE triangulation
   USE dofmapping
+  USE meshregion
   
   IMPLICIT NONE
 
@@ -401,7 +402,11 @@ CONTAINS
     p_IdirichletDOFs(1) = iDOF
   
     idx = idx + 1
-  END IF 
+  END IF
+  
+  ! Remember how many structures are allocated and in use
+  p_rdiscreteBC%inumEntriesAlloc = inumBCs
+  p_rdiscreteBC%inumEntriesUsed = inumBCs
 
   ! That's it
       
@@ -614,6 +619,10 @@ CONTAINS
   
   END DO  
 
+  ! Remember how many structures are allocated and in use
+  p_rdiscreteBC%inumEntriesAlloc = p_rboundaryConditions%iregionCount
+  p_rdiscreteBC%inumEntriesUsed = p_rboundaryConditions%iregionCount
+
   END SUBROUTINE
       
 ! *****************************************************************************
@@ -761,6 +770,10 @@ CONTAINS
   
   END DO  
 
+  ! Remember how many structures are allocated and in use
+  rdiscreteBC%inumEntriesAlloc = p_rboundaryConditions%iregionCount
+  rdiscreteBC%inumEntriesUsed = p_rboundaryConditions%iregionCount
+
   END SUBROUTINE
       
   ! ***************************************************************************
@@ -838,6 +851,10 @@ CONTAINS
     DEALLOCATE(p_rdiscreteBC%p_RdiscBCList)
     
   END IF
+
+  ! Reset the counts
+  p_rdiscreteBC%inumEntriesAlloc = 0
+  p_rdiscreteBC%inumEntriesUsed = 0
   
   ! Deallocate the structure (if we are allowed to), finish.
   IF (.NOT. PRESENT(bkeepBCStructure)) THEN
@@ -3207,5 +3224,5 @@ CONTAINS
     rdiscreteFBCDirichlet%ncomponents = 0
 
   END SUBROUTINE
-  
+
 END MODULE

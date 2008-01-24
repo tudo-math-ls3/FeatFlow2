@@ -834,7 +834,8 @@ CONTAINS
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u5.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       'gmv/u2d_2_mg.gmv')
     
     CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

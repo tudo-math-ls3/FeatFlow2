@@ -332,7 +332,8 @@ CONTAINS
     
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u0.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       'gmv/u1d_0_simple.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

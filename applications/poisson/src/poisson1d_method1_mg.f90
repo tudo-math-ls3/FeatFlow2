@@ -395,7 +395,7 @@ CONTAINS
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(nlevels)%rtriangulation,'gmv/u0_mg.gmv')
+        Rlevels(nlevels)%rtriangulation,'gmv/u1d_1_mg.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

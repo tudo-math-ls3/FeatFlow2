@@ -328,6 +328,10 @@ CONTAINS
         p_IdirichletDOFs(j) = p_IboundaryDOFs(j)
       END DO
 
+      ! Remember how many entries we have
+      Rlevels(i)%p_rdiscreteBC%inumEntriesAlloc = 1
+      Rlevels(i)%p_rdiscreteBC%inumEntriesUsed = 1
+
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%p_rdiscreteBC
@@ -453,10 +457,6 @@ CONTAINS
       CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevels(NLMAX)%rtriangulation,&
                          'gmv/u3d_1_mg.gmv')
       
-      ! Export to VTK would be:
-      !CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,Rlevels(NLMAX)%rtriangulation,&
-      !                   'gmv/u3d_1_mg.vtk')
-
       CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
       

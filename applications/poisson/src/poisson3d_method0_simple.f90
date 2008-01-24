@@ -217,10 +217,10 @@ CONTAINS
     p_rdirichlet%nDOF = rtriangulation%NVBD
     
     ! Allocate the arrays for the boundary conditions
-    CALL storage_new1D('poisson3d_method1', 'h_DdirichletValues',&
+    CALL storage_new1D('poisson3d_method0_simple', 'h_DdirichletValues',&
         p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
         ST_NEWBLOCK_ZERO)
-    CALL storage_new1D('poisson3d_method1', 'h_IdirichletDOFs',&
+    CALL storage_new1D('poisson3d_method0_simple', 'h_IdirichletDOFs',&
         p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
         ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
@@ -233,6 +233,10 @@ CONTAINS
     DO i = 1, rtriangulation%NVBD
       p_IdirichletDOFs(i) = p_IverticesAtBoundary(i)
     END DO
+    
+    ! Remember how many entries we have
+    p_rdiscreteBC%inumEntriesAlloc = 1
+    p_rdiscreteBC%inumEntriesUsed = 1
     
     ! That's it for the discrete boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -308,7 +312,8 @@ CONTAINS
     ! start the postprocessing. 
 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       'gmv/u3d_0_simple.gmv')
     
     ! Export to VTK would be:
     !CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_1.vtk')

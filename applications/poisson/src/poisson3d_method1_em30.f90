@@ -10,6 +10,9 @@
 !# poisson2d_method7.
 !# The element used here is EM30. For GMV output, it's interpolated
 !# to Q1 and then written to the output file.
+!#
+!# As the 3D EM30 element is currently not implemented, we'll use the E030
+!# element type for now...
 !# </purpose>
 !##############################################################################
 
@@ -227,10 +230,10 @@ CONTAINS
     p_rdirichlet%nDOF = rtriangulation%NABD
     
     ! Allocate the arrays for the boundary conditions
-    CALL storage_new1D('poisson3d_method7', 'h_DdirichletValues',&
+    CALL storage_new1D('poisson3d_method1_em30', 'h_DdirichletValues',&
         p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
         ST_NEWBLOCK_ZERO)
-    CALL storage_new1D('poisson3d_method7', 'h_IdirichletDOFs',&
+    CALL storage_new1D('poisson3d_method1_em30', 'h_IdirichletDOFs',&
         p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
         ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
@@ -243,6 +246,10 @@ CONTAINS
     DO i = 1, rtriangulation%NABD
       p_IdirichletDOFs(i) = p_IfacesAtBoundary(i)
     END DO
+
+    ! Remember how many entries we have
+    p_rdiscreteBC%inumEntriesAlloc = 1
+    p_rdiscreteBC%inumEntriesUsed = 1
 
     ! That's it for the discrete boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -376,6 +383,10 @@ CONTAINS
       p_IdirichletDOFs(i) = p_IverticesAtBoundary(i)
     END DO
 
+    ! Remember how many entries we have
+    p_rdiscreteBC_Q1%inumEntriesAlloc = 1
+    p_rdiscreteBC_Q1%inumEntriesUsed = 1
+
     ! That's it for the discrete boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -396,10 +407,8 @@ CONTAINS
       
     ! Call the GMV library to write out a GMV file for our solution.
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_7.gmv')
-    
-    ! Export to VTK would be:
-    !CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u3d_7.vtk')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       'gmv/u3d_1_em30.gmv')
     
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

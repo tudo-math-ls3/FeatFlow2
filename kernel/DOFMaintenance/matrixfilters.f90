@@ -827,7 +827,8 @@ CONTAINS
     boffdiagSubmatrix = rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rmatrix%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
       SELECT CASE (p_RdiscreteBC(i)%itype)
@@ -956,7 +957,8 @@ CONTAINS
     boffdiagSubmatrix = rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBC)
+    DO i=1, rmatrix%p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement slip boundary conditions.
       IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPSLIP) THEN
