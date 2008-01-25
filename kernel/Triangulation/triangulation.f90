@@ -348,6 +348,9 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**27
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATBOUNDARY       = 2**28
   
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPEDGESIDX    = 2**29
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPFACESIDX    = 2**30  
+  
   
   
   ! Share everything
@@ -700,6 +703,15 @@ MODULE triangulation
     ! boundary component.
     ! This is the old KBCT array.
     INTEGER          :: h_IboundaryCpIdx = ST_NOHANDLE
+    
+    ! in 2d this is a dublicate of h_IboundaryCpIdx, make it with the dublicate flag
+    ! in 3d this array is in index into the p_IedgesAtBoundary array that
+    ! works like the p_IboundaryCpIdx for the vertices... see above
+    INTEGER          :: h_IboundaryCpEdgesIdx = ST_NOHANDLE
+    
+    ! this array is an index into the p_IfacesAtBoundary array it
+    ! works like the p_IboundaryCpIdx for the vertices... see above
+    INTEGER          :: h_IboundaryCpFacesIdx = ST_NOHANDLE
 
     ! Vertices on boundary. 
     ! Handle to 
@@ -1959,6 +1971,13 @@ CONTAINS
 
     call checkAndRelease(idupflag, TR_SHARE_IFACESATBOUNDARY, &
            rtriangulation%h_IfacesAtBoundary)
+           
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPEDGESIDX,&
+          rtriangulation%h_IboundaryCpEdgesIdx)
+
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPFACESIDX,&
+          rtriangulation%h_IboundaryCpFacesIdx)
+           
            
     
     ! Clean up the rest of the structure
@@ -9347,9 +9366,10 @@ CONTAINS
     integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtFace
     integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
+    integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpFacesIdx    
     integer :: ive
     integer(PREC_ELEMENTIDX) :: iface, inumElements, iel, inumVertices
-    integer(PREC_VERTEXIDX) :: isize, iglobIndex, NFBD, findex
+    integer(PREC_VERTEXIDX) :: isize, iglobIndex, NFBD, findex, iBdyComp
     
     NFBD = 0
     
@@ -9372,15 +9392,31 @@ CONTAINS
       call sys_halt()
     end if
 
+    ! allocate memory
+    if(rtriangulation%h_IboundaryCpFacesIdx == ST_NOHANDLE) then
+      call storage_new ('tria_genFacesAtBoundary', 'IboundaryCpFacesIdx', &
+          int(rtriangulation%NBCT+1,I32), ST_INT, &
+          rtriangulation%h_IboundaryCpFacesIdx, ST_NEWBLOCK_NOINIT)
+    end if      
+
+
     ! Get the arrays.
     call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
     call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,p_IelementsAtFace)
     call storage_getbase_int2D (rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
-
+    call storage_getbase_int (rtriangulation%h_IboundaryCpFacesIdx,p_IboundaryCpFacesIdx)
+    
+    ! the first index is one
+    p_IboundaryCpFacesIdx(1)=1
+    ! the remaining indices are initialized with zeros
+    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+1)=0
+    
     ! loop over all faces
+    ! to count the number of faces on the boundary 
+    ! we save this number in NFBD
     do iface=1,rtriangulation%NAT
     
-      !used to count the nujmber of vertices
+      ! used to count the number of vertices
       inumVertices = 0
     
       ! count the number of boundary vertices at this face
@@ -9389,6 +9425,8 @@ CONTAINS
         
         if(p_InodalProperty(iglobIndex) > 0) then
           inumVertices = inumVertices + 1
+          ! save the number of the boundary component
+          iBdyComp = p_InodalProperty(iglobIndex)
         end if
         
       end do ! end ive
@@ -9405,32 +9443,50 @@ CONTAINS
 
       if(inumVertices == 4 .and. inumElements < 2) then
       ! boundary face
-        NFBD = NFBD + 1
+      ! increase the number of entries for tthe corresponding
+      ! boundary component
+      p_IboundaryCpFacesIdx(iBdyComp+1)=&
+      p_IboundaryCpFacesIdx(iBdyComp+1) + 1  
       else
       ! inner face
       end if
       
     end do ! end iface
+    
+    ! add up the entries to compute the actual index array
+    do ive=2,rtriangulation%NBCT+1
+    p_IboundaryCpFacesIdx(ive) = &
+    p_IboundaryCpFacesIdx(ive) + p_IboundaryCpFacesIdx(ive-1)
+    end do ! end ive
+    
+    ! number of faces on the boundary
+    NFBD = p_IboundaryCpFacesIdx(rtriangulation%NBCT+1) - 1
 
     ! assign the number of faces on the boundary
     rtriangulation%NABD = NFBD
+    
+    ! shift the indices... we do the old trick
+    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+1) = &
+    p_IboundaryCpFacesIdx(1:rtriangulation%NBCT)
 
-    ! allocate memory
+    ! allocate memory for the p_IfacesAtBoundary array
     if(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtBoundary', 'IfacesAtBoundary', &
           int(NFBD,I32), ST_INT, &
           rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
     end if      
     
-    ! get the pointer
+    ! woohoo memory is allocates so get the pointer
     call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,p_IfacesAtBoundary)
     
-    findex = 1
+    ! auxilliary index that points to the current position in the
+    ! p_IfacesAtBoundary array
+    findex = 0
     
     ! loop over all faces
     do iface=1,rtriangulation%NAT
     
-      !used to count the nujmber of vertices
+      ! used to count the number of vertices
       inumVertices = 0
     
       ! count the number of boundary vertices at this face
@@ -9452,10 +9508,17 @@ CONTAINS
           inumElements = inumElements + 1
         end if
       end do ! end iel
-
+      
       if(inumVertices == 4 .and. inumElements < 2) then
+        ! we have identified a boundary face
+        ! get the boundary component
+        iBdyComp = p_InodalProperty(iglobIndex)
+        ! so write its number in the array
+        findex = p_IboundaryCpFacesIdx(iBdyComp+1)
         p_IfacesAtBoundary(findex) = iface
-        findex = findex + 1
+        ! increase the free position in the index array
+        p_IboundaryCpFacesIdx(iBdyComp+1) = &
+        p_IboundaryCpFacesIdx(iBdyComp+1) + 1
       else
       ! inner face
       end if
@@ -9486,13 +9549,15 @@ CONTAINS
     
     integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtEdgeIdx
     integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtEdge
+    integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtEdge
     
     integer(prec_vertexidx), dimension(:), pointer :: p_IedgesAtBoundary
     integer(prec_vertexidx), dimension(:), pointer :: p_Iaux
     integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtBoundary
+    integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpEdgesIdx
     integer :: ive
     integer(prec_elementidx) :: iface,iface1,iface2, ifaceIndex
-    integer(prec_vertexidx) :: isize, iglobIndex, NMBD, eIndex
+    integer(prec_vertexidx) :: isize, iglobIndex, NMBD, eIndex, iBdyComp
     
     NMBD = 0
     
@@ -9502,6 +9567,13 @@ CONTAINS
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
       call sys_halt()
     end if
+
+    if (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) then
+      call output_line ('IverticesAtEdge not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+      call sys_halt()
+    end if
+
 
     if (rtriangulation%h_IfacesAtBoundary .EQ. ST_NOHANDLE) then
       call output_line ('IfacesAtBoundary not available!', &
@@ -9521,23 +9593,52 @@ CONTAINS
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
       call sys_halt()
     end if
-
+    
+    ! allocate memory
+    if(rtriangulation%h_IboundaryCpEdgesIdx == ST_NOHANDLE) then
+      call storage_new ('tria_genEdgesAtBoundary', 'IboundaryCpEdgesIdx', &
+          int(rtriangulation%NBCT+1,I32), ST_INT, &
+          rtriangulation%h_IboundaryCpEdgesIdx, ST_NEWBLOCK_NOINIT)
+    end if      
 
     ! Get the arrays.
     call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
     call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,p_IfacesAtBoundary)
     call storage_getbase_int (rtriangulation%h_IfacesAtEdgeIdx,p_IfacesAtEdgeIdx)
     call storage_getbase_int (rtriangulation%h_IfacesAtEdge,p_IfacesAtEdge)
+    call storage_getbase_int (rtriangulation%h_IboundaryCpEdgesIdx, &
+    p_IboundaryCpEdgesIdx)
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    
     
     ! create an auxilliary array
+    ! the auxilliary is (1:NAT) and
+    ! and p_Iaux(i) = 0 if face i is an inner
+    ! face and greater 0 if i is not a boundary face
     allocate(p_Iaux(rtriangulation%NAT))
     
-    iface1=1
+    ! initialise it with zeros
+    p_Iaux(:)=0
     
+    ! the first index is one
+    p_IboundaryCpEdgesIdx(1)=1
+    ! the remaining indices are initialized with zeros
+    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+1)=0
+    
+    ! iface1 points to the position in the
+    ! facesAtBoundary array
+    iface1=1
+    ! in the first loop over the faces we
+    ! count the number of edges on the boundary
+    ! and save it as NMBD
+    ! we also build the auxilliary array
     do iface=1,rtriangulation%NAT
     
+      ! check if the maximum number of faces on the
+      ! boundary is reached
       if(iface1 > rtriangulation%NABD) exit
     
+      ! check if face iface a boundary face
       if(p_IfacesAtBoundary(iface1) == iface) then
         p_Iaux(iface) = 1
         iface1 = iface1 + 1
@@ -9549,7 +9650,8 @@ CONTAINS
     
     ! check all edges
     do ive=1,rtriangulation%NMT
-    
+        
+      ! we get the start and end indices into facesAtEdge array  
       iface1 = p_IfacesAtEdgeIdx(ive)
       iface2 = p_IfacesAtEdgeIdx(ive+1) - 1
       
@@ -9557,12 +9659,22 @@ CONTAINS
       do iface=iface1,iface2
         ifaceIndex = p_IfacesAtEdge(iface)
         if(p_Iaux(ifaceIndex) == 1) then
+          ! the edge is connected to a boundary face
+          ! so it is a boundary edge
+          ! increase the number of edges on the boundary
           NMBD = NMBD + 1
+          ! get the boundary component number of 
+          ! a vertex of the edge
+          iBdyComp = p_IverticesAtEdge(1,ive)
+          iBdyComp = p_InodalProperty(iBdyComp)
+          p_IboundaryCpEdgesIdx(iBdyComp+1) = &
+          p_IboundaryCpEdgesIdx(iBdyComp+1) + 1
+          ! break out of this loop
           exit
         end if
       end do ! end iface
     
-    end do ! end iface
+    end do ! end ive
     
     ! assign the number of faces on the boundary
     rtriangulation%NMBD = NMBD
@@ -9577,11 +9689,23 @@ CONTAINS
     ! get the pointer
     call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
     
-    eIndex = 1
+    eIndex = 0
+    
+    ! add up the entries to compute the actual index array
+    do ive=2,rtriangulation%NBCT+1
+    p_IboundaryCpEdgesIdx(ive) = &
+    p_IboundaryCpEdgesIdx(ive) + p_IboundaryCpEdgesIdx(ive-1)
+    end do ! end ive
+    
+    ! shift the indices...
+    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+1) = &
+    p_IboundaryCpEdgesIdx(1:rtriangulation%NBCT)
     
     ! check all edges
     do ive=1,rtriangulation%NMT
     
+      ! we need to get the indices of the faces
+      ! connected to the edge
       iface1 = p_IfacesAtEdgeIdx(ive)
       iface2 = p_IfacesAtEdgeIdx(ive+1) - 1
       
@@ -9589,8 +9713,17 @@ CONTAINS
       do iface=iface1,iface2
         ifaceIndex = p_IfacesAtEdge(iface)
         if(p_Iaux(ifaceIndex) == 1) then
+          ! we have identified a boundary edge
+          ! now get the corresponding boundary component          
+          iBdyComp = p_IverticesAtEdge(1,ive)
+          iBdyComp = p_InodalProperty(iBdyComp)
+          
+          eIndex = p_IboundaryCpEdgesIdx(iBdyComp+1)
           p_IedgesAtBoundary(eIndex) = ive
-          eIndex = eIndex + 1
+          ! increase the pointer into the edgesAtBoundary array
+          p_IboundaryCpEdgesIdx(iBdyComp+1) = &
+          p_IboundaryCpEdgesIdx(iBdyComp+1) + 1
+          
           exit  
         end if
       end do ! end iface
@@ -9624,7 +9757,7 @@ CONTAINS
     ! local variables
 
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalProperty
-    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdx
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpEdgesIdx
 
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary      
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
@@ -9633,7 +9766,7 @@ CONTAINS
     integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
       
     integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
-    integer :: NVT,NEL,ivt, NVBD, NBCT
+    integer :: NVT,NEL,ivt, NVBD, NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
     NMBD = rtriangulation%NMBD
@@ -9653,8 +9786,8 @@ CONTAINS
     call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
         p_IedgesAtBoundary)
         
-    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
+    call storage_getbase_int (rtriangulation%h_IboundaryCpEdgesIdx,&
+        p_IboundaryCpEdgesIdx)
         
     call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,&
         p_IverticesAtEdge)
@@ -9684,17 +9817,28 @@ CONTAINS
     ! in the p_InodalProperty array
     do ive=1,rtriangulation%NMT
     
+      ! get the boundary component index of the vertices
+      ! that build the edge
+      IboundaryComponent = p_IverticesAtEdge(1,ive)
+      
+      ! get the boundary component number  
+      IboundaryComponent = p_InodalProperty( &
+      IboundaryComponent)
+      
+      ! if the vertex is an inner vertex
+      ! we can skip this edge
+      if(IboundaryComponent == 0) then
+        p_InodalProperty(rtriangulation%NVT+ive) = 0
+        cycle
+      end if
+      
+      IcpIdx1 = p_IboundaryCpEdgesIdx(IboundaryComponent)
+      IcpIdx2 = p_IboundaryCpEdgesIdx(IboundaryComponent+1)-1
+    
       ! check if edge is on border
-      if(tria_BinSearch(p_IedgesAtBoundary,ive,1,NMBD)==1) then
-           
-         ! get the boundary component index of the vertices
-         ! that build the edge
-         IboundaryComponent = p_IverticesAtEdge(1,ive)
-         
-         ! assign the boundary component number  
-         IboundaryComponent = p_InodalProperty( &
-         IboundaryComponent)
-         
+      if(tria_BinSearch(p_IedgesAtBoundary,ive,IcpIdx1,IcpIdx2)&
+          ==1) then
+         ! the edge is on the boundary
          ! write that number to the p_InodalProperty array 
          p_InodalProperty(rtriangulation%NVT+ive) = &
          IboundaryComponent
@@ -9706,7 +9850,6 @@ CONTAINS
     end do ! end ive
            
   end subroutine ! end tria_genEdgeNodalProperty3d
-  
   
 !====================================================================
   
@@ -9724,9 +9867,9 @@ CONTAINS
 !</subroutine>
       
     ! local variables
-
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalProperty
-    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdx
+    
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpFacesIdx    
 
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary      
     integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
@@ -9735,7 +9878,7 @@ CONTAINS
     integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
     integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
-    integer :: NVT,NEL,ivt, NVBD, NBCT
+    integer :: NVT,NEL,ivt, NVBD, NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
     NMBD = rtriangulation%NMBD
@@ -9755,8 +9898,8 @@ CONTAINS
     call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
         p_IedgesAtBoundary)
         
-    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
+    call storage_getbase_int (rtriangulation%h_IboundaryCpFacesIdx,&
+        p_IboundaryCpFacesIdx)
         
     call storage_getbase_int2d(rtriangulation%h_IverticesAtFace,&
         p_IverticesAtFace)
@@ -9784,18 +9927,29 @@ CONTAINS
     ! entry NVT+NMT+iface in the p_InodalProperty array will
     ! contain the boundary component of the face iface
     do iface=1,rtriangulation%NAT
+    
+      ! get the boundary component index of the vertices
+      ! that build the face
+      IboundaryComponent = p_IverticesAtFace(1,iface)
+         
+      ! get the boundary component number from the
+      ! p_InodalProperty array
+      IboundaryComponent = p_InodalProperty( &
+      IboundaryComponent)
+      
+      ! if the vertex is an inner vertex
+      ! we can skip this face
+      if(IboundaryComponent == 0) then
+        p_InodalProperty(rtriangulation%NVT+NMT+iface) = 0
+        cycle
+      end if
+      
+      IcpIdx1 = p_IboundaryCpFacesIdx(IboundaryComponent)
+      IcpIdx2 = p_IboundaryCpFacesIdx(IboundaryComponent+1)-1
       
       ! check if face is on border
-      if(tria_BinSearch(p_IfacesAtBoundary,iface,1,NABD)==1) then
-           
-         ! get the boundary component index of the vertices
-         ! that build the face
-         IboundaryComponent = p_IverticesAtFace(1,iface)
-         
-         ! get the boundary component number from the
-         ! p_InodalProperty array
-         IboundaryComponent = p_InodalProperty( &
-         IboundaryComponent)
+      if(tria_BinSearch(p_IfacesAtBoundary,iface,IcpIdx1,IcpIdx2)&
+         ==1) then
          
          ! write the boundary component number to the
          ! position NVT+NMT+iface
