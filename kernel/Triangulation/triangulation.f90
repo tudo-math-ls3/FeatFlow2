@@ -9121,146 +9121,6 @@ CONTAINS
 !==================================================================== 
  
 !<subroutine> 
-  subroutine tria_genFacesAtBoundary      (rtriangulation)
-!<description>
-  ! This routine generates the facesAtBoundary information
-  ! by using two conditions:
-  !                          1) a boundary face consists solely of boundary vertices
-  !                          2) it has not more than one adjacent hexa
-!</description>
-
-!<inputoutput>
-  ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
-!</inputoutput>
-  
-!</subroutine>
-
-    ! Local variables
-    integer(I32), dimension(:), pointer :: p_InodalProperty
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtFace
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
-    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
-    integer :: ive
-    integer(PREC_ELEMENTIDX) :: iface, inumElements, iel, inumVertices
-    integer(PREC_VERTEXIDX) :: isize, iglobIndex, NFBD, findex
-    
-    NFBD = 0
-    
-    ! Is everything here we need?
-    if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
-      call output_line ('InodalPropertys not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
-      call sys_halt()
-    end if
-
-    if (rtriangulation%h_IelementsAtFace .EQ. ST_NOHANDLE) then
-      call output_line ('IelementsAtFace not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
-      call sys_halt()
-    end if
-    
-    if (rtriangulation%h_IverticesAtFace .EQ. ST_NOHANDLE) then
-      call output_line ('IverticesAtFace not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
-      call sys_halt()
-    end if
-
-    ! Get the arrays.
-    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
-    call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,p_IelementsAtFace)
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
-
-    ! loop over all faces
-    do iface=1,rtriangulation%NAT
-    
-      !used to count the nujmber of vertices
-      inumVertices = 0
-    
-      ! count the number of boundary vertices at this face
-      do ive = 1,4
-        iglobIndex = p_IverticesAtFace(ive,iface)
-        
-        if(p_InodalProperty(iglobIndex) > 0) then
-          inumVertices = inumVertices + 1
-        end if
-        
-      end do ! end ive
-    
-      ! used to count the number of adjacent elements
-      inumElements = 0
-      
-      ! count the number of adjacent elements
-      do iel=1,2
-        if(p_IelementsAtFace(iel,iface) > 0) then
-          inumElements = inumElements + 1
-        end if
-      end do ! end iel
-
-      if(inumVertices == 4 .and. inumElements < 2) then
-      ! boundary face
-        NFBD = NFBD + 1
-      else
-      ! inner face
-      end if
-      
-    end do ! end iface
-
-    ! assign the number of faces on the boundary
-    rtriangulation%NABD = NFBD
-
-    ! allocate memory
-    if(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) then
-      call storage_new ('tria_genFacesAtBoundary', 'IfacesAtBoundary', &
-          int(NFBD,I32), ST_INT, &
-          rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
-    end if      
-    
-    ! get the pointer
-    call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,p_IfacesAtBoundary)
-    
-    findex = 1
-    
-    ! loop over all faces
-    do iface=1,rtriangulation%NAT
-    
-      !used to count the nujmber of vertices
-      inumVertices = 0
-    
-      ! count the number of boundary vertices at this face
-      do ive = 1,4
-        iglobIndex = p_IverticesAtFace(ive,iface)
-        
-        if(p_InodalProperty(iglobIndex) > 0) then
-          inumVertices = inumVertices + 1
-        end if
-        
-      end do ! end ive
-    
-      ! used to count the number of adjacent elements
-      inumElements = 0
-      
-      ! count the number of adjacent elements
-      do iel=1,2
-        if(p_IelementsAtFace(iel,iface) > 0) then
-          inumElements = inumElements + 1
-        end if
-      end do ! end iel
-
-      if(inumVertices == 4 .and. inumElements < 2) then
-        p_IfacesAtBoundary(findex) = iface
-        findex = findex + 1
-      else
-      ! inner face
-      end if
-      
-    end do ! end iface    
-    
-  end subroutine ! end tria_genFacesAtBoundary
-
-!==================================================================== 
-
-!<subroutine> 
   subroutine tria_refineBdry2lv3D(rsourceTriangulation,rdestTriangulation,rboundary)
 !<description>  
     ! This routine refines the boundary definition of rsourceTriangulation
@@ -9268,7 +9128,7 @@ CONTAINS
     ! IverticesAtBoundary. 
     ! If rboundary is specified, the parameter values of the boundary vertices are 
     ! updated and the coordinates of the boundary points are corrected according 
-    ! to the analytic boundarty. the boundary vertices are not sorted for their
+    ! to the analytic boundary. the boundary vertices are not sorted for their
     ! parameter value!
 !</description>  
 
@@ -9466,12 +9326,152 @@ CONTAINS
 
 !====================================================================
 
+!<subroutine> 
+  subroutine tria_genFacesAtBoundary      (rtriangulation)
+!<description>
+  ! This routine generates the facesAtBoundary information
+  ! by using two conditions:
+  !                          1) a boundary face consists solely of boundary vertices
+  !                          2) it is not connected to more than one hexa(or whatever element)
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    integer(I32), dimension(:), pointer :: p_InodalProperty
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtFace
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IfacesAtBoundary
+    integer :: ive
+    integer(PREC_ELEMENTIDX) :: iface, inumElements, iel, inumVertices
+    integer(PREC_VERTEXIDX) :: isize, iglobIndex, NFBD, findex
+    
+    NFBD = 0
+    
+    ! Is everything here we need?
+    if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
+      call output_line ('InodalPropertys not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IelementsAtFace .EQ. ST_NOHANDLE) then
+      call output_line ('IelementsAtFace not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
+      call sys_halt()
+    end if
+    
+    if (rtriangulation%h_IverticesAtFace .EQ. ST_NOHANDLE) then
+      call output_line ('IverticesAtFace not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtBoundary')
+      call sys_halt()
+    end if
+
+    ! Get the arrays.
+    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
+    call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,p_IelementsAtFace)
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
+
+    ! loop over all faces
+    do iface=1,rtriangulation%NAT
+    
+      !used to count the nujmber of vertices
+      inumVertices = 0
+    
+      ! count the number of boundary vertices at this face
+      do ive = 1,4
+        iglobIndex = p_IverticesAtFace(ive,iface)
+        
+        if(p_InodalProperty(iglobIndex) > 0) then
+          inumVertices = inumVertices + 1
+        end if
+        
+      end do ! end ive
+    
+      ! used to count the number of adjacent elements
+      inumElements = 0
+      
+      ! count the number of adjacent elements
+      do iel=1,2
+        if(p_IelementsAtFace(iel,iface) > 0) then
+          inumElements = inumElements + 1
+        end if
+      end do ! end iel
+
+      if(inumVertices == 4 .and. inumElements < 2) then
+      ! boundary face
+        NFBD = NFBD + 1
+      else
+      ! inner face
+      end if
+      
+    end do ! end iface
+
+    ! assign the number of faces on the boundary
+    rtriangulation%NABD = NFBD
+
+    ! allocate memory
+    if(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) then
+      call storage_new ('tria_genFacesAtBoundary', 'IfacesAtBoundary', &
+          int(NFBD,I32), ST_INT, &
+          rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
+    end if      
+    
+    ! get the pointer
+    call storage_getbase_int (rtriangulation%h_IfacesAtBoundary,p_IfacesAtBoundary)
+    
+    findex = 1
+    
+    ! loop over all faces
+    do iface=1,rtriangulation%NAT
+    
+      !used to count the nujmber of vertices
+      inumVertices = 0
+    
+      ! count the number of boundary vertices at this face
+      do ive = 1,4
+        iglobIndex = p_IverticesAtFace(ive,iface)
+        
+        if(p_InodalProperty(iglobIndex) > 0) then
+          inumVertices = inumVertices + 1
+        end if
+        
+      end do ! end ive
+    
+      ! used to count the number of adjacent elements
+      inumElements = 0
+      
+      ! count the number of adjacent elements
+      do iel=1,2
+        if(p_IelementsAtFace(iel,iface) > 0) then
+          inumElements = inumElements + 1
+        end if
+      end do ! end iel
+
+      if(inumVertices == 4 .and. inumElements < 2) then
+        p_IfacesAtBoundary(findex) = iface
+        findex = findex + 1
+      else
+      ! inner face
+      end if
+      
+    end do ! end iface    
+    
+  end subroutine ! end tria_genFacesAtBoundary
+
+!==================================================================== 
+
 !<subroutine>  
   subroutine tria_genEdgesAtBoundary(rtriangulation)
 !<description>
   ! This routine generates the edgesAtBoundary information
   ! by using a simple condition:
-  ! -------a boundary edge has a boundary face attached to it-------
+  ! -------a boundary edge has a boundary face attached-------
 !</description>
 
 !<inputoutput>
@@ -9609,7 +9609,9 @@ CONTAINS
   subroutine tria_genEdgeNodalProperty3d(rtriangulation)
 !<description>
   ! This routine generates the nodalproperty for the nodes that will be
-  ! formed by the current set of edges
+  ! formed by the current set of edges.
+  ! This is done by simply checking the pregenerated edgesAtBoundary
+  ! information
 !</description>
 
 !<inputoutput>
@@ -9656,20 +9658,13 @@ CONTAINS
         
     call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,&
         p_IverticesAtEdge)
-        
-
-    ! calculate the new value of NVBD
-    NVBD =  rtriangulation%NVBD + &
-            rtriangulation%NMBD + &      
-            rtriangulation%NABD       
                                                 
     NBCT = rtriangulation%NBCT 
     
-    ! assume we are at lvl "r" then:
-    ! there are NVBD boundary vertices from lvl r 
-    ! there are NMBD new boundary vertices from the edges of lvl r
-    ! there are NABD new boundary vertices from the faces of lvl r
-      
+    ! we check the size of the p_InodalProperty array
+    ! its size should be NVT+NMT+NAT, because in the nodal
+    ! property array we ant to store the properties of
+    ! NVT vertices, NMT edges and NAT faces
     CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
     IF (isize .NE. NVT+NMT+NAT) THEN
       ! If the size is wrong, reallocate memory.
@@ -9717,9 +9712,8 @@ CONTAINS
   
   subroutine tria_genFaceNodalProperty3d(rtriangulation)
 !<description>
-  ! This routine generates the edgesAtBoundary information
-  ! by using a simple conditions:
-  !                          1) a boundary edge has a boundary face attached to it
+  ! This routine generates the faceNodal property information
+  ! by simply checking the pregenerated facesAtBoundary array
 !</description>
 
 !<inputoutput>
@@ -9767,18 +9761,12 @@ CONTAINS
     call storage_getbase_int2d(rtriangulation%h_IverticesAtFace,&
         p_IverticesAtFace)
 
-    ! calculate the new value of NVBD
-    NVBD =  rtriangulation%NVBD + &
-            rtriangulation%NMBD + &      
-            rtriangulation%NABD       
-                                                
     NBCT = rtriangulation%NBCT 
     
-    ! assume we are at lvl "r" then:
-    ! there are NVBD boundary vertices from lvl r 
-    ! there are NMBD new boundary vertices from the edges of lvl r
-    ! there are NABD new boundary vertices from the faces of lvl r
-      
+    ! we check the size of the p_InodalProperty array
+    ! its size should be NVT+NMT+NAT, because in the nodal
+    ! property array we ant to store the properties of
+    ! NVT vertices, NMT edges and NAT faces
     CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
     IF (isize .NE. NVT+NMT+NAT) THEN
       ! If the size is wrong, reallocate memory.
