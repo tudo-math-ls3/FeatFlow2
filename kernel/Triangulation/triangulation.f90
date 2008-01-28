@@ -9261,12 +9261,17 @@ CONTAINS
       ! copy the nodal properties
       ! the vertex, edge and face properties of the source mesh
       ! are the vertex properties of the destination mesh
-      p_InodalPropertyDest(1:NVT+NMT+NAT) = &        
-      p_InodalPropertySource(1:NVT+NMT+NAT)
+      call lalg_copyVectorint(p_InodalPropertySource(1:NVT+NMT+NAT),&
+           p_InodalPropertyDest(1:NVT+NMT+NAT))
+      
+!      p_InodalPropertyDest(1:NVT+NMT+NAT) = &        
+!      p_InodalPropertySource(1:NVT+NMT+NAT)
 
       ! there are still NEL vertices remaining but these
       ! are not boundary vertices so assign zeros there
-      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
+      call lalg_clearVectorint( &
+           p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL))
+!      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
       
       
       ! allocate memory
@@ -9555,9 +9560,11 @@ CONTAINS
     integer(prec_vertexidx), dimension(:), pointer :: p_Iaux
     integer(prec_vertexidx), dimension(:), pointer :: p_IfacesAtBoundary
     integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpEdgesIdx
-    integer :: ive
+    integer :: ive, h_IbdyComponents, ibct, ibdyFace, inotFound
     integer(prec_elementidx) :: iface,iface1,iface2, ifaceIndex
     integer(prec_vertexidx) :: isize, iglobIndex, NMBD, eIndex, iBdyComp
+    integer(prec_vertexidx), dimension(:), pointer :: p_IbdyComponents
+    integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpFacesIdx        
     
     NMBD = 0
     
@@ -9609,6 +9616,8 @@ CONTAINS
     call storage_getbase_int (rtriangulation%h_IboundaryCpEdgesIdx, &
     p_IboundaryCpEdgesIdx)
     call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    call storage_getbase_int (rtriangulation%h_IboundaryCpFacesIdx,p_IboundaryCpFacesIdx)    
+    
     
     
     ! create an auxilliary array
@@ -9619,6 +9628,16 @@ CONTAINS
     
     ! initialise it with zeros
     p_Iaux(:)=0
+
+    ! another auxilliary array which is used as a pointer to
+    ! the free positions for the different boundary components
+    h_IbdyComponents = ST_NOHANDLE
+    
+    call storage_copy(rtriangulation%h_IboundaryCpFacesIdx, &
+         h_IbdyComponents)
+    
+    call storage_getbase_int (h_IbdyComponents, &
+         p_IbdyComponents)
     
     ! the first index is one
     p_IboundaryCpEdgesIdx(1)=1
@@ -9628,6 +9647,7 @@ CONTAINS
     ! iface1 points to the position in the
     ! facesAtBoundary array
     iface1=1
+    
     ! in the first loop over the faces we
     ! count the number of edges on the boundary
     ! and save it as NMBD
@@ -9637,12 +9657,32 @@ CONTAINS
       ! check if the maximum number of faces on the
       ! boundary is reached
       if(iface1 > rtriangulation%NABD) exit
-    
-      ! check if face iface a boundary face
-      if(p_IfacesAtBoundary(iface1) == iface) then
-        p_Iaux(iface) = 1
-        iface1 = iface1 + 1
-      else
+      
+      inotFound = 0
+      ! check for this face in every boundary component
+      ! until we have found it
+      do ibct=1,rtriangulation%NBCT
+        ! check if face iface a boundary face
+        ibdyFace = p_IbdyComponents(ibct)
+        ! if we are at or beyond the end of that bdy component
+        ! then skip it
+        if(ibdyFace >= p_IboundaryCpFacesIdx(ibct+1)) cycle
+        if(p_IfacesAtBoundary(ibdyFace) == iface) then
+          ! we have identified a boundary face
+          p_Iaux(iface) = 1
+          ! increase the number of boundary faces found
+          iface1 = iface1 + 1
+          ! increase the pointer to the boundary comp index
+          p_IbdyComponents(ibct) = p_IbdyComponents(ibct) + 1
+          exit ! break out of the ibct loop 
+        else
+          ! increase the not found counter
+          inotFound = inotFound + 1
+        end if
+      end do ! end do ibct
+      
+      ! if not found
+      if(inotFound == rtriangulation%NBCT) then
         p_Iaux(iface) = 0
       end if
     
@@ -9733,6 +9773,7 @@ CONTAINS
     
     ! free memory
     deallocate(p_Iaux)
+    call storage_free(h_IbdyComponents)
     
   end subroutine ! end tria_genEdgesAtBoundary
   
