@@ -2132,7 +2132,7 @@ CONTAINS
     TYPE(t_sptilsNode), POINTER :: p_rmgSolver,p_rsmoother,p_rcgrSolver
     TYPE(t_sptilsNode), POINTER :: p_rpresmoother,p_rpostsmoother
     
-    TYPE(t_spaceTimeVector) :: rtemp
+    ! TYPE(t_spaceTimeVector) :: rtemp
 
     REAL(DP) :: ddefNorm,dinitDefNorm
     
@@ -2662,7 +2662,8 @@ CONTAINS
       
       CALL stat_clearTimer (rtimerMGStep)
 
-      CALL sptivec_copyVector (rd,rtemp)
+      ! DEBUG!!!
+      !CALL sptivec_copyVector (rd,rtemp)
       
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
@@ -2681,10 +2682,10 @@ CONTAINS
         
       END IF
       
-      CALL output_line('Linear defect:')
-      CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rd, rtemp, &
-        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,.TRUE.)
-      CALL output_separator (OU_SEP_MINUS)
+      !CALL output_line('Linear defect:')
+      !CALL c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rd, rtemp, &
+      !  -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,.TRUE.)
+      !CALL output_separator (OU_SEP_MINUS)
       
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
@@ -2790,6 +2791,9 @@ CONTAINS
     ! Release the space-time and spatial preconditioner. 
     ! We don't need them anymore.
     CALL sptils_releaseSolver (p_rsolverNode)
+    
+    ! Release temp memory
+    ! CALL sptivec_releaseVector (rtemp)
     
     ! Release the spatial preconditioner and temp vector on every level
     DO ilev=1,SIZE(RspatialPrecond)
