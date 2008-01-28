@@ -1348,7 +1348,7 @@ CONTAINS
   END IF
 
   NVT = p_rtriangulation%NVT
-  nnve = tria_getNNVE(p_rtriangulation)
+  nnve = p_rtriangulation%NNVE
 
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
     ! Every element can be of different type.

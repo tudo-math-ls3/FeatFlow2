@@ -23,64 +23,64 @@
 !#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
 !#         information.
 !#
-!#  3.) tria_initStandardMeshFromRaw
+!#  3.) tria_readTriFile3D
+!#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
+!#         information.
+!#
+!#  4.) tria_initStandardMeshFromRaw
 !#      -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
 !#         (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!#  4.) tria_refine2LevelOrdering
+!#  5.) tria_refine2LevelOrdering
 !#      -> Refines a mesh according to the 2-level ordering algorithm.
 !#         Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
-!#  5.) tria_compress2LevelOrdHierarchy
+!#  6.) tria_compress2LevelOrdHierarchy
 !#      -> Can be used to compress a mesh hierarchy created with the 2-level
 !#         ordering. Saves memory. Shares vertex coordinates between fine
 !#         and coarse mesh.
 !#
-!#  6.) tria_quickRefine2LevelOrdering
+!#  7.) tria_quickRefine2LevelOrdering
 !#      -> Refines a mesh multiple times according to the 2-level ordering 
 !#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
 !#         coarse mesh.
 !#
-!#  7.) tria_done
+!#  8.) tria_done
 !#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!#  8.) tria_rawGridToTri
+!#  9.) tria_rawGridToTri
 !#      -> Converts a raw mesh into a triangular mesh.
 !#
-!#  9.) tria_duplicate
+!# 10.) tria_duplicate
 !#      -> Creates a duplicate / backup of a triangulation.
 !#         Some information may be shared between two triangulation structures.
 !#
-!# 10.) tria_restore
+!# 11.) tria_restore
 !#      -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 11.) tria_searchBoundaryNode
+!# 12.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 12.) tria_getPointsOnEdge
+!# 13.) tria_getPointsOnEdge
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
-!# 13.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
+!# 14.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
-!# 14.) tria_createRawTria1D
+!# 15.) tria_createRawTria1D
 !#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
 !#         of the same length
 !#
-!# 15.) tria_infoStatistics
+!# 16.) tria_infoStatistics
 !#      -> Prints out statistics about a mesh.
 !#
-!# 16.) tria_exportTriFile
+!# 17.) tria_exportTriFile
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
-!# 17.) tria_getNeighbourVertex
+!# 18.) tria_getNeighbourVertex
 !#      -> Calculates the vertex number of the neighbour vertex of a 
 !#         vertex on an edge.
-!#
-!# 18.) tria_readTriFile3D
-!#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
-!#         information.
 !#
 !# Auxiliary routines:
 !#
@@ -136,11 +136,52 @@
 !#      -> Generates the IboundaryEdgePos2D array for a 2D triangulatioon
 !#
 !# 18.) tria_readRawTriangulation3d
+!#      -> Read a 3D .TRI file
 !#
 !# 19.) tria_genRawBoundary3d
+!#      -> Generate basic boundary information in 3D
 !#
-!# 20.) tria_genElementsAtVertex3D
+!# 20.) tria_refineMesh2lv3D
+!#      -> Refine a 3D mesh with 2-level ordering
 !#
+!# 21.) tria_refineBdry2lv3D
+!#      -> Refine the 3D boundary
+!#
+!# 22.) tria_genFacesAtBoundary
+!#      -> Generate the array with face numbers on the boundary
+!#
+!# 23.) tria_genEdgeNodalProperty3d
+!#      -> Generate the edge nodal property in 3D
+!#
+!# 24.) tria_genFaceNodalProperty3d
+!#      -> Generate the face nodal property in 3D
+!#
+!# 25.) tria_genFacesAtVertex
+!#      -> Generate the arrays with the faces on the boundary
+!#
+!# 26.) tria_genFacesAtEdge
+!#      -> Generate the arrays with the faces at an edge
+!#
+!# 27.) tria_genEdgesAtFace
+!#      -> Generate the arrays with the edges at a face
+!#
+!# 28.) tria_genElementsAtFace
+!#      -> Generate the arrays with the elements at a face
+!#
+!# 29.) tria_genVerticesAtFace
+!#      -> Generate the arrays with the vertices at a face
+!#
+!# 30.) tria_genFacesAtElement
+!#      -> Generate the arrays with the faces at an element
+!#
+!# 31.) tria_genVerticesAtEdge3D
+!#      -> Generate the arrays describing the vertices at an edge in 3D
+!#
+!# 32.) tria_genElementsAtEdge3D
+!#      -> Generate the arrays describing the elements at an edge in 3D
+!#
+!# 33.) tria_genElementsAtVertex3D
+!#      -> Generate the 'elements at vertex' arrays
 !#
 !#  FAQ - Some explainations
 !# --------------------------
@@ -491,15 +532,21 @@ MODULE triangulation
     ! Number of edges on the boundary; coincides with NVBD
     ! for 2D domains.
     INTEGER             :: NMBD = 0
+
+    ! Maximum number of vertices per element.
+    ! 3 for 2D triangles, 4 for 2D quads or 3D tetrahedrons, 12 for 3D hexas
+    INTEGER             :: NNVE = 0
     
-    ! Number of vertices per element, 4 for a 2d quad mesh, 8 for a 3d hex mesh
-    INTEGER             :: NVE = 0
+    ! Maximum number of edges per element.
+    ! 3 for 2D triangles, 4 for 2D quads or 3D tetrahedrons, 12 for 3D hexas.
+    INTEGER             :: NNEE = 0
     
-    ! Number of edges per element 4 for quad, 12 for hexas
-    INTEGER             :: NEE = 0
+    ! Maximum number of areas per element. One hexa has e.g. 6 areas.
+    INTEGER             :: NNAE = 0
     
-    ! Maximum number of areas per element... one hexa has 6 areas
-    INTEGER             :: NAE = 0
+    ! Maximum number of vertices per face. 3 for 3D tetraheral meshes,
+    ! 4 for 3D hexahedral meshes. Unused in 2D.
+    INTEGER             :: NNVA = 0
     
     ! Number of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
@@ -571,7 +618,7 @@ MODULE triangulation
 
     ! Edges Adjacent to an Element.
     ! Handle to 
-    !       p_RedgesAtElement = array [1..NVE,1..NEL] of integer
+    !       p_IedgesAtElement = array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
     ! This is the old KMID array.
@@ -592,7 +639,7 @@ MODULE triangulation
     ! This is the old KADJ array.
     INTEGER        :: h_IneighboursAtElement = ST_NOHANDLE
     
-    ! Elements Adjacent to an Edge. 
+    ! Elements Adjacent to an Edge. Only 2D.
     ! Handle to 
     !       p_IelementsAtEdge = array [1..2,1..NMT] of integer.
     ! The numbers of the two elements adjacent to an edge IMT in 2D. 
@@ -704,15 +751,6 @@ MODULE triangulation
     ! This is the old KBCT array.
     INTEGER          :: h_IboundaryCpIdx = ST_NOHANDLE
     
-    ! in 2d this is a dublicate of h_IboundaryCpIdx, make it with the dublicate flag
-    ! in 3d this array is in index into the p_IedgesAtBoundary array that
-    ! works like the p_IboundaryCpIdx for the vertices... see above
-    INTEGER          :: h_IboundaryCpEdgesIdx = ST_NOHANDLE
-    
-    ! this array is an index into the p_IfacesAtBoundary array it
-    ! works like the p_IboundaryCpIdx for the vertices... see above
-    INTEGER          :: h_IboundaryCpFacesIdx = ST_NOHANDLE
-
     ! Vertices on boundary. 
     ! Handle to 
     !       p_IverticesAtBoundary = array [1..NVBD] of integer.
@@ -723,18 +761,37 @@ MODULE triangulation
     ! This is the old KVBD array.
     INTEGER          :: h_IverticesAtBoundary = ST_NOHANDLE
 
-    ! Edges Adjacent to the boundary. 
+    ! In 2d this is a reference to the IboundaryCpIdx array.
+    ! (Note: By du0plication flag, both arrays are identical and have
+    ! the same handles).
+    ! In 3d, this array is in index into the p_IedgesAtBoundary array that
+    ! works like the p_IboundaryCpIdx for the vertices... see above.
+    INTEGER          :: h_IboundaryCpEdgesIdx = ST_NOHANDLE
+    
+    ! Edges adjacent to the boundary. 
     ! Handle to 
-    !       p_IedgesAtBoundary = array [1..NVBD] of integer.
-    ! This array contains a list of all edges on the (real) boundary
-    ! in mathematically positive sense.
+    !       p_IedgesAtBoundary = array [1..NMBD] of integer.
+    ! This array contains a list of all edges on the (real) boundary.
+    ! 2D: in mathematically positive sense. 
+    ! 3D: with increasing number.
     ! The boundary edges of boundary component i are saved at
-    !        p_IboundaryCpIdx(i)..p_IboundaryCpIdx(i+1)-1.
+    !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1.
     ! This is the old KMBD array.
+    ! (Note: In 2D, the above index pointer coincides with
+    !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1 ).
     INTEGER          :: h_IedgesAtBoundary = ST_NOHANDLE
     
-    
-    ! an index array to the faces that are on the boundary
+    ! Ihis array is an index into the p_IfacesAtBoundary array it
+    ! works like the p_IboundaryCpIdx for the vertices... see above.
+    INTEGER          :: h_IboundaryCpFacesIdx = ST_NOHANDLE
+
+    ! Faces adjacent to the boundary. Only 3D, undefined in 2D.
+    ! Handle to 
+    !       p_IfacesAtBoundary = array [1..NMBD] of integer.
+    ! This array contains a list of all edges on the (real) boundary
+    ! with increasing number.
+    ! The boundary edges of boundary component i are saved at
+    !        p_IboundaryCpFacesIdx(i)..p_IboundaryCpFacesIdx(i+1)-1.
     INTEGER          :: h_IfacesAtBoundary = ST_NOHANDLE
 
     ! Elements Adjacent to the boundary. 
@@ -836,38 +893,95 @@ MODULE triangulation
     ! elements attached to an edge. for edge IVE, the array
     ! p_IelementsAtEdge3d contains the indices of the elements around this
     ! edge at the array positions
-    !     h_IelementsAtEdgeIdx3d(IVE)..h_IelementsAtEdgeIdx3d(IVE+1)-1.
+    !     p_IelementsAtEdgeIdx3d(IVE)..p_IelementsAtEdgeIdx3d(IVE+1)-1.
     ! By subtracting
     !     p_IelementsAtEdgeIdx3d(IVE+1)-p_IelementsAtEdgeIdx3d(IVE)
-    ! One can get the number of elements attached to edge IVE.
+    ! One can get the number of elements attached to edge IVE. Only 3D.
     INTEGER        :: h_IelementsAtEdgeIdx3d = ST_NOHANDLE
     
-    ! Elements Adjacent to an Edge. 
-    ! Handle to h_IelementsAtEdge3d 
+    ! Elements Adjacent to an Edge. Only 3D.
+    ! Array containing the Elements Adjacent to an edge.
+    ! Handle to 
+    !       p_IelementsAtEdge3d = array(1..*) of integer
+    ! p_IelementsAtEdge3D ( p_IelementsAtEdgeIdx3d(IVT)..p_IelementsAtEdgeIdx3d(IVT+1)-1 )
+    ! contains the number of the adjacent element in an edge.
     INTEGER        :: h_IelementsAtEdge3d = ST_NOHANDLE
     
-    ! the faces at an element
-    INTEGER        :: h_IfacesAtElement = ST_NOHANDLE
-    
-    ! the verticesAtFace
-    INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
-    
-    ! the elementsAtFace
-    INTEGER        :: h_IelementsAtFace = ST_NOHANDLE
-    
-    ! a pair of arrays thats builds a list of the edges at a face
+    ! Handle to 
+    !       p_IfacesAtEdgeIdx=array [1..NMT+1] of integer.
+    ! Index array for p_IfacesAtEdge of length NMT+1 for describing the
+    ! faces adjacent to an edge. For edge IMT, the array
+    ! p_IfacesAtEdge contains the numbers of the faces around this
+    ! edge at indices 
+    !     p_IfacesAtEdgeIdx(IMT)..p_IfacesAtEdgeIdx(IMT+1)-1.
+    ! By subtracting
+    !     p_IfacesAtEdgeIdx(IMT+1)-p_IfacesAtEdgeIdx(IMT)
+    ! One can get the number of faces adjacent to an edge. Only 3D.
     INTEGER        :: h_IfacesAtEdgeIdx = ST_NOHANDLE
+
+    ! Array containing the Faces Adjacent to an Edge.
+    ! Handle to 
+    !       p_IfacesAtEdge = array(1..*) of integer
+    ! p_IfacesAtEdge ( p_IfacesAtEdgeIdx(IVT)..p_IfacesAtEdgeIdx(IVT+1)-1 )
+    ! contains the number of the adjacent faces in an edge.
     INTEGER        :: h_IfacesAtEdge    = ST_NOHANDLE
     
-    ! the edges that make up a particular face
-    INTEGER        :: h_IedgesAtFace
-
-    ! a pair of arrays thats builds a list of the faces at a vertex
+    ! Handle to 
+    !       p_IfacesAtVertexIdx=array [1..NVT+1] of integer.
+    ! Index array for p_IfacesAtVertex of length NVT+1 for describing the
+    ! faces adjacent to an edge. For vertex IVT, the array
+    ! p_IfacesAtVertex contains the numbers of the faces around this
+    ! vertex at indices 
+    !     p_IfacesAtVertexIdx(IVT)..p_IfacesAtVertexIdx(IVT+1)-1.
+    ! By subtracting
+    !     p_IfacesAtVertexIdx(IVT+1)-p_IfacesAtVertexIdx(IVT)
+    ! One can get the number of faces adjacent to an edge. Only 3D.
     INTEGER        :: h_IfacesAtVertexIdx = ST_NOHANDLE
+
+    ! Array containing the Faces Adjacent to a Vertex. Only 3D.
+    ! Handle to 
+    !       p_IfacesAtVertex = array(1..*) of integer
+    ! p_IfacesAtVertex ( p_IfacesAtVertexIdx(IVT)..p_IfacesAtVertexIdx(IVT+1)-1 )
+    ! contains the number of the adjacent faces in a vertex.
     INTEGER        :: h_IfacesAtVertex    = ST_NOHANDLE
      
-   
+    ! Faces adjacent to an element. Only 3D.
+    ! Handle to 
+    !       p_IfacesAtElement = array [1..NNAE,1..NEL] of integer
+    ! For each element the node numbers of the edges following the
+    ! corner vertices in mathematically positive sense.
+    ! This is the old KMID array.
+    ! On pure tethrahedral meshes, there is NNAE=4. On mixed or pure hexahedral
+    ! meshes, there is NNAE=8. In this case, there is 
+    ! IedgesAtElement(5:8,.)=0 for a tethrahedral in a hexahedral mesh.
+    ! To be able to distinguish a number of an edge from a vertex number, 
+    ! edges are numbered in the range NVT+NMT+1..NVT+NMT+NAT.
+    INTEGER        :: h_IfacesAtElement = ST_NOHANDLE
     
+    ! Vertices Adjacent to a face.
+    ! Handle to 
+    !       p_IverticesAtFace = array [1..NNVA,1..NEL] of integer
+    ! For each element the node numbers of the edges following the
+    ! corner vertices in mathematically positive sense.
+    ! On pure tetrahedral meshes, there is NVA=3. On mixed or pure 
+    ! hexahedral meshes, there is NVA=4. In this case, there is 
+    ! IverticesAtFace(4,.)=0 for a tetrahedral in a hexahedral mesh.
+    INTEGER        :: h_IverticesAtFace = ST_NOHANDLE 
+    
+    ! Elements Adjacent to a Face. Only 3D.
+    ! Handle to 
+    !       p_IelementsAtEdge = array [1..2,1..NAT] of integer.
+    ! The numbers of the two elements adjacent to an edge IMT in 2D. 
+    ! For boundary edges, p_IelementsOnEdge(2,IMT) is set to 0.
+    ! This is the old KMEL array.
+    INTEGER        :: h_IelementsAtFace = ST_NOHANDLE
+
+    ! Edges Adjacent to a Face. Only 3D.
+    ! Handle to 
+    !       p_IedgesAtFace = array [1..NNVA,1..NAT] of integer.
+    ! The numbers of the edges adjacent to a face in 3D. 
+    INTEGER        :: h_IedgesAtFace
+
   END TYPE
 
 !</typeblock>
@@ -1499,13 +1613,18 @@ CONTAINS
       ! Release any old data.
       CALL tria_done (rbackupTriangulation)
       
-      rbackupTriangulation%ndim                   = rtriangulation%ndim                  
-      rbackupTriangulation%NVT                    = rtriangulation%NVT                   
-      rbackupTriangulation%NMT                    = rtriangulation%NMT                   
-      rbackupTriangulation%NEL                    = rtriangulation%NEL                   
-      rbackupTriangulation%NBCT                   = rtriangulation%NBCT                  
-      rbackupTriangulation%NVBD                   = rtriangulation%NVBD                  
-      rbackupTriangulation%NMBD                   = rtriangulation%NMBD                  
+      rbackupTriangulation%ndim                   = rtriangulation%ndim
+      rbackupTriangulation%NVT                    = rtriangulation%NVT 
+      rbackupTriangulation%NMT                    = rtriangulation%NMT 
+      rbackupTriangulation%NEL                    = rtriangulation%NEL 
+      rbackupTriangulation%NAT                    = rtriangulation%NAT
+      rbackupTriangulation%NBCT                   = rtriangulation%NBCT
+      rbackupTriangulation%NVBD                   = rtriangulation%NVBD
+      rbackupTriangulation%NMBD                   = rtriangulation%NMBD
+      rbackupTriangulation%NNVE                   = rtriangulation%NNVE
+      rbackupTriangulation%NNEE                   = rtriangulation%NNEE
+      rbackupTriangulation%NNAE                   = rtriangulation%NNAE
+      rbackupTriangulation%NNVA                   = rtriangulation%NNVA
       rbackupTriangulation%nverticesPerEdge       = rtriangulation%nverticesPerEdge      
       rbackupTriangulation%nVerticesOnAllEdges    = rtriangulation%nVerticesOnAllEdges   
       rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
@@ -1985,6 +2104,10 @@ CONTAINS
     rtriangulation%iduplicationFlag = 0
     rtriangulation%ndim = 0
     rtriangulation%NVT = 0
+    rtriangulation%NNVE = 0
+    rtriangulation%NNAE = 0
+    rtriangulation%NNVA = 0
+    rtriangulation%NNEE = 0
     rtriangulation%NMT = 0
     rtriangulation%NEL = 0
     rtriangulation%NBCT = 0
@@ -2264,7 +2387,9 @@ CONTAINS
     ! Read NEL,NVT,NMT,NVE,NBCT from the file
     ! and store this information in the structure.
     READ (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        NVE,rtriangulation%NBCT
+        rtriangulation%NNVE,rtriangulation%NBCT
+        
+    nve = rtriangulation%NNVE
 
     ! Comment: 'DCORVG'
     READ (iunit,*)
@@ -2614,6 +2739,8 @@ CONTAINS
 
     ! We have nintv+1 vertices
     rtriangulation%NVT = nintv+1
+    
+    rtriangulation%NNVE = 2
 
     ! Allocate vertices
     Isize = (/1, nintv+1/)
@@ -2748,7 +2875,6 @@ CONTAINS
     CASE (NDIM3D)
     ! vertices at element info provided by tri-File
     call tria_genElementsAtVertex3D   (rtriangulation)
-    call tria_genFacesAtElement3D     (rtriangulation)
     call tria_genNeighboursAtElement3D(rtriangulation)
     call tria_genEdgesAtElement3D     (rtriangulation)
     call tria_genElementsAtEdge3D     (rtriangulation)
@@ -2765,7 +2891,7 @@ CONTAINS
     
     !----BOUNDARY------
     call tria_genFacesAtBoundary      (rtriangulation)
-    call tria_genEdgesAtBoundary      (rtriangulation)
+    call tria_genEdgesAtBoundary3D    (rtriangulation)
 
     !----Properties----!
     call tria_genEdgeNodalProperty3d  (rtriangulation)
@@ -2880,6 +3006,10 @@ CONTAINS
 !<description>
   ! Determines the maximum number of vertices per element in
   ! rtriangulation.
+  !
+  ! DEPRECATED: Alternatively, the rtriangulation%NNVE-variable can be 
+  ! used. tria_getNNVE determines NNVE without rtriangulation%NNVE by
+  ! checking the array size.
 !</description>
 
 !<inputoutput>
@@ -2900,6 +3030,38 @@ CONTAINS
         rtriangulation%h_IverticesAtElement,p_Idata2D)
         
     tria_getNNVE = UBOUND(p_Idata2D,1)
+
+  END FUNCTION
+
+!************************************************************************
+
+!<function>
+
+  INTEGER FUNCTION tria_getNNVA(rtriangulation)
+
+!<description>
+  ! Determines the maximum number of vertices per face in
+  ! rtriangulation.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+!</inputoutput>
+  
+!<result>
+  ! Maximum number of vertices per face.
+!</result>
+  
+!</function>
+
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Idata2D
+    
+    ! NNVE is given by the first dimension of KVERT
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtFace,p_Idata2D)
+        
+    tria_getNNVA = UBOUND(p_Idata2D,1)
 
   END FUNCTION
 
@@ -3080,7 +3242,7 @@ CONTAINS
     ! Fill the index array with zero.
     CALL storage_clear (rtriangulation%h_IelementsAtVertexIdx)
     
-    nnve = tria_getNNVE(rtriangulation)
+    nnve = rtriangulation%NNVE
 
     ! We create the index array in two steps. In the first step,
     ! we loop over the elements to find out, how many elements
@@ -3189,7 +3351,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel1, iel2, ivi1, ivi2
     INTEGER(PREC_VERTEXIDX) :: ivt, ive
     
-    nnve = tria_getNNVE(rtriangulation)
+    nnve = rtriangulation%NNVE
 
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
@@ -3299,7 +3461,7 @@ CONTAINS
     INTEGER(PREC_EDGEIDX) :: iidxEdge, iedge, iedgeneighbour
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IedgeIdx
 
-    nnve = tria_getNNVE(rtriangulation)
+    nnve = rtriangulation%NNVE
 
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
@@ -4231,7 +4393,7 @@ CONTAINS
     
     CALL storage_getbase_int (rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
 
-    nnve = tria_getNNVE(rtriangulation)
+    nnve = rtriangulation%NNVE
 
     ! Loop through all boundary components
     DO ibct = 1,rtriangulation%NBCT
@@ -4373,7 +4535,7 @@ CONTAINS
     
     CALL storage_getbase_int (rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
 
-    nnve = tria_getNNVE(rtriangulation)
+    nnve = rtriangulation%NNVE
 
     ! Loop through all boundary components
     !$OMP PARALLEL DO PRIVATE(ivbd,ivt,iel,ive)
@@ -4872,7 +5034,7 @@ CONTAINS
           CALL tria_genFacesAtEdge           (rtriangulation)             
 
         IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
-          CALL tria_genEdgesAtBoundary       (rtriangulation)
+          CALL tria_genEdgesAtBoundary3d     (rtriangulation)
           
         call tria_genEdgeNodalProperty3d  (rtriangulation)
         
@@ -5103,12 +5265,14 @@ CONTAINS
       !   fine mesh. They are appended to the vertices from the
       !   coarse mesh
       
-      nnve = tria_getNNVE(rsourceTriangulation)
+      nnve = rsourceTriangulation%NNVE
       
       ! Initialise the basic mesh data in rdestTriangulation:
       
       ! 1D mesh
       rdestTriangulation%ndim = NDIM1D
+      
+      rdestTriangulation%NNVE = nnve
       
       ! Every element is divided into 2 subelements
       rdestTriangulation%NEL = 2 * rsourceTriangulation%NEL
@@ -5316,7 +5480,7 @@ CONTAINS
       ! So at first, get the number of quads in the mesh (may be =0 which is ok).
       
       nquads = rsourceTriangulation%InelOfType (TRIA_NVEQUAD2D)
-      nnve = tria_getNNVE(rsourceTriangulation)
+      nnve = rsourceTriangulation%NNVE
       
       IF ((nnve .LT. TRIA_NVETRI2D) .OR. (nnve .GT. TRIA_NVEQUAD2D)) THEN
       
@@ -5331,6 +5495,8 @@ CONTAINS
       
       ! 2D mesh
       rdestTriangulation%ndim = NDIM2D
+      
+      rdestTriangulation%nnve = nnve
       
       ! Every element is divided into 4 subelements
       rdestTriangulation%NEL = 4 * rsourceTriangulation%NEL
@@ -6483,7 +6649,7 @@ CONTAINS
 
     ! Write NEL,NVT,NMT,NVE,NBCT to the file
     WRITE (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        tria_getNNVE(rtriangulation),rtriangulation%NBCT,'NEL NVT NMT NVE NBCT'
+        rtriangulation%NNVE,rtriangulation%NBCT,'NEL NVT NMT NVE NBCT'
 
     ! Write: 'DCORVG'
     WRITE (iunit,*) 'DCORVG'
@@ -6701,9 +6867,15 @@ CONTAINS
   rtriangulation%NVT  = NVT
   rtriangulation%NEL  = NEL
   rtriangulation%NBCT = NBCT
-  rtriangulation%NVE  = NVE
-  rtriangulation%NEE  = NEE
-  rtriangulation%NAE  = NAE
+  rtriangulation%NNEE  = NEE
+  rtriangulation%NNAE  = NAE
+  
+  ! Vertices per face
+  IF (NAE .EQ. 4) THEN
+    rtriangulation%NNVA = 3
+  ELSE
+    rtriangulation%NNVA = 4
+  END IF
   
   ! skip Comment: 'DCORVG'
   read (iunit,*) 
@@ -6813,7 +6985,6 @@ CONTAINS
 
   ! local variables
   real(dp), dimension(:,:), pointer :: p_DvertexCoords
-  real(dp), dimension(:), pointer :: p_DvertexParameterValue
   integer(prec_vertexidx), dimension(:), POINTER :: p_IboundaryCpIdx
   integer(prec_vertexidx), dimension(:), POINTER :: p_IverticesAtBoundary
   integer(prec_vertexidx) :: ivbd,ivt
@@ -6969,7 +7140,7 @@ CONTAINS
     call storage_clear (rtriangulation%h_IelementsAtVertexIdx)
     
     ! shorthand to number of elements at vertex
-    nnve = rtriangulation%nve
+    nnve = rtriangulation%NNVE
     
     ! first we calculate the number of elements at each vertex simply by counting
     
@@ -7056,36 +7227,6 @@ CONTAINS
     
     end subroutine ! end tria_genElementsAtVertex3D
 
-!************************************************************************
-
-!<subroutine>    
-    subroutine tria_genFacesAtElement3D(rtriangulation)
-    
-!<description>
-  ! This routine generates the array IfacesAtElement
-  ! For this purpose, the following arrays are used:
-  ! IverticesAtElement.
-  ! If necessary, new memory is allocated.
-!</description>
-
-!<inputoutput>
-  ! The triangulation structure to be updated.
-    type(t_triangulation), intent(inout) :: rtriangulation
-!</inputoutput>
-    
-!</subroutine>        
-
-    ! local variables
-    integer(PREC_VERTEXIDX) , dimension(:,:), pointer :: p_IverticesAtElement
-    
-    ! Get some data arrays about the vertices.
-    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-     
-    
-    
-    end subroutine ! end tria_genFacesAtElement3D
-    
 !************************************************************************    
 !<subroutine>      
   recursive subroutine tria_mergesort(p_ConnectorList, l, r, pos)
@@ -7253,7 +7394,7 @@ CONTAINS
 !</subroutine>    
 
   ! local variables
-  integer :: i,j,k, NVFACE,iae
+  integer :: i,j,k, NVFACE
   
   integer, dimension(:,:), pointer :: p_idata3d
     
@@ -7265,10 +7406,10 @@ CONTAINS
   
     
   ! allocate memory for NEL connectors
-  allocate(p_IConnectList(rtriangulation%NEL*rtriangulation%NAE))
+  allocate(p_IConnectList(rtriangulation%NEL*rtriangulation%NNAE))
     
-  ! number of  face
-  NVFACE = rtriangulation%NAE
+  ! number of face
+  NVFACE = rtriangulation%NNAE
     
   ! loop through all hexahedrons
   do i=1, rtriangulation%NEL
@@ -7393,17 +7534,13 @@ CONTAINS
     type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
-  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
-  integer, dimension(:), pointer :: p_IelementsAtVertex
-  integer, dimension(:,:), pointer :: p_idata3d
-    
   ! the array this routine is supposed to build
   integer, dimension(:,:), pointer :: p_IneighboursAtElement3
      
 !</subroutine>
      
   ! local variables
-  integer :: iElements, nae, iel, iae, j
+  integer :: iElements, nae, iel, j
   
   integer(i32), dimension(2) :: Isize
 
@@ -7412,7 +7549,7 @@ CONTAINS
     
   ! function body ...
   
-  nae = rtriangulation%NAE
+  nae = rtriangulation%NNAE
   
   ! Do we have (enough) memory for that array?
   if (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) then
@@ -7439,7 +7576,7 @@ CONTAINS
   ! first build the connector list
   call tria_buildConnectorList(p_IConnectList,rtriangulation)
     
-  iElements = rtriangulation%NEL*rtriangulation%NAE
+  iElements = rtriangulation%NEL*rtriangulation%NNAE
     
   ! ConnectorList is build, now sort it
   call tria_sortElements3dInt(p_IConnectList,iElements)
@@ -7655,8 +7792,7 @@ CONTAINS
   integer, dimension(:), pointer :: p_IelementsAtVertexIdx
   integer, dimension(:), pointer :: p_IelementsAtVertex
   integer(prec_edgeidx), dimension(:,:), pointer :: p_IedgesAtElement
-  integer :: ive, iveneighbour
-  integer(prec_elementidx) :: iel,ied, ielneighbour,iSCElement
+  integer(prec_elementidx) :: iel,ied, iSCElement
   integer(prec_edgeidx) :: iedge
   integer(i32), dimension(2) :: Isize
   
@@ -7697,7 +7833,7 @@ CONTAINS
   
     
   ! size of I_edgesAtElement
-  Isize=(/rtriangulation%NEE, rtriangulation%NEL/)
+  Isize=(/rtriangulation%NNEE, rtriangulation%NEL/)
  
   ! allocate memory 
   call storage_new2D ('tria_genEdgesAtElement2D', 'KMID', &
@@ -7720,7 +7856,7 @@ CONTAINS
   do iel=1,rtriangulation%NEL
   
     ! loop over all edges at the element
-    do ied=1, rtriangulation%NEE
+    do ied=1, rtriangulation%NNEE
     
       ! get the local vertex indices of the current edge
       iVertex1 = Iedges(1,ied)
@@ -7753,7 +7889,7 @@ CONTAINS
       ! the edge already has a number, so                   
       ! search for edge (iVertex1,iVertex2) in the smallest common element
       
-      do i=1,rtriangulation%NEE
+      do i=1,rtriangulation%NNEE
       
           ! get the indices of the current edge of iSCElement
           iVertexAtEdge1=p_IVerticesAtElement(Iedges(1,i),iSCElement)
@@ -7884,7 +8020,6 @@ CONTAINS
   integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
   integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
   integer(prec_edgeidx), dimension(:), pointer :: p_Iaux1
-  integer :: ive
   integer(prec_elementidx) :: iel
   integer(prec_edgeidx) :: NMT
   integer(prec_edgeidx) :: iedge,iglobalEdge
@@ -7941,7 +8076,7 @@ CONTAINS
   ! loop over all elements
   do iel = 1, rtriangulation%NEL
     ! loop over all local edges
-    do iedge = 1, rtriangulation%NEE
+    do iedge = 1, rtriangulation%NNEE
 
       ! iglobalEdge is the iedge-th edge at element iel
       iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
@@ -7988,7 +8123,7 @@ CONTAINS
 
   do iel = 1, rtriangulation%NEL
     ! loop over all local edges
-    do iedge = 1, rtriangulation%NEE
+    do iedge = 1, rtriangulation%NNEE
 
       ! iglobalEdge is the iedge-th edge at element iel
       iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
@@ -8029,10 +8164,9 @@ CONTAINS
   
   integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdgeIdx3d
   integer(prec_edgeidx), dimension(:), pointer :: p_IelementsAtEdge3d
-  integer :: ive
   integer(prec_elementidx) :: iel 
   integer(prec_edgeidx) :: NMT,ilocEdge
-  integer(prec_edgeidx) :: iedge,iglobalEdge,ielementNumber
+  integer(prec_edgeidx) :: iedge,iglobalEdge
   integer(prec_vertexidx) :: iVertexGlobal1, iVertexGlobal2
   
   ! list of local edges
@@ -8069,7 +8203,7 @@ CONTAINS
       ! get an element that is attached to that edge
       iel = p_IelementsAtEdge3d(p_IelementsAtEdgeIdx3d(iedge))
       ! loop over all local edges
-      do ilocEdge = 1,rtriangulation%NEE
+      do ilocEdge = 1,rtriangulation%NNEE
         ! get the global edge number
         iglobalEdge = p_IedgesAtElement(ilocEdge,iel)-rtriangulation%NVT
         ! check if this edge's global number equal to the current edge
@@ -8117,7 +8251,7 @@ CONTAINS
   integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
   
   
-  integer(prec_vertexidx)  :: ive, ifaceNeighbour
+  integer(prec_vertexidx)  :: ifaceNeighbour
   integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
 
   ! list of local face numbers
@@ -8138,7 +8272,7 @@ CONTAINS
   call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
       p_IneighboursAtElement)
       
-  Isize = (/rtriangulation%NAE,rtriangulation%NEL/)
+  Isize = (/rtriangulation%NNAE,rtriangulation%NEL/)
   
   ! allocate memory
   if(rtriangulation%h_IfacesAtElement == ST_NOHANDLE) then
@@ -8153,7 +8287,7 @@ CONTAINS
   ! loop over all elements
   do iel=1,rtriangulation%NEL
     ! loop over all local faces
-    do iface = 1,rtriangulation%NAE
+    do iface = 1,rtriangulation%NNAE
       
       ! check if a face number was already assigned
       if(p_IneighboursAtElement(iface,iel) == 0 .or. &
@@ -8219,7 +8353,7 @@ CONTAINS
   integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
   
   
-  integer(prec_vertexidx)  :: ive, ifaceNeighbour
+  integer(prec_vertexidx)  :: ifaceNeighbour
   integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
 
   ! list of local face numbers
@@ -8258,7 +8392,7 @@ CONTAINS
   ! loop over all elements
   do iel=1,rtriangulation%NEL
     ! loop over all local faces
-    do iface = 1,rtriangulation%NAE
+    do iface = 1,rtriangulation%NNAE
       
       ! check if a face number was already assigned
       if(p_IneighboursAtElement(iface,iel) == 0 .or. &
@@ -8323,8 +8457,8 @@ CONTAINS
   integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtFace
   
   
-  integer(prec_vertexidx)  :: ifaceNeighbour
-  integer(prec_elementidx) :: iel,iface, ifaceGlobal,ineighbour, ifaceNumber
+  integer(prec_faceidx) :: iface
+  integer(prec_elementidx) :: iel, ifaceNumber
   
   integer, dimension(2) :: Isize
 
@@ -8352,7 +8486,7 @@ CONTAINS
   ! loop over all elements
   do iel=1,rtriangulation%NEL
     ! loop over all faces of this element
-    do iface=1,rtriangulation%NAE
+    do iface=1,rtriangulation%NNAE
     
       ! if there is no neighbour at this element
       if(p_IneighboursAtElement(iface,iel) == 0) then
@@ -8444,7 +8578,7 @@ CONTAINS
     iel = p_IelementsAtFace(1,iface)
     
     ! determine which local face is iface 
-    do ilocalFace=1,rtriangulation%NAE
+    do ilocalFace=1,rtriangulation%NNAE
      iglobalFace = p_IfacesAtElement(ilocalFace,iel) - &
                    rtriangulation%NVT - &
                    rtriangulation%NMT
@@ -8519,15 +8653,13 @@ CONTAINS
 !</subroutine>
     
   ! local parameters
-  integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
-  
   integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtFace
   
   integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdgeIdx
   
   integer(prec_edgeidx), dimension(:), pointer :: p_IfacesAtEdge
   
-  integer :: iface, iel, ilocalFace, iglobalEdge, iedge
+  integer :: iface, iglobalEdge, iedge
   
   integer(i32) :: haux1
   
@@ -8643,7 +8775,7 @@ CONTAINS
   integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertexIdx
   integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertex
   
-  integer :: iface, iglobalFace, ivt, iGlobalVertex
+  integer :: iface, ivt, iGlobalVertex
   
   integer(i32) :: haux1
   
@@ -8765,17 +8897,15 @@ CONTAINS
   integer(prec_vertexidx), dimension(:,:), pointer :: p_IfacesAtElement
   integer(prec_elementidx) :: nquads,iel,iel1,iel2,iel3
   integer(prec_edgeidx) :: imt
-  integer(prec_vertexidx) :: ivt1, ivt2, ivt3, ivtoffset, ivt, iae
+  integer(prec_vertexidx) :: ivt1, ivt2, ivtoffset, ivt, iae
   integer(prec_vertexidx) :: iel4, iel5, iel6, iel7, midPointOfIel
   integer(prec_vertexidx) :: midpointFaceA, midpointFaceB, midpointFaceC
   integer(prec_vertexidx) :: midpointFaceD, midpointFaceE, midpointFaceF
   
   integer(i32), dimension(2) :: Isize
-  integer :: nnve, ive
-  real(dp) :: x,y,z, invNVE
+  integer :: nnve, ive, nve
+  real(dp) :: x,y,z
   
-  invNVE = rsourceTriangulation%NVE
-      
   ! Get the arrays with information of the source mesh.
   call storage_getbase_double2D (rsourceTriangulation%h_DvertexCoords,&
       p_DcoordSource)
@@ -8810,12 +8940,14 @@ CONTAINS
       ! So at first, get the number of quads in the mesh (may be =0 which is ok).
       
   nquads = rsourceTriangulation%NEL
-  nnve = 8
+  nnve = rsourceTriangulation%NNVE
       
   ! Initialise the basic mesh data in rdestTriangulation:
       
   ! 3D mesh
   rdestTriangulation%ndim = NDIM3D
+  
+  rdestTriangulation%nnve = nnve
      
   ! Every element is divided into 8 subelements
   rdestTriangulation%NEL = 8 * rsourceTriangulation%NEL
@@ -8823,10 +8955,10 @@ CONTAINS
 
   ! We expect NVT+NMT+NAT+nquads new points.
   rdestTriangulation%NVT = &
-  rsourceTriangulation%NVT + &
-  rsourceTriangulation%NMT + &
-  rsourceTriangulation%NAT + &
-  nquads
+      rsourceTriangulation%NVT + &
+      rsourceTriangulation%NMT + &
+      rsourceTriangulation%NAT + &
+      nquads
       
   ! Allocate memory for the new vertex coordinates and
   ! get the pointers to the coordinate array
@@ -8893,7 +9025,8 @@ CONTAINS
   ! Allocate memory for IverticesAtElement and get a pointer to it.
   ! Fill the array with zero, so we won't have problems when mixing
   ! triangles into a quad mesh.
-  Isize = (/rsourceTriangulation%NVE,int(rdestTriangulation%NEL,I32)/)
+  nve = rsourceTriangulation%NNVE
+  Isize = (/nve,int(rdestTriangulation%NEL,I32)/)
   call storage_new2D ('tria_refineMesh2lv3D', 'KVERT', Isize, ST_INT, &
        rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
   call storage_getbase_int2D(&
@@ -8912,7 +9045,7 @@ CONTAINS
     x = 0.0_DP
     y = 0.0_DP
     z = 0.0_DP
-    do ive = 1,rsourceTriangulation%NVE
+    do ive = 1,nve
       x = x + p_DcoordSource (1,p_IvertAtElementSource(ive,iel))
       y = y + p_DcoordSource (2,p_IvertAtElementSource(ive,iel))
       z = z + p_DcoordSource (3,p_IvertAtElementSource(ive,iel))
@@ -9130,9 +9263,9 @@ CONTAINS
    call storage_copy (rsourceTriangulation%h_InodalProperty,&
           rdestTriangulation%h_InodalProperty)
   
-    rdestTriangulation%nve = rsourceTriangulation%nve
-    rdestTriangulation%nee = rsourceTriangulation%nee
-    rdestTriangulation%nae = rsourceTriangulation%nae
+    rdestTriangulation%NNEE = rsourceTriangulation%NNEE
+    rdestTriangulation%NNAE = rsourceTriangulation%NNAE
+    rdestTriangulation%NNVA = rsourceTriangulation%NNVA
   
   end subroutine
   
@@ -9166,10 +9299,6 @@ CONTAINS
 
   ! local variables
 
-      real(DP), dimension(:), pointer :: p_DvertParamsSource
-      real(DP), dimension(:), pointer :: p_DedgeParamsSource
-      real(DP), dimension(:), pointer :: p_DvertParamsDest
-      real(DP), dimension(:,:), pointer :: p_DcornerCoordDest
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IvertAtBoundartySource
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IedgesAtBoundartySource
       integer(PREC_VERTEXIDX), dimension(:), pointer :: p_InodalPropertySource
@@ -9183,7 +9312,7 @@ CONTAINS
       integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
       integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
-      integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
+      integer :: ivbd,ibct,isize,NMBD,NABD,NMT,NAT
       integer :: NVT,NEL,ivt,NVBD
       
       ! these names are just too long...
@@ -9374,7 +9503,7 @@ CONTAINS
     integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpFacesIdx    
     integer :: ive
     integer(PREC_ELEMENTIDX) :: iface, inumElements, iel, inumVertices
-    integer(PREC_VERTEXIDX) :: isize, iglobIndex, NFBD, findex, iBdyComp
+    integer(PREC_VERTEXIDX) :: iglobIndex, NFBD, findex, iBdyComp
     
     NFBD = 0
     
@@ -9535,7 +9664,7 @@ CONTAINS
 !==================================================================== 
 
 !<subroutine>  
-  subroutine tria_genEdgesAtBoundary(rtriangulation)
+  subroutine tria_genEdgesAtBoundary3d(rtriangulation)
 !<description>
   ! This routine generates the edgesAtBoundary information
   ! by using a simple condition:
@@ -9562,7 +9691,7 @@ CONTAINS
     integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpEdgesIdx
     integer :: ive, h_IbdyComponents, ibct, ibdyFace, inotFound
     integer(prec_elementidx) :: iface,iface1,iface2, ifaceIndex
-    integer(prec_vertexidx) :: isize, iglobIndex, NMBD, eIndex, iBdyComp
+    integer(prec_vertexidx) :: NMBD, eIndex, iBdyComp
     integer(prec_vertexidx), dimension(:), pointer :: p_IbdyComponents
     integer(prec_vertexidx), dimension(:), pointer :: p_IboundaryCpFacesIdx        
     
@@ -9571,39 +9700,39 @@ CONTAINS
     ! Is everything here we need?
     if (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) then
       call output_line ('InodalPropertys not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary3d')
       call sys_halt()
     end if
 
     if (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) then
       call output_line ('IverticesAtEdge not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary3d')
       call sys_halt()
     end if
 
 
     if (rtriangulation%h_IfacesAtBoundary .EQ. ST_NOHANDLE) then
       call output_line ('IfacesAtBoundary not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary3d')
       call sys_halt()
     end if
 
 
     if (rtriangulation%h_IfacesAtEdgeIdx .EQ. ST_NOHANDLE) then
       call output_line ('IfacesAtEdgeIdx not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary3d')
       call sys_halt()
     end if
 
     if (rtriangulation%h_IfacesAtEdge .EQ. ST_NOHANDLE) then
       call output_line ('IfacesAtEdge not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary3d')
       call sys_halt()
     end if
     
     ! allocate memory
     if(rtriangulation%h_IboundaryCpEdgesIdx == ST_NOHANDLE) then
-      call storage_new ('tria_genEdgesAtBoundary', 'IboundaryCpEdgesIdx', &
+      call storage_new ('tria_genEdgesAtBoundary3d', 'IboundaryCpEdgesIdx', &
           int(rtriangulation%NBCT+1,I32), ST_INT, &
           rtriangulation%h_IboundaryCpEdgesIdx, ST_NEWBLOCK_NOINIT)
     end if      
@@ -9721,7 +9850,7 @@ CONTAINS
 
     ! allocate memory
     if(rtriangulation%h_IedgesAtBoundary == ST_NOHANDLE) then
-      call storage_new ('tria_genEdgesAtBoundary', 'IedgesAtBoundary', &
+      call storage_new ('tria_genEdgesAtBoundary3d', 'IedgesAtBoundary', &
           int(NMBD,I32), ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
     end if      
@@ -9775,7 +9904,7 @@ CONTAINS
     deallocate(p_Iaux)
     call storage_free(h_IbdyComponents)
     
-  end subroutine ! end tria_genEdgesAtBoundary
+  end subroutine ! end tria_genEdgesAtBoundary3d
   
 !==================================================================== 
 
@@ -9806,8 +9935,8 @@ CONTAINS
     
     integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
       
-    integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
-    integer :: NVT,NEL,ivt, NVBD, NBCT, IcpIdx1, IcpIdx2
+    integer :: isize,IboundaryComponent,ive,NMBD,NABD,NMT,NAT
+    integer :: NVT,NEL,NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
     NMBD = rtriangulation%NMBD
@@ -9918,8 +10047,8 @@ CONTAINS
     
     integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtFace
       
-    integer :: ivbd,ibct,isize,IboundaryComponent,ive,NMBD,NABD,iface,NMT,NAT
-    integer :: NVT,NEL,ivt, NVBD, NBCT, IcpIdx1, IcpIdx2
+    integer :: isize,IboundaryComponent,NMBD,NABD,iface,NMT,NAT
+    integer :: NVT,NEL,NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
     NMBD = rtriangulation%NMBD
