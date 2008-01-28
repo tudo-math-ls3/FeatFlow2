@@ -2141,7 +2141,8 @@ CONTAINS
     INTEGER :: inpos, innextrec
     CHARACTER :: ctest
     
-    TYPE(t_timer) :: rtimerMGStep
+    TYPE(t_timer) :: rtimerMGStep,rtimerNonlinear,rtimerPreconditioner
+    INTEGER :: ilinearIterations
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx
@@ -2579,7 +2580,13 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
                                  'domega', domega, 1.0_DP)
 
+    ! Initalise statistic variables
+    CALL stat_clearTimer (rtimerPreconditioner)
+    CALL stat_clearTimer (rtimerNonlinear)
+    CALL stat_startTimer (rtimerNonlinear)
+
     iglobIter = 0
+    ilinearIterations = 0
     
     DO WHILE ((iglobIter .LT. nminIterations) .OR. &
               (((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GT. depsAbs)) &
@@ -2664,8 +2671,13 @@ CONTAINS
         CALL sptils_initData (p_rsolverNode,ierror)
         CALL sptils_precondDefect (p_rsolverNode,rd)
         CALL sptils_doneData (p_rsolverNode)
-
+        
         CALL stat_stopTimer (rtimerMGStep)
+        
+        ! Count the number of linear iterations and the time for
+        ! preconditioning
+        ilinearIterations = ilinearIterations + p_rsolverNode%iiterations
+        CALL stat_addTimers (rtimerMGStep,rtimerPreconditioner)
         
       END IF
       
@@ -2724,6 +2736,12 @@ CONTAINS
 
     END DO
     
+    CALL stat_stopTimer (rtimerNonlinear)
+    
+    ! Decrease iglobIter if the DO-loop was completely processed;
+    ! iglobIter = nmaxIterations+1 in that case!
+    IF (iglobIter .GT. nmaxIterations) iglobIter = nmaxIterations
+    
     !CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
     !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
     CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .TRUE.)
@@ -2750,7 +2768,16 @@ CONTAINS
     CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
     CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
     CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
-    CALL output_separator (OU_SEP_EQUAL)        
+    CALL output_separator (OU_SEP_EQUAL)
+    CALL output_line ('Total computation time         = '// &
+        TRIM(sys_sdL(rtimerNonlinear%delapsedReal,10)))
+    CALL output_line ('Total time for preconditioning = '// &
+        TRIM(sys_sdL(rtimerNonlinear%delapsedReal,10)))
+    CALL output_line ('#nonlinear iterations          = '//&
+        TRIM(sys_siL(iglobIter,10)))
+    CALL output_line ('#iterations preconditioner     = '//&
+        TRIM(sys_siL(ilinearIterations,10)))
+    CALL output_separator (OU_SEP_EQUAL)
 
     ! Do we have Neumann boundary?
     bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary

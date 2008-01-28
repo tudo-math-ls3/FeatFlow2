@@ -799,9 +799,9 @@ CONTAINS
           rmatrixComponents%dmu2 = ddualPrimalCoupling * &
               (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
           rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              ( dequationType) * dtheta 
+              ( dequationType) * dtheta * dtstep
           rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta 
+              (-dequationType) * dtheta * dtstep
         END IF
 
       END IF        
