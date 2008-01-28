@@ -617,68 +617,72 @@ CONTAINS
                                         'sgmvFileName', stemp, 'gmv/u.gmv')
     READ(stemp,*) sgmvName
     
-    ! Start UCD export to GMV file:
-    CALL output_lbrk ()
-    CALL output_line ('Writing GMV file: ' &
-        //TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+    IF (sgmvName .NE. '') THEN
     
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-        TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
-    
-    ! Write the configuration of the application as comment block
-    ! to the output file.
-    CALL ucd_addCommentLine (rexport,'Configuration:')
-    CALL ucd_addCommentLine (rexport,'---------------')
-    CALL ucd_addParameterList (rexport,rproblem%rparamList)
-    CALL ucd_addCommentLine (rexport,'---------------')
+      ! Start UCD export to GMV file:
+      CALL output_lbrk ()
+      CALL output_line ('Writing GMV file: ' &
+          //TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      
+      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+          TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      
+      ! Write the configuration of the application as comment block
+      ! to the output file.
+      CALL ucd_addCommentLine (rexport,'Configuration:')
+      CALL ucd_addCommentLine (rexport,'---------------')
+      CALL ucd_addParameterList (rexport,rproblem%rparamList)
+      CALL ucd_addCommentLine (rexport,'---------------')
 
-    ! Write velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
-    
-    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
-    
-    ! Write pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
-    
-    ! Dual velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
-    CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
-    
-    ! Dual pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
-    
-    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
-        
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
-                
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+      ! Write velocity field
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+      
+      CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+      CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+      
+      ! Write pressure
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+      CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+      
+      ! Dual velocity field
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+      CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
+      CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
+      
+      ! Dual pressure
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+      CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
+      
+      ! If we have a simple Q1~ discretisation, calculate the streamfunction.
+      IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+          ccomplexity .EQ. SPDISC_UNIFORM) THEN
           
-        CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
-        
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-        CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
-            UCD_VAR_STANDARD, p_Ddata)
+        ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                  RelementDistribution(1)%itrialElement
+                  
+        IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
             
+          CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+          
+          CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+          CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+              UCD_VAR_STANDARD, p_Ddata)
+              
+        END IF
+        
       END IF
+      
+      ! Write the file to disc, that's it.
+      CALL ucd_write (rexport)
+      CALL ucd_release (rexport)
       
     END IF
     
-    ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
-    
     ! Release the auxiliary vector
     CALL lsysbl_releaseVector (rprjVector)
-    
+  
     ! Release the discretisations structure
     CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
