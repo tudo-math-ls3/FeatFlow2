@@ -16,9 +16,11 @@ MSHOW_Initialisation = 2
 # >=3: extended output with more and more details
 MT_OutputLevel = 2
 
-# Log file for messages
+# Log file for messages.
+# ='': Disable log file.
 smsgLog = 'log/output.log'
 
 # Log file for error messages; usually coincides with smsgLog to print
-# errors into the same log file as standard messages
+# errors into the same log file as standard messages.
+# ='': Use log file.
 serrorLog = 'log/output.log'
