@@ -46,15 +46,21 @@
 !#
 !# Proceed as follows:
 !#
-!# 1.) CALL output_init ('mylogfile.txt')
-!# 
-!#     -> Opens a log file 'mylogfile.txt' for the output.
+!# 1.) CALL output_init ()
+!#     -> Initialise the output system for output on the terminal
+!#
+!#     Alternatively one can use:
+!#
+!#     CALL output_init ('mylogfile.txt')
+!#     -> Opens a log file 'mylogfile.txt' for the output additional to
+!#        terminal output
+!#
 !#     Alternatively one can use
 !# 
 !#     CALL output_init ('mylogfile.txt','myerrorlogfile.txt')
-!#
 !#     -> Opens a log file 'mylogfile.txt' for the output and
-!#        'myerrorlogfile.txt' for error output
+!#        'myerrorlogfile.txt' for error output (both additionally to
+!#        terminal output).
 !#     
 !# 2.) CALL output_line ('This is a message')
 !#
@@ -235,6 +241,12 @@ MODULE genoutput
     MODULE PROCEDURE output_line_std
     MODULE PROCEDURE output_line_feast
   END INTERFACE
+  
+  INTERFACE output_init
+    MODULE PROCEDURE output_init_simple
+    MODULE PROCEDURE output_init_logfile
+    MODULE PROCEDURE output_init_standard
+  END INTERFACE
 
 CONTAINS
 
@@ -295,7 +307,51 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_init (slogFilename,serrorFilename)
+  SUBROUTINE output_init_simple ()
+
+!<description>
+  ! Initialises the output system. The output system is configured to show all
+  ! messages on the terminal, no log file is opened.
+!</description>
+  
+!</subroutine>
+
+    CALL output_init_standard ("","")
+
+  END SUBROUTINE
+
+!************************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE output_init_logfile (slogFilename)
+
+!<description>
+  ! Initialises the output system. 
+  ! If sfilename is given, a log file with that name is opened and all log and error
+  ! messages are written to it. If not given, all output is directed to the 
+  ! terminal only.
+!</description>
+  
+!<input>
+
+  ! Name of a log file for standard messages. If "" is specified, 
+  ! output messages are written to the standard output.
+  CHARACTER(LEN=*), INTENT(IN) :: slogFilename
+  
+!</input>
+
+!</subroutine>
+
+    CALL output_init_standard (slogFilename,"")
+
+  END SUBROUTINE
+
+!************************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE output_init_standard (slogFilename,serrorFilename)
 
 !<description>
   ! Initialises the output system. 
@@ -310,21 +366,21 @@ CONTAINS
   
 !<input>
 
-  ! OPTIONAL: Name of a log file for standard messages. If not given, output
-  ! messages are written to the standard output.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: slogFilename
+  ! Name of a log file for standard messages. If ""
+  ! is specified, output messages are written to the standard output.
+  CHARACTER(LEN=*), INTENT(IN) :: slogFilename
   
-  ! OPTIONAL: Name of an log file for error messages. If not given, errors
-  ! are written to the log file. The name of the file may also coincide 
-  ! with slogFilename.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: serrorFilename
+  ! Name of an log file for error messages. If ""
+  ! is specified, errors are written to the standard log file. The name of 
+  ! the file may also coincide with slogFilename.
+  CHARACTER(LEN=*), INTENT(IN) :: serrorFilename
   
 !</input>
 
 !</subroutine>
 
   ! Both filenames given?
-  IF (PRESENT(slogFilename) .AND. PRESENT(serrorFilename)) THEN
+  IF ((slogFilename .NE. "") .AND. (serrorFilename .NE. "")) THEN
   
     ! Both filenames the same=
     IF (slogFilename .EQ. serrorFilename) THEN
@@ -346,17 +402,17 @@ CONTAINS
     ! Close previously opened log files.
     CALL output_done ()    
     
-    IF (PRESENT(slogFilename)) THEN
+    IF (slogFilename .NE. "") THEN
     
       ! Open a log file
       CALL output_openLogfile(slogFilename, OU_LOG)
     
     END IF
   
-    IF (PRESENT(serrorFilename)) THEN
+    IF (serrorFilename .NE. "") THEN
     
       ! Open an error log file
-      CALL output_openLogfile(slogFilename, OU_ERRORLOG)
+      CALL output_openLogfile(serrorFilename, OU_ERRORLOG)
       
     ELSE
     
