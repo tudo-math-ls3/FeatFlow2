@@ -497,39 +497,39 @@ CONTAINS
     ENDIF
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
-        
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
-                
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
-      
-        ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
-            rtempVector,.TRUE.)
-
-        ! Calculate divergence = B1^T u1 + B2^T u2
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(1), &
-            rtempVector, 1.0_DP, 0.0_DP)
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(2), &
-            rtempVector, 1.0_DP, 1.0_DP)
-        
-        CALL output_lbrk()
-        CALL output_line ('Divergence = ' &
-            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
-            
-        CALL lsyssc_releaseVector (rtempVector)
-      
-      END IF
-      
-    END IF    
+!    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+!        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+!        
+!      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+!                RelementDistribution(1)%itrialElement
+!                
+!      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+!      
+!        ! Create a temporary vector 
+!        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
+!            rtempVector,.TRUE.)
+!
+!        ! Calculate divergence = B1^T u1 + B2^T u2
+!        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
+!            rBmatrix,LSYSSC_TR_VIRTUAL)
+!        CALL lsyssc_scalarMatVec (&
+!            rBmatrix, rvector%RvectorBlock(1), &
+!            rtempVector, 1.0_DP, 0.0_DP)
+!        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
+!            rBmatrix,LSYSSC_TR_VIRTUAL)
+!        CALL lsyssc_scalarMatVec (&
+!            rBmatrix, rvector%RvectorBlock(2), &
+!            rtempVector, 1.0_DP, 1.0_DP)
+!        
+!        CALL output_lbrk()
+!        CALL output_line ('Divergence = ' &
+!            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
+!            
+!        CALL lsyssc_releaseVector (rtempVector)
+!      
+!      END IF
+!      
+!    END IF    
     
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
