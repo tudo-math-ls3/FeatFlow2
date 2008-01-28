@@ -772,11 +772,11 @@ CONTAINS
         rmatrixComponents%dgamma1 = &
             dtheta * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = &
-            - dsmooth * dtheta * REAL(1-rproblem%iequation,DP)
+            - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
         
         rmatrixComponents%dnewton1 = dtheta * dnewton
         rmatrixComponents%dnewton2 = &
-              dsmooth * dtheta * REAL(1-rproblem%iequation,DP)
+              dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = dsmooth * dtstep
