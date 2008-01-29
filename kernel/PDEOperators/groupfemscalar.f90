@@ -429,7 +429,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildConvOperatorBlock(RmatrixC, ru,&
-      fcb_getVelocity, bStabilize, bclear, rmatrixL, rafcstab)
+      fcb_getVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -451,6 +451,12 @@ CONTAINS
     ! problems which require the evaluation of the velocity
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
     
+    ! Switch for row-sum property
+    ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
+    !         is computed as the sum of negative off-diagonal coefficients
+    ! FALSE : compute the diagonal coefficient by standard finite elements
+    LOGICAL, INTENT(IN)                            :: bZeroRowsum
+
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -484,7 +490,7 @@ CONTAINS
     ELSE
       
       CALL gfsc_buildConvOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getVelocity, bStabilize, bclear, rmatrixL, rafcstab)
+          fcb_getVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
     END IF
   END SUBROUTINE gfsc_buildConvOperatorBlock
@@ -494,7 +500,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_getVelocity,&
-      bStabilize, bclear, rmatrixL, rafcstab)
+      bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -536,7 +542,13 @@ CONTAINS
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
-    
+
+    ! Switch for row-sum property
+    ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
+    !         is computed as the sum of negative off-diagonal coefficients
+    ! FALSE : compute the diagonal coefficient by standard finite elements
+    LOGICAL, INTENT(IN)                            :: bZeroRowsum
+
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -637,17 +649,36 @@ CONTAINS
         SELECT CASE (rafcstab%ctypeAFCstabilisation)
         CASE (AFCSTAB_UPWIND)
           ! Perform discrete upwinding without generating edge structure
-          SELECT CASE(ndim)
-          CASE (NDIM1D)
-            CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-          CASE (NDIM2D)
-            CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-          CASE (NDIM3D)
-            CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-          END SELECT
+
+          IF (bZeroRowsum) THEN
+            
+            SELECT CASE(ndim)
+            CASE (NDIM1D)
+              CALL doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CASE (NDIM2D)
+              CALL doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CASE (NDIM3D)
+              CALL doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            END SELECT
+
+          ELSE
+
+            SELECT CASE(ndim)
+            CASE (NDIM1D)
+              CALL doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CASE (NDIM2D)
+              CALL doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CASE (NDIM3D)
+              CALL doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            END SELECT
+
+          END IF
           
 
         CASE (AFCSTAB_FEMFCT)
@@ -715,33 +746,68 @@ CONTAINS
       ELSEIF (bStabilize) THEN
         
         ! Perform discrete upwinding without generating edge structure
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL do_upwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL do_upwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL do_upwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
+        IF (bZeroRowsum) THEN
+          
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+          
+        ELSE
+
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        END IF
+
       ELSE
         
         ! Apply standard Galerkin discretisation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
+        IF (bZeroRowsum) THEN
+          
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doGalerkinZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doGalerkinZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doGalerkinZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
 
+        ELSE
+
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        END IF
       END IF
 
       ! Release diagonal separator
@@ -776,18 +842,37 @@ CONTAINS
         ! What kind of stabilisation are we?
         SELECT CASE (rafcstab%ctypeAFCstabilisation)
         CASE (AFCSTAB_UPWIND)
+
           ! Perform discrete upwinding without generating edge structure
-          SELECT CASE(ndim)
-          CASE (NDIM1D)
-            CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-          CASE (NDIM2D)
-            CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-          CASE (NDIM3D)
-            CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-          END SELECT
+          IF (bZeroRowsum) THEN
+            
+            SELECT CASE(ndim)
+            CASE (NDIM1D)
+              CALL doUpwindZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CASE (NDIM2D)
+              CALL doUpwindZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CASE (NDIM3D)
+              CALL doUpwindZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            END SELECT
+
+          ELSE
+
+            SELECT CASE(ndim)
+            CASE (NDIM1D)
+              CALL doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_u, p_L)
+            CASE (NDIM2D)
+              CALL doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            CASE (NDIM3D)
+              CALL doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            END SELECT
+
+          END IF
           
 
         CASE (AFCSTAB_FEMFCT)
@@ -855,32 +940,68 @@ CONTAINS
       ELSEIF (bStabilize) THEN
         
         ! Perform discrete upwinding without generating edge structure
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL do_upwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL do_upwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL do_upwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
+        IF (bZeroRowsum) THEN
+          
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doUpwindZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doUpwindZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doUpwindZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        ELSE
+
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        END IF
         
       ELSE
         
         ! Apply standard Galerkin discretisation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
+        IF (bZeroRowsum) THEN
+          
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doGalerkinZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doGalerkinZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doGalerkinZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        ELSE
+
+          SELECT CASE(ndim)
+          CASE (NDIM1D)
+            CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_u, p_L)
+          CASE (NDIM2D)
+            CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+          CASE (NDIM3D)
+            CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          END SELECT
+
+        END IF
 
       END IF
 
@@ -899,10 +1020,11 @@ CONTAINS
     ! Here, the working routine follow
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D.
+    ! Assemble high-order Galerkin operator K in 1D
+    ! and assume zero row-sums.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
+    SUBROUTINE doGalerkinZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -943,14 +1065,71 @@ CONTAINS
           K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_1D
+    END SUBROUTINE doGalerkinZRSMat7_1D
 
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D.
+    ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+        
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)
+
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)
+          k_ji = -v_ji(1)*Cx(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinMat7_1D
+
+    
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 2D
+    ! and assume zero row-sums.
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doGalerkinZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -991,14 +1170,119 @@ CONTAINS
           K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_2D
+    END SUBROUTINE doGalerkinZRSMat7_2D
+
+
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 2D.
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinMat7_2D
+
+
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 3D
+    ! and assume zero row-sums
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doGalerkinZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
+          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinZRSMat7_3D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1008,8 +1292,8 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
       REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
-      REAL(DP)                    :: k_ij,k_ji
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
             
       ! Loop over all rows
@@ -1018,6 +1302,15 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1025,7 +1318,7 @@ CONTAINS
           
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
           CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
@@ -1035,18 +1328,18 @@ CONTAINS
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_3D
+    END SUBROUTINE doGalerkinMat7_3D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D
+    ! and assume zero row-sums
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
+    SUBROUTINE doGalerkinZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1088,14 +1381,72 @@ CONTAINS
           K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_1D
+    END SUBROUTINE doGalerkinZRSMat9_1D
+
+
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 1D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+        
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)
+        
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)
+          k_ji = -v_ji(1)*Cx(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinMat9_1D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D
+    ! and assume zero row-sums
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1137,14 +1488,72 @@ CONTAINS
           K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_2D
+    END SUBROUTINE doGalerkinZRSMat9_2D
+
+
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 2D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+        
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinMat9_2D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D
+    ! and assume zero row-sums.
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1186,14 +1595,72 @@ CONTAINS
           K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_3D
+    END SUBROUTINE doGalerkinZRSMat9_3D
+
+
+    !**************************************************************
+    ! Assemble high-order Galerkin operator K in 3D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
+      
+      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP)                    :: k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+        
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+
+        ! Update the diagonal coefficient
+        K(ii) = K(ii)+k_ii
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          
+          ! Assemble the global operator
+          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+        END DO
+      END DO
+    END SUBROUTINE doGalerkinMat9_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L in 1D
+    ! and assume zero row-sum.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_upwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
+    SUBROUTINE doUpwindZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1241,14 +1708,79 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat7_1D
+    END SUBROUTINE doUpwindZRSMat7_1D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 1D.
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)
+
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)
+          k_ji = -v_ji(1)*Cx(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat7_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L in 2D
+    ! and assume zero row-sums.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_upwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
+    SUBROUTINE doUpwindZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1296,14 +1828,79 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat7_2D
+    END SUBROUTINE doUpwindZRSMat7_2D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 2D.
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat7_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L in 3D
+    ! and assume zero row-sum.
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_upwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    SUBROUTINE doUpwindZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1351,14 +1948,79 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat7_3D
+    END SUBROUTINE doUpwindZRSMat7_3D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 3D.
+    ! All matrices are stored in matrix format 7
+    
+    SUBROUTINE doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kld(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat7_3D
 
     
     !**************************************************************
     ! Assemble low-order operator L in 1D
+    ! and assume zero row-sum.
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_upwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
+    SUBROUTINE doUpwindZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1407,14 +2069,80 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat9_1D
+    END SUBROUTINE doUpwindZRSMat9_1D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 1D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)
+
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)
+          k_ji = -v_ji(1)*Cx(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat9_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L in 2D
+    ! and assume zero row-sum.
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_upwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
+    SUBROUTINE doUpwindZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1463,14 +2191,80 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat9_2D
+    END SUBROUTINE doUpwindZRSMat9_2D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 2D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat9_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L in 3D
+    ! and assume zero row-sums.
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_upwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    SUBROUTINE doUpwindZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -1519,7 +2313,77 @@ CONTAINS
           L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
         END DO
       END DO
-    END SUBROUTINE do_upwindMat9_3D
+    END SUBROUTINE doUpwindZRSMat9_3D
+
+
+    !**************************************************************
+    ! Assemble low-order operator L in 3D.
+    ! All matrices are stored in matrix format 9
+    
+    SUBROUTINE doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
+
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
+      REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
+      
+      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
+      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
+      INTEGER(PREC_VECIDX)        :: i,j
+            
+      ! Loop over all rows
+      DO i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Compute local velocity coefficients for diagonal
+        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        
+        ! Convective transport coefficients
+        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        
+        ! Update the diagonal coefficient
+        L(ii) = L(ii)+k_ii
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute local velocity coefficients
+          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          
+          ! Convective transport coefficients
+          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
+          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = MAX(-k_ij, 0._DP, -k_ji)
+          
+          ! Apply artificial diffusion
+          k_ij = k_ij+d_ij
+          k_ji = k_ji+d_ij
+          
+          ! Assemble the global operator
+          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
+          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+        END DO
+      END DO
+    END SUBROUTINE doUpwindMat9_3D
+
+    
+
+
+    ! STOP
     
 
     !**************************************************************
