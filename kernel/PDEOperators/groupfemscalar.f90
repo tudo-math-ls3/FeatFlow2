@@ -79,46 +79,41 @@
 !#                             gfsc_buildResBlockFCT
 !#     -> assemble the residual vector for AFC stabilisation of FCT type
 !#
-!# 7.) gfsc_buildResidual_FCT_PC = gfsc_buildResidualScalar_FCT_PC /
-!#                                 gfsc_buildResidualBlock_FCT_PC
-!#     -> assemble the residual vector for FEM-FCT stabilisation of
-!#        predictor corrector type
-!#
-!# 8.) gfsc_buildResidualTVD = gfsc_buildResScalarTVD /
+!# 7.) gfsc_buildResidualTVD = gfsc_buildResScalarTVD /
 !#                             gfsc_buildResBlockTVD
 !#     -> assemble the residual vector for AFC stabilisation of TVD type
 !#
-!# 9.) gfsc_buildResidualSymmetric = gfsc_buildResScalarSymmetric /
-!#                                    gfsc_buildResBlockSymmetric
+!# 8.) gfsc_buildResidualSymm = gfsc_buildResScalarSymm /
+!#                                    gfsc_buildResBlockSymm
 !#     -> assemble the residual vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
-!# 10.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
-!#                                     gfsc_buildConvJacobianBlock
-!#      -> assemble the Jacobian matrix for the convective part of
-!#         the transport operator for a scalar convection equation
+!# 9.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
+!#                                    gfsc_buildConvJacobianBlock
+!#     -> assemble the Jacobian matrix for the convective part of
+!#        the transport operator for a scalar convection equation
 !#
-!# 11.) gfsc_buildStabLinearJacobian_FCT = gfsc_buildStabJacLinearScalar_FCT /
+!# 10.) gfsc_buildStabLinearJacobian_FCT = gfsc_buildStabJacLinearScalar_FCT /
 !#                                         gfsc_buildStabJacLinearBlock_FCT
 !#      -> assemble the Jacobian matrix for the stabilisation part of FCT type;
 !#         the velocity is assumed to be linear
 !#
-!# 12.) gfsc_buildStabLinearJacobian_GPTVD = gfsc_buildStabJacLinearScalar_GPTVD /
+!# 11.) gfsc_buildStabLinearJacobian_GPTVD = gfsc_buildStabJacLinearScalar_GPTVD /
 !#                                           gfsc_buildStabJacLinearBlock_GPTVD
 !#      -> assemble the Jacobian matrix for the stabilisation part of TVD type
 !#         and/or for the general purpose limiter; the velocity is assumed to be linear
 !#
-!# 13.) gfsc_buildStabJacobian_FCT = gfsc_buildStabJacobianScalar_FCT /
+!# 12.) gfsc_buildStabJacobian_FCT = gfsc_buildStabJacobianScalar_FCT /
 !#                                   gfsc_buildStabJacobianBlock_FCT
 !#      -> assemble the Jacobian matrix for the stabilisation part of FCT type;
 !#         the velocity can be arbitrary
 !#
-!# 14.) gfsc_buildStabJacobian_GPTVD = gfsc_buildStabJacobianScalar_GPTVD /
+!# 13.) gfsc_buildStabJacobian_GPTVD = gfsc_buildStabJacobianScalar_GPTVD /
 !#                                     gfsc_buildStabJacobianBlock_GPTVD
 !#      -> assemble the Jacobian matrix for the stabilisation part of TVD type
 !#         and/or for the general purpose limiter; the velocity can be arbitrary
 !#
-!# 15.) gfsc_buildStabJacobian_Symmetric = gfsc_buildStabJacobianScalar_Symm /
+!# 14.) gfsc_buildStabJacobian_Symmetric = gfsc_buildStabJacobianScalar_Symm /
 !#                                         gfsc_buildStabJacobianBlock_Symm
 !#      -> assemble the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
@@ -145,9 +140,8 @@ MODULE groupfemscalar
   PUBLIC :: gfsc_buildConvectionOperator
   PUBLIC :: gfsc_buildDiffusionOperator
   PUBLIC :: gfsc_buildResidualFCT
-  PUBLIC :: gfsc_buildResidual_FCT_PC
   PUBLIC :: gfsc_buildResidualTVD
-  PUBLIC :: gfsc_buildResidual_Symmetric
+  PUBLIC :: gfsc_buildResidualSymm
   PUBLIC :: gfsc_buildConvectionJacobian
   PUBLIC :: gfsc_buildStabLinearJacobian_FCT
   PUBLIC :: gfsc_buildStabLinearJacobian_GPTVD
@@ -169,19 +163,14 @@ MODULE groupfemscalar
     MODULE PROCEDURE gfsc_buildResBlockFCT
   END INTERFACE
 
-  INTERFACE gfsc_buildResidual_FCT_PC
-    MODULE PROCEDURE gfsc_buildResidualScalar_FCT_PC
-    MODULE PROCEDURE gfsc_buildResidualBlock_FCT_PC
-  END INTERFACE
-
   INTERFACE gfsc_buildResidualTVD
     MODULE PROCEDURE gfsc_buildResScalarTVD
     MODULE PROCEDURE gfsc_buildResBlockTVD
   END INTERFACE
 
-  INTERFACE gfsc_buildResidual_Symmetric
-    MODULE PROCEDURE gfsc_buildResidualScalar_Symm
-    MODULE PROCEDURE gfsc_buildResidualBlock_Symm
+  INTERFACE gfsc_buildResidualSymm
+    MODULE PROCEDURE gfsc_buildResScalarSymm
+    MODULE PROCEDURE gfsc_buildResBlockSymm
   END INTERFACE
 
   INTERFACE gfsc_buildConvectionJacobian
@@ -301,42 +290,7 @@ CONTAINS
             rafcstab%NEDGE, .FALSE., ST_DOUBLE)
       END DO
 
-      
-    CASE (AFCSTAB_FEMFCT_PC)
-      
-      ! Handle for IsuperdiagonalEdgesIdx
-      IF (rafcstab%h_IsuperdiagonalEdgesIdx .NE. ST_NOHANDLE)&
-          CALL storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
-      CALL storage_new('gfsc_initStabilisation', 'IsuperdiagonalEdgesIdx',&
-          rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
-      
-      ! Handle for IverticesAtEdge
-      Isize = (/4, rafcstab%NEDGE/)
-      IF (rafcstab%h_IverticesAtEdge .NE. ST_NOHANDLE)&
-          CALL storage_free(rafcstab%h_IverticesAtEdge)
-      CALL storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! Handle for DcoefficientsAtEdge
-      Isize = (/3, rafcstab%NEDGE/)
-      IF (rafcstab%h_DcoefficientsAtEdge .NE. ST_NOHANDLE)&
-          CALL storage_free(rafcstab%h_DcoefficientsAtEdge)
-      CALL storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
-          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
-
-      ! Nodal vectors
-      ALLOCATE(rafcstab%RnodalVectors(6))
-      DO i = 1, 6
-        CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .FALSE., ST_DOUBLE)
-      END DO
-
-      ! Edgewise vectors
-      ALLOCATE(rafcstab%RedgeVectors(1))
-      CALL lsyssc_createVector(rafcstab%RedgeVectors(1),&
-          rafcstab%NEDGE, .FALSE., ST_DOUBLE)
-     
- 
     CASE (AFCSTAB_SYMMETRIC)
 
       ! Handle for IsuperdiagonalEdgesIdx
@@ -696,7 +650,7 @@ CONTAINS
           END SELECT
           
 
-        CASE (AFCSTAB_FEMFCT, AFCSTAB_FEMFCT_PC)
+        CASE (AFCSTAB_FEMFCT)
           ! Set additional pointers
           CALL afcstab_getbase_IsupdiagEdgesIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
           CALL afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
@@ -836,7 +790,7 @@ CONTAINS
           END SELECT
           
 
-        CASE (AFCSTAB_FEMFCT, AFCSTAB_FEMFCT_PC)
+        CASE (AFCSTAB_FEMFCT)
           ! Set additional pointers
           CALL afcstab_getbase_IsupdiagEdgesIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
           CALL afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
@@ -3003,11 +2957,11 @@ CONTAINS
       theta, tstep, binitResidual, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector 
-    ! and applies stabilisation of FEM-FCT type.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-FCT type.  Note that this routine serves as
+    ! a wrapper for block vectors. If there is only one block, then
+    ! the corresponding scalar routine is called.  Otherwise, an error
+    ! is thrown.
 !</description>
 
 !<input>
@@ -3064,8 +3018,65 @@ CONTAINS
       theta, tstep, binitResidual, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector 
-    ! and applies stabilisation of FEM-FCT type
+
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-FCT type. The idea of flux corrected
+    ! transport can be traced back to the early SHASTA algorithm by
+    ! Boris and Bock in the early 1970s. Zalesak suggested a fully
+    ! multi-dimensional generalisation of this approach and paved the
+    ! way for a large family of FCT algorithms.
+    !
+    ! This subroutine provides different algorithms:
+    !
+    ! 1. Semi-explicit FEM-FCT algorithm
+    !
+    !    This is the classical algorithm which makes use of Zalesak's
+    !    flux limiter and recomputes and auxiliary positivity-
+    !    preserving solution in each iteration step. 
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar
+    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    University of Dortmund, 2004.
+    !
+    ! 2. Iterative FEM-FCT algorithm
+    !
+    !    The main idea of the iterative algorithm is to reuse the
+    !    amount of rejected antidiffusion in subsequent iterations so
+    !    that more and more antidiffusion can be built into the
+    !    residual as the iteration process continues. 
+    !    The details of this method can be also found in the above reference.
+    !
+    ! 3. Semi-implicit FEM-FCT algorith
+    !
+    !    This is the FCT algorithm that should be used by default. It
+    !    is quite efficient since the nodal correction factors are
+    !    only computed in the first iteration and used to limit the
+    !    antidiffusive flux from the first iteration. This explicit
+    !    predictor is used in all subsequent iterations to constrain
+    !    the actual target flux.
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin and D. Kourounis, " A semi-implicit FEM-FCT
+    !    algorithm for efficient treatment of time-dependent
+    !    problems", Ergebnisberichte Angew. Math. 302, University of
+    !    Dortmund, 2005.
+    !
+    ! 4. Linearized FEM-FCT algorithms
+    !
+    !    A new trend in the development of FCT algorithms is to
+    !    linearise the raw antidiffusive fluxes about an intermediate
+    !    solution computed by a positivity-preserving low-order
+    !    scheme. By virtue of this linearisation, the costly
+    !    evaluation of correction factors needs to be performed just
+    !    once per time step. Furthermore, no questionable
+    !    `prelimiting' of antidiffusive fluxes is required, which
+    !    eliminates the danger of artificial steepening.
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin, "Explicit and implicit FEM-FCT algorithms with
+    !    flux linearization", Ergebnisberichte Angew. Math. 358,
+    !    University of Dortmund, 2008.
 !</description>
 
 !<input>
@@ -3111,7 +3122,7 @@ CONTAINS
    
     ! Check if stabilisation is prepared
     IF (rafcstab%ctypeAFCstabilisation .NE. AFCSTAB_FEMFCT  .OR.&
-        IAND(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .EQ. 0   .OR.&
+        IAND(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .EQ. 0  .OR.&
         IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .EQ. 0) THEN
       CALL output_line('Stabilisation does not provide required structures',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
@@ -3385,286 +3396,6 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualBlock_FCT_PC(rmatrixMC, rmatrixML,&
-      rmatrixL, ru, tstep, rres, rrhs, rafcstab)
-
-!<description>
-    ! This subroutine assembles the residual vector 
-    ! and applies stabilisation of predictor corrector FEM-FCT type.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
-!</description>
-
-!<input>
-    ! consistent mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)   :: rmatrixMC
-
-    ! lumped mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)   :: rmatrixML
-
-    ! low-order convection matrix
-    TYPE(t_matrixScalar), INTENT(IN)   :: rmatrixL
-
-    ! solution vector
-    TYPE(t_vectorBlock), INTENT(IN)    :: ru
-
-    ! time step size
-    REAL(DP), INTENT(IN)               :: tstep
-!</input>
-
-!<inputoutput>
-    ! residual vector
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rres,rrhs
-
-    ! stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT)     :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    ! Check if block vectors contain exactly one block
-    IF (ru%nblocks .NE. 1 .OR. rres%nblocks .NE. 1) THEN
-
-      CALL output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualBlock_FCT_PC')
-      CALL sys_halt()
-
-    ELSE
-
-      CALL gfsc_buildResidualScalar_FCT_PC(rmatrixMC, rmatrixML, rmatrixL, &
-          ru%RvectorBlock(1), tstep, rres%RvectorBlock(1), rrhs%RvectorBlock(1), rafcstab)
-
-    END IF
-  END SUBROUTINE gfsc_buildResidualBlock_FCT_PC
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE gfsc_buildResidualScalar_FCT_PC(rmatrixMC, rmatrixML,&
-      rmatrixL, ru, tstep, rres, rrhs, rafcstab)
-
-!<description>
-    ! This subroutine assembles the residual vector 
-    ! and applies stabilisation of FEM-FCT type
-!</description>
-
-!<input>
-    ! consistent mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)    :: rmatrixMC
-
-    ! lumped mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)    :: rmatrixML
-
-    ! low-order convection matrix
-    TYPE(t_matrixScalar), INTENT(IN)   :: rmatrixL
-
-    ! solution vector
-    TYPE(t_vectorScalar), INTENT(IN)    :: ru
-
-    ! time step size
-    REAL(DP), INTENT(IN)                :: tstep
-!</input>
-
-!<inputoutput>
-    ! residual vector
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rres,rrhs
-
-    ! stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT)      :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    TYPE(t_vectorScalar), POINTER                 :: ruLow,rv
-    INTEGER(PREC_VECIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-    REAL(DP), DIMENSION(:,:), POINTER             :: p_DcoefficientsAtEdge
-    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    REAL(DP), DIMENSION(:), POINTER :: p_flux
-    REAL(DP), DIMENSION(:), POINTER :: p_u,p_ulow,p_v,p_res
-    REAL(DP), DIMENSION(:), POINTER :: p_MC,p_ML
-
-       
-    ! Check if stabilisation is prepared
-    IF (rafcstab%ctypeAFCstabilisation .NE. AFCSTAB_FEMFCT_PC .OR.&
-        IAND(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .EQ. 0    .OR.&
-        IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .EQ. 0) THEN
-      CALL output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_FCT_PC')
-      CALL sys_halt()
-    END IF
-
-    ! Check if vectors are compatible
-    CALL lsyssc_isVectorCompatible(ru, rres)
-
-    ! Set pointers
-    CALL afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    CALL afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    CALL lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    CALL lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-    CALL lsyssc_getbase_double(rmatrixMC, p_MC)
-    CALL lsyssc_getbase_double(rmatrixML, p_ML)
-    CALL lsyssc_getbase_double(ru,   p_u)
-    CALL lsyssc_getbase_double(rres, p_res)
-    
-    ! Compute explicit predictor  
-    !
-    !     u^{n+1/2} = M_L^{-1}*[M_L+0.5*dt*L]*u
-    !
-    ruLow => rafcstab%RnodalVectors(5)
-    CALL lsyssc_invertedDiagMatVec(rmatrixML, rrhs, 1._DP, ruLow)
-
-!!$    CALL lsyssc_invertedDiagMatVec(rmatrixML, rres, 0.5_DP, ruLow)
-!!$    CALL lsyssc_vectorLinearComb(ru, ruLow, 1._DP, 1._DP)
-    CALL lsyssc_getbase_double(ruLow, p_ulow)
-    
-    ! Compute time approximation
-    !
-    !     v^{n+1/2} = M_L^{-1}*[dt*L*u^{n+1/2}]
-    !
-    rv => rafcstab%RnodalVectors(6)
-    CALL lsyssc_scalarMatVec(rmatrixL, ruLow, rv, 1._DP, 0._DP)
-    CALL lsyssc_invertedDiagMatVec(rmatrixML, rv, 1._DP, rv)
-    CALL lsyssc_getbase_double(rv, p_v)
-
-    ! Set residual to explicit low-order part
-    !
-    !     res = [M_L+0.5*dt*L]*u
-    !
-!    CALL lsyssc_scalarMatVec(rmatrixML, ru ,rres, 1._DP, 0.5_DP)
-
-    CALL do_femfct_limit(p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-        p_ulow, p_v, tstep, rafcstab%NEDGE,&
-        (rafcstab%imass .EQ. AFCSTAB_CONSISTENTMASS),&
-        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
-
-  CONTAINS
-    
-    ! Here, the working routine follow
-
-    !**************************************************************
-    ! The predictor corrector FEM-FCT limiting procedure
-
-    SUBROUTINE do_femfct_limit(IverticesAtEdge, DcoefficientsAtEdge, MC, ML,&
-        u, v, tstep, NEDGE, bmass, pp, pm, qp, qm, rp, rm, flux, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtEdge
-      REAL(DP), DIMENSION(:,:), INTENT(IN)             :: DcoefficientsAtEdge
-      REAL(DP), DIMENSION(:), INTENT(IN)               :: MC,ML
-      REAL(DP), DIMENSION(:), INTENT(IN)               :: u,v
-      REAL(DP), INTENT(IN)                             :: tstep
-      INTEGER(PREC_MATIDX), INTENT(IN)                 :: NEDGE
-      LOGICAL, INTENT(IN)                              :: bmass
-      REAL(DP), DIMENSION(:), INTENT(INOUT)            :: pp,pm
-      REAL(DP), DIMENSION(:), INTENT(INOUT)            :: qp,qm
-      REAL(DP), DIMENSION(:), INTENT(INOUT)            :: rp,rm
-      REAL(DP), DIMENSION(:), INTENT(INOUT)            :: flux
-      REAL(DP), DIMENSION(:), INTENT(INOUT)            :: res
-      
-      INTEGER(PREC_MATIDX) :: iedge,ij
-      INTEGER(PREC_VECIDX) :: i,j
-      REAL(DP) :: d_ij,f_ij,m_ij,diff
-
-      ! Clear nodal vectors
-      CALL lalg_clearVectorDble(pp)
-      CALL lalg_clearVectorDble(pm)
-      CALL lalg_clearVectorDble(qp)
-      CALL lalg_clearVectorDble(qm)
-
-      ! Should we apply the consistent mass matrix?
-      IF (bmass) THEN
-
-        ! Loop over edges
-        DO iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
-
-          ! Determine fluxes
-          f_ij = tstep*(m_ij*(v(i)-v(j)) + d_ij*(u(i)-u(j)))
-          flux(iedge) = f_ij
-
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+MAX(0._DP,f_ij); pp(j) = pp(j)+MAX(0._DP,-f_ij)
-          pm(i) = pm(i)+MIN(0._DP,f_ij); pm(j) = pm(j)+MIN(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          diff = u(j)-u(i)
-          qp(i) = MAX(qp(i),diff); qp(j) = MAX(qp(j),-diff)
-          qm(i) = MIN(qm(i),diff); qm(j) = MIN(qm(j),-diff)
-        END DO
-
-      ELSE
-
-        ! Loop over edges
-        DO iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          
-          ! Determine fluxes
-          f_ij = tstep*d_ij*(u(i)-u(j))
-          flux(iedge) = f_ij
-
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+MAX(0._DP,f_ij); pp(j) = pp(j)+MAX(0._DP,-f_ij)
-          pm(i) = pm(i)+MIN(0._DP,f_ij); pm(j) = pm(j)+MIN(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          diff = u(j)-u(i)
-          qp(i) = MAX(qp(i),diff); qp(j) = MAX(qp(j),-diff)
-          qm(i) = MIN(qm(i),diff); qm(j) = MIN(qm(j),-diff)
-        END DO
-        
-      END IF
-
-      rp = 0; rm = 0
-      WHERE (pp > SYS_EPSREAL) rp = MIN(1d0,ML*qp/pp)
-      WHERE (pm <-SYS_EPSREAL) rm = MIN(1d0,ML*qm/pm)
-
-!!$      ! Apply the nodal limiter
-!!$      rp = ML*qp; rp = afcstab_limit( pp, rp, 0._DP, 1._DP)
-!!$      rm =-ML*qm; rm = afcstab_limit(-pm, rm, 0._DP, 1._DP)
-
-      ! Apply symmetric flux limiting
-      DO iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-
-        IF (flux(iedge) > 0.0_DP) THEN
-          f_ij = MIN(rp(i), rm(j))*flux(iedge)
-        ELSE
-          f_ij = MIN(rm(i), rp(j))*flux(iedge)
-        END IF
-
-        ! Update the defect vector
-        res(i) = res(i)+f_ij
-        res(j) = res(j)-f_ij
-      END DO
-    END SUBROUTINE do_femfct_limit
-  END SUBROUTINE gfsc_buildResidualScalar_FCT_PC
-
-  !*****************************************************************************
-
-!<subroutine>
-
   SUBROUTINE gfsc_buildResBlockTVD(rmatrixMC, ru, ru0,&
       theta, tstep, rres, rafcstab)
 
@@ -3727,24 +3458,43 @@ CONTAINS
       theta, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector 
-    ! and applies stabilisation of FEM-TVD type and/or 
-    ! employes the general purpose limiter.
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-TVD type and/or employes the general
+    ! purpose limiter.
     !
-    ! A detailed description of the FEM-TVD limiter is given in:
+    ! A detailed description of the FEM-TVD limiter in general is given in:
     !
     !     D. Kuzmin and S. Turek, "Multidimensional FEM-TVD paradigm
     !     for convection-dominated flows" In:  Proceedings of the 
     !     IV European Congress on Computational Methods in Applied Sciences
     !     and Engineering (ECCOMAS 2004). Vol. II, ISBN 951-39-1869-6.
     !
-    ! The general-purpose (GP) flux limiter is introduced in:
+    ! The method actually implemented in this routine is described in:
+    !
+    !     D. Kuzmin, "Algebraic flux correction for finite element
+    !     discretizations of coupled systems" In: E. Onate,
+    !     M. Papadrakakis and B. Schrefler (eds.) Computational
+    !     Methods for Coupled Problems in Science and Engineering II,
+    !     CIMNE, Barcelona, 2007, 653-656.
+    !
+    ! For time-dependent problems, the lack of a consistent mass
+    ! matrix deteriorates the phase accuracy significnatly. It is thus
+    ! that symmetric limiting strategies taylored to mass
+    ! antidiffusion have been considered. If both convective and mass
+    ! antidiffusion has to be limited then the so-called
+    ! general-purpose (GP) flux limiter comes into play:
     !
     !     D. Kuzmin, "On the design of general-purpose flux 
     !     limiters for implicit FEM with a consistent mass matrix.
     !     I. Scalar convection."
     !     J. Comput. Phys.  219  (2006) 513-531.
     !
+    ! Note however, that is is quite expensive and not recommended as
+    ! a standard limiter. In fact, it is only implemented to
+    ! demonstrate that the construction of general-purpose flux
+    ! limiters is possible. If you want to recover the consistent mass
+    ! matrix for time-dependent problems, you should apply flux
+    ! correction of FCT type.
 !</description>
 
 !<input>
@@ -4064,7 +3814,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualBlock_Symm(ru, dscale, rres, rafcstab)
+  SUBROUTINE gfsc_buildResBlockSymm(ru, dscale, rres, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector and applies stabilisation
@@ -4095,26 +3845,30 @@ CONTAINS
     IF (ru%nblocks .NE. 1 .OR. rres%nblocks .NE. 1) THEN
 
       CALL output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualBlock_Symm')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockSymm')
       CALL sys_halt()
 
     ELSE
 
-      CALL gfsc_buildResidualScalar_Symm(ru%RvectorBlock(1), dscale,&
+      CALL gfsc_buildResScalarSymm(ru%RvectorBlock(1), dscale,&
           rres%RvectorBlock(1), rafcstab)
 
     END IF
-  END SUBROUTINE gfsc_buildResidualBlock_Symm
+  END SUBROUTINE gfsc_buildResBlockSymm
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildResidualScalar_Symm(ru, dscale, rres, rafcstab)
+  SUBROUTINE gfsc_buildResScalarSymm(ru, dscale, rres, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector and applies stabilisation
     ! by means of symmetric flux limiting for diffusion operators.
+    !
+    ! Yet, there is no publication available. This routine is based on
+    ! private communication with D. Kuzmin.
+    !
 !</description>
 
 !<input>
@@ -4147,7 +3901,7 @@ CONTAINS
         IAND(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .EQ. 0    .OR.&
         IAND(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .EQ. 0) THEN
       CALL output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResidualScalar_Symm')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarSymm')
       CALL sys_halt()
     END IF
 
@@ -4257,7 +4011,7 @@ CONTAINS
         res(j) = res(j)-f_ij
       END DO
     END SUBROUTINE do_symmetric_limit
-  END SUBROUTINE gfsc_buildResidualScalar_Symm
+  END SUBROUTINE gfsc_buildResScalarSymm
 
   !*****************************************************************************
 
