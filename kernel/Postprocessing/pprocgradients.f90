@@ -344,8 +344,8 @@ CONTAINS
     TYPE(t_domainIntSubset) :: rintSubset
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsDest
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsTrial
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsDest
     
     ! Pointers to the X- and Y-derivative vector
     REAL(DP), DIMENSION(:), POINTER :: p_DxDeriv, p_DyDeriv
@@ -765,8 +765,8 @@ CONTAINS
     ! element in the destination space.
     INTEGER :: nlocalDOFsDestMax
 
-    ! Total number of sampling points in set of patches
-    INTEGER :: nnpoints
+    ! Total number of sampling/interpolation points in set of patches
+    INTEGER :: nspoints,nipoints
 
     ! The triangulation structure - to shorten some things...
     TYPE(t_triangulation), POINTER :: p_rtriangulation
@@ -785,32 +785,37 @@ CONTAINS
     TYPE(t_domainIntSubset) :: rintSubsetDest
 
     ! An allocatable array accepting the starting positions of each patch
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE, TARGET :: IelementsInPatchIdx
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsInPatchIdx
 
     ! An allocatable array accepting the element numbers of each patch
     ! Note that the first member for each patch defines the patch details, i.e.,
     ! the cubature formular that should be used for this patch, etc.
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE, TARGET :: IelementsInPatch
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsInPatch
 
     ! An allocatable array accepting the number of corners per element
-    INTEGER, DIMENSION(:), ALLOCATABLE, TARGET :: IelementNVEInPatch
+    INTEGER, DIMENSION(:), ALLOCATABLE :: IelementNVEInPatch
+
+    ! An allocatable array accepting the number of cubature points per element
+    INTEGER, DIMENSION(:), ALLOCATABLE :: IelementNcubpInPatch
 
     ! An allocatable array accepting the number of sampling points per patch
-    INTEGER, DIMENSION(:), ALLOCATABLE, TARGET :: Inpoints
+    INTEGER, DIMENSION(:), ALLOCATABLE :: Inpoints
     
     ! An allocatable array accepting the DOF's of a set of elements.
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsDest
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsTrial
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsDest
 
     ! An allocatable array accepting the coordinates of the patch bounding group
-    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DpatchBound
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DpatchBound
 
     ! An allocatable array accepting the polynomials of the set of elements.
-    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dpolynomials
+    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dpolynomials
+    REAL(DP), DIMENSION(:),       ALLOCATABLE :: DpolynomialsMixed
 
     ! An allocatable array accepting the values of the FE functions
     ! that are computed by the callback routine.
     REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+    REAL(DP), DIMENSION(:,:),   ALLOCATABLE :: DcoefficientsMixed
 
     ! An allocatable array accepting the averaged gradient values
     REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dderivatives
@@ -875,6 +880,8 @@ CONTAINS
     ! Pointers to the X-, Y- and Z-derivative vector
     REAL(DP), DIMENSION(:), POINTER :: p_DxDeriv, p_DyDeriv, p_DzDeriv
 
+    ! Auxiliary integers
+    INTEGER :: icubp,idim
     
     !-----------------------------------------------------------------------
     ! (0)  Initialisation
@@ -904,8 +911,8 @@ CONTAINS
     p_rtriangulation => p_rdiscrSource%p_rtriangulation
     
     ! Get a pointer to the vertices-at-element and vertex coordinates array
-    CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,  p_DvertexCoords)
+    CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    CALL storage_getbase_double2D (p_rtriangulation%h_DvertexCoords,  p_DvertexCoords)
 
     ! Get pointers to the derivative destination vector.
     SELECT CASE(p_rtriangulation%ndim)
@@ -1464,7 +1471,10 @@ CONTAINS
               nelementsPerBlock, ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
           
           ! Allocate memory for the patch interpolants matrices
-          ALLOCATE(Dpolynomials(indofTrial,1,ncubp,nelementsPerBlock))
+          ! Note that the second dimension is DER_FUNC=1 and could be omitted. However,
+          ! all routines for simultaneous element evaluation require a 4d-array so that
+          ! the array Dpolynomials is artificially created as 4d-array.
+          ALLOCATE(Dpolynomials(indofTrial,DER_FUNC,ncubp,nelementsPerBlock))
           
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial 
@@ -1483,7 +1493,7 @@ CONTAINS
           
           ! Compute the patch averages by solving $(P^T * P) * x = (P^T) * b$ for x
           CALL calc_patchAverages_sim(IelementsInPatchIdx, npatchesInCurrentBlock, ncubp, &
-              indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+              indofTrial,  Dcoefficients, Dpolynomials,Dderivatives)
           
 
           !-----------------------------------------------------------------------
@@ -1590,7 +1600,7 @@ CONTAINS
           ! Reallocate memory for the patch interpolants
           IF (ncubp .LT. nlocalDOFsDest) THEN
             DEALLOCATE(Dpolynomials)
-            ALLOCATE(Dpolynomials(indofTrial,1,nlocalDOFsDest,nelementsPerBlock))
+            ALLOCATE(Dpolynomials(indofTrial,DER_FUNC,nlocalDOFsDest,nelementsPerBlock))
           END IF
           
           ! Evaluate the basis functions for the cubature points of the destination FE space
@@ -1716,6 +1726,9 @@ CONTAINS
 
           ! Allocate memory for number of corners per element
           ALLOCATE(IelementNVEInPatch(nelementsPerBlock))
+
+          ! Allocate memory for number of cubature points per element
+          ALLOCATE(IelementNcubpInPatch(nelementsPerBlock))
           
           ! Allocate memory for the DOF's of all the elements
           ALLOCATE(IdofsTrial(indofTrialMax,nelementsPerBlock))
@@ -1724,14 +1737,9 @@ CONTAINS
           ALLOCATE(IdofsDest(indofDestMax,nelementsPerBlock))
 
           ! Allocate memory for coefficient values; for mixed triangulations
-          ! $ncubpMax*nelementsPerBlock$ is an upper bound for the total number
-          ! of sampling points. The actual number of sampling points is calculated
-          ! on-the-fly.
-          ALLOCATE(Dcoefficients(ncubpMax*nelementsPerBlock,1,p_rtriangulation%ndim))
-
-          ! Allocate memory for the patch interpolants matrices
-          ALLOCATE(Dpolynomials(indofTrialMax,1,ncubpMax,nelementsPerBlock))
-          Dpolynomials = 0
+          ! $ncubpMax$ is an upper bound for the number of cubature points.
+          ALLOCATE(Dcoefficients(ncubpMax,nelementsPerBlock,p_rtriangulation%ndim))
+!!$          ALLOCATE(DcoefficientsMixed(ncubpMax*nelementsPerBlock,p_rtriangulation%ndim))
 
           ! Calculate the global DOF's into IdofsTrial.
           CALL dof_locGlobMapping_mult(p_rdiscrSource, &
@@ -1765,10 +1773,10 @@ CONTAINS
           
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
+          ! However, we may skip the re-initialisation of cubature points, etc.
+          ! if the current elements belongs to the same element distribution as 
+          ! the last one.
 
-          ! initialise the total number of sampling points
-          nnpoints = 0
-          
           ! Loop over the patches in the set
           DO ipatch = 1, npatchesInCurrentBlock
             
@@ -1838,11 +1846,11 @@ CONTAINS
               ! Update number of sampling points for current patch
               Inpoints(ipatch) = Inpoints(ipatch)+ncubp
               
-              ! Update total number of sampling points
-              nnpoints = nnpoints+ncubp
-
               ! Store number of corners per element
               IelementNVEInPatch(idx) = NVE
+
+              ! Store number of cubature points per element
+              IelementNcubpInPatch(idx) = ncubp
 
               ! We have the coordinates of the cubature points saved in the
               ! coordinate array from above. Unfortunately for nonparametric
@@ -1874,55 +1882,54 @@ CONTAINS
               ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
               SELECT CASE(p_rtriangulation%ndim)
               CASE (NDIM1D)
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV1D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV1D_X, Dcoefficients(:,idx,1))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
               CASE (NDIM2D)
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV2D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_X, Dcoefficients(:,idx,1))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
 
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV2D_Y, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,2))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_Y, Dcoefficients(:,idx,2))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
               CASE (NDIM3D)
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_X, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,1))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_X, Dcoefficients(:,idx,1))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_Y, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,2))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Y, Dcoefficients(:,idx,2))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
-                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idx:idx), &
-                    p_Djac(:,:,idx:idx), p_Ddetj(:,idx:idx), &
-                    p_elementDistribution%itrialElement, IdofsTrial(:,idx:idx), ncubp, &
-                    1, p_DcubPtsTrial(:,:,idx:idx), DER_DERIV3D_Z, &
-                    Dcoefficients(nnpoints-ncubp+1:nnpoints,:,3))
+                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
+                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
+                    p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Z, Dcoefficients(:,idx,3))
+!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,3))
                 
               CASE DEFAULT
                 CALL output_line('Invalid spatial dimension!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
                 CALL sys_halt()
-              END SELECT
-              
-              
+              END SELECT             
 
             END DO
           END DO   ! End of IPATCH loop
           ilastElementDistr = 0
+
 
           !---------------------------------------------------------------------
           ! Step 3: Prepare least-squares fitting
@@ -1967,8 +1974,8 @@ CONTAINS
           
           ! Next, we need to convert the physical coordinates of the curvature points
           ! to the local coordinates of the constant Jacobian "patch" elements
-          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
-              NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
+          CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem,&
+              npatchesInCurrentBlock, NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
 
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
@@ -1979,12 +1986,63 @@ CONTAINS
           CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType, &
               nelementsPerBlock, ncubpMax, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
 
+          ! Allocate memory for the patch interpolants matrices
+          ! Note that the second dimension is DER_FUNC=1 and could be omitted. However,
+          ! all routines for simultaneous element evaluation require a 4d-array so that
+          ! the array Dpolynomials is artificially created as 4d-array.
+          ALLOCATE(Dpolynomials(indofTrial,DER_FUNC,ncubpMax,nelementsPerBlock))
+
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial 
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
+          ! Note that we evaluate over the maximum number of cubature points present in
+          ! the patch. Altought some meaningless values may be generated, it is faster to
+          ! evaluate all values simultaneously and filter the required data afterwards.
           CALL elem_generic_sim(p_elementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
               nelementsPerBlock, p_DcubPtsTrial)
+
+          ! Compute total number of sampling points
+          nspoints = SUM(Inpoints(1:npatchesInCurrentBlock))
+
+          ! Allocate memory for the aligned patch data
+          ALLOCATE(DcoefficientsMixed(nspoints,p_rtriangulation%ndim))
+          ALLOCATE(DpolynomialsMixed(indofTrial*nspoints))
+          
+          ! Reset total number of sampling/interpolation points
+          nspoints = 0; nipoints = 0
+
+          ! Loop over all element indices in the set of patches
+          ! and align the polynomials interpolants
+          DO idx = 1, IelementsInPatchIdx(npatchesInCurrentBlock+1)-1
+            
+            ! Get number of cubature points for current element
+            ncubp = IelementNcubpInPatch(idx)
+
+            ! Update total number of sampling points
+            nspoints = nspoints+ncubp
+
+            ! Apply coefficients for each dimension
+            DO idim = 1, p_rtriangulation%ndim
+              DcoefficientsMixed(nspoints-ncubp+1:nspoints,idim) =&
+                  Dcoefficients(1:ncubp,idx,idim)
+            END DO
+
+            ! Loop over all cubature points
+            DO icubp = 1, ncubp
+              
+              ! Update total number of interpolation points
+              nipoints = nipoints+indofTrial
+              
+              ! Align polynomial interpolats
+              DpolynomialsMixed(nipoints-indofTrial+1:nipoints) =&
+                   Dpolynomials(1:indofTrial,DER_FUNC,icubp,idx)
+            END DO
+          END DO
+
+          ! Deallocate memory for the unaligned data
+          DEALLOCATE(Dpolynomials, Dcoefficients)
+
 
           !-----------------------------------------------------------------------
           ! Step 4: Perform least-squares fitting
@@ -1992,10 +2050,12 @@ CONTAINS
 
           ! Allocate memory for the derivative values
           ALLOCATE(Dderivatives(indofTrial,npatchesInCurrentBlock,p_rtriangulation%ndim))
-
+          
           ! Compute the patch averages by solving $(P^T * P) * x = (P^T) * b$ for x
           CALL calc_patchAverages_mult(IelementsInPatchIdx, npatchesInCurrentBlock, &
-              Inpoints, indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+              Inpoints, indofTrial, DcoefficientsMixed, DpolynomialsMixed, Dderivatives)
+
+          DEALLOCATE(DpolynomialsMixed, DcoefficientsMixed)
 
 
           !-----------------------------------------------------------------------
@@ -2118,11 +2178,15 @@ CONTAINS
           ! We do not need the corner coordinates of the elements in the destination
           ! FE space but that of the "patch" elements in the source FE space
           p_Dcoords => rintSubset%p_Dcoords
-          
-          ! Reallocate memory for the patch interpolants matrices (if required)
-          DEALLOCATE(Dpolynomials)
-          ALLOCATE(Dpolynomials(indofTrial,4,nlocalDOFsDestMax,nelementsPerBlock))
-          Dpolynomials = 0
+
+
+          ! It is mandatory that the second dimensions is DER_MAXNDER even though only the
+          ! function values (DER_FUNC) are actually needed. During the evaluation of the basis
+          ! functions some elements do not check if first derivatives are required. In short,
+          ! IF-THEN-ELSE is more costly than just computing some superficial values ;-)
+          ! Therefore, we must provide sufficient memory !!!
+          ALLOCATE(Dpolynomials(indofTrial,DER_MAXNDER,nlocalDOFsDestMax,nelementsPerBlock))
+          Dpolynomials = 0.0_DP
 
           ! Loop over the patches in the set
           DO ipatch = 1, npatchesInCurrentBlock
@@ -2349,10 +2413,10 @@ CONTAINS
           ! Deallocate temporary memory
           DEALLOCATE(Dderivatives)
           DEALLOCATE(Dpolynomials)
-          DEALLOCATE(Dcoefficients)
           DEALLOCATE(IdofsDest)
           DEALLOCATE(IdofsTrial)
           DEALLOCATE(IelementNVEInPatch)
+          DEALLOCATE(IelementNcubpInPatch)
         END IF
         
         ! Deallocate temporary memory
@@ -2787,7 +2851,7 @@ CONTAINS
     ! That's exactly, what is done in this subroutine.
     
     SUBROUTINE calc_patchAverages_mult(IelementsInPatchIdx, npatches, &
-        Inpoints, indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+        Inpoints, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
       
       ! Index vector and list of elements in patch
       INTEGER, DIMENSION(:), INTENT(IN)                   :: IelementsInPatchIdx
@@ -2801,44 +2865,41 @@ CONTAINS
       ! Number of local degrees of freedom for test functions
       INTEGER, INTENT(IN)                                 :: indofTrial
 
-      ! Rectangular matrix with polynomial interpolants
-      REAL(DP), DIMENSION(:,:,:,:), INTENT(INOUT), TARGET :: Dpolynomials
-
       ! Vector with consistent gradient values
-      REAL(DP), DIMENSION(:,:,:), INTENT(IN), TARGET      :: Dcoefficients
+      REAL(DP), DIMENSION(:,:), INTENT(IN)                :: Dcoefficients
+
+      ! Vector with aligned polynomial interpolants
+      REAL(DP), DIMENSION(:), INTENT(INOUT)               :: Dpolynomials
 
       ! Smoothe gradient values
       REAL(DP), DIMENSION(:,:,:), INTENT(OUT)             :: Dderivatives
 
       ! local variables
-      INTEGER  :: i,ipatch,idxFirst,idxLast,icoeffFirst,icoeffLast
-      REAL(DP), DIMENSION(:,:,:), POINTER            :: p_Dpolynomials
-      REAL(DP), DIMENSION(:,:), POINTER              :: p_Dcoefficients
+      INTEGER  :: i,ipatch,icoeffFirst,icoeffLast,ipolyFirst,ipolyLast
       REAL(DP), DIMENSION(indofTrial,indofTrial)     :: Dv
       REAL(DP), DIMENSION(indofTrial)                :: Dd
       
+
       ! Initialise position index
       icoeffFirst = 1
       
       ! Loop over all patches
       DO ipatch = 1, npatches
         
-        ! Get first and last element index of patch
-        idxFirst   = IelementsInPatchIdx(ipatch)
-        idxLast    = IelementsInPatchIdx(ipatch+1)-1
+        ! Compute absolute position of coefficient and polynomials
         icoeffLast = icoeffFirst+Inpoints(ipatch)-1
+        ipolyFirst = indofTrial*(icoeffFirst-1)+1
+        ipolyLast  = indofTrial*icoeffLast
 
         ! Compute factorisation for the singular value decomposition
-        p_Dpolynomials => Dpolynomials(1:indofTrial,1,:,idxFirst:idxLast)
-        CALL mprim_SVD_factorise(p_Dpolynomials,&
+        CALL mprim_SVD_factorise(Dpolynomials(ipolyFirst:ipolyLast),&
             indofTrial, Inpoints(ipatch), Dd, Dv, .TRUE.)
         
         ! Perform back substitution for all componenets
         DO i = 1, SIZE(Dderivatives,3)
-          p_Dcoefficients => Dcoefficients(icoeffFirst:icoeffLast,:,i)
-          CALL mprim_SVD_backsubst(p_Dpolynomials, &
+          CALL mprim_SVD_backsubst1(Dpolynomials(ipolyFirst:ipolyLast), &
               indofTrial, Inpoints(ipatch), Dd, Dv, Dderivatives(:,ipatch,i), &
-              p_Dcoefficients, .TRUE.)
+              Dcoefficients(icoeffFirst:icoeffLast,i), .TRUE.)
         END DO
 
         ! Update position index
@@ -2860,7 +2921,7 @@ CONTAINS
     ! That's exactly, what is done in this subroutine.
     
     SUBROUTINE calc_patchAverages_sim(IelementsInPatchIdx, npatches, &
-        ncubp, indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+        ncubp, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
 
       ! Index vector and list of elements in patch
       INTEGER, DIMENSION(:), INTENT(IN)              :: IelementsInPatchIdx
@@ -2874,22 +2935,30 @@ CONTAINS
       ! Number of local degrees of freedom for test functions
       INTEGER, INTENT(IN)                            :: indofTrial
 
+      ! Vector with consistent gradient values
+      !
+      !   Dcoefficients(ncubp, nelemPerBlock, ndim)
+      !
+      REAL(DP), DIMENSION(:,:,:), INTENT(IN)         :: Dcoefficients
+
       ! Rectangular matrix with polynomial interpolants
+      !
+      !   Dpolynomials(indofTrial, 1, ncubp, nelemPerBlock)
+      !
       REAL(DP), DIMENSION(:,:,:,:), INTENT(INOUT)    :: Dpolynomials
 
-      ! Vector with consistent gradient values
-      REAL(DP), DIMENSION(:,:,:), INTENT(IN), TARGET :: Dcoefficients
-
-      ! Smoothe gradient values
+      ! Smoothed gradient values
+      !
+      !   Derivatives(indofTrial, npatches, ndim)
+      !
       REAL(DP), DIMENSION(:,:,:), INTENT(OUT)        :: Dderivatives
 
       ! local variables
       INTEGER  :: i,ipatch,idxFirst,idxLast,npoints
-      REAL(DP), DIMENSION(:,:), POINTER              :: p_Dcoefficients
+
       REAL(DP), DIMENSION(indofTrial,indofTrial)     :: Dv
       REAL(DP), DIMENSION(indofTrial)                :: Dd
       
-
       ! Loop over all patches
       DO ipatch = 1, npatches
         
@@ -2904,10 +2973,9 @@ CONTAINS
         
         ! Perform back substitution for all componenets
         DO i = 1, SIZE(Dderivatives,3)
-          p_Dcoefficients => Dcoefficients(:,:,i)
-          CALL mprim_SVD_backsubst(Dpolynomials(:,:,:,idxFirst:idxLast), &
+          CALL mprim_SVD_backsubst2(Dpolynomials(:,:,:,idxFirst:idxLast), &
               indofTrial, npoints, Dd, Dv, Dderivatives(:,ipatch,i), &
-              p_Dcoefficients(:,idxFirst:idxLast), .TRUE.)
+              Dcoefficients(:,idxFirst:idxLast,i), .TRUE.)
         END DO
       END DO
     END SUBROUTINE calc_patchAverages_sim
