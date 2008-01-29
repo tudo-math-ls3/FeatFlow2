@@ -701,6 +701,23 @@ CONTAINS
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%Rspatialdiscretisation(2))
       
+    CASE(-2)
+      ! Initialise spatial discretisations for gradient with P1/Q1-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with P2/Q2-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(2))
+
     CASE DEFAULT
       CALL output_line('Unsupproted element type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
