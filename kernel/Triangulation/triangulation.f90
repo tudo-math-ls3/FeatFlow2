@@ -6869,6 +6869,7 @@ CONTAINS
   rtriangulation%NBCT = NBCT
   rtriangulation%NNEE  = NEE
   rtriangulation%NNAE  = NAE
+  rtriangulation%NNVE  = NVE
   
   ! Vertices per face
   IF (NAE .EQ. 4) THEN
@@ -8895,6 +8896,11 @@ CONTAINS
   integer(prec_vertexidx), dimension(:,:), pointer :: p_IvertAtEdgeSource
   integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtFace
   integer(prec_vertexidx), dimension(:,:), pointer :: p_IfacesAtElement
+  integer(prec_vertexidx), dimension(:), pointer :: p_IrefinementPatch
+  integer(prec_vertexidx), dimension(:), pointer :: p_IrefinementPatchIndex
+  
+  integer(prec_vertexidx), dimension(:), pointer :: p_IcoarseGridElement
+  
   integer(prec_elementidx) :: nquads,iel,iel1,iel2,iel3
   integer(prec_edgeidx) :: imt
   integer(prec_vertexidx) :: ivt1, ivt2, ivtoffset, ivt, iae
@@ -8921,6 +8927,9 @@ CONTAINS
       
   call storage_getbase_int2d(rsourceTriangulation%h_IfacesAtElement, &
       p_IfacesAtElement)
+      
+  
+      
       
       
       
@@ -8953,6 +8962,51 @@ CONTAINS
   rdestTriangulation%NEL = 8 * rsourceTriangulation%NEL
   rdestTriangulation%InelOfType(:) = 8 * rsourceTriangulation%InelOfType(:)
 
+  ! We have now found rdestTriangulation%NEL, so we can:
+  ! Allocate memory for the refinement information arrays.
+  ! These arrays define for every coarse grid element the fine
+  ! grid elements and for every fine grid element the coarse
+  ! grid element where it comes from.
+  call storage_new ('tria_refineMesh2lv3D', 'h_IrefinementPatchIndex', &
+      rsourceTriangulation%NEL+1, ST_INT, &
+      rdestTriangulation%h_IrefinementPatchIndex, ST_NEWBLOCK_ZERO)
+  call storage_getbase_int(&
+      rdestTriangulation%h_IrefinementPatchIndex,p_IrefinementPatchIndex)
+
+  call storage_new ('tria_refineMesh2lv3D', 'h_IrefinementPatch', &
+      rdestTriangulation%NEL, ST_INT, &
+      rdestTriangulation%h_IrefinementPatch, ST_NEWBLOCK_ZERO)
+  call storage_getbase_int(&
+      rdestTriangulation%h_IrefinementPatch,p_IrefinementPatch)
+      
+  call storage_new ('tria_refineMesh2lv3D', 'h_IcoarseGridElement', &
+      rdestTriangulation%NEL, ST_INT, &
+      rdestTriangulation%h_IcoarseGridElement, ST_NEWBLOCK_ZERO)
+  call storage_getbase_int(&
+      rdestTriangulation%h_IcoarseGridElement,p_IcoarseGridElement)
+      
+
+  ! The p_IrefinementPatchIndex array can directly be initialised
+  ! as every coarse grid element gets 4 fine grid elements.
+  do iel = 0,rsourceTriangulation%NEL
+    p_IrefinementPatchIndex(1+iel) = 1 + iel*8
+  end do
+  
+  ! Also the p_IcoarseGridElement array can directly be initialised.
+  ! The coarse grid element number of element 1..NEL(coarse) stays
+  ! the same. The number of the other coarse grid elements can
+  ! be calculated by a formula.
+  do iel = 1,rsourceTriangulation%NEL
+    p_IcoarseGridElement(iel) = iel
+  end do
+  
+  ! assign the other element numbers
+  ! the number for an element is iel1 = rsourceTriangulation%NEL+7*(iel-1)+1  
+  do iel = rsourceTriangulation%NEL+1,rdestTriangulation%NEL
+    p_IcoarseGridElement(iel) = (iel-rsourceTriangulation%NEL-1)/7 + 1
+  end do
+
+  ! New value of NVT
   ! We expect NVT+NMT+NAT+nquads new points.
   rdestTriangulation%NVT = &
       rsourceTriangulation%NVT + &
@@ -9132,6 +9186,17 @@ CONTAINS
      iel5 = iel1+4
      iel6 = iel1+5
      iel7 = iel1+6
+     
+     ! Save them
+     p_IrefinementPatch(1+(iel-1)*8) = iel
+     p_IrefinementPatch(1+(iel-1)*8+1) = iel1
+     p_IrefinementPatch(1+(iel-1)*8+2) = iel2
+     p_IrefinementPatch(1+(iel-1)*8+3) = iel3
+     p_IrefinementPatch(1+(iel-1)*8+4) = iel4
+     p_IrefinementPatch(1+(iel-1)*8+5) = iel5
+     p_IrefinementPatch(1+(iel-1)*8+6) = iel6
+     p_IrefinementPatch(1+(iel-1)*8+7) = iel7
+
      
      ! the vertex number of the midpoint is
      ! the old face number
