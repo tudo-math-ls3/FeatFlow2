@@ -156,7 +156,7 @@ CONTAINS
     INTEGER :: ierror   
     
     ! Error of FE function to reference function
-    REAL(DP) :: derror, dmin, dmax
+    REAL(DP) :: dmin, dmax
     INTEGER :: i
     
     ! Output block for UCD output to GMV file
@@ -357,9 +357,13 @@ CONTAINS
         CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
             EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
             rtriangulation,p_rboundary)
+      CASE (-2)
+        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+            EL_E002,EL_E013,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
+            rtriangulation,p_rboundary)
       CASE DEFAULT
         CALL output_line('Unsupproted element type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion')
+            OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion_method2')
         CALL sys_halt()
       END SELECT     
 
@@ -734,6 +738,12 @@ CONTAINS
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
           p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:&
             rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NEL))
+    CASE (-2)
+      CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u2.gmv')
+      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+          p_Ddata(1:rtriangulation%NVT),&
+          p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
+          p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:))
     CASE (-30)
       !CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u2.gmv')
       CALL ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,'gmv/u2.gmv')
@@ -768,6 +778,11 @@ CONTAINS
       CALL lsysbl_releaseVector (rvectorPostProcBlock)
       CALL lsyssc_releaseVector (rvectorPostProc)
       CALL spdiscr_releaseBlockDiscr (rdiscretisationPostProc)
+
+    CASE DEFAULT
+      CALL output_line('Unsupproted element type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion_method2')
+      CALL sys_halt()
     END SELECT
     
     ! Write the file to disc, that's it.
