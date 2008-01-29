@@ -81,24 +81,31 @@ MODULE afcstabilisation
   
   ! Stabilisation of discrete upwind type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UPWIND          = 1
-  
+
+  ! Stabilisation of discrete maximum principle preserving 
+  ! type for anisotropic diffusion operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_DMP             = 2
+
   ! Stabilisation of semi-implicit FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT          = 2
-  
-  ! Stabilisation of general purpose type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMGP           = 3
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT          = 10
+
+  ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_EXP      = 11
+
+  ! Stabilisation of iterative FEM-FCT type for convection operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_ITE      = 12
+
+  ! Stabilisation of linearised FEM-FCT type for convection operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_LIN      = 13
   
   ! Stabilisation of FEM-TVD type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 4
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 20
+
+  ! Stabilisation of general purpose type for convection operators
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMGP           = 21
   
-  ! Stabilisation of predictor-corrector FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_PC       = 5
-
-  ! Stabilisation of discrete maximum principle preserving type for diffusion operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_DMP    = 6
-
   ! Stabilisation of symmetric type for diffusion operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SYMMETRIC       = 7
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SYMMETRIC       = 30
   
 !</constantblock>
 
@@ -315,9 +322,11 @@ CONTAINS
       
     ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND)    .AND. &
         (    istabilisation .NE. AFCSTAB_FEMFCT)    .AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT_EXP).AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT_ITE).AND. &
+        (    istabilisation .NE. AFCSTAB_FEMFCT_LIN).AND. &
         (    istabilisation .NE. AFCSTAB_FEMTVD)    .AND. &
         (    istabilisation .NE. AFCSTAB_FEMGP)     .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT_PC) .AND. &
         (    istabilisation .NE. AFCSTAB_DMP)       .AND. &
         (    istabilisation .NE. AFCSTAB_SYMMETRIC)) THEN 
       
