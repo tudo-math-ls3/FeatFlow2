@@ -60,6 +60,11 @@ MODULE mprimitives
     MODULE PROCEDURE mprim_signum_int32
   END INTERFACE
 
+  INTERFACE mprim_SVD_backsubst
+    MODULE PROCEDURE  mprim_SVD_backsubst1
+    MODULE PROCEDURE  mprim_SVD_backsubst2
+  END INTERFACE
+
   ! Alternative name for backward compatibility
   INTERFACE mprim_kronecker
     MODULE PROCEDURE kronecker
@@ -1585,7 +1590,7 @@ CONTAINS
 
   !************************************************************************
 
-  SUBROUTINE mprim_SVD_backsubst(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+  SUBROUTINE mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
     ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
@@ -1601,7 +1606,7 @@ CONTAINS
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
     LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
 
-    ! Factorised matrux U
+    ! Factorised matrix U
     REAL(DP), DIMENSION(mdim,ndim), INTENT(IN)    :: Da
 
     ! Diagonal matrix D
@@ -1611,7 +1616,7 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
 
     ! Right-hand side vector
-    REAL(DP), DIMENSION(*), INTENT(IN)            :: Df
+    REAL(DP), DIMENSION(:), INTENT(IN)            :: Df
 !</input>
 
 !<output>
@@ -1642,7 +1647,7 @@ CONTAINS
     ! Check if number of equations is larger than number of unknowns
     IF (m < n) THEN
       CALL output_line('Fewer equations than unknowns!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst')
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst1')
       CALL sys_halt()
     END IF
     
@@ -1663,5 +1668,92 @@ CONTAINS
     
     ! Compute x = B * aux
     CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
-  END SUBROUTINE mprim_SVD_backsubst
+  END SUBROUTINE mprim_SVD_backsubst1
+
+  !************************************************************************
+
+  SUBROUTINE mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+
+!<description>
+    ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
+    ! matrix $A$ has been decomposed into $Da$, $Dd$ and $Db$ by the routine
+    ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
+    ! to indicate that matrix A is stored in transposed format.
+    !
+    ! Note that this routine does exactly the same as mprim_SVD_backsubst1.
+    ! The only difference is, that the right-hand side vector $f$ is given
+    ! as a 2D-array, whereby the product of both dimensions must agree with
+    ! the corresponding dimensions of the rectangular matrix $A$.
+!</description>
+
+!<input>
+    ! Dimensions of the rectangular matrix
+    INTEGER, INTENT(IN)                           :: ndim,mdim
+
+    ! OPTIONAL: Flag to indicate if the matrix A is transposed
+    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+
+    ! Factorised matrix U
+    REAL(DP), DIMENSION(mdim,ndim), INTENT(IN)    :: Da
+
+    ! Diagonal matrix D
+    REAL(DP), DIMENSION(:), INTENT(IN)            :: Dd
+
+    ! Square matrix B
+    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
+
+    ! Right-hand side vector
+    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Df
+!</input>
+
+!<output>
+    ! Solution vector
+    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dx
+!</output>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(SIZE(Dd)) :: Daux
+    INTEGER :: i,n,m
+    LOGICAL :: btransposed
+
+    ! Do we have an optional transposed flag?
+    IF (PRESENT(btransposedOpt)) THEN
+      btransposed = btransposedOpt
+    ELSE
+      btransposed = .FALSE.
+    END IF
+
+    ! Is the matrix transposed?
+    IF (btransposed) THEN
+      n=mdim; m=ndim
+    ELSE
+      n=ndim; m=mdim
+    END IF
+    
+    ! Check if number of equations is larger than number of unknowns
+    IF (m < n) THEN
+      CALL output_line('Fewer equations than unknowns!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst2')
+      CALL sys_halt()
+    END IF
+    
+    ! Compute aux = (U^T * f)/D where D_i /= 0
+    IF (btransposed) THEN
+      CALL DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    ELSE
+      CALL DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    END IF
+
+    DO i =1, SIZE(Dd)
+      IF (ABS(Dd(i)) .GT. SYS_EPSREAL) THEN
+        Daux(i) = Daux(i)/Dd(i)
+      ELSE
+        Daux(i) = 0.0_DP
+      END IF
+    END DO
+    
+    ! Compute x = B * aux
+    CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+  END SUBROUTINE mprim_SVD_backsubst2
 END MODULE mprimitives
