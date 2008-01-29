@@ -9511,7 +9511,7 @@ CONTAINS
 
   function tria_BinSearch(p_Iarray, Ivalue, Ilbound, Iubound)
   
-    integer(PREC_VERTEXIDX), dimension(:),intent(IN), pointer :: p_Iarray
+    integer(PREC_VERTEXIDX), dimension(:),intent(IN) :: p_Iarray
     integer(PREC_VERTEXIDX) :: Ivalue
     integer(PREC_VERTEXIDX), intent(IN) :: Ilbound, Iubound
     
