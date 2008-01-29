@@ -2400,7 +2400,7 @@ CONTAINS
   REAL(DP), PARAMETER :: Q34 = 0.75_DP
   INTEGER(PREC_ELEMENTIDX) :: iel
   INTEGER(PREC_VERTEXIDX) :: ivtp1, ivtp2, ivtq1, ivtq2,ivt
-  REAL(DP) :: dp,dq,ddet
+  REAL(DP) :: dpf,dqf,ddet
   
     ! The information that was 'distributed' in the prolongation has to
     ! be 'collected'.
@@ -2429,16 +2429,16 @@ CONTAINS
 
       ! Refined Vertice in fine vector
       ivt = IvertsAtElemFine(2,iel)
-      dp = DuFine(ivt)
-      dq = DuFine(ivt+NVTfine)
+      dpf = DuFine(ivt)
+      dqf = DuFine(ivt+NVTfine)
 
       ! Function values
-      DuCoarse(ivtp1) = DuCoarse(ivtp1) + Q12*dp - Q34*dq/ddet
-      DuCoarse(ivtp2) = DuCoarse(ivtp2) + Q12*dp + Q34*dq/ddet
+      DuCoarse(ivtp1) = DuCoarse(ivtp1) + Q12*dpf - Q34*dqf/ddet
+      DuCoarse(ivtp2) = DuCoarse(ivtp2) + Q12*dpf + Q34*dqf/ddet
       
       ! Function derivatives
-      DuCoarse(ivtq1) = DuCoarse(ivtq1) + Q14*(dp*ddet - dq)
-      DuCoarse(ivtq2) = DuCoarse(ivtq2) - Q14*(dp*ddet + dq)
+      DuCoarse(ivtq1) = DuCoarse(ivtq1) + Q14*(dpf*ddet - dqf)
+      DuCoarse(ivtq2) = DuCoarse(ivtq2) - Q14*(dpf*ddet + dqf)
 
     END DO
 
