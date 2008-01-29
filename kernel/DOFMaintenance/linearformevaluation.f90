@@ -84,17 +84,6 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
-
-  ! local variables
-  TYPE(t_collection), POINTER :: p_rcollection
-  
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
   
   ! If the vector is not set up as new vector, it has to be unsorted.
   ! If it's a new vector, we switch off the sorting.
@@ -114,7 +103,7 @@ CONTAINS
     IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
       CALL linf_buildVectord_conf2 (rdiscretisation,rform,bclear,rVectorScalar,&  
-                                   fcoeff_buildVectorSc_sim,p_rcollection)
+                                   fcoeff_buildVectorSc_sim,rcollection)
     ELSE
       PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
     END IF
@@ -125,7 +114,7 @@ CONTAINS
     IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
       CALL linf_buildVectord_conf2 (rdiscretisation,rform,bclear,rVectorScalar,&  
-                                   fcoeff_buildVectorSc_sim,p_rcollection)
+                                   fcoeff_buildVectorSc_sim,rcollection)
     ELSE
       PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
     END IF
