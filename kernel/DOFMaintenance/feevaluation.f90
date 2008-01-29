@@ -32,6 +32,13 @@ MODULE feevaluation
   
   IMPLICIT NONE
 
+  ! There are two functions fevl_evaluate_mult which do the same -- with
+  ! different calling conventions and different complexities.
+  INTERFACE fevl_evaluate_mult
+    MODULE PROCEDURE fevl_evaluate_mult1
+    MODULE PROCEDURE fevl_evaluate_mult2
+  END INTERFACE
+
   ! There are two functions fevl_evaluate_sim which do the same -- with
   ! different calling conventions and different complexities.
   INTERFACE fevl_evaluate_sim
@@ -338,7 +345,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE fevl_evaluate_mult (iderType, Dvalues, rvectorScalar, ielement, &
+  SUBROUTINE fevl_evaluate_mult1 (iderType, Dvalues, rvectorScalar, ielement, &
       DpointsRef, Dpoints)
                                       
 !<description>
@@ -548,6 +555,151 @@ CONTAINS
       
     END DO ! ipoint
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fevl_evaluate_mult2 (rvectorScalar, Dcoords, Djac, Ddetj, &
+                  ieltyp, IdofsTrial, npoints,  Dpoints, iderType,&
+                  Dvalues)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution vector
+  ! rvectorScalar simultaneously in multiple points on one elements in a 
+  ! discretisation.
+  ! The caller must provide all necessary information for the evaluation in the
+  ! parameters.
+!</description>
+
+!<input>
+  ! The scalar solution vector that is to be evaluated.
+  TYPE(t_vectorScalar), INTENT(IN)               :: rvectorScalar
+  
+  ! The FE function must be discretised with the same trial functions on all
+  ! elements where it should be evaluated here. ieltyp defines the type
+  ! of FE trial function that was used for the discretisation on those 
+  ! elements that we are concerning here.
+  INTEGER(I32), INTENT(IN)                       :: ieltyp
+
+  ! A list of the corner vertices of the element.
+  ! array [1..NDIM2D,1..TRIA_MAXNVE2D] of double
+  REAL(DP), DIMENSION(:,:), INTENT(IN)           :: Dcoords
+  
+  ! The Jacobian matrix of the mapping between the reference and the
+  ! real element, for all points on the element.
+  ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement]
+  REAL(DP), DIMENSION(:,:),INTENT(IN)            :: Djac
+  
+  ! The Jacobian determinant of the mapping of each point from the
+  ! reference element to the real element.
+  ! array [1..npointsPerElement]
+  REAL(DP), DIMENSION(:), INTENT(IN)             :: Ddetj
+  
+  ! An array accepting the DOF's on the element in the trial space
+  ! of the FE function.
+  ! DIMENSION(\#local DOF's in trial space)
+  INTEGER(PREC_DOFIDX), DIMENSION(:), INTENT(IN) :: IdofsTrial
+  
+  ! Number of points on the element where to evalate the function
+  INTEGER, INTENT(IN) :: npoints
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! DIMENSION(NDIM2D,npoints).
+  ! The coordinates are expected 
+  ! - on the reference element, if ieltyp identifies a parametric element
+  ! - on the real element, if ieltyp identifies a nonparametric element
+  ! It's assumed that:
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  REAL(DP), DIMENSION(:,:), INTENT(IN)           :: Dpoints
+
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  INTEGER, INTENT(IN)                            :: iderType
+
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(npoints).
+  REAL(DP), DIMENSION(:), INTENT(OUT)            :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DbasTrial
+  INTEGER :: indofTrial
+  REAL(DP) :: dval
+  INTEGER :: ipoint,ibas
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+  
+  ! What to evaluate?
+  Bder = .FALSE.
+  Bder(iderType) = .TRUE.
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(ieltyp)
+  ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints))
+  
+  ! Evaluate the basis functions
+  CALL elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                         Bder, DbasTrial, npoints, Dpoints)  
+  
+  IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
+  
+    ! Get the data array from the vector
+    CALL lsyssc_getbase_double(rvectorScalar,p_Ddata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    DO ipoint = 1,npoints
+      ! Calculate the value in the point
+      dval = 0.0_DP
+      DO ibas = 1,indofTrial
+        dval = dval + &
+            p_Ddata(IdofsTrial(ibas)) * DbasTrial(ibas,iderType,ipoint)
+      END DO
+      ! Save the value in the point
+      Dvalues(ipoint) = dval
+    END DO
+    
+  ELSE IF (rvectorScalar%cdataType .EQ. ST_SINGLE) THEN
+  
+    ! Get the data array from the vector
+    CALL lsyssc_getbase_single(rvectorScalar,p_Fdata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    DO ipoint = 1,npoints
+      ! Calculate the value in the point
+      dval = 0.0_DP
+      DO ibas = 1,indofTrial
+        dval = dval + &
+            p_Fdata(IdofsTrial(ibas)) * DbasTrial(ibas,iderType,ipoint)
+      END DO
+      ! Save the value in the point
+      Dvalues(ipoint) = dval
+    END DO
+    
+  ELSE
+    PRINT *,'fevl_evaluate_sim: Unsupported vector precision'
+    CALL sys_halt()
+  END IF
+  
+  ! Release memory, finish
+  DEALLOCATE(DbasTrial)
+  
   END SUBROUTINE
 
   ! ***************************************************************************
