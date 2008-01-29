@@ -6633,8 +6633,8 @@ END SUBROUTINE
       END IF
 
       ! DEBUG!!!
-      CALL sptivec_saveToFileSequence (rd,&
-          '(''./debugdata/vector2.txt.'',I5.5)',.TRUE.)
+      !CALL sptivec_saveToFileSequence (rd,&
+      !    '(''./debugdata/vector2.txt.'',I5.5)',.TRUE.)
 
       CALL sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,rd)
       
@@ -6860,8 +6860,8 @@ END SUBROUTINE
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
                 ! DEBUG!!!
-                CALL sptivec_saveToFileSequence (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
-                    '(''./debugdata/vector1.txt.'',I5.5)',.TRUE.)
+                !CALL sptivec_saveToFileSequence (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
+                !    '(''./debugdata/vector1.txt.'',I5.5)',.TRUE.)
 
                 ! Implement boundary conditions into the defect
                 CALL tbc_implementInitCondDefect (&
