@@ -92,11 +92,8 @@ MODULE afcstabilisation
   ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_EXP      = 11
 
-  ! Stabilisation of iterative FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_ITE      = 12
-
   ! Stabilisation of linearised FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_LIN      = 13
+  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_LIN      = 12
   
   ! Stabilisation of FEM-TVD type for convection operators
   INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 20
@@ -323,7 +320,6 @@ CONTAINS
     ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND)    .AND. &
         (    istabilisation .NE. AFCSTAB_FEMFCT)    .AND. &
         (    istabilisation .NE. AFCSTAB_FEMFCT_EXP).AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT_ITE).AND. &
         (    istabilisation .NE. AFCSTAB_FEMFCT_LIN).AND. &
         (    istabilisation .NE. AFCSTAB_FEMTVD)    .AND. &
         (    istabilisation .NE. AFCSTAB_FEMGP)     .AND. &
