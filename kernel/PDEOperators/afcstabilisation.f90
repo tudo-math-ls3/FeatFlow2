@@ -19,27 +19,27 @@
 !# 3.) afcstab_resizeStabilisation
 !#     -> resize a stabilisation structure
 !#
-!# 4.) afcstab_getbase_IsupdiagEdgesIdx
+!# 4.) afcstab_getbase_IsupdiagEdgeIdx
 !#     -> return pointer to the index pointer for the
 !#        superdiagonal edge numbers
 !#
 !# 5.) afcstab_getbase_IverticesAtEdge
 !#     -> return pointer to the vertices at edge structure
 !#
-!# 6.) afcstab_getbase_IsubdiagEdgesIdx
+!# 6.) afcstab_getbase_IsubdiagEdgeIdx
 !#     -> return pointer to the index pointer for the
 !#        subdiagonal edge numbers
 !#
-!# 7.) afcstab_getbase_IsubdiagEdges
+!# 7.) afcstab_getbase_IsubdiagEdge
 !#     -> return pointer to the subdiagonal edge numbers
 !#
-!# 8.) afcstab_getbase_DcoefficientsAtEdge
+!# 8.) afcstab_getbase_DcoeffsAtEdge
 !#     -> return pointer to edge data
 !#
 !# 9.) afcstab_generateSubdiagEdges
 !#      -> generate the subdiagonal edge data structure
 !#
-!# 10.) afcstab_generateExtendedSparsity
+!# 10.) afcstab_generateExtSparsity
 !#      -> generate the extended sparsity pattern
 !#
 !# </purpose>
@@ -60,13 +60,13 @@ MODULE afcstabilisation
   PUBLIC :: afcstab_initFromParameterlist
   PUBLIC :: afcstab_releaseStabilisation
   PUBLIC :: afcstab_resizeStabilisation
-  PUBLIC :: afcstab_getbase_IsupdiagEdgesIdx
+  PUBLIC :: afcstab_getbase_IsupdiagEdgeIdx
   PUBLIC :: afcstab_getbase_IverticesAtEdge
   PUBLIC :: afcstab_getbase_DcoeffsAtEdge
-  PUBLIC :: afcstab_getbase_IsubdiagEdgesIdx
-  PUBLIC :: afcstab_getbase_IsubdiagEdges
+  PUBLIC :: afcstab_getbase_IsubdiagEdgeIdx
+  PUBLIC :: afcstab_getbase_IsubdiagEdge
   PUBLIC :: afcstab_generateSubdiagEdges
-  PUBLIC :: afcstab_generateExtendedSparsity
+  PUBLIC :: afcstab_generateExtSparsity
   PUBLIC :: afcstab_limit
  
   ! *****************************************************************************
@@ -526,7 +526,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsupdiagEdgesIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+  SUBROUTINE afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for vertices at edge structure
@@ -554,7 +554,7 @@ CONTAINS
     ! Get the array
     CALL storage_getbase_int(rafcstab%h_IsuperdiagonalEdgesIdx,&
         p_IsuperdiagonalEdgesIdx,rafcstab%NEQ+1)
-  END SUBROUTINE afcstab_getbase_IsupdiagEdgesIdx
+  END SUBROUTINE afcstab_getbase_IsupdiagEdgeIdx
 
   !*****************************************************************************
 
@@ -594,7 +594,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsubdiagEdgesIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+  SUBROUTINE afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for 
@@ -624,13 +624,13 @@ CONTAINS
     ! Get the array
     CALL storage_getbase_int(rafcstab%h_IsubdiagonalEdgesIdx,&
         p_IsubdiagonalEdgesIdx,rafcstab%NEQ+1)
-  END SUBROUTINE afcstab_getbase_IsubdiagEdgesIdx
+  END SUBROUTINE afcstab_getbase_IsubdiagEdgeIdx
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsubdiagEdges(rafcstab,p_IsubdiagonalEdges)
+  SUBROUTINE afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
 
 !<description>
     ! Returns a pointer to the subdiagonal edge number
@@ -658,7 +658,7 @@ CONTAINS
     ! Get the array
     CALL storage_getbase_int(rafcstab%h_IsubdiagonalEdges,&
         p_IsubdiagonalEdges,rafcstab%NEDGE)
-  END SUBROUTINE afcstab_getbase_IsubdiagEdges
+  END SUBROUTINE afcstab_getbase_IsubdiagEdge
 
   !*****************************************************************************
 
@@ -724,7 +724,7 @@ CONTAINS
     IF (IAND(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .EQ. 0) THEN
       CALL output_line('Discrete operator does not provide required &
           &edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
-          'afcstab_generateSubdiagEdges')
+          'afcstab_generateSubdiagEdge')
       CALL sys_halt()
     END IF
 
@@ -758,10 +758,10 @@ CONTAINS
     END IF
     
     ! Set pointers
-    CALL afcstab_getbase_IsupdiagEdgesIdx(rafcstab,p_IsuperdiagonalEdgesIdx)
+    CALL afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagonalEdgesIdx)
     CALL afcstab_getbase_IverticesAtEdge(rafcstab,p_IverticesAtEdge)
-    CALL afcstab_getbase_IsubdiagEdgesIdx(rafcstab,p_IsubdiagonalEdgesIdx)
-    CALL afcstab_getbase_IsubdiagEdges(rafcstab,p_IsubdiagonalEdges)
+    CALL afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagonalEdgesIdx)
+    CALL afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
     
     ! Count number of superdiagonal edges
     DO ieq = 1, neq
@@ -826,7 +826,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE afcstab_generateExtendedSparsity(rmatrixSrc, rmatrixExtended)
+  SUBROUTINE afcstab_generateExtSparsity(rmatrixSrc, rmatrixExtended)
 
 !<description>
     ! This subroutine generates the extended sparsity pattern
@@ -858,7 +858,7 @@ CONTAINS
     ! extended sparsity pattern of the Jacobian matrix
     CALL lsyssc_multMatMat(rmatrixSrc, rmatrixSrc,&
         rmatrixExtended, .TRUE., .TRUE., .FALSE.)
-  END SUBROUTINE afcstab_generateExtendedSparsity
+  END SUBROUTINE afcstab_generateExtSparsity
 
   !*****************************************************************************
 
