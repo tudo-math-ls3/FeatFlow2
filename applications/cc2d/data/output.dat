@@ -14,7 +14,7 @@ MSHOW_Initialisation = 2
 # level of output to terminal
 # =0: no output, =1: basic output; =2: standard output; 
 # >=3: extended output with more and more details
-MT_OutputLevel = 2
+MT_OutputLevel = 1
 
 # Log file for messages. ='': No log file output.
 smsgLog = 'log/output.log'
