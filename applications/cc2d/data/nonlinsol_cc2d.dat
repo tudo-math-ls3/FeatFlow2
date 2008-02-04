@@ -64,7 +64,7 @@ ioutputLevel       = 2
 #     the name of a section that specifies the parameters for the dynamic
 #     switching.
 
-itypePreconditioning = 2
+itypePreconditioning = 1
 
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
