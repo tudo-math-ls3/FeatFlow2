@@ -46,7 +46,7 @@ MODULE ccmainproblem
     
   USE ccbasic
   USE ccinitgeneralparameters
-  USE ccparamtriang
+  USE ccinitparamtriang
   USE ccboundarycondition
   USE ccgeneraldiscretisation
   USE ccpostprocessing
