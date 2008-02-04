@@ -63,6 +63,8 @@ ioutputLevel       = 2
 #     residual. The parameter spreconditionerAdaptiveNewton below defines
 #     the name of a section that specifies the parameters for the dynamic
 #     switching.
+# Note: Currently, Newton only works with quadratic convergence if 
+# the stabilisation is deactivated (iUpwind=0, dUpsam=0.0)!!!
 
 itypePreconditioning = 1
 
