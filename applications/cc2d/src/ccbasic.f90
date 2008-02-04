@@ -284,24 +284,6 @@ MODULE ccbasic
 ! The collection structure collects all information that is necessary to be
 ! passed to callback routines. This e.g. allows to pass matrices/vectors/
 ! constants from the main problem.
-! This structure contains the following information, which is added by the
-! initialisation routines to the collection:
-!
-! Global, level independent data:
-!
-! Before the nonlinear iteration, some parameters are added to the collection.
-! These are available during the nonlinear iteration and released afterwards.
-! The routine cc_saveNonlinearLoop saves all these parameters while
-! they can be restored from the collection by cc_restoreNonlinearLoop.
-! cc_removeNonlinearLoop finally deletes these entries from the collection
-! again.
-!
-! Expressions for boundary conditions are saved in special 
-! sections in the collection:
-!
-! Section [BDEXPRESSIONS]:
-! ------------------------
-! Saves the expressions that are to be evaluated on the boundary.
 !
 ! During the assembly of RHS vectors and boundary conditions, the following
 ! additional information is valid in the collection:
