@@ -32,9 +32,9 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	hadaptivity.f90 list.f90 binarytree.f90 arraylist.f90 \
 	graph.f90 octree.f90 triasearch.f90 statistics.f90 \
 	meshmodification.f90 mapleio.f90 jumpstabilisation.f90 \
-  boundaryintegral.f90 afcstabilisation.f90 groupfemscalar.f90 \
+	boundaryintegral.f90 afcstabilisation.f90 groupfemscalar.f90 \
 	hadaptaux.f90 hadaptaux2d.f90 hadaptaux3d.f90 groupfemsystem.f90 \
-	meshregion.f90
+	meshregion.f90 pprocsolution.f90
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
@@ -52,7 +52,8 @@ vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
 	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
 	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
-	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
+	$(KERNEL)/DataStructures $(KERNEL)/Preprocessing \
+	$(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -63,7 +64,8 @@ vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
 	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
 	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
-	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
+	$(KERNEL)/DataStructures $(KERNEL)/Preprocessing \
+	$(KERNEL) $(INCOMING)
 
 vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -74,7 +76,8 @@ vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
 	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
 	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
-	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
+	$(KERNEL)/DataStructures $(KERNEL)/Preprocessing \
+	$(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -85,5 +88,6 @@ vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
 	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
 	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
-	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
+	$(KERNEL)/DataStructures $(KERNEL)/Preprocessing \
+	$(KERNEL) $(INCOMING)
 
