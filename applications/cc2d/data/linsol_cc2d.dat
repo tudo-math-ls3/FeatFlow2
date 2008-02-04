@@ -52,7 +52,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 2
+ioutputLevel       = 0
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
