@@ -140,7 +140,7 @@ nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 1.0
+domega             = 0.9
 
 # ========================================================================
 # The following section describes the parameters of the VANCA coarse grid
