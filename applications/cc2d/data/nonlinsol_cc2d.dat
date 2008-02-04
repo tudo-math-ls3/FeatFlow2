@@ -24,7 +24,7 @@ nmaxIterations     = 10
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
-depsD              = 1.0E-10
+depsD              = 1.0E-5
 
 # (absolute) limit for DIV-defects, standard = 1.0E-5
 
