@@ -87,7 +87,7 @@ CONTAINS
     INTEGER :: cf,ix,iy
     
     IF (ifile .EQ. 0) THEN
-      CALL io_openFileForReading(sfile, cf)
+      CALL io_openFileForReading(sfile, cf, .TRUE.)
       IF (cf .EQ. -1) THEN
         PRINT *, 'ppsol_readPGM: Could not open file '//trim(sfile)
         CALL sys_halt()
@@ -116,37 +116,6 @@ CONTAINS
       DO iy = 1, rpgm%height
         DO ix = 1, rpgm%width
           CALL getNextEntryASCII(cbuffer); READ(cbuffer,*) p_Idata(ix,iy)
-          IF (p_Idata(ix,iy) .GT. rpgm%maxgray) THEN
-            CALL output_line('Image data exceeds range!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
-            CALL sys_halt()
-          END IF
-        END DO
-      END DO
-
-    CASE ('P5','p5')
-      ! Read the header
-      CALL getNextEntryASCII(cbuffer); READ(cbuffer,*) rpgm%width
-      CALL getNextEntryASCII(cbuffer); READ(cbuffer,*) rpgm%height
-      CALL getNextEntryASCII(cbuffer); READ(cbuffer,*) rpgm%maxgray
-
-      IF (rpgm%maxgray .GT. 255) THEN
-        CALL output_line('Maximum gray value exceeds 255!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
-        CALL sys_halt()
-      END IF
-
-      ! Allocate memory for image data
-      Isize=(/rpgm%width, rpgm%height/)
-      CALL storage_new('ppsol_readPGM', 'h_Idata',&
-          Isize, ST_INT, rpgm%h_Idata, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int2D(rpgm%h_Idata, p_Idata)
-
-      ! Read in binary data
-      READ(cf) p_Idata
-
-      DO iy = 1, rpgm%height
-        DO ix = 1, rpgm%width
           IF (p_Idata(ix,iy) .GT. rpgm%maxgray) THEN
             CALL output_line('Image data exceeds range!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
@@ -217,7 +186,6 @@ CONTAINS
       ! End the read characters by one space
 99    cbuffer(ipos:ipos) = ' '
     END SUBROUTINE getNextEntryASCII
-
   END SUBROUTINE ppsol_readPGM
 
   ! ***************************************************************************
@@ -251,7 +219,7 @@ CONTAINS
   SUBROUTINE ppsol_initArrayPGM_Dble(rpgm, DvertexCoords, Ddata)
 
 !<description>
-    ! Initialises a 2D array by a Portable Graymap image
+    ! Initialises a 2D double array by a Portable Graymap image
 !</description>
 
 !<input>
@@ -263,7 +231,7 @@ CONTAINS
 !</input>
 
 !<output>
-    ! data array
+    ! double data array
     REAL(DP), DIMENSION(:), INTENT(OUT)  :: Ddata
 !</output>
 !</subroutine>
@@ -280,7 +248,7 @@ CONTAINS
     xmin = HUGE(DP); xmax = -HUGE(DP)
     ymin = HUGE(DP); ymax = -HUGE(DP)
 
-    nvt = SIZE(DvertexCoords,2)
+    nvt = SIZE(Ddata)
     DO ivt = 1, nvt
       xmin = MIN(xmin, DvertexCoords(1,ivt))
       xmax = MAX(xmax, DvertexCoords(1,ivt))
@@ -305,4 +273,66 @@ CONTAINS
       Ddata(ivt) = REAL(p_Idata(ix,iy),DP)/REAL(rpgm%maxgray,DP)
     END DO
   END SUBROUTINE ppsol_initArrayPGM_Dble
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ppsol_initArrayPGM_Sngl(rpgm, DvertexCoords, Fdata)
+
+!<description>
+    ! Initialises a 2D single array by a Portable Graymap image
+!</description>
+
+!<input>
+    ! portable graymap image
+    TYPE(t_pgm), INTENT(IN)              :: rpgm
+
+    ! vertex coordinates of 2D array
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
+!</input>
+
+!<output>
+    ! single data array
+    REAL(SP), DIMENSION(:), INTENT(OUT)  :: Fdata
+!</output>
+!</subroutine>
+
+    ! local variables
+    INTEGER, DIMENSION(:,:), POINTER :: p_Idata
+    REAL(DP)     :: x,y,xmin,ymin,xmax,ymax
+    INTEGER(I32) :: ivt,nvt,ix,iy
+
+    ! Set pointer for image data
+    CALL storage_getbase_int2D(rpgm%h_Idata, p_Idata)
+
+    ! Determine minimum/maximum values of array
+    xmin = HUGE(DP); xmax = -HUGE(DP)
+    ymin = HUGE(DP); ymax = -HUGE(DP)
+
+    nvt = SIZE(Fdata)
+    DO ivt = 1, nvt
+      xmin = MIN(xmin, DvertexCoords(1,ivt))
+      xmax = MAX(xmax, DvertexCoords(1,ivt))
+      ymin = MIN(ymin, DvertexCoords(2,ivt))
+      ymax = MAX(ymax, DvertexCoords(2,ivt))
+    END DO
+
+    ! Clear array
+    CALL lalg_clearVectorSngl(Fdata)
+
+    ! Fill array with scaled image data
+    DO ivt = 1, nvt
+      x = DvertexCoords(1,ivt)
+      y = DvertexCoords(2,ivt)
+      
+      ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
+      IF (ix .LT. 1 .OR. ix .GT. rpgm%width) CYCLE
+
+      iy = rpgm%height-(rpgm%height-1)*(y-ymin)/(ymax-ymin)
+      IF (iy .LT. 1 .OR. iy .GT. rpgm%height) CYCLE
+
+      Fdata(ivt) = REAL(p_Idata(ix,iy),SP)/REAL(rpgm%maxgray,SP)
+    END DO
+  END SUBROUTINE ppsol_initArrayPGM_Sngl
 END MODULE pprocsolution
