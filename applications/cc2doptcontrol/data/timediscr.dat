@@ -29,14 +29,14 @@ dtimeMax = 1.0 1.0                           # TIMEMX
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 5                          # NITNS
+niterations = 5                         # NITNS
 
-# Minimum level in time.
-TIMENLMIN = 2
+# Minimum level in time. <=0: Use level (TIMENLMAX+TIMENLMIN) as coarse grid
+TIMENLMIN = -1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 4 # 5
+TIMENLMAX = 5 # 5
 
 # ----------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ ctimeStepScheme = 0                       # IFRSTP
 # parameter for one step scheme (THETA) if itimeStepScheme=0;
 # =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
 
-dtimeStepTheta = 1.0                      # THETA
+dtimeStepTheta = 1.0 0.5                      # THETA
 
 # ----------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ nmaxIterations     = 1 0 0 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 15 2 10 2 5 1E-8 0.001
+depsRel            = 1E-8 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -107,20 +107,21 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 0 3
+ioutputLevel       = 2 3
 
 #####################
 [TIME-POSTPROCESSING]
 #####################
 
 # Filename prefix for GMV output.
+# ='': Disable GMV output
 
-sgmvFileName = 'gmv/u4_1.gmv'
+sgmvFileName = 'gmv/u3_4.gmv'
 
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
 
-sfinalSolutionFileName = ''
+sfinalSolutionFileName = 'ns/solution'
 
 ##############
 [TIME-DEFCORR]
@@ -167,7 +168,7 @@ depsAbs            = 1E-5
 ispacelevelcoupledtotimelevel = 1
 
 # Minimum number of time-MG sweeps per nonlinear time-iteration
-nminIterations = 1
+nminIterations = 0
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
 nmaxIterations = 100 00
@@ -175,23 +176,23 @@ nmaxIterations = 100 00
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 2 1E-7
+depsRel            = 1E-8 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-15
+depsAbs            = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
 
-istoppingCriterion = 1
+istoppingCriterion = 0
 
 # Output level of the solver
 
-ioutputLevel       = 3
+ioutputLevel       = 2 3
 
 # Cycle. 0=F-cycle, 1=V-cycle, 2=W-cycle
 
@@ -257,7 +258,7 @@ istoppingCriterion = 1
 
 # Output level of the smoother
 
-ioutputLevel = 2
+ioutputLevel = 1 2
 
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
@@ -278,25 +279,23 @@ slinearSolver        = 'CC-MULTIGRID'
 # =4: direct (UMFPACK Gauss elimination)
 # =5: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
 # =6: Defect correction with UMFPACK preconditioning
-ctypeCoarseGridSolver = 4 4 0 2 5 4
+# If there's a preconditioner involved, its parameters can be found in the section
+# [TIME-COARSEPRECOND] below!
+ctypeCoarseGridSolver = 5 4 0 2 5 4
 
 # Minimum number of time-iterations on the coarsest time-mesh
-nminIterations = 3
+nminIterations = 1 3
 
 # Maximum number of time-iterations on the coarsest time-mesh
 nmaxIterations = 10 20
 
 # Damping parameter
-domega = 1.0 0.7 1.0 1.0
-
-# Damping parameter of a preconditioner; only used for cascaded solvers
-# (e.g. CG(...)) or SOR
-domegaPrecond = 1.0 0.7 1.0
+domega = 1.0 1.0 1.0 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-3 13 3 1E-10 
+depsRel            = 1E-6 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -308,9 +307,9 @@ depsAbs            = 1E-5 13 13 5
 
 ddivRel            = 1E20
 
-# Output level of the solver
+# Output level of the solver.
 
-ioutputLevel = 3
+ioutputLevel = 2 2 3
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -321,5 +320,50 @@ istoppingCriterion = 0
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
+# If there's a subsolver, this configures the spatial preconditioner
+# of the subsolver.
 
 slinearSolver        = 'CC-MULTIGRID'
+
+####################
+[TIME-COARSEPRECOND]
+####################
+
+# Preconditioner of the coarse grid solver. Only parameters, no
+# solver type!
+
+# Minimum number of time-iterations on the coarsest time-mesh
+nminIterations = 1 3
+
+# Maximum number of time-iterations on the coarsest time-mesh
+nmaxIterations = 1 0 20
+
+# Damping parameter
+domega = 1.0 1.0 1.0
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-13 13 3 1E-10 
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-5 13 13 5
+
+# Maximum relative residual before the iteration is treated as 'divergent'
+
+ddivRel            = 1E20
+
+# Output level of the solver.
+# If a subsolver is embedded in the solver, it receives the output level
+# ioutputLevel-2.
+
+ioutputLevel = 0 2 3
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 0
