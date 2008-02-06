@@ -24,13 +24,13 @@
 !#  4.) stat_sgetTime2
 !#      -> Returns a string containing both CPU and real elapsed time
 !#
-!#  5.) stat_addTimer
+!#  5.) stat_addTimers
 !#      -> Computes the sum of the elapsed times the given timers hold
 !#
-!#  6.) stat_subTimer
+!#  6.) stat_subTimers
 !#      -> Computes the difference of the elapsed times (rtimer2 - rtimer1) the given timers hold.
 !#
-!#  7.) stat_cloneTimer
+!#  7.) stat_rcloneTimer
 !#      -> Clones the given timer
 !#
 !#  8.) stat_clearOp
