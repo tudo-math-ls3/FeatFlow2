@@ -165,6 +165,7 @@ MODULE cc2dmediumm2spacetimesolver
   USE cc2dmediumm2nonlinearcore
   USE spacetimediscretisation
   USE spacetimelinearsystem
+  USE statistics
   
   USE spacetimevectors
   USE spacetimeinterlevelprojection
@@ -408,7 +409,10 @@ MODULE cc2dmediumm2spacetimesolver
     
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     INTEGER                    :: icurrentIteration
-
+    
+    ! STATISTICS OUTPUT: Time for solving problems in space.
+    TYPE(t_timer)              :: rtimeSpacePrecond
+    
     ! Structure of the space time matrix that the solver should use.
     TYPE(t_ccoptSpaceTimeMatrix) :: rmatrix
     
@@ -716,6 +720,19 @@ MODULE cc2dmediumm2spacetimesolver
     ! Array of t_sptilsMGLevelInfo structures for all the levels the MG solver
     ! should handle.
     TYPE(t_sptilsMGLevelInfo), DIMENSION(:), POINTER :: p_Rlevels => NULL()
+    
+    ! STATISTICS OUTPUT: Total time needed for smoothing operations
+    TYPE(t_timer) :: rtimeSmoothing
+        
+    ! STATISTICS OUTPUT: Total time needed for the coarse grid solver
+    TYPE(t_timer) :: rtimeCoarseGridSolver
+    
+    ! STATISTICS OUTPUT: Time needed for linear algebra stuff (matrix-vector, 
+    ! vector-copy, prolongation/restriction,...)
+    TYPE(t_timer) :: rtimeLinearAlgebra
+    
+    ! STATISTICS OUTPUT: Time needed for prolongation/restriction
+    TYPE(t_timer) :: rtimeProlRest
     
   END TYPE
   
@@ -1785,6 +1802,8 @@ CONTAINS
     ! Status reset
     rsolverNode%iresult = 0
     
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
     p_rmatrix => rsolverNode%rmatrix
@@ -1876,6 +1895,7 @@ CONTAINS
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           CALL sptils_precondDefect (p_rprecSubnode,p_rdef)
+          CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
         END IF
         
         ! In p_rdef, we now have the current residuum $P^{-1} (b-Ax)$.
@@ -2270,6 +2290,8 @@ CONTAINS
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd,p_Dsol
     
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
@@ -2365,10 +2387,12 @@ CONTAINS
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.
+      CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
       CALL c2d2_precondDefect (&
           rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner,&
           rmatrixComponents,&
           rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
+      CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
     
       ! Scale by omega
       CALL lsysbl_scaleVector (rtempVectorD,rsolverNode%domega)
@@ -2653,6 +2677,8 @@ CONTAINS
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
         
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)    
+    
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
@@ -2824,10 +2850,12 @@ CONTAINS
 
       ! Perform preconditioning of the spatial defect with the method 
       ! provided by the core equation module.
+      CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
       CALL c2d2_precondDefect (&
           rsolverNode%p_rsubnodeBlockSOR%p_rspatialPreconditioner,&
           rmatrixComponents,&
           rtempVectorD2,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
+      CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
     
       ! Save back the preconditioned defect.
       CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD2)
@@ -3138,7 +3166,10 @@ CONTAINS
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Dd1,p_Dd2,p_Dd3,p_Dd,p_Dsol
-        
+    
+    ! Timer init
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
@@ -3409,10 +3440,12 @@ CONTAINS
         !
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
+        CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
         CALL c2d2_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
+        CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
         CALL lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
@@ -3528,10 +3561,12 @@ CONTAINS
         
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
+        CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
         CALL c2d2_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
+        CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
         CALL lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
@@ -3946,6 +3981,7 @@ CONTAINS
   
     ! Status reset
     rsolverNode%iresult = 0
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeCG
@@ -4053,6 +4089,7 @@ CONTAINS
         ! Perform preconditioning with the assigned preconditioning
         ! solver structure.
         CALL sptils_precondDefect (p_rprecSubnode,p_DP)
+        CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
       END IF
 
       ! Calculate gamma
@@ -4159,6 +4196,7 @@ CONTAINS
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           CALL sptils_precondDefect (p_rprecSubnode,p_DP)
+          CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
         END IF
         
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -5468,6 +5506,7 @@ END SUBROUTINE
   
     ! Status reset
     rsolverNode%iresult = 0
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
@@ -5541,6 +5580,7 @@ END SUBROUTINE
       ! Perform preconditioning with the assigned preconditioning
       ! solver structure.
       CALL sptils_precondDefect (p_rprecSubnode,p_DR)
+      CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
     END IF
     
     ! Get the norm of the residuum
@@ -5616,6 +5656,7 @@ END SUBROUTINE
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           CALL sptils_precondDefect (p_rprecSubnode,p_DPA)
+          CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
         END IF
 
         dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
@@ -5647,6 +5688,7 @@ END SUBROUTINE
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           CALL sptils_precondDefect (p_rprecSubnode,p_DSA)
+          CALL stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
         END IF
         
         domega1 = sptivec_scalarProduct (p_DSA,p_DR)
@@ -6463,7 +6505,10 @@ END SUBROUTINE
     REAL(DP) :: dres,dresInit
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rmatrix
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_timer) :: rtimer
     !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    
+    CALL stat_clearTimer (rtimer)
     
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
     IF (rsolverNode%nmaxIterations .LE. 0) RETURN
@@ -6507,6 +6552,10 @@ END SUBROUTINE
       CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
           p_rspaceTimeDiscr,rtemp,rspatialTemp)
       
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+        CALL output_line ('Space-Time-Smoother: Step '//TRIM(sys_siL(i-1,10)))
+      END IF
+
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
                   
@@ -6523,10 +6572,14 @@ END SUBROUTINE
             (dres .LT. rsolverNode%depsRel*dresInit)) EXIT
       END IF
       
+      ! Stop the time for space-preconditioning and sum it up. Return the sum as result.
       CALL sptils_precondDefect(rsolverNode,rtemp)
+      CALL stat_addTimers (rsolverNode%rtimeSpacePrecond,rtimer)
       CALL sptivec_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
     END DO
+    
+    rsolverNode%rtimeSpacePrecond = stat_rcloneTimer (rtimer)
 
     ! Probably print the final residuum
     IF (rsolverNode%ioutputLevel .GE. 2) THEN
@@ -6588,11 +6641,22 @@ END SUBROUTINE
   ! Our MG structure
   TYPE(t_sptilsSubnodeMultigrid), POINTER :: p_rsubnode
   
+  ! For statistics:
+  TYPE(t_timer) :: rtimer
+  
     ! Solve the system!
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid
     
+    ! Initialise timers
+    CALL stat_clearTimer (p_rsubnode%rtimeSmoothing)
+    CALL stat_clearTimer (p_rsubnode%rtimeCoarseGridSolver)
+    CALL stat_clearTimer (p_rsubnode%rtimeLinearAlgebra)
+    CALL stat_clearTimer (p_rsubnode%rtimeProlRest)
+    
+    CALL stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rmatrix
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
@@ -6636,7 +6700,14 @@ END SUBROUTINE
       !CALL sptivec_saveToFileSequence (rd,&
       !    '(''./debugdata/vector2.txt.'',I5.5)',.TRUE.)
 
+      CALL stat_startTimer (p_rsubnode%rtimeCoarseGridSolver)
       CALL sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,rd)
+      CALL stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
+      
+      ! Sum up the time for space preconditioning
+      CALL stat_addTimers (&
+          p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
+          rsolverNode%rtimeSpacePrecond)
       
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = &
@@ -6649,6 +6720,11 @@ END SUBROUTINE
         p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%iiterations
       
     ELSE
+      ! rtimeLinearAlgebra calculates the total time. By subtracting all
+      ! other time information, we'll get at the end the time for
+      ! linear algebra.
+      CALL stat_startTimer (p_rsubnode%rtimeLinearAlgebra)
+    
       ! Get the norm of the initial residuum.
       ! As the initial iteration vector is zero, this is the norm
       ! of the RHS:
@@ -6761,12 +6837,19 @@ END SUBROUTINE
             
               ! Perform the pre-smoothing with the current solution vector
               IF (ASSOCIATED(p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother)) THEN
+                CALL stat_startTimer (p_rsubnode%rtimeSmoothing)
                 CALL sptils_smoothCorrection (&
                           p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother,&
                           p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                           p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                           p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                           p_rsubnode%p_Rlevels(ilev)%rprjVector)
+                CALL stat_stopTimer (p_rsubnode%rtimeSmoothing)
+
+                CALL stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpacePrecond,&
+                    rsolverNode%rtimeSpacePrecond)
+
               END IF
             
               ! Build the defect vector
@@ -6803,6 +6886,8 @@ END SUBROUTINE
               ! Otherwise, we restrict to the RHS on the lower level and continue
               ! the smoothing process there.
               IF (ilev .GT. nlmin+1) THEN
+                CALL stat_startTimer (p_rsubnode%rtimeProlRest)
+              
                 ! We don't project to the coarse grid
                 CALL sptipr_performRestriction (&
                       p_rsubnode%p_Rlevels(ilev)%rinterlevelProjection,&
@@ -6820,6 +6905,8 @@ END SUBROUTINE
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
+                    
+                CALL stat_stopTimer (p_rsubnode%rtimeProlRest)
 
                 ! Choose zero as initial vector on lower level. 
                 CALL sptivec_clearVector (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector)
@@ -6851,6 +6938,8 @@ END SUBROUTINE
 
               ELSE
               
+                CALL stat_startTimer (p_rsubnode%rtimeProlRest)
+              
                 ! The vector is to be restricted to the coarse grid.
                 CALL sptipr_performRestriction (&
                       p_rsubnode%p_Rlevels(ilev)%rinterlevelProjection,&
@@ -6872,6 +6961,8 @@ END SUBROUTINE
                     p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
+
+                CALL stat_stopTimer (p_rsubnode%rtimeProlRest)
 
                 ! Extended output
                 IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
@@ -6907,10 +6998,19 @@ END SUBROUTINE
               CALL output_line ('Space-Time-Multigrid: Invoking coarse grid solver.')
             END IF
             
+            CALL stat_startTimer (p_rsubnode%rtimeCoarseGridSolver)
+            
             ! Solve the system on lowest level by preconditioning
             ! of the RHS=defect vector.
             CALL sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,&
                                       p_rsubnode%p_Rlevels(ilev)%rsolutionVector)
+                                      
+            CALL stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
+
+            ! Sum up the time for space preconditioning
+            CALL stat_addTimers (&
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
+                rsolverNode%rtimeSpacePrecond)
             
             ! Now we have the solution vector on the lowest level - we have to go
             ! upwards now... but probably not to NLMAX! That depends on the cycle.
@@ -6924,6 +7024,8 @@ END SUBROUTINE
                     //TRIM(sys_siL(ilev,5)))
               END IF
 
+              CALL stat_startTimer (p_rsubnode%rtimeProlRest)
+              
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
               CALL sptipr_performProlongation (&
@@ -6946,6 +7048,8 @@ END SUBROUTINE
                   p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
+
+              CALL stat_stopTimer (p_rsubnode%rtimeProlRest)
 
               ! Step length control. By default, choose step length dalphamin
               ! which is usually = 1.0.
@@ -7001,12 +7105,18 @@ END SUBROUTINE
                                             
               ! Perform the post-smoothing with the current solution vector
               IF (ASSOCIATED(p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother)) THEN
+                CALL stat_startTimer (p_rsubnode%rtimeSmoothing)
                 CALL sptils_smoothCorrection (&
                           p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother,&
                           p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                           p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                           p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                           p_rsubnode%p_Rlevels(ilev)%rprjVector)
+                CALL stat_stopTimer (p_rsubnode%rtimeSmoothing)
+
+                CALL stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpacePrecond,&
+                    rsolverNode%rtimeSpacePrecond)
 
                 ! Extended output
                 IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
@@ -7204,6 +7314,12 @@ END SUBROUTINE
       END IF
     
     END IF
+    
+    ! Calculate the time for linear algebra
+    CALL stat_stopTimer (p_rsubnode%rtimeLinearAlgebra)
+    CALL stat_subTimers (p_rsubnode%rtimeSmoothing,p_rsubnode%rtimeLinearAlgebra)
+    CALL stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
+    CALL stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
 
     ! As the solution vector on the finest level shared its memory with rd,
     ! we just calculated the new correction vector!

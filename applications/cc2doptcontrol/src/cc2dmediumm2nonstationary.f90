@@ -143,6 +143,9 @@ CONTAINS
                               'TIMENLMIN',TIMENLMIN,1)
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMAX',TIMENLMAX,1)
+                              
+    ! Values <= 0 result in a relativ minimum level.
+    IF (TIMENLMIN .LE. 0) TIMENLMIN = TIMENLMAX+TIMENLMIN
 
     ! Allocate memory fo rthe space-time discretisation structures
     ! on all levels. Initialis the maximum level such that it represents

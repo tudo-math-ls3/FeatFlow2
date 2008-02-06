@@ -2155,7 +2155,27 @@ CONTAINS
 
     ! A third temporary vector for the nonlinear iteration
     TYPE(t_vectorBlock) :: rtempVector
+
+    ! STATISTICS: Total time needed for smoothing operations
+    TYPE(t_timer) :: rtimeSmoothing
+        
+    ! STATISTICS: Total time needed for the coarse grid solver
+    TYPE(t_timer) :: rtimeCoarseGridSolver
     
+    ! STATISTICS: Time needed for linear algebra stuff (matrix-vector, 
+    ! vector-copy, prolongation/restriction,...)
+    TYPE(t_timer) :: rtimeLinearAlgebra
+    
+    ! STATISTICS: Time needed for prolongation/restriction
+    TYPE(t_timer) :: rtimeProlRest
+    
+    ! STATISTICS: Time for solving problems in space.
+    TYPE(t_timer) :: rtimeSpacePrecond
+
+    ! STATISTICS: Time for initialisation / factorisation of the space time system;
+    ! global and in one step
+    TYPE(t_timer) :: rtimeFactorisation,rtimeFactorisationStep
+
     ! Get a poiter to the discretisation structure on the maximum
     ! space/time level. That's the level where we solve here.
     p_rspaceTimeDiscr => RspaceTimeDiscr(SIZE(RspaceTimeDiscr))
@@ -2270,8 +2290,8 @@ CONTAINS
 
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'domega', domega, 1.0_DP)
-        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                                    'domegaPrecond', domegaPrecond, 1.0_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                    'domega', domegaPrecond, 1.0_DP)
         
         SELECT CASE (ctypeCoarseGridSolver)
         CASE (0)
@@ -2345,8 +2365,25 @@ CONTAINS
 
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
             'ioutputLevel', p_rcgrSolver%ioutputLevel, 100)
-        IF (ASSOCIATED(p_rprecond)) &
-          p_rprecond%ioutputLevel = p_rcgrSolver%ioutputLevel-2
+            
+        ! If there's a subsolver, configure it.
+        IF (ASSOCIATED(p_rprecond)) THEN
+          CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+              'nminIterations', p_rprecond%nminIterations, 1)
+          CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+              'nmaxIterations', p_rprecond%nmaxIterations, 100)
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                      'depsRel', p_rprecond%depsRel, 1E-5_DP)
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                      'depsAbs', p_rprecond%depsAbs, 1E-5_DP)
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                      'ddivRel', p_rprecond%ddivRel, 1.0_DP)
+          CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                  'istoppingCriterion', p_rprecond%istoppingCriterion, 0)
+
+          CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+              'ioutputLevel', p_rprecond%ioutputLevel, 100)
+        END IF
         
       ELSE
         ! ... on higher levels, create a smoother, ...
@@ -2518,7 +2555,11 @@ CONTAINS
     CALL sptils_setMatrices (p_rsolverNode,RspaceTimePrecondMatrix)
     
     ! Initialise the space-time preconditioner
+    CALL stat_clearTimer (rtimeFactorisation)
+    CALL stat_startTimer (rtimeFactorisation)
     CALL sptils_initStructure (p_rsolverNode,ierror)
+    CALL stat_stopTimer (rtimeFactorisation)
+    
     ddefNorm = 1.0_DP
     
     ! ---------------------------------------------------------------
@@ -2581,6 +2622,12 @@ CONTAINS
                                  'domega', domega, 1.0_DP)
 
     ! Initalise statistic variables
+    CALL stat_clearTimer (rtimeSmoothing)
+    CALL stat_clearTimer (rtimeCoarseGridSolver)
+    CALL stat_clearTimer (rtimeLinearAlgebra)
+    CALL stat_clearTimer (rtimeProlRest)
+    CALL stat_clearTimer (rtimeSpacePrecond)
+    
     CALL stat_clearTimer (rtimerPreconditioner)
     CALL stat_clearTimer (rtimerNonlinear)
     CALL stat_startTimer (rtimerNonlinear)
@@ -2667,18 +2714,48 @@ CONTAINS
       
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
-        CALL stat_startTimer (rtimerMGStep)
 
+        CALL stat_clearTimer (rtimeFactorisationStep)
+        CALL stat_startTimer (rtimeFactorisationStep)
         CALL sptils_initData (p_rsolverNode,ierror)
+        CALL stat_stopTimer (rtimeFactorisationStep)
+        
+        CALL stat_clearTimer (rtimerMGStep)
+        CALL stat_startTimer (rtimerMGStep)
         CALL sptils_precondDefect (p_rsolverNode,rd)
         CALL sptils_doneData (p_rsolverNode)
         
         CALL stat_stopTimer (rtimerMGStep)
         
+        ! Sum up time data for statistics.
+        CALL stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing,&
+            rtimeSmoothing)
+        CALL stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver,&
+            rtimeCoarseGridSolver)
+        CALL stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra,&
+            rtimeLinearAlgebra)
+        CALL stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest,&
+            rtimeProlRest)
+        CALL stat_addtimers (p_rsolverNode%rtimeSpacePrecond,rtimeSpacePrecond)
+        
+        CALL output_lbrk ()
+        CALL output_line ("Time for smoothing          : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
+        CALL output_line ("Time for coarse grid solving: "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
+        CALL output_line ("Time for linear algebra     : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra%delapsedReal,10))
+        CALL output_line ("Time for prol/rest          : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest%delapsedReal,10))
+        CALL output_lbrk ()
+        CALL output_line ("Time for prec. in space     : "//&
+            sys_sdL(p_rsolverNode%rtimeSpacePrecond%delapsedReal,10))
+        
         ! Count the number of linear iterations and the time for
         ! preconditioning
         ilinearIterations = ilinearIterations + p_rsolverNode%iiterations
-        CALL stat_addTimers (rtimerMGStep,rtimerPreconditioner)
+        CALL stat_addtimers (rtimerMGStep,rtimerPreconditioner)
+        CALL stat_addtimers (rtimeFactorisationStep,rtimeFactorisation)
         
       END IF
       
@@ -2732,7 +2809,7 @@ CONTAINS
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
           ' Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
       CALL output_line ('Time for computation of this iterate: '//&
-          TRIM(sys_sdL(rtimerMGStep%delapsedReal,10)))
+          TRIM(sys_sdL(rtimerMGStep%delapsedReal+rtimeFactorisationStep%delapsedReal,10)))
       CALL output_separator (OU_SEP_EQUAL)
 
     END DO
@@ -2770,14 +2847,32 @@ CONTAINS
     CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
     CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
     CALL output_separator (OU_SEP_EQUAL)
-    CALL output_line ('Total computation time         = '// &
+    CALL output_line ('Total computation time             = '// &
         TRIM(sys_sdL(rtimerNonlinear%delapsedReal,10)))
-    CALL output_line ('Total time for preconditioning = '// &
-        TRIM(sys_sdL(rtimerNonlinear%delapsedReal,10)))
-    CALL output_line ('#nonlinear iterations          = '//&
+    CALL output_line ('Total time for factorisation       = '// &
+        TRIM(sys_sdL(rtimeFactorisation%delapsedReal,10)))
+    CALL output_line ('Total time for preconditioning     = '// &
+        TRIM(sys_sdL(rtimerPreconditioner%delapsedReal,10)))
+    CALL output_line ('#nonlinear iterations              = '//&
         TRIM(sys_siL(iglobIter,10)))
-    CALL output_line ('#iterations preconditioner     = '//&
+    CALL output_line ('#iterations preconditioner         = '//&
         TRIM(sys_siL(ilinearIterations,10)))
+
+    CALL output_separator (OU_SEP_EQUAL)
+
+    CALL output_line ("Preconditioner statistics:")
+    CALL output_line ("Total time for smoothing           = "//&
+        sys_sdL(rtimeSmoothing%delapsedReal,10))
+    CALL output_line ("Total time for coarse grid solving = "//&
+        sys_sdL(rtimeCoarseGridSolver%delapsedReal,10))
+    CALL output_line ("Total time for linear algebra      = "//&
+        sys_sdL(rtimeLinearAlgebra%delapsedReal,10))
+    CALL output_line ("Total time for prol/rest           = "//&
+        sys_sdL(rtimeProlRest%delapsedReal,10))
+    CALL output_lbrk ()
+    CALL output_line ("Total time for prec. in space      = "//&
+        sys_sdL(rtimeSpacePrecond%delapsedReal,10))
+
     CALL output_separator (OU_SEP_EQUAL)
 
     ! Do we have Neumann boundary?

@@ -136,7 +136,7 @@ CONTAINS
                               'NLMIN',ilvmin,2)
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMAX',ilvmax,4)
-    IF (ilvmin .LE. 0) ilvmin = ilvmax-ilvmin
+    IF (ilvmin .LE. 0) ilvmin = ilvmax+ilvmin
 
     ! Initialise the level in the problem structure
     ilvmin = MIN(ilvmin,ilvmax)
