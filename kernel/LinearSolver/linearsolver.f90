@@ -820,7 +820,8 @@ MODULE linearsolver
     
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
-    ! =0: no output, =1: basic output, =2, extended output
+    ! =-1: no output, =0: no output except for warning messages, 
+    ! =1: basic output, =2, extended output
     INTEGER                    :: ioutputLevel = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
@@ -3441,8 +3442,17 @@ CONTAINS
       ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
       ! completed
 
-      IF (ite .GT. rsolverNode%nmaxIterations) &
+      IF (ite .GT. rsolverNode%nmaxIterations) THEN
+        ! Warning if we didn't reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+            (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+          CALL output_line ('DefCorr: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        END IF
+
         ite = rsolverNode%nmaxIterations
+      END IF
 
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
@@ -7374,8 +7384,17 @@ CONTAINS
       ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
       ! completed
 
-      IF (ite .GT. rsolverNode%nmaxIterations) &
+      IF (ite .GT. rsolverNode%nmaxIterations) THEN
+        ! Warning if we didn't reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+            (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+          CALL output_line ('CG: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        END IF
+
         ite = rsolverNode%nmaxIterations
+      END IF
 
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
@@ -8350,8 +8369,17 @@ CONTAINS
       ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
       ! completed
 
-      IF (ite .GT. rsolverNode%nmaxIterations) &
+      IF (ite .GT. rsolverNode%nmaxIterations) THEN
+        ! Warning if we didn't reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+            (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+          CALL output_line ('BiCGStab: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        END IF
+
         ite = rsolverNode%nmaxIterations
+      END IF
 
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
@@ -8776,8 +8804,17 @@ CONTAINS
       ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
       ! completed
 
-      IF (ite .GT. rsolverNode%nmaxIterations) &
+      IF (ite .GT. rsolverNode%nmaxIterations) THEN
+        ! Warning if we didn't reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+            (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+          CALL output_line ('BiCGStab: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        END IF
+
         ite = rsolverNode%nmaxIterations
+      END IF
 
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
@@ -9941,8 +9978,17 @@ CONTAINS
       ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
       ! completed
 
-      IF (ite .GT. rsolverNode%nmaxIterations) &
+      IF (ite .GT. rsolverNode%nmaxIterations) THEN
+        ! Warning if we didn't reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+            (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+          CALL output_line ('GMRES: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        END IF
+
         ite = rsolverNode%nmaxIterations
+      END IF
 
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
@@ -12401,8 +12447,17 @@ CONTAINS
         ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
-        IF (ite .GT. rsolverNode%nmaxIterations) &
+        IF (ite .GT. rsolverNode%nmaxIterations) THEN
+          ! Warning if we didn't reach the convergence criterion.
+          ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+          IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+              (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+            CALL output_line ('Multigrid: Accuracy warning: '//&
+                'Solver did not reach the convergence criterion')
+          END IF
+
           ite = rsolverNode%nmaxIterations
+        END IF
 
         ! Finish - either with an error or if converged.
         ! Print the last residuum.
@@ -14118,8 +14173,17 @@ CONTAINS
         ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
-        IF (ite .GT. rsolverNode%nmaxIterations) &
+        IF (ite .GT. rsolverNode%nmaxIterations) THEN
+          ! Warning if we didn't reach the convergence criterion.
+          ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+          IF ((rsolverNode%ioutputLevel .GE. 0) .AND. &
+              (rsolverNode%nmaxIterations .GT. rsolverNode%nminIterations)) THEN
+            CALL output_line ('Multigrid: Accuracy warning: '//&
+                'Solver did not reach the convergence criterion')
+          END IF
+
           ite = rsolverNode%nmaxIterations
+        END IF
 
         ! Finish - either with an error or if converged.
         ! Print the last residuum.

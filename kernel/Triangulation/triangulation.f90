@@ -349,8 +349,13 @@ MODULE triangulation
   ! This helps avoiding tangled elements when there is a 'hole' in the domain.
   INTEGER(I32), PARAMETER :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2**0
 
+  ! After refinement, the coordinates of points on the boundary are
+  ! recalculated using their parameter values (only 2D)
+  INTEGER(I32), PARAMETER :: TRIA_R2LV_RECALCCOORDSONBD  = 2**1
+
   ! Standard parameter settings for 2-level refinement
-  INTEGER(I32), PARAMETER :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS
+  INTEGER(I32), PARAMETER :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS + &
+                                                  TRIA_R2LV_RECALCCOORDSONBD
 
 !</constantblock>
   
@@ -5188,7 +5193,8 @@ CONTAINS
       CALL tria_refineMesh2lv2D(rsourceTriangulation,rdestTria)
       
       ! Refine the boundary
-      CALL tria_refineBdry2lv2D(rsourceTriangulation,rdestTria,rboundary)
+      CALL tria_refineBdry2lv2D(rsourceTriangulation,rdestTria,&
+          IAND(cflags,TRIA_R2LV_RECALCCOORDSONBD) .NE. 0,rboundary)
       
       IF (IAND(cflagsAct,TRIA_R2LV_AVERAGEMIDPOINTS) .NE. 0) THEN
         ! Recalculate corner points of quads that were element midpoints
@@ -5879,7 +5885,8 @@ CONTAINS
 
     ! ---------------------------------------------------------------
   
-    SUBROUTINE tria_refineBdry2lv2D(rsourceTriangulation,rdestTriangulation,rboundary)
+    SUBROUTINE tria_refineBdry2lv2D(rsourceTriangulation,rdestTriangulation,&
+        brecalcBoundaryCoords,rboundary)
 
     ! This routine refines the boundary definition of rsourceTriangulation
     ! according to the 2-level ordering algorithm to generate a new 
@@ -5895,11 +5902,15 @@ CONTAINS
     ! Destination triangulation structure that receives the refined mesg. 
     TYPE(t_triangulation), INTENT(INOUT) :: rdestTriangulation
     
+    ! Recalculate the coordinates of all boundary vertices according to
+    ! their parameter value.
+    LOGICAL, INTENT(IN) :: brecalcBoundaryCoords
+    
     ! OPTIONAL: Defintion of analytic boundary.
     ! If specified, the coordinates of the new boundary vertices are
     ! recomputed according to the analytic boundary.
     TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
-
+    
       ! local variables
       REAL(DP), DIMENSION(:), POINTER :: p_DvertParamsSource
       REAL(DP), DIMENSION(:), POINTER :: p_DedgeParamsSource
@@ -5989,7 +6000,7 @@ CONTAINS
         
         ! If the analytic boundary is given, compute the coordinates of the
         ! boundary vertices from that.
-        IF (PRESENT(rboundary)) THEN
+        IF (PRESENT(rboundary) .AND. brecalcBoundaryCoords) THEN
           
           ! Get the array with the vertex coordinates.
           ! We want to correct the coordinates of the boundary points
