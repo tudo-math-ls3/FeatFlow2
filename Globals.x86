@@ -11,9 +11,10 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
+OPTFLAGSFDEBUG = -O0 -g
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
@@ -32,7 +33,7 @@ OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -107,6 +108,9 @@ CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
+OPTFLAGSCDEBUG = -traceback
+OPTFLAGSCPPDEBUG = -traceback
+OPTFLAGSFDEBUG = -warn all -check all -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
 LDFLAGS   = -lsvml
@@ -164,6 +168,7 @@ CC=suncc
 CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
+OPTFLAGSFDEBUG = -w1 -xcheck=%all -xcommonchk=yes
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
 CPPFLAGS   =
