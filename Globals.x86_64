@@ -11,13 +11,15 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
+OPTFLAGSFDEBUG = -O0 -g
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
 endif
+
 
 ########################################################################
 # AMD64 /w GNU compiler
@@ -28,14 +30,16 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
+OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
 
 # Try to find more sophisticated compiler settings
+
 ifeq ($(FFCPU),athlon64)
 OPTFLAGS  += -mmmx -msse -msse2 -m3dnow -ffinite-math-only -fgcse \
 -floop-optimize -foptimize-register-move \
@@ -73,6 +77,9 @@ CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
+OPTFLAGSCDEBUG = -traceback
+OPTFLAGSCPPDEBUG = -traceback
+OPTFLAGSFDEBUG = -warn all -check all -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
 CPPFLAGS   = -vec-report0
@@ -155,6 +162,7 @@ CC=suncc
 CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
+OPTFLAGSFDEBUG = -w1 -xcheck=%all -xcommonchk=yes
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
 CPPFLAGS   =
@@ -235,6 +243,7 @@ CC=gcc
 CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS   = -pipe
@@ -261,6 +270,9 @@ CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
+OPTFLAGSCDEBUG = -traceback
+OPTFLAGSCPPDEBUG = -traceback
+OPTFLAGSFDEBUG = -warn all -check all -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
 CPPFLAGS   = -vec-report0
@@ -287,6 +299,9 @@ CPP=icpc
 FC=mpif90
 AR=xiar
 OPTFLAGS  = -O3 -ipo
+OPTFLAGSCDEBUG = -traceback
+OPTFLAGSCPPDEBUG = -traceback
+OPTFLAGSFDEBUG = -warn all -check all -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
 CPPFLAGS   = -vec-report0
@@ -311,7 +326,8 @@ ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
 CPP=suncc
 FC=sunf90
-OPTFLAGS  = -fast -O5 
+OPTFLAGS  = -fast -O5
+OPTFLAGSFDEBUG = -w1 -xcheck=%all -xcommonchk=yes
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
 CPPFLAGS   =
