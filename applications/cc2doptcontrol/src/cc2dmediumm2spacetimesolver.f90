@@ -5407,7 +5407,9 @@ END SUBROUTINE
       END DO
     END IF
     
-    CALL lsysbl_releaseVector (rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
+    IF (rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%NEQ .NE. 0) THEN
+      CALL lsysbl_releaseVector (rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
+    END IF
     
   END SUBROUTINE
   
