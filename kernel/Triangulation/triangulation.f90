@@ -5194,7 +5194,7 @@ CONTAINS
       
       ! Refine the boundary
       CALL tria_refineBdry2lv2D(rsourceTriangulation,rdestTria,&
-          IAND(cflags,TRIA_R2LV_RECALCCOORDSONBD) .NE. 0,rboundary)
+          IAND(cflagsAct,TRIA_R2LV_RECALCCOORDSONBD) .NE. 0,rboundary)
       
       IF (IAND(cflagsAct,TRIA_R2LV_AVERAGEMIDPOINTS) .NE. 0) THEN
         ! Recalculate corner points of quads that were element midpoints

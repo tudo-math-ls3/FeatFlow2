@@ -10471,6 +10471,52 @@ CONTAINS
   
   ! ***************************************************************************
 
+!<subroutine>
+  
+  SUBROUTINE linsol_getMultigridLevel2 (rsolverNode,ilevel,p_rlevelInfo)
+                    
+!<description>
+  ! Searches inside of the multigrid structure for level ilevel and returns
+  ! a pointer to the corresponding p_rlevelInfo structure
+  ! (or NULL() if the level does not exist).
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT) :: rsolverNode
+!</inputoutput>
+
+!<input>
+  ! Number of the level to fetch.
+  INTEGER, INTENT(IN) :: ilevel
+!</input>  
+  
+!<output>
+  ! A pointer to the corresponding t_levelInfo structure or NULL()
+  ! if the level does not exist.
+  TYPE(t_linsolMGLevelInfo2), POINTER     :: p_rlevelInfo
+!</output>  
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    
+    NULLIFY(p_rlevelInfo)
+
+    ! Do we have the level?
+    IF ((ilevel .LT. 0) .OR. &
+        (ilevel .GT. rsolverNode%p_rsubnodeMultigrid%nlevels)) THEN
+      RETURN
+    END IF
+    
+    ! Get it.
+    p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
 !<function>
   
   INTEGER FUNCTION linsol_getMultigridLevelCount (rsolverNode)
@@ -13446,8 +13492,9 @@ CONTAINS
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The structure of the levels (pre/postsmoothers, interlevel projection
-  ! structures) must have been prepared with linsol_addMultigridLevel
-  ! before calling this routine.
+  ! structures) must have been prepared by setting the level parameters
+  ! before calling this routine. (The parameters of a specific level
+  ! can be get by calling linsol_getMultigridLevel2).
   ! The matrices $A$ on all levels must be attached to the solver previously 
   ! by linsol_setMatrices.
   
