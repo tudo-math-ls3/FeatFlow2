@@ -537,7 +537,7 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     REAL(DP), DIMENSION(:), POINTER        :: p_DelementArea,p_Ddata
     REAL(DP) :: dpintegral,c
-    INTEGER(PREC_ELEMENTIDX) :: iel,nel,itrial,itrialspace
+    INTEGER(PREC_ELEMENTIDX) :: iel,nel,itrialspace
     
     ! Get the discretisation...
     IF (.NOT. ASSOCIATED(rx%p_rspatialDiscretisation)) RETURN
