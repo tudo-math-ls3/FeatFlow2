@@ -548,11 +548,9 @@ MODULE matrixio
 !</subroutine>
     
     !local variables
-    INTEGER :: i, j, k, cf, nchar
+    INTEGER :: i, j, cf, nchar
     CHARACTER(len=32) :: S
     CHARACTER(len=6) :: sformatChar
-    INTEGER :: h_DrowVec
-    REAL(DP), DIMENSION(:), POINTER :: p_DrowVec
     
     IF (ifile .EQ. 0) THEN
       CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
