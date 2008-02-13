@@ -132,7 +132,8 @@
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 35.) lsyssc_transposeMatrix
+!# 35.) lsyssc_transposeMatrix,
+!#      lsyssc_transposeMatrixInSitu
 !#      -> Transposes a scalar matrix.
 !#
 !# 36.) lsyssc_allocEmptyMatrix
@@ -182,6 +183,9 @@
 !#
 !# 51.) lsyssc_hasMatrixContent
 !#      -> Check if a matrix has a content in memory or not.
+!#
+!# 52.) lsyssc_releaseMatrixContent
+!#      -> Releases the content of the matrix, the structure will stay unchanged.
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -4566,6 +4570,9 @@ CONTAINS
       CALL copyStaticStructure(rsourceMatrix,rdestMatrix)
 
     CASE (LSYSSC_DUP_SHARE)
+      ! Remove the structure - if there is any.
+      CALL removeStructure(rdestMatrix, .TRUE.)
+
       ! Share the structure between rsourceMatrix and rdestMatrix
       CALL shareStructure(rsourceMatrix, rdestMatrix)   
       
@@ -4583,6 +4590,9 @@ CONTAINS
         ! Copy the structure
         CALL copyStructure(rsourceMatrix, rdestMatrix, .FALSE.)
       ELSE
+        ! Remove the structure - if there is any.
+        CALL removeStructure(rdestMatrix, .TRUE.)
+
         ! Share the structure
         CALL shareStructure(rsourceMatrix, rdestMatrix)  
       END IF
@@ -4633,7 +4643,7 @@ CONTAINS
     CASE (LSYSSC_DUP_IGNORE)
       ! Nothing
     CASE (LSYSSC_DUP_REMOVE)
-      ! Remove the structure - if there is any.
+      ! Remove the content - if there is any.
       CALL removeContent(rdestMatrix, .TRUE.)
       
     CASE (LSYSSC_DUP_DISMISS)
@@ -4641,6 +4651,9 @@ CONTAINS
       CALL removeContent(rdestMatrix, .FALSE.)
       
     CASE (LSYSSC_DUP_SHARE)
+      ! Remove the content - if there is any.
+      CALL removeContent(rdestMatrix, .TRUE.)
+
       ! Share the structure between rsourceMatrix and rdestMatrix
       CALL shareContent(rsourceMatrix, rdestMatrix)   
       
@@ -4665,6 +4678,9 @@ CONTAINS
         ! Copy the structure
         CALL copyContent(rsourceMatrix, rdestMatrix, .FALSE.)
       ELSE
+        ! Remove the content - if there is any.
+        CALL removeContent(rdestMatrix, .TRUE.)
+
         ! Share the structure
         CALL shareContent(rsourceMatrix, rdestMatrix)  
       END IF
@@ -5376,6 +5392,46 @@ CONTAINS
   
 !<subroutine>
   
+  SUBROUTINE lsyssc_releaseMatrixContent (rmatrix)
+  
+!<description>
+  ! Releases the content of a matrix from memory. The structure stays unchanged.
+!</description>
+  
+!<inputoutput>
+  
+  ! Matrix to release.
+  TYPE(t_matrixScalar), INTENT(INOUT)               :: rmatrix
+  
+!</inputoutput>
+
+!</subroutine>
+
+    ! Which handles do we have to release?
+    !
+    ! Release the matrix data if the handle is not a copy of another matrix
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) THEN
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+        ! Release matrix data, structure 9,7
+        IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
+          CALL storage_free(rmatrix%h_DA)
+        END IF
+      END SELECT
+    END IF
+    
+    rmatrix%h_DA        = ST_NOHANDLE
+    
+    ! Set the copy-flag appropriately
+    rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
   SUBROUTINE lsyssc_releaseMatrix (rmatrix)
   
 !<description>
@@ -5397,19 +5453,8 @@ CONTAINS
   ! of Fortran 90.
   TYPE(t_matrixScalar) :: rmatrixTemplate
 
-  ! Which handles do we have to release?
-  !
-  ! Release the matrix data if the handle is not a copy of another matrix
-  IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) THEN
-    SELECT CASE (rmatrix%cmatrixFormat)
-    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
-        &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
-      ! Release matrix data, structure 9,7
-      IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
-        CALL storage_free(rmatrix%h_DA)
-      END IF
-    END SELECT
-  END IF
+  ! Release the matrix content.
+  CALL lsyssc_releaseMatrixContent(rmatrix)
   
   ! Release the structure if it doesn't belong to another vector
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) THEN
@@ -10443,6 +10488,82 @@ CONTAINS
     IF (PRESENT(berror)) berror = bnodiag    
   
   END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_transposeMatrixInSitu (rmatrix,itransFlag)
+  
+!<description>
+  ! This routine in-situ transposes a matrix rmatrix and creates the transposed
+  ! matrix in rtransposedMatrix.
+  ! itransFlag decides (if specified) how the creation of the
+  ! transposed matrix is to be performed.
+  !
+  ! Remark: Building a transposed matrix involves switching the trial- and
+  !  test-functions of the underlying discretisation. This routine does
+  !  *not* perform this switching! If the matrices base on a 
+  !  discretisation, the application has to set up the corresponding
+  !  discretisation structure manually and to attach it to the transposed
+  !  matrix!
+!</description>
+
+!<input>
+  ! OPTIONAL: transposed-flag; one of the LSYSSC_TR_xxxx constants:
+  ! =LSYSSC_TR_ALL or not specified: transpose the matrix completely.
+  ! =LSYSSC_TR_STRUCTURE           : Transpose only the matrix structure; 
+  !     the content of the transposed matrix is invalid afterwards.
+  !     If there is a matrix in rtransposedMatrix, the structure is 
+  !       overwritten or an error is thrown, depending on whether the
+  !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
+  !     If there's no matrix in rtransposedMatrix, a new matrix structure
+  !       without entries is created.
+  ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
+  !     structure, but invert the 'transposed' flag in imatrixSpec. 
+  !
+  !     rtransposedMatrix is created by copying the data handles from
+  !     rmatrix - any previous data in rtransposedMatrix is overwritten. 
+  !     Afterwards, rtransposedMatrix is marked as transposed 
+  !     without modifying the structures, and all matrix-vector operations
+  !     will be performed with the transposed matrix. 
+  !     But caution: there may be some algorithms that don't work with such 
+  !       'virtually' transposed matrices!
+  ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
+  !     creates a duplicate of the source matrix in memory, thus resulting
+  !     in rtransposedMatrix being a totally independent matrix.
+  INTEGER, INTENT(IN), OPTIONAL :: itransFlag
+!</input>
+
+!<inputoutput>
+  ! The matrix to be transposed.
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+    TYPE(t_matrixScalar) :: rmatrix2
+    
+    CALL lsyssc_transposeMatrix (rmatrix,rmatrix2,itransFlag)
+
+    ! Transfer the copy-flags
+    rmatrix2%imatrixSpec = IOR(IAND(rmatrix2%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY)),&
+                               IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY))
+
+    ! Probably remove old data
+    IF (.NOT. lsyssc_isMatrixContentShared(rmatrix,rmatrix2)) &
+      CALL lsyssc_releaseMatrixContent(rmatrix)
+    
+    ! Prevent lsyssc_releaseMatrix from releasing the content if it's still there
+    rmatrix%imatrixSpec = IOR(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
+    
+    IF (.NOT. lsyssc_isMatrixStructureShared(rmatrix,rmatrix2)) &
+      CALL lsyssc_releaseMatrix(rmatrix)
+      
+    ! Create a hard-copy of rmatrix.
+    ! This is one of the very rare cases where we on purpose assign a matrix
+    ! structure to another...
+    rmatrix = rmatrix2
+    
+  END SUBROUTINE
 
   ! ***************************************************************************
 

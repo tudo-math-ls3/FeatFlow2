@@ -392,6 +392,10 @@
 !#      12.) linsol_initMultigrid
 !#           -> Multigrid preconditioner
 !#
+!#      13.) linsol_initMultigrid2
+!#           -> Multigrid preconditioner; alternative implementation using
+!#              an array to store level information rather than a linear list.
+!#
 !# 9.) What is this linsol_matricesCompatible?
 !#
 !#     This allows to check a set of system matrices against a solver node.
@@ -1644,6 +1648,8 @@ CONTAINS
     CALL linsol_setMatrixGMRES (rsolverNode, Rmatrices)
   CASE (LINSOL_ALG_MULTIGRID)
     CALL linsol_setMatrixMultigrid (rsolverNode, Rmatrices)
+  CASE (LINSOL_ALG_MULTIGRID2)
+    CALL linsol_setMatrixMultigrid2 (rsolverNode, Rmatrices)
   CASE DEFAULT
   END SELECT
 
@@ -2262,7 +2268,7 @@ CONTAINS
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_doneMultigrid (p_rsolverNode)
     CASE (LINSOL_ALG_MULTIGRID2)
-      CALL linsol_doneMultigrid (p_rsolverNode)
+      CALL linsol_doneMultigrid2 (p_rsolverNode)
     CASE DEFAULT
     END SELECT
     
@@ -2577,6 +2583,8 @@ CONTAINS
       CALL linsol_precGMRES (rsolverNode,rd)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_precMultigrid (rsolverNode,rd)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_precMultigrid2 (rsolverNode,rd)
     CASE (LINSOL_ALG_JINWEITAM)
       CALL linsol_precJinWeiTam (rsolverNode,rd)
     END SELECT
@@ -10499,19 +10507,14 @@ CONTAINS
   
 !</subroutine>
 
-    ! local variables
-    INTEGER :: i
-    
     NULLIFY(p_rlevelInfo)
 
     ! Do we have the level?
-    IF ((ilevel .LT. 0) .OR. &
-        (ilevel .GT. rsolverNode%p_rsubnodeMultigrid%nlevels)) THEN
-      RETURN
+    IF ((ilevel .GT. 0) .AND. &
+        (ilevel .LE. SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo))) THEN
+      ! Get it.
+      p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
     END IF
-    
-    ! Get it.
-    p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
   END SUBROUTINE
 
@@ -12759,7 +12762,7 @@ CONTAINS
   END IF
   
   ! Make sure we have the right amount of matrices
-  IF (SIZE(Rmatrices) .NE. rsolverNode%p_rsubnodeMultigrid%nlevels) THEN
+  IF (SIZE(Rmatrices) .NE. SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) THEN
     PRINT *,'Error: Wrong number of matrices'
     CALL sys_halt()
   END IF
@@ -13107,7 +13110,7 @@ CONTAINS
   
   ! Do we have to allocate memory for prolongation/restriction/resorting?
   IF (imemmax .GT. 0) THEN
-    CALL lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
+    CALL lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector,&
                               imemmax,.FALSE.,rsolverNode%cdefaultDataType)
                               
     ! Use this vector also for the coarse grid correction.
@@ -13118,7 +13121,7 @@ CONTAINS
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
     
       CALL lsysbl_createVecFromScalar (&
-          rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
+          rsolverNode%p_rsubnodeMultigrid2%rprjTempVector,&
           p_rcurrentLevel%rcgcorrTempVector)
     
       CALL lsysbl_enforceStructure (&
@@ -13126,7 +13129,7 @@ CONTAINS
 
     END DO
   ELSE
-    rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ = 0
+    rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ = 0
   END IF
   
   END SUBROUTINE
@@ -13188,7 +13191,7 @@ CONTAINS
   ! Call the init routine of the preconditioner.
   
   ! Make sure the solver node is configured for multigrid
-  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
     CALL sys_halt()
@@ -13414,7 +13417,7 @@ CONTAINS
       ! Release the temp vector for the coarse grid correction.
       ! The vector shares its memory with the 'global' projection
       ! vector, so only release it if the other vector exists.
-      IF (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .GT. 0) THEN
+      IF (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ .GT. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
       END IF
 
@@ -13431,8 +13434,8 @@ CONTAINS
   ! Check if we have to release our temporary vector for prolongation/
   ! restriction.
   ! Do we have to allocate memory for prolongation/restriction?
-  IF (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .GT. 0) THEN
-    CALL lsyssc_releaseVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector)
+  IF (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ .GT. 0) THEN
+    CALL lsyssc_releaseVector (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector)
   END IF
 
   END SUBROUTINE
@@ -13593,7 +13596,7 @@ CONTAINS
     
     ! Is there only one level? Can be seen if the current level
     ! already contains a coarse grid solver.
-    IF (nlmax .GT. 1) THEN
+    IF (nlmax .EQ. 1) THEN
     
       IF (rsolverNode%ioutputLevel .GT. 1) THEN
         CALL output_line ('Multigrid: Only one level. '//&
@@ -13700,12 +13703,8 @@ CONTAINS
         ! Afterwards, rd and the solution vector on the finest level
         ! share the same memory location, so we use rd as iteration
         ! vector directly.
-        ! We set bisCopy to true to indicate that this vector is
-        ! actually does not belong to us. This is just to be sure that
-        ! an accidently performed releaseVector does not release a handle
-        ! (although this should not happen).
-        p_rcurrentLevel%rsolutionVector = rd
-        p_rcurrentLevel%rsolutionVector%bisCopy = .TRUE.
+        CALL lsysbl_duplicateVector (rd,p_rcurrentLevel%rsolutionVector,&
+            LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
         
         ! Clear the initial solution vector.
         CALL lsysbl_clearVector (p_rcurrentLevel%rsolutionVector)
@@ -13842,7 +13841,7 @@ CONTAINS
                 CALL lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
                 
                 ! Extended output and/or adaptive cycles
-                IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .OR.&
+                IF ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .NE. 1E99_DP) .OR.&
                     (rsolverNode%ioutputLevel .GE. 3)) THEN
                 
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
@@ -13853,7 +13852,7 @@ CONTAINS
                   ! In case adaptive cycles are activated, save the 'initial' residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
-                  IF (rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) THEN
+                  IF (rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .NE. 1E99_DP) THEN
                     p_rlowerLevel%dinitResCycle = dres
                     p_rlowerLevel%icycleCount = 1
                   END IF
@@ -14091,7 +14090,7 @@ CONTAINS
                   ! Cycle finished. Reset counter for next cycle.
                   p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
 
-                  IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .AND. &
+                  IF ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .NE. 1E99_DP) .AND. &
                       (ilev .LT. NLMAX)) THEN
                       
                     ! Adaptive cycles activated. 
@@ -14113,12 +14112,12 @@ CONTAINS
                     ! Compare it with the initial residuum. If it's not small enough
                     ! and if we haven't reached the maximum number of cycles,
                     ! repeat the complete cycle.
-                    IF ( ((rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles .LE. -1) &
+                    IF ( ((rsolverNode%p_rsubnodeMultigrid2%nmaxAdaptiveCycles .LE. -1) &
                           .OR. &
                           (p_rcurrentLevel%icycleCount .LT. &
-                           rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles)) &
+                           rsolverNode%p_rsubnodeMultigrid2%nmaxAdaptiveCycles)) &
                         .AND. &
-                        (dres .GT. rsolverNode%p_rsubnodeMultigrid%depsRelCycle * &
+                        (dres .GT. rsolverNode%p_rsubnodeMultigrid2%depsRelCycle * &
                                     p_rcurrentLevel%dinitResCycle) ) THEN
 
                       IF (rsolverNode%ioutputLevel .GE. 3) THEN
@@ -14275,6 +14274,9 @@ CONTAINS
                       (1.0_DP/REAL(rsolverNode%iiterations,DP))
         END IF
       END IF
+      
+      ! Release the temporary copy of the solution vector
+      CALL lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
     
     END IF
 

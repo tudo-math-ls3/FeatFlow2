@@ -708,6 +708,34 @@ CONTAINS
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax,&
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax)
     
+    CASE (LINSOL_ALG_MULTIGRID2)
+      ! Multigrid solver
+      !
+      ! Parameters:
+      !  icycle         = 0               -> F-cycle
+      !                 = 1               -> V-cycle
+      !                 = 2               -> W-cycle
+      !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
+      !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
+      
+      ! Then, get solver specific data.
+      CALL parlst_getvalue_int (p_rsection, 'icycle', &
+                                rsolverNode%p_rsubnodeMultigrid2%icycle,&
+                                rsolverNode%p_rsubnodeMultigrid2%icycle)
+
+      ! Coarse grid correction parameters
+      CALL parlst_getvalue_int (p_rsection, 'ccorrectionTypeAlpha', &
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType,&
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType)
+
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMin', &
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin,&
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin)
+      
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMax', &
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
+           rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
+    
     CASE DEFAULT
     
       ! Initialise the main solver parameters

@@ -778,7 +778,7 @@ CONTAINS
       
       ! Loop through the rows of the current matrix column.
       DO j=1,nblocks
-        IF (rmatrix%RmatrixBlock(j,i)%NCOLS .NE. 0) THEN
+        IF (lsysbl_isSubmatrixPresent(rmatrix,j,i)) THEN
           ! Get a/the discretisation structure of the current block/matrix column
           p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
           
