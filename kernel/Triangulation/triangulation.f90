@@ -2214,6 +2214,7 @@ CONTAINS
     rtriangulation%NEL = rtriangulation%NEL + icount
     rtriangulation%InelOfType(:) = 0
     rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
+    rtriangulation%nnve = 3
     
     ! That's it.
 
