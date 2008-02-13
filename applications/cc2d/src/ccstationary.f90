@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module invokes the nonlinear solver to solve the basic CC2D problem.
 !#
-!# 1.) cc_solve
+!# 1.) cc_solveStationary
 !#     -> Invoke the nonlinear solver to solve the stationary coupled system.
 !#
 !# </purpose>
@@ -50,7 +50,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_solve (rproblem,rvector,rrhs)
+  SUBROUTINE cc_solveStationary (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner

@@ -14,7 +14,7 @@
 !# The following routines can be found here:
 !#
 !# 1.) cc_allocSystemMatrix
-!#     -> Allocates memory for the system matrix representing the 
+!#     -> Allocates memory for the basic system matrix representing the 
 !#        core equation.
 !#
 !# 2.) cc_initNonlinearLoop
@@ -42,20 +42,18 @@
 !#
 !# Auxiliary routines, not to be called from outside:
 !#
-!# 1.) cc_checkAssembly
-!#     -> Checks if the system matrices are compatible to the preconditioner.
-!#        Set up some situation dependent 'tweak' flags for the assembly
-!#        of the matrices.
+!# 1.) cc_adjustPrecSpecials
+!#     -> Initialise some preconditioner 'specials' which must be
+!#        respected when assembling matrices for the preconditioner.
 !#
-!# 2.) cc_finaliseMatrices
-!#     -> Rearranges the structure of the preconditioner matrices if necessary.
+!# 2.) cc_initLinearSolver
+!#     -> Initialise a linear solver for preconditioning
 !#
-!# 3.) cc_unfinaliseMatrices 
-!#     -> Reverts the changes of cc_finaliseMatrices and brings preconditioner
-!#        matrices into their original form.
+!# 3.) cc_doneLinearSolver
+!#     -> Release data allocated in cc_initLinearSolver
 !#
 !# The module works in tight relationship to ccnonlinearcore.
-!# cc2dmediumm2nonlinearcodeinit provides the routines to initialise
+!# ccnlinearcodeinit provides the routines to initialise
 !# preconditioner and important structures using the problem related
 !# structure. This module ccnonlinearcore on the other hand
 !# contains only the 'main' worker routines that do the work of the
@@ -104,7 +102,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_allocSystemMatrix (rproblem,rlevelInfo,rmatrix)
+  SUBROUTINE cc_allocSystemMatrix (rproblem,rlevelInfo,cmatrixType,rmatrix)
   
 !<description>
   ! Allocates memory for the system matrix. rlevelInfo provides information
@@ -117,6 +115,12 @@ CONTAINS
 !<input>
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(IN) :: rproblem
+
+  ! Type of matrix.
+  ! =CCMASM_MTP_AUTOMATIC: standard matrix, A11=A22
+  ! =CCMASM_MTP_DECOUPLED: Decoupled velocity matrices A11 and A22
+  ! =CCMASM_MTP_FULLTENSOR: Full-tensor matrix with A11,A12,A21,A22 independent
+  INTEGER, INTENT(IN) :: cmatrixType
 
   ! A level-info structure specifying the matrices of the problem.
   TYPE(t_problem_lvl), INTENT(IN), TARGET :: rlevelInfo
@@ -180,18 +184,14 @@ CONTAINS
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%p_rdiscretisation
     rnonlinearCCMatrix%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rnonlinearCCMatrix%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
+    rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%p_rdiscretisation
     rnonlinearCCMatrix%p_rmatrixStokes => rlevelInfo%rmatrixStokes
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
 
-    IF (.NOT. rproblem%bdecoupledXY) THEN    
-      CALL cc_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
-        rmatrix,rnonlinearCCMatrix)
-    ELSE
-      CALL cc_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_DECOUPLED,&
-        rmatrix,rnonlinearCCMatrix)
-    END IF
+    CALL cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
+      rmatrix,rnonlinearCCMatrix)
                                   
     ! That's it, all submatrices are set up.
       
@@ -273,15 +273,14 @@ CONTAINS
     rnonlinearIteration%rpreconditioner%ctypePreconditioning = -1
     
     ! Deactivate any 'tweak' flags in the final-assembly structure
-    rnonlinearIteration%rfinalAssembly%iBmatricesTransposed = NO
-    rnonlinearIteration%rfinalAssembly%iadaptiveMatrices = 0
+    rnonlinearIteration%rprecSpecials%iadaptiveMatrices = 0
     
     ! Assign the matrix pointers in the nonlinear iteration structure to
     ! all our matrices that we want to use.
     DO ilevel = nlmin,nlmax
-      rnonlinearIteration%RcoreEquation(ilevel)%p_rsystemMatrix => &
-        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrix
-        
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisation => &
+        rproblem%RlevelInfo(ilevel)%p_rdiscretisation
+
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
         
@@ -306,9 +305,10 @@ CONTAINS
     CALL parlst_querysection(rproblem%rparamList, sname, p_rsection) 
 
     IF (.NOT. ASSOCIATED(p_rsection)) THEN
-      PRINT *,'Nonlinear solver not available; no section '''&
-              //TRIM(sname)//'''!'
-      STOP
+      CALL output_line ('Cannot create nonlinear solver; no section '''//&
+          TRIM(sname)//'''!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_initNonlinearLoop')
+      CALL sys_halt()
     END IF
 
     ! Get stopping criteria of the nonlinear iteration
@@ -389,6 +389,254 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE cc_initLinearSolver (rproblem,rnonlinearIteration,ssection)
+  
+!<description>
+  ! This routine initialises a linear solver structure to be used
+  ! for preconditioning of the nonlinear defect.
+!</description>
+
+!<input>
+  ! Name of the section in the parameter list that contains the parameters
+  ! of the linear solver.
+  CHARACTER(LEN=*), INTENT(IN) :: ssection
+!</input>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! The nonlinear iteration structure to which a preconditioner should
+  ! be initialised. The parameters for the linear solver are written to
+  ! the rpreconditioner substructure.
+  ! The rprecSpecials structure is configured according to the linear
+  ! solver.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_parlstSection), POINTER :: p_rsection
+    TYPE(t_parlist), POINTER :: p_rparamList
+    INTEGER :: nlevels, ilev, nsm
+    
+    INTEGER :: isolverType,ismootherType,icoarseGridSolverType
+    CHARACTER(LEN=SYS_STRLEN) :: sstring,ssolverSection,ssmootherSection
+    CHARACTER(LEN=SYS_STRLEN) :: scoarseGridSolverSection,spreconditionerSection
+    TYPE(t_linsolMGLevelInfo2), POINTER :: p_rlevelInfo
+    TYPE(t_linsolNode), POINTER :: p_rpreconditioner, p_rsmoother
+    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+
+    ! Check that there is a section called ssolverName - otherwise we
+    ! cannot create anything!
+    
+    p_rparamList => rproblem%rparamList
+        
+    CALL parlst_querysection(p_rparamList, ssection, p_rsection) 
+    
+    IF (.NOT. ASSOCIATED(p_rsection)) THEN
+      CALL output_line ('Cannot create linear solver; no section '''//TRIM(ssection)//&
+                        '''!', OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+      CALL sys_halt()
+    END IF
+    
+    ! Get the parameters that configure the solver type
+    
+    CALL parlst_getvalue_int (p_rsection, 'isolverType', isolverType, 1)
+    CALL parlst_getvalue_int (p_rsection, 'ismootherType', ismootherType, 3)
+    CALL parlst_getvalue_int (p_rsection, 'icoarseGridSolverType', &
+        icoarseGridSolverType, 1)
+        
+    rnonlinearIteration%rprecSpecials%isolverType = isolverType
+    rnonlinearIteration%rprecSpecials%ismootherType = ismootherType
+    rnonlinearIteration%rprecSpecials%icoarseGridSolverType = icoarseGridSolverType
+
+    CALL parlst_getvalue_string (p_rsection, 'ssolverSection', sstring,'')
+    READ (sstring,*) ssolverSection
+    CALL parlst_getvalue_string (p_rsection, 'ssmootherSection', sstring,'')
+    READ (sstring,*) ssmootherSection
+    CALL parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', sstring,'')
+    READ (sstring,*) scoarseGridSolverSection
+    
+    ! Which type of solver do we have?
+    
+    SELECT CASE (isolverType)
+    
+    CASE (0)
+    
+      ! This is the UMFPACK solver. Very easy to initialise. No parameters at all.
+      CALL linsol_initUMFPACK4 (p_rsolverNode)
+    
+    CASE (1)
+    
+      ! Multigrid solver. This is a little bit harder.
+      !
+      ! In a first step, initialise the main solver node for all our levels.
+      nlevels = rnonlinearIteration%NLMAX - rnonlinearIteration%NLMIN + 1
+      
+      CALL linsol_initMultigrid2 (p_rsolverNode,nlevels,&
+          rnonlinearIteration%p_RfilterChain)
+      
+      ! Init standard solver parameters and extended multigrid parameters
+      ! from the DAT file.
+      CALL linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
+          LINSOL_ALG_UNDEFINED)
+      CALL linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
+          LINSOL_ALG_MULTIGRID2)
+      
+      ! Ok, now we have to initialise all levels. First, we create a coarse
+      ! grid solver and configure it.
+      CALL linsol_getMultigridLevel2 (p_rsolverNode,1,p_rlevelInfo)
+      
+      SELECT CASE (icoarseGridSolverType)
+      CASE (0)
+        ! UMFPACK coarse grid solver. Easy.
+        CALL linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+        
+      CASE (1)
+        ! Defect correction with diagonal VANCA preconditioning.
+        !
+        ! Create VANCA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+        
+        CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+            'spreconditionerSection', sstring, '')
+        READ (sstring,*) spreconditionerSection
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANCA as preconditioner.
+        CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rnonlinearIteration%p_RfilterChain)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rpreconditioner%calgorithm)
+        
+      CASE (2)
+        ! BiCGSTab with diagonal VANCA preconditioning.
+        !
+        ! Create VANCA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+        
+        CALL parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
+           'spreconditionerSection', sstring, '')
+        READ (sstring,*) spreconditionerSection
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANCA as preconditioner.
+        CALL linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rnonlinearIteration%p_RfilterChain)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+        
+      END SELECT
+      
+      ! Now after the coarse grid solver is done, we turn to the smoothers
+      ! on all levels. Their initialisation is similar to the coarse grid
+      ! solver. Note that we use the same smoother on all levels, for 
+      ! presmoothing as well as for postsmoothing.
+      
+      DO ilev = 2,nlevels
+
+        ! Initialise the smoothers.
+        SELECT CASE (ismootherType)
+        
+        CASE (0:5)
+
+          NULLIFY(p_rsmoother)
+        
+          ! This is some kind of VANCA smoother. Initialise the correct one.
+          SELECT CASE (ismootherType)
+          CASE (0)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+          CASE (1)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+          CASE (2)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVST)
+          CASE (3)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVSTDIRECT)
+          CASE (4)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVST)
+          CASE (5)
+            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTDIRECT)
+          END SELECT
+          
+          ! Initialise the parameters -- if there are any.
+          CALL linsolinit_initParams (p_rsmoother,p_rparamList,&
+              ssmootherSection,LINSOL_ALG_UNDEFINED)
+          CALL linsolinit_initParams (p_rsmoother,p_rparamList,&
+              ssmootherSection,p_rsmoother%calgorithm)
+          
+          ! Convert to a smoother with a defined number of smoothing steps.
+          CALL parlst_getvalue_int (p_rparamList, ssmootherSection, &
+                    'nsmoothingSteps', nsm, 4)
+          CALL linsol_convertToSmoother (p_rsmoother,nsm)
+          
+          ! Put the smoother into the level info structure as presmoother
+          ! and postsmoother
+          CALL linsol_getMultigridLevel2 (p_rsolverNode,ilev,p_rlevelInfo)
+          p_rlevelInfo%p_rpresmoother => p_rsmoother
+          p_rlevelInfo%p_rpostsmoother => p_rsmoother
+          
+          ! Set up the interlevel projection structure on all levels
+          p_rlevelInfo%rinterlevelProjection = &
+            rnonlinearIteration%rpreconditioner%p_rprojection
+          
+        END SELECT
+      
+      END DO
+
+      ! Get information about adaptive matrix generation from INI/DAT files
+      CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+          'iAdaptiveMatrix', rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
+                                
+      CALL parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
+          'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
+
+    END SELECT    
+
+    ! Put the final solver node to the preconditioner structure.
+    rnonlinearIteration%rpreconditioner%p_rsolverNode => p_rsolverNode
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE cc_doneLinearSolver (rnonlinearIteration)
+  
+!<description>
+  ! Releases information of the linear solver preconditioner from the
+  ! structure rnonlinearIteration. Cleans up what was configured
+  ! in cc_initLinearSolver.
+!</description>
+
+  ! The nonlinear iteration structure to be cleaned up.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release the solver and all subsolvers.
+    CALL linsol_releaseSolver(rnonlinearIteration%rpreconditioner%p_rsolverNode)
+
+  END SUBROUTINE
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE cc_initPreconditioner (rproblem,rnonlinearIteration,rvector,rrhs)
   
 !<description>
@@ -453,8 +701,9 @@ CONTAINS
       ssolverName = ''
       IF (sstring .NE. '') READ (sstring,*) ssolverName
       IF (ssolverName .EQ. '') THEN
-        PRINT *,'No linear subsolver!'
-        STOP
+        CALL output_line ('No linear subsolver!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
+        CALL sys_halt()
       END IF
                                     
       ! Initialise a standard interlevel projection structure. We
@@ -470,24 +719,8 @@ CONTAINS
       CALL cc_getProlRest (rnonlinearIteration%rpreconditioner%p_rprojection, &
           rproblem%rparamList,  'CC-PROLREST')
       
-      ! Initialise the linear subsolver using the parameters from the INI/DAT
-      ! files, the prepared filter chain and the interlevel projection structure.
-      ! This gives us the linear solver node rpreconditioner%p_rsolverNode
-      ! which identifies the linear solver.
-      !
-      ! Note that we pass rpreconditioner%p_RfilterChain as filter chain here,
-      ! i.e. we use the same filter chain for all levels. This is a lack in the
-      ! design of linsolinit_initFromFile as it forces us to use the same
-      ! filters on all levels, which is not always advisable! (e.g. if
-      ! a higher level 'sees' Neumann boundary while a lower one doesn't,
-      ! there has actually another filter chain to be used on the lower level
-      ! than on the higher one...)
-      ! We probably change this later...
-      CALL linsolinit_initFromFile (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-                                    rproblem%rparamList,ssolverName,&
-                                    NLMAX-NLMIN+1,&
-                                    rnonlinearIteration%p_RfilterChain,&
-                                    rnonlinearIteration%rpreconditioner%p_rprojection)
+      ! Initialise the linear solver as configured in the DAT file.
+      CALL cc_initLinearSolver (rproblem,rnonlinearIteration,ssolverName)
       
       ! How much memory is necessary for performing the level change?
       ! We ourself must build nonlinear matrices on multiple levels and have
@@ -527,8 +760,9 @@ CONTAINS
     CASE DEFAULT
       
       ! Unknown preconditioner
-      PRINT *,'Unknown preconditioner for nonlinear iteration!'
-      STOP
+      CALL output_line ('Unknown preconditioner for nonlinear iteration!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
+      CALL sys_halt()
       
     END SELECT
 
@@ -580,8 +814,9 @@ CONTAINS
 
     ! local variables
     INTEGER :: NLMIN,NLMAX
-    INTEGER :: i
+    INTEGER :: i,cmatrixType
     CHARACTER(LEN=PARLST_MLDATA) :: sstring,snewton
+    LOGICAL :: btranspose
 
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
@@ -596,24 +831,18 @@ CONTAINS
     ! Pointer to the template FEM matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
     
-    
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioner
     CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
     
-      IF (.NOT. binit) THEN
-        ! Restore the standard matrix structure in case the matrices had been
-        ! modified by cc_finaliseMatrices for the preconditioner -- i.e. 
-        ! temporarily switch to the matrix structure that is compatible to 
-        ! the discretisation.
-        CALL cc_unfinaliseMatrices (rnonlinearIteration, &
-            rnonlinearIteration%rfinalAssembly,.FALSE.)
-      END IF
-    
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
       !
+      ! Adjust the special preconditioner parameters to the current situation.
+      CALL cc_adjustPrecSpecials (rproblem,rnonlinearIteration,&
+          rnonlinearIteration%rprecSpecials)
+      
       ! Which levels have we to take care of during the solution process?
       NLMIN = rnonlinearIteration%NLMIN
       NLMAX = rnonlinearIteration%NLMAX
@@ -621,150 +850,193 @@ CONTAINS
       ! Initialise the preconditioner matrices on all levels.
       DO i=NLMIN,NLMAX
       
-        ! Prepare the preconditioner matrices level i. This is
-        ! basically the system matrix...
-        ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+        ! Prepare the preconditioner matrices level i. 
+        IF (binit .OR. bstructuralUpdate) THEN
+
+          ! What type of matrix do we have? Is it a 'primitive' matrix
+          ! (with A11 and A22 being the same) or a 'full-tensor matrix'
+          ! with Aij all independent from each other
+          IF ((rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+              CCPREC_NEWTON) .OR. &
+              (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+              CCPREC_NEWTONDYNAMIC)) THEN
+            cmatrixType = CCMASM_MTP_FULLTENSOR
+          ELSE
+            cmatrixType = CCMASM_MTP_AUTOMATIC
+          END IF
+
+          ! Allocate memory for the matrix or release the existing matrix,
+          ! if there's a structural update.
+          IF (binit) THEN
+            ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+          ELSE
+            CALL lsysbl_releaseMatrix(&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+          END IF
+          
+          ! Allocate memory for the basic submatrices.
+          ! The B1^T and B2^T matrices are saved as 'virtual transpose' of B1 and
+          ! B2 by default, we must change them later if necessary.
+          CALL cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),cmatrixType,&
+              rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+              
+          ! Attach boundary conditions
+          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBC &
+              => rproblem%RlevelInfo(i)%p_rdiscreteBC
+          
+          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBCfict &
+              => rproblem%RlevelInfo(i)%p_rdiscreteFBC
+        END IF
+        
+        ! On the current level, set up a global preconditioner matrix.
+
         p_rmatrixPreconditioner => &
             rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner
       
-        ! The preallocated system matrix is the basic building block for
-        ! the preconditioning matrix. But probably the preconditioning
-        ! matrix contains some more entries... see below!
-        CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
-            p_rmatrixPreconditioner,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-            
         ! ----------------------------------------------------
-        ! Should the linear solver use the Newton matrix?
-        IF ((rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
-            CCPREC_NEWTON) .OR. &
-            (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
-            CCPREC_NEWTONDYNAMIC)) THEN
-          ! That means, our preconditioner matrix must look like
-          !
-          !  A11  A12  B1
-          !  A21  A22  B2
-          !  B1^T B2^T 0
-          !
-          ! With A12, A21, A11, A22 independent of each other!
-          ! Do we have that case? If not, we have to allocate memory 
-          ! for these matrices.
-          p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
+        ! Should the linear solver use the adaptive Newton matrix?
+            
+        IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+          CCPREC_NEWTONDYNAMIC) THEN
           
-          ! If we have a Stokes problem, A12 and A21 don't exist.
-          IF (rproblem%iequation .EQ. 0) THEN
-
-            IF (p_rmatrixPreconditioner%RmatrixBlock(1,2)%cmatrixFormat &
-                .EQ. LSYSSC_MATRIXUNDEFINED) THEN
-                
-              CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
-                p_rmatrixPreconditioner%RmatrixBlock(1,2), &
-                LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
-              ! Allocate memory for the entries; don't initialise the memory.
-              CALL lsyssc_allocEmptyMatrix (&
-                  p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
-                
-            END IF
-
-            IF (p_rmatrixPreconditioner%RmatrixBlock(2,1)%cmatrixFormat &
-                .EQ. LSYSSC_MATRIXUNDEFINED) THEN
-                
-              ! Create a new matrix A21 in memory. create a new matrix
-              ! using the template FEM matrix...
-              CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
-                p_rmatrixPreconditioner%RmatrixBlock(2,1), &
-                LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
-              ! Allocate memory for the entries; don't initialise the memory.
-              CALL lsyssc_allocEmptyMatrix (&
-                  p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
-               
-            END IF
-            
-          END IF
-
-          ! A22 may share its entries with A11. If that's the case,
-          ! allocate additional memory for A22, as the Newton matrix
-          ! requires a separate A22!
-          IF (lsyssc_isMatrixContentShared( &
-              p_rmatrixPreconditioner%RmatrixBlock(1,1), &
-              p_rmatrixPreconditioner%RmatrixBlock(2,2)) ) THEN
-            ! Release the matrix structure. As the matrix is a copy
-            ! of another one, this will clean up the structure but
-            ! not release any memory.
-            CALL lsyssc_releaseMatrix ( &
-                p_rmatrixPreconditioner%RmatrixBlock(2,2))
-
-            ! Create a new matrix A21 in memory. create a new matrix
-            ! using the template FEM matrix...
-            CALL lsyssc_duplicateMatrix ( &
-              p_rmatrixPreconditioner%RmatrixBlock(1,1), &
-              p_rmatrixPreconditioner%RmatrixBlock(2,2),&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-              
-            ! ... then allocate memory for the entries; 
-            ! don't initialise the memory.
-            CALL lsyssc_allocEmptyMatrix (&
-                p_rmatrixPreconditioner%RmatrixBlock(2,2),&
-                LSYSSC_SETM_UNDEFINED)
-          END IF
+          ! We have even the extended, dynamic Newton as preconditioner.
+          ! Put the parameters for the extended Newton from the DAT file
+          ! into the Adaptive-Newton configuration block.
           
-          ! ----------------------------------------------------
-          ! Should we even use the adaptive Newton?
-          IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
-            CCPREC_NEWTONDYNAMIC) THEN
-            
-            ! We have even the extended, dynamic Newton as preconditioner.
-            ! Put the parameters for the extended Newton from the DAT file
-            ! into the Adaptive-Newton configuration block.
-            
-            CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                        'spreconditionerAdaptiveNewton', sstring, '')
-            snewton = ''
-            IF (sstring .NE. '') READ (sstring,*) snewton
-            IF (snewton .NE. '') THEN
-              ! Initialise the parameters of the adaptive Newton
-              CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
-                  'nminFixPointIterations', rnonlinearIteration%rpreconditioner% &
-                  radaptiveNewton%nminFixPointIterations, 0)
+          CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                      'spreconditionerAdaptiveNewton', sstring, '')
+          snewton = ''
+          IF (sstring .NE. '') READ (sstring,*) snewton
+          IF (snewton .NE. '') THEN
+            ! Initialise the parameters of the adaptive Newton
+            CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
+                'nminFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%nminFixPointIterations, 0)
 
-              CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
-                  'nmaxFixPointIterations', rnonlinearIteration%rpreconditioner% &
-                  radaptiveNewton%nmaxFixPointIterations, 999)
+            CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
+                'nmaxFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%nmaxFixPointIterations, 999)
 
-              CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
-                  'depsAbsNewton', rnonlinearIteration%rpreconditioner% &
-                  radaptiveNewton%depsAbsNewton, 1E-5_DP)
+            CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
+                'depsAbsNewton', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%depsAbsNewton, 1E-5_DP)
 
-              CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
-                  'depsRelNewton', rnonlinearIteration%rpreconditioner% &
-                  radaptiveNewton%depsRelNewton, 1E99_DP)
-            END IF
-            
+            CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
+                'depsRelNewton', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%depsRelNewton, 1E99_DP)
           END IF
           
         END IF
+          
+        ! We add a zero diagonal matrix to the pressure block. This matrix
+        ! is only used under rare circumstances, e.g. if we have a pure
+        ! Dirichlet problem on that level and the solver does not support
+        ! filtering. In this case, this matrix is used to ensure definiteness.
+        !
+        ! We ignore the scaling factor here as we only want to ensure that there's
+        ! space available for the matrix.
+        IF (.NOT. lsysbl_isSubmatrixPresent(p_rmatrixPreconditioner,3,3,.TRUE.)) THEN
+          CALL lsyssc_createDiagMatrixStruc (p_rmatrixPreconditioner%RmatrixBlock(3,3),&
+              p_rmatrixPreconditioner%RmatrixBlock(1,3)%NCOLS,LSYSSC_MATRIX9)
+          CALL lsyssc_allocEmptyMatrix(&
+              p_rmatrixPreconditioner%RmatrixBlock(3,3),LSYSSC_SETM_ZERO)
+          p_rmatrixPreconditioner%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
+        END IF
+        
+        ! Under certain circumstances, the linear solver needs B^T-matrices.
+        ! This is the case if
+        ! - a direct solver (UMFPACK) is used on a level or
+        ! - if the general VANCA preconditioner is used.
+        ! In these cases, we create a separate copy of B1 and B2 and transpose them.
+        ! Note that we do this only in that case when there is a 'structural update'
+        ! (which means that the structure of the matrices have changed). Otherwise,
+        ! B1^T and B2^T stay unchanged!
+        !
+        ! In case we have a pure-dirichlet problem, we activate the 3,3-submatrix
+        ! It's probably needed for the preconditioner to make the pressure definite.
+        IF (bstructuralUpdate) THEN
+          btranspose = .FALSE.
+          SELECT CASE (rnonlinearIteration%rprecSpecials%isolverType)
+          CASE (0)
+            ! UMFPACK solver.
+            IF (i .EQ. NLMAX) THEN
+              ! UMFPACK solver. Tweak the matrix on the max. level.
+              ! Ignore the other levels.
+              btranspose = .TRUE.
+              
+              IF (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) THEN
+                ! Activate the 3,3-block, UMFPACK needs it in case the pressure
+                ! is globally indefinite.
+                p_rmatrixPreconditioner%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+              END IF
+            END IF
+
+          CASE (1)
+            ! Multigrid solver. Treat the matrix at the coarse level if there's
+            ! UMFPACK chosen as coarse grid solver.
+            IF (i .EQ. NLMIN) THEN
+            
+              IF (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .EQ. 0) THEN
+                btranspose = .TRUE.
+                
+                IF (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) THEN
+                  ! Activate the 3,3-block, UMFPACK needs it in case the pressure
+                  ! is globally indefinite.
+                  p_rmatrixPreconditioner%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+                END IF
+                
+              ELSE
+                
+                ! Tweak the matrix if the preconditioner needs transposed matrices.
+                !
+                ! Currently not implemented, as there is no configuration where a
+                ! preconditioner needs transposed matrices...
+                
+              END IF
+              
+            ELSE
+            
+              ! On the other levels, tweak the matrix if the general VANCA is
+              ! chosen as smoother; it needs transposed matrices.
+              IF ((rnonlinearIteration%rprecSpecials%ismootherType .EQ. 0) .OR. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .EQ. 1)) THEN
+                btranspose = .TRUE.
+              END IF              
+              
+            END IF
+
+          END SELECT
+          
+          IF (btranspose) THEN
+            ! Allocate memory for B1^T and B2^T and transpose B1 and B2.
+            IF (.NOT. ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)) THEN
+              ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
+            ELSE
+              CALL lsyssc_releaseMatrix(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
+            END IF
+            CALL lsyssc_transposeMatrix (&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1,&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_ALL)
+
+            IF (.NOT. ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)) THEN
+              ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
+            ELSE
+              CALL lsyssc_releaseMatrix(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
+            END IF
+            CALL lsyssc_transposeMatrix (&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2,&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_ALL)
+                
+            ! B1^T and B2^T have the same structure, release unnecessary memory.
+            CALL lsyssc_duplicateMatrix (&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T,&
+                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T,&
+                LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+          END IF
+
+        END IF
+        
       END DO
-      
-      IF (binit) THEN
-        ! Check the matrices if they are compatible to our
-        ! preconditioner. If not, we later have to modify the matrices a little
-        ! bit to make it compatible. 
-        ! The result of this matrix analysis is saved to the rfinalAssembly structure 
-        ! in rnonlinearIteration and allows us later to switch between these two
-        ! matrix representations: Compatibility to the discretisation routines
-        ! and compatibity to the preconditioner.
-        ! The cc_checkAssembly routine below uses this information to perform
-        ! the actual modification in the matrices.
-        CALL cc_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
-            rnonlinearIteration%rfinalAssembly)
-      END IF
-      ! Otherwise, checkAssembly was already called and does not have to be 
-      ! called again.
-      
-      ! Using rfinalAssembly as computed above, make the matrices compatible 
-      ! to our preconditioner if they are not.
-      CALL cc_finaliseMatrices (rnonlinearIteration)
       
       ! Attach the system matrices to the solver.
       !
@@ -791,20 +1063,25 @@ CONTAINS
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
       IF (binit) THEN
+      
         CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
         IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+        
       ELSE IF (bstructuralUpdate) THEN
+      
         CALL linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
         IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+        
       END IF
       
     CASE DEFAULT
       
       ! Unknown preconditioner
-      PRINT *,'Unknown preconditioner for nonlinear iteration!'
-      STOP
+      CALL output_line ('Unknown preconditioner for nonlinear iteration!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+      CALL sys_halt()
       
     END SELECT
 
@@ -845,6 +1122,17 @@ CONTAINS
         CALL lsysbl_releaseMatrix ( &
           rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
         DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+        
+        ! Also release B1^T and B2^T everywhere where they exist.
+        IF (ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)) THEN
+          CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
+          DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
+        END IF
+
+        IF (ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)) THEN
+          CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
+          DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
+        END IF
       END DO
       
       ! Release the temporary vector(s)
@@ -861,13 +1149,14 @@ CONTAINS
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
       CALL linsol_doneStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode)
-      CALL linsol_releaseSolver (rnonlinearIteration%rpreconditioner%p_rsolverNode)
+      CALL cc_doneLinearSolver (rnonlinearIteration)
       
     CASE DEFAULT
       
       ! Unknown preconditioner
-      PRINT *,'Unknown preconditioner for nonlinear iteration!'
-      STOP
+      CALL output_line ('Unknown preconditioner for nonlinear iteration!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_releasePreconditioner')
+      CALL sys_halt()
       
     END SELECT
 
@@ -973,14 +1262,17 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_checkAssembly (rproblem,rnonlinearIteration,rrhs,rfinalAssembly)
+  SUBROUTINE cc_adjustPrecSpecials (rproblem,rnonlinearIteration,rprecSpecials)
   
 !<description>
-  ! This routine checks the matrices against an existing preconditioner.
-  ! It may happen that e.g. VANCA does not like our matrices (probably
-  ! they have to be saved transposed or whatever). Information about
-  ! which things must be changed in the assembly to make 'everything proper'
-  ! is saved to rfinalAssembly.
+  ! This routine adjusts parameters in the rprecSpecials according to the current
+  ! problem. This includes e.g. special 'tweaks' that must be done if the
+  ! problem is a pure Dirichlet problem.
+  !
+  ! The routine must always be called if the situation changes during a
+  ! simulation (e.g. if a nonstationary simulation proceeds to a new timestep
+  ! and changes boundary conditions). It is usually called in 
+  ! cc_updatePreconditioner.
 !</description>
 
 !<inputoutput>
@@ -992,291 +1284,21 @@ CONTAINS
   TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
 !</inputoutput>
 
-!<input>
-  ! The right-hand-side vector to use in the equation
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
-!</input>
-
 !<inputoutput>
   ! Nonlinear iteration structure. 
-  ! The t_ccFinalAssemblyInfo substructure that receives information how to 
+  ! The t_ccPreconditionerSpecials substructure that receives information how to 
   ! finally assembly the matrices such that everything in the callback routines 
   ! will work.
-  TYPE(t_ccFinalAssemblyInfo), INTENT(INOUT) :: rfinalAssembly
+  TYPE(t_ccPreconditionerSpecials), INTENT(INOUT) :: rprecSpecials
 !</inputoutput>
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: NLMIN,NLMAX,ccompatible,iprecType
-  CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
-  TYPE(t_interlevelProjectionBlock) :: rprojection
+    ! Check if we have Neumann boundary components. If not, the matrices
+    ! may have to be changed, depending on the solver.
+    rprecSpecials%bpressureGloballyIndefinite = &
+      .NOT. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 
-  ! An array for the system matrix(matrices) during the initialisation of
-  ! the linear solver.
-  TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
-  TYPE(t_linsolNode), POINTER :: p_rsolverNode
-    
-    ! At first, ask the parameters in the INI/DAT file which type of 
-    ! preconditioner is to be used. 
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                     'itypePreconditioning', &
-                                     iprecType, 1)
-
-    SELECT CASE (iprecType)
-    CASE (CCPREC_NONE)
-      ! No preconditioning
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
-      ! That preconditioner is a solver for a linear system.
-      !
-      ! Which levels have we to take care of during the solution process?
-      NLMIN = rnonlinearIteration%NLMIN
-      NLMAX = rnonlinearIteration%NLMAX
-
-      ! Temporarily set up the solver node for the linear subsolver.
-      !
-      ! Figure out the name of the section that contains the information
-      ! about the linear subsolver. Ask the parameter list from the INI/DAT file
-      ! for the 'slinearSolver' value
-      CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                  'slinearSolver', sstring, '')
-      ssolverName = ''
-      IF (sstring .NE. '') READ (sstring,*) ssolverName
-      IF (ssolverName .EQ. '') THEN
-        PRINT *,'No linear subsolver!'
-        STOP
-      END IF
-                                    
-      ! Initialise a standard interlevel projection structure. We
-      ! can use the same structure for all levels. Therefore it's enough
-      ! to initialise one structure using the RHS vector on the finest
-      ! level to specify the shape of the PDE-discretisation.
-      CALL mlprj_initProjectionVec (rprojection,rrhs)
-      
-      ! Initialise the linear subsolver using the parameters from the INI/DAT
-      ! files, the prepared filter chain and the interlevel projection structure.
-      ! This gives us the linear solver node p_rsolverNode
-      ! which identifies the linear solver.
-      CALL linsolinit_initFromFile (p_rsolverNode,&
-                                    rproblem%rparamList,ssolverName,&
-                                    NLMAX-NLMIN+1,&
-                                    rinterlevelProjection=rprojection)
-      
-      ! Check the matrices.
-      !
-      ! We copy our matrices to a big matrix array and transfer that
-      ! to the setMatrices routines. This intitialises then the matrices
-      ! on all levels according to that array.
-      ALLOCATE(Rmatrices(1:NLMAX))
-      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rpreallocatedSystemMatrix
-      CALL linsol_matricesCompatible(p_rsolverNode, &
-          Rmatrices(NLMIN:NLMAX),ccompatible)
-      DEALLOCATE(Rmatrices)
-      
-      SELECT CASE (ccompatible)
-      CASE (LINSOL_COMP_OK) ! nothing to do
-        rfinalAssembly%iBmatricesTransposed = NO
-      CASE (LINSOL_COMP_ERRTRANSPOSED)
-        ! The B-matrices must be assembled in a transposed way. Remember that.
-        rfinalAssembly%iBmatricesTransposed = YES
-      CASE DEFAULT
-        PRINT *,'Preconditioner incompatible to the matrices. Don''t know why!?!'
-        STOP
-      END SELECT
-      
-      ! Release the solver node again.
-      CALL linsol_releaseSolver (p_rsolverNode)
-      
-      ! We also don't need the temporary projection structure anymore.
-      CALL mlprj_doneProjection (rprojection)
-      
-    END SELECT
-
-    ! Add information about adaptive matrix generation from INI/DAT files
-    ! to the collection.
-    CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'iAdaptiveMatrix', rfinalAssembly%iadaptiveMatrices, 0)
-                              
-    CALL parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
-        'dAdMatThreshold', rfinalAssembly%dAdMatThreshold, 20.0_DP)
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE cc_finaliseMatrices (rnonlinearIteration)
-  
-!<description>
-  ! This routine performs final assembly tasks to the matrices such that they
-  ! are compatible to the preconditioner.
-  ! It may happen that e.g. VANCA does not like our matrices (probably
-  ! they have to be saved transposed or whatever). In that case, we
-  ! have to make slight modifications to our matrices in order to 
-  ! make them compatible.
-!</description>
-
-!<inputoutput>
-  ! The nonlinear iteration structure that contains pointers to the
-  ! matrices which are to be used.
-  TYPE(t_ccnonlinearIteration), INTENT(INOUT), TARGET :: rnonlinearIteration
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    INTEGER :: ilev,NLMIN,NLMAX
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
-    IF (rnonlinearIteration%rfinalAssembly%iBmatricesTransposed .EQ. YES) THEN
-      ! There is usually a VANCA subsolver in the main linear solver which
-      ! cannot deal with our virtually transposed matrices. So we make
-      ! a copy of B1/B2 on every level and really transpose them.
-
-      ! Which levels have we to take care of during the solution process?
-      NLMIN = rnonlinearIteration%NLMIN
-      NLMAX = rnonlinearIteration%NLMAX
-
-      ! Loop through the levels, transpose the B-matrices  
-      DO ilev=NLMIN,NLMAX
-        ! Get the matrix of the preconditioner
-        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
-        
-        ! Release the old B1/B2 matrices from the system matrix. This
-        ! does not release any memory, as the content of the matrix
-        ! is saved elsewhere.
-        CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,1))
-        CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,2))
-        
-        ! Transpose B1/B2, write result to the system matrix.
-        CALL lsyssc_transposeMatrix (&
-            rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1, &
-            p_rmatrix%RmatrixBlock(3,1),LSYSSC_TR_ALL)
-
-        CALL lsyssc_transposeMatrix (&
-            rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2, &
-            p_rmatrix%RmatrixBlock(3,2),LSYSSC_TR_ALL)
-                                    
-        ! Release the memory that was allocated for the B2 structure by
-        ! the matrix-transpose routine. 
-        ! Replace the structure of B2 by that of B1; more precisely,
-        ! share the structure. We can do this as we know that B1 and B2
-        ! have exactly the same structure!
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
-                p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_REMOVE,LSYSSC_DUP_IGNORE)
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
-                p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-      
-      END DO
-      
-    END IF
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE cc_unfinaliseMatrices (rnonlinearIteration,rfinalAssembly,bdata)
-  
-!<description>
-  ! Reverts the changes that were done by cc_finaliseMatrices, brings
-  ! matrices back to their 'standard' form. Necessary if multiple simulations
-  ! are performed, e.g. in a time-dependent simulation: The assembly
-  ! routines expect matrices in the standard form and cannot work with
-  ! 'specially tuned' matrices which are used in the actual solving/
-  ! preconditioning process.
-!</description>
-
-!<inputoutput>
-  ! The nonlinear iteration structure that contains pointers to the
-  ! matrices which are to be used.
-  TYPE(t_ccnonlinearIteration), INTENT(INOUT), TARGET :: rnonlinearIteration
-!</inputoutput>
-
-!<input>
-  ! The t_ccFinalAssemblyInfo structure that receives information how to finally 
-  ! assembly the matrices such that everything in the callback routines will 
-  ! work. Must be set up with cc_checkAssembly above.
-  TYPE(t_ccFinalAssemblyInfo), INTENT(IN) :: rfinalAssembly
-  
-  ! TRUE  = restore the original matrices in their whole -- structure and data
-  ! FALSE = Ignore the data, only restore the original matrix structure.
-  !         Used to save time if the matrix content is thrown away in the
-  !         reassembling process anyway.
-  LOGICAL, INTENT(IN) :: bdata
-!</input>
-
-!</subroutine>
-
-    ! local variables
-    INTEGER :: ilev,NLMIN,NLMAX
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
-    ! Which levels have we to take care of during the solution process?
-    NLMIN = rnonlinearIteration%NLMIN
-    NLMAX = rnonlinearIteration%NLMAX
-
-    ! Loop through the levels, transpose the B-matrices  
-    DO ilev=NLMIN,NLMAX
-      ! Get the matrix of the preconditioner
-      p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
-        
-      IF ((rfinalAssembly%iBmatricesTransposed .EQ. YES) .AND. &
-          (IAND(p_rmatrix%RmatrixBlock(3,1)%imatrixSpec,&
-                LSYSSC_MSPEC_TRANSPOSED) .NE. 0)) THEN
-                
-        ! There is usually a VANCA subsolver in the main linear solver which
-        ! cannot deal with our virtually transposed matrices. 
-        ! The B1/B2 matrices are transposed -- so we re-transpose them
-        ! to get the original matrices.
-
-        ! Release the old B1/B2 matrices from the system matrix. This
-        ! does not release any memory, as the content of the matrix
-        ! is saved elsewhere.
-        CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,1))
-        CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,2))
-        
-        ! Transpose B1/B2, write result to the system matrix.
-        IF (bdata) THEN
-          ! Structure and data
-          CALL lsyssc_transposeMatrix (&
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1, &
-              p_rmatrix%RmatrixBlock(3,1),LSYSSC_TR_ALL)
-
-          CALL lsyssc_transposeMatrix (&
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2, &
-              p_rmatrix%RmatrixBlock(3,2),LSYSSC_TR_ALL)
-        ELSE
-          ! Only the structure; content gets invalid.
-          CALL lsyssc_transposeMatrix (&
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1, &
-              p_rmatrix%RmatrixBlock(3,1),LSYSSC_TR_STRUCTURE)
-
-          ! No change has to be done to the B2^T block in the global system 
-          ! matrix since that one will later share the same structure as B1^T!
-          ! So the following command is commented out and should 
-          ! not be commented in!
-          ! CALL lsyssc_transposeMatrix (&
-          !     rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2, &
-          !     p_rmatrix%RmatrixBlock(3,2),LSYSSC_TR_STRUCTURE)
-        END IF
-                                    
-        ! Release the memory that was allocated for the B2 structure by
-        ! the matrix-transpose routine. 
-        ! Replace the structure of B2 by that of B1; more precisely,
-        ! share the structure. We can do this as we know that B1 and B2
-        ! have exactly the same structure!
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
-                p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_REMOVE,LSYSSC_DUP_IGNORE)
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
-                p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-      
-      END IF
-
-    END DO
-      
   END SUBROUTINE
 
 END MODULE

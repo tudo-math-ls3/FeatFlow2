@@ -255,13 +255,8 @@ MODULE ccnonlinearcore
   ! and whose matrices exist and/or must be assmebled transposed to be
   ! compatible with the preconditioner and more. It's more or less
   ! a collection if different flags.
-  TYPE t_ccFinalAssemblyInfo
+  TYPE t_ccPreconditionerSpecials
   
-    ! This flag is set to YES if the B matrices must be assembled
-    ! transposedly. This may be necessary for special VANCA type smoothers
-    ! if a linear solver is used as preconditioner.
-    INTEGER :: iBmatricesTransposed = 0
-    
     ! Whether to use 'adaptive matrices', i.e. set up coarse grid matrices
     ! with the help of fine grid matrices. This is used for very special
     ! discretisations only (e.g. Q1~/Q0). =0: deactivate
@@ -269,6 +264,44 @@ MODULE ccnonlinearcore
     
     ! A configuration parameter for adaptive matrices.
     REAL(DP) :: dadMatThreshold     = 0.0_DP
+
+    ! If the preconditioner is a linear solver:
+    ! Type of solver.
+    ! =0: Gauss elimination (UMFPACK)
+    ! =1: Multigrid solver
+    INTEGER :: isolverType = 0
+    
+    ! If the preconditioner is the linear multigrid solver:
+    ! Type of smoother.
+    ! =0: general VANCA (slow, but independent of the discretisation and of the problem)
+    ! =1: general VANCA; 'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 0, but slightly faster)
+    ! =2: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =3: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    !     'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 8, but faster)
+    ! =4: Full VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =5: Full VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    !     'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 10, but faster)
+    INTEGER :: ismootherType = 3
+    
+    ! If the preconditioner is the linear multigrid solver:
+    ! Type of coarse grid solver.    
+    ! =0: Gauss elimination (UMFPACK)
+    ! =1: Defect correction with diagonal VANCA preconditioning.
+    ! =2: BiCGStab with diagonal VANCA preconditioning
+    INTEGER :: icoarseGridSolverType = 1
+        
+    ! This flag is set to .TRUE. if there are no Neumann boundary
+    ! components. In that case, the pressure matrices of direct
+    ! solvers must be changed.
+    LOGICAL :: bpressureGloballyIndefinite = .FALSE.
+    
   END TYPE
 
 !</typeblock>
@@ -280,8 +313,8 @@ MODULE ccnonlinearcore
   ! (linearised) system matrix and RHS vector.
   TYPE t_cccoreEquationOneLevel
   
-    ! The (linearised) system matrix for that specific level. 
-    TYPE(t_matrixBlock), POINTER :: p_rsystemMatrix => NULL()
+    ! Pointer to the discretisation structure of that level
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation => NULL()
 
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes => NULL()
@@ -305,12 +338,6 @@ MODULE ccnonlinearcore
     ! a Newton matrix. This matrix is changed during the
     ! nonlinear iteration and used e.g. if a linear solver (Multigrid) is
     ! used for preconditioning.
-    !
-    ! Note that most submatrices in here share their memory with the
-    ! submatrices of p_rsystemMatrix (e.g. the velocity matrices)!
-    ! However, p_rmatrixPreconditioner can also have a different and even 
-    ! larger structure than p_rsystemMatrix with additional blocks, e.g.
-    ! for the Newton part (i.e. $A_{12}$ and $A_{21}$)!
     TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner => NULL()
   
     ! Velocity coupling matrix $A_{12}$.
@@ -323,6 +350,22 @@ MODULE ccnonlinearcore
     ! nonlinear iteration.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixVelocityCoupling21 => NULL()
     
+    ! Pointer to a B1^T-matrix.
+    ! This pointer may point to NULL(). In this case, B1^T is created
+    ! by 'virtually transposing' the B1 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+
+    ! Pointer to a B2-matrix.
+    ! This pointer may point to NULL(). In this case, B2^T is created
+    ! by 'virtually transposing' the B2 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
+
   END TYPE
 
 !</typeblock>
@@ -385,9 +428,9 @@ MODULE ccnonlinearcore
     ! A t_ccPreconditioner saving information about the preconditioner.
     TYPE(t_ccPreconditioner) :: rpreconditioner
     
-    ! A t_ccFinalAssemblyInfo structure that saves information about
+    ! A t_ccPreconditionerSpecials structure that saves information about
     ! special 'tweaks' in matrices such that everything works.
-    TYPE(t_ccFinalAssemblyInfo) :: rfinalAssembly
+    TYPE(t_ccPreconditionerSpecials) :: rprecSpecials
     
     ! An array of t_cccoreEquationOneLevel structures for all levels
     ! of the discretisation.
@@ -495,12 +538,18 @@ CONTAINS
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%p_rdiscretisation => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       rnonlinearCCMatrix%p_rmatrixB1 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
       rnonlinearCCMatrix%p_rmatrixB2 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
+      rnonlinearCCMatrix%p_rmatrixB1T => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1T
+      rnonlinearCCMatrix%p_rmatrixB2T => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2T
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
@@ -577,7 +626,7 @@ CONTAINS
     ! local variables
     INTEGER :: ilvmax
     REAL(DP) :: dskv1,dskv2
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+    TYPE(t_matrixBlock) :: rmatrix
     TYPE(t_timer) :: rtimer
     ! A filter chain for the linear solver
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
@@ -604,9 +653,6 @@ CONTAINS
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
       
-      ! Get the system and the Stokes matrix on the maximum level
-      p_rmatrix => rnonlinearIteration%RcoreEquation(ilvmax)%p_rsystemMatrix
-
       ! We now want to calculate a new OMEGA parameter
       ! with OMGMIN < OMEGA < OMGMAX.
       !
@@ -678,9 +724,11 @@ CONTAINS
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%iadaptiveMatrices = &
-          rnonlinearIteration%rfinalAssembly%iadaptiveMatrices
+          rnonlinearIteration%rprecSpecials%iadaptiveMatrices
       rnonlinearCCMatrix%dadmatthreshold = &
-          rnonlinearIteration%rfinalAssembly%dadmatthreshold
+          rnonlinearIteration%rprecSpecials%dadmatthreshold
+      rnonlinearCCMatrix%p_rdiscretisation => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       rnonlinearCCMatrix%p_rmatrixB1 => &
@@ -692,7 +740,7 @@ CONTAINS
 
       ! Assemble the matrix.        
       CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-          p_rmatrix,rnonlinearCCMatrix,rtemp1)
+          rmatrix,rnonlinearCCMatrix,rtemp1)
       
       ! We don't have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
@@ -704,7 +752,7 @@ CONTAINS
       ! ==================================================================
 
       CALL lsysbl_copyVector (rb,rtemp2)
-      CALL lsysbl_blockMatVec (p_rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
+      CALL lsysbl_blockMatVec (rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
       
       ! This is a defect vector - filter it! This e.g. implements boundary
       ! conditions.
@@ -725,13 +773,16 @@ CONTAINS
       ! Calculate the value  rtemp1 = T*Y
       ! ==================================================================
 
-      CALL lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
+      CALL lsysbl_blockMatVec (rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
       ! This is a defect vector against 0 - filter it! This e.g. 
       ! implements boundary conditions.
       IF (ASSOCIATED(p_RfilterChain)) THEN
         CALL filter_applyFilterChainVec (rtemp1, p_RfilterChain)
       END IF
+      
+      ! Release the matrix again
+      CALL lsysbl_releaseMatrix (rmatrix)
       
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
@@ -751,9 +802,13 @@ CONTAINS
       dskv2 = lsysbl_scalarProduct (rtemp1, rtemp1)
       
       IF (dskv2 .LT. 1.0E-40_DP) THEN
-        PRINT *,'Error in cc_getOptimalDamping. dskv2 nearly zero.'
-        PRINT *,'Optimal damping parameter singular.'
-        PRINT *,'Is the triangulation ok??? .tri-file destroyed?'
+        CALL output_line ('dskv2 nearly zero. Optimal damping parameter singular.', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+        CALL output_line ('Is the triangulation ok??? .tri-file destroyed?', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+        CALL output_line ('Boundary conditions set up properly?', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+        CALL sys_halt()
         STOP
       END IF
       
@@ -1056,7 +1111,8 @@ CONTAINS
 
       ! local variables
       REAL(DP) :: dnewton
-      INTEGER :: ilev
+      INTEGER :: ilev,icol
+      INTEGER(PREC_MATIDX), DIMENSION(1) :: Irows = (/1/)
       TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
       TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
       TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
@@ -1143,15 +1199,21 @@ CONTAINS
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
           rnonlinearCCMatrix%iadaptiveMatrices = &
-              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices
+              rnonlinearIteration%rprecSpecials%iadaptiveMatrices
           rnonlinearCCMatrix%dadmatthreshold = &
-              rnonlinearIteration%rfinalAssembly%dadmatthreshold
+              rnonlinearIteration%rprecSpecials%dadmatthreshold
+          rnonlinearCCMatrix%p_rdiscretisation => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation
           rnonlinearCCMatrix%p_rmatrixStokes => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
           rnonlinearCCMatrix%p_rmatrixB1 => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
           rnonlinearCCMatrix%p_rmatrixB2 => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2
+          rnonlinearCCMatrix%p_rmatrixB1T => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1T
+          rnonlinearCCMatrix%p_rmatrixB2T => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2T
           rnonlinearCCMatrix%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
 
@@ -1189,6 +1251,50 @@ CONTAINS
             
         END DO
         
+        IF (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) THEN
+          
+          ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
+          !
+          ! We have a pure Dirichlet problem. This may give us some difficulties
+          ! in the case, the preconditioner uses a direct solver (UMFPACK).
+          ! In this case, we have to include a unit vector to the pressure
+          ! matrix to make the problem definite!
+          IF (rnonlinearIteration%rprecSpecials%isolverType .EQ. 0) THEN
+            p_rmatrix => rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner
+            
+            ! Include a unit vector
+            CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
+            CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
+            CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+            
+          END IF
+          
+          IF (rnonlinearIteration%rprecSpecials%isolverType .EQ. 1) THEN
+          
+            ! If we have a MG solver, We also check the coarse grid solver for 
+            ! the same thing!
+            ! What we don't check is the smoother, thus we assume that smoothers
+            ! are always solvers that allow the applicance of a filter chain.
+            IF (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .EQ. 0) THEN
+              p_rmatrix => rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner
+              
+              ! Include a unit vector
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
+              CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+              
+            END IF
+            
+          END IF
+            
+        ELSE
+          
+          ! The 3,3-block must be a zero-matrix. So if it's present, clear it.
+          IF (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
+            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
+          
+        END IF        
+
       END SUBROUTINE
       
     END SUBROUTINE
@@ -1491,9 +1597,10 @@ CONTAINS
     CALL parlst_querysection(rparamList, sname, p_rsection) 
 
     IF (.NOT. ASSOCIATED(p_rsection)) THEN
-      PRINT *,'Cannot create nonlinear solver; no section '''&
-              //TRIM(sname)//'''!'
-      STOP
+      CALL output_line ('Cannot create nonlinear solver; no section '''//&
+          TRIM(sname)//'''!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_getNonlinearSolver')
+      CALL sys_halt()
     END IF
     
     ! Parse the given parameters now to initialise the solver node.

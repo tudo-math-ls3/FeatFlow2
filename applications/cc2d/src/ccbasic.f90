@@ -57,26 +57,6 @@ MODULE ccbasic
     ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
     
-    ! A template matrix for the system matrix for that specific level.
-    ! Provides memory for intermediate calculations of the system matrix.
-    ! This matrix is used e.g. as template matrix for a Multigrid preconditioner
-    ! during the nonlinear iteration; in this case, the 'preconditioner matrices'
-    ! on all levels share some information with this to prevent frequent 
-    ! reallocation of memory. On the other hand, the matrix might have to be
-    ! evaluated for some reason (e.g. the evaluation of damping parameters)
-    ! which can be done with this variable to avoid memory allocation.
-    !
-    ! The system matrix at the same time defines on the one hand the shape
-    ! of the global system (number of DOF's, submatrices for gradient and/or
-    ! deformation tensor). On the other hand, the boundary conditions are associated
-    ! to this matrix to allow the implementation of boundary conditions into
-    ! a globally assembled system matrix.
-    !
-    ! Note that the system matrix does not have to be assembled for calculating
-    ! the defect! Routines to assemble the system matrix or the defect
-    ! can be found in the module ccmatvecassembly.
-    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrix
-    
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
     
@@ -195,14 +175,6 @@ MODULE ccbasic
         
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
-
-    ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different 
-    ! matrices). This is the case e.g. for no-slip boundary conditions
-    ! where then implementation of the BC's into the first velocity
-    ! matrix must not affect the 2nd velocity matrix!
-    ! This value must be initialised before the matrices are set
-    ! up and must not be changed afterwards.
-    LOGICAL :: bdecoupledXY
 
     ! iboundary parameter from the DAT file. Specifies whether to update
     ! boundary conditions in nonstationary simulations or not.

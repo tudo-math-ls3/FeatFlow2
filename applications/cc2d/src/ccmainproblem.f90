@@ -125,7 +125,7 @@ CONTAINS
     CALL parlst_init (p_rproblem%rparamList)
     
     ! Read parameters from the INI/DAT files into the parameter list. 
-    CALL cc2dmedium2_getDAT (p_rproblem%rparamList)
+    CALL cc2d_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.
@@ -261,7 +261,7 @@ CONTAINS
       
       CALL stat_startTimer(rtimerSolver)
       
-      CALL cc_solve (p_rproblem,rvector,rrhs)
+      CALL cc_solveStationary (p_rproblem,rvector,rrhs)
       
       CALL stat_stopTimer(rtimerSolver)
     

@@ -622,9 +622,10 @@ CONTAINS
 
     Dvalues(:,:) = 0.0_DP
     
-    IF (cderivative .EQ. DER_FUNC) THEN
-      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(Dpoints(1,:,:))
-    END IF
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(Dpoints(1,:,:))
+    ! END IF
 
   END SUBROUTINE
 
@@ -718,9 +719,10 @@ CONTAINS
 
     Dvalues(:,:) = 0.0_DP
     
-    IF (cderivative .EQ. DER_FUNC) THEN
-      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
-    END IF
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    ! END IF
 
   END SUBROUTINE
 
@@ -814,9 +816,10 @@ CONTAINS
 
     Dvalues(:,:) = 0.0_DP
 
-    IF (cderivative .EQ. DER_FUNC) THEN
-      ! ...
-    END IF
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   ...
+    ! END IF
 
   END SUBROUTINE
 
@@ -1346,8 +1349,9 @@ CONTAINS
         dy = dy / REAL(j,DP)
       
       CASE DEFAULT
-        PRINT *,'getBoundaryValuesFBC: Insupported coordinate type to return.'
-        STOP
+        CALL output_line ('Unsupported coordinate type to return.!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'getBoundaryValuesFBC')
+        CALL sys_halt()
       END SELECT
       
     END SUBROUTINE

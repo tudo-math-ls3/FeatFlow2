@@ -10,7 +10,7 @@
 !# 1.) cc_getLogFiles
 !#     -> Get information for LOG files from DAT files.
 !#
-!# 2.) cc2dmedium2_getDAT
+!# 2.) cc2d_getDAT
 !#     -> Read all DAT files.
 !#
 !# 3.) cc_initParameters
@@ -99,7 +99,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_getDAT (rparamList)
+  SUBROUTINE cc2d_getDAT (rparamList)
   
 !<description>
   ! Reads in all DAT files into the parameter list rparlist
@@ -195,9 +195,6 @@ CONTAINS
 
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
-    
-    ! By default, X- and Y-velocity matrix are coupled.
-    rproblem%bdecoupledXY = .FALSE.
     
     ! Get min/max level from the parameter file.
     !

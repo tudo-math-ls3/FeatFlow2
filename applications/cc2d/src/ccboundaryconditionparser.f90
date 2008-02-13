@@ -241,8 +241,9 @@ CONTAINS
                                    0, SEC_SBDEXPRESSIONS) 
                                    
       CASE DEFAULT
-        PRINT *,'Expressions not implemented!'
-        STOP
+        CALL output_line ('Expressions not implemented!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+        CALL sys_halt()
 
       END SELECT
       
@@ -366,16 +367,6 @@ CONTAINS
 
               END IF
               
-              ! If we have no-slip boundary conditions, the X- and Y-velocity
-              ! matrices are 'decoupled' as they are modified differently
-              ! by the boundary-conditions implementation filter!
-              ! In this case, change rproblem%bdecoupledXY from FALSE to TRUE
-              ! to indicate that.
-              IF ( ((sbdex1 .EQ. '') .AND. (sbdex2 .NE. '')) .OR.&
-                   ((sbdex1 .NE. '') .AND. (sbdex2 .EQ. '')) ) THEN
-                rproblem%bdecoupledXY = .TRUE.
-              END IF
-              
             CASE (2)
             
               ! Pressure drop boundary conditions.
@@ -427,8 +418,9 @@ CONTAINS
                                             rboundaryRegion,p_rbcRegion)
             
             CASE DEFAULT
-              PRINT *,'Unknown boundary condition'
-              STOP
+              CALL output_line ('Unknown boundary condition!', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+              CALL sys_halt()
             END SELECT
             
             ! Move on to the next parameter value

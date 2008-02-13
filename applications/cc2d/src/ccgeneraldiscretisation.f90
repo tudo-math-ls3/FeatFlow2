@@ -402,8 +402,10 @@ CONTAINS
                     p_rtriangulation, p_rboundary)
 
       CASE DEFAULT
-        PRINT *,'Unknown discretisation: iElementType = ',ielementType
-        STOP
+        CALL output_line (&
+            'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+        CALL sys_halt()
       END SELECT
 
       ! -----------------------------------------------------------------------
@@ -463,9 +465,10 @@ CONTAINS
               IF (j .NE. 0) THEN
                 icubM = j
               ELSE
-                PRINT *,'cc_initDiscretisation: Unknown cubature formula for &
-                        &mass lumping!'
-                STOP
+                CALL output_line (&
+                    'Unknown cubature formula for mass lumping!', &
+                    OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+                CALL sys_halt()
               END IF
               
               ! Set the cubature formula appropriately
@@ -661,25 +664,15 @@ CONTAINS
                                            LSYSSC_SETM_UNDEFINED)
 
       ! -----------------------------------------------------------------------
-      ! Now let's come to the main system matrix, which is a block matrix.
-      
-      ! Allocate memory for that matrix with the appropriate construction routine.
-      ! The modules "nonlinearcoreinit" and "nonlinearcore" are actually the
-      ! only modules that 'know' the structure of the system matrix!
-      CALL cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
-
-      ! -----------------------------------------------------------------------
       ! Temporary vectors
       !
       ! Now on all levels except for the maximum one, create a temporary 
-      ! vector on that level, based on the matrix template.
+      ! vector on that level, based on the block discretisation structure.
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
-        p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
-        CALL lsysbl_createVecBlockIndMat (&
-            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
-            p_rtempVector,.FALSE.)
+        CALL lsysbl_createVecBlockByDiscr (&
+            rproblem%RlevelInfo(i)%p_rdiscretisation,&
+            rproblem%RlevelInfo(i)%rtempVector,.TRUE.)
       END IF
 
     END DO
@@ -999,7 +992,9 @@ CONTAINS
     ilev = rproblem%NLMAX-ABS(istart)+1
     
     IF (ilev .LT. rproblem%NLMIN) THEN
-      PRINT *,'Warning: Level of start vector is < NLMIN! Initialising with zero!'
+      CALL output_line (&
+          'Level of start vector is < NLMIN! Initialising with zero!', &
+          OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
       istart = 0
     END IF
     
@@ -1103,8 +1098,9 @@ CONTAINS
     idestLevel = rproblem%NLMAX-ABS(idestLevel)+1 ! level where to write out
 
     IF (idestLevel .LT. rproblem%NLMIN) THEN
-      PRINT *,'Warning: Level for solution vector is < NLMIN! &
-              &Writing out at level NLMIN!'
+      CALL output_line (&
+          'Warning: Level for solution vector is < NLMIN! Writing out at level NLMIN!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
       idestLevel = rproblem%NLMIN
     END IF
     
@@ -1178,9 +1174,6 @@ CONTAINS
 
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Delete the system matrix.
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
-
       ! If there is an existing mass matrix, release it.
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
 

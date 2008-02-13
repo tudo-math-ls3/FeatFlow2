@@ -190,25 +190,16 @@ MODULE ccmatvecassembly
     ! Standard = 20.0
     REAL(DP) :: dadmatthreshold = 20.0_DP
     
-    ! A pointer to a block matrix that provides preallocated memory.
-    ! If not associated, new memory will be automatically allocated by 
-    ! the assembly routine.
-    TYPE(t_matrixBlock), POINTER :: p_rpreallocatedMatrix => NULL()
-  
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...).
-    ! Only used during matrix creation if p_rpreallocatedMatrix=>NULL(), 
-    ! otherwise this is not used.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation => NULL()
 
     ! Pointer to a template FEM matrix that defines the structure of 
-    ! Laplace/Stokes/... matrices. Only used during matrix creation
-    ! if p_rpreallocatedMatrix=>NULL(), otherwise this is not used.
+    ! Laplace/Stokes/... matrices. 
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM => NULL()
 
     ! A template FEM matrix that defines the structure of gradient
-    ! matrices (B1/B2) matrices. Only used during matrix creation
-    ! if p_rpreallocatedMatrix=>NULL(), otherwise this is not used.
+    ! matrices (B1/B2) matrices. 
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateGradient => NULL()
 
     ! Pointer to Stokes matrix (=nu*Laplace). 
@@ -219,6 +210,16 @@ MODULE ccmatvecassembly
 
     ! Pointer to a B2-matrix.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixB2 => NULL()
+
+    ! Pointer to a B1^T-matrix.
+    ! This pointer may point to NULL(). In this case, B1^T is created
+    ! by 'virtually transposing' the B1 matrix.
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+
+    ! Pointer to a B2-matrix.
+    ! This pointer may point to NULL(). In this case, B2^T is created
+    ! by 'virtually transposing' the B2 matrix.
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
 
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
@@ -257,9 +258,6 @@ CONTAINS
   ! to include some special stabilisation terms into the matrix rmatrix.
   !
   ! The routine does not include any boundary conditions in the matrix.
-  ! Nevertheless, if the p_rpreallocatedMatrix parameter in rnonlinearCCMatrix
-  ! is set and rmatrix is not initialised, a reference to boundary condition 
-  ! structure of p_rpreallocatedMatrix is transferred to rmatrix.
 !</description>
 
 !<input>
@@ -301,17 +299,10 @@ CONTAINS
   ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
   ! about how to set up the matrix. 
   !
-  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, either
-  ! p_rpreallocatedMatrix must be initialised or p_rmatrixTemplateXXXX
-  ! as well as p_rdiscretisation!
-  ! If the p_rpreallocatedMatrix pointer is associated and 'coperation' the 
-  ! routine will set up rmatrix based on p_rpreallocatedMatrix. It will create
-  ! rmatrix as a 'shared copy', i.e. in such a way that rmatrix shares its 
-  ! information with p_rpreallocatedMatrix. That helps to save memory and 
-  ! computational time for allocation/deallocation of memory!
-  ! If p_rpreallocatedMatrix is not set, the new matrix is created based
-  ! p_rmatrixTemplateXXXX as well as p_rdiscretisation.
-  ! In both cases, memory is allocated automatically if it's missing.
+  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX 
+  ! must be initialised as well as p_rdiscretisation!
+  ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
+  ! p_rdiscretisation. Memory is allocated automatically if it's missing.
   TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
@@ -355,17 +346,8 @@ CONTAINS
       ! Release the matrix if present.
       CALL lsysbl_releaseMatrix (rmatrix)
     
-      ! Allocate a new one. Do we have a template matrix to use as source?
-      IF (ASSOCIATED(rnonlinearCCMatrix%p_rpreallocatedMatrix)) THEN
-        ! Copy the template, share everything -- structure as well as content
-        ! (if there is any).
-        CALL lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rpreallocatedMatrix,&
-            rmatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      ELSE
-        ! Oops we have to create a complete new one. That task is a little bit
-        ! more advanced... see below!
-        CALL allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
-      END IF
+      ! Create a complete new matrix. 
+      CALL allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
     END IF   
    
     IF (IAND(coperation,CCMASM_COMPUTE) .NE. 0) THEN
@@ -477,8 +459,9 @@ CONTAINS
       IF (.NOT. ASSOCIATED(p_rmatrixTemplateFEM)) &
         p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixStokes
       IF (.NOT. ASSOCIATED(p_rmatrixTemplateFEM)) THEN
-        PRINT *,'allocMatrix: Cannot set up A matrices in system matrix!'
-        STOP
+        CALL output_line ('Cannot set up A matrices in system matrix!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
+        CALL sys_halt()
       END IF
 
       ! In the global system, there are two gradient matrices B1 and B2.
@@ -489,8 +472,9 @@ CONTAINS
       IF (.NOT. ASSOCIATED(p_rmatrixTemplateGradient)) &
         p_rmatrixTemplateGradient => rnonlinearCCMatrix%p_rmatrixB1
       IF (.NOT. ASSOCIATED(p_rmatrixTemplateGradient)) THEN
-        PRINT *,'allocMatrix: Cannot set up B matrix in system matrix!'
-        STOP
+        CALL output_line ('Cannot set up B matrices in system matrix!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
+        CALL sys_halt()
       END IF
 
       ! Initialise the block matrix with default values based on
@@ -606,17 +590,32 @@ CONTAINS
                                     rmatrix%RmatrixBlock(2,3),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      ! These matrices will not change during the whole computation,
-      ! so we can put refereces to the original ones to the system matrix.
-      CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                    rmatrix%RmatrixBlock(3,1),&
-                                    LSYSSC_TR_VIRTUAL)
+      ! Now, prepare B1^T and B2^T. Are these matrices given?
+      !
+      ! If yes, take the given matrices. If not, create them by
+      ! 'virtually transposing' B1 and B2 (i.e. they share the same
+      ! data as B1 and B2 but hate the 'transpose'-flag set).
+      
+      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB1T)) THEN
+        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1T, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
 
-      CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                    rmatrix%RmatrixBlock(3,2),&
-                                    LSYSSC_TR_VIRTUAL)
-                                    
+      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB2T)) THEN
+        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2T, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
+
       ! That's it, all submatrices are basically set up.
       !
       ! Update the structural information of the block matrix, as we manually
@@ -897,8 +896,9 @@ CONTAINS
           END IF
 
         CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
+          CALL output_line ('Don''t know how to set up nonlinearity!?!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
+          CALL sys_halt()
         
         END SELECT
 
@@ -1042,15 +1042,34 @@ CONTAINS
                                     rmatrix%RmatrixBlock(2,3),&
                                     idubStructure,idubContent)
       
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      ! These matrices are always 'shared'.
-      CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                    rmatrix%RmatrixBlock(3,1),&
-                                    LSYSSC_TR_VIRTUAL)
+      ! Now, prepare B1^T and B2^T. Are these matrices given?
+      !
+      ! If yes, take the given matrices. If not, create them by
+      ! 'virtually transposing' B1 and B2 (i.e. they share the same
+      ! data as B1 and B2 but hate the 'transpose'-flag set).
+      !
+      ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
+      ! memory if necessary.
+      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB1T)) THEN
+        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1T, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      idubStructure,idubContent)
+      ELSE
+        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
 
-      CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                    rmatrix%RmatrixBlock(3,2),&
-                                    LSYSSC_TR_VIRTUAL)
+      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB2T)) THEN
+        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2T, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      idubStructure,idubContent)
+      ELSE
+        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
+
 
     END SUBROUTINE
 
@@ -1330,8 +1349,9 @@ CONTAINS
                               rmatrix%RmatrixBlock(1,1),rvector,rdefect) 
                               
           IF (.NOT. bshared) THEN
-            PRINT *,'Upwind does not support independent A11/A22!'
-            STOP
+            CALL output_line ('Upwind does not support independent A11/A22!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+            CALL sys_halt()
           END IF     
 
         CASE (2)
@@ -1400,13 +1420,16 @@ CONTAINS
                               rsolution=rvector,rdefect=rdefect)   
 
           IF (.NOT. bshared) THEN
-            PRINT *,'Edge oriented stabilisation does not support independent A11/A22!'
-            STOP
+            CALL output_line (&
+                'Edge oriented stabilisation does not support independent A11/A22!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+            CALL sys_halt()
           END IF
 
         CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
+          CALL output_line ('Don''t know how to set up nonlinearity!?!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+          CALL sys_halt()
         
         END SELECT
       

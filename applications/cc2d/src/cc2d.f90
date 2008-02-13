@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmedium </name>
+!# <name> cc2d </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -52,7 +52,7 @@ PROGRAM cc2d
 
   ! Call the problem to solve. 
   CALL output_lbrk ()
-  CALL output_line ('Calculating cc2dmedium-Problem')
+  CALL output_line ('Calculating cc2d-Problem')
   CALL output_separator (OU_SEP_MINUS)
   
   CALL cc2dmain ()

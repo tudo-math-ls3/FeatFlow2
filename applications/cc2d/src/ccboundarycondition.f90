@@ -203,8 +203,6 @@ CONTAINS
       ! vector.
       p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
 
-      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix%p_rdiscreteBC => p_rdiscreteBC
-      
       ! Also hang in the boundary conditions into the temporary vector that is
       ! used for the creation of solutions on lower levels.
       ! This allows us to filter this vector when we create it.
@@ -212,8 +210,6 @@ CONTAINS
       
       ! The same for the fictitious boudary boundary conditions.
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
-      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix%p_rdiscreteBCfict => &
-          p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
     END DO

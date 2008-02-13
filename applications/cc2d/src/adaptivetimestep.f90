@@ -222,8 +222,10 @@ CONTAINS
     CALL parlst_querysection(rparams, ssection, p_rsection) 
     
     IF (.NOT. ASSOCIATED(p_rsection)) THEN
-      PRINT *,'Cannot configure adaptive time stepping! Parameter section not found!'
-      STOP
+      CALL output_line (&
+          'Cannot configure adaptive time stepping! Parameter section not found!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'adtstp_init')
+      CALL sys_halt()
     END IF
     
     ! Get the paramters and fill our structure. Use the standard parameters

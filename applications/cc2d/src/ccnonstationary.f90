@@ -473,13 +473,21 @@ CONTAINS
     !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(tstep*p) = ...
     ! and scale it back afterwards.
     !
-    ! Note that there is an error in the book of [Turel] describing the factor
+    ! Note that there is an error in the book of [Turek] describing the factor
     ! in front of the pressure in the Crank Nicolson scheme! The pressure is
     ! handled fully implicitely. There is no part of the pressure on the RHS
     ! of the time step scheme and so the factor in front of the pressure
     ! is always the length of the current (sub)step!
     CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
         rtimestepping%dtstep)
+    
+    ! Update the preconditioner for the case, something changed (e.g.
+    ! the boundary conditions).
+    ! Note: The bstructuralChange-parameter is set to FALSE here.
+    ! In case the template matrices changed (e.g. during a mesh adaption),
+    ! the routine must be called with bstructuralChange=true!
+    CALL cc_updatePreconditioner (rproblem,rnonlinearIterationTmp,&
+       rvector,rtempVectorRhs,.FALSE.,.FALSE.)
     
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
@@ -606,7 +614,7 @@ CONTAINS
                rproblem%rtimedependence%dtimemax) .AND. &
               (dtimederivative .GE. &
                rproblem%rtimedependence%dminTimeDerivative))
-              
+
       ! The babortTimestep is normally FALSE. If set to TRUE, the computation
       ! of the next time step is aborted because of an error. 
       
