@@ -72,7 +72,7 @@ itypePreconditioning = 1
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
-slinearSolver        = 'CC-MULTIGRID'
+slinearSolver        = 'CC-LINEARSOLVER'
 
 # If itypePreconditioning = 3: Name of the section that controls the
 # switching between the defect correction and the Newton iteration.
