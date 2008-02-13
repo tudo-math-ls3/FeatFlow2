@@ -9,11 +9,12 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) arrlst_createArrayList
+!# 1.) arrlst_createArrayList = arrlst_createArrayList /
+!#                              arrlst_createArrayListTbl
 !#     -> Create an empty arraylist
 !#
 !# 2.) arrlst_releaseArrayList = arrlst_releaseArrayList /
-!#                               arrlst_releaseArrayList_table
+!#                               arrlst_releaseArrayListTbl
 !#     -> Release an existing arraylist
 !#
 !# 3.) arrlst_resizeArrayList
@@ -29,14 +30,14 @@
 !#                            arrlst_copyToArrayListInt
 !#     -> Copy data to/from an arraylist for a given table
 !#
-!# 5.) arrlst_copyArrayListTable = arrlst_copyFromArrayList_table /
-!#                                 arrlst_copyFromArrayListDble_table /
-!#                                 arrlst_copyFromArrayListSngl_table /
-!#                                 arrlst_copyFromArrayListInt_table /
-!#                                 arrlst_copyToArrayList_table /
-!#                                 arrlst_copyToArrayListDble_table /
-!#                                 arrlst_copyToArrayListSngl_table /
-!#                                 arrlst_copyToArrayListInt_table
+!# 5.) arrlst_copyArrayListTable = arrlst_copyFromArrayListTbl /
+!#                                 arrlst_copyFromArrayListDbleTbl /
+!#                                 arrlst_copyFromArrayListSnglTbl /
+!#                                 arrlst_copyFromArrayListIntTbl /
+!#                                 arrlst_copyToArrayListTbl /
+!#                                 arrlst_copyToArrayListDbleTbl /
+!#                                 arrlst_copyToArrayListSnglTbl /
+!#                                 arrlst_copyToArrayListIntTbl
 !#     -> Copy data to/from an arraylist for a complete table
 !#        structure
 !#
@@ -260,10 +261,14 @@ MODULE arraylist
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
-  
+  INTERFACE arrlst_createArrayList
+    MODULE PROCEDURE arrlst_createArrayList
+    MODULE PROCEDURE arrlst_createArrayListTbl
+  END INTERFACE
+
   INTERFACE arrlst_releaseArrayList
     MODULE PROCEDURE arrlst_releaseArrayList
-    MODULE PROCEDURE arrlst_releaseArrayList_table
+    MODULE PROCEDURE arrlst_releaseArrayListTbl
   END INTERFACE 
   
   INTERFACE arrlst_copyArrayList
@@ -278,14 +283,14 @@ MODULE arraylist
   END INTERFACE
 
   INTERFACE arrlst_copyArrayListTable
-    MODULE PROCEDURE arrlst_copyFromArrayList_table
-    MODULE PROCEDURE arrlst_copyFromArrayListDble_table
-    MODULE PROCEDURE arrlst_copyFromArrayListSngl_table
-    MODULE PROCEDURE arrlst_copyFromArrayListInt_table
-    MODULE PROCEDURE arrlst_copyToArrayList_table
-    MODULE PROCEDURE arrlst_copyToArrayListDble_table
-    MODULE PROCEDURE arrlst_copyToArrayListSngl_table
-    MODULE PROCEDURE arrlst_copyToArrayListInt_table
+    MODULE PROCEDURE arrlst_copyFromArrayListTbl
+    MODULE PROCEDURE arrlst_copyFromArrayListDbleTbl
+    MODULE PROCEDURE arrlst_copyFromArrayListSnglTbl
+    MODULE PROCEDURE arrlst_copyFromArrayListIntTbl
+    MODULE PROCEDURE arrlst_copyToArrayListTbl
+    MODULE PROCEDURE arrlst_copyToArrayListDbleTbl
+    MODULE PROCEDURE arrlst_copyToArrayListSnglTbl
+    MODULE PROCEDURE arrlst_copyToArrayListIntTbl
   END INTERFACE
     
   INTERFACE arrlst_prependToArrayList
@@ -423,7 +428,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_createArrayList_table(rarraylist,itable)
+  SUBROUTINE arrlst_createArrayListTbl(rarraylist,itable)
 
 !<description>
     ! This subroutine creates new table entries up to position
@@ -446,12 +451,12 @@ CONTAINS
     ! Check if table number is valid
     IF (itable < 1) THEN
       CALL output_line('Invalid table number',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayList_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayListTbl')
       CALL sys_halt()
     END IF
 
     ! Resize tables if required
-    IF (itable > rarraylist%NNTABLE) CALL arrlst_resizeArrayList_table(&
+    IF (itable > rarraylist%NNTABLE) CALL arrlst_resizeArrayListTbl(&
         rarraylist,CEILING(itable*rarraylist%dfactor))
     
     ! Initialize structures
@@ -459,7 +464,7 @@ CONTAINS
 
     ! Set new table size
     rarraylist%NTABLE = MAX(rarraylist%NTABLE,itable)
-  END SUBROUTINE arrlst_createArrayList_table
+  END SUBROUTINE arrlst_createArrayListTbl
 
   ! ***************************************************************************
 
@@ -500,7 +505,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_releaseArrayList_table(rarraylist,itable)
+  SUBROUTINE arrlst_releaseArrayListTbl(rarraylist,itable)
 
 !<description>
     ! This subroutine releases a table from the arraylist
@@ -519,7 +524,7 @@ CONTAINS
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
       CALL output_line('Invalid table number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_releaseArrayList_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_releaseArrayListTbl')
       CALL sys_halt()
     END IF
 
@@ -533,7 +538,7 @@ CONTAINS
     ! Decrease number of tables if the last table has been deleted
     IF (itable .EQ. rarraylist%NTABLE)&
         rarraylist%NTABLE = rarraylist%NTABLE-1
-  END SUBROUTINE arrlst_releaseArrayList_table
+  END SUBROUTINE arrlst_releaseArrayListTbl
 
   ! ***************************************************************************
 
@@ -587,7 +592,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_resizeArrayList_table(rarraylist,nntable)
+  SUBROUTINE arrlst_resizeArrayListTbl(rarraylist,nntable)
 
 !<description>
     ! This subroutine reallocates memory for the lookup table
@@ -608,7 +613,7 @@ CONTAINS
     rarraylist%NNTABLE = nntable
     rarraylist%NRESIZE = rarraylist%NRESIZE+1
 
-    CALL storage_realloc('arrlst_resizeArrayList_table',nntable,&
+    CALL storage_realloc('arrlst_resizeArrayListTbl',nntable,&
         rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT,.TRUE.)
     CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%p_Ktable)
 
@@ -617,7 +622,7 @@ CONTAINS
 !!$    rarraylist%p_Ktable(ARRLST_TAIL,rarraylist%NTABLE+1:) = ARRLST_NULL
 !!$    rarraylist%p_Ktable(ARRLST_ITEM,rarraylist%NTABLE+1:) = ARRLST_HEAD
 !!$    rarraylist%p_Ktable(ARRLST_NA,  rarraylist%NTABLE+1:) = ARRLST_NULL
-  END SUBROUTINE arrlst_resizeArrayList_table
+  END SUBROUTINE arrlst_resizeArrayListTbl
 
   ! ***************************************************************************
 
@@ -687,7 +692,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayList_table(rarraylist,h_Data,h_Table)
+  SUBROUTINE arrlst_copyFromArrayListTbl(rarraylist,h_Data,h_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -719,24 +724,24 @@ CONTAINS
     ! Transform the content of the arraylist and the 
     ! table to h_Data and h_Table, respectively
     IF (h_Table .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('arrlst_copyFromArrayList_table','Table',&
+      CALL storage_new('arrlst_copyFromArrayListTbl','Table',&
           rarraylist%NTABLE+1,ST_INT,h_Table,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Table,isize)
       IF (isize < rarraylist%NTABLE+1) THEN
-        CALL storage_realloc('arrlst_copyFromArrayList_table',&
+        CALL storage_realloc('arrlst_copyFromArrayListTbl',&
             rarraylist%NTABLE+1,h_Table,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
     CALL storage_getbase_int(h_Table,p_Table)
     
     IF (h_Data .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('arrlst_copyFromArrayList_table','Data',&
+      CALL storage_new('arrlst_copyFromArrayListTbl','Data',&
           rarraylist%NA,rarraylist%carraylistFormat,h_Data,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Data,isize)
       IF (isize < rarraylist%NA) THEN
-        CALL storage_realloc('arrlst_copyFromArrayList_table',&
+        CALL storage_realloc('arrlst_copyFromArrayListTbl',&
             rarraylist%NA,h_Data,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
@@ -757,10 +762,10 @@ CONTAINS
       
     CASE DEFAULT
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayList_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListTbl')
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE arrlst_copyFromArrayList_table
+  END SUBROUTINE arrlst_copyFromArrayListTbl
   
   ! ***************************************************************************
 
@@ -824,7 +829,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayListDble_table(rarraylist,p_DData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListDbleTbl(rarraylist,p_DData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -853,13 +858,13 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable+1 < rarraylist%NTABLE) THEN
       CALL output_line('Invalid dimension of table array!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDbleTbl')
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDbleTbl')
       CALL sys_halt()
     END IF
 
@@ -876,7 +881,7 @@ CONTAINS
       END DO
     END DO
     p_Table(ntable+1)=icount+1
-  END SUBROUTINE arrlst_copyFromArrayListDble_table
+  END SUBROUTINE arrlst_copyFromArrayListDbleTbl
 
   ! ***************************************************************************
 
@@ -939,7 +944,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayListSngl_table(rarraylist,p_FData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListSnglTbl(rarraylist,p_FData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -968,13 +973,13 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable+1 < rarraylist%NTABLE) THEN
       CALL output_line('Invalid dimension of table array!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSnglTbl')
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSnglTbl')
       CALL sys_halt()
     END IF
 
@@ -991,7 +996,7 @@ CONTAINS
       END DO
     END DO
     p_Table(ntable+1)=icount+1
-  END SUBROUTINE arrlst_copyFromArrayListSngl_table
+  END SUBROUTINE arrlst_copyFromArrayListSnglTbl
 
   ! ***************************************************************************
 
@@ -1055,7 +1060,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayListInt_table(rarraylist,p_IData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListIntTbl(rarraylist,p_IData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -1084,13 +1089,13 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable+1 < rarraylist%NTABLE) THEN
       CALL output_line('Invalid dimension of table array!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListIntTbl')
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListIntTbl')
       CALL sys_halt()
     END IF
 
@@ -1107,7 +1112,7 @@ CONTAINS
       END DO
     END DO
     p_Table(ntable+1)=icount
-  END SUBROUTINE arrlst_copyFromArrayListInt_table
+  END SUBROUTINE arrlst_copyFromArrayListIntTbl
 
   ! ***************************************************************************
 
@@ -1165,7 +1170,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayList_table(h_DataSrc,rarraylist,h_Table)
+  SUBROUTINE arrlst_copyToArrayListTbl(h_DataSrc,rarraylist,h_Table)
 
 !<description>
     ! This subroutine copies the content of the given handle to the
@@ -1212,10 +1217,10 @@ CONTAINS
 
     CASE DEFAULT
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayList_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListTbl')
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE arrlst_copyToArrayList_table
+  END SUBROUTINE arrlst_copyToArrayListTbl
 
   ! ***************************************************************************
 
@@ -1260,7 +1265,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayListDble_table(p_DDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListDbleTbl(p_DDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given double array to
@@ -1287,7 +1292,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListDble_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListDbleTbl')
       CALL sys_halt()
     END IF
     
@@ -1297,7 +1302,7 @@ CONTAINS
         CALL arrlst_appendToArrayList(rarraylist,itable,p_DDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE arrlst_copyToArrayListDble_table
+  END SUBROUTINE arrlst_copyToArrayListDbleTbl
 
   ! ***************************************************************************
 
@@ -1342,7 +1347,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayListSngl_table(p_FDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListSnglTbl(p_FDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given single array to
@@ -1369,7 +1374,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListSngl_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListSnglTbl')
       CALL sys_halt()
     END IF
 
@@ -1379,7 +1384,7 @@ CONTAINS
         CALL arrlst_appendToArrayList(rarraylist,itable,p_FDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE arrlst_copyToArrayListSngl_table
+  END SUBROUTINE arrlst_copyToArrayListSnglTbl
 
   ! ***************************************************************************
 
@@ -1424,7 +1429,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayListInt_table(p_IDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListIntTbl(p_IDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given integer array
@@ -1451,7 +1456,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
       CALL output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListInt_table')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListIntTbl')
       CALL sys_halt()
     END IF
     
@@ -1461,7 +1466,7 @@ CONTAINS
         CALL arrlst_appendToArrayList(rarraylist,itable,p_IDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE arrlst_copyToArrayListInt_table
+  END SUBROUTINE arrlst_copyToArrayListIntTbl
   
   ! ***************************************************************************
 
@@ -1663,7 +1668,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListDble')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -1737,7 +1742,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListSngl')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -1811,7 +1816,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListInt')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -1885,7 +1890,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListDble')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -1960,7 +1965,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListSngl')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -2035,7 +2040,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListInt')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -2113,7 +2118,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListDble')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -2199,7 +2204,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListSngl')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
@@ -2285,7 +2290,7 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListInt')
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
