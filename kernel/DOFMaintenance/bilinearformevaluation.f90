@@ -266,6 +266,7 @@ CONTAINS
 
   ! local variables
   TYPE(t_collection), POINTER :: p_rcollection
+  TYPE(t_matrixScalar) :: rmatrixBackup
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.
@@ -307,15 +308,26 @@ CONTAINS
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
         !END IF
       CASE (LSYSSC_MATRIX7)
-        ! Convert structure 7 to structure 9.
-        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
+        ! Convert structure 7 to structure 9.For that purpose, make a backup of
+        ! the original matrix...
+        CALL lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        ! Convert the matrix 
+        CALL lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
         
         ! Create the matrix in structure 9
-        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixBackup,&  
                                        fcoeff_buildMatrixSc_sim,rcollection)
                                        
         ! Convert back to structure 7
-        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+        CALL lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+        
+        ! Copy the entries back to the original matrix and release memory.
+        CALL lsyssc_duplicateMatrix (rmatrixBackup,rmatrixScalar,&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        CALL lsyssc_releaseMatrix (rmatrixBackup)
                                        
       CASE DEFAULT
         CALL output_line ('Not supported matrix structure!', &
@@ -344,15 +356,26 @@ CONTAINS
         !END IF
         
       CASE (LSYSSC_MATRIX7)
-        ! Convert structure 7 to structure 9
-        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
+        ! Convert structure 7 to structure 9.For that purpose, make a backup of
+        ! the original matrix...
+        CALL lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        ! Convert the matrix 
+        CALL lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
         
         ! Create the matrix in structure 9
-        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixBackup,&  
                                        fcoeff_buildMatrixSc_sim,rcollection)
                                        
         ! Convert back to structure 7
-        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+        CALL lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+        
+        ! Copy the entries back to the original matrix and release memory.
+        CALL lsyssc_duplicateMatrix (rmatrixBackup,rmatrixScalar,&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        CALL lsyssc_releaseMatrix (rmatrixBackup)
 
       CASE DEFAULT
         CALL output_line ('Not supported matrix structure!', &
