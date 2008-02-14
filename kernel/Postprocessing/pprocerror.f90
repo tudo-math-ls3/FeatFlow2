@@ -52,7 +52,12 @@
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
-!#     
+!#
+!# 7.) pperr_scalarStandardDeviation
+!#     -> Calculate the standard deviation of a scalar vector
+!#
+!# 8.) pperr_blockStandardDeviation
+!#     -> Calculate the standard deviation of a block vector
 !# </purpose>
 !#########################################################################
 
@@ -2537,7 +2542,7 @@ CONTAINS
     CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
                                p_DvertexCoords)
 
-    ! Set the current error to 0 and add the error  contributions of each element to that.
+    ! Set the current error to 0 and add the error contributions of each element to that.
     derror = 0.0_DP
 
     ! Get a pointer to the element error (if required)
@@ -3268,4 +3273,604 @@ CONTAINS
 
   END SUBROUTINE pperr_blockL1ErrorEstimate
 
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE pperr_scalarStandardDeviation (rvector,ddeviation,relementDeviation)
+
+!<description>
+  ! This routine calculates the standard deviation
+  ! 
+  ! $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$
+  !
+  ! of a given FE function $u$ in rvector, whereby
+  !
+  ! $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$
+  !
+  ! and each component is computed from the following relation
+  !
+  ! $$ \hat x=\int_\Omega x u dx $$
+  !
+  ! Note: For the evaluation of the integrals, ccubTypeEval from the
+  ! element distributions in the discretisation structure specifies the 
+  ! cubature formula to use for each element distribution.
+!</description>
+
+!<input>
+    ! FE solution vector
+    TYPE(t_vectorScalar), INTENT(IN), TARGET                    :: rvector
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
+    TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL               :: relementDeviation
+!</inputoutput>
+
+!<output>
+    ! The calculated standard deviation.
+    REAL(DP), INTENT(OUT)                                       :: ddeviation
+!</output>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorBlock) :: rvectorBlock
+
+    ! Create block vectors with one block
+    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
+
+    ! Call block version
+    CALL pperr_blockStandardDeviation(rvectorBlock,ddeviation,relementDeviation)
+
+    ! Release auxiliary block vectors
+    CALL lsysbl_releaseVector(rvectorBlock)
+
+  END SUBROUTINE pperr_scalarStandardDeviation
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE pperr_blockStandardDeviation (rvector,ddeviation,relementDeviation)
+
+!<description>
+  ! This routine calculates the standard deviation
+  ! 
+  ! $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$
+  !
+  ! of a given FE function $u$ in rvector, whereby
+  !
+  ! $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$
+  !
+  ! and each component is computed from the following relation
+  !
+  ! $$ \hat x=\int_\Omega x u dx $$
+  !
+  ! Note: For the evaluation of the integrals, ccubTypeEval from the
+  ! element distributions in the discretisation structure specifies the 
+  ! cubature formula to use for each element distribution.
+!</description>
+
+!<input>
+    ! FE solution block vector
+    TYPE(t_vectorBlock), INTENT(IN), TARGET                     :: rvector
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
+    TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL               :: relementDeviation
+!</inputoutput>
+
+!<output>
+    ! The calculated deviation.
+    REAL(DP), INTENT(OUT)                                       :: ddeviation
+!</output>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    INTEGER      :: i,j,k,icurrentElementDistr,iblock,ICUBP,NVE,idim
+    LOGICAL      :: bnonparTrial
+    INTEGER(I32) :: IEL, IELmax, IELset,IELGlobal
+    REAL(DP)     :: OM,delementDeviation
+
+    ! Array to tell the element which derivatives to calculate
+    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+    
+    ! Cubature point coordinates on the reference element
+    REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+    
+    ! number of cubature points on the reference element
+    INTEGER :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    INTEGER :: indofTrial
+    
+    ! The triangulation structure - to shorten some things...
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
+
+    ! An array receiving the coordinates of cubature points on
+    ! the real element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsReal
+
+    ! Pointer to the point coordinates to pass to the element function.
+    ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
+    ! the trial element is parametric or not.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial,p_DcubPtsTrialRef
+    
+    ! Array with coordinates of the corners that form the real element.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
+    
+    ! Arrays for saving Jacobian determinants and matrices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac
+    
+    ! Pointer to KVERT of the triangulation
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    
+    ! Pointer to DCORVG of the triangulation
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+
+    ! Pointer to the element deviation
+    REAL(DP), DIMENSION(:), POINTER :: p_DelementDeviation
+    
+    ! Current element distribution
+    TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+    
+    ! Number of elements in the current element distribution
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+
+    ! Pointer to the values of the function that are computed by the callback routine.
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+
+    ! Mathematical expectation of the center of mass
+    REAL(DP), DIMENSION(NDIM3D) :: DmassCenter
+    
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    INTEGER :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    TYPE(t_domainIntSubset) :: rintSubset
+
+    ! An allocateable array accepting the DOF's of a set of elements.
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
+    
+    ! Get the correct discretisation structure for the solution vector
+    p_rdiscretisation => rvector%p_rblockDiscretisation%RspatialDiscretisation(1)
+    DO iblock=2,rvector%nblocks
+      CALL lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
+    END DO
+
+    IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
+      CALL output_line('No discretisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockStandardDeviation')
+      CALL sys_halt()
+    END IF
+
+    ! The vector must be unsorted.
+    DO iblock=1,rvector%nblocks
+      IF (rvector%RvectorBlock(iblock)%isortStrategy .GT. 0) THEN
+        CALL output_line('Vectors must be unsorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockStandardDeviation')
+        CALL sys_halt()
+      END IF
+    END DO
+
+    ! We only need the function values of basis functions
+    Bder = .FALSE.
+    Bder(DER_FUNC) = .TRUE.
+
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => p_rdiscretisation%p_rtriangulation
+
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = MIN(PPERR_NELEMSIM,p_rtriangulation%NEL)
+
+    ! Get a pointer to the KVERT and DCORVG array
+    CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
+                               p_IverticesAtElement)
+    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+                               p_DvertexCoords)
+
+    ! Set the mathematical expectation of the center of mass to 0
+    DmassCenter = 0.0_DP
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_elementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+
+      ! Cancel if this element distribution is empty.
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
+      ! Get the number of local DOF's for trial functions
+      indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+     
+      ! Initialise the cubature formula.
+      ! Get cubature weights and point coordinates on the reference element
+      CALL cub_getCubPoints(p_elementDistribution%ccubTypeEval,&
+          ncubp, Dxi, Domega)
+
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
+
+      ! Allocate memory and get local references to it.
+      CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
+          p_rtriangulation%ndim,NVE)
+      p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
+      p_DcubPtsReal => rintSubset%p_DcubPtsReal
+      p_Djac =>        rintSubset%p_Djac
+      p_Ddetj =>       rintSubset%p_Ddetj
+      p_Dcoords =>     rintSubset%p_DCoords
+
+      ! Put the cubature point coordinates in the right format to the
+      ! cubature-point array.
+      ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+      ! as the cubature point coordinates are identical on all elements
+      DO j=1,SIZE(p_DcubPtsRef,3)
+        DO i=1,ncubp
+          DO k=1,SIZE(p_DcubPtsRef,1)
+            ! Could be solved using the TRANSPOSE operator - but often is's 
+            ! faster this way...
+            p_DcubPtsRef(k,i,j) = Dxi(i,k)
+          END DO
+        END DO
+      END DO
+
+      ! Allocate memory for the DOF's of all the elements.
+      ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+
+      ! Allocate memory for the coefficients.
+      ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,rvector%nblocks))
+    
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrial    = elem_isNonparametric(p_elementDistribution%itestElement)
+
+      ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
+      IF (bnonparTrial) THEN
+        p_DcubPtsTrial => p_DcubPtsReal
+      ELSE
+        p_DcubPtsTrial => p_DcubPtsRef
+      END IF
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_elementDistribution%NEL
+
+      ! Loop over the elements - blockwise.
+      DO IELset = 1, NEL, PPERR_NELEMSIM
+  
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     .FALSE.,IdofsTrial)
+
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        !
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set.
+        CALL trafo_getCoords_sim (&
+            elem_igetTrafoType(p_elementDistribution%itrialElement),&
+            p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+            IELmax-IELset+1,ncubp,p_Dcoords,&
+            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
+            p_Ddetj(:,1:IELmax-IELset+1),&
+            p_DcubPtsReal)
+
+        ! Standard deviation uses only the values of the function.
+
+        ! Calculate the values of the FE solution vector in the cubature 
+        ! points u_h(x,y) and save the result to Dcoefficients(:,:,iblock)
+
+        DO iblock=1,rvector%nblocks
+          
+          ! solution vector
+          CALL fevl_evaluate_sim (rvector%RvectorBlock(iblock), &
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), &
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, &
+              IdofsTrial, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrial, DER_FUNC,&
+              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+
+        END DO
+
+        ! Calculate the mathematical expectation of the center of mass
+        ! $\hat x_h=\int_\Omega x u_h dx$
+
+        ! Loop through elements in the set and for each element,
+        ! loop through the DOF's and cubature points to calculate the
+        ! integral: int_Omega x*u_h dx, for x,y and z
+        
+        DO IEL=1,IELmax-IELset+1
+
+          ! Loop over all cubature points on the current element
+          DO icubp = 1, ncubp
+            
+            ! calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            
+            ! Mathematical expectation of the center of mass is:
+            ! int_... x*u_h dx
+            
+            DO iblock=1,rvector%nblocks
+              DO idim=1,p_rdiscretisation%ndimension
+                DmassCenter(idim) = DmassCenter(idim) + &
+                    OM * p_DcubPtsReal(idim,icubp,IEL) * &
+                         Dcoefficients(icubp,IEL,iblock)
+              END DO
+            END DO
+
+          END DO ! ICUBP 
+        
+        END DO ! IEL
+        
+      END DO ! IELset
+      
+      ! Release memory
+      CALL domint_doneIntegration(rintSubset)
+      
+      DEALLOCATE(Dcoefficients)
+      DEALLOCATE(IdofsTrial)
+      
+    END DO ! icurrentElementDistr
+
+    ! Ok, we have the mathematical expectation of the center of mass.
+    ! Let's compute the standard deviation.
+
+    Ddeviation = 0.0_DP
+
+    ! Get a pointer to the element deviation (if required)
+    IF (PRESENT(relementDeviation)) THEN
+      CALL lsyssc_getbase_double(relementDeviation,p_DelementDeviation)
+      CALL lalg_clearVectorDble (p_DelementDeviation)
+    END IF
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_elementDistribution    => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+
+      ! Cancel if this element distribution is empty.
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
+      ! Get the number of local DOF's for trial functions
+      indofTrial    = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+     
+      ! Initialise the cubature formula.
+      ! Get cubature weights and point coordinates on the reference element
+      CALL cub_getCubPoints(p_elementDistribution%ccubTypeEval,&
+          ncubp, Dxi, Domega)
+
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
+
+      ! Allocate memory and get local references to it.
+      CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
+          p_rtriangulation%ndim,NVE)
+      p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
+      p_DcubPtsReal => rintSubset%p_DcubPtsReal
+      p_Djac =>        rintSubset%p_Djac
+      p_Ddetj =>       rintSubset%p_Ddetj
+      p_Dcoords =>     rintSubset%p_DCoords
+
+      ! Put the cubature point coordinates in the right format to the
+      ! cubature-point array.
+      ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+      ! as the cubature point coordinates are identical on all elements
+      DO j=1,SIZE(p_DcubPtsRef,3)
+        DO i=1,ncubp
+          DO k=1,SIZE(p_DcubPtsRef,1)
+            ! Could be solved using the TRANSPOSE operator - but often is's 
+            ! faster this way...
+            p_DcubPtsRef(k,i,j) = Dxi(i,k)
+          END DO
+        END DO
+      END DO
+
+      ! Allocate memory for the DOF's of all the elements.
+      ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+
+      ! Allocate memory for the coefficients.
+      ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,rvector%nblocks))
+    
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrial    = elem_isNonparametric(p_elementDistribution%itestElement)
+
+      ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
+      IF (bnonparTrial) THEN
+        p_DcubPtsTrial => p_DcubPtsReal
+      ELSE
+        p_DcubPtsTrial => p_DcubPtsRef
+      END IF
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_elementDistribution%NEL
+
+      ! Loop over the elements - blockwise.
+      DO IELset = 1, NEL, PPERR_NELEMSIM
+  
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     .FALSE.,IdofsTrial)
+
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        !
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set.
+        CALL trafo_getCoords_sim (&
+            elem_igetTrafoType(p_elementDistribution%itrialElement),&
+            p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+            IELmax-IELset+1,ncubp,p_Dcoords,&
+            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
+            p_Ddetj(:,1:IELmax-IELset+1),&
+            p_DcubPtsReal)
+
+        ! Standard deviation uses only the values of the function.
+
+        ! Calculate the values of the FE solution vector in the cubature 
+        ! points u_h(x,y) and save the result to Dcoefficients(:,:,iblock)
+
+        DO iblock=1,rvector%nblocks
+          
+          ! solution vector
+          CALL fevl_evaluate_sim (rvector%RvectorBlock(iblock), &
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), &
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, &
+              IdofsTrial, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrial, DER_FUNC,&
+              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+
+        END DO
+
+        ! Calculate the standard deviation
+        ! $\int_\Omega ((x-\hat x_h)^2 + (y-\hat y_h)^2 + (z-\hat z_h)^2) u_h dx$
+
+        ! Loop through elements in the set and for each element,
+        ! loop through the DOF's and cubature points to calculate the
+        ! integral: int_Omega (x-\hat x_h)*(x-\hat x_h)*u_h dx
+        ! and sum up for x,y and z
+        
+        DO IEL=1,IELmax-IELset+1
+
+          ! Initialise element deviation by 0
+          delementDeviation = 0.0_DP
+
+          ! Loop over all cubature points on the current element
+          DO icubp = 1, ncubp
+            
+            ! calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            
+            ! Standard deviation is: int_... (x-\hat x_h)*(x-\hat x_h)*u_h dx
+            ! summed up for all x,y and z
+            
+            DO iblock=1,rvector%nblocks
+              DO idim=1,p_rdiscretisation%ndimension
+                delementDeviation = delementDeviation + &
+                    OM * Dcoefficients(icubp,IEL,iblock) * &
+                        (p_DcubPtsReal(idim,icubp,IEL)-DmassCenter(idim))**2
+              END DO
+            END DO
+
+          END DO ! ICUBP 
+        
+          ! Apply to global deviation
+          ddeviation = ddeviation + delementDeviation
+
+          ! Store in element deviation (if required)
+          IF (PRESENT(relementDeviation)) THEN
+            IELGlobal = p_IelementList(IELset+IEL-1)
+            p_DelementDeviation(IELGlobal) = SQRT(delementDeviation)
+          END IF
+
+        END DO ! IEL
+        
+      END DO ! IELset
+      
+      ! Release memory
+      CALL domint_doneIntegration(rintSubset)
+      
+      DEALLOCATE(Dcoefficients)
+      DEALLOCATE(IdofsTrial)
+      
+    END DO ! icurrentElementDistr
+    
+    ! ddeviation is ||deviation||^2, so take the square root at last.
+    ddeviation = SQRT(ddeviation)
+
+
+  END SUBROUTINE pperr_blockStandardDeviation
 END MODULE
