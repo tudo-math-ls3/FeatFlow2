@@ -621,6 +621,7 @@ CONTAINS
   ! in cc_initLinearSolver.
 !</description>
 
+!<inputoutput>
   ! The nonlinear iteration structure to be cleaned up.
   TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
 !</inputoutput>
