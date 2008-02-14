@@ -7273,9 +7273,9 @@ CONTAINS
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
             CALL output_line('CG: Convergence failed, ALPHA=0!')
-            rsolverNode%iresult = -2
-            EXIT
           END IF
+          rsolverNode%iresult = -2
+          EXIT
         END IF
         
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -8281,14 +8281,14 @@ CONTAINS
 
         dalpha = lsysbl_scalarProduct (p_DR0,p_DPA)
         
-        IF (dalpha .EQ. 0.0_DP) THEN
+        IF (ABS(dalpha) .EQ. 0.0_DP) THEN
           ! We are below machine exactness - we can't do anything more...
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
             CALL output_line ('BiCGStab: Convergence failed, ALPHA=0!')
-            rsolverNode%iresult = -2
-            EXIT
           END IF
+          rsolverNode%iresult = -2
+          EXIT
         END IF
         
         dalpha = drho1/dalpha
@@ -8316,9 +8316,9 @@ CONTAINS
           IF (domega2 .EQ. 0.0_DP) THEN
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
               CALL output_line ('BiCGStab: Convergence failed: omega=0!')
-              rsolverNode%iresult = -2
-              EXIT
             END IF
+            rsolverNode%iresult = -2
+            EXIT
           END IF
           domega0 = domega1/domega2
         END IF
@@ -8716,9 +8716,9 @@ CONTAINS
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
             CALL output_line ('BiCGStab: Convergence failed, ALPHA=0!')
-            rsolverNode%iresult = -2
-            EXIT
           END IF
+          rsolverNode%iresult = -2
+          EXIT
         END IF
         
         dalpha = drho1/dalpha
@@ -8751,9 +8751,9 @@ CONTAINS
           IF (domega2 .EQ. 0.0_DP) THEN
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
               CALL output_line ('BiCGStab: Convergence failed: omega=0!')
-              rsolverNode%iresult = -2
-              EXIT
             END IF
+            rsolverNode%iresult = -2
+            EXIT
           END IF
           domega0 = domega1/domega2
         END IF
