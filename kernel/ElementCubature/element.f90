@@ -305,6 +305,9 @@ MODULE element
   ! ID of cubic conforming triangular FE, P3
   INTEGER(I32), PARAMETER :: EL_E003 = EL_P3
 
+  ! General rotated linear $\tilde P1$ element (Crouzeix-Raviart)
+  INTEGER(I32), PARAMETER :: EL_P1T  = EL_2D + 20
+
   ! ID of constant conforming quadrilateral FE, Q0 (just for the FEAST-users...)
   INTEGER(I32), PARAMETER :: EL_Q0   = EL_2D + 10
 
@@ -378,6 +381,9 @@ MODULE element
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
+  
+  ! ID of rotated linear nonconforming triangulat FE, P1~, edge-midpoint based
+  INTEGER(I32), PARAMETER :: EL_E020 = EL_P1T
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, integral
   ! mean value based
@@ -511,6 +517,9 @@ CONTAINS
   CASE (EL_P3)
     ! local DOF's for P3
     elem_igetNDofLoc = 9
+  CASE (EL_P1T)
+    ! local DOF's for Ex20
+    elem_igetNDofLoc = 3
   CASE (EL_Q1)
     ! local DOF's for Q1
     elem_igetNDofLoc = 4
@@ -622,6 +631,9 @@ CONTAINS
     ! local DOF's for P3
     ndofAtVertices = 3
     ndofAtEdges    = 6
+  CASE (EL_P1T)
+    ! local DOF's for Ex20
+    ndofAtEdges    = 3
   CASE (EL_Q1)
     ! local DOF's for Q1
     ndofAtVertices = 4
@@ -734,7 +746,7 @@ CONTAINS
   CASE (EL_P0_1D,EL_P1_1D,EL_P2_1D,EL_S31_1D)
     ! Line elements
     elem_igetCoordSystem = TRAFO_CS_REF1D
-  CASE (EL_P0,EL_P1,EL_P2,EL_P3)
+  CASE (EL_P0,EL_P1,EL_P2,EL_P3,EL_P1T)
     ! Triangular elements work in barycentric coordinates
     elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
   CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
@@ -784,7 +796,7 @@ CONTAINS
     ! Linear line transformation, 1D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_1D
   
-  CASE (EL_P0, EL_P1, EL_P2, EL_P3)
+  CASE (EL_P0, EL_P1, EL_P2, EL_P3,EL_P1T)
     ! Linear triangular transformation, 2D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
     
@@ -884,6 +896,9 @@ CONTAINS
     ! Function + 1st derivative
     elem_getMaxDerivative = 3
   CASE (EL_P3)
+    ! Function + 1st derivative
+    elem_getMaxDerivative = 3
+  CASE (EL_P1T)
     ! Function + 1st derivative
     elem_getMaxDerivative = 3
   CASE (EL_Q1)
@@ -1013,6 +1028,8 @@ CONTAINS
     CALL elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_P2)
     CALL elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+  CASE (EL_P1T)
+    CALL elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_Q0)
     CALL elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_Q1)
@@ -1137,6 +1154,8 @@ CONTAINS
     CALL elem_P1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_P2)
     CALL elem_P2_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+  CASE (EL_P1T)
+    CALL elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_Q0)
     CALL elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_Q1)
@@ -1284,6 +1303,9 @@ CONTAINS
   CASE (EL_P2)
     CALL elem_P2_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
+  CASE (EL_P1T)
+    CALL elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                       Bder, Dbas, npoints, nelements, Dpoints)
   CASE (EL_Q0)
     CALL elem_Q0_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
@@ -3736,6 +3758,382 @@ CONTAINS
           Dbas(6,DER_DERIV_Y,i,j)= &
               4.0_DP*(Dpoints(1,i,j)*Djac(1,i,j) &
                       +Dpoints(3,i,j)*(Djac(3,i,j)-Djac(1,i,j)))*Dxj(i)
+        END DO
+!      ENDIF
+
+    END DO
+      
+  END IF
+    
+  END SUBROUTINE 
+
+!**************************************************************************
+! Element subroutines for parametric P1~ element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  PURE SUBROUTINE elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                            Dpoint, Dbas)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_P1T.
+  INTEGER(I32), INTENT(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(1,2)
+  !  Djac(4,i) = J_i(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), INTENT(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Barycentric coordinates of the point where to evaluate
+  REAL(DP), DIMENSION(3), INTENT(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  REAL(DP) :: dxj !auxiliary variable
+  
+  ! The P1~ space consists of 'linear' finite elements. We have three basis 
+  ! functions on the reference element, which can be written down in
+  ! standard coordinates (-> P(.)) as well as in barycentric coordinates
+  ! (-> p(.)). These are:
+  !
+  !   p1(xi1,xi2,xi3) = 1 - 2*xi3 =  1 - 2*Y       = P1(X,Y)
+  !   p2(xi1,xi2,xi3) = 1 - 2*xi1 = -1 + 2*X + 2*Y = P2(X,Y)
+  !   p3(xi1,xi2,xi3) = 1 - 2*xi2 =  1 - 2*X       = P3(X,Y)
+  
+  ! Clear the output array
+  !Dbas = 0.0_DP
+    
+  ! Remark: The P1~-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  ! If function values are desired, calculate them.
+  ! Use the p(.) representation in barycentric coordinates to calculate the
+  ! function values.
+!  if (el_bder(DER_FUNC)) then
+    Dbas(1,DER_FUNC) = 1._DP -2E0_DP*Dpoint(3)
+    Dbas(2,DER_FUNC) = 1._DP -2E0_DP*Dpoint(1)
+    Dbas(3,DER_FUNC) = 1._DP -2E0_DP*Dpoint(2)
+!  endif
+  
+  ! If x-or y-derivatives are desired, calculate them.
+  ! Here, we use the P(.) representation to get P_X and P_Y (which are
+  ! only 0, 1 or -1)!
+  ! These are then multiplied with the inverse of the transformation
+  ! as described above to get the actual values of the derivatives.
+  
+!  if ((el_bder(DER_DERIV_X)) .or. (el_bder(DER_DERIV_Y))) then
+    dxj = 1E0_DP / ddetj
+    
+    ! x-derivatives on current element.
+!    if (el_bder(DER_DERIV_X)) then
+      Dbas(1,DER_DERIV_X) =  2E0_DP*Djac(2)*dxj
+      Dbas(2,DER_DERIV_X) =  2E0_DP*(Djac(4)-Djac(2))*dxj
+      Dbas(3,DER_DERIV_X) = -2E0_DP*Djac(2)*dxj
+!    endif
+    
+    !y-derivatives on current element
+!    if (el_bder(DER_DERIV_Y)) then
+      Dbas(1,DER_DERIV_Y) = -2E0_DP*Djac(1)*dxj
+      Dbas(2,DER_DERIV_Y) = -2E0_DP*(Djac(3)- Djac(1))*dxj
+      Dbas(3,DER_DERIV_Y) =  2E0_DP*Djac(3)*dxj
+!    endif
+!  endif
+    
+  END SUBROUTINE 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  PURE SUBROUTINE elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                 Bder, Dbas, npoints, Dpoints)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+!</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_P1T.
+  INTEGER(I32), INTENT(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(1,2)
+  !  Djac(4,i) = J_i(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(3,npoints).
+  !  Dpoints(1,.)=1st barycentric coordinate
+  !  Dpoints(2,.)=2nd barycentric coordinate
+  !  Dpoints(3,.)=3rd barycentric coordinate
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+
+  !</input>
+  
+  !<output>
+  
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  REAL(DP), DIMENSION(:,:,:), INTENT(OUT) :: Dbas
+  
+  !</output>
+
+! </subroutine>
+
+  REAL(DP),DIMENSION(npoints) :: dxj ! auxiliary variable
+  
+  INTEGER :: i   ! point counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The P1~-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  !IF (Bder(DER_FUNC)) THEN
+    DO i=1,npoints
+      Dbas(1,DER_FUNC,i) = 1._DP -2E0_DP*Dpoints(3,i)
+      Dbas(2,DER_FUNC,i) = 1._DP -2E0_DP*Dpoints(1,i)
+      Dbas(3,DER_FUNC,i) = 1._DP -2E0_DP*Dpoints(2,i)
+    END DO
+  !ENDIF
+  
+  !if x-or y-derivatives are desired
+!  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
+    dxj = 1E0_DP / Ddetj
+    
+    !x-derivatives on current element
+!    IF (Bder(DER_DERIV_X)) THEN
+      DO i=1,npoints
+        Dbas(1,DER_DERIV_X,i) =  2E0_DP*Djac(2,i)*dxj(i)
+        Dbas(2,DER_DERIV_X,i) =  2E0_DP*(Djac(4,i)-Djac(2,i))*dxj(i)
+        Dbas(3,DER_DERIV_X,i) = -2E0_DP*Djac(2,i)*dxj(i)
+!      END DO
+!    ENDIF
+    
+    !y-derivatives on current element
+!    IF (Bder(DER_DERIV_Y)) THEN
+!      DO i=1,npoints
+        Dbas(1,DER_DERIV_Y,i) = -2E0_DP*Djac(1,i)*dxj(i)
+        Dbas(2,DER_DERIV_Y,i) = -2E0_DP*(Djac(3,i)- Djac(1,i))*dxj(i)
+        Dbas(3,DER_DERIV_Y,i) =  2E0_DP*Djac(3,i)*dxj(i)
+      END DO
+!    ENDIF
+!  ENDIF
+    
+  END SUBROUTINE
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  PURE SUBROUTINE elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                Bder, Dbas, npoints, nelements, Dpoints)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_P1T.
+  INTEGER(I32), INTENT(IN)  :: ieltyp
+
+  ! Number of points on every element where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  INTEGER, INTENT(IN)  :: nelements
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(1,2,.)
+  !  Djac(4,i,.) = J_i(2,2,.)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  !  Djac(:,:,j) refers to the determinants of the points of element j.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(3,npoints,nelements)
+  !  Dpoints(1,.) = 1st barycentric coordinate
+  !  Dpoints(2,.) = 2nd barycentric coordinate
+  !  Dpoints(3,.) = 3rd barycentric coordinate
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  !   basis function of the finite element k in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  REAL(DP), DIMENSION(:,:,:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
+  
+  INTEGER :: i   ! point counter
+  INTEGER :: j   ! element counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  !if function values are desired
+  IF (Bder(DER_FUNC)) THEN
+  
+    DO j=1,nelements
+    
+      DO i=1,npoints
+        Dbas(1,DER_FUNC,i,j) = 1._DP -2E0_DP*Dpoints(3,i,j)
+        Dbas(2,DER_FUNC,i,j) = 1._DP -2E0_DP*Dpoints(1,i,j)
+        Dbas(3,DER_FUNC,i,j) = 1._DP -2E0_DP*Dpoints(2,i,j)
+      END DO
+      
+    END DO
+    
+  END IF
+    
+  !if x-or y-derivatives are desired
+  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
+  
+    DO j=1,nelements
+      dxj = 1E0_DP / Ddetj(:,j)
+      
+      !x-derivatives on current element
+!      IF (Bder(DER_DERIV_X)) THEN
+        DO i=1,npoints
+          Dbas(1,DER_DERIV_X,i,j) =  2E0_DP*Djac(2,i,j)*dxj(i)
+          Dbas(2,DER_DERIV_X,i,j) =  2E0_DP*(Djac(4,i,j)-Djac(2,i,j))*dxj(i)
+          Dbas(3,DER_DERIV_X,i,j) = -2E0_DP*Djac(2,i,j)*dxj(i)
+        END DO
+!      ENDIF
+      
+      !y-derivatives on current element
+!      IF (Bder(DER_DERIV_Y)) THEN
+        DO i=1,npoints
+          Dbas(1,DER_DERIV_Y,i,j) = -2E0_DP*Djac(1,i,j)*dxj(i)
+          Dbas(2,DER_DERIV_Y,i,j) = -2E0_DP*(Djac(3,i,j)- Djac(1,i,j))*dxj(i)
+          Dbas(3,DER_DERIV_Y,i,j) =  2E0_DP*Djac(3,i,j)*dxj(i)
         END DO
 !      ENDIF
 
