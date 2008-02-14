@@ -796,7 +796,7 @@ CONTAINS
     ! Linear line transformation, 1D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_1D
   
-  CASE (EL_P0, EL_P1, EL_P2, EL_P3,EL_P1T)
+  CASE (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
     ! Linear triangular transformation, 2D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
     
