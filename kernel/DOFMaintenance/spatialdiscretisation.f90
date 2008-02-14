@@ -441,6 +441,10 @@ CONTAINS
         ! Use trapezoidal rule
         ccubType = CUB_TRZ_T
 
+      CASE (EL_P1T)
+        ! Use Gauss-3pt
+        ccubType = CUB_G3_T
+
       CASE (EL_Q0)
         ! Use Gauss 1X1
         ccubType = CUB_G1X1
@@ -529,6 +533,10 @@ CONTAINS
         ccubType = CUB_TRZ_T
 
       CASE (EL_P2)
+        ! Gauss-3pt
+        ccubType = CUB_G3_T
+
+      CASE (EL_P1T)
         ! Gauss-3pt
         ccubType = CUB_G3_T
 
