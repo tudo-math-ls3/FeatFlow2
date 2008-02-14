@@ -10,14 +10,15 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) pperr_scalar
-!#     -> Calculate $L_2$-error or $H_1$-error to an analytic reference
-!#        function or the $L_2$-norm or $H_1$-norm of a FE function:
+!#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
+!#        analytic reference function or the $L_1$-norm, $L_2$-norm
+!#        or $H_1$-norm of a FE function:
 !#   $$ int_\Omega u-u_h dx , \qquad int_\Omega \nabla u-\nabla u_h dx $$
 !#
 !# 2.) pperr_scalarBoundary2d
-!#     -> On a 2D boundary segment, calculate $L_2$-error or $H_1$-error 
-!#        to an analytic reference function or the $L_2$-norm or
-!#        $H_1$-norm of a FE function.
+!#     -> On a 2D boundary segment, calculate $L_1$-error, $L_2$-error 
+!#        or $H_1$-error to an analytic reference function or the 
+!#        $L_1$-norm, $L_2$-norm or $H_1$-norm of a FE function.
 !#   $$ int_\Gamma u-cu_h dx , \qquad int_\Gamma \nabla u-c\nabla u_h dx $$
 !#
 !# 3.) pperr_scalarL2ErrorEstimate
@@ -30,6 +31,22 @@
 !#
 !# 4.) pperr_blockL2ErrorEstimate
 !#     -> Calculate $L_2$-error to two different block vectors of a 
+!#        FE function:
+!#   $$ int_\Omega u_h-u_ref dx $$
+!#        where $u_h$ denotes the FE solution vector and $u_ref$ is
+!#        some reference solution vector which is supposed to be a 
+!#        better approximation of the true solution.
+!#
+!# 5.) pperr_scalarL1ErrorEstimate
+!#     -> Calculate $L_1$-error to two different scalar vectors of a 
+!#        FE function:
+!#   $$ int_\Omega u_h-u_ref dx $$
+!#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
+!#        some reference solution vector which is supposed to be a 
+!#        better approximation of the true solution.
+!#
+!# 6.) pperr_blockL1ErrorEstimate
+!#     -> Calculate $L_1$-error to two different block vectors of a 
 !#        FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
@@ -65,6 +82,10 @@ MODULE pprocerror
   
   ! $H_1$-error/norm
   INTEGER, PARAMETER :: PPERR_H1ERROR = 2
+
+  ! $L_1$-error/norm
+  INTEGER, PARAMETER :: PPERR_L1ERROR = 3
+  
   
 !</constantblock>
 
@@ -562,6 +583,58 @@ CONTAINS
 
           END DO ! IEL
 
+        CASE (PPERR_L1ERROR)
+          
+          ! L1-error uses only the values of the function.
+          
+          IF (PRESENT(ffunctionReference)) THEN
+            ! It's time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x)
+            ! The result is saved in Dcoefficients(:,:,1)
+            CALL ffunctionReference (DER_FUNC1D,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+          ELSE
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+          END IF
+
+          ! Calculate the values of the FE function in the
+          ! cubature points: u_h(x).
+          ! Save the result to Dcoefficients(:,:,2)
+          
+          CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+               p_elementDistribution%itrialElement, IdofsTrial, &
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC1D,&
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+          
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
+          ! the error "u-u_h(cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF's and cubature points to calculate the
+          ! integral: int_Omega abs(u-u_h) dx
+          
+          DO IEL=1,IELmax-IELset+1
+          
+            ! Loop over all cubature points on the current element
+            DO icubp = 1, ncubp
+            
+              ! calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+
+              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              
+              ! L1-error is:   int_... abs(u-u_h) dx
+              
+              derror = derror + &
+                       OM * ABS(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+            END DO ! ICUBP 
+
+          END DO ! IEL
+
         CASE (PPERR_H1ERROR)
 
           ! H1-error uses only 1st derivative of the function.
@@ -633,7 +706,10 @@ CONTAINS
     END DO ! icurrentElementDistr
 
     ! derror is ||error||^2, so take the square root at last.
-    derror = SQRT(derror)
+    IF ((cerrortype .EQ. PPERR_L2ERROR) .OR.&
+        (cerrortype .EQ. PPERR_H1ERROR)) THEN
+      derror = SQRT(derror)
+    END IF
 
   END SUBROUTINE
 
@@ -979,6 +1055,58 @@ CONTAINS
 
           END DO ! IEL
 
+        CASE (PPERR_L1ERROR)
+          
+          ! L1-error uses only the values of the function.
+          
+          IF (PRESENT(ffunctionReference)) THEN
+            ! It's time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            CALL ffunctionReference (DER_FUNC,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+          ELSE
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+          END IF
+
+          ! Calculate the values of the FE function in the
+          ! cubature points: u_h(x,y).
+          ! Save the result to Dcoefficients(:,:,2)
+          
+          CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+               p_elementDistribution%itrialElement, IdofsTrial, &
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+          
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
+          ! the error "u-u_h(cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF's and cubature points to calculate the
+          ! integral: int_Omega abs(u-u_h) dx
+          
+          DO IEL=1,IELmax-IELset+1
+          
+            ! Loop over all cubature points on the current element
+            DO icubp = 1, ncubp
+            
+              ! calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+
+              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              
+              ! L1-error is:   int_... abs(u-u_h) dx
+              
+              derror = derror + &
+                       OM * ABS(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+            END DO ! ICUBP 
+
+          END DO ! IEL
+
         CASE (PPERR_H1ERROR)
 
           ! H1-error uses only 1st derivative of the function.
@@ -1062,7 +1190,10 @@ CONTAINS
     END DO ! icurrentElementDistr
 
     ! derror is ||error||^2, so take the square root at last.
-    derror = SQRT(derror)
+    IF ((cerrortype .EQ. PPERR_L2ERROR) .OR.&
+        (cerrortype .EQ. PPERR_H1ERROR)) THEN
+      derror = SQRT(derror)
+    END IF
 
   END SUBROUTINE
 
@@ -1409,6 +1540,58 @@ CONTAINS
 
           END DO ! IEL
 
+        CASE (PPERR_L1ERROR)
+          
+          ! L1-error uses only the values of the function.
+          
+          IF (PRESENT(ffunctionReference)) THEN
+            ! It's time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y,z)
+            ! The result is saved in Dcoefficients(:,:,1)
+            CALL ffunctionReference (DER_FUNC3D,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+          ELSE
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+          END IF
+
+          ! Calculate the values of the FE function in the
+          ! cubature points: u_h(x,y,z).
+          ! Save the result to Dcoefficients(:,:,2)
+          
+          CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+               p_elementDistribution%itrialElement, IdofsTrial, &
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC3D,&
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+          
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
+          ! the error "u-u_h(cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF's and cubature points to calculate the
+          ! integral: int_Omega abs(u-u_h) dx
+          
+          DO IEL=1,IELmax-IELset+1
+          
+            ! Loop over all cubature points on the current element
+            DO icubp = 1, ncubp
+            
+              ! calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+
+              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              
+              ! L1-error is:   int_... abs(u-u_h) dx
+              
+              derror = derror + &
+                       OM * ABS(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+            END DO ! ICUBP 
+
+          END DO ! IEL
+
         CASE (PPERR_H1ERROR)
 
           ! H1-error uses only 1st derivative of the function.
@@ -1504,7 +1687,10 @@ CONTAINS
     END DO ! icurrentElementDistr
 
     ! derror is ||error||^2, so take the square root at last.
-    derror = SQRT(derror)
+    IF ((cerrortype .EQ. PPERR_L2ERROR) .OR.&
+        (cerrortype .EQ. PPERR_H1ERROR)) THEN
+      derror = SQRT(derror)
+    END IF
 
   END SUBROUTINE
 
@@ -1522,11 +1708,11 @@ CONTAINS
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
-  !   $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
+  !   $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{L_1}  \textrm{ or }  ||y-z||_{H_1}$$
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
+  !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{L_1}  \textrm{ or }  ||y||_{H_1}.$$
   !
   ! If the vector rvectorScalar is not specified, it's assumed to be =0.
   !
@@ -1905,7 +2091,7 @@ CONTAINS
     ! elements. Generally said, we have to evaluate the elements in these
     ! points now. That can be done by using fevl_evaluate_mult.
     !
-    ! Which type of integral is to calculate? H1 or L2?
+    ! Which type of integral is to calculate? H1 or L2 or L1?
     SELECT CASE (cerrortype)
     CASE (PPERR_L2ERROR)
     
@@ -1963,7 +2149,65 @@ CONTAINS
         END DO
       END DO
       
-      DEALLOCATE(Dvalues)  
+      DEALLOCATE(Dvalues)
+
+    CASE (PPERR_L1ERROR)
+    
+      ALLOCATE (Dvalues(ncubp,NEL,2))
+      Dvalues = 0.0_DP
+      
+      ! If the FE function exists, evaluate it.
+      IF (PRESENT(rvectorScalar)) THEN
+        DO iel = 1,NEL
+          ! Evaluate on the element, write results to Dvalues
+          CALL fevl_evaluate_mult (DER_FUNC, Dvalues(:,iel,1), rvectorScalar, &
+              Ielements(iel), DpointsRef(:,:,iel))
+        END DO
+      END IF
+
+      ! If the reference function exists, evaluate it.
+      IF (PRESENT(ffunctionReference)) THEN
+        
+        ! Evaluate the reference function on the boundary
+        CALL ffunctionReference (DER_FUNC,rdiscretisation, &
+            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,2))
+            
+      END IF
+      
+      ! Linear combination to get the actual values in the cubature points.
+      DO iel = 1,NEL
+        DO ipoint = 1,ncubp
+          Dvalues(ipoint,iel,1) = Dvalues(ipoint,iel,2)-Dvalues(ipoint,iel,1)
+        END DO
+      END DO
+    
+      ! Now, Dvalues1 contains in Dvalues1(:,:,1) the term
+      ! "u(x,y)-u_h(x,y)" -- in every cubature point on every
+      ! element. We are finally able to calculate the integral!
+      ! That means, run over all the edges and sum up...
+      ! (ok, if rvectorScalar is not specified, we have
+      !  -u_h(x,y) in Dvalues1(:,:,1), but as we take the square,
+      !  it doesn't matter if we have u_h or -u_h there!)
+      
+      derror = 0.0_DP
+      DO iel = 1,NEL
+      
+        ! Get the length of the edge. Let's use the parameter values
+        ! on the boundary for that purpose; this is a more general
+        ! implementation than using simple lines as it will later 
+        ! support isoparametric elements.
+        !
+        ! The length of the current edge serves as a "determinant"
+        ! in the cubature, so we have to divide it by 2 as an edge on 
+        ! the unit inverval [-1,1] has length 2.
+        dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
+      
+        DO ipoint = 1,ncubp
+          derror = derror + dlen * Domega1D(ipoint) * ABS(Dvalues(ipoint,iel,1))
+        END DO
+      END DO
+      
+      DEALLOCATE(Dvalues)
       
     CASE (PPERR_H1ERROR)
     
@@ -2536,5 +2780,492 @@ CONTAINS
 
 
   END SUBROUTINE pperr_blockL2ErrorEstimate
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE pperr_scalarL1ErrorEstimate (rvector,rvectorRef,derror,&
+                                          rdiscretisationRef,relementError)
+
+!<description>
+  ! This routine calculates the L1-error of a given FE function in rvector
+  ! and a reference vector given in rvectorRef. Both vectors must have the
+  ! same number of blocks. As an example, one can think of the consistent
+  ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
+  !
+  ! Note: For the evaluation of the integrals, ccubTypeEval from the
+  ! element distributions in the discretisation structure specifies the 
+  ! cubature formula to use for each element distribution.
+!</description>
+
+!<input>
+    ! FE solution vector
+    TYPE(t_vectorScalar), INTENT(IN), TARGET                    :: rvector
+
+    ! FE reference solution vector
+    TYPE(t_vectorScalar), INTENT(IN), TARGET                    :: rvectorRef
+            
+    ! OPTIONAL: A discretisation structure specifying how to compute the error.
+    ! If not specified, the discretisation structure in the reference gradient 
+    ! is used. If specified, the discretisation structure must be 'compatible'
+    ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
+    ! cubature formula specifier of the linear form in rdiscretisation to 
+    ! compute the integrals for the error.
+    TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationRef
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Scalar vector that stores the calculated error on each element.
+    TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL               :: relementError
+!</inputoutput>
+
+!<output>
+    ! The calculated error.
+    REAL(DP), INTENT(OUT)                                       :: derror 
+!</output>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorBlock) :: rvectorBlock,rvectorBlockRef
+
+    ! Create block vectors with one block
+    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
+    CALL lsysbl_createVecFromScalar(rvectorRef,rvectorBlockRef)
+
+    ! Call block version
+    CALL pperr_blockL1ErrorEstimate(rvectorBlock,rvectorBlockRef,derror,&
+        rdiscretisationRef,relementError)
+
+    ! Release auxiliary block vectors
+    CALL lsysbl_releaseVector(rvectorBlock)
+    CALL lsysbl_releaseVector(rvectorBlockRef)
+
+  END SUBROUTINE pperr_scalarL1ErrorEstimate
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE pperr_blockL1ErrorEstimate (rvector,rvectorRef,derror,&
+                                         rdiscretisationRef,relementError)
+
+!<description>
+  ! This routine calculates the L1-error of a given FE function in rvector
+  ! and a reference vector given in rvectorRef. Both vectors must have the
+  ! same number of blocks. As an example, one can think of the consistent
+  ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
+  !
+  ! Note: For the evaluation of the integrals, ccubTypeEval from the
+  ! element distributions in the discretisation structure specifies the 
+  ! cubature formula to use for each element distribution.
+!</description>
+
+!<input>
+    ! FE solution block vector
+    TYPE(t_vectorBlock), INTENT(IN), TARGET                     :: rvector
+
+    ! FE reference solution block vector
+    TYPE(t_vectorBlock), INTENT(IN), TARGET                     :: rvectorRef
+            
+    ! OPTIONAL: A discretisation structure specifying how to compute the error.
+    ! If not specified, the discretisation structure in the reference gradient 
+    ! is used. If specified, the discretisation structure must be 'compatible'
+    ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
+    ! cubature formula specifier of the linear form in rdiscretisation to 
+    ! compute the integrals for the error.
+    TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationRef
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Scalar vector that stores the calculated error on each element.
+    TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL               :: relementError
+!</inputoutput>
+
+!<output>
+    ! The calculated error.
+    REAL(DP), INTENT(OUT)                                       :: derror 
+!</output>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationRef
+    INTEGER      :: i,j,k,icurrentElementDistr,iblock,ICUBP,NVE
+    LOGICAL      :: bnonparTrial,bnonparTrialRef
+    INTEGER(I32) :: IEL, IELmax, IELset,IELGlobal
+    REAL(DP)     :: OM,delementError
+
+    ! Array to tell the element which derivatives to calculate
+    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+    
+    ! Cubature point coordinates on the reference element
+    REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+    
+    ! number of cubature points on the reference element
+    INTEGER :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    INTEGER :: indofTrial,indofTrialRef
+    
+    ! The triangulation structure - to shorten some things...
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
+
+    ! An array receiving the coordinates of cubature points on
+    ! the real element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsReal
+
+    ! Pointer to the point coordinates to pass to the element function.
+    ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
+    ! the trial element is parametric or not.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial,p_DcubPtsTrialRef
+    
+    ! Array with coordinates of the corners that form the real element.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
+    
+    ! Arrays for saving Jacobian determinants and matrices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac
+    
+    ! Pointer to KVERT of the triangulation
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    
+    ! Pointer to DCORVG of the triangulation
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+
+    ! Pointer to the element error
+    REAL(DP), DIMENSION(:), POINTER :: p_DelementError
+    
+    ! Current element distribution
+    TYPE(t_elementDistribution), POINTER :: p_elementDistribution,p_elementDistributionRef
+    
+    ! Number of elements in the current element distribution
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+
+    ! Pointer to the values of the function that are computed by the callback routine.
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    INTEGER :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    TYPE(t_domainIntSubset) :: rintSubset
+    
+    ! An allocateable array accepting the DOF's of a set of elements.
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial,IdofsTrialRef
+    
+    ! Get the correct discretisation structure for the solution vector
+    p_rdiscretisation => rvector%p_rblockDiscretisation%RspatialDiscretisation(1)
+    DO iblock=2,rvector%nblocks
+      CALL lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
+    END DO
+
+    ! Get the correct discretisation structure for the reference 
+    ! vector and check if we can use it.
+    IF (PRESENT(rdiscretisationRef)) THEN
+      p_rdiscretisationRef => rdiscretisationRef
+      CALL lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(1),p_rdiscretisationRef)
+    ELSE
+      p_rdiscretisationRef => rvectorRef%p_rblockDiscretisation%RspatialDiscretisation(1)
+    END IF
+    DO iblock=2,rvectorRef%nblocks
+      CALL lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(iblock),p_rdiscretisationRef)
+    END DO
+    
+    IF (.NOT. ASSOCIATED(p_rdiscretisation) .OR.&
+        .NOT. ASSOCIATED(p_rdiscretisationRef)) THEN
+      CALL output_line('No discretisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockL1ErrorEstimate')
+      CALL sys_halt()
+    END IF
+    
+    ! The vectors must have the same number of blocks
+    IF (rvector%nblocks .NE. rvectorRef%nblocks) THEN
+      CALL output_line('Vectors have different number of blocks!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockL1ErrorEstimate')
+      CALL sys_halt()
+    END IF
+    
+    ! The vector must be unsorted.
+    DO iblock=1,rvector%nblocks
+      IF (rvector%RvectorBlock(iblock)%isortStrategy    .GT. 0 .OR.&
+          rvectorRef%RvectorBlock(iblock)%isortStrategy .GT. 0) THEN
+        CALL output_line('Vectors must be unsorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockL1ErrorEstimate')
+        CALL sys_halt()
+      END IF
+    END DO
+
+    ! We only need the function values of basis functions
+    Bder = .FALSE.
+    Bder(DER_FUNC) = .TRUE.
+
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => p_rdiscretisationRef%p_rtriangulation
+
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = MIN(PPERR_NELEMSIM,p_rtriangulation%NEL)
+
+    ! Get a pointer to the KVERT and DCORVG array
+    CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
+                               p_IverticesAtElement)
+    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+                               p_DvertexCoords)
+
+    ! Set the current error to 0 and add the error  contributions of each element to that.
+    derror = 0.0_DP
+
+    ! Get a pointer to the element error (if required)
+    IF (PRESENT(relementError)) THEN
+      CALL lsyssc_getbase_double(relementError,p_DelementError)
+      CALL lalg_clearVectorDble (p_DelementError)
+    END IF
+
+    ! Check that both discretisations have the same number of element distributions
+    IF (p_rdiscretisation%inumFESpaces .NE. &
+        p_rdiscretisationRef%inumFESpaces) THEN
+      CALL output_line('Number of element distributions mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockL1ErrorEstimate')
+      CALL sys_halt()
+    END IF
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_elementDistribution    => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_elementDistributionRef => p_rdiscretisationRef%RelementDistribution(icurrentElementDistr)
+
+      ! Check if element distrbutions have different number of elements
+      IF (p_elementDistribution%NEL .NE. &
+          p_elementDistributionRef%NEL) THEN
+        CALL output_line('Number of elements in distributions mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockL1ErrorEstimate')
+        CALL sys_halt()
+      END IF
+
+      ! Cancel if this element distribution is empty.
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
+      ! Get the number of local DOF's for trial functions
+      indofTrial    = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+      indofTrialRef = elem_igetNDofLoc(p_elementDistributionRef%itrialElement)
+
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+     
+      ! Initialise the cubature formula.
+      ! Get cubature weights and point coordinates on the reference element
+      CALL cub_getCubPoints(p_elementDistributionRef%ccubTypeEval,&
+          ncubp, Dxi, Domega)
+                 
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      j = elem_igetCoordSystem(p_elementDistributionRef%itrialElement)
+
+      ! Allocate memory and get local references to it.
+      CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
+          p_rtriangulation%ndim,NVE)
+      p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
+      p_DcubPtsReal => rintSubset%p_DcubPtsReal
+      p_Djac =>        rintSubset%p_Djac
+      p_Ddetj =>       rintSubset%p_Ddetj
+      p_Dcoords =>     rintSubset%p_DCoords
+
+      ! Put the cubature point coordinates in the right format to the
+      ! cubature-point array.
+      ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+      ! as the cubature point coordinates are identical on all elements
+      DO j=1,SIZE(p_DcubPtsRef,3)
+        DO i=1,ncubp
+          DO k=1,SIZE(p_DcubPtsRef,1)
+            ! Could be solved using the TRANSPOSE operator - but often is's 
+            ! faster this way...
+            p_DcubPtsRef(k,i,j) = Dxi(i,k)
+          END DO
+        END DO
+      END DO
+
+      ! Allocate memory for the DOF's of all the elements.
+      ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+      ALLOCATE(IdofsTrialRef(indofTrialRef,nelementsPerBlock))
+
+      ! Allocate memory for the coefficients, that is, two times the spatial dimension
+      ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,2*rvector%nblocks))
+    
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrial    = elem_isNonparametric(p_elementDistribution%itestElement)
+
+      ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
+      IF (bnonparTrial) THEN
+        p_DcubPtsTrial => p_DcubPtsReal
+      ELSE
+        p_DcubPtsTrial => p_DcubPtsRef
+      END IF
+      
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrialRef = elem_isNonparametric(p_elementDistributionRef%itestElement)
+
+      ! Let p_DcubPtsTrialRef point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
+      IF (bnonparTrialRef) THEN
+        p_DcubPtsTrialRef => p_DcubPtsReal
+      ELSE
+        p_DcubPtsTrialRef => p_DcubPtsRef
+      END IF
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_elementDistribution%NEL
+
+      ! Loop over the elements - blockwise.
+      DO IELset = 1, NEL, PPERR_NELEMSIM
+  
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     .FALSE.,IdofsTrial)
+        CALL dof_locGlobMapping_mult(p_rdiscretisationRef, p_IelementList(IELset:IELmax), &
+                                     .FALSE.,IdofsTrialRef)
+                                     
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        !
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set.
+        CALL trafo_getCoords_sim (&
+            elem_igetTrafoType(p_elementDistributionRef%itrialElement),&
+            p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafoabs_sim (p_elementDistributionRef%ctrafoType,&
+            IELmax-IELset+1,ncubp,p_Dcoords,&
+            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
+            p_Ddetj(:,1:IELmax-IELset+1),&
+            p_DcubPtsReal)
+            
+        ! L2-error uses only the values of the function.
+
+        ! Calculate the values of the FE solution vector and the reference solution 
+        ! vector in the cubature points: u_h(x,y) and u_ref(x,y)
+        ! Save the result to Dcoefficients(:,:,2*iblock-1) and 
+        ! Dcoefficients(:,:,2*iblock)
+
+        DO iblock=1,rvector%nblocks
+          
+          ! solution vector
+          CALL fevl_evaluate_sim (rvector%RvectorBlock(iblock), &
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), &
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, &
+              IdofsTrial, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrial, DER_FUNC,&
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
+
+          ! solution reference vector
+          CALL fevl_evaluate_sim (rvectorRef%RvectorBlock(iblock), &
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1),&
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistributionRef%itrialElement, &
+              IdofsTrialRef, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrialRef, DER_FUNC,&
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+
+        END DO
+
+        ! Subtraction of Dcoefficients(:,:,2*iblock-1) from Dcoefficients(:,:,2*iblock)
+        ! and summing over all iblock=1,..,nblocks gives the error 
+        ! $u_h(cubature pt.) - u_ref(cubature pt.)$
+        !        
+        ! Loop through elements in the set and for each element,
+        ! loop through the DOF's and cubature points to calculate the
+        ! integral: int_Omega (u_h-u_ref,u_h-u_ref) dx
+
+        DO IEL=1,IELmax-IELset+1
+
+          ! Initialise element error by 0
+          delementError = 0.0_DP
+
+          ! Loop over all cubature points on the current element
+          DO icubp = 1, ncubp
+            
+            ! calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            
+            ! L1-error is:   int_... abs(u_h-u_ref) dx
+            
+            DO iblock=1,rvector%nblocks
+              delementError = delementError + &
+                  OM * ABS(Dcoefficients(icubp,IEL,2*iblock-1)-&
+                           Dcoefficients(icubp,IEL,2*iblock))
+            END DO
+
+          END DO ! ICUBP 
+
+          ! Apply to global error
+          derror = derror + delementError
+
+          ! Store in element error (if required)
+          IF (PRESENT(relementError)) THEN
+            IELGlobal = p_IelementList(IELset+IEL-1)
+            p_DelementError(IELGlobal) = delementError
+          END IF
+
+        END DO ! IEL
+        
+      END DO ! IELset
+      
+      ! Release memory
+      CALL domint_doneIntegration(rintSubset)
+      
+      DEALLOCATE(Dcoefficients)
+      DEALLOCATE(IdofsTrial,IdofsTrialRef)
+      
+    END DO ! icurrentElementDistr
+
+  END SUBROUTINE pperr_blockL1ErrorEstimate
 
 END MODULE
