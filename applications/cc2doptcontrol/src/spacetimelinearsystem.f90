@@ -38,12 +38,12 @@
 !#
 !#  Navier-Stokes:   Standard iteration:
 !#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
-!#                   N = N(y_i) = -nu*Laplace(.) + y_i*grad(.) - (.)*grad(y_i)
+!#                   N = N(y_i) = -nu*Laplace(.) - y_i*grad(.) + (.)*grad(y_i)
 !#                   R = R(l_i) = -M                                   
 !#
 !#                   Newton iteration:
 !#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.) + grad(y_i)*(.)
-!#                   N = N(y_i) = -nu*Laplace(.) + y_i*grad(.) - grad(y_i)*(.)
+!#                   N = N(y_i) = -nu*Laplace(.) - y_i*grad(.) + grad(y_i)*(.)
 !#                   R = R(l_i) = -M + l_i*grad(.) - grad(l_i)*(.)
 !#  
 !#  ====================================================================================================
@@ -82,7 +82,7 @@
 !#  Stokes:          A(y_i) = -nu*Laplace(.)
 !#                   N(y_i) = not present
 !#  Navier-Stokes:   A(y_i) = -nu*Laplace(.) + y_i*grad(.)
-!#                   N(y_i) = -nu*Laplace(.) + y_i*grad(.) - (.)*grad(y_i)
+!#                   N(y_i) = -nu*Laplace(.) - y_i*grad(.) + (.)*grad(y_i)
 !#  
 !#  ===============================================================================================================================================================
 !#  [I                ]                                   |                                                    |                                            
