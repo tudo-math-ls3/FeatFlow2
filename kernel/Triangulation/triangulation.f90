@@ -5251,6 +5251,7 @@ CONTAINS
       INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
       INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
       INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IcoarseGridElement
+      INTEGER(I32), DIMENSION(:), POINTER :: p_InodalPropSource, p_InodalPropDest
       INTEGER(PREC_ELEMENTIDX) :: iel,iel2
       INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
       INTEGER(I32), DIMENSION(2) :: Isize
@@ -5301,19 +5302,19 @@ CONTAINS
       ! These arrays define for every coarse grid element the fine
       ! grid elements and for every fine grid element the coarse
       ! grid element where it comes from.
-      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatchIndex', &
+      CALL storage_new ('tria_refineMesh2lv1D', 'h_IrefinementPatchIndex', &
           rsourceTriangulation%NEL+1, ST_INT, &
           rdestTriangulation%h_IrefinementPatchIndex, ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int(&
           rdestTriangulation%h_IrefinementPatchIndex,p_IrefinementPatchIndex)
 
-      CALL storage_new ('tria_refineMesh2lv2D', 'h_IrefinementPatch', &
+      CALL storage_new ('tria_refineMesh2lv1D', 'h_IrefinementPatch', &
           rdestTriangulation%NEL, ST_INT, &
           rdestTriangulation%h_IrefinementPatch, ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int(&
           rdestTriangulation%h_IrefinementPatch,p_IrefinementPatch)
     
-      CALL storage_new ('tria_refineMesh2lv2D', 'h_IcoarseGridElement', &
+      CALL storage_new ('tria_refineMesh2lv1D', 'h_IcoarseGridElement', &
           rdestTriangulation%NEL, ST_INT, &
           rdestTriangulation%h_IcoarseGridElement, ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int(&
@@ -5363,7 +5364,7 @@ CONTAINS
       ! Fill the array with zero, so we won't have problems when mixing
       ! triangles into a quad mesh.
       Isize = (/nnve,INT(rdestTriangulation%NEL,I32)/)
-      CALL storage_new2D ('tria_refineMesh2lv2D', 'KVERT', Isize, ST_INT, &
+      CALL storage_new2D ('tria_refineMesh2lv1D', 'KVERT', Isize, ST_INT, &
           rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int2D(&
           rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
@@ -5413,10 +5414,21 @@ CONTAINS
       END DO
       !$OMP END PARALLEL DO
       
-      ! Set up InodalProperty. But that's the most easiest thing: Simply
-      ! copy the nodal property array from the coarse mesh to the fine mesh.
-      CALL storage_copy (rsourceTriangulation%h_InodalProperty,&
-          rdestTriangulation%h_InodalProperty)
+      ! Create a new nodal property array
+      CALL storage_new('tria_refineMesh2lv1D', 'h_InodalProperty',&
+          rdestTriangulation%NVT, ST_INT,&
+          rdestTriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+      
+      ! Get the nodal property arrays
+      CALL storage_getbase_int(rsourceTriangulation%h_InodalProperty, &
+                               p_InodalPropSource)
+      CALL storage_getbase_int(rdestTriangulation%h_InodalProperty, &
+                               p_InodalPropDest)
+      
+      ! Copy the nodal property of the coarse mesg
+      DO ivt=1, rsourceTriangulation%NVT
+        p_InodalPropDest(ivt) = p_InodalPropSource(ivt)
+      END DO
       
       ! We also need to copy the boundary vertices array to the finer level.
       rdestTriangulation%NVBD = rsourceTriangulation%NVBD
