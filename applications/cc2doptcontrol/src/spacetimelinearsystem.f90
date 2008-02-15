@@ -323,7 +323,7 @@ CONTAINS
       dequationType = -1.0_DP
 
     ! Treat the convection explicitely?
-    bconvectionExplicit = rproblem%roptcontrol%ispaceTimeFormulation .NE. 0
+    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .NE. 0
 
     ! What's the matrix type we should set up? If we have to set up a
     ! Newton matrix, we put dnewton to 1.0 so the Newton part in the
