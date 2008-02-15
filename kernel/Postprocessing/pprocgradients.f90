@@ -28,6 +28,12 @@
 !#        Uses the superconvergent patch recovery technique suggested
 !#        by Zienkiewicz and Zhu. 1D, 2D, 3D.
 !#
+!# 3.) ppgrd_calcGradLimAverageRecov
+!#     -> Calculate the reconstructed gradient as ~P1 or ~Q1 vector
+!#        for an arbitrary conformal discretisation.
+!#        Uses the limited gradient averaging technique by M. Möller
+!#        and D. Kuzmin.
+!#
 !# </purpose>
 !#########################################################################
 
@@ -180,7 +186,7 @@ CONTAINS
 
     SELECT CASE (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim)
     CASE (NDIM2D)
-      ! Currently, the destinatino vector must be either pure Q1 or pure P1 or
+      ! Currently, the destination vector must be either pure Q1 or pure P1 or
       ! mixed Q1/P1 -- everything else is currently not supported.
       bisQ0 = .FALSE.
       bisP0 = .FALSE.
@@ -3075,5 +3081,105 @@ CONTAINS
       END SELECT
     END SUBROUTINE calc_cubatureDest
   END SUBROUTINE ppgrd_calcGradSuperPatchRecov
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ppgrd_calcGradLimAverageRecov (rvectorScalar,rvectorGradient)
+
+!<description>
+    ! Calculates the recovered gradient of a scalar finite element function
+    ! by means of the limited gradient averaging technique suggested by 
+    ! M. Möller and D. Kuzmin. Supports conformal discretisations in arbitrary
+    ! spatial dimensions with $P_1$ and $Q_1$ finite elements mixed in the
+    ! source and destination vectors.
+!</description>
+
+!<input>
+    ! The FE solution vector. Represents a scalar FE function.
+    TYPE(t_vectorScalar), INTENT(IN)         :: rvectorScalar
+!</input>
+
+!<inputoutput>
+    ! A block vector receiving the gradient.
+    ! The first subvector receives the X-gradient.
+    ! In 2D/3D discretisations, the 2nd subvector recevies the Y-gradient.
+    ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
+    ! The vector must be prepared with a discretisation structure that defines
+    ! the destination finite element space for the gradient field.
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rvectorGradient
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i,j
+    LOGICAL :: bisQ1T, bisP1T, bisDifferent
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+
+    ! Dimension of triangulation must be less or equal than number of subvectors
+    ! in the block vector.
+    
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+      CALL output_line ('No discretisation attached to the source vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+    
+    IF ((rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
+        (rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
+      CALL output_line ('Only uniform and conformal discretisations supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+    
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation%p_rtriangulation)) THEN
+      CALL output_line ('No triangulation attached to the source vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+    
+    IF (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim .GT. &
+        rvectorGradient%nblocks) THEN
+      CALL output_line ('Dimension of destination vector not large enough!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+    
+    ! There must be given discretisation structures in the destination vector.
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+      CALL output_line ('No discretisation attached to the destination vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+
+    ! The destination vector must be either pure Q1T or pure P1T or mixed Q1T/P1T
+    bisQ1T = .FALSE.
+    bisP1T = .FALSE.
+    
+    DO i=1,MIN(rvectorGradient%nblocks,&
+        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim,rvectorGradient%nblocks)
+      p_rdiscr => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
+      DO j=1,p_rdiscr%inumFESpaces
+        SELECT CASE (elem_getPrimaryElement (p_rdiscr%RelementDistribution(j)%itrialElement))
+        CASE (EL_Q1T)
+          bisQ1T = .TRUE.
+        CASE (EL_P1T)
+          bisP1T = .TRUE.
+        CASE DEFAULT
+          bisDifferent = .TRUE.
+        END SELECT
+      END DO
+    END DO
+
+    IF (bisDifferent) THEN
+      CALL output_line ('Only Q1T, and P1T supported as&
+          & discretisation for the destination vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+      CALL sys_halt()
+    END IF
+
+  END SUBROUTINE ppgrd_calcGradLimAverageRecov
 
 END MODULE
