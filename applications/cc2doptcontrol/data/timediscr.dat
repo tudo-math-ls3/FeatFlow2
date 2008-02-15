@@ -36,7 +36,7 @@ TIMENLMIN = -1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 5 # 5
+TIMENLMAX = 3 # 5
 
 # ----------------------------------------------------------------------
 
@@ -79,7 +79,7 @@ cspaceTimeSolverType = 2
 #     (at the cost of assembly time and stability of the linear solver/
 #     preconditioner).
 
-ctypePreconditioner = 1
+ctypePreconditioner = 2
 
 # Minimum number of steps
 
@@ -87,12 +87,12 @@ nminIterations     = 1
 
 # Maximum number of steps
       
-nmaxIterations     = 1 0 0 10
+nmaxIterations     = 10 0 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 15 2 10 2 5 1E-8 0.001
+depsRel            = 1E-5 8 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -134,7 +134,7 @@ sfinalSolutionFileName = 'ns/solution'
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
-slinearSolver        = 'CC-MULTIGRID'
+slinearSolver        = 'CC-LINEARSOLVER'
 
 # Minimum number of iterations
 nminIterations = 1
@@ -182,7 +182,7 @@ depsRel            = 1E-8 1E-2
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-5
+depsAbs            = 1E-0 5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -232,7 +232,7 @@ domega = 0.7 0.5 0.7
 domegaPrecond = 1.0
 
 # Number of smoothing steps
-nsmSteps = 4
+nsmSteps = 2
 
 # Switch smoothing on/off.
 # =1: do smoothing as pre- and/or postsmoother, respectively.
@@ -264,7 +264,7 @@ ioutputLevel = 1 2
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
-slinearSolver        = 'CC-MULTIGRID'
+slinearSolver        = 'CC-LINEARSOLVER'
 
 
 #######################
@@ -295,7 +295,7 @@ domega = 1.0 1.0 1.0 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-6 13 13 3 1E-10 
+depsRel            = 1E-2 6 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -323,7 +323,7 @@ istoppingCriterion = 0
 # If there's a subsolver, this configures the spatial preconditioner
 # of the subsolver.
 
-slinearSolver        = 'CC-MULTIGRID'
+slinearSolver        = 'CC-LINEARSOLVER'
 
 ####################
 [TIME-COARSEPRECOND]
@@ -344,7 +344,7 @@ domega = 1.0 1.0 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-13 13 3 1E-10 
+depsRel            = 1E-9 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -360,7 +360,7 @@ ddivRel            = 1E20
 # If a subsolver is embedded in the solver, it receives the output level
 # ioutputLevel-2.
 
-ioutputLevel = 0 2 3
+ioutputLevel = 0 0 2 3
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.

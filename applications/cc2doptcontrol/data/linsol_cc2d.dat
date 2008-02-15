@@ -6,44 +6,84 @@
 # ------------------------------------------------------------------------
 
 # ========================================================================
-# The following section describes the parameters of the multigrid solver.
-# When a parameter is deleted or commented out, the standard value is used.
-#
-# The first couple of parameters are valid for all types of linear solvers:
+# The following section defines the configuration of the linear solver,
+# which is used as preconditioner in each nonlinear iteration.
 
-##############
-[CC-MULTIGRID]
-##############
+#################
+[CC-LINEARSOLVER]
+#################
 
-# Type identifier of the solver.
-# 9=Multigrid, 11=UMFPACK
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
 
-isolverType = 11 9
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = 'CC-MULTIGRIDSOLVER'
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANCA.
+# 1=General VANCA. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 2=Full VANCA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 4=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
+# 5=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+
+ismootherType = 2
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = 'CC-SMOOTHER'
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANCA preconditioning.
+# =2: BiCGStab with diagonal VANCA preconditioning
+
+icoarseGridSolverType = 0
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+
+
+# ========================================================================
+# The following section specifies teh parameters for the solver.
+
+####################
+[CC-MULTIGRIDSOLVER]
+####################
 
 # Minimum number of steps
 
-nminIterations     = 1 2
+nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 20 100
+nmaxIterations     = 5
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 15 2 1E-8 0.001
+depsRel            = 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-12 0.001
+depsAbs            = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
 
-istoppingCriterion = 1
+istoppingCriterion = 0
 
 # General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
 # not used if MG is the linear solver.
@@ -51,8 +91,12 @@ istoppingCriterion = 1
 domega             = 1.0
 
 # Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages 
+# =-1:no output (standard)
 
-ioutputLevel       = 0 2 3
+ioutputLevel       = 0 -1
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -72,7 +116,8 @@ icycle             = 0
 # =0: use constant 1.0 = standard for conforming elements.
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
-ccorrectionTypeAlpha = 0
+
+ccorrectionTypeAlpha = 1
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -84,113 +129,41 @@ dalphaMin          = -10.0
 
 dalphaMax          = 10.0
 
-# Name of the pre- and post-smoother. This is the name of another 
-# subsection in this file which describes the actual smoother.
-# Both names can be identical, then the same configuration is used
-# as pre- and postsmoother.
-
-#spreSmootherName   = 'CC-VANCA2DQ1TP0'
-#spostSmootherName  = 'CC-VANCA2DQ1TP0'
-spreSmootherName   = 'CC-BICGSTABSMOOTHER' 
-spostSmootherName  = 'CC-BICGSTABSMOOTHER' 
-
-# Name of the coarse grid solver. This is the name of another 
-# subsection in this file which describes the actual smoother.
-
-#scoarseGridSolver  = 'CC-UMFPACK'
-scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
 
 # ========================================================================
-# The following section describes the parameters of the VANCA smoother.
-# When a parameter is deleted or commented out, the standard value is used.
+# The following section specifies the parameters for the smoother.
 
-#####################
-[CC-BICGSTABSMOOTHER]
-#####################
+#############
+[CC-SMOOTHER]
+#############
 
-# Type identifier of the solver that should be used.
-# 7=BiCGStab, 1=Defect correction
-
-isolverType        = 7
-
-# Number of smoothing steps
-
-nsmoothingSteps    = 2
-
-# Relaxation parameter
-
-domega             = 1.0 0.7 1.0
-
-ioutputLevel = 0
-
-# VANCA preconditioner
-
-spreconditioner = 'CC-VANCA2DQ1TP0'
-
-#################
-[CC-VANCA2DQ1TP0]
-#################
-
-# Type identifier of the solver that should be used as smoother.
-# 54=Vanca
-
-isolverType        = 54
-
-# Subtype identifier of the smoother.
-# Note: Usually, the best variants are 0 (completely general), 3 or 5.
-# Standard value for Navier-Stokes is = 3.
-# 0=general VANCA (slow, but independent of the discretisation and of the problem)
-# 1=general VANCA; 'direct' method, bypassing the defect correction approach.
-#   (-> specialised variant of 0, but slightly faster)
-# 2=Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-# 3=Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-#   'direct' method, bypassing the defect correction approach.
-#   (-> specialised variant of 2, but faster)
-# 4=Full VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-# 5=Full VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-#   'direct' method, bypassing the defect correction approach.
-#   (-> specialised variant of 4, but faster)
-#
-# 20=Full VANCA for 2D Navier-Stokes optimal control problem.
-# 21=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
-#    Note: This doesn't seem to work!?!
-# 22=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
-# 23=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
-#    Note: This doesn't seem to work!?!
-
-isolverSubtype     = 22 5   # 21
-
-# Number of smoothing steps
+# Number of pre- and postsmoothing steps
 
 nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 1.0 0.7 1.0
+domega             = 0.9
 
-ioutputLevel = 0
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
+
+ioutputLevel       = 0
 
 # ========================================================================
-# The following section describes the parameters of the VANCA coarse grid
-# solver.
-# When a parameter is deleted or commented out, the standard value is used.
+# The following section specifies teh parameters for the 
+# coarse grid solver.
 
-########################
-[CC-VANCA2DQ1TP0-COARSE]
-########################
-
-# Type identifier of the solver that should be used.
-# 7=BiCGStab, 1=Defect correction
-
-isolverType        = 7 11 7
+#####################
+[CC-COARSEGRIDSOLVER]
+#####################
 
 # Minimum number of steps
 
-nminIterations     = 2
+nminIterations     = 1
 
 # Maximum number of steps
 
@@ -199,61 +172,40 @@ nmaxIterations     = 1000
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-11 #0.01
+depsRel            = 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-14
-
-# Output level of the solver
-
-ioutputLevel       = 0 2
+depsAbs            = 1E-2
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
 
-istoppingCriterion = 1
+istoppingCriterion = 0
 
-# VANCA preconditioner
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
 
-spreconditioner = 'CC-VANCA2DQ1TP0-COARSEPRECOND'
-
-###############################
-[CC-VANCA2DQ1TP0-COARSEPRECOND]
-###############################
-
-# Preconditioner for the coarse grid solver: VANCA
-# 54=Vanca
-
-isolverType        = 54
-
-# Subtype identifier of the VANCA-type.
-# 0=2=general VANCA, 
-# 1=3=Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
-# discretisation
-#
-# 21=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
-
-isolverSubtype     = 21 3  # 21
+ioutputLevel       = 0
 
 # Relaxation parameter
 
-domega             = 0.7
+domega             = 1.0
 
+# Section in this file that defines the parameters of the preconditioner
 
-# ========================================================================
-# The following section describes the parameters of the UMFPACK solver.
-# When a parameter is deleted or commented out, the standard value is used.
+spreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
 
-############
-[CC-UMFPACK]
-############
+##############################
+[CC-COARSEGRID-PRECONDITIONER]
+##############################
 
-# Type identifier of the smoother.
-# 11=UMFPACK
+# Relaxation parameter
 
-isolverType        = 11
-
+domega             = 1.0
