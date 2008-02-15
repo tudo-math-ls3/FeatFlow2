@@ -1080,6 +1080,14 @@ MODULE linearsolver
   
   TYPE t_linsolSubnodeUMFPACK4
   
+    ! Matrix output for debug.
+    ! If this is set to a value <> 0, the numerical factorisation routine
+    ! writes the matrix to a text file before factorising it.
+    ! The text file gets the name 'matrixN.txt' with N=imatrixDebugOutput.
+    ! This is for debugging purposes and should be used with care,
+    ! as the text files grow rather quickly with the dimension!
+    INTEGER :: imatrixDebugOutput = 0
+  
     ! Control structure for UMFPACK4; contains parameter for the solver
     REAL(DP), DIMENSION(20) :: Dcontrol
 
@@ -5815,11 +5823,20 @@ CONTAINS
     rtempMatrix%dscaleFactor = 1.0_DP
   END IF
 
-  !!! DEBUG
-  !CALL lsyssc_getbase_double (rtempMatrix,p_DA)
-  !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
-  !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
-  !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
+  ! If the debug flag is set, write out the matrix to a text file.
+  IF (rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput .GT. 0) THEN
+    IF (rsolverNode%ioutputLevel .GE. 0) THEN
+      CALL output_line ('Writing matrix to a text file.',&
+          OU_CLASS_WARNING,OU_MODE_STD,'linsol_initDataUMFPACK4')
+    END IF
+    CALL lsyssc_getbase_double (rtempMatrix,p_DA)
+    WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
+    CALL matio_writeMatrixHR (p_rmatrix, 'matrix',.TRUE., 0, 'matrix'//&
+        TRIM(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
+        '.txt', '(E15.5)')
+  END IF
+  
+  ! DEBUG!!!
   !CALL sys_halt()
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
