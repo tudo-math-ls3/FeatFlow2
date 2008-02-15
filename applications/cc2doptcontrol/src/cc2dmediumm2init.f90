@@ -7,16 +7,16 @@
 !# This module contains basic initialisation routines for cc2dmini_method2:
 !# Initialisation of the main structures with parameters:
 !#
-!# 1.) c2d2_initParameters
+!# 1.) cc_initParameters
 !#     -> Init the problem structure with data from the INI/DAT files
 !#
-!# 2.) c2d2_doneParameters
+!# 2.) cc_doneParameters
 !#     -> Clean up the problem structure
 !#
-!# 3.) c2d2_initParamTriang
+!# 3.) cc_initParamTriang
 !#     -> Read parametrisation, read triangulation, refine the mesh
 !#
-!# 4.) c2d2_doneParamTriang
+!# 4.) cc_doneParamTriang
 !#     -> Remove the meshes of all levels from the heap
 !#
 !# </purpose>
@@ -55,7 +55,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initOutput (rproblem)
+  SUBROUTINE cc_initOutput (rproblem)
   
 !<description>
   ! Initialises basic output settings based on the parameters in the DAT file.
@@ -82,7 +82,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initParameters (rproblem)
+  SUBROUTINE cc_initParameters (rproblem)
   
 !<description>
   ! Initialises the structure rproblem with data from the initialisation
@@ -120,9 +120,6 @@ CONTAINS
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
     
-    ! By default, X- and Y-velocity matrix are coupled.
-    rproblem%bdecoupledXY = .FALSE.
-    
     ! Add the (global) viscosity parameter
     CALL collct_setvalue_real(rproblem%rcollection,'NU',dnu,.TRUE.)
 
@@ -144,9 +141,6 @@ CONTAINS
     rproblem%NLMIN = ilvmin
     rproblem%NLMAX = ilvmax
 
-    CALL collct_setvalue_int (rproblem%rcollection,'NLMIN',ilvmin,.TRUE.)
-    CALL collct_setvalue_int (rproblem%rcollection,'NLMAX',ilvmax,.TRUE.)
-    
     ! Allocate memory for the levels
     ALLOCATE(rproblem%RlevelInfo(1:ilvmax))
     
@@ -183,11 +177,11 @@ CONTAINS
     CALL collct_setvalue_int( rproblem%rcollection,'IBOUNDARY',i1,.TRUE.)
 
     ! Time dependence
-    CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+    CALL cc_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
         rproblem%rparamList)
         
     ! Optimal control
-    CALL c2d2_initOptControl(rproblem)
+    CALL cc_initOptControl(rproblem)
 
   END SUBROUTINE
 
@@ -195,12 +189,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneParameters (rproblem)
+  SUBROUTINE cc_doneParameters (rproblem)
   
 !<description>
   ! Cleans up parameters read from the DAT files. Removes all references to
   ! parameters from the collection rproblem\%rcollection that were
-  ! set up in c2d2_initParameters.
+  ! set up in cc_initParameters.
 !</description>
   
 !<inputoutput>
@@ -211,7 +205,7 @@ CONTAINS
 !</subroutine>
 
     ! Optimal control
-    CALL c2d2_doneOptControl(rproblem)
+    CALL cc_doneOptControl(rproblem)
 
     ! Release memory of the level specification
     DEALLOCATE(rproblem%RlevelInfo)
@@ -229,10 +223,6 @@ CONTAINS
     ! Remove type of problem to discretise
     CALL collct_deleteValue(rproblem%rcollection,'ISTOKES')
 
-    ! Remove min/max level from the collection
-    CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
-    CALL collct_deleteValue(rproblem%rcollection,'NLMIN')
-
     ! Remove the viscosity parameter
     CALL collct_deletevalue(rproblem%rcollection,'NU')
     
@@ -242,7 +232,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initParamTriang (rproblem)
+  SUBROUTINE cc_initParamTriang (rproblem)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -309,7 +299,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneParamTriang (rproblem)
+  SUBROUTINE cc_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.

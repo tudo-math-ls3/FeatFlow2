@@ -305,8 +305,8 @@ CONTAINS
     CALL lsysbl_releaseVector (rx1)
     
     ! DEBUG!!!
-    !CALL c2d2_postprocSpaceTimeGMV (rproblem,rdiscrFine,rfineVector,'gmv/fine.gmv')
-    !CALL c2d2_postprocSpaceTimeGMV (rproblem,rdiscrCoarse,rcoarseVector,'gmv/coarse.gmv')
+    !CALL cc_postprocSpaceTimeGMV (rproblem,rdiscrFine,rfineVector,'gmv/fine.gmv')
+    !CALL cc_postprocSpaceTimeGMV (rproblem,rdiscrCoarse,rcoarseVector,'gmv/coarse.gmv')
     
 !    ! Constant prolongation
 !    !

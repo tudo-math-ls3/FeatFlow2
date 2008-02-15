@@ -1906,7 +1906,7 @@ CONTAINS
 
         ! Calculate the residuum for the next step : (b-Ax)
         CALL sptivec_copyVector (rd,p_rdef)
-        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+        CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             p_rx,p_rdef, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dresnorm,.FALSE.)
         
         ! Filter the defect for boundary conditions in space and time.
@@ -2259,7 +2259,7 @@ CONTAINS
   ! to the diagonal block of each time step in the global space-time
   ! system. Usually, this spatial preconditioner is a linear solver
   ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with c2d2_precondDefect is suitable.
+  ! can be used with cc_precondDefect is suitable.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -2279,13 +2279,15 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iidxNonlin
+    INTEGER :: isubstep,iidxNonlin, nlmax
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX
+    TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditioner
+    TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd,p_Dsol
@@ -2296,6 +2298,17 @@ CONTAINS
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
     p_rspaceTimeMatrix => rsolverNode%rmatrix
+    
+    ! Get a pointer to our spatial preconditioner
+    p_rspatialPreconditioner => &
+        rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner
+        
+    ! Get the maximum level. This level corresponds to the above
+    ! space-time discretisation
+    nlmax = p_rspatialPreconditioner%NLMAX
+    
+    ! Get preconditioner information about the maximum level
+    p_rlevelInfo => p_rspatialPreconditioner%RcoreEquation(nlmax)
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
@@ -2317,16 +2330,13 @@ CONTAINS
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
+    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
+    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
         
     rmatrixComponents%dnu = &
         collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
@@ -2361,7 +2371,7 @@ CONTAINS
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
           .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
       END IF
 
       ! DEBUG!!!      
@@ -2382,13 +2392,13 @@ CONTAINS
       CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
       ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+      CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
         isubstep,0,rmatrixComponents,iidxNonlin)
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.
       CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
-      CALL c2d2_precondDefect (&
+      CALL cc_precondDefect (&
           rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner,&
           rmatrixComponents,&
           rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
@@ -2646,7 +2656,7 @@ CONTAINS
   ! to the diagonal block of each time step in the global space-time
   ! system. Usually, this spatial preconditioner is a linear solver
   ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with c2d2_precondDefect is suitable.
+  ! can be used with cc_precondDefect is suitable.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -2666,13 +2676,15 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iidxNonlin
+    INTEGER :: isubstep,iidxNonlin,nlmax
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3,rtempVectorX
+    TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditioner
+    TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
@@ -2683,6 +2695,17 @@ CONTAINS
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
     p_rspaceTimeMatrix => rsolverNode%rmatrix
+    
+    ! Get a pointer to our spatial preconditioner
+    p_rspatialPreconditioner => &
+        rsolverNode%p_rsubnodeBlockSOR%p_rspatialPreconditioner
+        
+    ! Get the maximum level. This level corresponds to the above
+    ! space-time discretisation
+    nlmax = p_rspatialPreconditioner%NLMAX
+    
+    ! Get preconditioner information about the maximum level
+    p_rlevelInfo => p_rspatialPreconditioner%RcoreEquation(nlmax)
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
@@ -2709,16 +2732,13 @@ CONTAINS
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
+    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
+    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
         
     rmatrixComponents%dnu = &
         collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
@@ -2808,7 +2828,7 @@ CONTAINS
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
           .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
       END IF
 
       ! DEBUG!!!      
@@ -2829,10 +2849,10 @@ CONTAINS
       IF (isubstep .GT. 0) THEN
       
         ! Create d2 = RHS - Mx1 
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,-1,rmatrixComponents,iidxNonlin)
           
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorD1,rtempVectorD2,rsolverNode%domega)
+        CALL cc_assembleDefect (rmatrixComponents,rtempVectorD1,rtempVectorD2,rsolverNode%domega)
         
       END IF
 
@@ -2845,13 +2865,13 @@ CONTAINS
       END IF
 
       ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+      CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
         isubstep,0,rmatrixComponents,iidxNonlin)
 
       ! Perform preconditioning of the spatial defect with the method 
       ! provided by the core equation module.
       CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
-      CALL c2d2_precondDefect (&
+      CALL cc_precondDefect (&
           rsolverNode%p_rsubnodeBlockSOR%p_rspatialPreconditioner,&
           rmatrixComponents,&
           rtempVectorD2,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
@@ -3130,7 +3150,7 @@ CONTAINS
   ! to the diagonal block of each time step in the global space-time
   ! system. Usually, this spatial preconditioner is a linear solver
   ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with c2d2_precondDefect is suitable.
+  ! can be used with cc_precondDefect is suitable.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -3150,7 +3170,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iiteration,iidxNonlin
+    INTEGER :: isubstep,iiteration,iidxNonlin,nlmax
     REAL(DP) :: dtheta,dtstep,dtime
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -3163,6 +3183,8 @@ CONTAINS
     TYPE(t_spacetimeVector), POINTER :: p_rx
     LOGICAL :: bcalcNorm
     REAL(DP) :: domegaSOR,dres,dresInit
+    TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditioner
+    TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Dd1,p_Dd2,p_Dd3,p_Dd,p_Dsol
@@ -3174,6 +3196,17 @@ CONTAINS
     ! how to apply the global system matrix.
     p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
     p_rspaceTimeMatrix => rsolverNode%rmatrix
+    
+    ! Get a pointer to our spatial preconditioner
+    p_rspatialPreconditioner => &
+        rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner
+        
+    ! Get the maximum level. This level corresponds to the above
+    ! space-time discretisation
+    nlmax = p_rspatialPreconditioner%NLMAX
+    
+    ! Get preconditioner information about the maximum level
+    p_rlevelInfo => p_rspatialPreconditioner%RcoreEquation(nlmax)
     
     dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
@@ -3230,16 +3263,13 @@ CONTAINS
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
+    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
+    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
         
     rmatrixComponents%dnu = &
         collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
@@ -3374,7 +3404,7 @@ CONTAINS
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
             .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
         END IF
 
         ! The RHS which is put into the preconditioner is set up in 
@@ -3389,10 +3419,10 @@ CONTAINS
           CALL sptivec_getTimestepData (p_rx, 1+isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+          CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents,iidxNonlin)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
             rtempVectorRHS,domegaSOR)
           
         END IF
@@ -3401,10 +3431,10 @@ CONTAINS
         IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
           
           ! Create d2 = RHS - Ml3 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+          CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents,iidxNonlin)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
             rtempVectorRHS,domegaSOR)
           
         END IF
@@ -3419,11 +3449,11 @@ CONTAINS
         END IF  
 
         ! Set up the matrix weights for the diagonal matrix
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents,iidxNonlin)
           
         ! Create d2 = RHS - A(solution) X2
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol)
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -3441,7 +3471,7 @@ CONTAINS
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        CALL c2d2_precondDefect (&
+        CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
@@ -3495,7 +3525,7 @@ CONTAINS
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
             .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
         END IF
 
         ! The RHS which is put into the preconditioner is set up in 
@@ -3506,10 +3536,10 @@ CONTAINS
         IF (isubstep .GT. 0) THEN
         
           ! Create d2 = RHS - Mx1 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+          CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rmatrixComponents,iidxNonlin)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
             rtempVectorRHS,domegaSOR)
           
         END IF
@@ -3522,10 +3552,10 @@ CONTAINS
           CALL sptivec_getTimestepData (p_rx, 1+isubstep+1, rtempVectorX3)
         
           ! Create d2 = RHS - Ml3 
-          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+          CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rmatrixComponents,iidxNonlin)
             
-          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
             rtempVectorRHS,domegaSOR)
           
         END IF
@@ -3537,11 +3567,11 @@ CONTAINS
         END IF
 
         ! Set up the matrix weights for the diagonal matrix
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rmatrixComponents,iidxNonlin)
           
         ! Create d2 = RHS - A(solution) X2
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol)
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -3562,7 +3592,7 @@ CONTAINS
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        CALL c2d2_precondDefect (&
+        CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
@@ -4113,7 +4143,7 @@ CONTAINS
         ! We will now abuse the p_DP vector to save the result of
         ! the matrix-vector-multiplication A * d_k.
         ! Using this trick, we can save one temporary vector.
-        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+        CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             p_DD,p_DP, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Calculate alpha for the CG iteration
@@ -4554,7 +4584,7 @@ CONTAINS
       ! Nothing to do if there is Nuemann boundary here.
       IF (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) RETURN
     
-      neq = p_rspaceTimeDiscr%p_rlevelInfo%rpreallocatedSystemMatrix%neq
+      neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
       ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes%NEQ
       ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1%NCOLS
     
@@ -4606,7 +4636,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(1) :: Irows
     INTEGER(PREC_VECIDX) :: idiag
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
-  
+      
     p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
    
     ! Create a global matrix:
@@ -4621,25 +4651,28 @@ CONTAINS
         p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
     rmatrixComponents%p_rmatrixStokes           => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
+    rmatrixComponents%p_rmatrixB1               => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
+    rmatrixComponents%p_rmatrixB2               => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
+    rmatrixComponents%p_rmatrixMass             => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
     rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
     rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
     rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
     rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
 
-    ! Copy references to the preallocated system matrix. Use that as space
-    ! for storing matrix data.
-    CALL lsysbl_duplicateMatrix (p_rspaceTimeDiscr%p_rlevelInfo%rpreallocatedSystemMatrix,&
-        rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
+    ! Get a temporary system matrix
+    CALL cc_allocSystemMatrix (rproblem,p_rspaceTimeDiscr%p_rlevelInfo,rblockTemp)
+    
+    ! Attach the boundary conditions
+    rblockTemp%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rblockTemp%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+
     ! Create a vector for evaluating the nonlinearity.
     ! (The vector is always created but only used when there is a nonlinearity!)
     CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
@@ -4656,7 +4689,7 @@ CONTAINS
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
       END IF
       
       ! Assemble diagonal blocks as well as the band above and below the diagonal.
@@ -4669,7 +4702,7 @@ CONTAINS
       DO ix = ileft,iright
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,&
+        CALL cc_setupMatrixWeights (rproblem,rsupermatrix,&
           p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rmatrixComponents,iidxNonlin)
           
         ! If there is a nonlinearity involved, get the evaluation point.
@@ -4684,8 +4717,8 @@ CONTAINS
         rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
         rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
         rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
-        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rblockTemp,rmatrixComponents,rvector,ctypePrimalDual=0) 
+        CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rblockTemp,rmatrixComponents,rvector) 
 
         ! Switch of matrices that aren't needed.
         SELECT CASE (ix)
@@ -5645,7 +5678,7 @@ END SUBROUTINE
         CALL sptivec_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
         CALL sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
 
-        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+        CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             p_DP,p_DPA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Filter the defect for boundary conditions in space and time.
@@ -5677,7 +5710,7 @@ END SUBROUTINE
 
         CALL sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
 
-        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+        CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             p_DR,p_DSA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Filter the defect for boundary conditions in space and time.
@@ -6542,7 +6575,7 @@ END SUBROUTINE
     DO i=1,iiterations
     
       CALL sptivec_copyVector(rb,rtemp)
-      CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+      CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
           rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
       
       IF (iiterations .EQ. 1) dresInit = dres
@@ -6589,7 +6622,7 @@ END SUBROUTINE
         ! We only have to recalculate the residuum if we haven't stopped
         ! prematurely.
         CALL sptivec_copyVector(rb,rtemp)
-        CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+        CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
         IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
                   
@@ -6812,7 +6845,7 @@ END SUBROUTINE
               p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
               p_rsubnode%p_Rlevels(ilev)%rtempVector)
           IF (ite .NE. 1) THEN   ! initial solution vector is zero!
-            CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+            CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                 p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
                 SPTID_FILTER_DEFECT)
@@ -6857,7 +6890,7 @@ END SUBROUTINE
               ! Build the defect vector
               CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector)
-              CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+              CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                   p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
                   SPTID_FILTER_DEFECT,dres)
@@ -7093,7 +7126,7 @@ END SUBROUTINE
                   
                 CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
-                CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+                CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                     p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
                     SPTID_FILTER_DEFECT,dres)
@@ -7126,7 +7159,7 @@ END SUBROUTINE
                     
                   CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                                           p_rsubnode%p_Rlevels(ilev)%rtempVector)
-                  CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+                  CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                       p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                       p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
                       SPTID_FILTER_DEFECT,dres)
@@ -7170,7 +7203,7 @@ END SUBROUTINE
                     ! At first, calculate the residuum on that level.
                     CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                                             p_rsubnode%p_Rlevels(ilev)%rtempVector)
-                    CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+                    CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
                         p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                         p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
                         SPTID_FILTER_DEFECT,dres)
@@ -7237,7 +7270,7 @@ END SUBROUTINE
           ! Calculate the residuum and its norm.
           CALL sptivec_copyVector (p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
                                     p_rsubnode%p_Rlevels(ilev)%rtempVector)
-          CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
+          CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
               p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
               p_rsubnode%p_Rlevels(ilev)%rtempVector, -1.0_DP,1.0_DP,&
               SPTID_FILTER_DEFECT,dres)
@@ -7315,14 +7348,14 @@ END SUBROUTINE
         END IF
       END IF
     
+      ! Calculate the time for linear algebra
+      CALL stat_stopTimer (p_rsubnode%rtimeLinearAlgebra)
+      CALL stat_subTimers (p_rsubnode%rtimeSmoothing,p_rsubnode%rtimeLinearAlgebra)
+      CALL stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
+      CALL stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
+
     END IF
     
-    ! Calculate the time for linear algebra
-    CALL stat_stopTimer (p_rsubnode%rtimeLinearAlgebra)
-    CALL stat_subTimers (p_rsubnode%rtimeSmoothing,p_rsubnode%rtimeLinearAlgebra)
-    CALL stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
-    CALL stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
-
     ! As the solution vector on the finest level shared its memory with rd,
     ! we just calculated the new correction vector!
       
@@ -7414,7 +7447,7 @@ END SUBROUTINE
       !
       ! Calculate the nominator
       CALL sptivec_copyVector (rrhsVector,rtempVector)
-      CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
+      CALL cc_spaceTimeMatVec (rproblem, rmatrix, &
           rsolutionVector,rtempVector, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT)
 
       ! Implement boundary conditions into the vector.
@@ -7431,7 +7464,7 @@ END SUBROUTINE
       ! Calculate the denominator:
       
       CALL sptivec_clearVector (rtempVector)
-      CALL c2d2_spaceTimeMatVec (rproblem, rmatrix, &
+      CALL cc_spaceTimeMatVec (rproblem, rmatrix, &
           rcorrectionVector,rtempVector, 1.0_DP,0.0_DP,SPTID_FILTER_DEFECT)
       
       ! Implement boundary conditions into the vector.

@@ -72,14 +72,14 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_createPreconditioner
+!# 1.) cc_createPreconditioner
 !#     -> Creates a basic preconditioner structure for a spatial 
 !#        preconditioner.
 !#
-!# 2.) c2d2_releasePreconditioner
+!# 2.) cc_releasePreconditioner
 !#     -> Releases a spatial preconditioner structure
 !#
-!# 3.) c2d2_precondDefect
+!# 3.) cc_precondDefect
 !#     -> Executes spatial preconditioning on a given defect vector
 !#
 !# </purpose>
@@ -142,20 +142,13 @@ MODULE cc2dmediumm2nonlinearcore
 
   
 !<types>
-
-!<typeblock>
-
   ! This type is used to save some situation specific assembly information
   ! during the setup phase of the nonlinear solver. Here it's noted, if
   ! and whose matrices exist and/or must be assmebled transposed to be
   ! compatible with the preconditioner and more. It's more or less
   ! a collection if different flags.
-  TYPE t_ccFinalAssemblyInfo
-    ! This flag is set to YES if the B matrices must be assembled
-    ! transposedly. This may be necessary for special VANCA type smoothers
-    ! if a linear solver is used as preconditioner.
-    INTEGER :: iBmatricesTransposed = NO
-    
+  TYPE t_ccPreconditionerSpecials
+  
     ! Whether to use 'adaptive matrices', i.e. set up coarse grid matrices
     ! with the help of fine grid matrices. This is used for very special
     ! discretisations only (e.g. Q1~/Q0). =0: deactivate
@@ -163,6 +156,44 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! A configuration parameter for adaptive matrices.
     REAL(DP) :: dadMatThreshold     = 0.0_DP
+
+    ! If the preconditioner is a linear solver:
+    ! Type of solver.
+    ! =0: Gauss elimination (UMFPACK)
+    ! =1: Multigrid solver
+    INTEGER :: isolverType = 0
+    
+    ! If the preconditioner is the linear multigrid solver:
+    ! Type of smoother.
+    ! =0: general VANCA (slow, but independent of the discretisation and of the problem)
+    ! =1: general VANCA; 'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 0, but slightly faster)
+    ! =2: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =3: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    !     'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 8, but faster)
+    ! =4: Full VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =5: Full VANCA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANCA variant).
+    !     'direct' method, bypassing the defect correction approach.
+    !     (-> specialised variant of 10, but faster)
+    INTEGER :: ismootherType = 3
+    
+    ! If the preconditioner is the linear multigrid solver:
+    ! Type of coarse grid solver.    
+    ! =0: Gauss elimination (UMFPACK)
+    ! =1: Defect correction with diagonal VANCA preconditioning.
+    ! =2: BiCGStab with diagonal VANCA preconditioning
+    INTEGER :: icoarseGridSolverType = 1
+        
+    ! This flag is set to .TRUE. if there are no Neumann boundary
+    ! components. In that case, the pressure matrices of direct
+    ! solvers must be changed.
+    LOGICAL :: bpressureGloballyIndefinite = .FALSE.
+    
   END TYPE
 
 !</typeblock>
@@ -176,12 +207,6 @@ MODULE cc2dmediumm2nonlinearcore
   
     ! The (linearised) system matrix for that specific level. 
     TYPE(t_matrixBlock), POINTER :: p_rmatrix => NULL()
-
-    ! The primal part of the (linearised) system matrix for that specific level. 
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixPrimal => NULL()
-
-    ! The dual part of the (linearised) system matrix for that specific level. 
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixDual => NULL()
 
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes => NULL()
@@ -210,12 +235,22 @@ MODULE cc2dmediumm2nonlinearcore
     ! used for preconditioning.
     TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner => NULL()
     
-    ! A reference to p_rmatrixPreconditioner(1:3,1:3)
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditionerPrimal => NULL()
-    
-    ! A reference to p_rmatrixPreconditioner(4:6,4:6)
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditionerDual => NULL()
-  
+    ! Pointer to a B1^T-matrix.
+    ! This pointer may point to NULL(). In this case, B1^T is created
+    ! by 'virtually transposing' the B1 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+
+    ! Pointer to a B2-matrix.
+    ! This pointer may point to NULL(). In this case, B2^T is created
+    ! by 'virtually transposing' the B2 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
+
   END TYPE
 
 !</typeblock>
@@ -238,21 +273,15 @@ MODULE cc2dmediumm2nonlinearcore
     ! Name of the section in the DAT file configuring this preconditioner.
     CHARACTER(LEN=SYS_STRLEN) :: spreconditionerSection = ''
     
-    ! Target equation where the preconditioner is allowed to be applied to.
-    ! =0: full primal-dual (6x6) system
-    ! =1: primal (3x3) system
-    ! =2: dual (3x3) system
-    INTEGER :: ctypePrimalDual = 0
-    
     ! Minimum discretisation level
     INTEGER :: NLMIN = 0
     
     ! Maximum discretisation level
     INTEGER :: NLMAX = 0
     
-    ! A t_ccFinalAssemblyInfo structure that saves information about
+    ! A t_ccPreconditionerSpecials structure that saves information about
     ! special 'tweaks' in matrices such that everything works.
-    TYPE(t_ccFinalAssemblyInfo) :: rfinalAssembly
+    TYPE(t_ccPreconditionerSpecials) :: rprecSpecials
     
     ! An array of t_cccoreEquationOneLevel structures for all levels
     ! of the discretisation.
@@ -288,7 +317,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_createPreconditioner (rpreconditioner,NLMIN,NLMAX)
+  SUBROUTINE cc_createPreconditioner (rpreconditioner,NLMIN,NLMAX)
   
 !<description>
   ! This routine creates a spational preconditioner structure. The structure is
@@ -323,7 +352,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_releasePreconditioner (rpreconditioner)
+  SUBROUTINE cc_releasePreconditioner (rpreconditioner)
   
 !<description>
   ! Releases allocated memory in the spatial preconditioner structure.
@@ -348,7 +377,7 @@ CONTAINS
 
   !<subroutine>
 
-    SUBROUTINE c2d2_precondDefect (rpreconditioner,rmatrixComponents,&
+    SUBROUTINE cc_precondDefect (rpreconditioner,rmatrixComponents,&
         rd,rx,bsuccess,rcollection)
   
     USE linearsystemblock
@@ -410,7 +439,6 @@ CONTAINS
     real(dp), dimension(:), pointer :: p_vec,p_def,p_da
     call lsysbl_getbase_double (rd,p_def)
     call lsysbl_getbase_double (rx,p_vec)
-!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
 
       SELECT CASE (rpreconditioner%ctypePreconditioning)
       CASE (CCPREC_NONE)
@@ -450,45 +478,13 @@ CONTAINS
         ! in the matrices in case they have changed...
         ALLOCATE(Rmatrices(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
         
-        ! Either attach the full system matrix or the primal or dual submatrix
-        SELECT CASE (rpreconditioner%ctypePrimalDual)
-        CASE (0)
-          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
-            CALL lsysbl_duplicateMatrix ( &
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
-              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          END DO
+        ! Attach the system matrix
+        DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
+          CALL lsysbl_duplicateMatrix ( &
+            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END DO
           
-        CASE (1)
-          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
-            CALL lsysbl_duplicateMatrix ( &
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal, &
-              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-              
-            ! Overwrite the data of the matrix with the data of the submatrix
-            ! in the full 6x6 preconditioner matrix.
-            ! Ths overwrites the data handes and multiplication factor.
-            CALL lsysbl_deriveSubmatrix ( &
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
-              Rmatrices(i), LSYSSC_DUP_IGNORE,LSYSSC_DUP_SHARE,1,3)
-          END DO
-        
-        CASE (2)
-          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
-            CALL lsysbl_duplicateMatrix ( &
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual, &
-              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-            ! Overwrite the data of the matrix with the data of the submatrix
-            ! in the full 6x6 preconditioner matrix.
-            ! Ths overwrites the data handes and multiplication factor.
-            CALL lsysbl_deriveSubmatrix ( &
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
-              Rmatrices(i), LSYSSC_DUP_IGNORE,LSYSSC_DUP_SHARE,4,6)
-          END DO
-        
-        END SELECT
-        
         ! DEBUG!!!
         !CALL matio_writeBlockMatrixHR (Rmatrices(rpreconditioner%NLMIN), 'matrix',&
         !                               .TRUE., 0, 'matrixstat.txt','(E10.2)')
@@ -500,12 +496,15 @@ CONTAINS
         !  CALL storage_getbase_double (Rmatrices(i)% &
         !      RmatrixBlock(4,1)%h_Da,p_Ddata)
         !END DO
-            
+        
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
         CALL linsol_updateStructure (rpreconditioner%p_rsolverNode,ierror)
         CALL linsol_initData (p_rsolverNode, ierror)
-        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+        IF (ierror .NE. LINSOL_ERR_NOERROR) THEN
+          PRINT *,'linsol_initData failed!'
+          CALL sys_halt()
+        END IF
         
         ! The solver got the matrices; clean up Rmatrices, it was only of temporary
         ! nature...
@@ -514,107 +513,13 @@ CONTAINS
         END DO
         DEALLOCATE(Rmatrices)
 
-        ! Check the preconditioner. Do we have a full-space preconditioner
-        ! or one that has to be applied either only to the primal or to the
-        ! dual system?
-        SELECT CASE (rpreconditioner%ctypePrimalDual)
-        CASE (0)
-          ! Full system
-          !
-          ! Solve the system. As we want to solve Ax=b with
-          ! b being the real RHS and x being the real solution vector,
-          ! we use linsol_solveAdaptively. If b is a defect
-          ! RHS and x a defect update to be added to a solution vector,
-          ! we would have to use linsol_precondDefect instead.
-          CALL linsol_precondDefect (p_rsolverNode,rd)
+        ! Solve the system. As we want to solve Ax=b with
+        ! b being the real RHS and x being the real solution vector,
+        ! we use linsol_solveAdaptively. If b is a defect
+        ! RHS and x a defect update to be added to a solution vector,
+        ! we would have to use linsol_precondDefect instead.
+        CALL linsol_precondDefect (p_rsolverNode,rd)
 
-        CASE (1)
-          ! Primal system
-          !
-          ! The matrix looks like
-          !
-          !  ( A   B   M      )
-          !  ( B^T            )
-          !  ( M       A    B )
-          !  (         B^T    )
-          !
-          ! We only process the primal matrix here:
-          !
-          !  ( A   B )
-          !  ( B^T   )
-          !
-          ! The dual equation is treated as RHS. So subtract M*dual-vector from the
-          ! iteration vector, corresponding to the upper right submatrix.
-          !
-          !  (         M      )  =: M~
-          !  (                )
-          !  (                )
-          !  (                )
-          !
-          ! Subtract: d=d-M~x, so M*dual is subtracted from the primal defect.
-          
-          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
-          !    rx%RvectorBlock(4),rd%RvectorBlock(1),-rmatrixComponents%dmu1,1.0_DP)
-          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
-          !    rx%RvectorBlock(5),rd%RvectorBlock(2),-rmatrixComponents%dmu1,1.0_DP)
-          
-          ! Create a subvector that resembles the primal defect
-          CALL lsysbl_deriveSubvector (rd,rsubvectorD,1,3,.TRUE.)
-          
-          ! Solve the system. As we want to solve Ax=b with
-          ! b being the real RHS and x being the real solution vector,
-          ! we use linsol_solveAdaptively. If b is a defect
-          ! RHS and x a defect update to be added to a solution vector,
-          ! we would have to use linsol_precondDefect instead.
-          CALL linsol_precondDefect (p_rsolverNode,rsubvectorD)
-          
-          ! Release the temp vector again
-          CALL lsysbl_releaseVector (rsubvectorD)
-
-        CASE (2)
-          ! Dual system
-          !
-          ! The matrix looks like
-          !
-          !  ( A   B   M      )
-          !  ( B^T            )
-          !  ( M       A    B )
-          !  (         B^T    )
-          !
-          ! We only process the primal matrix here:
-          !
-          !  ( A   B )
-          !  ( B^T   )
-          !
-          ! The dual equation is treated as RHS. So subtract M*dual-vector from the
-          ! iteration vector, corresponding to the upper right submatrix.
-          !
-          !  (                )  =: M~
-          !  (                )
-          !  ( M              )
-          !  (                )
-          !
-          ! Subtract: d=d-M~x, so M*dual is subtracted from the primal defect.
-          
-          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
-          !    rx%RvectorBlock(1),rd%RvectorBlock(4),-rmatrixComponents%dmu2,1.0_DP)
-          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
-          !    rx%RvectorBlock(2),rd%RvectorBlock(5),-rmatrixComponents%dmu2,1.0_DP)
-          
-          ! Create a subvector that resembles the primal defect
-          CALL lsysbl_deriveSubvector (rd,rsubvectorD,4,6,.TRUE.)
-          
-          ! Solve the system. As we want to solve Ax=b with
-          ! b being the real RHS and x being the real solution vector,
-          ! we use linsol_solveAdaptively. If b is a defect
-          ! RHS and x a defect update to be added to a solution vector,
-          ! we would have to use linsol_precondDefect instead.
-          CALL linsol_precondDefect (p_rsolverNode,rsubvectorD)
-          
-          ! Release the temp vector again
-          CALL lsysbl_releaseVector (rsubvectorD)
-        END SELECT
-        
         ! Release the numeric factorisation of the matrix.
         ! We don't release the symbolic factorisation, as we can use them
         ! for the next iteration.
@@ -671,15 +576,16 @@ CONTAINS
       TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
       TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
       TYPE(t_ccmatrixComponents) :: rmatrixAssembly
+      INTEGER(PREC_MATIDX), DIMENSION(1), PARAMETER :: Irows = (/1/)
 
       ! A filter chain for the linear solver
       TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
       
       ! DEBUG!!!
+      TYPE(t_cccoreEquationOneLevel), POINTER :: p_rcore
     !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
     !    call lsysbl_getbase_double (rd,p_def)
     !    call lsysbl_getbase_double (rx,p_vec)
-    !    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
 
         ! Get the interlevel projection structure and the temporary vector
         ! from the collection.
@@ -696,9 +602,9 @@ CONTAINS
         ! which are not part of the standard initialisation.
         rmatrixAssembly = rmatrixComponents
         rmatrixAssembly%iadaptiveMatrices = &
-            rpreconditioner%rfinalAssembly%iadaptiveMatrices
+            rpreconditioner%rprecSpecials%iadaptiveMatrices
         rmatrixAssembly%dadmatthreshold = &
-            rpreconditioner%rfinalAssembly%dadmatthreshold
+            rpreconditioner%rprecSpecials%dadmatthreshold
 
         ! On all levels, we have to set up the nonlinear system matrix,
         ! so that the linear solver can be applied to it.
@@ -752,14 +658,19 @@ CONTAINS
 
           ! Set the pointers in the rmatrixAssembly structure according
           ! to the current level.
+          p_rcore => rpreconditioner%RcoreEquation(ilev)
           rmatrixAssembly%p_rdiscretisation         => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrix%p_rblockDiscretisation
+              p_rmatrix%p_rblockDiscretisation
           rmatrixAssembly%p_rmatrixStokes           => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixStokes          
           rmatrixAssembly%p_rmatrixB1             => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixB1              
           rmatrixAssembly%p_rmatrixB2             => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixB2              
+          rmatrixAssembly%p_rmatrixB1T            => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB1T
+          rmatrixAssembly%p_rmatrixB2T            => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB2T
           rmatrixAssembly%p_rmatrixMass           => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixMass            
           rmatrixAssembly%p_rmatrixIdentityPressure => &
@@ -768,13 +679,11 @@ CONTAINS
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. rpreconditioner%NLMAX) THEN
-            CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,&
-                ctypePrimalDual=rpreconditioner%ctypePrimalDual)
+            CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse)
           ELSE
-            CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine,&
-                ctypePrimalDual=rpreconditioner%ctypePrimalDual)
+            CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
           END IF
 
           ! Boundary conditions
@@ -804,6 +713,94 @@ CONTAINS
           !                              .TRUE., 0, 'matrix.txt','(E20.10)')
 
         END DO
+        
+        IF (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) THEN
+          
+          ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
+          !
+          ! We have a pure Dirichlet problem. This may give us some difficulties
+          ! in the case, the preconditioner uses a direct solver (UMFPACK).
+          ! In this case, we have to include a unit vector to the pressure
+          ! matrix to make the problem definite!
+          IF (rpreconditioner%rprecSpecials%isolverType .EQ. 0) THEN
+            p_rmatrix => rpreconditioner%RcoreEquation(rpreconditioner%NLMAX)%&
+                p_rmatrixPreconditioner
+            
+            ! Include a unit vector to the matrix part of the pressure in
+            ! the primal equation -- as long as there is not a full identity
+            ! matrix in the pressure matrix (what would be the case for 
+            ! the initial condition).
+            IF (rmatrixAssembly%dkappa1 .EQ. 0.0_DP) THEN
+              ! Switch the pressure matrix on and clear it; we don't know what is inside.
+              p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+              CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
+              CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,4),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,5),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,6),Irows)
+            END IF
+
+            ! Also in the dual equation, as the BC type coincides
+            IF (rmatrixAssembly%dkappa2 .EQ. 0.0_DP) THEN
+              ! Switch the pressure matrix on and clear it; we don't know what is inside.
+              p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
+              CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,1),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,2),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,3),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,4),Irows)
+              CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,5),Irows)
+              CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(6,6),Irows)
+            END IF
+            
+          END IF
+          
+          IF (rpreconditioner%rprecSpecials%isolverType .EQ. 1) THEN
+          
+            ! If we have a MG solver, We also check the coarse grid solver for 
+            ! the same thing!
+            ! What we don't check is the smoother, thus we assume that smoothers
+            ! are always solvers that allow the applicance of a filter chain.
+            IF (rpreconditioner%rprecSpecials%icoarseGridSolverType .EQ. 0) THEN
+              p_rmatrix => rpreconditioner%RcoreEquation(rpreconditioner%NLMIN)%&
+                  p_rmatrixPreconditioner
+              
+              ! Include a unit vector to the matrix part of the pressure in
+              ! the primal equation -- as long as there is not a full identity
+              ! matrix in the pressure matrix (what would be the case for 
+              ! the initial condition).
+              IF (rmatrixAssembly%dkappa1 .EQ. 0.0_DP) THEN
+                ! Switch the pressure matrix on and clear it; we don't know what is inside.
+                p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+                CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
+                CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,4),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,5),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,6),Irows)
+              END IF
+
+              ! Also in the dual equation, as the BC type coincides
+              IF (rmatrixAssembly%dkappa2 .EQ. 0.0_DP) THEN
+                ! Switch the pressure matrix on and clear it; we don't know what is inside.
+                p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
+                CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,1),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,2),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,3),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,4),Irows)
+                CALL mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,5),Irows)
+                CALL mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(6,6),Irows)
+              END IF
+              
+            END IF
+            
+          END IF
+            
+        END IF        
         
       END SUBROUTINE
       

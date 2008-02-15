@@ -9,7 +9,7 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_postprocessing
+!# 1.) cc_postprocessing
 !#     -> Evaluate the solution of the stationary solver, write GMV-file.
 !# </purpose>
 !##############################################################################
@@ -105,7 +105,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_postprocessingStationary (rproblem,rvector)
+  SUBROUTINE cc_postprocessingStationary (rproblem,rvector)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -181,7 +181,7 @@ CONTAINS
     
     ! Print out the value of the optimal control functional.
     CALL output_lbrk ()
-    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
+    CALL cc_printControlFunctionalStat (rproblem,rvector)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
@@ -266,7 +266,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
@@ -293,7 +293,7 @@ CONTAINS
     CALL vecfil_discreteFBCsol (rprjVector)
     
     ! Clean up the collection (as we are done with the assembly.
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
@@ -420,7 +420,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_postprocessingNonstat (rproblem,rvector)
+  SUBROUTINE cc_postprocessingNonstat (rproblem,rvector)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -577,7 +577,7 @@ CONTAINS
     ! new discretisation:
     CALL spdp_projectSolution (rvector,rprjVector)
     
-    CALL c2d2_initCollectForAssembly(rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
@@ -596,7 +596,7 @@ CONTAINS
                               BCASM_DISCFORSOL)
     rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
     
-    CALL c2d2_doneCollectForAssembly(rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
@@ -696,7 +696,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_postprocSpaceTimeGMV (rproblem,rdiscr,rvector,sfilename)
+  SUBROUTINE cc_postprocSpaceTimeGMV (rproblem,rdiscr,rvector,sfilename)
   
 !<description>
   ! For every sub-solution in the global space-time vector rvector,
@@ -815,7 +815,7 @@ CONTAINS
       ! new discretisation:
       CALL spdp_projectSolution (rvectorTmp,rprjVector)
       
-      CALL c2d2_initCollectForAssembly(rproblem,rproblem%rcollection)
+      CALL cc_initCollectForAssembly(rproblem,rproblem%rcollection)
       
       ! Discretise the boundary conditions according to the Q1/Q1/Q0 
       ! discretisation for implementing them into a solution vector.
@@ -834,7 +834,7 @@ CONTAINS
                                 BCASM_DISCFORSOL)
       rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
-      CALL c2d2_doneCollectForAssembly(rproblem,rproblem%rcollection)
+      CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
       
       ! Filter the solution vector to implement discrete BC's.
       CALL vecfil_discreteBCsol (rprjVector)
@@ -929,7 +929,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initpostprocessing (rproblem,rpostprocessing)
+  SUBROUTINE cc_initpostprocessing (rproblem,rpostprocessing)
 
 !<description>
   ! Initialises the given postprocessing structure rpostprocessing
@@ -985,7 +985,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_clearpostprocessing (rpostprocessing)
+  SUBROUTINE cc_clearpostprocessing (rpostprocessing)
 
 !<description>
   ! Releases all calculated data in the given postprocessing structure
@@ -1016,7 +1016,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_donepostprocessing (rpostprocessing)
+  SUBROUTINE cc_donepostprocessing (rpostprocessing)
 
 !<description>
   ! Releases a given problem structure. All allocated memory of this structure
@@ -1030,7 +1030,7 @@ CONTAINS
 !</subroutine>
 
     ! Release all vectors -- if there are still some allocated
-    CALL c2d2_clearpostprocessing (rpostprocessing)
+    CALL cc_clearpostprocessing (rpostprocessing)
 
     ! Release the discretisation structures allocated above.
     CALL spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
@@ -1043,7 +1043,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_printControlFunctionalStat (rproblem,rvector)
+  SUBROUTINE cc_printControlFunctionalStat (rproblem,rvector)
   
 !<description>
   ! Calculates and prints the value of the optimal control functional J(y,u) 
@@ -1069,12 +1069,12 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Analyse the deviation from the target velocity field.
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dalphaC',dalphaC,0.1_DP)
-    CALL c2d2_optc_stationaryFunctional (rvector,dalphaC,Derror,&
+    CALL cc_optc_stationaryFunctional (rvector,dalphaC,Derror,&
         rproblem%rcollection)
 
     CALL output_line ('||y-z||_L2: '//TRIM(sys_sdEL(Derror(1),2)))
@@ -1082,7 +1082,7 @@ CONTAINS
     CALL output_line ('J(y,u)    : '//TRIM(sys_sdEL(Derror(3),2)))
     
     ! Release assembly-stuff from the collection
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
     
   END SUBROUTINE
 

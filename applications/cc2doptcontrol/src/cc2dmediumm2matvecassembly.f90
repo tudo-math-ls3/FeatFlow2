@@ -65,10 +65,10 @@
 !#
 !# The module contains the following routines:
 !#
-!# 1.) c2d2_assembleMatrix
+!# 1.) cc_assembleMatrix
 !#     -> Assembles a matrix based on a set of input parameters.
 !#
-!# 2.) c2d2_assembleDefect
+!# 2.) cc_assembleDefect
 !#     -> Set up a defect vector d:=b-A(x)x
 !#
 !# </purpose>
@@ -231,25 +231,17 @@ MODULE cc2dmediumm2matvecassembly
     ! Standard = 20.0
     REAL(DP) :: dadmatthreshold = 20.0_DP
     
-    ! A pointer to a block matrix that provides preallocated memory.
-    ! If not associated, new memory will be allocated by the assembly
-    ! routine automatically.
-    TYPE(t_matrixBlock), POINTER :: p_rpreallocatedMatrix => NULL()
-  
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...).
-    ! Only used during matrix creation if p_rpreallocatedMatrix=>NULL(), 
-    ! otherwise this is not used.
+    ! Only used during matrix creation.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation => NULL()
 
     ! Pointer to a template FEM matrix that defines the structure of 
-    ! Laplace/Stokes/... matrices. Only used during matrix creation
-    ! if p_rpreallocatedMatrix=>NULL(), otherwise this is not used.
+    ! Laplace/Stokes/... matrices. Only used during matrix creation.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM => NULL()
 
     ! A template FEM matrix that defines the structure of gradient
-    ! matrices (B1/B2) matrices. Only used during matrix creation
-    ! if p_rpreallocatedMatrix=>NULL(), otherwise this is not used.
+    ! matrices (B1/B2) matrices. Only used during matrix creation.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateGradient => NULL()
 
     ! Pointer to Stokes matrix (=nu*Laplace). 
@@ -260,6 +252,22 @@ MODULE cc2dmediumm2matvecassembly
 
     ! Pointer to a B2-matrix.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixB2 => NULL()
+
+    ! Pointer to a B1^T-matrix.
+    ! This pointer may point to NULL(). In this case, B1^T is created
+    ! by 'virtually transposing' the B1 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+
+    ! Pointer to a B2-matrix.
+    ! This pointer may point to NULL(). In this case, B2^T is created
+    ! by 'virtually transposing' the B2 matrix.
+    !
+    ! Note: This information is automatically created when the preconditioner
+    ! is initialised! The main application does not have to initialise it!
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
 
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
@@ -280,8 +288,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_assembleMatrix (coperation,cmatrixType,rmatrix,rmatrixComponents,&
-      rvector,rfineMatrix,ctypePrimalDual)
+  SUBROUTINE cc_assembleMatrix (coperation,cmatrixType,rmatrix,rmatrixComponents,&
+      rvector,rfineMatrix)
 
 !<description>
   ! This routine assembles a global matrix. The caller must initialise the 
@@ -299,9 +307,6 @@ CONTAINS
   ! to include some special stabilisation terms into the matrix rmatrix.
   !
   ! The routine will not include any boundary conditions in the matrix.
-  ! Nevertheless, if the p_rpreallocatedMatrix parameter in rmatrixComponents
-  ! is set and rmatrix is not initialised, a reference to boundary condition 
-  ! structure of p_rpreallocatedMatrix is transferred to rmatrix.
 !</description>
 
 !<input>
@@ -343,17 +348,10 @@ CONTAINS
   ! A t_ccmatrixComponents structure providing all necessary 'source' information
   ! about how to set up the matrix. 
   !
-  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, either
-  ! p_rpreallocatedMatrix must be initialised or p_rmatrixTemplateXXXX
-  ! as well as p_rdiscretisation!
-  ! If the p_rpreallocatedMatrix pointer is associated and 'coperation' the 
-  ! routine will set up rmatrix based on p_rpreallocatedMatrix. It will create
-  ! rmatrix as a 'shared copy', i.e. in such a way that rmatrix shares its 
-  ! information with p_rpreallocatedMatrix. That helps to save memory and 
-  ! computational time for allocation/deallocation of memory!
-  ! If p_rpreallocatedMatrix is not set, the new matrix is created based
-  ! p_rmatrixTemplateXXXX as well as p_rdiscretisation.
-  ! In both cases, memory is allocated automatically if it's missing.
+  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX
+  ! must be initialised as well as p_rdiscretisation!
+  ! The new matrix is created based p_rmatrixTemplateXXXX as well as p_rdiscretisation.
+  ! Memory is automatically allocated if it's missing.
   TYPE(t_ccmatrixComponents), INTENT(IN) :: rmatrixComponents
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
@@ -367,11 +365,6 @@ CONTAINS
   ! Rannacher-Turek element if cells are too anisotropic).
   TYPE(t_matrixBlock), INTENT(IN), OPTIONAL :: rfineMatrix
   
-  ! What to assemble.
-  ! =0: assemble both, primal and dual parts (1:6,1:6) of the system
-  ! =1: assemble only primal parts of the system (1:3,1:6)
-  ! =2: assemble only dual parts of the system (4:6,1:6)
-  INTEGER, INTENT(IN) :: ctypePrimalDual
 !</input>
 
 !<inputoutput>
@@ -402,17 +395,8 @@ CONTAINS
       ! Release the matrix if present.
       CALL lsysbl_releaseMatrix (rmatrix)
     
-      ! Allocate a new one. Do we have a template matrix to use as source?
-      IF (ASSOCIATED(rmatrixComponents%p_rpreallocatedMatrix)) THEN
-        ! Copy the template, share everything -- structure as well as content
-        ! (if there is any).
-        CALL lsysbl_duplicateMatrix (rmatrixComponents%p_rpreallocatedMatrix,&
-            rmatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      ELSE
-        ! Oops we have to create a complete new one. That task is a little bit
-        ! more advanced... see below!
-        CALL allocMatrix (cmatrixType,rmatrixComponents,rmatrix)
-      END IF
+      ! Allocate the system matrix
+      CALL allocMatrix (cmatrixType,rmatrixComponents,rmatrix)
     END IF   
    
     IF (IAND(coperation,CCMASM_COMPUTE) .NE. 0) THEN
@@ -428,173 +412,164 @@ CONTAINS
       !
       ! With some multiplication factors in front of the matrices.
       
-      IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 1)) THEN
+      ! Primal equation
+      ! ---------------
+      ! Assemble rows 1..3 of the block matrix:
+      !
+      !    ( A11  A12  B1  M/a          ) 
+      !    ( A21  A22  B2       M/a     ) 
+      !    ( B1^T B2^T I                )
       
-        ! Primal equation
-        ! ---------------
-        ! Assemble rows 1..3 of the block matrix:
-        !
-        !    ( A11  A12  B1  M/a          ) 
-        !    ( A21  A22  B2       M/a     ) 
-        !    ( B1^T B2^T I                )
-        
-        ! In case dnewton1=0, switch off the A12/A21 matrices as we don't
-        ! assemble them.
-        IF (rmatrixComponents%dnewton1 .NE. 0.0_DP) THEN
-          rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-          rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-        ELSE
-          rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
-          rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
-        END IF
+      ! In case dnewton1=0, switch off the A12/A21 matrices as we don't
+      ! assemble them.
+      IF (rmatrixComponents%dnewton1 .NE. 0.0_DP) THEN
+        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+      ELSE
+        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+      END IF
 
-        ! 1.) Assemble the velocity submatrix
-        !
-        !    ( A11  A12   .    .    .    . ) 
-        !    ( A21  A22   .    .    .      ) 
-        !    (  .    .    .    .    .    . )
+      ! 1.) Assemble the velocity submatrix
+      !
+      !    ( A11  A12   .    .    .    . ) 
+      !    ( A21  A22   .    .    .      ) 
+      !    (  .    .    .    .    .    . )
 
-        CALL assembleVelocityBlocks (.FALSE.,&
-            rmatrixComponents,rmatrix,rvector,1.0_DP)
-        
-        ! Include the mass matrix blocks
-        !
-        !    (  .    .    .    M    .    . ) 
-        !    (  .    .    .    .    M    . ) 
-        !    (  .    .    .    .    .    . )
-        
-        CALL assembleMassBlocks (1,4,rmatrixComponents,rmatrix)
-        
-        ! 3.) Initialise the weights for the idenity- and B-matrices
-        !
-        !    (  .    .   B1    .    .    . ) 
-        !    (  .    .   B2    .    .    . ) 
-        !    ( B1^T B2^T  I    .    .    . )
-        
-        CALL assembleGradientMatrices (.FALSE.,rmatrixComponents,rmatrix,&
-          IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
-
-        ! 2.) Initialise the weights for the B-matrices
-        !
-        !    (  .    .   B1  ) 
-        !    (  .    .   B2  ) 
-        !    ( B1^T B2^T  I  )
-        
-        ! Initialise the weights for the B/B^T matrices
-        rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%deta1
-        rmatrix%RmatrixBlock(2,3)%dscaleFactor = rmatrixComponents%deta1
-        
-        rmatrix%RmatrixBlock(3,1)%dscaleFactor = rmatrixComponents%dtau1
-        rmatrix%RmatrixBlock(3,2)%dscaleFactor = rmatrixComponents%dtau1
-        
-        ! Initialise the weights of the mass matrices
-        rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
-        rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
-        
-        ! Switch the I-matrix in the continuity equation on/off.
-        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
-            rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%dkappa1
+      CALL assembleVelocityBlocks (.FALSE.,&
+          rmatrixComponents,rmatrix,rvector,1.0_DP)
       
+      ! Include the mass matrix blocks
+      !
+      !    (  .    .    .    M    .    . ) 
+      !    (  .    .    .    .    M    . ) 
+      !    (  .    .    .    .    .    . )
+      
+      CALL assembleMassBlocks (1,4,rmatrixComponents,rmatrix)
+      
+      ! 3.) Initialise the weights for the idenity- and B-matrices
+      !
+      !    (  .    .   B1    .    .    . ) 
+      !    (  .    .   B2    .    .    . ) 
+      !    ( B1^T B2^T  I    .    .    . )
+      
+      CALL assembleGradientMatrices (.FALSE.,rmatrixComponents,rmatrix,&
+        IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+
+      ! 2.) Initialise the weights for the B-matrices
+      !
+      !    (  .    .   B1  ) 
+      !    (  .    .   B2  ) 
+      !    ( B1^T B2^T  I  )
+      
+      ! Initialise the weights for the B/B^T matrices
+      rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%deta1
+      rmatrix%RmatrixBlock(2,3)%dscaleFactor = rmatrixComponents%deta1
+      
+      rmatrix%RmatrixBlock(3,1)%dscaleFactor = rmatrixComponents%dtau1
+      rmatrix%RmatrixBlock(3,2)%dscaleFactor = rmatrixComponents%dtau1
+      
+      ! Initialise the weights of the mass matrices
+      rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
+      rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
+      
+      ! Switch the I-matrix in the continuity equation on/off.
+      ! The matrix always exists -- but is usually filled with zeroes
+      ! or switched off.
+      rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%dkappa1
+      IF (rmatrixComponents%dkappa1 .NE. 0.0_DP) THEN
+        CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(3,3))
+      END IF
+    
+      ! Dual equation
+      ! ---------------
+      ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
+      ! assembled them.
+      IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
+        rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
+      ELSE
+        rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
+        rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
       END IF
       
-      IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 2)) THEN
+      ! Assemble rows 1..3 of the block matrix:
+      !
+      !    (  R    .    .  A44  A45  B1 ) 
+      !    (  .    R    .  A54  A55  B2 ) 
+      !    (  .    .    .  B1^T B2^T I  ) 
+      !
+      ! 1.) Assemble the velocity submatrix
+      !
+      !    (  .    .    .   A44  A45   . ) 
+      !    (  .    .    .   A54  A55   . ) 
+      !    (  .    .    .    .    .    . )
+      !
+      ! Note that the Newton part (if assembled) is set up with the
+      ! primal velocity! The weight is taken from the GAMMA parameter
+      ! and switches of the assembly of Newton. Actually, it's not
+      ! a 'Newton' matrix but the adjoint of the nonlinearity
+      ! which is assembled here...
       
-        ! Dual equation
-        ! ---------------
-        ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
-        ! assembled them.
-        IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
-          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
-          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
-        ELSE
-          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
-          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
-        END IF
-        
-        ! Assemble rows 1..3 of the block matrix:
-        !
-        !    (  R    .    .  A44  A45  B1 ) 
-        !    (  .    R    .  A54  A55  B2 ) 
-        !    (  .    .    .  B1^T B2^T I  ) 
-        !
-        ! 1.) Assemble the velocity submatrix
-        !
-        !    (  .    .    .   A44  A45   . ) 
-        !    (  .    .    .   A54  A55   . ) 
-        !    (  .    .    .    .    .    . )
-        !
-        ! Note that the Newton part (if assembled) is set up with the
-        ! primal velocity! The weight is taken from the GAMMA parameter
-        ! and switches of the assembly of Newton. Actually, it's not
-        ! a 'Newton' matrix but the adjoint of the nonlinearity
-        ! which is assembled here...
-        
-        CALL assembleVelocityBlocks (.TRUE.,&
-            rmatrixComponents,rmatrix,rvector,1.0_DP)
+      CALL assembleVelocityBlocks (.TRUE.,&
+          rmatrixComponents,rmatrix,rvector,1.0_DP)
 
-        ! 2.) Include the mass matrix blocks
-        !
-        !    (  R    .    .    .    .    .  ) 
-        !    (  .    R    .    .    .    .  ) 
-        !    (  .    .    .    .    .    .  )
-        
-        CALL assembleDualMassBlocks (rmatrixComponents,rmatrix)
-        !CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
-        
-        ! 3.) Initialise the weights for the idenity- and B-matrices
-        !
-        !    ( .    .    .    .    .   B1 ) 
-        !    ( .    .    .    .    .   B2 ) 
-        !    ( .    .    .   B1^T B2^T  I )
-        
-        ! Should we assemble only the dual equation?
-        IF (ctypePrimalDual .EQ. 2) THEN
-          CALL assembleGradientMatrices (.TRUE.,rmatrixComponents,rmatrix,&
-            IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
-        ELSE
-        
-          ! The B/B^T-matrices themself share their structure and data with
-          ! those of the primal equation. This is possible as long as the
-          ! type of boundary conditions are the same, as then implementing the
-          ! BC's into the B/B^T-matrices of the primal equation will affect
-          ! those of the dual equation as well and vice versa
-          ! (in total the BC's are then implemented 2x into the same matrices
-          ! which needs a little bit more time but not much).
-          !
-          ! Furthermore, the VANCA preconditioner can only handle the
-          ! situation where the B/B^T matrices of the dual equation share their
-          ! data with that of the primal one...
-          CALL lsyssc_duplicateMatrix ( &
-              rmatrix%Rmatrixblock(1,3),rmatrix%Rmatrixblock(4,6), &
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          CALL lsyssc_duplicateMatrix ( &
-              rmatrix%Rmatrixblock(2,3),rmatrix%Rmatrixblock(5,6), &
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          CALL lsyssc_duplicateMatrix ( &
-              rmatrix%Rmatrixblock(3,1),rmatrix%Rmatrixblock(6,4), &
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          CALL lsyssc_duplicateMatrix ( &
-              rmatrix%Rmatrixblock(3,2),rmatrix%Rmatrixblock(6,5), &
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        END IF
-    
-        ! Initialise the weights for the B/B^T matrices
-        rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%deta2
-        rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%deta2
-        
-        rmatrix%RmatrixBlock(6,4)%dscaleFactor = rmatrixComponents%dtau2
-        rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%dtau2
-        
-        ! Initialise the weights of the mass matrices
-        !rmatrix%RmatrixBlock(4,1)%dscaleFactor = rmatrixComponents%dmu2
-        !rmatrix%RmatrixBlock(5,2)%dscaleFactor = rmatrixComponents%dmu2
-        
-        ! Switch the I-matrix in the dual continuity equation on/off.
-        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
-            rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%dkappa2
+      ! 2.) Include the mass matrix blocks
+      !
+      !    (  R    .    .    .    .    .  ) 
+      !    (  .    R    .    .    .    .  ) 
+      !    (  .    .    .    .    .    .  )
       
+      CALL assembleDualMassBlocks (rmatrixComponents,rmatrix)
+      !CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
+      
+      ! 3.) Initialise the weights for the idenity- and B-matrices
+      !
+      !    ( .    .    .    .    .   B1 ) 
+      !    ( .    .    .    .    .   B2 ) 
+      !    ( .    .    .   B1^T B2^T  I )
+      
+      ! The B/B^T-matrices themself share their structure and data with
+      ! those of the primal equation. This is possible as long as the
+      ! type of boundary conditions are the same, as then implementing the
+      ! BC's into the B/B^T-matrices of the primal equation will affect
+      ! those of the dual equation as well and vice versa
+      ! (in total the BC's are then implemented 2x into the same matrices
+      ! which needs a little bit more time but not much).
+      !
+      ! Furthermore, the VANCA preconditioner can only handle the
+      ! situation where the B/B^T matrices of the dual equation share their
+      ! data with that of the primal one...
+      CALL lsyssc_duplicateMatrix ( &
+          rmatrix%Rmatrixblock(1,3),rmatrix%Rmatrixblock(4,6), &
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      CALL lsyssc_duplicateMatrix ( &
+          rmatrix%Rmatrixblock(2,3),rmatrix%Rmatrixblock(5,6), &
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      CALL lsyssc_duplicateMatrix ( &
+          rmatrix%Rmatrixblock(3,1),rmatrix%Rmatrixblock(6,4), &
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      CALL lsyssc_duplicateMatrix ( &
+          rmatrix%Rmatrixblock(3,2),rmatrix%Rmatrixblock(6,5), &
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+  
+      ! Initialise the weights for the B/B^T matrices
+      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%deta2
+      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%deta2
+      
+      rmatrix%RmatrixBlock(6,4)%dscaleFactor = rmatrixComponents%dtau2
+      rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%dtau2
+      
+      ! Initialise the weights of the mass matrices
+      !rmatrix%RmatrixBlock(4,1)%dscaleFactor = rmatrixComponents%dmu2
+      !rmatrix%RmatrixBlock(5,2)%dscaleFactor = rmatrixComponents%dmu2
+      
+      ! Switch the I-matrix in the dual continuity equation on/off.
+      ! The matrix always exists -- but is usually filled with zeroes
+      ! or switched off.
+      rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%dkappa2
+      IF (rmatrixComponents%dkappa2 .NE. 0.0_DP) THEN
+        CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(6,6))
       END IF
       
       ! Matrix restriction
@@ -609,38 +584,31 @@ CONTAINS
       IF (PRESENT(rfineMatrix)) THEN
       
         ! Primal system:
-        IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 1)) THEN
-      
-          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
+        CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
+            rmatrix%RmatrixBlock(1,1), &
+            rmatrixComponents%iadaptiveMatrices, &
+            rmatrixComponents%dadmatthreshold)
+            
+        IF (.NOT. lsyssc_isMatrixContentShared(&
+            rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) THEN
+          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
               rmatrix%RmatrixBlock(1,1), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
-              
-          IF (.NOT. lsyssc_isMatrixContentShared(&
-              rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) THEN
-            CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
-                rmatrix%RmatrixBlock(1,1), &
-                rmatrixComponents%iadaptiveMatrices, &
-                rmatrixComponents%dadmatthreshold)
-          END IF
-          
         END IF
-        
+          
         ! Dual system
-        IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 2)) THEN
-
-          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
-              rmatrix%RmatrixBlock(4,4), &
+        CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
+            rmatrix%RmatrixBlock(4,4), &
+            rmatrixComponents%iadaptiveMatrices, &
+            rmatrixComponents%dadmatthreshold)
+            
+        IF (.NOT. lsyssc_isMatrixContentShared(&
+          rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) THEN
+          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
+              rmatrix%RmatrixBlock(5,5), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
-              
-          IF (.NOT. lsyssc_isMatrixContentShared(&
-            rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) THEN
-            CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
-                rmatrix%RmatrixBlock(5,5), &
-                rmatrixComponents%iadaptiveMatrices, &
-                rmatrixComponents%dadmatthreshold)
-          END IF
         END IF
         
       END IF
@@ -745,7 +713,7 @@ CONTAINS
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
-      IF (.NOT. bdecoupled .AND. .NOT. bfulltensor) THEN     
+      IF (.NOT. bfulltensor) THEN     
            
         ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
@@ -829,22 +797,39 @@ CONTAINS
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       ! In the same manner, insert an identiy matrix for the pressure
-      ! to the system matrix; as the enties aren't changed, we can share
-      ! the entries with the original one.
+      ! to the system matrix. The matrix is zero by default but may
+      ! partially or fully be initialised to an identity matrix depending
+      ! on the situation. (It's mostly used for direct solvers/UMFPACK)
       CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure, &
                                     rmatrix%RmatrixBlock(3,3),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
 
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      ! These matrices will not change during the whole computation,
-      ! so we can put refereces to the original ones to the system matrix.
-      CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
-                                    rmatrix%RmatrixBlock(3,1),&
-                                    LSYSSC_TR_VIRTUAL)
+      ! Now, prepare B1^T and B2^T. Are these matrices given?
+      !
+      ! If yes, take the given matrices. If not, create them by
+      ! 'virtually transposing' B1 and B2 (i.e. they share the same
+      ! data as B1 and B2 but hate the 'transpose'-flag set).
+      
+      IF (ASSOCIATED(rmatrixComponents%p_rmatrixB1T)) THEN
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
 
-      CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
-                                    rmatrix%RmatrixBlock(3,2),&
-                                    LSYSSC_TR_VIRTUAL)
+      IF (ASSOCIATED(rmatrixComponents%p_rmatrixB2T)) THEN
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
 
       ! Insert free space for the mass matrices to the matrix.
       !
@@ -977,24 +962,40 @@ CONTAINS
                                     rmatrix%RmatrixBlock(5,6),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      ! These matrices will not change during the whole computation,
-      ! so we can put refereces to the original ones to the system matrix.
-      CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
-                                    rmatrix%RmatrixBlock(6,4),&
-                                    LSYSSC_TR_VIRTUAL)
+      ! Now, prepare B1^T and B2^T. Are these matrices given?
+      !
+      ! If yes, take the given matrices. If not, create them by
+      ! 'virtually transposing' B1 and B2 (i.e. they share the same
+      ! data as B1 and B2 but hate the 'transpose'-flag set).
+      
+      IF (ASSOCIATED(rmatrixComponents%p_rmatrixB1T)) THEN
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
+                                      rmatrix%RmatrixBlock(6,4),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                      rmatrix%RmatrixBlock(6,4),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
 
-      CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
-                                    rmatrix%RmatrixBlock(6,5),&
-                                    LSYSSC_TR_VIRTUAL)
-                                    
+      IF (ASSOCIATED(rmatrixComponents%p_rmatrixB2T)) THEN
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
+                                      rmatrix%RmatrixBlock(6,5),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        CALL lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                      rmatrix%RmatrixBlock(6,5),&
+                                      LSYSSC_TR_VIRTUAL)
+      END IF
+
       ! In the same manner, insert an identiy matrix for the pressure
       ! to the system matrix; as the enties aren't changed, we can share
       ! the entries with the original one.
       CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure, &
                                     rmatrix%RmatrixBlock(6,6),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+      
       ! Insert free space for the mass matrices to the matrix.
       !
       ! Note that we share the structure of M, while we create empty space 
@@ -1189,7 +1190,7 @@ CONTAINS
       
         IF (.NOT. PRESENT(rvector)) THEN
           CALL output_line ('Velocity vector not present!', &
-                             OU_CLASS_ERROR,OU_MODE_STD,'c2d2_assembleMatrix')
+                             OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
           STOP
         END IF
       
@@ -1739,7 +1740,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_assembleDefect (rmatrixComponents,rx,rd,cx,ry)
+  SUBROUTINE cc_assembleDefect (rmatrixComponents,rx,rd,cx,ry)
 
 !<description>
   ! This routine assembles the nonlinear defect

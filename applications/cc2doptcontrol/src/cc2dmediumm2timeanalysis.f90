@@ -14,11 +14,11 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_timeErrorByPredictor
+!# 1.) cc_timeErrorByPredictor
 !#     -> Calculate an approximation to the time error using a predictor-like
 !#        approach.
 !#
-!# 2.) c2d2_timeDerivative
+!# 2.) cc_timeDerivative
 !#     -> Calculate the (1st order) time derivative of a solution.
 !# </purpose>
 !##############################################################################
@@ -118,7 +118,7 @@ CONTAINS
 
 !<function>
 
-  REAL(DP) FUNCTION c2d2_timeErrorByPredictor (ctimeErrorControl,&
+  REAL(DP) FUNCTION cc_timeErrorByPredictor (ctimeErrorControl,&
                       rsolution,rpredSolution,rauxVector,&
                       rtimeError) &
            RESULT(dtimeerror)
@@ -250,7 +250,7 @@ CONTAINS
 
 !<function>
 
-  REAL(DP) FUNCTION c2d2_timeDerivative (ctimeErrorControl,&
+  REAL(DP) FUNCTION cc_timeDerivative (ctimeErrorControl,&
                       rsolutionNew,rsolutionOld,dtstep,rauxVector,rtimeDerivNorms) &
            RESULT(dtimenorm)
 

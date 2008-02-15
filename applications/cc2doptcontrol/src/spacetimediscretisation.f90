@@ -169,7 +169,7 @@ CONTAINS
           rproblem%rtimedependence%dtimeMax,&
           niterations, rspaceTimeDiscr%rtimeDiscr)
     CASE DEFAULT
-      PRINT *,'c2d2_initParamsSupersystem: Unsupported time discretisation.'
+      PRINT *,'cc_initParamsSupersystem: Unsupported time discretisation.'
       CALL sys_halt()
     END SELECT
     

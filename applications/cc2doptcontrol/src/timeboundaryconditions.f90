@@ -163,13 +163,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rvector=rtempVector)
+        CALL cc_implementBC (rproblem,rvector=rtempVector)
         
         CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
@@ -190,13 +190,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rvector=rtempVector)
+        CALL cc_implementBC (rproblem,rvector=rtempVector)
         
         CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
@@ -284,13 +284,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rvector=rtempVector)
+        CALL cc_implementBC (rproblem,rvector=rtempVector)
         
         CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
@@ -311,13 +311,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rvector=rtempVector)
+        CALL cc_implementBC (rproblem,rvector=rtempVector)
         
         CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
@@ -400,13 +400,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
+        CALL cc_implementBC (rproblem,rdefect=rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -436,13 +436,13 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
         CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
+        CALL cc_implementBC (rproblem,rdefect=rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -783,12 +783,12 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
     IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+      CALL cc_updateDiscreteBC (rproblem, .FALSE.)
     END IF
 
     ! Implement the boundary conditions into the RHS.
@@ -798,7 +798,7 @@ CONTAINS
     CALL vecfil_discreteFBCsol (rvector)      
   
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
   
   END SUBROUTINE
 
@@ -848,10 +848,10 @@ CONTAINS
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
     IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+      CALL cc_updateDiscreteBC (rproblem, .FALSE.)
     END IF
     
-    CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
+    CALL cc_implementBC (rproblem,rdefect=rtempVector)
     
     ! In the very first time step, we have the initial condition for the
     ! solution. The defect is =0 there!

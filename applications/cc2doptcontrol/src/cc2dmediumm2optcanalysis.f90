@@ -12,12 +12,12 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_optc_stationaryFunctional
+!# 1.) cc_optc_stationaryFunctional
 !#     -> Calculates the value of the stationary functional which is to be
 !#        minimised:
 !#     $$ J(y,u) = 1/2||y-z||_{L^2} + \alpha/2||u||^2 $$
 !#
-!# 1.) c2d2_optc_nonstatFunctional
+!# 1.) cc_optc_nonstatFunctional
 !#     -> Calculates the value of the stationary functional which is to be
 !#        minimised:
 !#     $$ J(y,u) = 1/2||y-z||^2_{L^2} + \alpha/2||u||^2_{L^2} + gamma/2||y(T)-z(T)||^2_{L^2}$$
@@ -41,7 +41,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_optc_stationaryFunctional (rsolution,dalpha,Derror,rcollection)
+  SUBROUTINE cc_optc_stationaryFunctional (rsolution,dalpha,Derror,rcollection)
 
 !<description>
   ! This function calculates the value of the functional which is to be
@@ -112,7 +112,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_optc_nonstatFunctional (rproblem,rsolution,rtempVector,&
+  SUBROUTINE cc_optc_nonstatFunctional (rproblem,rsolution,rtempVector,&
       dalpha,dgamma,Derror)
 
 !<description>
@@ -185,7 +185,7 @@ CONTAINS
       ! Initialise the collection for the assembly process with callback routines.
       ! This stores the simulation time in the collection and sets the
       ! current subvector z for the callback routines.
-      CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+      CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
       
       ! Compute:
       ! Derror(1) = ||y-z||^2_{L^2}.
@@ -213,7 +213,7 @@ CONTAINS
                           
       Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2)
       
-      CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
     END DO
     

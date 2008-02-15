@@ -10,34 +10,34 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_initDiscretisation
+!# 1.) cc_initDiscretisation
 !#     -> Initialise the discretisation structure inside of the problem
 !#        structure using the parameters from the INI/DAT files.
 !#
-!# 2.) c2d2_allocMatVec
+!# 2.) cc_allocMatVec
 !#     -> Allocates memory for vectors/matrices on all levels.
 !#
-!# 4.) c2d2_generateStaticMatrices
+!# 4.) cc_generateStaticMatrices
 !#     -> Assembles matrix entries of static matrices (Stokes, B)
 !#        on one level
 !#
-!# 5.) c2d2_generateBasicMatrices
+!# 5.) cc_generateBasicMatrices
 !#     -> Assembles the matrix entries of all static matrices on all levels.
 !#
-!# 6.) c2d2_generateBasicRHS
+!# 6.) cc_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
 !#        implemented
 !#
-!# 7.) c2d2_doneMatVec
+!# 7.) cc_doneMatVec
 !#     -> Cleanup of matrices/vectors, release all memory
 !#
-!# 8.) c2d2_doneDiscretisation
+!# 8.) cc_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
-!# 9.) c2d2_initInitialSolution
+!# 9.) cc_initInitialSolution
 !#     -> Init solution vector according to parameters in the DAT file
 !#
-!# 10.) c2d2_writeSolution
+!# 10.) cc_writeSolution
 !#      -> Write solution vector as configured in the DAT file.
 !#
 !# </purpose>
@@ -79,7 +79,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_get1LevelDiscretisation (rparlist,rboundary,rtriangulation,&
+  SUBROUTINE cc_get1LevelDiscretisation (rparlist,rboundary,rtriangulation,&
       nequations,rdiscretisation)
   
 !<description>
@@ -425,7 +425,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initDiscretisation (rproblem)
+  SUBROUTINE cc_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -467,7 +467,7 @@ CONTAINS
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector.
       ALLOCATE(p_rdiscretisation)
-      CALL c2d2_get1LevelDiscretisation (rproblem%rparamList,&
+      CALL cc_get1LevelDiscretisation (rproblem%rparamList,&
           rproblem%p_rboundary,p_rtriangulation,nequations,p_rdiscretisation)
 
       ! Save the discretisation structure to our local LevelInfo structure
@@ -499,12 +499,6 @@ CONTAINS
       ALLOCATE (rproblem%RlevelInfo(i)%p_rdiscretisationPrimal)
       CALL spdiscr_deriveBlockDiscr (rproblem%RlevelInfo(i)%p_rdiscretisation, &
           rproblem%RlevelInfo(i)%p_rdiscretisationPrimal, 1,3)
-      
-      ! The same for the dual solution, sharing the discretisation with part 4..6
-      ! of the global equation.
-      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationDual)
-      CALL spdiscr_deriveBlockDiscr (rproblem%RlevelInfo(i)%p_rdiscretisation, &
-          rproblem%RlevelInfo(i)%p_rdiscretisationDual, 4,6)
       
       ! -----------------------------------------------------------------------
       ! Mass matrices
@@ -542,7 +536,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneDiscretisation (rproblem)
+  SUBROUTINE cc_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -570,9 +564,6 @@ CONTAINS
       CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationPrimal,.TRUE.)
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationPrimal)
       
-      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationDual,.TRUE.)
-      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationDual)
-      
       ! -----------------------------------------------------------------------
       ! Mass matrix problem
       ! -----------------------------------------------------------------------
@@ -589,7 +580,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_allocMatVec (rproblem,rvector,rrhs)
+  SUBROUTINE cc_allocMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Allocates memory for all matrices and vectors of the problem on the heap
@@ -747,34 +738,6 @@ CONTAINS
         p_rdiscretisation%RspatialDiscretisation(3)
 
       ! -----------------------------------------------------------------------
-      ! Now let's come to the main system matrix, which is a block matrix.
-      
-      ! Allocate memory for that matrix with the appropriate construction routine.
-      ! The modules "nonlinearcoreinit" and "nonlinearcore" are actually the
-      ! only modules that 'know' the structure of the system matrix!
-      CALL c2d2_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
-          
-      ! Create a reference to rpreallocatedSystemMatrix(1:3,1:3) to
-      ! rpreallocatedSystemMatrixPrimal, which is used as preallocated matrix
-      ! only for the primal system. Share all memory
-      CALL lsysbl_deriveSubmatrix (&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
-      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rblockDiscretisation =>&
-          rproblem%RlevelInfo(i)%p_rdiscretisationPrimal
-          
-      ! And create a reference to rpreallocatedSystemMatrix(4:6,4:6) as submatrix
-      ! for the dual equation.
-      CALL lsysbl_deriveSubmatrix (&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
-          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
-      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rblockDiscretisation =>&
-          rproblem%RlevelInfo(i)%p_rdiscretisationDual
-      
-      ! -----------------------------------------------------------------------
       ! Temporary vectors
       !
       ! Now on all levels except for the maximum one, create a temporary 
@@ -782,9 +745,8 @@ CONTAINS
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
         p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
-        CALL lsysbl_createVecBlockIndMat (&
-            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
-            p_rtempVector,.FALSE.)
+        CALL lsysbl_createVecBlockByDiscr (&
+            rproblem%RlevelInfo(i)%p_rdiscretisation,p_rtempVector,.TRUE.)
             
         ! The temp vectors for the primal and dual system share their memory
         ! with that temp vector.
@@ -814,7 +776,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_generateStaticMatrices (rproblem,rlevelInfo)
+  SUBROUTINE cc_generateStaticMatrices (rproblem,rlevelInfo)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
@@ -845,7 +807,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! -----------------------------------------------------------------------
     ! Basic (Navier-) Stokes problem
@@ -893,7 +855,7 @@ CONTAINS
     CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! -----------------------------------------------------------------------
     ! Initialise the identity matrix
@@ -905,7 +867,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_generateBasicMatrices (rproblem)
+  SUBROUTINE cc_generateBasicMatrices (rproblem)
   
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
@@ -925,7 +887,7 @@ CONTAINS
     INTEGER :: i
 
     DO i=rproblem%NLMIN,rproblem%NLMAX
-      CALL c2d2_generateStaticMatrices (&
+      CALL cc_generateStaticMatrices (&
           rproblem,rproblem%RlevelInfo(i))
     END DO
 
@@ -935,7 +897,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_generateBasicRHS (rproblem,rrhs)
+  SUBROUTINE cc_generateBasicRHS (rproblem,rrhs)
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
@@ -991,7 +953,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
@@ -1039,7 +1001,7 @@ CONTAINS
     CALL lsyssc_clearVector(rrhs%RvectorBlock(6))
                                 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 
@@ -1047,7 +1009,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initInitialSolution (rproblem,rvector)
+  SUBROUTINE cc_initInitialSolution (rproblem,rvector)
   
 !<description>
   ! Initialises the initial solution vector into rvector. Depending on the settings
@@ -1147,7 +1109,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_writeSolution (rproblem,rvector)
+  SUBROUTINE cc_writeSolution (rproblem,rvector)
   
 !<description>
   ! Writes a solution vector rvector to a file as configured in the parameters
@@ -1240,7 +1202,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneMatVec (rproblem,rvector,rrhs)
+  SUBROUTINE cc_doneMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -1265,10 +1227,6 @@ CONTAINS
 
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Delete the system matrix / matrices.
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal)
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual)
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
 
       ! If there is an existing mass matrix, release it.
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
@@ -1305,7 +1263,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initOptControl (rproblem)
+  SUBROUTINE cc_initOptControl (rproblem)
   
 !<description>
   ! Initialises the optimal control problem. Reads parameters from the DAT
@@ -1349,6 +1307,9 @@ CONTAINS
         'ispaceTimeFormulation',rproblem%roptcontrol%ispaceTimeFormulation,0)
     
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'iconvectionExplicit',rproblem%roptcontrol%iconvectionExplicit,0)
+    
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itypeTerminalCondition',rproblem%roptcontrol%itypeTerminalCondition,0)
 
   END SUBROUTINE
@@ -1357,7 +1318,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneOptControl (rproblem)
+  SUBROUTINE cc_doneOptControl (rproblem)
   
 !<description>
   ! Cleans up the structure for the optimal control problem. 
@@ -1382,7 +1343,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initTargetFlow (rproblem,dstartTime,dendTime,ntimesteps)
+  SUBROUTINE cc_initTargetFlow (rproblem,dstartTime,dendTime,ntimesteps)
   
 !<description>
   ! Reads in the target flow of the optimal control problem.
@@ -1445,7 +1406,7 @@ CONTAINS
           
       ! Create a discretisation structure corresponding to that mesh.
       ALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
-      CALL c2d2_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
+      CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
           rproblem%roptcontrol%p_rtriangulation,NDIM2D+1,&
           rproblem%roptcontrol%p_rdiscrTargetFlow)
       
@@ -1482,7 +1443,7 @@ CONTAINS
           rproblem%roptcontrol%p_rdiscrTargetFlow%RspatialDiscretisation(1)) .NE. &
           rproblem%roptcontrol%rtargetFlow%RvectorBlock(1)%NEQ) THEN
         CALL output_line ('Target flow vector invalid, NEQ wrong!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'c2d2_initTargetFlow')
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initTargetFlow')
         CALL sys_halt()
       END IF
 
@@ -1527,7 +1488,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneTargetFlow (rproblem)
+  SUBROUTINE cc_doneTargetFlow (rproblem)
   
 !<description>
   ! Cleans up the structure for the optimal control problem. 

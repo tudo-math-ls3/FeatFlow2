@@ -7,7 +7,7 @@
 !# This module invokes the nonlinear solver to solve the basic CC2D 
 !# optimal control problem.
 !#
-!# 1.) c2d2_solve
+!# 1.) cc_solve
 !#     -> Invoke the nonlinear solver to solve the stationary coupled system.
 !#
 !# </purpose>
@@ -53,7 +53,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_solve (rproblem,rvector,rrhs)
+  SUBROUTINE cc_solve (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
@@ -156,13 +156,13 @@ CONTAINS
 !    
 !    
 !    ! Initialise the preconditioner for the nonlinear iteration
-!    CALL c2d2_initPreconditioner (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
+!    CALL cc_initPreconditioner (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
 !        rpreconditioner,0)
-!    CALL c2d2_configPreconditioner (rproblem,rpreconditioner)
+!    CALL cc_configPreconditioner (rproblem,rpreconditioner)
 !        
 !    ! Print out the value of the optimal control functional for the
 !    ! initial solution vector directly prior to the solution process.
-!    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
+!    CALL cc_printControlFunctionalStat (rproblem,rvector)
 !
 !    ! Get configuration parameters from the DAT file
 !    CALL parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
@@ -181,7 +181,7 @@ CONTAINS
 !
 !    ! Get the initial nonlinear defect
 !    CALL lsysbl_copyVector (rrhs,rd)
-!    CALL c2d2_assembleDefect (rmatrix,rvector,rd)
+!    CALL cc_assembleDefect (rmatrix,rvector,rd)
 !
 !    ! ... and its norm
 !    ddefNorm = lsysbl_vectorNorm (rd,LINALG_NORML2)
@@ -201,7 +201,7 @@ CONTAINS
 !      iglobIter = iglobIter+1
 !      
 !      ! Preconditioning of the defect: d=C^{-1}d
-!      CALL c2d2_precondDefect (rpreconditioner,rmatrix,rd,rvector,bsuccess,&
+!      CALL cc_precondDefect (rpreconditioner,rmatrix,rd,rvector,bsuccess,&
 !          rproblem%rcollection)
 !      
 !      ! Add the defect: x = x + omega*d          
@@ -209,7 +209,7 @@ CONTAINS
 !          
 !      ! Assemble the new defect: d=b-Ax
 !      CALL lsysbl_copyVector (rrhs,rd)
-!      CALL c2d2_assembleDefect (rmatrix,rvector,rd)
+!      CALL cc_assembleDefect (rmatrix,rvector,rd)
 !      
 !      ! ... and its norm
 !      ddefNorm = lsysbl_vectorNorm (rd,LINALG_NORML2)
@@ -222,7 +222,7 @@ CONTAINS
 !    CALL output_separator (OU_SEP_EQUAL)
 !             
 !    ! Release the preconditioner and the temp vector
-!    CALL c2d2_releasePreconditioner (rpreconditioner)
+!    CALL cc_releasePreconditioner (rpreconditioner)
 !    
 !    CALL lsysbl_releaseVector (rd)
 !    

@@ -57,19 +57,19 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
-!# 8.) c2d2_initCollectForAssembly
+!# 8.) cc_initCollectForAssembly
 !#     -> Is called prior to the assembly process.
 !#     -> Stores some information from the problem structure to a collection
 !#        such that it can be accessed in callback routines
 !#
-!# 9.) c2d2_doneCollectForAssembly
+!# 9.) cc_doneCollectForAssembly
 !#     -> Is called after the assembly process.
 !#     -> Releases information stored in the collection by 
-!#        c2d2_initCollectForAssembly.
+!#        cc_initCollectForAssembly.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls c2d2_initCollectForAssembly to stores the current point 
+!# framework calls cc_initCollectForAssembly to stores the current point 
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
@@ -80,7 +80,7 @@
 !# -> p_rcollection%DquickAccess(2)   = minimum simulation time
 !# -> p_rcollection%DquickAccess(3)   = maximum simulation time
 !#
-!# After the assembly, c2d2_doneCollectForAssembly is called to clean up.
+!# After the assembly, cc_doneCollectForAssembly is called to clean up.
 !# Note: Information stored in the quick-access array are of temporary
 !# nature and does not have to be cleaned up.
 !#
@@ -117,7 +117,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initCollectForAssembly (rproblem,rcollection)
+  SUBROUTINE cc_initCollectForAssembly (rproblem,rcollection)
   
 !<description>
   ! This subroutine is an auxiliary subroutine called by the CC2D framework
@@ -199,7 +199,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_doneCollectForAssembly (rproblem,rcollection)
+  SUBROUTINE cc_doneCollectForAssembly (rproblem,rcollection)
   
 !<description>
   ! This subroutine is an auxiliary subroutine called by the CC2D framework
@@ -207,7 +207,7 @@ CONTAINS
   !
   ! After the assembly process, this subroutine is called to release temporary
   ! information from the collection which was stored there by 
-  ! c2d2_initCollectForAssembly.
+  ! cc_initCollectForAssembly.
 !</description>
   
 !<input>
@@ -223,7 +223,7 @@ CONTAINS
 !</subroutine>
 
     ! Currently, this subroutine is empty as all information stored in
-    ! the collection in c2d2_initCollectForAssembly is put to the quick-access
+    ! the collection in cc_initCollectForAssembly is put to the quick-access
     ! arrays -- which do not have to be cleaned up. 
     ! This might change in future...
 
@@ -1566,7 +1566,7 @@ CONTAINS
     INTEGER :: ipoint,idx
     
     ! Note: the definition of (analytic) fictitious boundary components 
-    ! is performed in 'c2d2_parseFBDconditions'.
+    ! is performed in 'cc_parseFBDconditions'.
     
     ! Are we evaluating our fictitious boundary component?
     IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN

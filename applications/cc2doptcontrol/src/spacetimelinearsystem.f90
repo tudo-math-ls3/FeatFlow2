@@ -11,13 +11,13 @@
 !#
 !# The routines in this module form the basic set of routines:
 !#
-!# 1.) c2d2_spaceTimeMatVec
+!# 1.) cc_spaceTimeMatVec
 !#     -> Matrix-Vector multiplication of a space-time vector with the
 !#        global matrix.
 !#
 !# Auxiliary routines:
 !#
-!# 1.) c2d2_setupMatrixWeights
+!# 1.) cc_setupMatrixWeights
 !#     -> Initialise the matrix weights of a submatrix in the global space-time
 !#        matrix.
 !#
@@ -223,7 +223,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+  SUBROUTINE cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
       isubstep,irelpos,rmatrixComponents,ivecIndexNonlin)
 
 !<description>
@@ -314,12 +314,16 @@ CONTAINS
     REAL(DP) :: dnewton
     REAL(DP) :: dsmooth
     REAL(DP) :: dtstep
+    LOGICAL :: bconvectionExplicit
     
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
     dequationType = 1.0_DP
     IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
       dequationType = -1.0_DP
+
+    ! Treat the convection explicitely?
+    bconvectionExplicit = rproblem%roptcontrol%ispaceTimeFormulation .NE. 0
 
     ! What's the matrix type we should set up? If we have to set up a
     ! Newton matrix, we put dnewton to 1.0 so the Newton part in the
@@ -378,13 +382,25 @@ CONTAINS
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = dtheta
         
-        rmatrixComponents%dgamma1 = 0.0_DP
-        rmatrixComponents%dgamma2 = &
-            - dtheta * REAL(1-rproblem%iequation,DP)
+        IF (.NOT. bconvectionExplicit) THEN
         
-        rmatrixComponents%dnewton1 = 0.0_DP
-        rmatrixComponents%dnewton2 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = &
+              - dtheta * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = &
+                dtheta * REAL(1-rproblem%iequation,DP)
+                
+        ELSE
+
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = 0.0_DP
+
+        END IF
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 1.0_DP
@@ -392,33 +408,42 @@ CONTAINS
         rmatrixComponents%dtau1 = 0.0_DP
         rmatrixComponents%dtau2 = 1.0_DP
         
-        ! In the 0'th timestep, there is no RHS in the dual equation
-        ! and therefore no coupling between the primal and dual solution!
-        ! That is because of the initial condition, which fixes the primal solution
-        ! => dual solution has no influence on the primal one
-        ! Therefore, the following weights must be commented out, otherwise
-        ! the solver cannot converge in the 0'th timestep!
-        ! Instead, the dual solution of this 0'th timestep only depends
-        ! on the dual solution of the 1st timestep and is computed assuming that
-        ! the initial condition meets the target flow (y_0 = z_0).
-        !
-        ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
-        !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        IF (dnewton .EQ. 0.0_DP) THEN
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              dtheta * (-dequationType)
+        rmatrixComponents%dmu1 = 0.0_DP
+        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+            dtheta * (-dequationType)
+
+        IF (.NOT. bconvectionExplicit) THEN
+        
+          ! In the 0'th timestep, there is no RHS in the dual equation
+          ! and therefore no coupling between the primal and dual solution!
+          ! That is because of the initial condition, which fixes the primal solution
+          ! => dual solution has no influence on the primal one
+          ! Therefore, the following weights must be commented out, otherwise
+          ! the solver cannot converge in the 0'th timestep!
+          ! Instead, the dual solution of this 0'th timestep only depends
+          ! on the dual solution of the 1st timestep and is computed assuming that
+          ! the initial condition meets the target flow (y_0 = z_0).
+          !
+          ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
+          !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
+
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                dtheta * ( dequationType)
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                dtheta * (-dequationType)
+          END IF
+          
+        ELSE
+        
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
-        ELSE
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              dtheta * (-dequationType)
-          rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              dtheta * ( dequationType)
-          rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              dtheta * (-dequationType)
+
         END IF
-        rmatrixComponents%dmu1 = 0.0_DP
-        !rmatrixComponents%dmu2 = 0.0_DP
+          
                     
       ELSE IF (irelpos .EQ. 1) THEN
       
@@ -440,13 +465,26 @@ CONTAINS
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
-        rmatrixComponents%dgamma1 = 0.0_DP
-        rmatrixComponents%dgamma2 = &
-            - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+        IF (.NOT. bconvectionExplicit) THEN
         
-        rmatrixComponents%dnewton1 = 0.0_DP
-        rmatrixComponents%dnewton2 = &
-              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = &
+              - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = &
+                (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+        ELSE
+
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = &
+              - dtheta * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = &
+                dtheta * REAL(1-rproblem%iequation,DP)
+
+        END IF
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -458,14 +496,23 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
-        IF (dnewton .EQ. 0.0_DP) THEN
+        IF (.NOT. bconvectionExplicit) THEN
+
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * (-dequationType)
+          END IF
+        
+        ELSE
+
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
-        ELSE
-          rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              (1.0_DP-dtheta) * ( dequationType)
-          rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              (1.0_DP-dtheta) * (-dequationType)
+        
         END IF
             
       END IF
@@ -500,12 +547,27 @@ CONTAINS
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
-        rmatrixComponents%dgamma1 = &
-            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
-        rmatrixComponents%dgamma2 = 0.0_DP
+        IF (.NOT. bconvectionExplicit) THEN
+
+          rmatrixComponents%dgamma1 = &
+              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = &
+              (1.0_DP-dtheta) * dnewton
+          rmatrixComponents%dnewton2 = 0.0_DP
+
+        ELSE
         
-        rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
-        rmatrixComponents%dnewton2 = 0.0_DP
+          rmatrixComponents%dgamma1 = &
+              dtheta * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = &
+              dtheta * dnewton
+          rmatrixComponents%dnewton2 = 0.0_DP
+        
+        END IF
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -537,14 +599,26 @@ CONTAINS
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
         
-        rmatrixComponents%dgamma1 = &
-            dtheta * REAL(1-rproblem%iequation,DP)
-        rmatrixComponents%dgamma2 = &
-            - dtheta * REAL(1-rproblem%iequation,DP)
-        
-        rmatrixComponents%dnewton1 = dtheta * dnewton
-        rmatrixComponents%dnewton2 = &
+        IF (.NOT. bconvectionExplicit) THEN
+
+          rmatrixComponents%dgamma1 = &
               dtheta * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = &
+              - dtheta * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = dtheta * dnewton
+          rmatrixComponents%dnewton2 = &
+                dtheta * REAL(1-rproblem%iequation,DP)
+                
+        ELSE
+        
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = 0.0_DP
+        
+        END IF
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = 1.0_DP
@@ -554,18 +628,26 @@ CONTAINS
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        IF (dnewton .EQ. 0.0_DP) THEN
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta 
+        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+            (-dequationType) * dtheta 
+            
+        IF (.NOT. bconvectionExplicit) THEN
+
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
+          
+        ELSE
+        
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
-        ELSE
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta 
-          rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              ( dequationType) * dtheta 
-          rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta 
+        
         END IF
 
       ELSE IF (irelpos .EQ. 1) THEN
@@ -587,13 +669,27 @@ CONTAINS
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
-        rmatrixComponents%dgamma1 = 0.0_DP
-        rmatrixComponents%dgamma2 = &
-            - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+        IF (.NOT. bconvectionExplicit) THEN
+
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = &
+              - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = &
+              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              
+        ELSE
         
-        rmatrixComponents%dnewton1 = 0.0_DP
-        rmatrixComponents%dnewton2 = &
-            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = &
+              - dtheta * REAL(1-rproblem%iequation,DP)
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = &
+                dtheta * REAL(1-rproblem%iequation,DP)
+        
+        END IF
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -605,14 +701,23 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
-        IF (dnewton .EQ. 0.0_DP) THEN
+        IF (.NOT. bconvectionExplicit) THEN
+        
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * (-dequationType)
+          END IF
+          
+        ELSE
+        
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
-        ELSE
-          rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              (1.0_DP-dtheta) * ( dequationType)
-          rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              (1.0_DP-dtheta) * (-dequationType)
+          
         END IF
             
       END IF
@@ -726,12 +831,25 @@ CONTAINS
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
-        rmatrixComponents%dgamma1 = &
-            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
-        rmatrixComponents%dgamma2 = 0.0_DP
+        IF (.NOT. bconvectionExplicit) THEN
+
+          rmatrixComponents%dgamma1 = &
+              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
+          rmatrixComponents%dnewton2 = 0.0_DP
+          
+        ELSE
         
-        rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
-        rmatrixComponents%dnewton2 = 0.0_DP
+          rmatrixComponents%dgamma1 = &
+              dtheta * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = dtheta * dnewton
+          rmatrixComponents%dnewton2 = 0.0_DP
+          
+        END IF
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -769,14 +887,26 @@ CONTAINS
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dsmooth * dtheta * dtstep
         
-        rmatrixComponents%dgamma1 = &
-            dtheta * REAL(1-rproblem%iequation,DP)
-        rmatrixComponents%dgamma2 = &
-            - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+        IF (.NOT. bconvectionExplicit) THEN
+
+          rmatrixComponents%dgamma1 = &
+              dtheta * REAL(1-rproblem%iequation,DP)
+          rmatrixComponents%dgamma2 = &
+              - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+          
+          rmatrixComponents%dnewton1 = dtheta * dnewton
+          rmatrixComponents%dnewton2 = &
+                dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+                
+        ELSE
         
-        rmatrixComponents%dnewton1 = dtheta * dnewton
-        rmatrixComponents%dnewton2 = &
-              dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+          rmatrixComponents%dgamma1 = 0.0_DP
+          rmatrixComponents%dgamma2 = 0.0_DP
+          
+          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton2 = 0.0_DP
+        
+        END IF        
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = dsmooth * dtstep
@@ -786,22 +916,28 @@ CONTAINS
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
+        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
             
-        ! Weight the mass matrix by GAMMA instead of delta(T).
-        ! That's the only difference to the implementation above!
-        IF (dnewton .EQ. 0.0_DP) THEN
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
-              !dtheta * p_rspaceTimeDiscr%dtstep
+        IF (.NOT. bconvectionExplicit) THEN
+        
+          ! Weight the mass matrix by GAMMA instead of delta(T).
+          ! That's the only difference to the implementation above!
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta * dtstep
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta * dtstep
+          END IF
+        
+        ELSE
+        
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
-        ELSE
-          rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
-          rmatrixComponents%dr21 = ddualPrimalCoupling * &
-              ( dequationType) * dtheta * dtstep
-          rmatrixComponents%dr22 = ddualPrimalCoupling * &
-              (-dequationType) * dtheta * dtstep
+
         END IF
 
       END IF        
@@ -897,7 +1033,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, cx, cy, &
+  SUBROUTINE cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, cx, cy, &
       cfilter, dnorm, bprintRes)
 
 !<description>
@@ -1003,7 +1139,7 @@ CONTAINS
     END IF
       
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
-    ! account as the actual matrix multiplication routine c2d2_assembleDefect
+    ! account as the actual matrix multiplication routine cc_assembleDefect
     ! introduces another -1!
     IF (cx .NE. -1.0_DP) THEN
       CALL lsysbl_scaleVector (rtempVector(1),-cx)
@@ -1112,7 +1248,7 @@ CONTAINS
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
       END IF
       
       ! The first and last substep is a little bit special concerning
@@ -1134,12 +1270,12 @@ CONTAINS
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents,iidxNonlin)
           
         ! Subtract: rd = rd - A11 x1
         irelnonl = ABS(iidxNonlin)-ieqTime
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
 
         ! -----
@@ -1149,12 +1285,12 @@ CONTAINS
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rmatrixComponents,iidxNonlin)
 
         ! Subtract: rd = rd - A12 x2
         irelnonl = ABS(iidxNonlin)-ieqTime
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
 
         ! Release the block mass matrix.
@@ -1181,14 +1317,14 @@ CONTAINS
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rmatrixComponents,iidxNonlin)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
         irelnonl = ABS(iidxNonlin)-ieqTime + 1
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
 
         ! Release the block mass matrix.
@@ -1201,12 +1337,12 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents,iidxNonlin)
 
         ! Subtract: rd = rd - Aii xi
         irelnonl = ABS(iidxNonlin)-ieqTime + 1
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
             
         ! -----
@@ -1216,12 +1352,12 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rmatrixComponents,iidxNonlin)
           
         ! Subtract: rd = rd - Aii+1 xi+1
         irelnonl = ABS(iidxNonlin)-ieqTime + 1
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
         
         ! Release the block mass matrix.
@@ -1246,14 +1382,14 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rmatrixComponents,iidxNonlin)
           
         ! Subtract: rd = rd - Ann-1 xn-1
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xn due to the discretisation scheme!!!
         irelnonl = ABS(iidxNonlin)-ieqTime + 2
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
      
         ! -----
@@ -1263,12 +1399,12 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents,iidxNonlin)
 
         ! Subtract: rd = rd - Ann xn
         irelnonl = ABS(iidxNonlin)-ieqTime + 2
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(irelnonl))
       
       END IF
@@ -1378,7 +1514,7 @@ CONTAINS
 !  
 !!<subroutine>
 !
-!  SUBROUTINE c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
+!  SUBROUTINE cc_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
 !      rtempvector1, rtempvector2, rtempvector3, bimplementBC)
 !
 !!<description>
@@ -1647,7 +1783,7 @@ CONTAINS
 !      IF (bgenerate) THEN
 !      
 !        ! Generate the RHS of that point in time into the vector.
-!        CALL c2d2_generateBasicRHS (rproblem,rvector)
+!        CALL cc_generateBasicRHS (rproblem,rvector)
 !
 !      END IF
 !      
@@ -1657,12 +1793,12 @@ CONTAINS
 !        ! Initialise the collection for the assembly process with callback routines.
 !        ! Basically, this stores the simulation time in the collection if the
 !        ! simulation is nonstationary.
-!        CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+!        CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 !
 !        ! Discretise the boundary conditions at the new point in time -- 
 !        ! if the boundary conditions are nonconstant in time!
 !        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!          CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+!          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
 !        END IF
 !
 !        ! Implement the boundary conditions into the RHS.
@@ -1672,7 +1808,7 @@ CONTAINS
 !        CALL vecfil_discreteFBCsol (rvector)      
 !      
 !        ! Clean up the collection (as we are done with the assembly, that's it.
-!        CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+!        CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 !        
 !      END IF
 !    

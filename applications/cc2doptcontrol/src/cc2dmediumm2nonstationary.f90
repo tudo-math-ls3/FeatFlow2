@@ -9,11 +9,11 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) c2d2_initParTimeDependence
+!# 1.) cc_initParTimeDependence
 !#     -> Initialise the parameters of the time dependent solver from DAT file
 !#        parameters.
 !#
-!# 2.) c2d2_solveNonstationaryDirect
+!# 2.) cc_solveNonstationaryDirect
 !#     -> Solves the space-time coupled system.
 !# </purpose>
 !##############################################################################
@@ -65,7 +65,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initParTimeDependence (rproblem,ssection,rparams)
+  SUBROUTINE cc_initParTimeDependence (rproblem,ssection,rparams)
   
 !<description>
   ! Initialises parameters in the problem structure according to whether the
@@ -115,7 +115,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_solveNonstationaryDirect (rproblem)
+  SUBROUTINE cc_solveNonstationaryDirect (rproblem)
   
 !<description>
   ! Solve the nonstationary optimal control problem. This allocates
@@ -163,7 +163,7 @@ CONTAINS
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
 
     ! Read the target flow -- stationary or nonstationary
-    CALL c2d2_initTargetFlow (rproblem,&
+    CALL cc_initTargetFlow (rproblem,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeInit,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeMax,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals)
@@ -182,7 +182,7 @@ CONTAINS
     SELECT CASE (cspaceTimeSolverType)
     CASE (0)
       ! 1-level (in time) Gauss elimination solver.
-      CALL c2d2_solveSupersystemDirect (rproblem, &
+      CALL cc_solveSupersystemDirect (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
 
     CASE (1)
@@ -190,7 +190,7 @@ CONTAINS
       ! in space. 
       !
       ! Call the defect correction solver      
-      CALL c2d2_solveSupersystemDefCorr (rproblem, &
+      CALL cc_solveSupersystemDefCorr (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd, ctypePreconditioner)
       
     CASE (2)
@@ -246,15 +246,15 @@ CONTAINS
       END DO
       
       ! Call the multigrid solver to solve on all these levels
-      CALL c2d2_solveSupersystemMultigrid (rproblem, &
+      CALL cc_solveSupersystemMultigrid (rproblem, &
           RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd, ctypePreconditioner)
     END SELECT
     
     ! POSTPROCESSING
     !
-    CALL c2d2_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
+    CALL cc_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
     
-    CALL c2d2_doneTargetFlow (rproblem)
+    CALL cc_doneTargetFlow (rproblem)
     
     DO i=TIMENLMIN,TIMENLMAX-1
       CALL sptidis_doneDiscretisation (RspaceTimeDiscr(i))
@@ -269,7 +269,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_spacetimepostproc (rproblem,rspacetimediscr,rvector)
+  SUBROUTINE cc_spacetimepostproc (rproblem,rspacetimediscr,rvector)
   
 !<description>
   ! Performs postprocessing of the space time solution vector rvector.
@@ -317,7 +317,7 @@ CONTAINS
       !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
       CALL tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
     
-      CALL c2d2_postprocessingNonstat (rproblem,rvectorTmp)  
+      CALL cc_postprocessingNonstat (rproblem,rvectorTmp)  
       
     END DO
     

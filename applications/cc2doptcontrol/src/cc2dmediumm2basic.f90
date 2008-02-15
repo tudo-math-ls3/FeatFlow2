@@ -53,10 +53,6 @@ MODULE cc2dmediumm2basic
     ! primal space.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationPrimal
 
-    ! An object specifying the block discretisation structure only for the
-    ! dual space.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationDual
-
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateFEM
@@ -64,34 +60,6 @@ MODULE cc2dmediumm2basic
     ! A template FEM matrix that defines the structure of gradient
     ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
-    
-    ! A template matrix for the system matrix for that specific level.
-    ! Provides memory for intermediate calculations of the system matrix.
-    ! This matrix is used e.g. as template matrix for a Multigrid preconditioner
-    ! during the nonlinear iteration; in this case, the 'preconditioner matrices'
-    ! on all levels share some information with this to prevent frequent 
-    ! reallocation of memory. On the other hand, the matrix might have to be
-    ! evaluated for some reason (e.g. the evaluation of damping parameters)
-    ! which can be done with this variable to avoid memory allocation.
-    !
-    ! The system matrix at the same time defines on the one hand the shape
-    ! of the global system (number of DOF's, submatrices for gradient and/or
-    ! deformation tensor). On the other hand, the boundary conditions are associated
-    ! to this matrix to allow the implementation of boundary conditions into
-    ! a globally assembled system matrix.
-    !
-    ! Note that the system matrix does not have to be assembled for calculating
-    ! the defect! Routines to assemble the system matrix or the defect
-    ! can be found in the module cc2dmediumm2matvecassembly.
-    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrix
-    
-    ! This is a reference to rpreallocatedSystemMatrix(1:3,1:3), which realises
-    ! the pure primal system.
-    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrixPrimal
-    
-    ! This is a reference to rpreallocatedSystemMatrix(4:6,4:6), which realises
-    ! the pure dual system.
-    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrixDual
     
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
@@ -119,18 +87,6 @@ MODULE cc2dmediumm2basic
   
     ! A structure for discrete fictitious boundary conditions
     TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
-    
-    ! A variable describing the discrete boundary conditions for the primal velocity
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBCprimal
-
-    ! A variable describing the discrete boundary conditions for the dual velocity
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBCdual
-  
-    ! A structure for discrete fictitious boundary conditions (primal solution)
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBCprimal
-
-    ! A structure for discrete fictitious boundary conditions (dual solution)
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBCdual
     
     ! Mass matrix
     TYPE(t_matrixScalar) :: rmatrixMass
@@ -208,6 +164,12 @@ MODULE cc2dmediumm2basic
     ! The two formulations differ in a "-"-sign in front of the dual velocity.
     INTEGER :: ispaceTimeFormulation = 0
   
+    ! Whether to treat the convection explicitly or implicitly.
+    ! =0: Treat the convection implicitely.
+    ! =1: Treat the convection explicitely. (This is the formulation of the paper
+    !     of Baerwolff and Hinze!)
+    INTEGER :: iconvectionExplicit = 0
+
     ! Type of implementation of the terminal condition.
     ! =0: implement terminal condition in a weak sense by filtering.
     ! =1: implement terminal condition in a strong sense by modifying the matrix.
@@ -309,14 +271,6 @@ MODULE cc2dmediumm2basic
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
     
-    ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different 
-    ! matrices). This is the case e.g. for no-slip boundary conditions
-    ! where then implementation of the BC's into the first velocity
-    ! matrix must not affect the 2nd velocity matrix!
-    ! This value must be initialised before the matrices are set
-    ! up and must not be changed afterwards.
-    LOGICAL :: bdecoupledXY
-
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions
 
@@ -408,14 +362,7 @@ MODULE cc2dmediumm2basic
 !
 ! Name                  | Description
 ! ----------------------+------------------------------------------------------
-! INI                   | t_paramlist object
-!                       | Contains parameters from the DAT/INI files
-!                       |
 ! NU                    | Reciprocal 1/RE of parameter RE from the DAT file
-! NLMIN                 | Minimum level of the discretisation
-! NLMAX                 | Maximum level of the discretisation
-! IUPWIND               | Type of stabilisation. =0:streamline diff, =1:upwind,
-!                       | =2:jump stabil
 ! IBOUNDARY             ! =0: stationary Dirichlet boundary conditions
 !                       ! =1: nonstationary boundary conditions, possibly with
 !                       !     pressure drop
@@ -424,36 +371,6 @@ MODULE cc2dmediumm2basic
 ! UPSAM                 | Stabilisation parameter
 !
 ! On every level between NLMIN and NLMAX:
-!
-! Name                  | Description
-! ----------------------+------------------------------------------------------
-! STOKES                | Stokes matrix (=nu*Laplace) if nu=constant
-! SYSTEMMAT             | Nonlinear system matrix
-! RTEMPVEC              | Temporary vector, compatible to matrix
-!
-!
-! Global, level independent data, available during the nonlinear iteration:
-!
-! Name                  | Description
-! ----------------------+------------------------------------------------------
-! RHS                   | t_vectorBlock object 
-!                       | Current RHS vector on maximum level
-!                       |
-! SOLUTION              | t_vectorBlock object 
-!                       | Current solution vector on maximum level
-!                       |
-! ILVPROJECTION         | t_interlevelProjectionBlock structure.
-!                       | Configures prolongation/restriction for multigrid
-!                       | solver component.
-!                       |
-! RTEMPSCALAR           | t_vectorScalar object 
-!                       | Temporary vector
-!                       |
-! RTEMP2SCALAR          | t_vectorScalar object 
-!                       | Temporary vector
-!                       |
-! LINSOLVER             | t_linsol object
-!                       | Configures the linear solver for preconditioning
 !
 ! Expressions for boundary conditions are saved in special 
 ! sections in the collection:

@@ -511,7 +511,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
@@ -559,7 +559,7 @@ CONTAINS
     CALL lsyssc_clearVector(rrhs%RvectorBlock(6))
                                 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
   
   END SUBROUTINE
     

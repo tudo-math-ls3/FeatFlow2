@@ -9,11 +9,11 @@
 !#
 !# The following files can be found here:
 !#
-!# 1.) c2d2_parseBDconditions
+!# 1.) cc_parseBDconditions
 !#     -> Parses the definition of the BC's from sections given by DAT files
 !#        and sets up an analytical boundary condition description
 !#
-!# 2.) c2d2_parseFBDconditions
+!# 2.) cc_parseFBDconditions
 !#     -> Parses the definition of the BC's given by fictitious boundaries
 !#        by evaluating sections given by DAT files
 !#        and sets up an analytical boundary condition description
@@ -103,7 +103,7 @@ CONTAINS
 
   ! ***************************************************************************
 
-  SUBROUTINE c2d2_parseBDconditions (rproblem)
+  SUBROUTINE cc_parseBDconditions (rproblem)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -382,15 +382,6 @@ CONTAINS
                 CALL setZeroVelocity (p_rbcRegion)
               END IF
               
-              ! If we have no-slip boundary conditions, the X- and Y-velocity
-              ! matrices are 'decoupled' as they are modified differently
-              ! by the boundary-conditions implementation filter!
-              ! In this case, change rproblem%bdecoupledXY from FALSE to TRUE
-              ! to indicate that.
-              IF ( ((sbdex1 .EQ. '') .AND. (sbdex2 .NE. '')) ) THEN
-                rproblem%bdecoupledXY = .TRUE.
-              END IF
-              
             CASE (2)
             
               ! Pressure drop boundary conditions.
@@ -505,16 +496,6 @@ CONTAINS
                 CALL setExpression (sbdex4,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
-              ! If we have no-slip boundary conditions, the X- and Y-velocity
-              ! matrices are 'decoupled' as they are modified differently
-              ! by the boundary-conditions implementation filter!
-              ! In this case, change rproblem%bdecoupledXY from FALSE to TRUE
-              ! to indicate that.
-              IF ( ((sbdex1 .EQ. '') .AND. (sbdex2 .NE. '')) .OR.&
-                   ((sbdex1 .NE. '') .AND. (sbdex2 .EQ. '')) ) THEN
-                rproblem%bdecoupledXY = .TRUE.
-              END IF
-              
             CASE DEFAULT
               PRINT *,'Unknown boundary condition'
               STOP
@@ -619,7 +600,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_parseFBDconditions (rproblem)
+  SUBROUTINE cc_parseFBDconditions (rproblem)
 
 !<description>
   ! This initialises the analytic boundary conditions for fictitious boundary
