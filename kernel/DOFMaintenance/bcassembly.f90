@@ -1705,6 +1705,36 @@ CONTAINS
               -ABS(Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1))
         END IF
         
+      CASE (EL_P1T)
+
+        ! Edge midpoint based element.
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DedgeParameterValue)) &
+              dpar = p_DedgeParameterValue(I)
+          
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+              rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
+              iedge,dpar, &
+              p_rcollection, Dvalues)
+          
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+            ! Save the computed function value
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+          END IF
+          
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          END IF
+        END IF
+
       CASE (EL_Q1T)
       
         ! The Q1T-element has different variants. Check which variant we have
