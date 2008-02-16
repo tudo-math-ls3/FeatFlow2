@@ -8612,7 +8612,7 @@ CONTAINS
         bextend = (rafcstab%iextendedJacobian .NE. 0)
         CALL doJacobian_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kld, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Kld, p_Kcol, p_Kld, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
             theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         
@@ -8622,6 +8622,7 @@ CONTAINS
       CASE(LSYSSC_MATRIX9)
 
         ! Set pointers
+        CALL lsyssc_getbase_Kld(rmatrixJ, p_Kld)
         CALL lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
         
         ! Create diagonal separator
@@ -8633,7 +8634,7 @@ CONTAINS
         bextend = (rafcstab%iextendedJacobian .NE. 0)
         CALL doJacobian_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kdiagonal, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Kld, p_Kcol, p_Kdiagonal, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
             theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         
@@ -8712,14 +8713,14 @@ CONTAINS
           
           CALL doJacobian_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kld, p_Kcol, p_MC, p_u, p_u0, p_flux, p_flux0, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kld, p_MC, p_u, p_u0, p_flux, p_flux0, p_pp, p_pm, p_qp, p_qm,&
               p_rp, p_rm, theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           
         ELSE
           CALL doJacobian_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kld, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kld, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         END IF
@@ -8727,9 +8728,10 @@ CONTAINS
         ! Free storage
         CALL storage_free(h_Ksep)
 
-        CASE(LSYSSC_MATRIX9)
+      CASE(LSYSSC_MATRIX9)
 
         ! Set pointers
+        CALL lsyssc_getbase_Kld(rmatrixJ, p_Kld)
         CALL lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
         
         ! Create diagonal separator
@@ -8747,13 +8749,13 @@ CONTAINS
 
           CALL doJacobian_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Kcol, p_MC, p_u, p_u0, p_flux, p_flux0,&
+              p_Kld, p_Kcol, p_Kdiagonal, p_MC, p_u, p_u0, p_flux, p_flux0,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
               rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         ELSE
           CALL doJacobian_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kdiagonal, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         END IF
@@ -8780,7 +8782,7 @@ CONTAINS
     !**************************************************************    
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
-    ! by one if the is necessary for matrix format 7).
+    ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
@@ -8811,7 +8813,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-TVD
     SUBROUTINE doJacobian_TVD(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+        Kld, Kcol, Kdiagonal, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -8821,6 +8823,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
       REAL(DP), DIMENSION(:), INTENT(IN)                :: pp,pm,qp,qm
@@ -8909,15 +8912,17 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol, flux, Kloc, rploc, rmloc,&
-                fluxloc, hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
+                flux, Kloc, rploc, rmloc, fluxloc,&
+                hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
 
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol, flux, Kloc, rploc, rmloc,&
-                fluxloc, hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
+                flux, Kloc, rploc, rmloc, fluxloc,&
+                hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
         END DO
       END DO   ! end-of k-loop
@@ -9057,12 +9062,11 @@ CONTAINS
 
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-TVD
-    SUBROUTINE assembleJacobian_TVD(IverticesAtEdge, Kdiagonal, Kcol, flux,&
+    SUBROUTINE assembleJacobian_TVD(IverticesAtEdge, Kdiagonal, flux,&
         Kloc, rploc, rmloc, fluxloc, hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
 
       INTEGER(PREC_MATIDX), DIMENSION(:,:), INTENT(IN)  :: IverticesAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN)  :: Kloc
       REAL(DP), DIMENSION(:,0:), INTENT(IN)             :: rploc,rmloc
@@ -9188,7 +9192,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-GP
     SUBROUTINE doJacobian_GP(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
+        Kld, Kcol, Kdiagonal, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
         theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
     
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -9198,6 +9202,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: MC
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u,u0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
@@ -9291,7 +9296,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -9299,7 +9304,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld,Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -9493,13 +9498,12 @@ CONTAINS
 
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP
-    SUBROUTINE assembleJacobian_GP(IverticesAtEdge, Kdiagonal, Kcol,&
+    SUBROUTINE assembleJacobian_GP(IverticesAtEdge, Kdiagonal,&
         flux, flux0, rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
         hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
 
       INTEGER(PREC_MATIDX), DIMENSION(:,:), INTENT(IN)  :: IverticesAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: rp,rm
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN)  :: Kloc
@@ -10897,7 +10901,7 @@ CONTAINS
 
           CALL doJacobian_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kld, p_Kcol, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Kld, p_Kcol, p_Kld, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
             theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
 
@@ -10907,7 +10911,7 @@ CONTAINS
 
           CALL doJacobian_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kld, p_Kcol, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
             theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           
@@ -10918,7 +10922,7 @@ CONTAINS
 
           CALL doJacobian_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kld, p_Kcol, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
             theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         END SELECT
@@ -10930,6 +10934,7 @@ CONTAINS
       CASE(LSYSSC_MATRIX9)
 
         ! Set pointers
+        CALL lsyssc_getbase_Kld(rmatrixJ, p_Kld)
         CALL lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
         
         ! Create diagonal separator
@@ -10947,7 +10952,7 @@ CONTAINS
           
           CALL doJacobian_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Kcol, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
 
@@ -10957,7 +10962,7 @@ CONTAINS
 
           CALL doJacobian_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
 
@@ -10968,7 +10973,7 @@ CONTAINS
 
           CALL doJacobian_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
         END SELECT
@@ -11048,7 +11053,7 @@ CONTAINS
 
             CALL doJacobian_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kld, p_Kcol, p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kld, p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
 
@@ -11058,7 +11063,7 @@ CONTAINS
 
             CALL doJacobian_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kld, p_Kcol, p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11069,7 +11074,7 @@ CONTAINS
 
             CALL doJacobian_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kld, p_Kcol, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           END SELECT
@@ -11083,7 +11088,7 @@ CONTAINS
             
             CALL doJacobian_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-              p_Kld, p_Kcol, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+              p_Kld, p_Kcol, p_Kld, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
               theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
               rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11093,7 +11098,7 @@ CONTAINS
 
             CALL doJacobian_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kld, p_Kcol, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                 rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11104,7 +11109,7 @@ CONTAINS
 
             CALL doJacobian_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kld, p_Kcol, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                p_Kld, p_Kcol, p_Kld, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                 rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           END SELECT
@@ -11117,6 +11122,7 @@ CONTAINS
       CASE(LSYSSC_MATRIX9)
 
         ! Set pointers
+        CALL lsyssc_getbase_Kld(rmatrixJ, p_Kld)
         CALL lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
         
         ! Create diagonal separator
@@ -11140,7 +11146,7 @@ CONTAINS
             
             CALL doJacobian_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
 
@@ -11150,7 +11156,7 @@ CONTAINS
 
             CALL doJacobian_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kdiagonal,p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11161,7 +11167,7 @@ CONTAINS
 
             CALL doJacobian_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                 p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           END SELECT
@@ -11175,7 +11181,7 @@ CONTAINS
             
             CALL doJacobian_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                 rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11185,7 +11191,7 @@ CONTAINS
             
             CALL doJacobian_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                 rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
             
@@ -11196,7 +11202,7 @@ CONTAINS
 
             CALL doJacobian_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-                p_Kdiagonal, p_Kcol, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                p_Kld, p_Kcol, p_Kdiagonal, p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                 rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
           END SELECT
@@ -11225,7 +11231,7 @@ CONTAINS
     !**************************************************************    
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
-    ! by one if the is necessary for matrix format 7).
+    ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
@@ -11256,7 +11262,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-TVD in 1D
     SUBROUTINE doJacobian_TVD_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+        Kld, Kcol, Kdiagonal, Cx, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -11266,6 +11272,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
@@ -11380,7 +11387,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal, &
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11388,7 +11395,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11401,7 +11408,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-TVD in 2D
     SUBROUTINE doJacobian_TVD_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, Cy, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+        Kld, Kcol, Kdiagonal, Cx, Cy, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -11411,6 +11418,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
@@ -11525,7 +11533,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11533,7 +11541,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11546,7 +11554,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-TVD in 3D
     SUBROUTINE doJacobian_TVD_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, Cy, Cz, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+        Kld, Kcol, Kdiagonal, Cx, Cy, Cz, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -11556,6 +11564,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
@@ -11670,7 +11679,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11678,7 +11687,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_TVD(IverticesAtEdge, Kld, Kcol,&
+            CALL assembleJacobian_TVD(IverticesAtEdge, Kdiagonal,&
                 flux, Kloc, rploc, rmloc, fluxloc, hstep,&
                 iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -11866,12 +11875,11 @@ CONTAINS
 
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-TVD in arbitrary dimension
-    SUBROUTINE assembleJacobian_TVD(IverticesAtEdge, Kdiagonal, Kcol, flux,&
+    SUBROUTINE assembleJacobian_TVD(IverticesAtEdge, Kdiagonal, flux,&
         Kloc, rploc, rmloc, fluxloc, hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
 
       INTEGER(PREC_MATIDX), DIMENSION(:,:), INTENT(IN)  :: IverticesAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN)  :: Kloc
       REAL(DP), DIMENSION(:,0:), INTENT(IN)             :: rploc,rmloc
@@ -11995,7 +12003,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-GP in 1D
     SUBROUTINE doJacobian_GP_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
+        Kld, Kcol, Kdiagonal, Cx, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
         theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
     
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -12005,6 +12013,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,MC
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u,u0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
@@ -12123,7 +12132,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12131,7 +12140,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12144,7 +12153,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-GP in 2D
     SUBROUTINE doJacobian_GP_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, Cy, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
+        Kld, Kcol, Kdiagonal, Cx, Cy, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
         theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
     
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -12154,6 +12163,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,MC
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u,u0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
@@ -12272,7 +12282,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12280,7 +12290,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12293,7 +12303,7 @@ CONTAINS
     ! Assemble the Jacobian matrix for FEM-GP in 3D
     SUBROUTINE doJacobian_GP_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
         IsubdiagonalEdgesIdx, IsubdiagonalEdges, DcoefficientsAtEdge,&
-        Kld, Kcol, Cx, Cy, Cz, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
+        Kld, Kcol, Kdiagonal, Cx, Cy, Cz, MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
         theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
     
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: IsuperdiagonalEdgesIdx
@@ -12303,6 +12313,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(IN)              :: DcoefficientsAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,MC
       REAL(DP), DIMENSION(:), INTENT(IN)                :: u,u0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
@@ -12421,7 +12432,7 @@ CONTAINS
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12429,7 +12440,7 @@ CONTAINS
           ! Loop over all superdiagonal edges
           DO iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            CALL assembleJacobian_GP(IverticesAtEdge, Kld, Kcol, flux, flux0,&
+            CALL assembleJacobian_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                 rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
                 hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
           END DO
@@ -12694,13 +12705,12 @@ CONTAINS
 
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP for arbitrary dimensions
-    SUBROUTINE assembleJacobian_GP(IverticesAtEdge, Kdiagonal, Kcol,&
+    SUBROUTINE assembleJacobian_GP(IverticesAtEdge, Kdiagonal, &
         flux, flux0, rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
         hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
 
       INTEGER(PREC_MATIDX), DIMENSION(:,:), INTENT(IN)  :: IverticesAtEdge
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       REAL(DP), DIMENSION(:), INTENT(IN)                :: flux,flux0
       REAL(DP), DIMENSION(:), INTENT(IN)                :: rp,rm
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(IN)  :: Kloc
@@ -12978,7 +12988,6 @@ CONTAINS
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_IsubdiagonalEdges
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_IsubdiagonalEdgesIdx
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_Kld,p_Ksep
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_Kdiagonal
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER   :: p_Kcol
     REAL(DP), DIMENSION(:,:), POINTER             :: p_DcoefficientsAtEdge
     REAL(DP), DIMENSION(:), POINTER               :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
@@ -13073,7 +13082,7 @@ CONTAINS
     !**************************************************************    
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
-    ! by one if the is necessary for matrix format 7).
+    ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
