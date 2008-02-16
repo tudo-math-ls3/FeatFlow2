@@ -383,7 +383,7 @@ MODULE element
 !<constantblock description="Special 2D element variants.">
   
   ! ID of rotated linear nonconforming triangular FE, P1~, edge-midpoint based
-  INTEGER(I32), PARAMETER :: EL_E020 = EL_P1T
+  INTEGER(I32), PARAMETER :: EL_E020 = EL_P1T + 2**16
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, integral
   ! mean value based
