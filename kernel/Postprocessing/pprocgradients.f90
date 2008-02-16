@@ -28,7 +28,7 @@
 !#        Uses the superconvergent patch recovery technique suggested
 !#        by Zienkiewicz and Zhu. 1D, 2D, 3D.
 !#
-!# 3.) ppgrd_calcGradLimAverageRecov
+!# 3.) ppgrd_calcGradLimAvgP1Q1cnf
 !#     -> Calculate the reconstructed gradient as ~P1 or ~Q1 vector
 !#        for an arbitrary conformal discretisation.
 !#        Uses the limited gradient averaging technique by M. Möller
@@ -3086,7 +3086,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE ppgrd_calcGradLimAverageRecov (rvectorScalar,rvectorGradient)
+  SUBROUTINE ppgrd_calcGradLimAvgP1Q1cnf (rvectorScalar,rvectorGradient)
 
 !<description>
     ! Calculates the recovered gradient of a scalar finite element function
@@ -3114,55 +3114,162 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: i,j
-    LOGICAL :: bisQ1T, bisP1T, bisDifferent
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+    INTEGER :: i,j,k,icurrentElementDistr, NVE
+    LOGICAL :: bisQ1, bisP1, bisQ1T, bisP1T, bisDifferent
+    LOGICAL :: bnonparTrial
+    INTEGER(I32) :: IELmax, IELset, idof
+
+    ! Array to tell the element which derivatives to calculate
+    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+    
+    ! Cubature point coordinates on the reference element
+    REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! Cubature formula weights. The cotent is actually not used here.
+    REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+    
+    ! Number of 'cubature points'. As we acutally don't do cubature
+    ! here, this coincides with the number of DOF's on each element
+    ! in the destination space.
+    INTEGER :: nlocalDOFsDest
+    
+    ! Number of local degees of freedom for test functions
+    INTEGER :: indofTrial,indofDest
+    
+    ! The triangulation structure - to shorten some things...
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
+
+    ! An array receiving the coordinates of cubature points on
+    ! the real element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsReal
+
+    ! Pointer to the point coordinates to pass to the element function.
+    ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
+    ! the trial element is parametric or not.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
+    
+    ! Array with coordinates of the corners that form the real element.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
+    
+    ! Arrays for saving Jacobian determinants and matrices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac
+    
+    ! Pointer to KVERT of the triangulation
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    
+    ! Pointer to DCORVG of the triangulation
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+    
+    ! Current element distribution in source- and destination vector
+    TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+    TYPE(t_elementDistribution), POINTER :: p_elementDistrDest
+    
+    ! Pointer to the values of the function that are computed by the callback routine.
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dderivatives
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    INTEGER :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    TYPE(t_domainIntSubset) :: rintSubset
+    
+    ! An allocateable array accepting the DOF's of a set of elements.
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsTrial
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: IdofsDest
+    
+    ! Pointers to the X-, Y- and Z-derivative vector
+    REAL(DP), DIMENSION(:), POINTER :: p_DxDeriv, p_DyDeriv, p_DzDeriv
+    
+    ! Number of elements in the current element distribution
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+
+    ! Pointer to an array that counts if an edge has been visited.
+    INTEGER :: h_IcontributionsAtDOF
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IcontributionsAtDOF
+    
+    ! Discretisation structures for the source- and destination vector(s)
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrSource, p_rdiscrDest
 
     ! Dimension of triangulation must be less or equal than number of subvectors
     ! in the block vector.
     
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
       CALL output_line ('No discretisation attached to the source vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
     IF ((rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
         (rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
       CALL output_line ('Only uniform and conformal discretisations supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation%p_rtriangulation)) THEN
       CALL output_line ('No triangulation attached to the source vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'pppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
     IF (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim .GT. &
         rvectorGradient%nblocks) THEN
       CALL output_line ('Dimension of destination vector not large enough!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
     ! There must be given discretisation structures in the destination vector.
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
       CALL output_line ('No discretisation attached to the destination vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+      CALL sys_halt()
+    END IF
+
+    ! The source vector must be either pure Q1 or pure P1 or mixed Q1/P1
+    bisQ1 = .FALSE.
+    bisP1 = .FALSE.
+    bisDifferent = .FALSE.
+
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
+    DO j=1,p_rdiscrSource%inumFESpaces
+      SELECT CASE (elem_getPrimaryElement (p_rdiscrSource%RelementDistribution(j)%itrialElement))
+      CASE (EL_Q1)
+        bisQ1 = .TRUE.
+      CASE (EL_P1)
+        bisP1 = .TRUE.
+      CASE DEFAULT
+        bisDifferent = .TRUE.
+      END SELECT
+    END DO
+
+    IF (bisDifferent) THEN
+      CALL output_line ('Only Q1, and P1 supported as&
+          & discretisation for the source vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
 
     ! The destination vector must be either pure Q1T or pure P1T or mixed Q1T/P1T
     bisQ1T = .FALSE.
     bisP1T = .FALSE.
+    bisDifferent = .FALSE.
     
     DO i=1,MIN(rvectorGradient%nblocks,&
         rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim,rvectorGradient%nblocks)
-      p_rdiscr => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
-      DO j=1,p_rdiscr%inumFESpaces
-        SELECT CASE (elem_getPrimaryElement (p_rdiscr%RelementDistribution(j)%itrialElement))
+      p_rdiscrDest => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
+      DO j=1,p_rdiscrDest%inumFESpaces
+        SELECT CASE (elem_getPrimaryElement (p_rdiscrDest%RelementDistribution(j)%itrialElement))
         CASE (EL_Q1T)
           bisQ1T = .TRUE.
         CASE (EL_P1T)
@@ -3176,10 +3283,360 @@ CONTAINS
     IF (bisDifferent) THEN
       CALL output_line ('Only Q1T, and P1T supported as&
           & discretisation for the destination vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAverageRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
 
-  END SUBROUTINE ppgrd_calcGradLimAverageRecov
+    ! Get the discretisation structures of the source- and destination space.
+    ! Note that we assume here that the X- and Y-derivative is discretised
+    ! the same way!
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
+    p_rdiscrDest   => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(1)
+    
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => p_rdiscrSource%p_rtriangulation
+    
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = MIN(PPGRD_NELEMSIM,p_rtriangulation%NEL)
+    
+    ! Get a pointer to the KVERT and DCORVG array
+    CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
+                               p_IverticesAtElement)
+    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+                               p_DvertexCoords)
+                     
+    ! Get pointers to the derivative destination vector.
+    SELECT CASE(p_rtriangulation%ndim)
+    CASE (NDIM1D)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      CALL lalg_clearVectorDble (p_DxDeriv)
+
+    CASE (NDIM2D)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
+      CALL lalg_clearVectorDble (p_DxDeriv)
+      CALL lalg_clearVectorDble (p_DyDeriv)
+
+    CASE (NDIM3D)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
+      CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(3),p_DzDeriv)
+      CALL lalg_clearVectorDble (p_DxDeriv)
+      CALL lalg_clearVectorDble (p_DyDeriv)
+      CALL lalg_clearVectorDble (p_DzDeriv)
+
+    CASE DEFAULT
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+      CALL sys_halt()
+    END SELECT
+
+    ! Array that allows the calculation about the number of elements
+    ! meeting in a vertex, based onm DOF's.
+    CALL storage_new ('ppgrd_calcGradLimAvgP1Q1cnf','p_IcontributionsAtDOF',&
+                      dof_igetNDofGlob(p_rdiscrDest),&
+                      ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int (h_IcontributionsAtDOF,p_IcontributionsAtDOF)
+    
+    ! Evaluate the first derivative of the FE functions.
+
+    Bder = .FALSE.
+    SELECT CASE (p_rtriangulation%ndim)
+    CASE (NDIM1D)
+      Bder(DER_DERIV1D_X) = .TRUE.
+
+    CASE (NDIM2D)
+      Bder(DER_DERIV2D_X) = .TRUE.
+      Bder(DER_DERIV2D_Y) = .TRUE.
+
+    CASE (NDIM3D)
+      Bder(DER_DERIV3D_X) = .TRUE.
+      Bder(DER_DERIV3D_Y) = .TRUE.
+      Bder(DER_DERIV3D_Z) = .TRUE.
+
+    CASE DEFAULT
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+      CALL sys_halt()
+    END SELECT
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    DO icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_elementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+      p_elementDistrDest => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+    
+      ! If the element distribution is empty, skip it
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+    
+      ! Get the number of local DOF's for trial functions
+      ! in the source and destination vector.
+      indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+      indofDest = elem_igetNDofLoc(p_elementDistrDest%itrialElement)
+      
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+
+      ! Initialise the cubature formula.
+      ! That's a special trick here! The FE space of the destination vector
+      ! is either P1 or Q1. We create the gradients in the midpoints of the edges
+      ! by taking the limited average of the gradients of the source vector!
+
+      SELECT CASE (elem_getPrimaryElement(p_elementDistrDest%itrialElement))
+      CASE (EL_P1T)
+        CALL cub_getCubPoints(CUB_G3_T, nlocalDOFsDest, Dxi, Domega)
+
+      CASE (EL_Q1T)
+        Dxi(1,1) =  0.0_DP
+        Dxi(1,2) = -1.0_DP
+        Dxi(2,1) =  1.0_DP
+        Dxi(2,2) =  0.0_DP
+        Dxi(3,1) =  0.0_DP
+        Dxi(3,2) =  1.0_DP
+        Dxi(4,1) = -1.0_DP
+        Dxi(4,2) =  0.0_DP
+        
+        nlocalDOFsDest = 4
+
+      CASE DEFAULT
+        CALL output_line ('Unsupported FE space in destination vector!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+        CALL sys_halt()
+      END SELECT
+
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
+      
+      ! Allocate memory and get local references to it.
+      ! We abuse the system of cubature points here for the evaluation.
+      CALL domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,j,&
+          p_rtriangulation%ndim,NVE)
+      p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
+      p_DcubPtsReal => rintSubset%p_DcubPtsReal
+      p_Djac =>        rintSubset%p_Djac
+      p_Ddetj =>       rintSubset%p_Ddetj
+      p_Dcoords =>     rintSubset%p_DCoords
+
+      ! Destination space is either P1 or Q1.
+      ! Put the cubature point coordinates in the right format to the
+      ! cubature-point array.
+      ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+      ! as the cubature point coordinates are identical on all elements
+      DO j=1,SIZE(p_DcubPtsRef,3)
+        DO i=1,nlocalDOFsDest
+          DO k=1,SIZE(p_DcubPtsRef,1)
+            ! Could be solved using the TRANSPOSE operator - but often is's 
+            ! faster this way...
+            p_DcubPtsRef(k,i,j) = Dxi(i,k)
+          END DO
+        END DO
+      END DO
+
+      ! Allocate memory for the DOF's of all the elements.
+      ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+      ALLOCATE(IdofsDest(indofDest,nelementsPerBlock))
+
+      ! Allocate memory for the values of the derivatives in the corners
+      ALLOCATE(Dderivatives(nlocalDOFsDest,nelementsPerBlock,2))
+
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrial  = elem_isNonparametric(p_elementDistribution%itestElement)
+                      
+      ! Let p_DcubPtsTest point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
+      IF (bnonparTrial) THEN
+        p_DcubPtsTrial => p_DcubPtsReal
+      ELSE
+        p_DcubPtsTrial => p_DcubPtsRef
+      END IF
+
+      ! Get the number of elements in the element distribution.
+      NEL = p_elementDistribution%NEL
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+                                p_IelementList)
+
+      ! Loop over the elements - blockwise.
+      DO IELset = 1, NEL, PPGRD_NELEMSIM
+      
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = MIN(NEL,IELset-1+PPGRD_NELEMSIM)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        CALL dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
+                                     .TRUE.,IdofsTrial)
+
+        ! Also calculate the global DOF's in our destination vector(s)
+        CALL dof_locGlobMapping_mult(p_rdiscrDest, p_IelementList(IELset:IELmax), &
+                                     .TRUE.,IdofsDest)
+
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        !
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set. 
+        
+        CALL trafo_getCoords_sim (elem_igetTrafoType(&
+            p_elementDistribution%itrialElement),&
+            p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element, we need the 
+        ! coordinates of the points on the real element, too.
+        CALL trafo_calctrafoabs_sim (&
+              p_rdiscrSource%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+              IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
+              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
+              p_DcubPtsReal)
+      
+        ! Prepare the call to the evaluation routine of the analytic function.    
+        rintSubset%ielementDistribution = icurrentElementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+    
+        ! At this point, we calculate the gradient information.
+        ! As this routine handles the 2D case, we have an X- and Y-derivative.
+        ! Calculate the X-derivative in the corners of the elements
+        ! into Dderivatives(:,:,1) and the Y-derivative into
+        ! Dderivatives(:,:,2).
+        
+        CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, IdofsTrial, &
+              nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))        
+
+        CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, IdofsTrial, &
+              nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+
+        ! Sum up the derivative values in the destination vector.
+        ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+        ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+        ! local DOF's in the destination space -- in that order!
+
+        SELECT CASE (p_rtriangulation%ndim)
+        CASE (NDIM1D)
+          
+          DO i=1,IELmax-IELset+1
+            DO j=1,nlocalDOFsDest
+
+              idof = IdofsDest(j,i)
+
+              IF (p_IcontributionsAtDOF(idof) .EQ. 0) THEN 
+                p_DxDeriv(idof) = Dderivatives(j,i,1)
+                p_IcontributionsAtDOF(idof) = 1
+              ELSE
+                p_DxDeriv(idof) = (SIGN(0.5_DP,p_DxDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,1))) * &
+                                   MIN(0.5_DP*ABS(p_DxDeriv(idof)+Dderivatives(j,i,1)), &
+                                       2._DP*ABS(p_DxDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,1)))
+              END IF
+            END DO
+          END DO
+
+        CASE (NDIM2D)
+
+          DO i=1,IELmax-IELset+1
+            DO j=1,nlocalDOFsDest
+
+              idof = IdofsDest(j,i)
+
+              IF (p_IcontributionsAtDOF(idof) .EQ. 0) THEN 
+                p_DxDeriv(idof) = Dderivatives(j,i,1)
+                p_DyDeriv(idof) = Dderivatives(j,i,2)
+                p_IcontributionsAtDOF(idof) = 1
+              ELSE
+                p_DxDeriv(idof) = (SIGN(0.5_DP,p_DxDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,1))) * &
+                                   MIN(0.5_DP*ABS(p_DxDeriv(idof)+Dderivatives(j,i,1)), &
+                                       2._DP*ABS(p_DxDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,1)))
+                p_DyDeriv(idof) = (SIGN(0.5_DP,p_DyDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,2))) * &
+                                   MIN(0.5_DP*ABS(p_DyDeriv(idof)+Dderivatives(j,i,2)), &
+                                       2._DP*ABS(p_DyDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,2)))
+              END IF
+            END DO
+          END DO
+
+        CASE (NDIM3D)
+
+          DO i=1,IELmax-IELset+1
+            DO j=1,nlocalDOFsDest
+
+              idof = IdofsDest(j,i)
+
+              IF (p_IcontributionsAtDOF(idof) .EQ. 0) THEN 
+                p_DxDeriv(idof) = Dderivatives(j,i,1)
+                p_DyDeriv(idof) = Dderivatives(j,i,2)
+                p_DzDeriv(idof) = Dderivatives(j,i,3)
+                p_IcontributionsAtDOF(idof) = 1
+              ELSE
+                p_DxDeriv(idof) = (SIGN(0.5_DP,p_DxDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,1))) * &
+                                   MIN(0.5_DP*ABS(p_DxDeriv(idof)+Dderivatives(j,i,1)), &
+                                       2._DP*ABS(p_DxDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,1)))
+                p_DyDeriv(idof) = (SIGN(0.5_DP,p_DyDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,2))) * &
+                                   MIN(0.5_DP*ABS(p_DyDeriv(idof)+Dderivatives(j,i,2)), &
+                                       2._DP*ABS(p_DyDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,2)))
+                p_DzDeriv(idof) = (SIGN(0.5_DP,p_DzDeriv(idof)) + &
+                                   SIGN(0.5_DP,Dderivatives(j,i,3))) * &
+                                   MIN(0.5_DP*ABS(p_DzDeriv(idof)+Dderivatives(j,i,3)), &
+                                       2._DP*ABS(p_DzDeriv(idof)), &
+                                       2._DP*ABS(Dderivatives(j,i,3)))
+              END IF
+            END DO
+          END DO
+
+        CASE DEFAULT
+          CALL output_line('Invalid spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+          CALL sys_halt()
+        END SELECT
+        
+      END DO ! IELset
+      
+      ! Release memory
+      CALL domint_doneIntegration(rintSubset)
+      
+      DEALLOCATE(Dderivatives)
+      DEALLOCATE(IdofsDest)
+      DEALLOCATE(IdofsTrial)
+      
+    END DO ! icurrentElementDistr
+
+    ! Release temp data
+    CALL storage_free (h_IcontributionsAtDOF)
+
+  END SUBROUTINE ppgrd_calcGradLimAvgP1Q1cnf
 
 END MODULE
