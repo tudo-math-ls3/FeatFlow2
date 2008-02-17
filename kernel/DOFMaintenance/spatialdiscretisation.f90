@@ -529,8 +529,8 @@ CONTAINS
         ccubType = CUB_G1_T
 
       CASE (EL_P1)
-        ! Use trapezoidal rule
-        ccubType = CUB_TRZ_T
+        ! Use Gauss-3pt
+        ccubType = CUB_G3_T
 
       CASE (EL_P2)
         ! Gauss-3pt
