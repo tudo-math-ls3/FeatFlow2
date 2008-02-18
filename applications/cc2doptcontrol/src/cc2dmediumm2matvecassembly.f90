@@ -201,6 +201,22 @@ MODULE cc2dmediumm2matvecassembly
     ! R-parameter that weight the reactive coupling mass matrix.
     REAL(DP) :: dr21 = 0.0_DP
     REAL(DP) :: dr22 = 0.0_DP
+    
+    ! When evaluating nonlinear terms, the evaluation routine accepts
+    ! in timestep i three solution vectors -- one corresponding to
+    ! the matrix Aii-1, one corresponding to matrix Aii and one corresponding
+    ! to matrix Aii+1. The following id's specify which primal solution is
+    ! used for which matrix. A value of 1 correspponds to solution i-1,
+    ! a value of 2 to solution i and a value of 3 to solution i+1.
+    ! iprimalSol=1 means e.g. that A=A(xi-1). Similarly,
+    ! iprimalSol=3 would mean that A=A(xi+1).
+    ! =0: undefined.
+    INTEGER :: iprimalSol  = 2
+
+    ! The following three variables specify the id of the dual solution to be
+    ! evaluated. 1=lambda_{i-1}, 2=lambda_i, 3=lambda_{i+1}.
+    ! =0: undefined.
+    INTEGER :: idualSol  = 2
 
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
@@ -289,7 +305,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cc_assembleMatrix (coperation,cmatrixType,rmatrix,rmatrixComponents,&
-      rvector,rfineMatrix)
+      rvector1,rvector2,rvector3,rfineMatrix)
 
 !<description>
   ! This routine assembles a global matrix. The caller must initialise the 
@@ -355,8 +371,21 @@ CONTAINS
   TYPE(t_ccmatrixComponents), INTENT(IN) :: rmatrixComponents
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
-  ! It specifies where to evaluate the nonlinearity.
-  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'previous' timestep. If there is no previous timestep (e.g.
+  ! like in the 0th timestep), the vector can be undefined.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector1
+
+  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'current' timestep. 
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector2
+
+  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'next' timestep. If there is no next timestep (e.g.
+  ! like in the last timestep), the vector can be undefined.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector3
 
   ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
   ! usually done when assembling matrices on multiple levels. If specified, the
@@ -436,8 +465,17 @@ CONTAINS
       !    ( A21  A22   .    .    .      ) 
       !    (  .    .    .    .    .    . )
 
-      CALL assembleVelocityBlocks (.FALSE.,&
-          rmatrixComponents,rmatrix,rvector,1.0_DP)
+      SELECT CASE (rmatrixComponents%iprimalSol)
+      CASE (1)
+        CALL assembleVelocityBlocks (.FALSE.,&
+            rmatrixComponents,rmatrix,rvector1,1.0_DP)
+      CASE (2)
+        CALL assembleVelocityBlocks (.FALSE.,&
+            rmatrixComponents,rmatrix,rvector2,1.0_DP)
+      CASE (3)
+        CALL assembleVelocityBlocks (.FALSE.,&
+            rmatrixComponents,rmatrix,rvector3,1.0_DP)
+      END SELECT
       
       ! Include the mass matrix blocks
       !
@@ -510,9 +548,20 @@ CONTAINS
       ! and switches of the assembly of Newton. Actually, it's not
       ! a 'Newton' matrix but the adjoint of the nonlinearity
       ! which is assembled here...
-      
-      CALL assembleVelocityBlocks (.TRUE.,&
-          rmatrixComponents,rmatrix,rvector,1.0_DP)
+      !
+      ! Specify the correct primal solution for evaluating the nonlinear
+      ! dual matrices.
+      SELECT CASE (rmatrixComponents%iprimalSol)
+      CASE (1)
+        CALL assembleVelocityBlocks (.TRUE.,&
+            rmatrixComponents,rmatrix,rvector1,1.0_DP)
+      CASE (2)
+        CALL assembleVelocityBlocks (.TRUE.,&
+            rmatrixComponents,rmatrix,rvector2,1.0_DP)
+      CASE (3)
+        CALL assembleVelocityBlocks (.TRUE.,&
+            rmatrixComponents,rmatrix,rvector3,1.0_DP)
+      END SELECT
 
       ! 2.) Include the mass matrix blocks
       !
@@ -520,8 +569,17 @@ CONTAINS
       !    (  .    R    .    .    .    .  ) 
       !    (  .    .    .    .    .    .  )
       
-      CALL assembleDualMassBlocks (rmatrixComponents,rmatrix)
-      !CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
+      ! Specify the correct dual solution for a possible evaluationp of
+      ! nonlinearity in R.
+      SELECT CASE (rmatrixComponents%idualSol)
+      CASE (1)
+        CALL assembleDualMassBlocks (rmatrixComponents,rmatrix,rvector1)
+        !CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
+      CASE (2)
+        CALL assembleDualMassBlocks (rmatrixComponents,rmatrix,rvector2)
+      CASE (3)
+        CALL assembleDualMassBlocks (rmatrixComponents,rmatrix,rvector3)
+      END SELECT
       
       ! 3.) Initialise the weights for the idenity- and B-matrices
       !
@@ -1191,7 +1249,7 @@ CONTAINS
         IF (.NOT. PRESENT(rvector)) THEN
           CALL output_line ('Velocity vector not present!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
-          STOP
+          CALL sys_halt()
         END IF
       
         SELECT CASE (iupwind)
@@ -1443,7 +1501,7 @@ CONTAINS
     
     ! -----------------------------------------------------
 
-    SUBROUTINE assembleDualMassBlocks (rmatrixComponents,rmatrix)
+    SUBROUTINE assembleDualMassBlocks (rmatrixComponents,rmatrix,rvector)
         
     ! Assembles a 2x2 block matrix with mass matrices on the diagonal
     ! in the dual equation. These matrices consist of a standard mass
@@ -1456,6 +1514,9 @@ CONTAINS
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
     TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    
+    ! Vector that specifies where to evaluate nonlinear terms
+    TYPE(t_vectorBlock), INTENT(IN) :: rvector
     
       ! local variables
       TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
@@ -1740,7 +1801,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_assembleDefect (rmatrixComponents,rx,rd,cx,ry)
+  SUBROUTINE cc_assembleDefect (rmatrixComponents,rx,rd,cx,rvector1,rvector2,rvector3)
 
 !<description>
   ! This routine assembles the nonlinear defect
@@ -1782,9 +1843,22 @@ CONTAINS
   ! If not specified, cx=1.0 is assumed.
   REAL(DP), INTENT(IN), OPTIONAL :: cx
 
-  ! OPTIONAL: Point where to evaluate the nonlinearity. If not specified,
-  ! ry=rx is assumed.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: ry
+  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'previous' timestep. If there is no previous timestep (e.g.
+  ! like in the 0th timestep), the vector can be undefined.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector1
+
+  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'current' timestep. 
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector2
+
+  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
+  ! It specifies where to evaluate the nonlinearity and must contain the data
+  ! for the 'next' timestep. If there is no next timestep (e.g.
+  ! like in the last timestep), the vector can be undefined.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector3
 
 !</input>
 
@@ -1797,7 +1871,6 @@ CONTAINS
 
     ! local variables
     REAL(DP) :: dcx
-    TYPE(t_vectorBlock), POINTER :: p_ry
     TYPE(t_matrixBlock) :: rmatrix
     
     ! DEBUG!!!
@@ -1807,9 +1880,6 @@ CONTAINS
     
     dcx = 1.0_DP
     IF (PRESENT(cx)) dcx = cx
-    
-    p_ry => rx
-    IF (PRESENT(ry)) p_ry => ry
     
     ! The system matrix looks like:
     !          
@@ -1909,8 +1979,23 @@ CONTAINS
     ! equation. In both cases, we specify the primal velocity p_ry
     ! as velocity field (!).
 
-    CALL assembleVelocityDefect (.FALSE.,rmatrixComponents,rmatrix,rx,rd,dcx,p_ry,1.0_DP)
-    CALL assembleVelocityDefect (.TRUE.,rmatrixComponents,rmatrix,rx,rd,dcx,p_ry,1.0_DP)
+    SELECT CASE (rmatrixComponents%iprimalSol)
+    CASE (1)
+      CALL assembleVelocityDefect (&
+          .FALSE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector1,1.0_DP)
+      CALL assembleVelocityDefect (&
+          .TRUE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector1,1.0_DP)
+    CASE (2)
+      CALL assembleVelocityDefect (&
+          .FALSE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector2,1.0_DP)
+      CALL assembleVelocityDefect (&
+          .TRUE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector2,1.0_DP)
+    CASE (3)
+      CALL assembleVelocityDefect (&
+          .FALSE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector3,1.0_DP)
+      CALL assembleVelocityDefect (&
+          .TRUE.,rmatrixComponents,rmatrix,rx,rd,dcx,rvector3,1.0_DP)
+    END SELECT
     
     ! Now, we treat all the remaining blocks. Let's see what is missing:
     !
@@ -1966,8 +2051,17 @@ CONTAINS
         (rmatrixComponents%dr22 .NE. 0.0_DP)) THEN
     
       ! Assemble the defect of the reactive coupling mass matrices
-      CALL assembleReactiveMassDefect (rmatrixComponents,rx,&
-          rd,dcx,p_ry,1.0_DP)
+      SELECT CASE (rmatrixComponents%idualSol)
+      CASE (1)
+        CALL assembleReactiveMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector1,1.0_DP)
+      CASE (2)
+        CALL assembleReactiveMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector2,1.0_DP)
+      CASE (3)
+        CALL assembleReactiveMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector3,1.0_DP)
+      END SELECT
     
     END IF
     

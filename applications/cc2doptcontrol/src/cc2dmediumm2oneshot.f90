@@ -657,7 +657,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel,ierror,i,iidxNonlin
+    INTEGER :: isubstep,ilevel,ierror,i
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_vectorBlock) :: rxGlobal, rbGlobal, rdGlobal
     TYPE(t_vectorBlock) :: rxGlobalSolve, rbGlobalSolve, rdGlobalSolve
@@ -670,6 +670,7 @@ CONTAINS
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_matrixBlock) :: rmatrix
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorSol
     
     REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
 
@@ -723,6 +724,24 @@ CONTAINS
     ! Get a temporary system matrix
     CALL cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(ilevel),rmatrix)
     
+    ! Solution vectors -- for the nonlinearity (if there is one).
+    ! For the previous (1), current (2) and next (3) time step.
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rtempVectorSol(1),.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rtempVectorSol(2),.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rtempVectorSol(3),.TRUE.)
+    
+    ! Load the last solution vectors for handling the nonlinearity.
+    ! rtempVectorSol(2) holds the data for the current timestep.
+    ! rtempVectorSol(1) holds the data from the previous and
+    ! rtempVectorSol(3) that of the next timestep.
+    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+      CALL sptivec_getTimestepData (rspaceTimeMatrix%p_rsolution, &
+          0, rtempVectorSol(2))
+    END IF
+    
     ! Loop through the substeps
     
     DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
@@ -747,15 +766,23 @@ CONTAINS
       
         ! -----
         
+        ! Get the evaluation point for the nonlinearity in the next timestep
+        ! into rtempVectorSol(3).
+        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+          CALL sptivec_getTimestepData (rspaceTimeMatrix%p_rsolution, &
+              1+isubstep+1, rtempVectorSol(3))
+        END IF
+
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents,iidxNonlin)
+          isubstep,0,rmatrixComponents)
           
-        ! Assemble the matrix
+        ! Assemble the matrix. No 'previous' solution vector.
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
           
         ! Assemble the system matrix on level p_rspaceTimeDiscr%ilevel.
         ! Include the boundary conditions into the matrices.
@@ -774,11 +801,12 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents,iidxNonlin)
+          isubstep,1,rmatrixComponents)
       
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         CALL lsysbl_duplicateMatrix (&
             rmatrix,&
@@ -813,11 +841,12 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents,iidxNonlin)
+          isubstep,-1,rmatrixComponents)
 
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         CALL lsysbl_duplicateMatrix (&
             rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -847,11 +876,12 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents,iidxNonlin)
+          isubstep,0,rmatrixComponents)
             
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (rmatrix,&
@@ -865,11 +895,12 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents,iidxNonlin)
+          isubstep,1,rmatrixComponents)
 
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         CALL lsysbl_duplicateMatrix (&
             rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -902,11 +933,12 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents,iidxNonlin)
+          isubstep,-1,rmatrixComponents)
       
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         CALL lsysbl_duplicateMatrix (&
             rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -933,11 +965,12 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents,iidxNonlin)
+          isubstep,0,rmatrixComponents)
         
         ! Assemble the matrix
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents) 
+            rmatrix,rmatrixComponents,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (rmatrix,rglobalA,isubstep*6+1,isubstep*6+1)
@@ -947,13 +980,22 @@ CONTAINS
       
       END IF
     
+      ! Shift the evaluation vectors: 1 <- 2 <- 3
+      IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+        CALL lsysbl_copyVector (rtempVectorSol(2),rtempVectorSol(1))
+        CALL lsysbl_copyVector (rtempVectorSol(3),rtempVectorSol(2))
+      END IF
+    
     END DO
     
-    ! Release the temp matrix
+    ! Release the temp matrix and vectors
     CALL lsysbl_releaseMatrix (rmatrix)
     
     ! Update structural information of the global matrix.
     CALL lsysbl_updateMatStrucInfo (rglobalA)
+    CALL lsysbl_releaseVector (rtempVectorSol(3))
+    CALL lsysbl_releaseVector (rtempVectorSol(2))
+    CALL lsysbl_releaseVector (rtempVectorSol(1))
 
     ! Write the global matrix to a file.
     !CALL matio_writeBlockMatrixHR(rglobalA,'MATRIX',.TRUE.,0,'matrixcn.txt','(1X,E20.10)')
@@ -1100,7 +1142,7 @@ CONTAINS
 !!</subroutine>
 !
 !    ! local variables
-!    INTEGER :: isubstep,ilevel,icp,iidxNonlin,irelnonl
+!    INTEGER :: isubstep,ilevel,icp,irelnonl
 !    TYPE(t_vectorBlock) :: rtempVectorD
 !    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVector
 !    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorEval, rtempVectorEval2, rtempVectorEval3
@@ -1259,7 +1301,7 @@ CONTAINS
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents,iidxNonlin)
+!          isubstep,0,rmatrixComponents)
 !          
 !        ! Subtract: rd = rd - A11 x1
 !        irelnonl = ABS(iidxNonlin)-isubstep + 1
@@ -1274,7 +1316,7 @@ CONTAINS
 !        !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,1,rmatrixComponents,iidxNonlin)
+!          isubstep,1,rmatrixComponents)
 !
 !        ! Subtract: rd = rd - A12 x2
 !        irelnonl = ABS(iidxNonlin)-isubstep + 1
@@ -1313,7 +1355,7 @@ CONTAINS
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,-1,rmatrixComponents,iidxNonlin)
+!          isubstep,-1,rmatrixComponents)
 !            
 !        ! Subtract: rd = rd - Aii-1 xi-1
 !        ! Note that at this point, the nonlinearity must be evaluated
@@ -1333,7 +1375,7 @@ CONTAINS
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents,iidxNonlin)
+!          isubstep,0,rmatrixComponents)
 !
 !        ! Subtract: rd = rd - Aii xi
 !        irelnonl = ABS(iidxNonlin)-isubstep + 2
@@ -1348,7 +1390,7 @@ CONTAINS
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,1,rmatrixComponents,iidxNonlin)
+!          isubstep,1,rmatrixComponents)
 !          
 !        ! Subtract: rd = rd - Aii+1 xi+1
 !        irelnonl = ABS(iidxNonlin)-isubstep + 2
@@ -1378,7 +1420,7 @@ CONTAINS
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,-1,rmatrixComponents,iidxNonlin)
+!          isubstep,-1,rmatrixComponents)
 !          
 !        ! Subtract: rd = rd - Ann-1 xn-1
 !        ! Note that at this point, the nonlinearity must be evaluated
@@ -1395,7 +1437,7 @@ CONTAINS
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents,iidxNonlin)
+!          isubstep,0,rmatrixComponents)
 !
 !        ! Subtract: rd = rd - Ann xn
 !        irelnonl = ABS(iidxNonlin)-isubstep + 3
@@ -1706,7 +1748,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel,iidxNonlin
+    INTEGER :: isubstep,ilevel
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -1776,7 +1818,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents,iidxNonlin)
+        isubstep,0,rmatrixComponents)
         
       ! Perform preconditioning of the defect with the method provided by the
       ! core equation module.

@@ -2279,7 +2279,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iidxNonlin, nlmax
+    INTEGER :: isubstep, nlmax
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -2393,7 +2393,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents,iidxNonlin)
+        isubstep,0,rmatrixComponents)
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.
@@ -2676,7 +2676,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iidxNonlin,nlmax
+    INTEGER :: isubstep,nlmax
     REAL(DP) :: dtheta,dtstep
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -2850,7 +2850,7 @@ CONTAINS
       
         ! Create d2 = RHS - Mx1 
         CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents,iidxNonlin)
+          isubstep,-1,rmatrixComponents)
           
         CALL cc_assembleDefect (rmatrixComponents,rtempVectorD1,rtempVectorD2,rsolverNode%domega)
         
@@ -2866,7 +2866,7 @@ CONTAINS
 
       ! Set up the matrix weights for the diagonal matrix
       CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents,iidxNonlin)
+        isubstep,0,rmatrixComponents)
 
       ! Perform preconditioning of the spatial defect with the method 
       ! provided by the core equation module.
@@ -3170,7 +3170,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,iiteration,iidxNonlin,nlmax
+    INTEGER :: isubstep,iiteration,nlmax
     REAL(DP) :: dtheta,dtstep,dtime
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
@@ -3178,7 +3178,7 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3
     TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX2,rtempVectorX3
-    TYPE(t_vectorBlock) :: rtempVectorSol
+    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorSol
     TYPE(t_vectorBlock) :: rtempVectorRHS
     TYPE(t_spacetimeVector), POINTER :: p_rx
     LOGICAL :: bcalcNorm
@@ -3230,9 +3230,14 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
         rtempVectorX3,.TRUE.)
 
-    ! Solution vector -- for setting up the defect in nonlinear problems.
+    ! Solution vectors -- for setting up the defect in nonlinear problems.
+    ! For the previous (1), current (2) and next (3) time step.
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
-        rtempVectorSol,.TRUE.)
+        rtempVectorSol(1),.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rtempVectorSol(2),.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rtempVectorSol(3),.TRUE.)
         
     ! DEBUG!!!      
     CALL lsysbl_getbase_double (rtempVectorX1,p_Dx1)
@@ -3253,8 +3258,12 @@ CONTAINS
     rtempVectorD3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorD3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    rtempVectorSol%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorSol(1)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorSol(1)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorSol(2)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorSol(2)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorSol(3)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorSol(3)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     rtempVectorRHS%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorRHS%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
@@ -3377,7 +3386,16 @@ CONTAINS
       ! Backward in time
       ! -----
 
-      ! Load the RHS and solution of the 0th timestep.
+      ! Load the last solution vectors for handling the nonlinearity.
+      ! rtempVectorSol(2) holds the data for the current timestep.
+      ! rtempVectorSol(1) holds the data from the previous and
+      ! rtempVectorSol(3) that of the next timestep.
+      IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+        CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+            p_rspaceTimeDiscr%NEQtime, rtempVectorSol(2))
+      END IF
+
+      ! Load the RHS and solution of the last timestep.
       CALL sptivec_getTimestepData (rd, &
           p_rspaceTimeDiscr%NEQtime, rtempVectorD2)
       
@@ -3414,16 +3432,23 @@ CONTAINS
         ! Is this the first timestep or not?
         IF (isubstep .GT. 0) THEN
         
+          ! Get the evaluation point for the nonlinearity in the previous (=next) timestep
+          ! into rtempVectorSol(1)
+          IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+            CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+                1+isubstep-1, rtempVectorSol(1))
+          END IF
+        
           ! Read the RHS and solution of the next timestep
           CALL sptivec_getTimestepData (rd, 1+isubstep-1, rtempVectorD1)
           CALL sptivec_getTimestepData (p_rx, 1+isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
           CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents,iidxNonlin)
-            
+            isubstep,-1,rmatrixComponents)
+          
           CALL cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
-            rtempVectorRHS,domegaSOR)
+            rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         END IF
 
@@ -3432,29 +3457,20 @@ CONTAINS
           
           ! Create d2 = RHS - Ml3 
           CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents,iidxNonlin)
+            isubstep,1,rmatrixComponents)
             
           CALL cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
-            rtempVectorRHS,domegaSOR)
+            rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         END IF
 
-        ! Read in the solution vector of the current timestep (for nonlinear problems).
-        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
-          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-              1+isubstep, rtempVectorSol)
-
-          ! DEBUG!!!
-          CALL lsysbl_getbase_double (rtempVectorSol,p_Dsol)
-        END IF  
-
         ! Set up the matrix weights for the diagonal matrix
         CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents,iidxNonlin)
+          isubstep,0,rmatrixComponents)
           
         ! Create d2 = RHS - A(solution) X2
         CALL cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
-            1.0_DP,rtempVectorSol)
+            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
             
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
@@ -3474,7 +3490,7 @@ CONTAINS
         CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
-            rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
+            rtempVectorRHS,rtempVectorSol(2),bsuccess,rsolverNode%p_rproblem%rcollection)      
         CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
@@ -3491,12 +3507,21 @@ CONTAINS
         CALL lsysbl_copyVector (rtempVectorX2,rtempVectorX3)
         CALL lsysbl_copyVector (rtempVectorX1,rtempVectorX2)
 
+        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+          CALL lsysbl_copyVector (rtempVectorSol(2),rtempVectorSol(3))
+          CALL lsysbl_copyVector (rtempVectorSol(1),rtempVectorSol(2))
+        END IF
+
       END DO
       
       ! -----
       ! Forward in time
       ! -----
-
+      
+      ! rtempVectorSol(1) is undefined, but we don't need it.
+      ! rtempVectorSol(2) holds the data of the 0th timestep, 
+      ! rtempVectorSol(3) of the 1st one.
+      
       ! Norm of the residuum
       dres = 0.0_DP
 
@@ -3537,15 +3562,27 @@ CONTAINS
         
           ! Create d2 = RHS - Mx1 
           CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents,iidxNonlin)
-            
+            isubstep,-1,rmatrixComponents)
+          
           CALL cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
-            rtempVectorRHS,domegaSOR)
+            rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         END IF
 
         ! Is this the last timestep or not?
         IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
+          
+          IF (isubstep .GT. 0) THEN
+          
+            ! Get the evaluation point for the nonlinearity in the next timestep
+            ! into rtempVectorSol(3).
+            ! In the 0th timestep, we don't need that; there, rtempVectorSol(3)
+            ! is set from the previous backward loop.
+            IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+              CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+                  1+isubstep+1, rtempVectorSol(3))
+            END IF
+          END IF
           
           ! Read the RHS and solution of the next timestep
           CALL sptivec_getTimestepData (rd, 1+isubstep+1, rtempVectorD3)
@@ -3553,26 +3590,21 @@ CONTAINS
         
           ! Create d2 = RHS - Ml3 
           CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents,iidxNonlin)
-            
-          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
-            rtempVectorRHS,domegaSOR)
+            isubstep,1,rmatrixComponents)
           
-        END IF
-
-        ! Read in the solution vector of the current timestep (for nonlinear problems).
-        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
-          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-              1+isubstep, rtempVectorSol)
+          CALL cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
+            rtempVectorRHS,domegaSOR,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
+          
         END IF
 
         ! Set up the matrix weights for the diagonal matrix
         CALL cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents,iidxNonlin)
+          isubstep,0,rmatrixComponents)
           
         ! Create d2 = RHS - A(solution) X2
         CALL cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
-            1.0_DP,rtempVectorSol)
+            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
         IF (isubstep .EQ. 0) THEN
@@ -3595,7 +3627,7 @@ CONTAINS
         CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
-            rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
+            rtempVectorRHS,rtempVectorSol(2),bsuccess,rsolverNode%p_rproblem%rcollection)      
         CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
@@ -3612,6 +3644,11 @@ CONTAINS
         CALL lsysbl_copyVector (rtempVectorX2,rtempVectorX1)
         CALL lsysbl_copyVector (rtempVectorX3,rtempVectorX2)
 
+        IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+          CALL lsysbl_copyVector (rtempVectorSol(2),rtempVectorSol(1))
+          CALL lsysbl_copyVector (rtempVectorSol(3),rtempVectorSol(2))
+        END IF
+
       END DO
       
     END DO ! iiteration
@@ -3621,7 +3658,9 @@ CONTAINS
     
     ! Release memory, finish.
     CALL lsysbl_releaseVector (rtempVectorRHS)
-    CALL lsysbl_releaseVector (rtempVectorSol)
+    CALL lsysbl_releaseVector (rtempVectorSol(3))
+    CALL lsysbl_releaseVector (rtempVectorSol(2))
+    CALL lsysbl_releaseVector (rtempVectorSol(1))
     CALL lsysbl_releaseVector (rtempVectorD3)
     CALL lsysbl_releaseVector (rtempVectorD2)
     CALL lsysbl_releaseVector (rtempVectorD1)
@@ -4631,8 +4670,8 @@ CONTAINS
     ! local variables  
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    TYPE(t_vectorBlock) :: rvector
-    INTEGER :: isubstep,ileft,iright,ix,iidxNonlin
+    TYPE(t_vectorBlock) :: rvector1,rvector2,rvector3
+    INTEGER :: isubstep,ileft,iright,ix
     INTEGER(PREC_VECIDX), DIMENSION(1) :: Irows
     INTEGER(PREC_VECIDX) :: idiag
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
@@ -4673,12 +4712,26 @@ CONTAINS
     rblockTemp%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rblockTemp%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    ! Create a vector for evaluating the nonlinearity.
+    ! Create a vector for evaluating the nonlinearity in the previous, current and
+    ! next timestep.
     ! (The vector is always created but only used when there is a nonlinearity!)
-    CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
+    CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector1)
+    CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector2)
+    CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector3)
+    
+    ! Put the 'current' solution to the 'middle' vector.
+    IF (ASSOCIATED(rsupermatrix%p_rsolution))  THEN
+      CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, 1, rvector2)
+    END IF
     
     ! Loop through the substeps
     DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
+
+      ! Load the data of the 'next' timestep to rvector3.    
+      IF (ASSOCIATED(rsupermatrix%p_rsolution) .AND. &
+          (isubstep .NE. p_rspaceTimeDiscr%NEQtime-1))  THEN
+        CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, 1+isubstep+1, rvector3)
+      END IF
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
@@ -4703,13 +4756,8 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rsupermatrix,&
-          p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rmatrixComponents,iidxNonlin)
+          p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rmatrixComponents)
           
-        ! If there is a nonlinearity involved, get the evaluation point.
-        IF (iidxNonlin .GT. 0)  THEN
-          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, 1+iidxNonlin-1, rvector)
-        END IF
-      
         ! Assemble the matrix in rblockTemp.
         ! Note that the weights of the matrices must be set before, otherwise
         ! the assembly routines would complain about missing matrices :-)
@@ -4718,7 +4766,7 @@ CONTAINS
         rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
         rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rblockTemp,rmatrixComponents,rvector) 
+            rblockTemp,rmatrixComponents,rvector1,rvector2,rvector3) 
 
         ! Switch of matrices that aren't needed.
         SELECT CASE (ix)
@@ -4770,6 +4818,13 @@ CONTAINS
         
       END DO  
 
+      ! Cycle the solution vectors: 1 <- 2 <- 3
+      IF (ASSOCIATED(rsupermatrix%p_rsolution)) THEN
+        CALL lsysbl_copyVector (rvector2,rvector1)
+        CALL lsysbl_copyVector (rvector3,rvector2)
+        ! Now rvector3 is free and can take the data of the next timestep.
+      END IF
+      
       IF (.NOT. p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) THEN
         ! Insert a 'point matrix' containing a zero in the pressure block.
         ! This allows the boundary condition implementation routine to
@@ -4792,8 +4847,10 @@ CONTAINS
       
     END DO
     
-    ! Release the temp vector
-    CALL lsysbl_releaseVector (rvector)
+    ! Release the temp vectors
+    CALL lsysbl_releaseVector (rvector3)
+    CALL lsysbl_releaseVector (rvector2)
+    CALL lsysbl_releaseVector (rvector1)
     
     ! Release the temp matrix
     CALL lsysbl_releaseMatrix (rblockTemp)

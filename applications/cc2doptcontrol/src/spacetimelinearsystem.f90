@@ -224,7 +224,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-      isubstep,irelpos,rmatrixComponents,ivecIndexNonlin)
+      isubstep,irelpos,rmatrixComponents)
 
 !<description>
   ! This routine sets up the matrix weights in the rmatrixComponents structure
@@ -273,11 +273,6 @@ CONTAINS
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
   TYPE(t_ccmatrixComponents), INTENT(INOUT) :: rmatrixComponents
-  
-  ! Returns the (1-based) number of the subvector in rspaceTimeMatrix%p_rsolution
-  ! which should be specified as evaluation point for the nonlinearity.
-  ! If no nonlinearity has to be evaluated, a negative value is returned.
-  INTEGER, INTENT(OUT) :: ivecIndexNonlin
 !</inputoutput>
 
 !</subroutine>
@@ -364,12 +359,18 @@ CONTAINS
     IF (isubstep .EQ. 0) THEN
       
       ! We are in the first substep
+      !
+      ! Specify which vectors should be used for evaluating the nonlinearity.
+      ! Aii-1 = undefined.
+      ! Aii = Aii(x_i,lambda_i).
+      ! Aii+1 = Aii+1(x_i,lambda_i+1)
     
       IF (irelpos .EQ. 0) THEN
       
         ! The diagonal matrix.
-        ivecIndexNonlin = 1 + isubstep
-        
+        rmatrixComponents%iprimalSol = 2
+        rmatrixComponents%idualSol = 2
+
         rmatrixComponents%diota1 = 1.0_DP
         rmatrixComponents%diota2 = 0.0_DP
 
@@ -448,7 +449,17 @@ CONTAINS
       ELSE IF (irelpos .EQ. 1) THEN
       
         ! Offdiagonal matrix on the right of the diagonal.
-        ivecIndexNonlin = 1 + isubstep+1
+        !
+        ! Note that at this point, the nonlinearity must be evaluated
+        ! at xi due to the discretisation scheme!!!
+        !
+        ! WARNING: For a very strange situation, taking xi here (which is said
+        ! to be the correct evaluation point from the theory) does not lead
+        ! to quadratic convergence in the Newton. Taking xi+1 does!?!
+        ! So we take xi+1, although the theory tells us to take xi!
+
+        rmatrixComponents%iprimalSol = 3
+        rmatrixComponents%idualSol = 3
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -510,8 +521,15 @@ CONTAINS
         
         ELSE
 
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
         
         END IF
             
@@ -524,13 +542,17 @@ CONTAINS
       
       ! -----
       
+      ! Specify which vectors should be used for evaluating the nonlinearity.
+      ! Aii-1 = Aii+1(x_i-1,lambda_i-1).
+      ! Aii = Aii(x_i,lambda_i).
+      ! Aii+1 = Aii+1(x_i,lambda_i+1)
+
       IF (irelpos .EQ. -1) THEN
       
         ! Matrix on the left of the diagonal.
-        !
-        ! Note that at this point, the nonlinearity must be evaluated
-        ! at xi due to the discretisation scheme!!!
-        ivecIndexNonlin = 1 + isubstep
+
+        rmatrixComponents%iprimalSol = 1
+        rmatrixComponents%idualSol = 1
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -585,7 +607,8 @@ CONTAINS
       ELSE IF (irelpos .EQ. 0) THEN    
 
         ! The diagonal matrix.
-        ivecIndexNonlin = 1 + isubstep
+        rmatrixComponents%iprimalSol = 2
+        rmatrixComponents%idualSol = 2
 
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
@@ -653,7 +676,16 @@ CONTAINS
       ELSE IF (irelpos .EQ. 1) THEN
             
         ! Matrix on the right of the diagonal.
-        ivecIndexNonlin = 1 + isubstep+1
+        !
+        ! Note that at this point, the nonlinearity must be evaluated
+        ! at xi due to the discretisation scheme!!!
+        !
+        ! WARNING: For a very strange situation, taking xi here (which is said
+        ! to be the correct evaluation point from the theory) does not lead
+        ! to quadratic convergence in the Newton. Taking xi+1 does!?!
+        ! So we take xi+1, although the theory tells us to take xi!
+        rmatrixComponents%iprimalSol = 3
+        rmatrixComponents%idualSol = 3
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -715,8 +747,15 @@ CONTAINS
           
         ELSE
         
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
           
         END IF
             
@@ -726,6 +765,11 @@ CONTAINS
     
       ! We are in the last substep
       
+      ! Specify which vectors should be used for evaluating the nonlinearity.
+      ! Aii-1 = Aii+1(x_i-1,lambda_i-1).
+      ! Aii = Aii(x_i,lambda_i).
+      ! Aii+1 = Aii+1(x_i,lambda_i+1)
+
 !      ! Although this would be the correct implementation of the matrix weights
 !      ! for the terminal condition at the first glance, it would be wrong to use 
 !      ! that. The last timestep has to be processed like
@@ -811,10 +855,9 @@ CONTAINS
       IF (irelpos .EQ. -1) THEN
       
         ! Matrix on the left of the diagonal.
-        !
-        ! Note that at this point, the nonlinearity must be evaluated
-        ! at xn due to the discretisation scheme!!!
-        ivecIndexNonlin = 1 + isubstep
+        
+        rmatrixComponents%iprimalSol = 1
+        rmatrixComponents%idualSol = 1
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -867,7 +910,8 @@ CONTAINS
       ELSE IF (irelpos .EQ. 0) THEN    
 
         ! The diagonal matrix.
-        ivecIndexNonlin = 1 + isubstep
+        rmatrixComponents%iprimalSol = 2
+        rmatrixComponents%idualSol = 2
 
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP ! (1.0_DP-dsmooth) !0.0_DP
@@ -1019,14 +1063,6 @@ CONTAINS
 
     END IF
 
-    ! If there is no nonlinearity involved, return 0 as subvector index 
-    IF ((rmatrixComponents%dgamma1 .EQ. 0.0_DP) .AND. &
-        (rmatrixComponents%dgamma2 .EQ. 0.0_DP) .AND. &
-        (rmatrixComponents%dnewton1 .EQ. 0.0_DP) .AND. &
-        (rmatrixComponents%dnewton2 .EQ. 0.0_DP))  THEN
-      ivecIndexNonlin = -ivecIndexNonlin
-    END IF
-
   END SUBROUTINE  
   
   ! ***************************************************************************
@@ -1087,7 +1123,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: ieqTime,ilevel,icp,iidxNonlin,irelNonl
+    INTEGER :: ieqTime,ilevel,icp
     TYPE(t_vectorBlock) :: rtempVectorD
     TYPE(t_vectorBlock), DIMENSION(3) :: rtempVector
     TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorEval
@@ -1128,23 +1164,15 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(3),.FALSE.)
     
     ! Get the parts of the X-vector which are to be modified at first --
-    ! subvector 1, 2 and 3.
-    CALL sptivec_getTimestepData(rx, 1+0, rtempVector(1))
-    IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 0) &
-      CALL sptivec_getTimestepData(rx, 1+1, rtempVector(2)) 
-    IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 1) THEN
-      CALL sptivec_getTimestepData(rx, 1+2, rtempVector(3))
-    ELSE
-      CALL lsysbl_copyVector (rtempVector(2),rtempVector(3))
-    END IF
+    ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
+    ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
+    CALL sptivec_getTimestepData(rx, 1+0, rtempVector(2))
       
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
     ! account as the actual matrix multiplication routine cc_assembleDefect
     ! introduces another -1!
     IF (cx .NE. -1.0_DP) THEN
-      CALL lsysbl_scaleVector (rtempVector(1),-cx)
       CALL lsysbl_scaleVector (rtempVector(2),-cx)
-      CALL lsysbl_scaleVector (rtempVector(3),-cx)
     END IF
       
     ! Now what's the evaluation point where to evaluate the nonlinearity/ies?
@@ -1165,18 +1193,13 @@ CONTAINS
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     END IF
 
+    ! If a nonlinearity is involved, rtempVectorEval(1) contains the 'previous',
+    ! rtempVectorEval(2) the 'current' and rtempVectorEval(3) the 'next'
+    ! solution (relative to the current time step) where to evaluate
+    ! the nonlinearity.
     IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
-          1+0, rtempVectorEval(1))
-      IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 0) &
-        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
-            1+1, rtempVectorEval(2))
-      IF (p_rspaceTimeDiscretisation%rtimeDiscr%nintervals .GT. 1+1) THEN
-        CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
-            1+2, rtempVectorEval(3))
-      ELSE
-        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(3))
-      END IF
+          1+0, rtempVectorEval(2))
     END IF
     
     ! DEBUG!!!
@@ -1243,6 +1266,27 @@ CONTAINS
       ELSE
         CALL lsysbl_clearVector (rtempVectorD)
       END IF
+      
+      IF (ieqTime .NE. p_rspaceTimeDiscretisation%NEQtime-1) THEN
+      
+        ! Read the solution of the 'next' timestep and the 'next' evaluation
+        ! point.
+
+        CALL sptivec_getTimestepData(rx, 1+ieqTime+1, rtempVector(3))
+          
+        ! If necesary, multiply the rtempVectorX. We have to take a -1 into
+        ! account as the actual matrix multiplication routine cc_assembleDefect
+        ! introduces another -1!
+        IF (cx .NE. -1.0_DP) THEN
+          CALL lsysbl_scaleVector (rtempVector(3),-cx)
+        END IF
+
+        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
+              1+ieqTime+1, rtempVectorEval(3))
+        END IF
+
+      END IF
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -1271,12 +1315,11 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents,iidxNonlin)
+          ieqTime,0,rmatrixComponents)
           
         ! Subtract: rd = rd - A11 x1
-        irelnonl = ABS(iidxNonlin)-ieqTime
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! -----
       
@@ -1286,12 +1329,11 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,1,rmatrixComponents,iidxNonlin)
+          ieqTime,1,rmatrixComponents)
 
         ! Subtract: rd = rd - A12 x2
-        irelnonl = ABS(iidxNonlin)-ieqTime
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
@@ -1318,14 +1360,13 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,-1,rmatrixComponents,iidxNonlin)
+          ieqTime,-1,rmatrixComponents)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        irelnonl = ABS(iidxNonlin)-ieqTime + 1
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
@@ -1338,12 +1379,11 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents,iidxNonlin)
+          ieqTime,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii xi
-        irelnonl = ABS(iidxNonlin)-ieqTime + 1
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
             
         ! -----
         
@@ -1353,12 +1393,11 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,1,rmatrixComponents,iidxNonlin)
+          ieqTime,1,rmatrixComponents)
           
         ! Subtract: rd = rd - Aii+1 xi+1
-        irelnonl = ABS(iidxNonlin)-ieqTime + 1
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
         
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
@@ -1383,14 +1422,13 @@ CONTAINS
 
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,-1,rmatrixComponents,iidxNonlin)
+          ieqTime,-1,rmatrixComponents)
           
         ! Subtract: rd = rd - Ann-1 xn-1
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xn due to the discretisation scheme!!!
-        irelnonl = ABS(iidxNonlin)-ieqTime + 2
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
      
         ! -----
         
@@ -1400,12 +1438,11 @@ CONTAINS
       
         ! Set up the matrix weights of that submatrix.
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents,iidxNonlin)
+          ieqTime,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Ann xn
-        irelnonl = ABS(iidxNonlin)-ieqTime + 2
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
-            1.0_DP,rtempVectorEval(irelnonl))
+        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+            1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
       
       END IF
       
@@ -1450,47 +1487,17 @@ CONTAINS
         END IF
       END IF
       
-      IF ((ieqTime .GT. 0) .AND. &
-          (ieqTime .LT. p_rspaceTimeDiscretisation%NEQtime-2)) THEN
-      
-        ! Shift the timestep data: x_n+1 -> x_n -> x_n-1
-        IF (rtempVector(2)%NEQ .NE. 0) &
-          CALL lsysbl_copyVector (rtempVector(2), rtempVector(1))
-        
-        IF (rtempVector(3)%NEQ .NE. 0) &
-          CALL lsysbl_copyVector (rtempVector(3), rtempVector(2))
-        
-        ! Get the new x_n+1 for the next pass through the loop.
-        CALL sptivec_getTimestepData(rx, 1+ieqTime+2, rtempVector(3))
-        
-        ! If necessary, multiply rtempVector(3)
-        IF (cx .NE. -1.0_DP) THEN
-          CALL lsysbl_scaleVector (rtempVector(3),-cx)
-        END IF        
-        
-        ! A similar shifting has to be done for the evaluation point --
-        ! if it's different from rx!
-        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-          CALL lsysbl_copyVector (rtempVectorEval(2), rtempVectorEval(1))
-          CALL lsysbl_copyVector (rtempVectorEval(3), rtempVectorEval(2))
-          ! Get the new x_n+1 for the next pass through the loop.
-          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
-              1+ieqTime+2, rtempVectorEval(3))
-        END IF
-        
-      ELSE IF ((p_rspaceTimeDiscretisation%NEQtime .EQ. 2) .AND. &
-               (ieqTime .EQ. 0)) THEN
-      
-        ! Only one timestep. Copy vector-1 -> vector-2 -> vector-3 so that the above
-        ! assembly routine for the last timestep will work.
-        CALL lsysbl_copyVector (rtempVector(2),rtempVector(3))
-        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(3))
+      ! Cycle the solution vectors and the evaluation points: 1 <- 2 <- 3.
+      CALL lsysbl_copyVector (rtempVector(2),rtempVector(1))
+      CALL lsysbl_copyVector (rtempVector(3),rtempVector(2))
 
-        CALL lsysbl_copyVector (rtempVector(1),rtempVector(2))
-        CALL lsysbl_copyVector (rtempVectorEval(1),rtempVectorEval(2))
-        
+      IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
+        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(1))
+        CALL lsysbl_copyVector (rtempVectorEval(3),rtempVectorEval(2))
       END IF
-    
+      
+      ! Now, the 3rd subvector is again free to take the next vector.
+      
     END DO
     
     ! If dnorm is specified, normalise it.

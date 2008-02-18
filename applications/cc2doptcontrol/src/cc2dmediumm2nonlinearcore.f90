@@ -414,7 +414,7 @@ CONTAINS
   !</inputoutput>
   
   !<input>
-    ! Current iteration vector
+    ! Current iteration vector.
     TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
   !</input>
   
@@ -680,10 +680,11 @@ CONTAINS
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. rpreconditioner%NLMAX) THEN
             CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse)
+                p_rmatrix,rmatrixAssembly,rvector2=p_rvectorCoarse)
           ELSE
             CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
+                p_rmatrix,rmatrixAssembly,rvector2=p_rvectorCoarse,&
+                rfineMatrix=p_rmatrixFine)
           END IF
 
           ! Boundary conditions
