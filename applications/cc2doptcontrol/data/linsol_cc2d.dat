@@ -47,6 +47,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =0: Gauss elimination (UMFPACK)
 # =1: Defect correction with diagonal VANCA preconditioning.
 # =2: BiCGStab with diagonal VANCA preconditioning
+# =3: BiCGStab with full VANCA preconditioning
 
 icoarseGridSolverType = 0
 
