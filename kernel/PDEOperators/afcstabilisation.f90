@@ -434,7 +434,7 @@ CONTAINS
 !<inputoutput>
     ! stabilisation structure
     TYPE(t_afcstab), INTENT(INOUT)   :: rafcstab
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables

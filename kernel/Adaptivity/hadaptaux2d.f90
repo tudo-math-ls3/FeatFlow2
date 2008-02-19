@@ -275,9 +275,9 @@ MODULE hadaptaux2d
   INTEGER, PARAMETER :: MARK_REF_QUADBLUE_123       = 15
   INTEGER, PARAMETER :: MARK_REF_QUADBLUE_341       = 27
   
-!</constant>
+!</constantblock>
 
-  !<constantblock description="Constants for element states in 2D">
+!<constantblock description="Constants for element states in 2D">
 
   ! Triangle from the root triangulation
   INTEGER, PARAMETER :: STATE_TRIA_ROOT             = 0

@@ -50,6 +50,9 @@ MODULE pprocsolution
     ! Handle to the image data
     INTEGER :: h_Idata     = ST_NOHANDLE
   END TYPE t_pgm
+
+!</typeblock>
+!</types>
   
 CONTAINS
   

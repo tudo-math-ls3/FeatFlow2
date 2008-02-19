@@ -297,7 +297,7 @@ CONTAINS
 !<description>
     ! This subroutine initializes the adaptivity structure
     ! with the values supplied by the parameter list
-!</descrpition>
+!</description>
 
 !<input>
     ! parameter list
@@ -937,7 +937,7 @@ CONTAINS
 !<inputoutput>
     ! Adaptivity structure
     TYPE(t_hadapt), INTENT(INOUT)    :: rhadapt
-!</inputoutput
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1013,6 +1013,7 @@ CONTAINS
 
     ! OPTIONAL: number of spatial dimensions
     INTEGER, INTENT(OUT), OPTIONAL :: ndim
+!</output>
 !</subroutine>
 
     ! Check if coordinates exists
@@ -1060,7 +1061,7 @@ CONTAINS
 !<inputoutput>
     ! Adaptivity structure
     TYPE(t_hadapt), INTENT(INOUT)    :: rhadapt
-!</inputoutput
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1138,6 +1139,7 @@ CONTAINS
 
     ! OPTIONAL: number of spatial dimensions
     INTEGER, INTENT(OUT), OPTIONAL :: ndim
+!</output>
 !</subroutine>
 
     ! Check if coordinates exists
@@ -1229,6 +1231,7 @@ CONTAINS
 !<output>
     ! OPTIONAL: number of elements
     INTEGER(PREC_ELEMENTIDX), INTENT(OUT), OPTIONAL :: nel
+!</output>
 !</subroutine>
 
     ! Check if "vertices-at-element" array exists
@@ -1349,7 +1352,7 @@ CONTAINS
 !<description>
     ! This subroutine sets the number of elements with a defined number
     ! of vertices per elements, that is, InelOfType(TRIA_MAXNVE)
-!</desciption>
+!</description>
 
 !<input>
     ! Number of elements with a defined number of vertices per element.
@@ -1377,7 +1380,7 @@ CONTAINS
 !<description>
     ! This subroutine returns the number of elements with a defined number
     ! of vertices per elements, that is, InelOfType(TRIA_MAXNVE)
-!</desciption>
+!</description>
 
 !<input>
     ! Adaptivity structure

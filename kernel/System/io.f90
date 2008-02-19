@@ -61,12 +61,12 @@ CONTAINS
 !<subroutine>
   subroutine io_openFileForReading(sfilename, iunit, bformatted)
 
-    !<description>
+!<description>
     !This routine tries to open a file for reading. If succesful, on can read from it
     !via unit "iunit". Otherwise, iunit is -1.
-    !</description>
+!</description>
 
-    !<input>
+!<input>
 
     !filename
     character(*), intent(in) :: sfilename
@@ -77,13 +77,13 @@ CONTAINS
     ! If not specified, the default system dependent setting is used.
     LOGICAL, INTENT(IN), OPTIONAL :: bformatted
 
-    !</input>
+!</input>
 
-    !<output>
+!<output>
 
     !number of unit
     integer, intent(out) :: iunit
-    !</output>
+!</output>
 !</subroutine>
 
     logical :: bexists !true, if a file with name sfilename exists
@@ -137,14 +137,14 @@ CONTAINS
 !<subroutine>
   subroutine io_openFileForWriting(sfilename, iunit, cflag, bfileExists, bformatted)
 
-    !<description>
+!<description>
     !This routine tries to open a file for writing. If succesful, one can write to it
     !via unit "iunit". Otherwise, iunit is -1. cflag specifies if an already existing file
     !should be replaced or if the output should be appended. bfileExists is an optional
     !parameter, which will be set to true, if the file already existed, otherwise false.
-    !</description>
+!</description>
 
-    !<input>
+!<input>
 
     !filename
     character(*), intent(in) :: sfilename
@@ -157,9 +157,9 @@ CONTAINS
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
     LOGICAL, INTENT(IN), OPTIONAL :: bformatted
-    !</input>
+!</input>
 
-    !<output>
+!<output>
 
     !unit of the opened file
     integer, intent(out) :: iunit
@@ -167,7 +167,7 @@ CONTAINS
     !optional parameter (see description)
     logical, intent(out),optional :: bfileExists
     
-    !</output>
+!</output>
 !</subroutine>
 
     logical :: bexists !true, if the file to be written in exists
@@ -274,6 +274,7 @@ CONTAINS
     ! of the file is reached.
     INTEGER, INTENT(OUT) :: ios
 !</output>
+!</subroutine>
     
     ! local variables
     INTEGER :: eol

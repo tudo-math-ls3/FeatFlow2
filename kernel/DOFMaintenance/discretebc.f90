@@ -90,6 +90,7 @@ MODULE discretebc
   ! list - if the list is full.
   INTEGER, PARAMETER :: DISCBC_LISTBLOCKSIZE = 10
 
+!</constantblock>
 !</constants>
 
 !<types>

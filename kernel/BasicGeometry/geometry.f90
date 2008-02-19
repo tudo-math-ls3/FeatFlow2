@@ -286,6 +286,8 @@ MODULE geometry
   
 !</constantblock>
 
+!</constants>
+
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
@@ -1146,6 +1148,8 @@ END SUBROUTINE
   TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
 !</input>
 
+!</subroutine>
+
   ! Some temporary variables
   REAL(DP) :: dTol
   INTEGER :: nvertsNeeded, nvertsUsed, h_Dverts
@@ -1450,6 +1454,7 @@ END SUBROUTINE
 !</output>
 
 !</subroutine>
+
   REAL(DP) :: dlen, drad
   
     ! Calculate scaled radius

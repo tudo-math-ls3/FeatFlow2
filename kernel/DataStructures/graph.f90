@@ -276,7 +276,7 @@ CONTAINS
 
   ! ***************************************************************************
 
-!<suboutine>
+!<subroutine>
 
   SUBROUTINE grph_createGraphFromMatrix(rscalarMatrix,rgraph,nvtMax,nedgeMax)
 
@@ -304,6 +304,8 @@ CONTAINS
     ! The sparsity graph
     TYPE(t_graph), INTENT(OUT) :: rgraph
 !</output>
+
+!</subroutine>
 
     ! local variables
     INTEGER :: h_Key
@@ -398,7 +400,7 @@ CONTAINS
     ! This routine releases an existing graph rgraph.
 !</description>
 
-!<inputout>
+!<inputoutput>
     ! The graph that should be released
     TYPE(t_graph), INTENT(INOUT) :: rgraph
 !</inputoutput>

@@ -980,7 +980,7 @@ CONTAINS
 !<inputoutput>
     ! handle to the key
     INTEGER, INTENT(INOUT) :: h_Key
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
     
     ! local variables
@@ -1084,7 +1084,7 @@ CONTAINS
 !<inputoutput>
     ! double-valued array
     REAL(DP), DIMENSION(:), INTENT(INOUT) :: p_DKey
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1143,7 +1143,7 @@ CONTAINS
 !<inputoutput>
     ! single-valued array
     REAL(SP), DIMENSION(:), INTENT(INOUT) :: p_FKey
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1202,7 +1202,7 @@ CONTAINS
 !<inputoutput>
     ! integer-valued array
     INTEGER, DIMENSION(:), INTENT(INOUT) :: p_IKey
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1283,7 +1283,7 @@ CONTAINS
 !<inputoutput>
     ! handle to the data
     INTEGER, INTENT(INOUT) :: h_Data
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1529,7 +1529,7 @@ CONTAINS
 !<inputoutput>
     ! double data array
     REAL(DP), DIMENSION(:),INTENT(INOUT) :: p_DData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1603,7 +1603,7 @@ CONTAINS
 !<inputoutput>
     ! double data array
     REAL(DP), DIMENSION(:,:),INTENT(INOUT) :: p_DData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1706,7 +1706,7 @@ CONTAINS
 !<inputoutput>
     ! single data array
     REAL(SP), DIMENSION(:),INTENT(INOUT) :: p_FData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1780,7 +1780,7 @@ CONTAINS
 !<inputoutput>
     ! single data array
     REAL(SP), DIMENSION(:,:),INTENT(INOUT) :: p_FData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1883,7 +1883,7 @@ CONTAINS
 !<inputoutput>
     ! integer data array
     INTEGER, DIMENSION(:),INTENT(INOUT) :: p_IData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -1957,7 +1957,7 @@ CONTAINS
 !<inputoutput>
     ! integer data array
     INTEGER, DIMENSION(:,:),INTENT(INOUT) :: p_IData
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables

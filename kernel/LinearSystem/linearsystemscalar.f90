@@ -1170,7 +1170,7 @@ CONTAINS
     ! TRUE if the matrix is an explicit matrix that can be accessed with
     ! lsyssc_getbase_double.
     ! FALSE if the matrix is not accessible in that way.
-!</output>
+!</result>
 
 !</function>
 
@@ -7453,14 +7453,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7_double (Da, DaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -7480,9 +7480,9 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(DP), DIMENSION(:), INTENT(OUT) :: Da
@@ -7493,7 +7493,7 @@ CONTAINS
     ! Row positions of destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Ild
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -7581,14 +7581,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7_single (Fa, FaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Single precision version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -7608,9 +7608,9 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(SP), DIMENSION(:), INTENT(OUT) :: Fa
@@ -7621,7 +7621,7 @@ CONTAINS
     ! Row positions of destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Ild
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -7708,14 +7708,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7_int (Ia, IaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Integer version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -7735,9 +7735,9 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
@@ -7748,7 +7748,7 @@ CONTAINS
     ! Row positions of destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Ild
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -7835,15 +7835,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7Ent_double (Da, DaH, IcolH, &
                                         IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Double precision version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -7863,14 +7863,14 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(DP), DIMENSION(:), INTENT(OUT) :: Da
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -7950,15 +7950,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7Ent_single (Fa, FaH, IcolH, &
                                         IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Single precision version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -7978,14 +7978,14 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(SP), DIMENSION(:), INTENT(OUT) :: Fa
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8064,15 +8064,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat7Ent_int (Ia, IaH, IcolH, &
                                      IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Integer version.
     !
     ! Storage technique 7 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8092,14 +8092,14 @@ CONTAINS
     ! Permutation of 1..neq describing the sorting back
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8177,15 +8177,15 @@ CONTAINS
 
   SUBROUTINE lsyssc_sortMat7Struc (Icol, IcolH, Ild, IldH, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine 
     ! doesn't handle the entries.
     !
     ! Storage technique 7 version. 
-  !</description>
+!</description>
     
-  !<input>
+!<input>
 
     ! Number of equations
     INTEGER(PREC_VECIDX) , INTENT(IN) :: neq
@@ -8196,9 +8196,9 @@ CONTAINS
     ! Permutation of 1..neq describing how to sort
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<inputoutput>
+!<inputoutput>
 
     ! Column description of matrix
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Icol
@@ -8212,7 +8212,7 @@ CONTAINS
     ! Row positions of source matrix -> resorted matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(INOUT) :: IldH
     
-  !</inputoutput>
+!</inputoutput>
 !</subroutine>
     
     !local variables
@@ -8290,14 +8290,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9_double (Da, DaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8317,9 +8317,9 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(DP), DIMENSION(:), INTENT(OUT) :: Da
@@ -8333,7 +8333,7 @@ CONTAINS
     ! Positions of diagonal elements in the destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Idiag
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8427,14 +8427,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9_single (Fa, FaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Single precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8454,9 +8454,9 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(SP), DIMENSION(:), INTENT(OUT) :: Fa
@@ -8470,7 +8470,7 @@ CONTAINS
     ! Positions of diagonal elements in the destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Idiag
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8564,14 +8564,14 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9_int (Ia, IaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8591,9 +8591,9 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
@@ -8607,7 +8607,7 @@ CONTAINS
     ! Positions of diagonal elements in the destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Idiag
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8701,15 +8701,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9Ent_double (Da, DaH, IcolH, IldH, &
                                         Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Double precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8729,14 +8729,14 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(DP), DIMENSION(:), INTENT(OUT) :: Da
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8818,15 +8818,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9Ent_single (Fa, FaH, IcolH, IldH, &
                                         Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Single precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8846,14 +8846,14 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Destination matrix
     REAL(SP), DIMENSION(:), INTENT(OUT) :: Fa
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -8935,15 +8935,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9Ent_int (Ia, IaH, IcolH, IldH, &
                                      Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
     ! Double precision version.
     !
     ! Storage technique 9 version.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -8963,14 +8963,14 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
-    
-  !<output>
+!</input>
+
+!<output>
 
     ! Destination matrix
     INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
 
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -9052,15 +9052,15 @@ CONTAINS
   SUBROUTINE lsyssc_sortMat9Struc (Icol, IcolH, &
                                    Ild, IldH, Idiag, Itr1, Itr2, neq)
   
-  !<description>
+!<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine 
     ! doesn't handle the entries.
     !
     ! Storage technique 9 version. 
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     
     ! Number of equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
@@ -9077,9 +9077,9 @@ CONTAINS
     ! Permutation of 1..neq describing the inverse permutation
     INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
 
-  !</input>
+!</input>
     
-  !<output>
+!<output>
 
     ! Column structure of destination matrix
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Icol
@@ -9090,7 +9090,7 @@ CONTAINS
     ! Positions of diagonal elements in the destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Idiag
     
-  !</output>
+!</output>
     
 !</subroutine>
     
@@ -9179,12 +9179,12 @@ CONTAINS
 
   SUBROUTINE lsyssc_sortCR (Ih1, Ih2)
   
-  !<description>
+!<description>
     ! Performs bubble sort for the vector Ih1 and does the
     ! same swaps also on vector Ih2.
-  !</description>
+!</description>
     
-  !<inputoutput>
+!<inputoutput>
       
     ! column vector
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ih1
@@ -9192,7 +9192,7 @@ CONTAINS
     ! row vector; same size as Ih1
     INTEGER(PREC_VECIDX), DIMENSION(SIZE(Ih1)), INTENT(INOUT) :: Ih2
       
-  !</inputoutput>
+!</inputoutput>
 !</subroutine>
     
     !local variables
@@ -10181,16 +10181,16 @@ CONTAINS
   SUBROUTINE lsyssc_transpMatStruct79double (nrow, ncol, Icol, Irow, &
                                              Itmp, IcolDest, IrowDest)
   
-  !<description>
+!<description>
     ! This routine accepts the structure of a structure-7 or structure-9
     ! matrix and creates the structure of the transposed matrix from it.
     !
     ! The resulting structure is of structure 9, i.e. not pivoted anymore 
     ! with the diagonal entry in front if a structure-7 matrix is to be 
     ! transposed!
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     ! Number of rows in the source matrix
     INTEGER(PREC_VECIDX), INTENT(IN) :: nrow
     
@@ -10202,21 +10202,21 @@ CONTAINS
     
     ! Row structure of the source matrix
     INTEGER(PREC_MATIDX), DIMENSION(nrow+1), INTENT(IN) :: Irow
-  !</input>
+!</input>
     
-  !<output>
+!<output>
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: IcolDest
 
     ! Row structure of the destination matrix
     INTEGER(PREC_MATIDX), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
-  !</output>
+!</output>
     
-  !<inputoutput>
+!<inputoutput>
     ! Auxiliary array of size ncol
     INTEGER(PREC_VECIDX), DIMENSION(ncol), INTENT(INOUT) :: Itmp
-  !</inputoutput>
+!</inputoutput>
 !</subroutine>
     
     !local variables
@@ -10272,16 +10272,16 @@ CONTAINS
   SUBROUTINE lsyssc_transpMat79double (nrow, ncol, Da, Icol, Irow, &
                                        Itmp, DaDest, IcolDest, IrowDest)
   
-  !<description>
+!<description>
     ! Auxiliary routine.
     ! This routine accepts a structure-7 or structure-9
     ! matrix and creates the transposed matrix from it.
     !
     ! The resulting matrix is of format 9, i.e. not pivoted anymore with 
     ! the diagonal entry in front if a structure-7 matrix is to be transposed!
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     ! Number of rows in the source matrix
     INTEGER(PREC_VECIDX), INTENT(IN) :: nrow
     
@@ -10297,9 +10297,9 @@ CONTAINS
     ! Row structure of the source matrix.
     ! DIMENSION(nrow+1)
     INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Irow
-  !</input>
+!</input>
     
-  !<output>
+!<output>
     ! The entries of the destination matrix
     ! The array must be of the same size as Da or Icol
     REAL(DP), DIMENSION(:), INTENT(OUT) :: DaDest
@@ -10311,13 +10311,13 @@ CONTAINS
     ! Row structure of the destination matrix.
     ! DIMENSION(ncol+1)
     INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: IrowDest
-  !</output>
+!</output>
     
-  !<inputoutput>
+!<inputoutput>
     ! Auxiliary array.
     ! DIMENSION(ncol)
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Itmp
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
     
@@ -10393,23 +10393,23 @@ CONTAINS
 
   SUBROUTINE lsyssc_pivotiseMatrix7double (neq, Icol, Irow, Da, berror)
   
-  !<description>
+!<description>
     ! Auxiliary routine.
     ! This routine repivots a matrix in structure 7: The diagonal element
     ! of each row is moved to the front.
-  !</description>
+!</description>
     
-  !<input>
+!<input>
     ! Number of rows/columns/equations
     INTEGER(PREC_VECIDX), INTENT(IN) :: neq
-  !</input>
+!</input>
   
-  !<output>
+!<output>
     ! If .TRUE. a diagonal element was not found
     LOGICAL, OPTIONAL, INTENT(OUT) :: berror
-  !</output>
+!</output>
         
-  !<inputoutput>
+!<inputoutput>
     ! OPTIONAL: Matrix entries.
     ! If not specified, only the matrix structure is pivotised.
     REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
@@ -10419,7 +10419,7 @@ CONTAINS
     
     ! Matrix row structure
     INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(INOUT) :: Irow
-  !</inputoutput>
+!</inputoutput>
 !</subroutine>
     
     !local variables
@@ -10539,6 +10539,7 @@ CONTAINS
   ! The matrix to be transposed.
   TYPE(t_matrixScalar),INTENT(INOUT) :: rmatrix
 !</inputoutput>
+!</subroutine>
 
     TYPE(t_matrixScalar) :: rmatrix2
     

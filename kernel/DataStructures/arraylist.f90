@@ -910,6 +910,7 @@ CONTAINS
 !<output>
     ! OPTIONAL: number of data entries
     INTEGER, INTENT(OUT), OPTIONAL :: ndata
+!</output>
 !</subroutine>
 
     ! local variables

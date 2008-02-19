@@ -880,6 +880,8 @@ MODULE boundary
   REAL(DP), INTENT(INOUT) :: dpar
 !</inputoutput>
 
+!</subroutine>
+
     SELECT CASE (cpar)
     CASE (BDR_PAR_01)
       dpar = MOD(dpar,REAL(IsegCount(iboundCompIdx),DP))

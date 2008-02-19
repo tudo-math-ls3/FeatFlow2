@@ -3094,7 +3094,7 @@ CONTAINS
   ! Number of vertices on element iel.
 !</result>
 
-!</subroutine>
+!</function>
 
     INTEGER :: i
 
@@ -3129,7 +3129,7 @@ CONTAINS
   ! Number of vertices on element iel.
 !</result>
 
-!</subroutine>
+!</function>
 
     INTEGER :: i
     INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement

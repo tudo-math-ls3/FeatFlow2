@@ -989,7 +989,7 @@ CONTAINS
   ! Calculates a quadratic interpolation. dx is a value in the range $[-1,1]$.
   ! The routine calculates the value $dy:=p(dx)$ with $p(.)$ being the quadratic
   ! interpolation polynomial with $p(-1)=d1$, $p(0)=d2$ and $p(1)=d3$.
-!<description>
+!</description>
   
 !<input>
   ! The parameter value in the range $[-1,1]$ where the polynomial should be evaluated.

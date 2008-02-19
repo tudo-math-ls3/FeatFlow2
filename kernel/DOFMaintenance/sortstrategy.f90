@@ -148,7 +148,7 @@ MODULE sortstrategy
 
 !</typeblock>
 
-!<types>
+!</types>
 
   PRIVATE :: t_levelHirarchy
 

@@ -509,9 +509,9 @@ CONTAINS
   ! available, the heap structure is changed to take more handles.
 !</description>
 
-  !<result>
+!<result>
   ! The new handle number.
-  !</result>
+!</result>
 
 !<inputoutput>
 
@@ -5419,7 +5419,7 @@ CONTAINS
 
 !************************************************************************
 
-!<FUNCTION>
+!<function>
 
   FUNCTION storage_isEqual (ihandle1, ihandle2, rheap1, rheap2) RESULT (bisequal)
 
@@ -5452,7 +5452,7 @@ CONTAINS
   ! .TRUE. if the content is equal.
   LOGICAL :: bisequal
 
-!</output>
+!</result>
 
 !</function>
 

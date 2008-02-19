@@ -1854,7 +1854,7 @@ CONTAINS
   END SUBROUTINE
   
 
-! <!---------------------------------------------------------------------------
+! ---------------------------------------------------------------------------
 ! Explaination of the quadrilateral transformation:
 !
 ! We want to perform a transformation from the reference quadrilateral
@@ -1914,7 +1914,7 @@ CONTAINS
 ! on the reference element to coordinates (XX,YY) on the real element by:
 !
 !   (XX,YY) := Psi(XI1,XI2) 
-! ---------------------------------------------------------------------------->
+! ----------------------------------------------------------------------------
 
 !<subroutine>
 
@@ -2465,7 +2465,7 @@ CONTAINS
   
   END SUBROUTINE
 
-! <!---------------------------------------------------------------------------
+! ---------------------------------------------------------------------------
 ! Explaination of the hexahedral transformation:
 !
 ! We want to perform a transformation from the reference hexahedron
@@ -2564,7 +2564,7 @@ CONTAINS
 ! det DPhi = DPhi[1,1]*(DPhi[2,2]*DPhi[3,3] - DPhi[2,3]*DPhi[3,2])
 !          + DPhi[1,2]*(DPhi[2,3]*DPhi[3,1] - DPhi[2,1]*DPhi[3,3])
 !          + DPhi[1,3]*(DPhi[2,1]*DPhi[3,2] - DPhi[2,2]*DPhi[3,1])
-! ---------------------------------------------------------------------------->
+! ----------------------------------------------------------------------------
 
 !<subroutine>
 

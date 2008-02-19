@@ -2619,7 +2619,7 @@ CONTAINS
     
   END SUBROUTINE 
 
-!<!----------------------------------------------------------------------------
+! ----------------------------------------------------------------------------
 ! General information: Function values and derivatives of 
 !                      triangular elements
 !                      with linear transformation from the reference
@@ -2709,7 +2709,7 @@ CONTAINS
 ! being the matrix from the transformation (according to
 ! http://mathworld.wolfram.com/BarycentricCoordinates.html).
 !
-!----------------------------------------------------------------------------->
+! -----------------------------------------------------------------------------
 
 !**************************************************************************
 ! Element subroutines for parametric P0 element.
@@ -4143,7 +4143,7 @@ CONTAINS
     
   END SUBROUTINE 
   
-!<!----------------------------------------------------------------------------
+! ----------------------------------------------------------------------------
 ! General information: Function values and derivatives of 
 !                      quadrilateral elements
 !                      with bilinear transformation between the
@@ -4206,7 +4206,7 @@ CONTAINS
 !        ( c d )     ( s2_x   s2_y )
 !
 ! being the matrix from the transformation.
-!----------------------------------------------------------------------------->
+! -----------------------------------------------------------------------------
 
 !**************************************************************************
 ! Element subroutines for parametric Q0 element.
@@ -8791,7 +8791,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:,:,:), INTENT(OUT) :: Dbas
 !</output>
 
-! </subroutine>
+!</subroutine>
 
   ! Clear the output array
   !Dbas = 0.0_DP
@@ -8802,7 +8802,7 @@ CONTAINS
 
   END SUBROUTINE 
 
-!<!----------------------------------------------------------------------------
+! ----------------------------------------------------------------------------
 ! General information: Function values and derivatives of 
 !                      tetrahedral elements
 !                      with linear transformation from the reference
@@ -8888,7 +8888,7 @@ CONTAINS
 !
 ! being the matrix from the transformation (according to
 ! http://mathworld.wolfram.com/BarycentricCoordinates.html).
-! ---------------------------------------------------------------------------->
+! ----------------------------------------------------------------------------
 
 !**************************************************************************
 ! Element subroutines for parametric P1_3D element.
