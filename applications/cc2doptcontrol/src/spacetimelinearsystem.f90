@@ -458,7 +458,7 @@ CONTAINS
         ! to quadratic convergence in the Newton. Taking xi+1 does!?!
         ! So we take xi+1, although the theory tells us to take xi!
 
-        rmatrixComponents%iprimalSol = 3
+        rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 3
 
         ! Create the matrix
@@ -521,15 +521,8 @@ CONTAINS
         
         ELSE
 
-          IF (dnewton .EQ. 0.0_DP) THEN
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          ELSE
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
-          END IF
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
         
         END IF
             
@@ -607,8 +600,13 @@ CONTAINS
       ELSE IF (irelpos .EQ. 0) THEN    
 
         ! The diagonal matrix.
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 2
+        IF (.NOT. bconvectionExplicit) THEN
+          rmatrixComponents%iprimalSol = 2
+          rmatrixComponents%idualSol = 2
+        ELSE
+          rmatrixComponents%iprimalSol = 2
+          rmatrixComponents%idualSol = 3
+        END IF
 
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
@@ -668,8 +666,15 @@ CONTAINS
           
         ELSE
         
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
         
         END IF
 
@@ -684,7 +689,7 @@ CONTAINS
         ! to be the correct evaluation point from the theory) does not lead
         ! to quadratic convergence in the Newton. Taking xi+1 does!?!
         ! So we take xi+1, although the theory tells us to take xi!
-        rmatrixComponents%iprimalSol = 3
+        rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 3
 
         ! Create the matrix
@@ -747,15 +752,8 @@ CONTAINS
           
         ELSE
         
-          IF (dnewton .EQ. 0.0_DP) THEN
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          ELSE
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
-          END IF
+          rmatrixComponents%dr21 = 0.0_DP
+          rmatrixComponents%dr22 = 0.0_DP
           
         END IF
             
