@@ -372,7 +372,7 @@ CONTAINS
         ! Initialise the smoothers.
         SELECT CASE (ismootherType)
         
-        CASE (0:5)
+        CASE (0:7)
 
           NULLIFY(p_rsmoother)
         
@@ -390,6 +390,14 @@ CONTAINS
             CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
           CASE (5)
             CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAGDIR)
+          CASE (6)
+            CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+            CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rpreconditioner%p_RfilterChain)
+          CASE (7)
+            CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+            CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rpreconditioner%p_RfilterChain)
           END SELECT
           
           ! Initialise the parameters -- if there are any.
