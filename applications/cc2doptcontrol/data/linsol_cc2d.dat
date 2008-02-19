@@ -34,8 +34,10 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 4=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
 # 5=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 #   Note: This doesn't seem to work!?!
+# 6=BiCGStab with Full VANCA preconditioning
+# 7=BiCGStab with Diagonal VANCA preconditioning
 
-ismootherType = 2
+ismootherType = 7
 
 # Name of the section in this file which configures the smoother.
 
