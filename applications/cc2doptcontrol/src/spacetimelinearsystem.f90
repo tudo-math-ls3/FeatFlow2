@@ -768,88 +768,6 @@ CONTAINS
       ! Aii = Aii(x_i,lambda_i).
       ! Aii+1 = Aii+1(x_i,lambda_i+1)
 
-!      ! Although this would be the correct implementation of the matrix weights
-!      ! for the terminal condition at the first glance, it would be wrong to use 
-!      ! that. The last timestep has to be processed like
-!      ! the others, which infers some 'smoothing' in the dual solution
-!      ! at the end of the time cylinder! Without that smoothing that, some 
-!      ! time discretisation schemes like Crank-Nicolson would get instable
-!      ! if a terminal condition <> 0 is prescribed!
-!      
-!      IF (irelpos .EQ. -1) THEN
-!      
-!        ! Matrix on the left of the diagonal
-!        !
-!        ! Create the matrix
-!        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-!        
-!        rmatrixComponents%diota1 = 0.0_DP
-!        rmatrixComponents%diota2 = 0.0_DP
-!
-!        rmatrixComponents%dkappa1 = 0.0_DP
-!        rmatrixComponents%dkappa2 = 0.0_DP
-!        
-!        rmatrixComponents%dalpha1 = -1.0_DP
-!        rmatrixComponents%dalpha2 = 0.0_DP
-!        
-!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%dtheta2 = 0.0_DP
-!        
-!        rmatrixComponents%dgamma1 = &
-!            (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        rmatrixComponents%dgamma2 = 0.0_DP
-!        
-!        rmatrixComponents%dnewton1 = 0.0_DP
-!        rmatrixComponents%dnewton2 = 0.0_DP
-!        
-!        rmatrixComponents%deta1 = 0.0_DP
-!        rmatrixComponents%deta2 = 0.0_DP
-!        
-!        rmatrixComponents%dtau1 = 0.0_DP
-!        rmatrixComponents%dtau2 = 0.0_DP
-!        
-!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            p_rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
-!        rmatrixComponents%dmu2 = 0.0_DP
-!        
-!      ELSE IF (irelpos .EQ. 0) THEN
-!      
-!        ! The diagonal matrix.
-!        
-!        rmatrixComponents%diota1 = 0.0_DP
-!        rmatrixComponents%diota2 = (1.0_DP-ddualPrimalCoupling)
-!
-!        rmatrixComponents%dkappa1 = 0.0_DP
-!        rmatrixComponents%dkappa2 = 1.0_DP
-!        
-!        rmatrixComponents%dalpha1 = 1.0_DP
-!        rmatrixComponents%dalpha2 = 1.0_DP
-!        
-!        rmatrixComponents%dtheta1 = dtheta * p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%dtheta2 = 0.0_DP
-!        
-!        rmatrixComponents%dgamma1 = &
-!            dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        rmatrixComponents%dgamma2 = 0.0_DP
-!!           - dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        
-!        rmatrixComponents%dnewton1 = 0.0_DP
-!        rmatrixComponents%dnewton2 = 0.0_DP
-!!             dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!
-!        rmatrixComponents%deta1 = p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%deta2 = 0.0_DP
-!        
-!        rmatrixComponents%dtau1 = 1.0_DP
-!        rmatrixComponents%dtau2 = 0.0_DP
-!        
-!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            dtheta * p_rspaceTimeDiscr%dtstep / p_rspaceTimeDiscr%dalphaC
-!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            (-p_rspaceTimeDiscr%dgammaC)
-!
-!      END IF
-        
       IF (irelpos .EQ. -1) THEN
       
         ! Matrix on the left of the diagonal.
@@ -974,7 +892,7 @@ CONTAINS
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta * dtstep
           END IF
-        
+
         ELSE
         
           rmatrixComponents%dr21 = 0.0_DP

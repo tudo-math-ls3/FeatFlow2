@@ -354,6 +354,12 @@ CONTAINS
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
+      CASE DEFAULT
+      
+        CALL output_line ('Unknown coarse grid solver.', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+        CALL sys_halt()
+          
       END SELECT
       
       ! Now after the coarse grid solver is done, we turn to the smoothers
@@ -366,7 +372,7 @@ CONTAINS
         ! Initialise the smoothers.
         SELECT CASE (ismootherType)
         
-        CASE (0:3)
+        CASE (0:5)
 
           NULLIFY(p_rsmoother)
         
@@ -406,6 +412,12 @@ CONTAINS
           ! Set up the interlevel projection structure on all levels
           p_rlevelInfo%rinterlevelProjection = &
             rpreconditioner%p_rprojection
+          
+        CASE DEFAULT
+        
+          CALL output_line ('Unknown smoother.', &
+              OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+          CALL sys_halt()
           
         END SELECT
       
