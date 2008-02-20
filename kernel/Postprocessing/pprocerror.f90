@@ -3407,7 +3407,7 @@ CONTAINS
     ! Pointer to the point coordinates to pass to the element function.
     ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
     ! the trial element is parametric or not.
-    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial,p_DcubPtsTrialRef
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
     
     ! Array with coordinates of the corners that form the real element.
     REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
