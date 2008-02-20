@@ -173,7 +173,7 @@ MODULE afcstabilisation
     INTEGER :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
 
     ! Format Tag. Specifies the type of dissipation
-    INTEGER :: iDissipation                            = AFCSTAB_SCALARDISSIPATION
+    INTEGER :: idissipation                            = AFCSTAB_SCALARDISSIPATION
 
     ! Format Tag: Specifies the stabilisation
     INTEGER :: iSpec                                   = AFCSTAB_UNDEFINED
