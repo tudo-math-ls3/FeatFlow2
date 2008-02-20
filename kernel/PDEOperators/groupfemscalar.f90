@@ -18,11 +18,11 @@
 !# at the beginning of the simulation and each time the grid is modified.
 !#
 !# Moreover, this module allows to modifying discrete operators by means of
-!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Möller
+!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Moeller
 !# and Turek in a series of publications. As a starting point for scalar
 !# conservation laws, the reader is referred to the book chapter
 !#
-!#     D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar conservation
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar conservation
 !#     laws", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
 !#     Algorithms, and Applications, Springer, 2005, 155-206.
 !#
@@ -509,7 +509,7 @@ CONTAINS
     !     elimination of negative off-diagonal entries from the Galerkin
     !     operator. This technique is for instance described in the reference:
     !
-    !     D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar
+    !     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
     !     conservation laws", In: D. Kuzmin et al. (eds), Flux-Corrected
     !     Transport: Principles,  Algorithms, and Applications,
     !     Springer, 2005, 155-206.
@@ -5056,7 +5056,7 @@ CONTAINS
     !    preserving solution in each iteration step. 
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Möller, "Algebraic flux correction I. Scalar
+    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
     !    conservation laws", Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
