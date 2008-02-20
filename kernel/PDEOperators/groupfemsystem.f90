@@ -31,16 +31,16 @@
 !#        of the divergence term $div(F)$ by means of the Galerkin method 
 !#        and some sort of artificial dissipation (if required)
 !#
-!# 5.) gfsys_buildResidual_Galerkin = gfsys_buildResidualScalar_Galerkin /
-!#                                    gfsys_buildResidualBlock_Galerkin
+!# 5.) gfsys_buildResidualGalerkin = gfsys_buildResScalarGalerkin /
+!#                                   gfsys_buildResBlockGalerkin
 !#     -> assemble the residual for standard Galerkin scheme
 !#
-!# 6.) gfsys_buildResidual_Upwind = gfsys_buildResidualScalar_Upwind /
-!#                                  gfsys_buildResidualBlock_Upwind
+!# 6.) gfsys_buildResidualUpwind = gfsys_buildResScalarUpwind /
+!#                                 gfsys_buildResBlockUpwind
 !#     -> assemble the residual for discrete upwinding scheme
 !#
-!# 7.) gfsys_buildResidual_TVD = gfsys_buildResidualScalar_TVD /
-!#                               gfsys_buildResidualBlock_TVD
+!# 7.) gfsys_buildResidualTVD = gfsys_buildResScalarTVD /
+!#                              gfsys_buildResBlockTVD
 !#     -> assemble the residual for FEM-TVD stabilisation
 !#
 !# 6.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
@@ -78,9 +78,9 @@ MODULE groupfemsystem
   PUBLIC :: gfsys_isMatrixCompatible
   PUBLIC :: gfsys_isVectorCompatible
   PUBLIC :: gfsys_buildDivOperator
-  PUBLIC :: gfsys_buildResidual_Galerkin
-  PUBLIC :: gfsys_buildResidual_Upwind
-  PUBLIC :: gfsys_buildResidual_TVD
+  PUBLIC :: gfsys_buildResidualGalerkin
+  PUBLIC :: gfsys_buildResidualUpwind
+  PUBLIC :: gfsys_buildResidualTVD
   PUBLIC :: gfsys_buildDivJacobian
 
   ! *****************************************************************************
@@ -160,19 +160,19 @@ MODULE groupfemsystem
      MODULE PROCEDURE gfsys_buildDivOperatorBlock
   END INTERFACE
 
-  INTERFACE gfsys_buildResidual_Galerkin
-    MODULE PROCEDURE gfsys_buildResidualScalar_Galerkin
-    MODULE PROCEDURE gfsys_buildResidualBlock_Galerkin
+  INTERFACE gfsys_buildResidualGalerkin
+    MODULE PROCEDURE gfsys_buildResScalarGalerkin
+    MODULE PROCEDURE gfsys_buildResBlockGalerkin
   END INTERFACE
 
-  INTERFACE gfsys_buildResidual_Upwind
-    MODULE PROCEDURE gfsys_buildResidualScalar_Upwind
-    MODULE PROCEDURE gfsys_buildResidualBlock_Upwind
+  INTERFACE gfsys_buildResidualUpwind
+    MODULE PROCEDURE gfsys_buildResScalarUpwind
+    MODULE PROCEDURE gfsys_buildResBlockUpwind
   END INTERFACE
 
-  INTERFACE gfsys_buildResidual_TVD
-    MODULE PROCEDURE gfsys_buildResidualScalar_TVD
-    MODULE PROCEDURE gfsys_buildResidualBlock_TVD
+  INTERFACE gfsys_buildResidualTVD
+    MODULE PROCEDURE gfsys_buildResScalarTVD
+    MODULE PROCEDURE gfsys_buildResBlockTVD
   END INTERFACE
 
   INTERFACE gfsys_buildDivJacobian
@@ -695,13 +695,13 @@ CONTAINS
       CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
         CASE (NDIM2D)
-          CALL do_galerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
         CASE (NDIM3D)
-          CALL do_galerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
         END SELECT
         
@@ -714,13 +714,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
           
@@ -728,13 +728,13 @@ CONTAINS
        CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
@@ -747,13 +747,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
            
@@ -761,13 +761,13 @@ CONTAINS
        CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
@@ -780,13 +780,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+           CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
 
@@ -817,13 +817,13 @@ CONTAINS
       CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
         CASE (NDIM2D)
-          CALL do_galerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
         CASE (NDIM3D)
-          CALL do_galerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
         END SELECT
         
@@ -836,13 +836,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
           
@@ -850,13 +850,13 @@ CONTAINS
        CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
@@ -869,13 +869,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_scalardissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_scalardissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_scalardissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
            
@@ -883,13 +883,13 @@ CONTAINS
        CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
          
@@ -902,13 +902,13 @@ CONTAINS
          END IF
          SELECT CASE(ndim)
          CASE (NDIM1D)
-           CALL do_tensordissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
          CASE (NDIM2D)
-           CALL do_tensordissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
          CASE (NDIM3D)
-           CALL do_tensordissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+           CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
          END SELECT
 
@@ -936,7 +936,7 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -994,14 +994,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_1D
+    END SUBROUTINE doGalerkinMat7Diag_1D
 
     
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1061,14 +1061,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_2D
+    END SUBROUTINE doGalerkinMat7Diag_2D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1130,14 +1130,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_3D
+    END SUBROUTINE doGalerkinMat7Diag_3D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1196,14 +1196,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_1D
+    END SUBROUTINE doGalerkinMat9Diag_1D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1264,14 +1264,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_2D
+    END SUBROUTINE doGalerkinMat9Diag_2D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1334,14 +1334,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_3D
+    END SUBROUTINE doGalerkinMat9Diag_3D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1403,14 +1403,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_1D
+    END SUBROUTINE doGalerkinMat7_1D
 
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1474,14 +1474,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_2D
+    END SUBROUTINE doGalerkinMat7_2D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1547,14 +1547,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_3D
+    END SUBROUTINE doGalerkinMat7_3D
 
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1617,14 +1617,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_1D
+    END SUBROUTINE doGalerkinMat9_1D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1689,14 +1689,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_2D
+    END SUBROUTINE doGalerkinMat9_2D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1763,7 +1763,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_3D
+    END SUBROUTINE doGalerkinMat9_3D
 
     
     !**************************************************************
@@ -1771,7 +1771,7 @@ CONTAINS
     ! with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1827,7 +1827,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_1D
+    END SUBROUTINE doScalarDissMat7Diag_1D
 
 
     !**************************************************************
@@ -1835,7 +1835,7 @@ CONTAINS
     ! with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1892,7 +1892,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_2D
+    END SUBROUTINE doScalarDissMat7Diag_2D
 
     
     !**************************************************************
@@ -1900,7 +1900,7 @@ CONTAINS
     ! with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1958,7 +1958,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_3D
+    END SUBROUTINE doScalarDissMat7Diag_3D
 
 
     !**************************************************************
@@ -1966,7 +1966,7 @@ CONTAINS
     ! with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2022,7 +2022,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_1D
+    END SUBROUTINE doScalarDissMat9Diag_1D
 
 
     !**************************************************************
@@ -2030,7 +2030,7 @@ CONTAINS
     ! with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2087,7 +2087,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_2D
+    END SUBROUTINE doScalarDissMat9Diag_2D
 
 
     !**************************************************************
@@ -2095,7 +2095,7 @@ CONTAINS
     ! with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2153,14 +2153,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_3D
+    END SUBROUTINE doScalarDissMat9Diag_3D
 
     
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2228,14 +2228,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_1D
+    END SUBROUTINE doScalarDissMat7_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2304,14 +2304,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_2D
+    END SUBROUTINE doScalarDissMat7_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2381,14 +2381,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_3D
+    END SUBROUTINE doScalarDissMat7_3D
 
     
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2457,14 +2457,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_1D
+    END SUBROUTINE doScalarDissMat9_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2534,14 +2534,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_2D
+    END SUBROUTINE doScalarDissMat9_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2611,7 +2611,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_3D
+    END SUBROUTINE doScalarDissMat9_3D
 
 
     !**************************************************************
@@ -2619,7 +2619,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2676,7 +2676,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_1D
+    END SUBROUTINE doTensorDissMat7Diag_1D
 
 
     !**************************************************************
@@ -2684,7 +2684,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2742,7 +2742,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_2D
+    END SUBROUTINE doTensorDissMat7Diag_2D
 
 
     !**************************************************************
@@ -2750,7 +2750,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2809,7 +2809,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_3D
+    END SUBROUTINE doTensorDissMat7Diag_3D
 
 
     !**************************************************************
@@ -2817,7 +2817,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2875,7 +2875,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_1D
+    END SUBROUTINE doTensorDissMat9Diag_1D
 
 
     !**************************************************************
@@ -2883,7 +2883,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -2942,7 +2942,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_2D
+    END SUBROUTINE doTensorDissMat9Diag_2D
 
 
      !**************************************************************
@@ -2950,7 +2950,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3010,14 +3010,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_3D
+    END SUBROUTINE doTensorDissMat9Diag_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3076,14 +3076,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_1D
+    END SUBROUTINE doTensorDissMat7_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3143,14 +3143,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_2D
+    END SUBROUTINE doTensorDissMat7_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3211,14 +3211,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_3D
+    END SUBROUTINE doTensorDissMat7_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3278,14 +3278,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_1D
+    END SUBROUTINE doTensorDissMat9_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3346,14 +3346,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_2D
+    END SUBROUTINE doTensorDissMat9_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -3415,7 +3415,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_3D
+    END SUBROUTINE doTensorDissMat9_3D
   END SUBROUTINE gfsys_buildDivOperatorBlock
 
   ! *****************************************************************************
@@ -3529,13 +3529,13 @@ CONTAINS
       CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3543,13 +3543,13 @@ CONTAINS
       CASE (GFSYS_GALERKIN)     ! Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3557,13 +3557,13 @@ CONTAINS
       CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_scalardissipationMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_scalardissipationMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_scalardissipationMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3571,13 +3571,13 @@ CONTAINS
       CASE (GFSYS_SCALAR)       ! scalar dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_scalardissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_scalardissipationMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_scalardissipationMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3585,13 +3585,13 @@ CONTAINS
       CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_tensordissipationMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_tensordissipationMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_tensordissipationMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3599,13 +3599,13 @@ CONTAINS
       CASE (GFSYS_TENSOR)       ! tensorial dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_tensordissipationMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_tensordissipationMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_tensordissipationMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
 
@@ -3636,13 +3636,13 @@ CONTAINS
       CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3650,13 +3650,13 @@ CONTAINS
       CASE (GFSYS_GALERKIN)     ! Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3664,13 +3664,13 @@ CONTAINS
       CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_scalardissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_scalardissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_scalardissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3678,13 +3678,13 @@ CONTAINS
       CASE (GFSYS_SCALAR)       ! scalar dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_scalardissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_scalardissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_scalardissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
 
@@ -3692,13 +3692,13 @@ CONTAINS
       CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_tensordissipationMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_tensordissipationMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_tensordissipationMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
         
@@ -3706,13 +3706,13 @@ CONTAINS
       CASE (GFSYS_TENSOR)       ! tensorial dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL do_tensordissipationMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL do_tensordissipationMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL do_tensordissipationMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
         END SELECT
 
@@ -3741,7 +3741,7 @@ CONTAINS
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doGalerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3792,14 +3792,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_1D
+    END SUBROUTINE doGalerkinMat7Diag_1D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3852,14 +3852,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_2D
+    END SUBROUTINE doGalerkinMat7Diag_2D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3914,14 +3914,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7Diag_3D
+    END SUBROUTINE doGalerkinMat7Diag_3D
 
     
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doGalerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3973,14 +3973,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_1D
+    END SUBROUTINE doGalerkinMat9Diag_1D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4034,14 +4034,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_2D
+    END SUBROUTINE doGalerkinMat9Diag_2D
 
 
     !**************************************************************
     ! Assemble block-diagonal high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4097,14 +4097,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9Diag_3D
+    END SUBROUTINE doGalerkinMat9Diag_3D
 
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4155,14 +4155,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_1D
+    END SUBROUTINE doGalerkinMat7_1D
 
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4215,14 +4215,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_2D
+    END SUBROUTINE doGalerkinMat7_2D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4277,14 +4277,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_3D
+    END SUBROUTINE doGalerkinMat7_3D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4336,14 +4336,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_1D
+    END SUBROUTINE doGalerkinMat9_1D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4397,14 +4397,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_2D
+    END SUBROUTINE doGalerkinMat9_2D
 
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4460,7 +4460,7 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+B_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_3D
+    END SUBROUTINE doGalerkinMat9_3D
 
 
     !**************************************************************
@@ -4468,7 +4468,7 @@ CONTAINS
     ! with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE doScalarDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4517,7 +4517,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_1D
+    END SUBROUTINE doScalarDissMat7Diag_1D
 
 
     !**************************************************************
@@ -4525,7 +4525,7 @@ CONTAINS
     ! with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE doScalarDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4575,7 +4575,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_2D
+    END SUBROUTINE doScalarDissMat7Diag_2D
 
 
     !**************************************************************
@@ -4583,7 +4583,7 @@ CONTAINS
     ! with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE doScalarDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4634,7 +4634,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7Diag_3D
+    END SUBROUTINE doScalarDissMat7Diag_3D
     
 
     !**************************************************************
@@ -4642,7 +4642,7 @@ CONTAINS
     ! with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -4693,7 +4693,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_1D
+    END SUBROUTINE doScalarDissMat9Diag_1D
 
 
     !**************************************************************
@@ -4701,7 +4701,7 @@ CONTAINS
     ! with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -4753,7 +4753,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_2D
+    END SUBROUTINE doScalarDissMat9Diag_2D
 
     
     !**************************************************************
@@ -4761,7 +4761,7 @@ CONTAINS
     ! with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissipationMat9Diag_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -4814,14 +4814,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9Diag_3D
+    END SUBROUTINE doScalarDissMat9Diag_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4881,14 +4881,14 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_1D
+    END SUBROUTINE doScalarDissMat7_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4949,14 +4949,14 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_2D
+    END SUBROUTINE doScalarDissMat7_2D
     
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5018,14 +5018,14 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat7_3D
+    END SUBROUTINE doScalarDissMat7_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5087,14 +5087,14 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_1D
+    END SUBROUTINE doScalarDissMat9_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5157,14 +5157,14 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_2D
+    END SUBROUTINE doScalarDissMat9_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissipationMat9_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5228,7 +5228,7 @@ CONTAINS
           L(idiag,jj) = L(idiag,jj)-d_ij(1)
         END DO
       END DO
-    END SUBROUTINE do_scalardissipationMat9_3D
+    END SUBROUTINE doScalarDissMat9_3D
 
     
     !**************************************************************
@@ -5236,7 +5236,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE doTensorDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5285,7 +5285,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_1D
+    END SUBROUTINE doTensorDissMat7Diag_1D
 
 
     !**************************************************************
@@ -5293,7 +5293,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE doTensorDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5343,7 +5343,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_2D
+    END SUBROUTINE doTensorDissMat7Diag_2D
 
 
     !**************************************************************
@@ -5351,7 +5351,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE doTensorDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5402,7 +5402,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7Diag_3D
+    END SUBROUTINE doTensorDissMat7Diag_3D
 
 
     !**************************************************************
@@ -5410,7 +5410,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5461,7 +5461,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_1D
+    END SUBROUTINE doTensorDissMat9Diag_1D
 
 
     !**************************************************************
@@ -5469,7 +5469,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5521,7 +5521,7 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_2D
+    END SUBROUTINE doTensorDissMat9Diag_2D
 
 
     !**************************************************************
@@ -5529,7 +5529,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9Diag_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5582,14 +5582,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9Diag_3D
+    END SUBROUTINE doTensorDissMat9Diag_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
+    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5637,14 +5637,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_1D
+    END SUBROUTINE doTensorDissMat7_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
+    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5693,14 +5693,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_2D
+    END SUBROUTINE doTensorDissMat7_2D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_tensordissipationMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
+    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -5750,14 +5750,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat7_3D
+    END SUBROUTINE doTensorDissMat7_3D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_1D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5807,14 +5807,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_1D
+    END SUBROUTINE doTensorDissMat9_1D
 
 
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_2D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5865,14 +5865,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_2D
+    END SUBROUTINE doTensorDissMat9_2D
 
     
     !**************************************************************
     ! Assemble low-order operator L with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_tensordissipationMat9_3D(Kld, Kcol, Kdiagonal,&
+    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal,&
         Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -5924,14 +5924,14 @@ CONTAINS
           L(:,jj) = L(:,jj)-A_ij-D_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissipationMat9_3D
+    END SUBROUTINE doTensorDissMat9_3D
   END SUBROUTINE gfsys_buildDivOperatorScalar
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResidualBlock_Galerkin(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResBlockGalerkin(RmatrixC, ru,&
       fcb_getRoeMatrix, dscale, rres)
 
 !<description>
@@ -5970,7 +5970,7 @@ CONTAINS
     
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
-      CALL gfsys_buildResidualScalar_Galerkin(RmatrixC, ru%RvectorBlock(1),&
+      CALL gfsys_buildResScalarGalerkin(RmatrixC, ru%RvectorBlock(1),&
           fcb_getRoeMatrix, dscale, rres%RvectorBlock(1))
       RETURN       
     END IF
@@ -5998,25 +5998,25 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+         CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
         CALL sys_halt()
       END SELECT
     
@@ -6030,32 +6030,32 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+         CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
         CALL sys_halt()
       END SELECT
       
 
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Galerkin')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
       CALL sys_halt()
     END SELECT
     
@@ -6070,7 +6070,7 @@ CONTAINS
     ! Assemble residual for high-order Galerkin operator in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6128,14 +6128,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_1D
+    END SUBROUTINE doGalerkinMat7_1D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6195,14 +6195,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_2D
+    END SUBROUTINE doGalerkinMat7_2D
 
     
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6264,14 +6264,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_3D
+    END SUBROUTINE doGalerkinMat7_3D
 
     
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6330,14 +6330,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_1D
+    END SUBROUTINE doGalerkinMat9_1D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6398,14 +6398,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_2D
+    END SUBROUTINE doGalerkinMat9_2D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6468,14 +6468,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_3D
-  END SUBROUTINE gfsys_buildResidualBlock_Galerkin
+    END SUBROUTINE doGalerkinMat9_3D
+  END SUBROUTINE gfsys_buildResBlockGalerkin
   
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResidualScalar_Galerkin(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResScalarGalerkin(RmatrixC, ru,&
       fcb_getRoeMatrix, dscale, rres)
 
 !<description>
@@ -6533,25 +6533,25 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL do_galerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL do_galerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+         CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL do_galerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Galerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
         CALL sys_halt()
       END SELECT
     
@@ -6565,32 +6565,32 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL do_galerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL do_galerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+         CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL do_galerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Galerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
         CALL sys_halt()
       END SELECT
       
 
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Galerkin')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
       CALL sys_halt()
     END SELECT
 
@@ -6605,7 +6605,7 @@ CONTAINS
     ! Assemble residual for high-order Galerkin operator in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_galerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6659,14 +6659,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_1D
+    END SUBROUTINE doGalerkinMat7_1D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_galerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6722,14 +6722,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_2D
+    END SUBROUTINE doGalerkinMat7_2D
 
     
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_galerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6787,14 +6787,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat7_3D
+    END SUBROUTINE doGalerkinMat7_3D
 
     
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6849,14 +6849,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_1D
+    END SUBROUTINE doGalerkinMat9_1D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6913,14 +6913,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_2D
+    END SUBROUTINE doGalerkinMat9_2D
 
 
     !**************************************************************
     ! Assemble residual for high-order Galerkin operator in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_galerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6979,14 +6979,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rB_ij
         END DO
       END DO
-    END SUBROUTINE do_galerkinMat9_3D
-  END SUBROUTINE gfsys_buildResidualScalar_Galerkin
+    END SUBROUTINE doGalerkinMat9_3D
+  END SUBROUTINE gfsys_buildResScalarGalerkin
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResidualBlock_Upwind(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResBlockUpwind(RmatrixC, ru,&
       fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
 
 !<description>
@@ -7030,7 +7030,7 @@ CONTAINS
 
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
-      CALL gfsys_buildResidualScalar_Upwind(RmatrixC, ru%RvectorBlock(1),&
+      CALL gfsys_buildResScalarUpwind(RmatrixC, ru%RvectorBlock(1),&
           fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres%RvectorBlock(1))
       RETURN       
     END IF
@@ -7062,25 +7062,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_scalardissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_scalardissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_scalardissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
           CALL sys_halt()
         END SELECT
         
@@ -7094,32 +7094,32 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_scalardissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_scalardissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_scalardissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
           CALL sys_halt()
         END SELECT
       
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
         CALL sys_halt()
       END SELECT
 
@@ -7134,25 +7134,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_tensordissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_tensordissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_tensordissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
           CALL sys_halt()
         END SELECT
         
@@ -7166,39 +7166,39 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_tensordissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_tensordissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_tensordissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
           CALL sys_halt()
         END SELECT
       
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
         CALL sys_halt()
       END SELECT
 
 
     CASE DEFAULT
       CALL output_line('Unsupported type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_Upwind')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
       CALL sys_halt()
     END SELECT
     
@@ -7213,7 +7213,7 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7269,14 +7269,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_1D
+    END SUBROUTINE doScalarDissMat7_1D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7333,14 +7333,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_2D
+    END SUBROUTINE doScalarDissMat7_2D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7398,14 +7398,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_3D
+    END SUBROUTINE doScalarDissMat7_3D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7462,14 +7462,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_1D
+    END SUBROUTINE doScalarDissMat9_1D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7527,14 +7527,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_2D
+    END SUBROUTINE doScalarDissMat9_2D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7593,7 +7593,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_3D
+    END SUBROUTINE doScalarDissMat9_3D
 
     
     !**************************************************************
@@ -7601,7 +7601,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7656,7 +7656,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_1D
+    END SUBROUTINE doTensorDissMat7_1D
 
 
     !**************************************************************
@@ -7664,7 +7664,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7720,7 +7720,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_2D
+    END SUBROUTINE doTensorDissMat7_2D
 
     
     !**************************************************************
@@ -7728,7 +7728,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7785,7 +7785,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_3D
+    END SUBROUTINE doTensorDissMat7_3D
 
     
     !**************************************************************
@@ -7793,7 +7793,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7849,7 +7849,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_1D
+    END SUBROUTINE doTensorDissMat9_1D
 
 
     !**************************************************************
@@ -7857,7 +7857,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7914,7 +7914,7 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_2D
+    END SUBROUTINE doTensorDissMat9_2D
 
 
     !**************************************************************
@@ -7922,7 +7922,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -7980,14 +7980,14 @@ CONTAINS
           res(j,:) = res(j,:)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_3D
-  END SUBROUTINE gfsys_buildResidualBlock_Upwind
+    END SUBROUTINE doTensorDissMat9_3D
+  END SUBROUTINE gfsys_buildResBlockUpwind
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResidualScalar_Upwind(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResScalarUpwind(RmatrixC, ru,&
       fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
 
 !<description>
@@ -8054,25 +8054,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_scalardissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_scalardissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_scalardissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
           CALL sys_halt()
         END SELECT
         
@@ -8086,32 +8086,32 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_scalardissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_scalardissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_scalardissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
           CALL sys_halt()
         END SELECT
       
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
         CALL sys_halt()
       END SELECT
 
@@ -8126,25 +8126,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_tensordissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_tensordissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_tensordissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
           CALL sys_halt()
         END SELECT
         
@@ -8158,39 +8158,39 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_tensordissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_tensordissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_tensordissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
           CALL sys_halt()
         END SELECT
       
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
         CALL sys_halt()
       END SELECT
 
       
     CASE DEFAULT
       CALL output_line('Unsupported type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_Upwind')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
       CALL sys_halt()
     END SELECT
     
@@ -8205,7 +8205,7 @@ CONTAINS
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_scalardissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8257,14 +8257,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_1D
+    END SUBROUTINE doScalarDissMat7_1D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8317,14 +8317,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_2D
+    END SUBROUTINE doScalarDissMat7_2D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_scalardissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8378,14 +8378,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat7_3D
+    END SUBROUTINE doScalarDissMat7_3D
     
     
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_scalardissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8438,14 +8438,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_1D
+    END SUBROUTINE doScalarDissMat9_1D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8499,14 +8499,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_2D
+    END SUBROUTINE doScalarDissMat9_2D
 
 
     !**************************************************************
     ! Assemble residual for low-order operator with scalar dissipation in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_scalardissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8561,7 +8561,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_scalardissMat9_3D
+    END SUBROUTINE doScalarDissMat9_3D
     
     
     !**************************************************************
@@ -8569,7 +8569,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8620,7 +8620,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_1D
+    END SUBROUTINE doTensorDissMat7_1D
 
 
     !**************************************************************
@@ -8628,7 +8628,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8680,7 +8680,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_2D
+    END SUBROUTINE doTensorDissMat7_2D
 
     
     !**************************************************************
@@ -8688,7 +8688,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE do_tensordissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8741,7 +8741,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat7_3D
+    END SUBROUTINE doTensorDissMat7_3D
 
 
     !**************************************************************
@@ -8749,7 +8749,7 @@ CONTAINS
     ! with tensorial dissipation in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8801,7 +8801,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_1D
+    END SUBROUTINE doTensorDissMat9_1D
 
     
     !**************************************************************
@@ -8809,7 +8809,7 @@ CONTAINS
     ! with tensorial dissipation in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8862,7 +8862,7 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_2D
+    END SUBROUTINE doTensorDissMat9_2D
 
     
     !**************************************************************
@@ -8870,7 +8870,7 @@ CONTAINS
     ! with tensorial dissipation in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE do_tensordissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -8924,14 +8924,14 @@ CONTAINS
           res(:,j) = res(:,j)+rA_ij-rD_ij
         END DO
       END DO
-    END SUBROUTINE do_tensordissMat9_3D
-  END SUBROUTINE gfsys_buildResidualScalar_Upwind
+    END SUBROUTINE doTensorDissMat9_3D
+  END SUBROUTINE gfsys_buildResScalarUpwind
 
   ! *****************************************************************************
   
   !<subroutine>
   
-  SUBROUTINE gfsys_buildResidualBlock_TVD(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResBlockTVD(RmatrixC, ru,&
       fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
       rafcstab, dscale, rres)
 
@@ -8974,7 +8974,7 @@ CONTAINS
     
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
-      CALL gfsys_buildResidualScalar_TVD(RmatrixC, ru%RvectorBlock(1),&
+      CALL gfsys_buildResScalarTVD(RmatrixC, ru%RvectorBlock(1),&
           fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
           rafcstab, dscale, rres%RvectorBlock(1))
       RETURN       
@@ -9004,7 +9004,7 @@ CONTAINS
       ! Check if stabilisation is prepeared
       IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALISED) .EQ. 0) THEN
         CALL output_line('Stabilisation has not been initialised',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockTVD')
         CALL sys_halt()
       END IF
       
@@ -9027,25 +9027,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_femtvdMat7_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+          CALL doLimitTVDMat7_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
               p_Cx, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_femtvdMat7_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+          CALL doLimitTVDMat7_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
               p_Cx, p_Cy, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_femtvdMat7_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
+          CALL doLimitTVDMat7_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%nblocks,&
               p_Cx, p_Cy, p_Cz, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockTVD')
           CALL sys_halt()
         END SELECT
         
@@ -9059,14 +9059,14 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_femtvdMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_femtvdMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
@@ -9074,25 +9074,25 @@ CONTAINS
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_femtvdMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockTVD')
           CALL sys_halt()
         END SELECT
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockTVD')
         CALL sys_halt()
       END SELECT
       
     CASE DEFAULT
       CALL output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualBlock_TVD')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockTVD')
       CALL sys_halt()
     END SELECT
     
@@ -9108,7 +9108,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -9260,7 +9260,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_1D
+    END SUBROUTINE doLimitTVDMat7_1D
 
 
     !**************************************************************
@@ -9268,7 +9268,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -9516,7 +9516,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_2D
+    END SUBROUTINE doLimitTVDMat7_2D
 
     
     !**************************************************************
@@ -9524,7 +9524,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -9866,7 +9866,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_3D
+    END SUBROUTINE doLimitTVDMat7_3D
     
     
     !**************************************************************
@@ -9874,7 +9874,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -10027,7 +10027,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_1D
+    END SUBROUTINE doLimitTVDMat9_1D
 
 
     !**************************************************************
@@ -10035,7 +10035,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -10284,7 +10284,7 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_2D
+    END SUBROUTINE doLimitTVDMat9_2D
 
     
     !**************************************************************
@@ -10292,7 +10292,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -10635,14 +10635,14 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_3D
-  END SUBROUTINE gfsys_buildResidualBlock_TVD
+    END SUBROUTINE doLimitTVDMat9_3D
+  END SUBROUTINE gfsys_buildResBlockTVD
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE gfsys_buildResidualScalar_TVD(RmatrixC, ru,&
+  SUBROUTINE gfsys_buildResScalarTVD(RmatrixC, ru,&
       fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
       rafcstab, dscale, rres)
     
@@ -10705,7 +10705,7 @@ CONTAINS
       ! Check if stabilisation is prepeared
       IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALISED) .EQ. 0) THEN
         CALL output_line('Stabilisation has not been initialised',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarTVD')
         CALL sys_halt()
       END IF
       
@@ -10728,25 +10728,25 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_femtvdMat7_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
+          CALL doLimitTVDMat7_1D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
               p_Cx, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_femtvdMat7_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
+          CALL doLimitTVDMat7_2D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
               p_Cx, p_Cy, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_femtvdMat7_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
+          CALL doLimitTVDMat7_3D(p_Kld, p_Kcol, p_Ksep, RmatrixC(1)%NEQ, ru%NVAR,&
               p_Cx, p_Cy, p_Cz, p_u, dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarTVD')
           CALL sys_halt()
         END SELECT
         
@@ -10760,14 +10760,14 @@ CONTAINS
         SELECT CASE(SIZE(RmatrixC,1))
         CASE (NDIM1D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL do_femtvdMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL do_femtvdMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
@@ -10775,25 +10775,25 @@ CONTAINS
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL do_femtvdMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doLimitTVDMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
           
         CASE DEFAULT
           CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarTVD')
           CALL sys_halt()
         END SELECT
         
       CASE DEFAULT
         CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarTVD')
         CALL sys_halt()
       END SELECT
       
     CASE DEFAULT
       CALL output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResidualScalar_TVD')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarTVD')
       CALL sys_halt()
     END SELECT
     
@@ -10809,7 +10809,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -10954,7 +10954,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_1D
+    END SUBROUTINE doLimitTVDMat7_1D
 
 
     !**************************************************************
@@ -10962,7 +10962,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -11201,7 +11201,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_2D
+    END SUBROUTINE doLimitTVDMat7_2D
 
 
     !**************************************************************
@@ -11209,7 +11209,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE do_femtvdMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -11539,7 +11539,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat7_3D
+    END SUBROUTINE doLimitTVDMat7_3D
 
 
     !**************************************************************
@@ -11547,7 +11547,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -11693,7 +11693,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_1D
+    END SUBROUTINE doLimitTVDMat9_1D
 
     
     !**************************************************************
@@ -11701,7 +11701,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -11940,7 +11940,7 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_2D
+    END SUBROUTINE doLimitTVDMat9_2D
 
 
     !**************************************************************
@@ -11948,7 +11948,7 @@ CONTAINS
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE do_femtvdMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doLimitTVDMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -12279,8 +12279,8 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
         END DO
       END DO
-    END SUBROUTINE do_femtvdMat9_3D
-  END SUBROUTINE gfsys_buildResidualScalar_TVD
+    END SUBROUTINE doLimitTVDMat9_3D
+  END SUBROUTINE gfsys_buildResScalarTVD
 
   !*****************************************************************************
 
