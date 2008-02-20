@@ -187,6 +187,12 @@
 !# 52.) lsyssc_releaseMatrixContent
 !#      -> Releases the content of the matrix, the structure will stay unchanged.
 !#
+!# 53.) lsyssc_spreadVector
+!#      -> Spreads a scalar vector into another scalar vector
+!#
+!# 54.) lsyssc_spreadMatrix
+!#      -> Spreads a scalar matrix into another scalar matrix
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -17559,5 +17565,111 @@ CONTAINS
 
   END FUNCTION
 
+  !****************************************************************************
 
+!<subroutine>
+
+  SUBROUTINE lsyssc_spreadVector(rvector1, rvector2)
+
+!<description>
+    ! This subroutine spreads a scalar vector which is not stored in interleave
+    ! format into another vector which is stored in interleave format.
+!</description>
+
+!<input>
+    ! Scalar source vector
+    TYPE(t_vectorScalar), INTENT(IN)    :: rvector1
+!</input>
+
+!<inputoutput>
+    ! Scalar destination vector in interleave format
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata1,p_Ddata2
+    REAL(SP), DIMENSION(:), POINTER     :: p_Fdata1,p_Fdata2
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata1,p_Idata2
+    INTEGER(PREC_VECIDX)                :: ieq
+    INTEGER                             :: ivar
+    
+    ! Source vector must not be stored in interleave format
+    IF (rvector1%NVAR .NE. 1) THEN
+      CALL output_line('Source vector must not be stored in interleave format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      CALL sys_halt()
+    END IF
+
+    ! Vectors must have the same size
+    IF (rvector1%NEQ .NE. rvector2%NEQ) THEN
+      CALL output_line('Vectors not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      CALL sys_halt()
+    END IF
+
+    ! Vectors must have the data type
+    IF (rvector1%cdataType .NE. rvector2%cdataType) THEN
+      CALL output_line('Vectors not compatible, different data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      CALL sys_halt()
+    END IF
+
+    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+    
+    IF ((rvector1%isortStrategy .GT. 0) .OR. &
+        (rvector2%isortStrategy .GT. 0)) THEN
+      
+      IF (rvector1%isortStrategy .NE. &
+          rvector2%isortStrategy) THEN
+        CALL output_line('Vectors not compatible, differently sorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+        CALL sys_halt()
+      END IF
+    END IF
+
+    IF (rvector1%h_isortPermutation .NE. &
+        rvector2%h_isortPermutation) THEN
+      CALL output_line('Vectors not compatible, differently sorted!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      CALL sys_halt()
+    END IF
+
+    SELECT CASE (rvector1%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsyssc_getbase_double(rvector1, p_Ddata1)
+      CALL lsyssc_getbase_double(rvector2, p_Ddata2)
+
+      DO ieq = 1, rvector1%NEQ
+        DO ivar = 1, rvector2%NVAR
+          p_Ddata2((ivar-1)*rvector1%NEQ+ivar) = p_Ddata1(ieq)
+        END DO
+      END DO
+      
+    CASE (ST_SINGLE)
+      CALL lsyssc_getbase_single(rvector1, p_Fdata1)
+      CALL lsyssc_getbase_single(rvector2, p_Fdata2)
+
+      DO ieq = 1, rvector1%NEQ
+        DO ivar = 1, rvector2%NVAR
+          p_Fdata2((ivar-1)*rvector1%NEQ+ivar) = p_Fdata1(ieq)
+        END DO
+      END DO
+
+    CASE (ST_INT)
+      CALL lsyssc_getbase_int(rvector1, p_Idata1)
+      CALL lsyssc_getbase_int(rvector2, p_Idata2)
+
+      DO ieq = 1, rvector1%NEQ
+        DO ivar = 1, rvector2%NVAR
+          p_Idata2((ivar-1)*rvector1%NEQ+ivar) = p_Idata1(ieq)
+        END DO
+      END DO
+      
+    CASE DEFAULT
+      CALL output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      CALL sys_halt()
+    END SELECT
+  END SUBROUTINE lsyssc_spreadVector
 END MODULE
