@@ -29,6 +29,7 @@ MODULE poisson1d_method0_simple
   USE genoutput
   USE matrixio
   USE vectorio
+  USE meshregion
     
   USE poisson1d_callback
   
@@ -64,6 +65,9 @@ CONTAINS
     !
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
+    
+    ! An object for saving the boundary mesh region
+    TYPE(t_meshregion) :: rmeshRegion
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
@@ -217,10 +221,27 @@ CONTAINS
     ! dirichlet boundary conditions by hand instead of discretising an analytic
     ! boundary condition function using a boundary structure.
     !
-    ! Set p_rdiscreteBC to NULL -- bcasm_initDirichletBC_1D will allocate it.
     NULLIFY(p_rdiscreteBC)
-    CALL bcasm_initDirichletBC_1D(rdiscretisation, p_rdiscreteBC, 0.0_DP, 0.0_DP)
-                             
+
+    ! In 1D we have 2 possibilities to describe Dirichlet BCs on the interval
+    ! ends. One possibility is to use the bcasm_initDirichletBC_1D routine.
+    ! The following call would prescribe 0 on both interval ends:
+    !
+    ! CALL bcasm_initDirichletBC_1D(rdiscretisation, p_rdiscreteBC, 0.0_DP, 0.0_DP)
+    !
+    ! The second possibility is using mesh regions:
+    !
+    ! Create a mesh region describing the mesh's boundary based on the
+    ! nodal-property-array of the current triangulation.
+    CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation)
+    
+    ! Describe Dirichlet BCs on that mesh region
+    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, rmeshRegion,&
+                                  1, getBoundaryValuesMR_1D, NULL())
+    
+    ! Free the mesh region structure as we won't need it anymore
+    CALL mshreg_done(rmeshRegion)
+    
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.

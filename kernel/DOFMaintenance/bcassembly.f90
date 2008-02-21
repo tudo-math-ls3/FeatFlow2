@@ -3255,4 +3255,799 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE bcasm_newDirichletBConMR (rblockDiscretisation, p_rdiscreteBC, &
+                                       rmeshRegion, iequation, &
+                                       fgetBoundaryValuesMR, p_rcollection)
+  
+!<description>
+  ! Adds a Dirichlet boundary condition entry to the discrete boundary condition
+  ! structure, based on a mesh region.
+!</description>
+
+!<input>
+  ! The block discretisation structure of the underlying PDE.
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rblockDiscretisation
+  
+  ! The mesh region structure that is used for the boundary region.
+  TYPE(t_meshRegion), INTENT(IN)          :: rmeshRegion
+  
+  ! An identifier for the equation, this boundary condition refers to.
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! Y-velocity), etc.
+  INTEGER, INTENT(IN)                     :: iequation
+
+  ! A callback function that calculates values on the boundary.
+  ! Is declared in the interface include file 'intf_discretebc.inc'.
+  INCLUDE 'intf_discretebc.inc'
+
+  ! A collection structure to inform the callback function with
+  ! additional information. Can be NULL() if there is no information to pass.
+  TYPE(t_collection), POINTER             :: p_rcollection
+
+!</input>
+
+!<inputoutput>
+  ! A discretised version of the analytic boundary conditions.
+  ! This is a pointer to a t_discreteBC structures, 
+  ! representing the boundary discretised in a discretisation- dependent way.
+  ! If this pointer points to NULL(), a complete new structure is set up.
+  TYPE(t_discreteBC), POINTER             :: p_rdiscreteBC
+!</inputoutput>
+
+!</subroutine>
+
+  ! More than a hand full of local variables
+  INTEGER :: inumAlloc,i,j,ivt,iel,imt,iat,idx,idofHigh,&
+    inumGlobalDofs,ilenDofBitmap,idof,cinfoNeeded,ndofs
+  INTEGER, DIMENSION(1) :: Icomponents
+  REAL(DP), DIMENSION(1) :: Dvalues
+  INTEGER(I32) :: ielemType, idofMask
+  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdbcList
+  TYPE(t_discreteBCEntry), POINTER :: p_rdbcEntry
+  TYPE(t_discreteBCDirichlet), POINTER :: p_rdirichlet
+  TYPE(t_triangulation), POINTER :: p_rtria
+  TYPE(t_spatialDiscretisation), POINTER :: p_rspatDisc
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IvertexIdx
+  INTEGER(PREC_EDGEIDX), DIMENSION(:), POINTER :: p_IedgeIdx
+  INTEGER(PREC_FACEIDX), DIMENSION(:), POINTER :: p_IfaceIdx
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementIdx
+  INTEGER(PREC_VERTEXIDX) :: iregionNVT, itriaNVT
+  INTEGER(PREC_EDGEIDX) :: iregionNMT, itriaNMT
+  INTEGER(PREC_FACEIDX) :: iregionNAT, itriaNAT
+  INTEGER(PREC_ELEMENTIDX) :: iregionNEL, itriaNEL
+  INTEGER(I32), DIMENSION(:), POINTER :: p_IdofBitmap
+  INTEGER, DIMENSION(:), POINTER :: p_IelemAtVertIdx, p_IelemAtVert,&
+    p_IelemAtEdgeIdx, p_IelemAtEdge, p_IelemDist
+  INTEGER, DIMENSION(:,:), POINTER :: p_IelemAtEdge2D, p_IelemAtFace,&
+    p_IedgesAtElem, p_IfacesAtElem
+  REAL(DP), DIMENSION(1) :: Dcoord1D
+  REAL(DP), DIMENSION(2) :: Dcoord2D
+  REAL(DP), DIMENSION(3) :: Dcoord3D
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertsAtEdge,&
+    p_IvertsAtFace, p_IvertsAtElem
+  INTEGER, DIMENSION(EL_MAXNBAS) :: IdofGlob
+  LOGICAL :: buniform
+  
+  REAL(DP), PARAMETER :: Q12 = 0.5_DP
+  REAL(DP), PARAMETER :: Q13 = 0.333333333333333_DP
+  REAL(DP), PARAMETER :: Q14 = 0.25_DP
+  REAL(DP), PARAMETER :: Q18 = 0.125_DP
+
+    ! Get the spatial discretisation and the triangulation
+    p_rspatDisc => rblockDiscretisation%RspatialDiscretisation(iequation)
+    Icomponents(1) = iequation
+    cinfoNeeded = DISCBC_NEEDFUNC
+
+    ! Is this a uniform discretisation?
+    IF (p_rspatDisc%inumFESpaces .GT. 1) THEN
+  
+      ! Get the element distribution array, if given
+      CALL storage_getbase_int(p_rspatDisc%h_IelementDistr, p_IelemDist)
+      buniform = .FALSE.
+  
+    ELSE
+  
+      ! Get the one and only element type
+      ielemType = p_rspatDisc%RelementDistribution(1)%itestElement
+      buniform = .TRUE.
+  
+    END IF
+    
+    ! Get the triangulation of the spatial discretisation
+    p_rtria => p_rspatDisc%p_rtriangulation
+
+    ! Make sure that the triangulation of the spatial discretisation and the
+    ! mesh region are the same!
+    IF(.NOT. ASSOCIATED(p_rtria, rmeshRegion%p_rtriangulation)) THEN
+
+      PRINT *, 'ERROR: bcasm_newDirichletBConMR'
+      PRINT *, 'Different triangulations for spatial discretisation and mesh region!'
+      CALL sys_halt()
+
+    END IF
+    
+    ! Allocate the discrete BC structure
+    IF(.NOT. ASSOCIATED(p_rdiscreteBC)) THEN
+      
+      ALLOCATE(p_rdiscreteBC)
+      
+    END IF
+
+    ! Get the vertice coordinates and vertice index arrays from the triangulation
+    CALL storage_getbase_double2D(p_rtria%h_DvertexCoords, p_DvertexCoords)
+    CALL storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertsAtElem)
+    CALL storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
+    CALL storage_getbase_int(p_rtria%h_IelementsAtVertex, p_IelemAtVert)
+    IF (p_rtria%ndim .EQ. NDIM2D) THEN
+      CALL storage_getbase_int2D(p_rtria%h_IverticesAtEdge, p_IvertsAtEdge)
+      CALL storage_getbase_int2D(p_rtria%h_IelementsAtEdge, p_IelemAtEdge2D)
+      CALL storage_getbase_int2D(p_rtria%h_IedgesAtElement, p_IedgesAtElem)
+    ELSE IF (p_rtria%ndim .EQ. NDIM3D) THEN
+      CALL storage_getbase_int2D(p_rtria%h_IverticesAtEdge, p_IvertsAtEdge)
+      CALL storage_getbase_int2D(p_rtria%h_IedgesAtElement, p_IedgesAtElem)
+      CALL storage_getbase_int2D(p_rtria%h_IfacesAtElement, p_IfacesAtElem)
+      CALL storage_getbase_int2D(p_rtria%h_IverticesAtFace, p_IvertsAtFace)
+      CALL storage_getbase_int(p_rtria%h_IelementsAtEdgeIdx3D, p_IelemAtEdgeIdx)
+      CALL storage_getbase_int(p_rtria%h_IelementsAtEdge3D, p_IelemAtEdge)
+      CALL storage_getbase_int2D(p_rtria%h_IelementsAtFace, p_IelemAtFace)
+    END IF
+    itriaNVT = p_rtria%NVT
+    itriaNMT = p_rtria%NMT
+    itriaNAT = p_rtria%NAT
+    itriaNEL = p_rtria%NEL
+
+    ! Now get all the arrays and counts from the mesh region
+    IF(rmeshRegion%h_IvertexIdx .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int(rmeshRegion%h_IvertexIdx, p_IvertexIdx)
+      iregionNVT = rmeshRegion%NVT
+    ELSE
+      p_IvertexIdx => NULL()
+      iregionNVT = 0
+    END IF
+    IF(rmeshRegion%h_IedgeIdx .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int(rmeshRegion%h_IedgeIdx, p_IedgeIdx)
+      iregionNMT = rmeshRegion%NMT
+    ELSE
+      p_IedgeIdx => NULL()
+      iregionNMT = 0
+    END IF
+    IF(rmeshRegion%h_IfaceIdx .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+      iregionNAT = rmeshRegion%NAT
+    ELSE
+      p_IfaceIdx => NULL()
+      iregionNAT = 0
+    END IF
+    IF(rmeshRegion%h_IelementIdx .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int(rmeshRegion%h_IelementIdx, p_IelementIdx)
+      iregionNEL = rmeshRegion%NEL
+    ELSE
+      p_IelementIdx => NULL()
+      iregionNEL = 0
+    END IF
+
+    ! Allocate some new dbc entries if necessary
+    IF(p_rdiscreteBC%inumEntriesAlloc .EQ. 0) THEN
+      
+      ! The list is currently empty - so allocate it
+      ALLOCATE(p_rdiscreteBC%p_RdiscBCList(DISCBC_LISTBLOCKSIZE))
+      p_rdiscreteBC%inumEntriesAlloc = DISCBC_LISTBLOCKSIZE
+      
+    ELSE IF(p_rdiscreteBC%inumEntriesUsed .GE. p_rdiscreteBC%inumEntriesAlloc) THEN
+      
+      ! We need to reallocate the list as it is full
+      inumAlloc = p_rdiscreteBC%inumEntriesAlloc
+      ALLOCATE(p_RdbcList(inumAlloc+DISCBC_LISTBLOCKSIZE))
+      p_RdbcList(1:inumAlloc) = p_rdiscreteBC%p_RdiscBCList(1:inumAlloc)
+      DEALLOCATE(p_rdiscreteBC%p_RdiscBCList)
+      p_rdiscreteBC%p_RdiscBCList => p_RdbcList
+      p_rdiscreteBC%inumEntriesAlloc = inumAlloc + DISCBC_LISTBLOCKSIZE
+      
+    END IF
+    
+    ! Get the next free discrete BC entry
+    p_rdbcEntry => p_rdiscreteBC%p_RdiscBCList(p_rdiscreteBC%inumEntriesUsed + 1)
+    p_rdiscreteBC%inumEntriesUsed = p_rdiscreteBC%inumEntriesUsed + 1
+    
+    ! Set the bc type to Dirichlet
+    p_rdbcEntry%itype = DISCBC_TPDIRICHLET
+    ! And get a pointer to the Dirichlet BC structure
+    p_rdirichlet => p_rdbcEntry%rdirichletBCs
+    
+    ! set the component number and the number of DOFs
+    p_rdirichlet%icomponent = iequation
+    
+    ! Get the total number of global DOFs
+    inumGlobalDofs = dof_igetNDofGlob(p_rspatDisc, .TRUE.)
+    
+    ! We have to ensure that one DOF does not get added to the dirichlet BC
+    ! array twice. To ensure this, we will create an array called DOF-Bitmap.
+    ! This is an array of 32-bit integers, but we will interpret it as an
+    ! array of bits.
+    ! Assume we are currently processing the DOF with number 'idof', then we 
+    ! need to calculate 2 values to access the bit of the DOF in the bitmap:
+    ! 1. idofHigh: the index of the 32-bit integer inside the bitmap where 
+    !              our DOF is in
+    ! 2. idofMask: a 32-bit-mask for the DOF inside that 32-bit integer
+    !
+    ! These two values are calculated as follows:
+    ! idofHigh = ISHFT(idof-1,-5) + 1
+    ! idofMask = INT(ISHFT(1,IAND(idof-1,31)),I32)
+    !
+    ! To mark a DOF as 'processed' we need to apply an OR-operator:
+    ! p_IdofBitmap(idofHigh) = IOR(p_IdofBitmap(idofHigh),idofMask)
+    !
+    ! To check whether a DOF has already been processed we need to apply an
+    ! AND-operator:
+    ! IF (IAND(p_IdofBitmap(idofHigh),idofMask) .NE. 0) THEN
+    !   ! DOF has already been processed
+    ! END IF
+    !
+    ! Remark:
+    ! The DOF bitmap works for both 32- and 64-bit systems. Remember that on
+    ! a 64-Bit system 'idofHigh' is 64-Bit where 'idofMask' is 32-Bit.
+    !
+    
+    ! The length of the dof bitmap is = inumGlobalDofs/32 + 1
+    ilenDofBitmap = (inumGlobalDofs / 32) + 1
+    
+    ! Allocate a DOF bitmap
+    ALLOCATE(p_IdofBitmap(1:ilenDofBitmap))
+    
+    ! Format the DOF bitmap to 0
+    DO i=1, ilenDofBitmap
+      p_IdofBitmap(i) = 0
+    END DO
+    
+    ! Calculate an initial guess of the number of DOFs that will be affected
+    ! with this dirichlet condition.
+    ndofs = 0
+    IF (p_rspatDisc%inumFESpaces .EQ. 1) THEN
+    
+      ! The discretisation is uniform. In this nice case, our initial
+      ! guess will be exact.
+      SELECT CASE(elem_getPrimaryElement(&
+        p_rspatDisc%RelementDistribution(1)%itestElement))
+      
+      ! P0/Q0 elements (and 2D QP1 element)
+      CASE (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D)
+        ndofs = iregionNEL
+      
+      ! P1/Q1 elements (and 1D S31 element)
+      CASE (EL_P1_1D,EL_S31_1D,EL_P1,EL_Q1,EL_P1_3D,EL_Q1_3D)
+        ndofs = iregionNVT
+      
+      ! 1D P2 element
+      CASE (EL_P2_1D)
+        ndofs = iregionNVT + iregionNEL
+      
+      ! 2D P2 element
+      CASE (EL_P2)
+        ndofs = iregionNVT + iregionNMT
+            
+      ! 2D P1~/Q1~ element
+      CASE (EL_P1T,EL_Q1T)
+        ndofs = iregionNMT
+      
+      ! 2D Q2 element
+      CASE (EL_Q2)
+        ndofs = iregionNVT + iregionNMT + iregionNEL
+      
+      ! 3D Q1~ element
+      CASE (EL_Q1T_3D)
+        ndofs = iregionNAT
+      
+      END SELECT
+
+    END IF
+    
+    ! If the discretisation is not uniform or we did not calculate an initial guess
+    ! for whatever reason, we will set it to the maximum of the array lengths.
+    IF (ndofs .EQ. 0) ndofs = MAX(iregionNVT,iregionNMT,iregionNAT,iregionNEL)
+    
+    ! First of all, go through all vertices in the mesh region (if any at all)
+    DO i=1, iregionNVT
+    
+      ! Get the index of the vertice
+      ivt = p_IvertexIdx(i)
+      
+      ! And go through all elements which are adjacent to this vertice
+      DO idx=p_IelemAtVertIdx(ivt), p_IelemAtVertIdx(ivt+1)-1
+      
+        ! Get the index of the element
+        iel = p_IelemAtVert(idx)
+        
+        ! Get all global dofs on this element
+        CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+        
+        ! Now get the element type for this element (if the discretisation
+        ! is not uniform)
+        IF (.NOT. buniform) ielemType = &
+          p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+        
+        ! Now we need to find which global DOF the currently processed
+        ! vertices belongs to.
+        idof = 0
+        SELECT CASE(elem_getPrimaryElement(ielemType))
+        ! 1D P1/P2/S31 element
+        CASE (EL_P1_1D,EL_P2_1D,EL_S31_1D)
+          DO j=1,2
+            IF (p_IvertsAtElem(j,iel) .EQ. ivt) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+          
+        ! 2D P1/P2/P3 element
+        CASE (EL_P1,EL_P2,EL_P3)
+          DO j=1,3
+            IF (p_IvertsAtElem(j,iel) .EQ. ivt) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+
+        ! 2D Q1/Q2/Q3 element
+        CASE (EL_Q1,EL_Q2,EL_Q3)
+          DO j=1,4 
+            IF (p_IvertsAtElem(j,iel) .EQ. ivt) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+
+        ! 3D P1 element
+        CASE (EL_P1_3D)
+          DO j=1,4
+            IF (p_IvertsAtElem(j,iel) .EQ. ivt) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+
+        ! 3D Q1 element
+        CASE (EL_Q1_3D)
+          DO j=1,8
+            IF (p_IvertsAtElem(j,iel) .EQ. ivt) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+
+        END SELECT
+        
+        ! If we come out here and idof is 0, then either the element
+        ! does not have DOFs in the vertices or something unforseen has
+        ! happened...
+        IF (idof .EQ. 0) CYCLE
+        
+        ! Let's check if we have already processed this dof.
+        idofHigh = ISHFT(idof-1,-5) + 1
+        idofMask = INT(ISHFT(1,IAND(idof-1,31)),I32)
+        IF (IAND(p_IdofBitmap(idofHigh),idofMask) .NE. 0) CYCLE
+        
+        ! This is a new DOF for the list - so call the boundary values callback
+        ! routine to calculate the value
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, p_DvertexCoords(:,ivt), p_rcollection, Dvalues)
+        
+        ! Okay, finally add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+        
+        ! And mark the DOF as 'processed' in the bitmap
+        p_IdofBitmap(idofHigh) = IOR(p_IdofBitmap(idofHigh),idofMask)
+        
+        ! Let's go for the next element adjacent to the vertice
+      
+      END DO ! idx
+      
+      ! Go for the next vertice in the mesh region
+    
+    END DO ! ivt
+    
+    IF (p_rtria%ndim .EQ. NDIM2D) THEN
+      
+      ! Go through all edges in the mesh region
+      DO i=1, iregionNMT
+      
+        ! Get the index of the edge
+        imt = p_IedgeIdx(i)
+        
+        ! And go through all elements which are adjacent to this edge
+        DO idx = 1, 2
+        
+          ! Get the index of the element
+          iel = p_IelemAtEdge2D(idx, imt)
+          IF (iel .EQ. 0) CYCLE
+        
+          ! Get all global dofs on this element
+          CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+          
+          ! Now get the element type for this element (if the discretisation
+          ! is not uniform)
+          IF (.NOT. buniform) ielemType = &
+            p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+          
+          ! Now we need to find which global DOF the currently processed
+          ! edge belongs to.
+          idof = 0
+          SELECT CASE(elem_getPrimaryElement(ielemType))
+          ! 2D P1~ element
+          CASE (EL_P1T)
+            DO j=1,3
+              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+                idof = IdofGlob(j)
+                EXIT
+              END IF
+            END DO
+
+          ! 2D P2 element
+          CASE (EL_P2)
+            DO j=1,3
+              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+                ! The first 3 DOFs belong to the vertices
+                idof = IdofGlob(3+j)
+                EXIT
+              END IF
+            END DO
+            
+          ! 2D Q1~ element
+          CASE (EL_Q1T)
+            DO j=1,4
+              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+                idof = IdofGlob(j)
+                EXIT
+              END IF
+            END DO
+
+          ! 2D Q2 element
+          CASE (EL_Q2)
+            DO j=1,4
+              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+                ! The first 4 DOFs belong to the vertices
+                idof = IdofGlob(4+j)
+                EXIT
+              END IF
+            END DO
+          
+          ! 2D P3, Q3 and others are currently not supported
+          
+          END SELECT
+
+          ! If we come out here and idof is 0, then either the element
+          ! does not have DOFs in the edges or something unforseen has
+          ! happened...
+          IF (idof .EQ. 0) CYCLE
+          
+          ! Let's check if we have already processed this dof
+          idofHigh = ISHFT(idof-1,-5) + 1
+          idofMask = INT(ISHFT(1,IAND(idof-1,31)),I32)
+          IF (IAND(p_IdofBitmap(idofHigh),idofMask) .NE. 0) CYCLE
+          
+          ! Calculate the coordinates of the edge midpoint
+          Dcoord2D(1:2) = Q12 * (p_DvertexCoords(1:2, p_IvertsAtEdge(1,imt)) +&
+            p_DvertexCoords(1:2, p_IvertsAtEdge(2,imt)))
+
+          ! This is a new DOF for the list - so call the boundary values callback
+          ! routine to calculate the value
+          CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+              cinfoNeeded, Dcoord2D, p_rcollection, Dvalues)
+          
+          ! Okay, finally add the DOF into the list
+          CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+          
+          ! And mark the DOF as 'processed' in the bitmap
+          p_IdofBitmap(idofHigh) = IOR(p_IdofBitmap(idofHigh),idofMask)
+          
+          ! Let's go for the next element adjacent to the edge
+                
+        END DO ! idx
+      
+        ! Go for the next edge in the mesh region
+      
+      END DO ! imt
+    
+    ! Currently we don't have any 3D elements which have DOFs in the edges,
+    ! so there is no ELSE IF-case for 3D.
+    
+    END IF    
+    
+    ! Go through all faces in the mesh region
+    DO i=1, iregionNAT
+    
+      ! Get the index of the face
+      iat = p_IfaceIdx(i)
+      
+      ! And go through all elements which are adjacent to this face
+      DO idx=1,2
+      
+        ! Get the index of the element
+        iel = p_IelemAtFace(idx,iat)
+        IF (iel .EQ. 0) CYCLE
+      
+        ! Get all global dofs on this element
+        CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+        
+        ! Now get the element type for this element (if the discretisation
+        ! is not uniform)
+        IF (.NOT. buniform) ielemType = &
+          p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+        
+        ! Now we need to find which global DOF the currently processed
+        ! face belongs to.
+        idof = 0
+        SELECT CASE(elem_getPrimaryElement(ielemType))
+        ! 3D Q1~ element
+        CASE (EL_Q1T_3D)
+          DO j=1,6
+            IF ((p_IfacesAtElem(j,iel)-itriaNVT-itriaNMT) .EQ. iat) THEN
+              idof = IdofGlob(j)
+              EXIT
+            END IF
+          END DO
+        
+        ! Currently there are no other 3D elements with DOFs on the faces
+        
+        END SELECT
+
+        ! If we come out here and idof is 0, then either the element
+        ! does not have DOFs in the faces or something unforseen has
+        ! happened...
+        IF (idof .EQ. 0) CYCLE
+        
+        ! Let's check if we have already processed this dof
+        idofHigh = ISHFT(idof-1,-5) + 1
+        idofMask = INT(ISHFT(1,IAND(idof-1,31)),I32)
+        IF (IAND(p_IdofBitmap(idofHigh),idofMask) .NE. 0) CYCLE
+        
+        ! Calculate the coordinates of the face midpoint
+        Dcoord3D(1:3) = Q14 * (p_DvertexCoords(1:3, p_IvertsAtFace(1,iat)) +&
+          p_DvertexCoords(1:3, p_IvertsAtFace(2,iat)) +&
+          p_DvertexCoords(1:3, p_IvertsAtFace(3,iat)) +&
+          p_DvertexCoords(1:3, p_IvertsAtFace(4,iat)))
+
+        ! This is a new DOF for the list - so call the boundary values callback
+        ! routine to calculate the value
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord3D, p_rcollection, Dvalues)
+        
+        ! Okay, finally add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+        
+        ! And mark the DOF as 'processed' in the bitmap
+        p_IdofBitmap(idofHigh) = IOR(p_IdofBitmap(idofHigh),idofMask)
+        
+        ! Let's go for the next element adjacent to the face
+
+      END DO ! idx
+      
+      ! Go for the next face in the mesh region
+    
+    END DO
+    
+    ! Go through all elements in the mesh region
+    DO i=1, iregionNEL
+    
+      ! Get the element index
+      iel = p_IelementIdx(i)
+
+      ! Get all global dofs on this element
+      CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+      
+      ! Now get the element type for this element (if the discretisation
+      ! is not uniform)
+      IF (.NOT. buniform) ielemType = &
+        p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+      
+      ! Now we need to find which global DOF the currently processed
+      ! element belongs to.
+      idof = 0
+      SELECT CASE(elem_getPrimaryElement(ielemType))
+      ! 1D P0 element
+      CASE (EL_P0_1D)
+        ! The line-midpoint DOF has number 1
+        idof = IdofGlob(1)
+        
+        ! Calculate line-midpoint
+        Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord1D, p_rcollection, Dvalues)
+
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 1D P2 element
+      CASE (EL_P2_1D)
+        ! The line-midpoint DOF has number 3
+        idof = IdofGlob(3)
+        
+        ! Calculate line-midpoint
+        Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord1D, p_rcollection, Dvalues)
+
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+      
+      ! 2D P0 element
+      CASE (EL_P0)
+        ! The triangle-midpoint DOF has number 1
+        idof = IdofGlob(1)
+        
+        ! Calculate triangle-midpoint
+        Dcoord2D(1:2) = Q13 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord2D, p_rcollection, Dvalues)
+      
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 2D P2 element
+      CASE (EL_P2)
+        ! The triangle-midpoint DOF has number 7
+        idof = IdofGlob(7)
+        
+        ! Calculate triangle-midpoint
+        Dcoord2D(1:2) = Q13 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord2D, p_rcollection, Dvalues)
+      
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 2D Q0/QP1 element
+      CASE (EL_Q0,EL_QP1)
+        ! The quad-midpoint DOF has number 1
+        idof = IdofGlob(1)
+        
+        ! Calculate quad-midpoint
+        Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord2D, p_rcollection, Dvalues)
+
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 2D Q2 element
+      CASE (EL_Q2)
+        ! The quad-midpoint DOF has number 9
+        idof = IdofGlob(9)
+        
+        ! Calculate quad-midpoint
+        Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord2D, p_rcollection, Dvalues)
+
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 3D Q0 element
+      CASE (EL_Q0_3D)
+        ! The hexa-midpoint DOF has number 1
+        idof = IdofGlob(1)
+        
+        ! Calculate hexa-midpoint
+        Dcoord3D(1:2) = Q18 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(5,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(6,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(7,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(8,iel)))
+        
+        ! Call the boundary condition callback routine
+        CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Dcoord3D, p_rcollection, Dvalues)
+
+        ! Add the DOF into the list
+        CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+      
+      END SELECT
+
+      ! Let's go for the next element in the mesh region
+      
+    END DO
+   
+    ! Deallocate the DOF map
+    DEALLOCATE(p_IdofBitmap)
+    
+    ! That's it - unbelievable!
+    
+    CONTAINS
+    
+      ! This auxiliary routine adds a dof and a dirichlet value into a
+      ! discrete dirichlet boundary condition structure.
+      SUBROUTINE addDofToDirichletEntry(rdirichlet, idof, dvalue, ndofs)
+      
+      ! The dirichlet boundary condition structure
+      TYPE(t_discreteBCDirichlet), INTENT(INOUT) :: rdirichlet
+      
+      ! The number of the dof that is to be added
+      INTEGER, INTENT(IN) :: idof
+      
+      ! The dirichlet value of the dof
+      REAL(DP), INTENT(IN) :: dvalue
+      
+      ! If the dirichlet entry structure is already initialized, then this
+      ! corresponds to the total number of currently allocated dofs in the
+      ! dirichlet entry structure.
+      ! If the structure is uninitialized, then ndofs specifies the initial
+      ! size which is to be used for the arrays.
+      INTEGER, INTENT(INOUT) :: ndofs
+      
+      ! Some local variables
+      INTEGER, DIMENSION(:), POINTER :: p_Idofs
+      REAL(DP), DIMENSION(:), POINTER :: p_Dvalues
+      
+      ! Number of entries added if the list is full
+      INTEGER, PARAMETER :: NINC = 64
+      
+        ! If the list is empty, then allocate it
+        IF (rdirichlet%nDOF .EQ. 0) THEN
+        
+          ! Make sure that we do not allocate empty arrays
+          IF (ndofs .LE. 0) ndofs = NINC
+        
+          ! allocate the arrays
+          CALL storage_new('addDofToDirichletEntry', 'p_IdirichletDOFs',&
+            ndofs, ST_INT, rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO)
+          CALL storage_new('addDofToDirichletEntry', 'p_DdirichletValues',&
+            ndofs, ST_DOUBLE, rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO)
+        
+        ELSE IF (rdirichlet%nDOF .GE. ndofs) THEN
+          
+          ! The list is full, so resize it
+          CALL storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
+            rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO, .TRUE.)
+          CALL storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
+            rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO, .TRUE.)
+          
+          ! And remember that we have increased the list size
+          ndofs = ndofs + NINC
+        
+        END IF
+
+        ! Get the lists
+        CALL storage_getbase_int(rdirichlet%h_IdirichletDOFs, p_Idofs)
+        CALL storage_getbase_double(rdirichlet%h_DdirichletValues, p_Dvalues)
+        
+        ! Add the new dof to the lists
+        rdirichlet%nDOF = rdirichlet%nDOF + 1
+        p_Idofs(rdirichlet%nDOF) = idof
+        p_Dvalues(rdirichlet%nDOF) = dvalue
+            
+      END SUBROUTINE ! addDofToDirichletEntry(...)
+
+  END SUBROUTINE
+  
 END MODULE

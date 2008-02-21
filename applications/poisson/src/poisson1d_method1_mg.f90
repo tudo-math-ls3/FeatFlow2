@@ -32,6 +32,7 @@ MODULE poisson1d_method1_mg
   USE genoutput
   USE matrixio
   USE vectorio
+  USE meshregion
     
   USE poisson1d_callback
   
@@ -94,6 +95,9 @@ CONTAINS
     ! An array of problem levels for the multigrid solver
     TYPE(t_level), DIMENSION(:), ALLOCATABLE :: Rlevels
     
+    ! An object for saving the boundary mesh region
+    TYPE(t_meshregion) :: rmeshRegion
+    
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
     TYPE(t_linearForm) :: rlinform
@@ -131,7 +135,7 @@ CONTAINS
     TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
-    ! Some temporary variables
+    ! A temporary variable for the Level-loops
     INTEGER :: i
     
     ! The number of sub-intervals for the discretisation
@@ -273,13 +277,21 @@ CONTAINS
     ! dirichlet boundary conditions by hand instead of discretising an analytic
     ! boundary condition function using a boundary structure.
     !
-    ! Set p_rdiscreteBC to NULL -- bcasm_initDirichletBC_1D will allocate it.
     DO i = 1, nlevels
     
+      ! Set the pointer to NULL - bcasm_newDirichletBConMR will allocate it
       NULLIFY(Rlevels(i)%p_rdiscreteBC)
 
-      CALL bcasm_initDirichletBC_1D(&
-          Rlevels(i)%rdiscretisation, Rlevels(i)%p_rdiscreteBC,0.0_DP, 0.0_DP)
+      ! Create a mesh region describing the mesh's boundary based on the
+      ! nodal-property-array of the current triangulation.
+      CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation)
+      
+      ! Describe Dirichlet BCs on that mesh region
+      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, &
+        Rlevels(i)%p_rdiscreteBC,rmeshRegion,1,getBoundaryValuesMR_1D,NULL())
+      
+      ! Free the mesh region structure as we won't need it anymore
+      CALL mshreg_done(rmeshRegion)
 
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.

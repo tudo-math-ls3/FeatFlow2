@@ -259,7 +259,7 @@ MODULE meshregion
     IF (iNMT .GT. 0) THEN
     
       ! Allocate the edge index array
-      CALL storage_new('mshreg_createFromNodalProp', 'p_IedgeIdx', iNVT, &
+      CALL storage_new('mshreg_createFromNodalProp', 'p_IedgeIdx', iNMT, &
                        ST_INT, rmeshRegion%h_IedgeIdx, ST_NEWBLOCK_NOINIT)
       
       ! get the edge index array
@@ -300,7 +300,7 @@ MODULE meshregion
     IF (iNAT .GT. 0) THEN
     
       ! Allocate the face index array
-      CALL storage_new('mshreg_createFromNodalProp', 'p_IfaceIdx', iNVT, &
+      CALL storage_new('mshreg_createFromNodalProp', 'p_IfaceIdx', iNAT, &
                        ST_INT, rmeshRegion%h_IfaceIdx, ST_NEWBLOCK_NOINIT)
       
       ! get the face index array

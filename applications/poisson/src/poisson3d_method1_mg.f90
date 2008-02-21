@@ -30,6 +30,7 @@ MODULE poisson3d_method1_mg
   USE pprocerror
   USE genoutput
   USE matrixio
+  USE meshregion
     
   USE poisson3d_callback
   
@@ -92,6 +93,9 @@ CONTAINS
     ! An array of problem levels for the multigrid solver
     TYPE(t_level), DIMENSION(:), ALLOCATABLE :: Rlevels
     
+    ! An object for saving the boundary mesh region
+    TYPE(t_meshregion) :: rmeshRegion
+    
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
     TYPE(t_linearForm) :: rlinform
@@ -106,9 +110,6 @@ CONTAINS
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(:),ALLOCATABLE :: Rmatrices
-
-    ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBCDirichlet), POINTER :: p_rdirichlet
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
@@ -141,9 +142,8 @@ CONTAINS
     TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     
-    ! Some temporary variables for the manual boundary condition assembly
-    INTEGER :: inumDofsAtBnd, i, j
-    INTEGER, DIMENSION(:), POINTER :: p_IboundaryDOFs, p_IdirichletDOFs
+    ! A temporary variable for the Level-loops
+    INTEGER :: i
 
     ! Ok, let's start. 
     !
@@ -268,80 +268,41 @@ CONTAINS
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
         rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_3D)
     
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Now we have the raw problem. What is missing is the definition of the boudary
+    ! conditions.
+    ! For implementing boundary conditions, we use a 'filter technique with
+    ! discretised boundary conditions'. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    
+    ! In contrast to the 2D examples, we currently do not have an analytic
+    ! description of the domain's boundary, therefore we need a discrete
+    ! (mesh-dependent) description of the mesh's boundary. This can be done
+    ! using mesh-regions.
     DO i = NLMIN, NLMAX
-      ! As there currently is no boundary structure for 3D, we have to set
-      ! up the discrete boundary conditions by hand for now...
+    
+      ! Set the pointer to NULL - bcasm_newDirichletBConMR will allocate it
       NULLIFY(Rlevels(i)%p_rdiscreteBC)
-      ALLOCATE(Rlevels(i)%p_rdiscreteBC)
-      
-      ! Currently we have only 1 Dirichlet boundary condition for the whole
-      ! boundary.
-      ALLOCATE(Rlevels(i)%p_rdiscreteBC%p_RdiscBCList(1))
-      Rlevels(i)%p_rdiscreteBC%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
-      p_rdirichlet => Rlevels(i)%p_rdiscreteBC%p_RdiscBCList(1)%rdirichletBCs
-      
-      ! First we need to find out how many DOFs are on the boundary.
-      ! This information depends on the element type - currently we only
-      ! have the choice between Q1 and Q1~.
-      SELECT CASE(ielemType)
-      CASE (EL_Q1_3D)
-        ! Every DOF that belongs to a boundary vertice belongs to the
-        ! discrete boundary conditions.
-        inumDofsAtBnd = Rlevels(i)%rtriangulation%NVBD
-        
-        ! Get the vertices-at-boundary array
-        CALL storage_getbase_int(Rlevels(i)%rtriangulation%h_IverticesAtBoundary, &
-                                 p_IboundaryDOFs)
 
-      CASE (EL_E030_3D,EL_E031_3D)
-        ! Every DOF that belongs to a boundary face belongs to the
-        ! discrete boundary conditions.
-        inumDofsAtBnd = Rlevels(i)%rtriangulation%NABD
-        
-        ! Get the faces-at-boundary array
-        CALL storage_getbase_int(Rlevels(i)%rtriangulation%h_IfacesAtBoundary, &
-                                 p_IboundaryDOFs)
-
-      CASE DEFAULT
-        ! This is not what we wanted...
-        PRINT *, 'ERROR: poisson3d_method1_mg: Invalid element type!'
-        CALL sys_halt()
-        
-      END SELECT
+      ! Create a mesh region describing the mesh's boundary based on the
+      ! nodal-property-array of the current triangulation.
+      CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation)
       
-      ! For now, we only have 1 boundary component...
-      p_rdirichlet%icomponent = 1
-      p_rdirichlet%nDOF = inumDofsAtBnd
+      ! Describe Dirichlet BCs on that mesh region
+      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, &
+        Rlevels(i)%p_rdiscreteBC,rmeshRegion,1,getBoundaryValuesMR_3D,NULL())
       
-      ! Allocate the arrays for the boundary conditions
-      CALL storage_new1D('poisson3d_method1_mg', 'h_DdirichletValues',&
-          inumDofsAtBnd, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
-          ST_NEWBLOCK_ZERO)
-      CALL storage_new1D('poisson3d_method1_mg', 'h_IdirichletDOFs',&
-          inumDofsAtBnd, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
-          ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
-      
-      ! Now go through all DOFs at the boundary
-      DO j = 1, inumDofsAtBnd
-        p_IdirichletDOFs(j) = p_IboundaryDOFs(j)
-      END DO
-
-      ! Remember how many entries we have
-      Rlevels(i)%p_rdiscreteBC%inumEntriesAlloc = 1
-      Rlevels(i)%p_rdiscreteBC%inumEntriesUsed = 1
+      ! Free the mesh region structure as we won't need it anymore
+      CALL mshreg_done(rmeshRegion)
 
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%p_rdiscreteBC
-  
+      
       ! Also implement the boundary conditions into the matrix.
       CALL matfil_discreteBC (Rlevels(i)%rmatrix)
-      
+
     END DO ! level loop
-    ! That's it for the discrete boundary conditions
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Our right-hand-side also needs to know the boundary conditions.
     rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%p_rdiscreteBC

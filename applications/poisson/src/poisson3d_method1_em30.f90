@@ -35,6 +35,7 @@ MODULE poisson3d_method1_em30
   USE pprocerror
   USE genoutput
   USE matrixio
+  USE meshregion
     
   USE poisson3d_callback
   USE spdiscprojection
@@ -73,6 +74,9 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
 
+    ! An object for saving the boundary mesh region
+    TYPE(t_meshregion) :: rmeshRegion
+
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     TYPE(t_blockDiscretisation) :: rdiscretisation
@@ -93,7 +97,6 @@ CONTAINS
 
     ! A variable describing the discrete boundary conditions.    
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteBCDirichlet), POINTER :: p_rdirichlet
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -125,11 +128,6 @@ CONTAINS
     TYPE(t_vectorBlock) :: rprjVector
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     TYPE(t_discreteBC), POINTER ::p_rdiscreteBC_Q1
-
-    ! Some temporary variables for the manual boundary condition assembly
-    INTEGER :: i
-    INTEGER, DIMENSION(:), POINTER :: p_IverticesAtBoundary, &
-                                      p_IfacesAtBoundary, p_IdirichletDOFs
 
     ! Ok, let's start. 
     !
@@ -212,47 +210,29 @@ CONTAINS
     CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
     CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
     
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! As there currently is no boundary structure for 3D, we have to set
-    ! up the discrete boundary conditions by hand for now...
+    ! Now we have the raw problem. What is missing is the definition of the boudary
+    ! conditions.
+    ! For implementing boundary conditions, we use a 'filter technique with
+    ! discretised boundary conditions'. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    
+    ! In contrast to the 2D examples, we currently do not have an analytic
+    ! description of the domain's boundary, therefore we need a discrete
+    ! (mesh-dependent) description of the mesh's boundary. This can be done
+    ! using mesh-regions.
     NULLIFY(p_rdiscreteBC)
-    ALLOCATE(p_rdiscreteBC)
     
-    ! Currently we have only 1 Dirichlet boundary condition for the whole
-    ! boundary.
-    ALLOCATE(p_rdiscreteBC%p_RdiscBCList(1))
-    p_rdiscreteBC%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
-    p_rdirichlet => p_rdiscreteBC%p_RdiscBCList(1)%rdirichletBCs
+    ! Create a mesh region describing the mesh's boundary based on the
+    ! nodal-property-array of the current triangulation.
+    CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation)
     
-    ! For now, we only have 1 boundary component, and the number of boundary 
-    ! DOFs is equal to the number of faces at the boundary.
-    p_rdirichlet%icomponent = 1
-    p_rdirichlet%nDOF = rtriangulation%NABD
+    ! Describe Dirichlet BCs on that mesh region
+    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, rmeshRegion,&
+                                  1, getBoundaryValuesMR_3D, NULL())
     
-    ! Allocate the arrays for the boundary conditions
-    CALL storage_new1D('poisson3d_method1_em30', 'h_DdirichletValues',&
-        p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
-        ST_NEWBLOCK_ZERO)
-    CALL storage_new1D('poisson3d_method1_em30', 'h_IdirichletDOFs',&
-        p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
-        ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
-    
-    ! Get the faces-at-boundary array
-    CALL storage_getbase_int(rtriangulation%h_IfacesAtBoundary, &
-                             p_IfacesAtBoundary)
-    
-    ! Now go through all faces at the boundary
-    DO i = 1, rtriangulation%NABD
-      p_IdirichletDOFs(i) = p_IfacesAtBoundary(i)
-    END DO
-
-    ! Remember how many entries we have
-    p_rdiscreteBC%inumEntriesAlloc = 1
-    p_rdiscreteBC%inumEntriesUsed = 1
-
-    ! That's it for the discrete boundary conditions
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! We will not free the mesh region structure here, as we will need it
+    ! later for calculating the Q1 solution.
 
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
@@ -348,47 +328,14 @@ CONTAINS
 
     ! Step 4: Discretise the boundary condition according to the Q1
     ! discretisation:
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! As there currently is no boundary structure for 3D, we have to set
-    ! up the discrete boundary conditions by hand for now...
     NULLIFY(p_rdiscreteBC_Q1)
-    ALLOCATE(p_rdiscreteBC_Q1)
     
-    ! Currently we have only 1 Dirichlet boundary condition for the whole
-    ! boundary.
-    ALLOCATE(p_rdiscreteBC_Q1%p_RdiscBCList(1))
-    p_rdiscreteBC_Q1%p_RdiscBCList(1)%itype = DISCBC_TPDIRICHLET
-    p_rdirichlet => p_rdiscreteBC_Q1%p_RdiscBCList(1)%rdirichletBCs
+    ! Describe Dirichlet BCs on the mesh region which was created before
+    CALL bcasm_newDirichletBConMR(rprjDiscretisation, p_rdiscreteBC_Q1, rmeshRegion,&
+                                  1, getBoundaryValuesMR_3D, NULL())
     
-    ! For now, we only have 1 boundary component, and the number of boundary 
-    ! DOFs is equal to the number of vertices at the boundary.
-    p_rdirichlet%icomponent = 1
-    p_rdirichlet%nDOF = rtriangulation%NVBD
-    
-    ! Allocate the arrays for the boundary conditions
-    CALL storage_new1D('poisson3d_method7', 'h_DdirichletValues',&
-        p_rdirichlet%nDOF, ST_DOUBLE, p_rdirichlet%h_DdirichletValues,&
-        ST_NEWBLOCK_ZERO)
-    CALL storage_new1D('poisson3d_method7', 'h_IdirichletDOFs',&
-        p_rdirichlet%nDOF, ST_INT, p_rdirichlet%h_IdirichletDOFs,&
-        ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int(p_rdirichlet%h_IdirichletDOFs,p_IdirichletDOFs)
-    
-    ! Get the vertices-at-boundary array
-    CALL storage_getbase_int(rtriangulation%h_IverticesAtBoundary, &
-                             p_IverticesAtBoundary)
-    
-    ! Now go through all vertices at the boundary
-    DO i = 1, rtriangulation%NVBD
-      p_IdirichletDOFs(i) = p_IverticesAtBoundary(i)
-    END DO
-
-    ! Remember how many entries we have
-    p_rdiscreteBC_Q1%inumEntriesAlloc = 1
-    p_rdiscreteBC_Q1%inumEntriesUsed = 1
-
-    ! That's it for the discrete boundary conditions
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Free the mesh region structure as we won't need it anymore
+    CALL mshreg_done(rmeshRegion)
 
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC_Q1
