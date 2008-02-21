@@ -17892,7 +17892,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata1,p_Idata2
 
     ! Source vector must be stored in interleave format
-    IF (rvector1%NVAR .LE. ivar) THEN
+    IF (rvector1%NVAR .LT. ivar) THEN
       CALL output_line('Source vector does not provide variable IVAR!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
       CALL sys_halt()
