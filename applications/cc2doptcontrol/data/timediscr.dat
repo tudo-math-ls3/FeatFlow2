@@ -29,14 +29,14 @@ dtimeMax = 1.0 1.0                           # TIMEMX
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 5                         # NITNS
+niterations = 4                         # NITNS
 
-# Minimum level in time. <=0: Use level (TIMENLMAX+TIMENLMIN) as coarse grid
-TIMENLMIN = -1
+# Minimum level in time.
+TIMENLMIN = 1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 3 # 5
+TIMENLMAX = 4 # 5
 
 # ----------------------------------------------------------------------
 
@@ -79,7 +79,7 @@ cspaceTimeSolverType = 2
 #     (at the cost of assembly time and stability of the linear solver/
 #     preconditioner).
 
-ctypePreconditioner = 2
+ctypePreconditioner = 1
 
 # Minimum number of steps
 
@@ -166,6 +166,22 @@ depsAbs            = 1E-5
 # =2: MG only in space: Time level TIMENLMAX-i has the same number of time 
 #     steps as time level TIMENLMAX, but uses space level NLMAX-i
 ispacelevelcoupledtotimelevel = 1
+
+# If space and time levels are coupled:
+# Maximum level where simultaneous refinement in space and time is
+# allowed. This and all higher levels will use the maximum space refinement.
+# Standard value: 0 = maximum level.
+# Negative values: use level (TIMENLMAX+nmaxSimulRefLevel) as maximum.
+nmaxSimulRefLevel = 0
+
+# If space and time levels are coupled:
+# Factor that specifies the number of refinement levels in time before refining
+# in space.
+# Standard: 1.0 = each refinement in time results in a refinement in space.
+# Other values e.g.:
+#   2.0 = two refinements in time per refinement in space
+#   0.5 = two refinements in space per refinement in time
+dspacetimeRefFactor = 2.0
 
 # Minimum number of time-MG sweeps per nonlinear time-iteration
 nminIterations = 0
