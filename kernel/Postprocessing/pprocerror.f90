@@ -2342,14 +2342,36 @@ CONTAINS
 
     ! local variables
     TYPE(t_vectorBlock) :: rvectorBlock,rvectorBlockRef
+    TYPE(t_blockDiscretisation) :: rDiscr,rDiscrRef
+
+    ! Create block discretisations with one component
+    IF (ASSOCIATED(rvector%p_rspatialDiscretisation)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialDiscretisation, rDiscr)
+    ELSE
+      CALL output_line('Vector does not provide a spatial discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL2ErrorEstimate')
+      CALL sys_halt()
+    END IF
+
+    IF (ASSOCIATED(rvectorRef%p_rspatialDiscretisation)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvectorRef%p_rspatialDiscretisation, rDiscrRef)
+    ELSE
+      CALL output_line('Reference vector does not provide a spatial discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL2ErrorEstimate')
+      CALL sys_halt()
+    END IF
 
     ! Create block vectors with one block
-    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
-    CALL lsysbl_createVecFromScalar(rvectorRef,rvectorBlockRef)
+    CALL lsysbl_createVecFromScalar(rvector, rvectorBlock, rDiscr)
+    CALL lsysbl_createVecFromScalar(rvectorRef, rvectorBlockRef, rDiscrRef)
 
     ! Call block version
-    CALL pperr_blockL2ErrorEstimate(rvectorBlock,rvectorBlockRef,derror,&
-        rdiscretisationRef,relementError)
+    CALL pperr_blockL2ErrorEstimate(rvectorBlock, rvectorBlockRef,&
+        derror, rdiscretisationRef,relementError)
+
+    ! Release auxiliary block discretisations
+    CALL spdiscr_releaseBlockDiscr(rDiscr)
+    CALL spdiscr_releaseBlockDiscr(rDiscrRef)
 
     ! Release auxiliary block vectors
     CALL lsysbl_releaseVector(rvectorBlock)
@@ -2833,14 +2855,36 @@ CONTAINS
 
     ! local variables
     TYPE(t_vectorBlock) :: rvectorBlock,rvectorBlockRef
+    TYPE(t_blockDiscretisation) :: rDiscr,rDiscrRef
+
+    ! Create block discretisations with one component
+    IF (ASSOCIATED(rvector%p_rspatialDiscretisation)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialDiscretisation, rDiscr)
+    ELSE
+      CALL output_line('Vector does not provide a spatial discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL1ErrorEstimate')
+      CALL sys_halt()
+    END IF
+
+    IF (ASSOCIATED(rvectorRef%p_rspatialDiscretisation)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvectorRef%p_rspatialDiscretisation, rDiscrRef)
+    ELSE
+      CALL output_line('Reference vector does not provide a spatial discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL1ErrorEstimate')
+      CALL sys_halt()
+    END IF
 
     ! Create block vectors with one block
-    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
-    CALL lsysbl_createVecFromScalar(rvectorRef,rvectorBlockRef)
+    CALL lsysbl_createVecFromScalar(rvector, rvectorBlock, rDiscr)
+    CALL lsysbl_createVecFromScalar(rvectorRef, rvectorBlockRef, rDiscrRef)
 
     ! Call block version
-    CALL pperr_blockL1ErrorEstimate(rvectorBlock,rvectorBlockRef,derror,&
-        rdiscretisationRef,relementError)
+    CALL pperr_blockL1ErrorEstimate(rvectorBlock, rvectorBlockRef,&
+        derror, rdiscretisationRef, relementError)
+
+    ! Release auxiliary block discretisations
+    CALL spdiscr_releaseBlockDiscr(rDiscr)
+    CALL spdiscr_releaseBlockDiscr(rDiscrRef)
 
     ! Release auxiliary block vectors
     CALL lsysbl_releaseVector(rvectorBlock)
@@ -3315,12 +3359,25 @@ CONTAINS
 
     ! local variables
     TYPE(t_vectorBlock) :: rvectorBlock
+    TYPE(t_blockDiscretisation) :: rDiscr
+
+    ! Create block discretisations with one component
+    IF (ASSOCIATED(rvector%p_rspatialDiscretisation)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialDiscretisation, rDiscr)
+    ELSE
+      CALL output_line('Vector does not provide a spatial discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarStandardDeviation')
+      CALL sys_halt()
+    END IF
 
     ! Create block vectors with one block
-    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
+    CALL lsysbl_createVecFromScalar(rvector, rvectorBlock, rDiscr)
 
     ! Call block version
-    CALL pperr_blockStandardDeviation(rvectorBlock,ddeviation,relementDeviation)
+    CALL pperr_blockStandardDeviation(rvectorBlock, ddeviation, relementDeviation)
+
+    ! Release auxiliary block discretisations
+    CALL spdiscr_releaseBlockDiscr(rDiscr)
 
     ! Release auxiliary block vectors
     CALL lsysbl_releaseVector(rvectorBlock)
