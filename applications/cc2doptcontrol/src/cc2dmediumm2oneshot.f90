@@ -2266,12 +2266,9 @@ CONTAINS
       ! Type of coarse grid solver?
       CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                 'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
-    
-      IF (RspaceTimeDiscr(ilev)%ilevel .LT. rproblem%NLMAX) THEN
-        ispacelev = MAX(rproblem%nlmin,rproblem%nlmax-SIZE(RspatialPrecond)+ilev)
-      ELSE
-        ispacelev = rproblem%nlmax
-      END IF
+
+      ! Get the refinement level in space that belongs to this space-time level.    
+      ispacelev = RspaceTimeDiscr(ilev)%ilevel
       
       IF (ilev .EQ. 1) THEN
         i = ctypeCoarseGridSolver
