@@ -2387,7 +2387,7 @@ CONTAINS
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block matrix
     ALLOCATE(rmatrix%RmatrixBlock(1,1))
-    rmatrix%RmatrixBlock(1,1)             = rscalarMat
+    rmatrix%RmatrixBlock(1,1) = rscalarMat
 
     ! The matrix is a copy of another one. Note this!
     rmatrix%RmatrixBlock(1,1)%imatrixSpec = &
@@ -2859,7 +2859,8 @@ CONTAINS
   DO j=1,UBOUND(rmatrix%RmatrixBlock,2)
     DO k=1,UBOUND(rmatrix%RmatrixBlock,1)
       IF (rmatrix%RmatrixBlock(k,j)%NCOLS .NE. 0) THEN
-        NCOLS = NCOLS + rmatrix%RmatrixBlock(k,j)%NCOLS
+        NCOLS = NCOLS + rmatrix%RmatrixBlock(k,j)%NCOLS *&
+                        rmatrix%RmatrixBlock(k,j)%NVAR
         EXIT
       END IF
     END DO
@@ -2870,7 +2871,8 @@ CONTAINS
   DO j=1,UBOUND(rmatrix%RmatrixBlock,1)
     DO k=1,UBOUND(rmatrix%RmatrixBlock,2)
       IF (rmatrix%RmatrixBlock(j,k)%NEQ .NE. 0) THEN
-        NEQ = NEQ + rmatrix%RmatrixBlock(j,k)%NEQ
+        NEQ = NEQ + rmatrix%RmatrixBlock(j,k)%NEQ *&
+                    rmatrix%RmatrixBlock(j,k)%NVAR
         EXIT
       END IF
     END DO
