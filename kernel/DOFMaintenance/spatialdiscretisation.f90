@@ -42,35 +42,39 @@
 !# 8.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
 !#
-!# 9.) spdiscr_releaseBlockDiscr
-!#     -> Releases a block discretisation structure from memory
+!# 9.) spdiscr_createBlockDiscrInd
+!#     -> Creates a block discretisation with one component from an
+!#        existing scalar discretisation.
 !#
-!# 10.) spdiscr_checkCubature
+!# 10.) spdiscr_releaseBlockDiscr
+!#      -> Releases a block discretisation structure from memory
+!#
+!# 11.) spdiscr_checkCubature
 !#      -> Checks if a cubature formula is compatible to an element
 !#         distribution.
 !#
-!# 11.) spdiscr_duplicateDiscrSc
+!# 12.) spdiscr_duplicateDiscrSc
 !#      -> Copies a spatial discretisation structure to another
 !# 
-!# 12.) spdiscr_duplicateBlockDiscr
+!# 13.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
 !#
-!# 13.) spdiscr_getLumpCubature
+!# 14.) spdiscr_getLumpCubature
 !#      -> Try to get a cubature formula for an element type that leads to
 !#         diagonal lumping when setting up a mass matrix with that element
 !# 
-!# 14.) spdiscr_getStdCubature
+!# 15.) spdiscr_getStdCubature
 !#      -> Try to get the typical cubature formula for an element
 !#
-!# 15.) spdiscr_infoBlockDiscr
+!# 16.) spdiscr_infoBlockDiscr
 !#      -> Outputs information about the block discretisation
 !#         (mostly for debugging)
 !#
-!# 16.) spdiscr_infoDiscr
+!# 17.) spdiscr_infoDiscr
 !#      -> Outputs information about the spatial discretisation
 !#         (mostly for debugging)
 !#
-!# 17.) spdiscr_infoElementDistr
+!# 18.) spdiscr_infoElementDistr
 !#      -> Outputs information about the element distribution
 !#         (mostly for debugging)
 !# </purpose>
@@ -709,6 +713,54 @@ CONTAINS
   ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
 
   ! That's it.  
+  
+  END SUBROUTINE  
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_createBlockDiscrInd (rspatialDiscr,rblockDiscr,rboundaryConditions)
+  
+!<description>
+  ! This routine creates a block discretisation structure with one block from
+  ! a scalar discretisation structure. The scalar discretisation structure
+  ! is embedded as a 'shared copy' into the first component of the
+  ! block discretisation.
+  ! (So, releasing the block discretisation will not destroy the original
+  ! spatial discretisation.)
+!</description>
+
+!<input>
+  
+  ! Spatial discretisation structure that is embedded into the
+  ! block discretisation.
+  TYPE(t_spatialDiscretisation), INTENT(IN) :: rspatialDiscr
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+  
+!</input>
+  
+!<output>
+  
+  ! The block discretisation structure to be initialised.
+  TYPE(t_blockDiscretisation), INTENT(OUT) :: rblockDiscr
+  
+!</output>
+  
+!</subroutine>
+
+    ! Initialise a new block discretisation with one component.
+    CALL spdiscr_initBlockDiscr2D (rblockDiscr,1,&
+        rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary, &
+        rboundaryConditions)
+    
+    ! Put a copy of the spatial discretisation to first component
+    ! of the the block discretisation. Share the data.
+    CALL spdiscr_duplicateDiscrSc (rspatialDiscr,&
+        rblockDiscr%RspatialDiscretisation(1),.TRUE.)
   
   END SUBROUTINE  
 
