@@ -135,8 +135,11 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: RspaceTimeDiscr
     TYPE(t_spacetimeVector) :: rx,rd,rb
     INTEGER :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
+    INTEGER :: nmaxSimulRefLevel,icurrentspace,icurrenttime
+    REAL(DP) :: dspacetimeRefFactor,dcurrentfactor
     INTEGER :: ctypePreconditioner
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX
+    INTEGER, DIMENSION(:,:), ALLOCATABLE :: Ispacetimelevel
 
     ! Get the minimum and maximum time level from the parameter list    
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
@@ -147,10 +150,10 @@ CONTAINS
     ! Values <= 0 result in a relativ minimum level.
     IF (TIMENLMIN .LE. 0) TIMENLMIN = TIMENLMAX+TIMENLMIN
 
-    ! Allocate memory fo rthe space-time discretisation structures
+    ! Allocate memory for the space-time discretisation structures
     ! on all levels. Initialis the maximum level such that it represents
     ! the finest time level as well as the finest space level.
-    ALLOCATE(RspaceTimeDiscr(TIMENLMIN:TIMENLMAX))
+    ALLOCATE(RspaceTimeDiscr(1:TIMENLMAX))
     
     CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
         rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX))
@@ -200,6 +203,18 @@ CONTAINS
       CALL parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
           'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
 
+      ! Parameters of the refinement?
+      CALL parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
+          'nmaxSimulRefLevel',nmaxSimulRefLevel,0)
+      
+      IF (nmaxSimulRefLevel .LE. 0) THEN
+        nmaxSimulRefLevel = TIMENLMAX+nmaxSimulRefLevel
+      END IF
+      nmaxSimulRefLevel = MIN(TIMENLMAX,MAX(TIMENLMIN,nmaxSimulRefLevel))
+          
+      CALL parlst_getvalue_double (rproblem%rparamList,'TIME-MULTIGRID',&
+          'dspacetimeRefFactor',dspacetimeRefFactor,1.0_DP)
+
       ! Initialise the supersystem on all levels below the topmost one
       SELECT CASE (ispacelevelcoupledtotimelevel)
       CASE (0)
@@ -210,12 +225,68 @@ CONTAINS
         END DO
         
       CASE (1) 
-        ! Space level NLMAX-i = Time level TIMENLMAX-i
-        DO i=TIMENLMIN,TIMENLMAX-1
-          CALL sptidis_initDiscretisation (rproblem,i,&
-              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-              RspaceTimeDiscr(i))
+        ! Space level NLMAX-i = Time level TIMENLMAX-i.
+        !
+        ! But this is modified by nmaxSimulRefLevel and dspacetimeRefFactor!
+        ! From level nmaxSimulRefLevel on, we have to use the maximum
+        ! space level. Below of that, on every space refinement we have
+        ! to do dspacetimeRefFactor time refinements (rounded).
+        !
+        ! To get a formula for that, one might get crazy. So we calculate
+        ! the levels in advance. Allocate an array Ispacetimelevel
+        ! and fill it: Ispacetimelevel(1,:) all the space levels,
+        ! Ispacetimelevel(2,:) all the corresponding time levels.
+        ALLOCATE(Ispacetimelevel(2,TIMENLMAX))
+        
+        icurrentspace = rproblem%NLMAX
+        icurrenttime = TIMENLMAX
+        dcurrentfactor = 0.0_DP
+        DO i=TIMENLMAX, TIMENLMIN,-1
+          Ispacetimelevel(1,i) = icurrentspace
+          Ispacetimelevel(2,i) = icurrenttime
+          
+          ! Reduce space and/or time level.
+          IF (dspacetimeRefFactor .GE. 1.0_DP) THEN
+            ! Time coarsened as usual, space probably delayed
+            icurrenttime = icurrenttime - 1
+            IF (i .LE. nmaxSimulRefLevel) THEN
+              ! Space coarsening allowed.
+              dcurrentfactor = dcurrentfactor + 1.0_DP/dspacetimeRefFactor
+              IF (dcurrentfactor .GE. 1.0_DP) THEN
+                ! Coarsening in space
+                IF (icurrentspace .GT. rproblem%NLMIN) &
+                    icurrentspace = icurrentspace - 1
+                dcurrentfactor = MOD(dcurrentfactor,1.0_DP)
+              END IF
+              ! Otherwise no coarsening in space.
+            END IF
+          ELSE
+            ! Space coarsened as usual, time probably delayed
+            IF (icurrentspace .GT. rproblem%NLMIN) &
+                icurrentspace = icurrentspace - 1
+            IF (i .LE. nmaxSimulRefLevel) THEN
+              ! Time coarsening allowed.
+              dcurrentfactor = dcurrentfactor + dspacetimeRefFactor
+              IF (dcurrentfactor .GE. 1.0_DP) THEN
+                ! Coarsening in space
+                IF (icurrenttime .GT. TIMENLMIN) icurrenttime = icurrenttime - 1
+                dcurrentfactor = MOD(dcurrentfactor,1.0_DP)
+              END IF
+              ! Otherwise no coarsening in time.
+            END IF
+          END IF
         END DO
+        
+        ! Now initialise the level hierarchy
+        DO i=TIMENLMIN,TIMENLMAX-1
+          !CALL sptidis_initDiscretisation (rproblem,i,&
+          !    MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+          !    RspaceTimeDiscr(i))
+          CALL sptidis_initDiscretisation (rproblem,Ispacetimelevel(2,i),&
+              Ispacetimelevel(1,i),RspaceTimeDiscr(i))
+        END DO
+        
+        DEALLOCATE (Ispacetimelevel)
         
       CASE (2)
         ! Space level NLMAX-i = Time level TIMENLMAX-i,
