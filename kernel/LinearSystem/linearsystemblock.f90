@@ -4261,14 +4261,15 @@ CONTAINS
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
-      PRINT *, "lsysbl_resizeVecBlockDirect: A copied vector cannot be resized!"
+      CALL output_line('A copied vector cannot be resized!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
       CALL sys_halt()
     END IF
     
     ! Check, if vector has been initialized before
     IF (rx%NEQ == 0 .OR. rx%h_Ddata == ST_NOHANDLE) THEN
-      PRINT *, "lsysbl_resizeVecBlockDirect: A vector can only be resized &
-          & uf it has been created correctly!"
+      CALL output_line(' A vector can only be resized if it has been created correctly!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
       CALL sys_halt()
     END IF
 
@@ -4320,7 +4321,14 @@ CONTAINS
     ! Restore the structure of the scalar subvectors
     n=1
     DO i=1,rx%nblocks
-      rx%RvectorBlock(i)%NEQ = Isize(i)
+
+      ! Check that Isize(i) is a multiple of NVAR
+      IF (MOD(Isize(i), rx%RvectorBlock(i)%NVAR) .NE. 0) THEN
+        CALL output_line('Size of the scalar subvector is not a multiple of NVAR!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
+        CALL sys_halt()
+      END IF
+      rx%RvectorBlock(i)%NEQ = INT(Isize(i)/rx%RvectorBlock(i)%NVAR, PREC_DOFIDX)
       rx%RvectorBlock(i)%iidxFirstEntry = n
       n = n + rx%RvectorBlock(i)%NEQ
 
@@ -4451,15 +4459,22 @@ CONTAINS
     ELSE
       
       ! Check if vectors are compatible
-      IF ((rx%cdataType /= rTemplate%cdataType) .OR. &
-          (rx%nblocks /= rTemplate%nblocks)) THEN
-        PRINT *, "lsysbl_resizeVecBlockIndirect: Vectors are incompatible!"
+      IF ((rx%cdataType .NE. rTemplate%cdataType) .OR. &
+          (rx%nblocks   .NE. rTemplate%nblocks  )) THEN
+        CALL output_line('Vectors are incompatible!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndirect')
         CALL sys_halt()
       END IF
 
       ! Fill auxiliary vector Iisize
       DO i=1,rTemplate%nblocks
-        Isize(i) = rTemplate%RvectorBlock(i)%NEQ
+
+        IF (rx%RvectorBlock(i)%NVAR .NE. rTemplate%RvectorBlock(i)%NVAR) THEN
+          CALL output_line('Scalar subvectors are incompatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndirect')
+          CALL sys_halt()
+        END IF
+        Isize(i) = rTemplate%RvectorBlock(i)%NEQ*rTemplate%RvectorBlock(i)%NVAR
       END DO
 
       ! Get current size of global vector
