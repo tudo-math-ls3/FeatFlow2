@@ -193,6 +193,9 @@
 !# 54.) lsyssc_spreadMatrix
 !#      -> Spreads a scalar matrix into another scalar matrix
 !#
+!# 55.) lsyssc_packVector
+!#      -> Packs a scalar vector into another scalar vector
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -17591,8 +17594,6 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER     :: p_Ddata1,p_Ddata2
     REAL(SP), DIMENSION(:), POINTER     :: p_Fdata1,p_Fdata2
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata1,p_Idata2
-    INTEGER(PREC_VECIDX)                :: ieq
-    INTEGER                             :: ivar
     
     ! Source vector must not be stored in interleave format
     IF (rvector1%NVAR .NE. 1) THEN
@@ -17639,37 +17640,377 @@ CONTAINS
     CASE (ST_DOUBLE)
       CALL lsyssc_getbase_double(rvector1, p_Ddata1)
       CALL lsyssc_getbase_double(rvector2, p_Ddata2)
-
-      DO ieq = 1, rvector1%NEQ
-        DO ivar = 1, rvector2%NVAR
-          p_Ddata2((ivar-1)*rvector1%NEQ+ivar) = p_Ddata1(ieq)
-        END DO
-      END DO
+      CALL do_spreadDble(p_Ddata1, rvector2%NVAR, rvector2%NEQ, p_Ddata2)
       
     CASE (ST_SINGLE)
       CALL lsyssc_getbase_single(rvector1, p_Fdata1)
       CALL lsyssc_getbase_single(rvector2, p_Fdata2)
-
-      DO ieq = 1, rvector1%NEQ
-        DO ivar = 1, rvector2%NVAR
-          p_Fdata2((ivar-1)*rvector1%NEQ+ivar) = p_Fdata1(ieq)
-        END DO
-      END DO
+      CALL do_spreadSngl(p_Fdata1, rvector2%NVAR, rvector2%NEQ, p_Fdata2)
 
     CASE (ST_INT)
       CALL lsyssc_getbase_int(rvector1, p_Idata1)
       CALL lsyssc_getbase_int(rvector2, p_Idata2)
-
-      DO ieq = 1, rvector1%NEQ
-        DO ivar = 1, rvector2%NVAR
-          p_Idata2((ivar-1)*rvector1%NEQ+ivar) = p_Idata1(ieq)
-        END DO
-      END DO
+      CALL do_spreadInt(p_Idata1, rvector2%NVAR, rvector2%NEQ, p_Idata2)
       
     CASE DEFAULT
       CALL output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
       CALL sys_halt()
     END SELECT
+
+  CONTAINS
+
+    ! Here, the real working routines follow.
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadDble(Ddata1, NVAR, NEQ, Ddata2)
+      REAL(DP), DIMENSION(:), INTENT(IN)         :: Ddata1
+      INTEGER, INTENT(IN)                        :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)           :: NEQ
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT) :: Ddata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Ddata2(:,ieq) = Ddata1(ieq)
+      END DO
+    END SUBROUTINE do_spreadDble
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadSngl(Fdata1, NVAR, NEQ, Fdata2)
+      REAL(SP), DIMENSION(:), INTENT(IN)         :: Fdata1
+      INTEGER, INTENT(IN)                        :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)           :: NEQ
+      REAL(SP), DIMENSION(NVAR,NEQ), INTENT(OUT) :: Fdata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Fdata2(:,ieq) = Fdata1(ieq)
+      END DO
+    END SUBROUTINE do_spreadSngl
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadInt(Idata1, NVAR, NEQ, Idata2)
+      INTEGER(I32), DIMENSION(:), INTENT(IN)         :: Idata1
+      INTEGER, INTENT(IN)                            :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: NEQ
+      INTEGER(I32), DIMENSION(NVAR,NEQ), INTENT(OUT) :: Idata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Idata2(:,ieq) = Idata1(ieq)
+      END DO
+    END SUBROUTINE do_spreadInt
   END SUBROUTINE lsyssc_spreadVector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_spreadMatrix(rmatrix1, rmatrix2)
+
+!<description>
+    ! This subroutine spreads a scalar matrix which is not stored in interleave
+    ! format into another matrix which is stored in interleave format.
+!</description>
+
+!<input>
+    ! Scalar source matrix
+    TYPE(t_matrixScalar), INTENT(IN)    :: rmatrix1
+!</input>
+
+!<inputoutput>
+    ! Scalar destination matrix in interleave format
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata1,p_Ddata2
+    REAL(SP), DIMENSION(:), POINTER     :: p_Fdata1,p_Fdata2
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata1,p_Idata2
+
+    ! Source matrices must not be stored in interleave format
+    IF (rmatrix1%NVAR .NE. 1) THEN
+      CALL output_line('Source matrix must not be stored in interleave format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
+      CALL sys_halt()
+    END IF
+
+    ! Check if matrices are compatible
+    CALL lsyssc_isMatrixMatrixCompatible(rmatrix1,rmatrix2)
+    
+    ! Ok, now we can copy the matrices
+    SELECT CASE(rmatrix2%cinterleavematrixFormat)
+      
+    CASE (LSYSSC_MATRIXUNDEFINED)
+      ! Destination matrix is identical to source matrix
+      CALL lsyssc_duplicateMatrix (rmatrix1,rmatrix2,&
+          LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+      
+    CASE (LSYSSC_MATRIX1)
+      SELECT CASE (rmatrix1%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double(rmatrix1, p_Ddata1)
+        CALL lsyssc_getbase_double(rmatrix2, p_Ddata2)
+        CALL do_spreadDble(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                           rmatrix2%NA, p_Ddata2)
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single(rmatrix1, p_Fdata1)
+        CALL lsyssc_getbase_single(rmatrix2, p_Fdata2)
+        CALL do_spreadSngl(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                           rmatrix2%NA, p_Fdata2)
+
+      CASE (ST_INT)
+        CALL lsyssc_getbase_int(rmatrix1, p_Idata1)
+        CALL lsyssc_getbase_int(rmatrix2, p_Idata2)
+        CALL do_spreadInt(p_Idata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                          rmatrix2%NA, p_Idata2)
+
+      CASE DEFAULT
+        CALL output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
+        CALL sys_halt()
+      END SELECT
+      
+    CASE (LSYSSC_MATRIXD)
+      SELECT CASE (rmatrix1%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double(rmatrix1, p_Ddata1)
+        CALL lsyssc_getbase_double(rmatrix2, p_Ddata2)
+        CALL do_spreadDble(p_Ddata1, rmatrix2%NVAR, 1,&
+                           rmatrix2%NA, p_Ddata2)
+
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single(rmatrix1, p_Fdata1)
+        CALL lsyssc_getbase_single(rmatrix2, p_Fdata2)
+        CALL do_spreadSngl(p_Fdata1, rmatrix2%NVAR, 1,&
+                           rmatrix2%NA, p_Fdata2)
+
+      CASE (ST_INT)
+        CALL lsyssc_getbase_int(rmatrix1, p_Idata1)
+        CALL lsyssc_getbase_int(rmatrix2, p_Idata2)
+        CALL do_spreadInt(p_Idata1, rmatrix2%NVAR, 1,&
+                          rmatrix2%NA, p_Idata2)
+
+      CASE DEFAULT
+        CALL output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
+        CALL sys_halt()
+      END SELECT
+      
+    CASE DEFAULT
+      CALL output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
+      CALL sys_halt()
+    END SELECT
+    
+  CONTAINS
+
+    ! Here, the real working routines follow.
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadDble(Ddata1, NVAR, MVAR, NA, Ddata2)
+      REAL(DP), DIMENSION(:), INTENT(IN)             :: Ddata1
+      INTEGER, INTENT(IN)                            :: NVAR,MVAR
+      INTEGER(PREC_MATIDX), INTENT(IN)               :: NA
+      REAL(DP), DIMENSION(NVAR,MVAR,NA), INTENT(OUT) :: Ddata2
+
+      INTEGER(PREC_MATIDX) :: ia
+
+      DO ia = 1, NA
+        Ddata2(:,:,ia) = Ddata1(ia)
+      END DO
+    END SUBROUTINE do_spreadDble
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadSngl(Fdata1, NVAR, MVAR, NA, Fdata2)
+      REAL(SP), DIMENSION(:), INTENT(IN)             :: Fdata1
+      INTEGER, INTENT(IN)                            :: NVAR,MVAR
+      INTEGER(PREC_MATIDX), INTENT(IN)               :: NA
+      REAL(SP), DIMENSION(NVAR,MVAR,NA), INTENT(OUT) :: Fdata2
+
+      INTEGER(PREC_MATIDX) :: ia
+
+      DO ia = 1, NA
+        Fdata2(:,:,ia) = Fdata1(ia)
+      END DO
+    END SUBROUTINE do_spreadSngl
+
+    !**************************************************************
+
+    SUBROUTINE do_spreadInt(Idata1, NVAR, MVAR, NA, Idata2)
+      INTEGER(I32), DIMENSION(:), INTENT(IN)             :: Idata1
+      INTEGER, INTENT(IN)                                :: NVAR,MVAR
+      INTEGER(PREC_MATIDX), INTENT(IN)                   :: NA
+      INTEGER(I32), DIMENSION(NVAR,MVAR,NA), INTENT(OUT) :: Idata2
+
+      INTEGER(PREC_MATIDX) :: ia
+
+      DO ia = 1, NA
+        Idata2(:,:,ia) = Idata1(ia)
+      END DO
+    END SUBROUTINE do_spreadInt   
+  END SUBROUTINE lsyssc_spreadMatrix
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_packVector(rvector1, rvector2, ivar)
+
+!<description>
+    ! This subroutine packs a scalar vector which is stored in interleave
+    ! format into another vector which is not stored in interleave format.
+!</description>
+
+!<input>
+    ! Scalar source vector in interleave format
+    TYPE(t_vectorScalar), INTENT(IN)    :: rvector1
+
+    ! Number of the variable to pack
+    INTEGER, INTENT(IN)                 :: ivar
+!</input>
+
+!<inputoutput>
+    ! Scalar destination vector
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata1,p_Ddata2
+    REAL(SP), DIMENSION(:), POINTER     :: p_Fdata1,p_Fdata2
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata1,p_Idata2
+
+    ! Source vector must be stored in interleave format
+    IF (rvector1%NVAR .LE. ivar) THEN
+      CALL output_line('Source vector does not provide variable IVAR!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END IF
+
+    ! Destination vector must not be stored in interleave format
+    IF (rvector2%NVAR .NE. 1) THEN
+      CALL output_line('Destination vector must not be stored in interleave format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END IF
+
+    ! Vectors must have the same size
+    IF (rvector1%NEQ .NE. rvector2%NEQ) THEN
+      CALL output_line('Vectors not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END IF
+
+    ! Vectors must have the data type
+    IF (rvector1%cdataType .NE. rvector2%cdataType) THEN
+      CALL output_line('Vectors not compatible, different data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END IF
+
+    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+    
+    IF ((rvector1%isortStrategy .GT. 0) .OR. &
+        (rvector2%isortStrategy .GT. 0)) THEN
+      
+      IF (rvector1%isortStrategy .NE. &
+          rvector2%isortStrategy) THEN
+        CALL output_line('Vectors not compatible, differently sorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+        CALL sys_halt()
+      END IF
+    END IF
+
+    IF (rvector1%h_isortPermutation .NE. &
+        rvector2%h_isortPermutation) THEN
+      CALL output_line('Vectors not compatible, differently sorted!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END IF
+
+    SELECT CASE (rvector1%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsyssc_getbase_double(rvector1, p_Ddata1)
+      CALL lsyssc_getbase_double(rvector2, p_Ddata2)
+      CALL do_packDble(p_Ddata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Ddata2)
+      
+    CASE (ST_SINGLE)
+      CALL lsyssc_getbase_single(rvector1, p_Fdata1)
+      CALL lsyssc_getbase_single(rvector2, p_Fdata2)
+      CALL do_packSngl(p_Fdata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Fdata2)
+
+    CASE (ST_INT)
+      CALL lsyssc_getbase_int(rvector1, p_Idata1)
+      CALL lsyssc_getbase_int(rvector2, p_Idata2)
+      CALL do_packInt(p_Idata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Idata2)
+      
+    CASE DEFAULT
+      CALL output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+      CALL sys_halt()
+    END SELECT
+
+  CONTAINS
+
+    ! Here, the real working routines follow.
+
+    !**************************************************************
+
+    SUBROUTINE do_packDble(Ddata1, NVAR, NEQ, ivar, Ddata2)
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN) :: Ddata1
+      INTEGER, INTENT(IN)                       :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)          :: NEQ
+      INTEGER, INTENT(IN)                       :: ivar
+      REAL(DP), DIMENSION(:), INTENT(OUT)       :: Ddata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Ddata2(ieq) = Ddata1(ivar,ieq)
+      END DO
+    END SUBROUTINE do_packDble
+
+    !**************************************************************
+
+    SUBROUTINE do_packSngl(Fdata1, NVAR, NEQ, ivar, Fdata2)
+      REAL(SP), DIMENSION(NVAR,NEQ), INTENT(IN) :: Fdata1
+      INTEGER, INTENT(IN)                       :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)          :: NEQ
+      INTEGER, INTENT(IN)                       :: ivar
+      REAL(SP), DIMENSION(:), INTENT(OUT)       :: Fdata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Fdata2(ieq) = Fdata1(ivar,ieq)
+      END DO
+    END SUBROUTINE do_packSngl
+
+    !**************************************************************
+
+    SUBROUTINE do_packInt(Idata1, NVAR, NEQ, ivar, Idata2)
+      INTEGER(I32), DIMENSION(NVAR,NEQ), INTENT(IN) :: Idata1
+      INTEGER, INTENT(IN)                           :: NVAR
+      INTEGER(PREC_DOFIDX), INTENT(IN)              :: NEQ
+      INTEGER, INTENT(IN)                           :: ivar
+      INTEGER(I32), DIMENSION(:), INTENT(OUT)       :: Idata2
+
+      INTEGER(PREC_DOFIDX) :: ieq
+
+      DO ieq = 1, NEQ
+        Idata2(ieq) = Idata1(ivar,ieq)
+      END DO
+    END SUBROUTINE do_packInt
+  END SUBROUTINE lsyssc_packVector
 END MODULE
