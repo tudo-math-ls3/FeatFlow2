@@ -58,89 +58,89 @@ PROGRAM poisson
   ! Initialise the FEAT 2.0 storage management: 
   CALL storage_init(999, 100)
  
-!  ! Call the problem to solve. Poisson 1D method 1 - simple:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-1D-Problem with method 0 - simple')
-!  CALL output_line ('-----------------------------------------------------')
-!  CALL poisson1d_0_simple
-!
-!  ! Call the problem to solve. Poisson 1D method 1 - multigrid:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-1D-Problem with method 1 - multigrid')
-!  CALL output_line ('--------------------------------------------------------')
-!  CALL poisson1d_1_mg
-!
-!  ! Call the problem to solve. Poisson 2D method 1 - simple:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
-!  CALL output_line ('-----------------------------------------------------')
-!  CALL poisson2d_0_simple
-!  
-!  ! Call the problem to solve. Poisson 2D method 1 - multigrid:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - multigrid')
-!  CALL output_line ('--------------------------------------------------------')
-!  CALL poisson2d_1_mg
-!
-!  ! Call the problem to solve. Poisson 1: Support for nonconforming elements
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - EM30')
-!  CALL output_line ('---------------------------------------------------')
-!  CALL poisson2d_1_em30
-!
-!  ! Call the problem to solve. Poisson 1: Fictitious boundary support
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - FBC')
-!  CALL output_line ('--------------------------------------------------')
-!  CALL poisson2d_1_fbc
-!
-!  ! Call the problem to solve. Poisson 1: h-adaptivity
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - hadapt')
-!  CALL output_line ('-----------------------------------------------------')
+  ! Call the problem to solve. Poisson 1D method 1 - simple:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-1D-Problem with method 0 - simple')
+  CALL output_line ('-----------------------------------------------------')
+  CALL poisson1d_0_simple
+
+  ! Call the problem to solve. Poisson 1D method 1 - multigrid:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-1D-Problem with method 1 - multigrid')
+  CALL output_line ('--------------------------------------------------------')
+  CALL poisson1d_1_mg
+
+  ! Call the problem to solve. Poisson 2D method 1 - simple:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
+  CALL output_line ('-----------------------------------------------------')
+  CALL poisson2d_0_simple
+  
+  ! Call the problem to solve. Poisson 2D method 1 - multigrid:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - multigrid')
+  CALL output_line ('--------------------------------------------------------')
+  CALL poisson2d_1_mg
+
+  ! Call the problem to solve. Poisson 1: Support for nonconforming elements
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - EM30')
+  CALL output_line ('---------------------------------------------------')
+  CALL poisson2d_1_em30
+
+  ! Call the problem to solve. Poisson 1: Fictitious boundary support
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - FBC')
+  CALL output_line ('--------------------------------------------------')
+  CALL poisson2d_1_fbc
+
+  ! Call the problem to solve. Poisson 1: h-adaptivity
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - hadapt')
+  CALL output_line ('-----------------------------------------------------')
   CALL poisson2d_1_hadapt
-!
-!  ! Call the problem to solve. Poisson 2D method 2:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 2')
-!  CALL output_line ('--------------------------------------------')
-!  CALL poisson2d_2
-!  
-!  ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - CM-sorting')
-!  CALL output_line ('---------------------------------------------------------')
-!  CALL poisson2d_2_cmsort
-!  
-!  ! Call the problem to solve. Poisson 5:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - multigrid')
-!  CALL output_line ('--------------------------------------------------------')
-!  CALL poisson2d_2_mg
-!
-!  ! Call the problem to solve. Poisson 3: Collection support
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - collection')
-!  CALL output_line ('---------------------------------------------------------')
-!  CALL poisson2d_2_collect
-!  
-!  ! Call the problem to solve. Poisson3D-1:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
-!  CALL output_line ('-----------------------------------------------------')
-!  CALL poisson3d_0_simple
-!
-!  ! Call the problem to solve. Poisson3D-1:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - multigrid')
-!  CALL output_line ('--------------------------------------------------------')
-!  CALL poisson3d_1_mg
-!
-!  ! Call the problem to solve. Poisson3D-7:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - EM30')
-!  CALL output_line ('---------------------------------------------------')
-!  CALL poisson3d_1_em30
+
+  ! Call the problem to solve. Poisson 2D method 2:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2')
+  CALL output_line ('--------------------------------------------')
+  CALL poisson2d_2
+  
+  ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - CM-sorting')
+  CALL output_line ('---------------------------------------------------------')
+  CALL poisson2d_2_cmsort
+  
+  ! Call the problem to solve. Poisson 5:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - multigrid')
+  CALL output_line ('--------------------------------------------------------')
+  CALL poisson2d_2_mg
+
+  ! Call the problem to solve. Poisson 3: Collection support
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 2 - collection')
+  CALL output_line ('---------------------------------------------------------')
+  CALL poisson2d_2_collect
+  
+  ! Call the problem to solve. Poisson3D-1:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
+  CALL output_line ('-----------------------------------------------------')
+  CALL poisson3d_0_simple
+
+  ! Call the problem to solve. Poisson3D-1:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - multigrid')
+  CALL output_line ('--------------------------------------------------------')
+  CALL poisson3d_1_mg
+
+  ! Call the problem to solve. Poisson3D-7:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-3D-Problem with method 1 - EM30')
+  CALL output_line ('---------------------------------------------------')
+  CALL poisson3d_1_em30
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
