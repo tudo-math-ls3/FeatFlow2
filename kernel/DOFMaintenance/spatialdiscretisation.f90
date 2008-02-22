@@ -675,17 +675,18 @@ CONTAINS
 !<input>
   
   ! The triangulation structure underlying to the discretisation.
-  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
-  
-  ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  TYPE(t_triangulation), INTENT(IN), TARGET      :: rtriangulation
   
   ! Number of solution components maintained by the block structure
-  INTEGER, INTENT(IN)                          :: ncomponents
+  INTEGER, INTENT(IN)                            :: ncomponents
+
+  ! OPTIONAL: The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
+  
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL   :: rboundaryConditions
   
 !</input>
   
@@ -702,7 +703,11 @@ CONTAINS
   rblockDiscr%ndimension             = NDIM2D
   rblockDiscr%ccomplexity            = SPDISC_UNIFORM
   rblockDiscr%p_rtriangulation       => rtriangulation
-  rblockDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundary)) THEN
+    rblockDiscr%p_rboundary          => rboundary
+  ELSE
+    NULLIFY(rblockDiscr%p_rboundary)
+  END IF
   IF (PRESENT(rboundaryConditions)) THEN
     rblockDiscr%p_rboundaryConditions  => rboundaryConditions
   ELSE
@@ -1079,7 +1084,7 @@ CONTAINS
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
@@ -1118,7 +1123,11 @@ CONTAINS
   ! Initialise the variables of the structure for the simple discretisation
   rspatialDiscr%ndimension             = NDIM2D
   rspatialDiscr%p_rtriangulation       => rtriangulation
-  rspatialDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundary)) THEN
+    rspatialDiscr%p_rboundary          => rboundary
+  ELSE
+    NULLIFY(rspatialDiscr%p_rboundary)
+  END IF
   rspatialDiscr%ccomplexity            = SPDISC_CONFORMAL
   
   ! Allocate an array containing the element distribution for each element
@@ -1554,17 +1563,17 @@ CONTAINS
   ! Cubature formula CUB_xxxx to use for calculating integrals
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  INTEGER, INTENT(IN)                       :: ccubType
+  INTEGER, INTENT(IN)                            :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
-  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN), TARGET      :: rtriangulation
   
-  ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  ! OPTIONAL: The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL   :: rboundaryConditions
 !</input>
   
 !<output>
@@ -1592,9 +1601,13 @@ CONTAINS
   END IF
 
   ! Initialise the variables of the structure for the simple discretisation
-  rspatialDiscr%ndimension             = NDIM2D
+  rspatialDiscr%ndimension             = rtriangulation%ndim
   rspatialDiscr%p_rtriangulation       => rtriangulation
-  rspatialDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundary)) THEN
+    rspatialDiscr%p_rboundary          => rboundary
+  ELSE
+    NULLIFY(rspatialDiscr%p_rboundary)
+  END IF
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
