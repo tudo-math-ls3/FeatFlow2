@@ -321,13 +321,16 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
-    ! ... and then discretise the RHS to the first subvector of
+    ! ... and then discretise the RHS to the first two subvectors of
     ! the block vector using the discretisation structure of the 
-    ! first block.
+    ! corresponding blocks.
     !
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
-                  rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_2D)
+                  rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
+
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(2),&
+                  rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".

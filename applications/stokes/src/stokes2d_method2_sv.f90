@@ -469,9 +469,9 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
-    ! ... and then discretise the RHS to the first subvector of
+    ! ... and then discretise the RHS to the first two subvectors of
     ! the block vector using the discretisation structure of the 
-    ! first block.
+    ! corresponding blocks.
     !
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
@@ -480,7 +480,11 @@ CONTAINS
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS_2D,rproblem%rcollection)
+              p_rrhs%RvectorBlock(1),coeff_RHS_X_2D,rproblem%rcollection)
+
+    CALL linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rrhs%RvectorBlock(2),coeff_RHS_Y_2D,rproblem%rcollection)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".

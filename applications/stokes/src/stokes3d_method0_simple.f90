@@ -350,11 +350,17 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC3D
     
-    ! ... and then discretise the RHS to the first subvector of
+    ! ... and then discretise the RHS to the first three subvectors of
     ! the block vector using the discretisation structure of the 
-    ! first block.
+    ! corresponding block.
     CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
-                  rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_3D)
+                  rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
+                  
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(2),&
+                  rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_Y_3D)
+                  
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(3),&
+                  rlinform,.TRUE.,rrhs%RvectorBlock(3),coeff_RHS_Z_3D)
                                 
     ! The fourth subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
