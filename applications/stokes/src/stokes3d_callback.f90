@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> stokes_callback </name>
+!# <name> stokes3d_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -10,36 +10,36 @@
 !# on the situation. All of them correspond to a specific interface for
 !# callback functions, defined in 'intf_xxxx.inc' files.
 !#
-!# 1.) coeff_Stokes
+!# 1.) coeff_Stokes_3D
 !#     -> Returns the coefficients for the Laplace matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 1.) coeff_Pressure
+!# 1.) coeff_Pressure_3D
 !#     -> Returns the coefficients for the pressure matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 2.) coeff_RHS
+!# 2.) coeff_RHS_3D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) getBoundaryValues
-!#     -> Returns analitical values on the (Dirichlet) boundary of the
+!# 3.) getBoundaryValuesMR_3D
+!#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
+!#        'intf_discretebc.inc'
 !#
 !# </purpose>
 !##############################################################################
 
-MODULE stokes_callback
+MODULE stokes3d_callback
 
   USE fsystem
   USE storage
@@ -59,7 +59,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Stokes (rdiscretisation,rform, &
+  SUBROUTINE coeff_Stokes_3D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
                   Dcoefficients)
@@ -139,7 +139,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Pressure (rdiscretisation,rform, &
+  SUBROUTINE coeff_Pressure_3D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
                   Dcoefficients)
@@ -220,7 +220,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coeff_RHS (rdiscretisation,rform, &
+  SUBROUTINE coeff_RHS_3D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,p_rcollection, &
                   Dcoefficients)
@@ -296,12 +296,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+  SUBROUTINE getBoundaryValuesMR_3D (Icomponents,rdiscretisation,rmeshRegion,&
+                                cinfoNeeded,Dcoords,p_rcollection,Dvalues)
   
   USE collection
   USE spatialdiscretisation
-  USE discretebc
+  USE meshregion
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -323,47 +323,21 @@ CONTAINS
   ! analytic boundary boundary description etc.
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
-  
-  ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
+  ! Mesh region that is currently being processed.
+  TYPE(t_meshRegion), INTENT(IN)                              :: rmeshRegion
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
   INTEGER, INTENT(IN)                                         :: cinfoNeeded
   
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  INTEGER, INTENT(IN)                                         :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   dwhere = 0 (not used)
-  REAL(DP), INTENT(IN)                                        :: dwhere
+  ! The coordinates of the point for which the boundary values are to be
+  ! calculated.
+  REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
     
   ! A pointer to a collection structure to provide additional 
   ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
+  TYPE(t_collection), POINTER                                 :: p_rcollection
 
 !</input>
 
@@ -378,12 +352,12 @@ CONTAINS
 !</subroutine>
 
   INTEGER :: icomponent
-  REAL(DP) :: y
+  REAL(DP) :: x,y,z
   
   ! Get from the current component of the PDE we are discretising:
   icomponent = Icomponents(1)
   
-  ! -> 1=X-velocity, 2=Y-velocity.
+  ! -> 1=X-velocity, 2=Y-velocity, 3=Z-velocity.
   
   ! Return zero Dirichlet boundary values for all situations by default.
   Dvalues(1) = 0.0_DP
@@ -391,14 +365,20 @@ CONTAINS
   ! Now, depending on the problem, calculate the actual velocity value.
   SELECT CASE (icomponent)
   CASE (1) ! X-velocity
-    IF ((dwhere .GE. 3.0_DP) .AND. (dwhere .LE. 4.0_DP)) THEN
-      y = 4.0_DP-dwhere
-      Dvalues(1) = y*(1.0_DP-y)
+    x = Dcoords(1)
+    y = Dcoords(2)
+    z = Dcoords(3)
+    IF ((x .GT. -0.001_DP) .AND. (x .LT. 0.001)) THEN
+      Dvalues(1) = y*(1.0_DP-y)*z*(1.0_DP-z)
     END IF
 
   CASE (2) ! Y-velocity
     ! Nothing to do here.
+
+  CASE (3) ! Z-velocity
+    ! Nothing to do here.
   END SELECT
+  
   END SUBROUTINE
 
 END MODULE

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> stokes_method1 </name>
+!# <name> stokes2d_method2_sv </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -19,7 +19,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE stokes_method1
+MODULE stokes2d_method2_sv
 
   USE fsystem
   USE storage
@@ -39,13 +39,9 @@ MODULE stokes_method1
   
   USE collection
     
-  USE stokes_callback
+  USE stokes2d_callback
   
   IMPLICIT NONE
-  
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
 
@@ -103,9 +99,8 @@ MODULE stokes_method1
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
-    ! to one level of the discretisation. There is currently
-    ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    ! to one level of the discretisation.
+    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
@@ -126,11 +121,6 @@ CONTAINS
 
   SUBROUTINE st1_initParamTriang (ilvmin,ilvmax,rproblem)
   
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
-
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
@@ -155,15 +145,10 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-    ! Variable for a filename:  
-    CHARACTER(LEN=60) :: CFILE
-
     ! Initialise the level in the problem structure
     rproblem%ilvmin = ilvmin
     rproblem%ilvmax = ilvmax
+    ALLOCATE(rproblem%RlevelInfo(ilvmin:ilvmax))
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -388,9 +373,8 @@ CONTAINS
       ! in the collection.
       !
       ! Build the X-velocity matrix:
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                   p_rmatrix%RmatrixBlock(1,1),coeff_Stokes,&
-                                   rproblem%rcollection)
+      CALL bilf_buildMatrixScalar (rform,.TRUE.,p_rmatrix%RmatrixBlock(1,1),&
+                                   coeff_Stokes_2D,rproblem%rcollection)
       
       ! Duplicate the matrix to the Y-velocity matrix, share structure and
       ! content between them (as the matrices are the same).
@@ -415,9 +399,8 @@ CONTAINS
       rform%BconstantCoeff = .TRUE.
       rform%Dcoefficients(1)  = -1.0_DP
       
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                  rproblem%RlevelInfo(i)%rmatrixB1,coeff_Pressure,&
-                                  rproblem%rcollection)
+      CALL bilf_buildMatrixScalar (rform,.TRUE.,rproblem%RlevelInfo(i)%rmatrixB1,&
+                                   coeff_Pressure_2D,rproblem%rcollection)
 
       ! Build the second pressure matrix B2.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -430,9 +413,8 @@ CONTAINS
       rform%BconstantCoeff = .TRUE.
       rform%Dcoefficients(1)  = -1.0_DP
       
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                  rproblem%RlevelInfo(i)%rmatrixB2,coeff_Pressure,&
-                                  rproblem%rcollection)
+      CALL bilf_buildMatrixScalar (rform,.TRUE.,rproblem%RlevelInfo(i)%rmatrixB2,&
+                                   coeff_Pressure_2D,rproblem%rcollection)
                                   
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -498,8 +480,7 @@ CONTAINS
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS,&
-              rproblem%rcollection)
+              p_rrhs%RvectorBlock(1),coeff_RHS_2D,rproblem%rcollection)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
@@ -698,7 +679,7 @@ CONTAINS
       ! in the collection.
       NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                              .FALSE.,getBoundaryValues,rproblem%rcollection)
+                              .FALSE.,getBoundaryValues_2D,rproblem%rcollection)
                                
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -813,7 +794,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -891,9 +872,23 @@ CONTAINS
     !
     ! We copy our matrices to a big matrix array and transfer that
     ! to the setMatrices routines. This intitialises then the matrices
-    ! on all levels according to that array.
-    Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
+    ! on all levels according to that array. Note that this does not
+    ! allocate new memory, we create only 'links' to existing matrices
+    ! into Rmatrices(:)!
+    ALLOCATE(Rmatrices(ilvmin:ilvmax))
+    DO i=ilvmin,ilvmax
+      CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    END DO
+    
     CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
+    
+    ! We can release Rmatrices immediately -- as long as we don't
+    ! release rproblem%RlevelInfo(i)%rmatrix!
+    DO i=ilvmin,ilvmax
+      CALL lsysbl_releaseMatrix (Rmatrices(i))
+    END DO
+    DEALLOCATE(Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -1003,8 +998,8 @@ CONTAINS
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation:
     NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection)
+    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC,.FALSE.,&
+                             getBoundaryValues_2D,rproblem%rcollection)
                             
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC
@@ -1023,14 +1018,21 @@ CONTAINS
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u1.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       'gmv/u2d_2_sv.gmv')
 
     ! Write velocity field
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
-    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    ! In case we use the VTK exporter, which supports vector output, we will
+    ! pass the X- and Y-velocity at once to the ucd module.
+    CALL ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+
+    ! If we use the GMV exporter, we might replace the line above by the
+    ! following two lines:
+    !CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+    !CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
     
     ! Write pressure
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
@@ -1180,6 +1182,8 @@ CONTAINS
       CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
+    DEALLOCATE(rproblem%RlevelInfo)
+    
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
 
@@ -1189,9 +1193,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE stokes1
-  
-  include 'cmem.inc'
+  SUBROUTINE stokes2d_2_sv
   
 !<description>
   ! This is a 'separated' stokes solver for solving a stokes
