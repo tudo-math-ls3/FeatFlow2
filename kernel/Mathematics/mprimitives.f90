@@ -25,11 +25,11 @@
 !# 4.) mprim_invert4x4MatrixDirectDble
 !#     -> Inverts a 4x4 matrix directly without pivoting.
 !#
-!# 5.) mprim_invertMatrixPivotDble
-!#     -> Inverts a 4x4 matrix directly with pivoting.
-!#
-!# 6.) mprim_invert6x6MatrixDirectDble
+!# 5.) mprim_invert6x6MatrixDirectDble
 !#     -> Inverts a 6x6 matrix directly without pivoting.
+!#
+!# 6.) mprim_invertMatrixPivotDble
+!#     -> Inverts a n x n matrix directly with pivoting.
 !#
 !# 7.) mprim_signum
 !#     -> Signum function
@@ -788,13 +788,10 @@ CONTAINS
   ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
   ! 'Da' is a 2-dimensional (ndim x ndim) matrix and will be replaced
   ! by its inverse.
-  !
-  ! Warning: For speed reasons, there is no array bounds checking
-  ! activated in this routine! Da and Db are assumed to be 4x4 arrays!
 !</description>
 
 !<input>
-  ! Dimension of the matrix Da and Db.
+  ! Dimension of the matrix Da.
   INTEGER, INTENT(IN) :: ndim
 !</input>
 

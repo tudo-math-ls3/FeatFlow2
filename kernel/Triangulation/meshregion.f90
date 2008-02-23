@@ -4,7 +4,26 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# TODO
+!# This module contains structures and routines for managing a sepcific region
+!# inside a given triangulation. These region may be used e.g. for boundary
+!# condition assembly.
+!#
+!# The following routines can be found here:
+!#
+!#  1.) mshreg_createFromNodalProp
+!#      -> Creates a mesh region based on the triangulation's
+!#         nodal property array.
+!#
+!#  2.) mshred_done
+!#      -> Releases a mesh region structure.
+!#
+!#  3.) mshreg_recalcEdgesFromFaces
+!#      -> Recalculates the edge index array of the mesh region from the
+!#         face index array of the mesh region.
+!#
+!#  4.) mshreg_recalcVerticesFromFaces
+!#      -> Recalculates the vertex index array of the mesh region from the
+!#         face index array of the mesh region.
 !# </purpose>
 !##############################################################################
 
@@ -31,6 +50,19 @@ MODULE meshregion
 
   ! A mesh region shares its IelementIdx array with another structure
   INTEGER(I32), PARAMETER :: MESH_REGION_SHARE_ELEMENT = 2**3
+
+!</constantblock>
+
+!<constantblock description="Mask operator types">
+
+  ! Kick the old index array
+  INTEGER(I32), PARAMETER :: MESH_REGION_MASK_KICK     = 0
+  
+  ! Apply the OR-operator
+  INTEGER(I32), PARAMETER :: MESH_REGION_MASK_OR       = 1
+  
+  ! Apply the AND-operator
+  INTEGER(I32), PARAMETER :: MESH_REGION_MASK_AND      = 2
 
 !</constantblock>
 
@@ -82,6 +114,8 @@ MODULE meshregion
 !</typeblock>
 
 !</types>
+
+  PRIVATE :: mshreg_calcArrayFromMap
 
   CONTAINS
 
@@ -410,5 +444,357 @@ MODULE meshregion
     ! That's it
 
   END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mshreg_calcArrayFromMap(Imap,h_Iarray,inumEntries)
+
+!<description>
+  ! This auxiliary routine creates an index array from a map.
+  !
+  ! This subroutine is used by some other routines in this module and
+  ! is not meant to be called from outside this module, therefore, it is
+  ! declared as private.
+!</description>
+
+!<input>
+  ! The map that is to be converted into an index array.
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: Imap
   
+!</input>
+
+!<output>
+  ! A storage handle to the index array.
+  INTEGER(I32), INTENT(OUT) :: h_Iarray
+  
+  ! The number of entries in the index array
+  INTEGER, INTENT(OUT) :: inumEntries
+!</output>
+
+!</subroutine>
+
+  ! Three nice local variables
+  INTEGER :: i,ientry
+  INTEGER, DIMENSION(:), POINTER :: p_Iarray
+
+    h_Iarray = ST_NOHANDLE
+
+    ! First of all, count the entries
+    inumEntries = 0
+    DO i = LBOUND(Imap,1), UBOUND(Imap,1)
+      IF (Imap(i) .NE. 0) inumEntries = inumEntries + 1
+    END DO
+    
+    ! If there are no entries, we can leave here
+    IF (inumEntries .EQ. 0) RETURN
+    
+    ! Otherwise allocate an index array
+    CALL storage_new('mshreg_calcArrayFromMap', 'p_Iarray', inumEntries, &
+                     ST_INT, h_Iarray, ST_NEWBLOCK_NOINIT)
+    
+    ! Get the index array
+    CALL storage_getbase_int(h_Iarray, p_Iarray)
+    
+    ! Go and calculate the indices
+    ientry = 1
+    DO i = LBOUND(Imap,1), UBOUND(Imap,1)
+      IF (Imap(i) .NE. 0) THEN
+        p_Iarray(ientry) = i
+        ientry = ientry + 1
+      END IF
+    END DO
+    
+    ! That's it
+    
+  END SUBROUTINE
+  
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mshreg_recalcEdgesFromFaces(rmeshRegion,coperatorMask)
+
+!<description>
+  ! Recalculates the edge index array from the face index array.
+  ! Every edge that belongs to a face in the mesh region will be added
+  ! to the mesh region's edge index array.
+!</description>
+
+!<input>
+  ! OPTIONAL: An operator mask for the old edge index array.
+  ! One of the MESH_REGION_MASK_XXXX constants defined above.
+  ! If not given, MESH_REGION_MASK_KICK is used.
+  INTEGER(I32), INTENT(IN), OPTIONAL   :: coperatorMask
+!</input>
+
+!<inputoutput>
+  ! The mesh region.
+  TYPE(t_meshRegion), INTENT(INOUT)    :: rmeshRegion
+!</inputoutput>
+
+!</subroutine>
+  
+  INTEGER(I32), DIMENSION(:), ALLOCATABLE :: IedgeMap
+  INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx, p_IedgeIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IedgesAtFace
+  INTEGER(I32) :: copMask
+  INTEGER :: i, j, iface
+  TYPE(t_triangulation), POINTER :: p_rtria
+
+    ! Decide what operator to use
+    copMask = MESH_REGION_MASK_KICK
+    IF (PRESENT(coperatorMask)) copMask = coperatorMask
+    
+    ! Do we have any faces at all?
+    IF ((rmeshRegion%NAT .LE. 0) .OR. (rmeshRegion%h_IfaceIdx .EQ. &
+         ST_NOHANDLE)) THEN
+    
+      ! If the mesh region already had an edge index array and we do not
+      ! apply the OR-operator, kick the old edge index array.
+      IF (copMask .NE. MESH_REGION_MASK_OR) THEN
+      
+        IF ((rmeshRegion%h_IedgeIdx .NE. ST_NOHANDLE) .AND. &
+            (IAND(rmeshRegion%cflags, MESH_REGION_SHARE_EDGE) .EQ. 0)) THEN
+            
+            CALL storage_free(rmeshRegion%h_IedgeIdx)
+            
+        END IF
+        
+        ! Remove anything that has to do with edges from the mesh region
+        rmeshRegion%NMT = 0
+        rmeshRegion%h_IedgeIdx = ST_NOHANDLE
+        rmeshRegion%cflags = IAND(rmeshRegion%cflags, &
+                              NOT(MESH_REGION_SHARE_EDGE))
+      
+      END IF
+      
+      ! Return here
+      RETURN
+    
+    END IF
+    
+    p_rtria => rmeshRegion%p_rtriangulation
+    
+    ! Get the face index array
+    CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+    
+    ! Get the edges-at-face array from the triangulation
+    CALL storage_getbase_int2D(p_rtria%h_IedgesAtFace,&
+                               p_IedgesAtFace)
+    
+    ! Allocate an edge map
+    ALLOCATE(IedgeMap(p_rtria%NMT))
+    DO i=1, p_rtria%NMT
+      IedgeMap(i) = 0
+    END DO
+    
+    ! Go through all faces
+    DO i=1, rmeshRegion%NAT
+    
+      ! Get the face index
+      iface = p_IfaceIdx(i)
+      
+      ! Go through all edges adjacent to that face
+      DO j=1, UBOUND(p_IedgesAtFace,1)
+        
+        IF (p_IedgesAtFace(j,iface) .GT. 0) THEN
+          IedgeMap(p_IedgesAtFace(j,iface)-p_rtria%NVT) = 1
+        END IF
+        
+      END DO
+      
+    END DO
+    
+    ! Now let's see what to do with the old edges
+    IF (rmeshRegion%h_IedgeIdx .NE. ST_NOHANDLE) THEN
+    
+      ! Get the old edge index array
+      CALL storage_getbase_int(rmeshRegion%h_IedgeIdx, p_IedgeIdx)
+      
+      SELECT CASE(copMask)
+      CASE (MESH_REGION_MASK_OR)
+        ! Go through all edges and apply an OR-operator.
+        DO i=1, rmeshRegion%NMT
+          IedgeMap(p_IedgeIdx(i)) = 1
+        END DO
+      
+      CASE (MESH_REGION_MASK_AND)
+        ! Go through all edges and apply an AND-operator.
+        DO i=1, rmeshRegion%NMT
+          IedgeMap(p_IedgeIdx(i)) = IAND(IedgeMap(p_IedgeIdx(i)),1)
+        END DO
+        
+      END SELECT
+      
+      ! Now let's destroy the old edge index array
+      IF (IAND(rmeshRegion%cflags, MESH_REGION_SHARE_EDGE) .EQ. 0) THEN
+          CALL storage_free(rmeshRegion%h_IedgeIdx)
+      END IF
+      
+      ! Remove anything that has to do with edges from the mesh region
+      rmeshRegion%NMT = 0
+      rmeshRegion%h_IedgeIdx = ST_NOHANDLE
+      rmeshRegion%cflags = IAND(rmeshRegion%cflags, &
+                            NOT(MESH_REGION_SHARE_EDGE))
+      
+    END IF
+    
+    ! Now we have the edge index map, so create an index array from this.
+    CALL mshreg_calcArrayFromMap(IedgeMap, rmeshRegion%h_IedgeIdx, &
+                                 rmeshRegion%NMT)
+    
+    ! And release the edge map
+    DEALLOCATE(IedgeMap)
+    
+    ! That's it
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mshreg_recalcVerticesFromFaces(rmeshRegion,coperatorMask)
+
+!<description>
+  ! Recalculates the vertice index array from the face index array.
+  ! Every vertice that belongs to a face in the mesh region will be added
+  ! to the mesh region's vertice index array.
+!</description>
+
+!<input>
+  ! OPTIONAL: An operator mask for the old vertice index array.
+  ! One of the MESH_REGION_MASK_XXXX constants defined above.
+  ! If not given, MESH_REGION_MASK_KICK is used.
+  INTEGER(I32), INTENT(IN), OPTIONAL   :: coperatorMask
+!</input>
+
+!<inputoutput>
+  ! The mesh region.
+  TYPE(t_meshRegion), INTENT(INOUT)    :: rmeshRegion
+!</inputoutput>
+
+!</subroutine>
+  
+  INTEGER(I32), DIMENSION(:), ALLOCATABLE :: IvertMap
+  INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx, p_IvertIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IvertsAtFace
+  INTEGER(I32) :: copMask
+  INTEGER :: i, j, iface
+  TYPE(t_triangulation), POINTER :: p_rtria
+
+    ! Decide what operator to use
+    copMask = MESH_REGION_MASK_KICK
+    IF (PRESENT(coperatorMask)) copMask = coperatorMask
+    
+    ! Do we have any faces at all?
+    IF ((rmeshRegion%NAT .LE. 0) .OR. (rmeshRegion%h_IfaceIdx .EQ. &
+         ST_NOHANDLE)) THEN
+    
+      ! If the mesh region already had an vertex index array and we do not
+      ! apply the OR-operator, kick the old vertex index array.
+      IF (copMask .NE. MESH_REGION_MASK_OR) THEN
+      
+        IF ((rmeshRegion%h_IvertexIdx .NE. ST_NOHANDLE) .AND. &
+            (IAND(rmeshRegion%cflags, MESH_REGION_SHARE_VERTEX) .EQ. 0)) THEN
+            
+            CALL storage_free(rmeshRegion%h_IvertexIdx)
+            
+        END IF
+        
+        ! Remove anything that has to do with vertices from the mesh region
+        rmeshRegion%NVT = 0
+        rmeshRegion%h_IvertexIdx = ST_NOHANDLE
+        rmeshRegion%cflags = IAND(rmeshRegion%cflags, &
+                              NOT(MESH_REGION_SHARE_VERTEX))
+      
+      END IF
+      
+      ! Return here
+      RETURN
+    
+    END IF
+    
+    p_rtria => rmeshRegion%p_rtriangulation
+    
+    ! Get the face index array
+    CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+    
+    ! Get the vertices-at-face array from the triangulation
+    CALL storage_getbase_int2D(p_rtria%h_IverticesAtFace,&
+                               p_IvertsAtFace)
+    
+    ! Allocate an vertex map
+    ALLOCATE(IvertMap(p_rtria%NVT))
+    DO i=1, p_rtria%NVT
+      IvertMap(i) = 0
+    END DO
+    
+    ! Go through all faces
+    DO i=1, rmeshRegion%NAT
+    
+      ! Get the face index
+      iface = p_IfaceIdx(i)
+      
+      ! Go through all edges adjacent to that face
+      DO j=1, UBOUND(p_IvertsAtFace,1)
+        
+        IF (p_IvertsAtFace(j,iface) .GT. 0) THEN
+          IvertMap(p_IvertsAtFace(j,iface)) = 1
+        END IF
+        
+      END DO
+      
+    END DO
+    
+    ! Now let's see what to do with the old vertices
+    IF (rmeshRegion%h_IvertexIdx .NE. ST_NOHANDLE) THEN
+    
+      ! Get the old vertices index array
+      CALL storage_getbase_int(rmeshRegion%h_IvertexIdx, p_IvertIdx)
+      
+      SELECT CASE(copMask)
+      CASE (MESH_REGION_MASK_OR)
+        ! Go through all vertices and apply an OR-operator.
+        DO i=1, rmeshRegion%NVT
+          IvertMap(p_IvertIdx(i)) = 1
+        END DO
+      
+      CASE (MESH_REGION_MASK_AND)
+        ! Go through all vertices and apply an AND-operator.
+        DO i=1, rmeshRegion%NVT
+          IvertMap(p_IvertIdx(i)) = IAND(IvertMap(p_IvertIdx(i)),1)
+        END DO
+        
+      END SELECT
+      
+      ! Now let's destroy the old vertex index array
+      IF ((rmeshRegion%h_IvertexIdx .NE. ST_NOHANDLE) .AND. &
+          (IAND(rmeshRegion%cflags, MESH_REGION_SHARE_VERTEX) .EQ. 0)) THEN
+          
+          CALL storage_free(rmeshRegion%h_IvertexIdx)
+          
+      END IF
+      
+      ! Remove anything that has to do with vertices from the mesh region
+      rmeshRegion%NVT = 0
+      rmeshRegion%h_IvertexIdx = ST_NOHANDLE
+      rmeshRegion%cflags = IAND(rmeshRegion%cflags, &
+                            NOT(MESH_REGION_SHARE_VERTEX))
+      
+    END IF
+    
+    ! Now we have the vertex index map, so create an index array from this.
+    CALL mshreg_calcArrayFromMap(IvertMap, rmeshRegion%h_IvertexIdx, &
+                                 rmeshRegion%NVT)
+    
+    ! And release the vertex map
+    DEALLOCATE(IvertMap)
+    
+    ! That's it
+    
+  END SUBROUTINE
+
 END MODULE
