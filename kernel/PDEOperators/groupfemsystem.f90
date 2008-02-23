@@ -6,10 +6,54 @@
 !# <purpose>
 !# This module provides the basic routines for applying the group-finite
 !# element formulation to systems of conservation laws.
-!# The group finite element formulation introduced by Fletcher uses the
-!# same basis functions for the unknown solution and the fluxes.
+!# The technique was proposed by C.A.J. Fletcher in:
+!#
+!#     C.A.J. Fletcher, "The group finite element formulation"
+!#     Computer Methods in Applied Mechanics and Engineering (ISSN 0045-7825),
+!#     vol. 37, April 1983, p. 225-244.
+!#
+!# The group finite element formulation uses the same basis functions for the
+!# unknown solution and the fluxes. This allows for an efficient matrix assemble,
+!# whereby the constant coefficient matrices can be assembled once and for all
+!# at the beginning of the simulation and each time the grid is modified.
+!#
 !# Moreover, this module allows to modifying discrete operators by means of
-!# the algebraic flux correction (AFC) methodology by Kuzmin, Möller and Turek.
+!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Moeller
+!# and Turek in a series of publications. As a starting point for systems of
+!# conservation laws, the reader is referred to the book chapter
+!#
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compressible Euler
+!#     Equations", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
+!#     Algorithms, and Applications, Springer, 2005, 207-250.
+!#
+!#
+!# A more detailed description of the algorithms is given in the comments of the
+!# subroutine implementing the corresponding discretisation schemes. All methods
+!# are based on the stabilisation structure t_afcstab which is defined in the 
+!# underlying module "afcstabilisation". The initialisation as a system stabilisation
+!# structure is done by the routine gfsys_initStabilisation. 
+!#
+!# There are three types of routines. The gfsys_buildDivOperator routines can be
+!# used to assemble the discrete divergence operators resulting from the standard
+!# Galerkin finite element discretisation plus some discretely defined artificial
+!# viscosities. This technique represents a generalisation of the discrete upwinding
+!# approach which has been used to construct upwind finite element scheme for
+!# scalar conservation laws (see module groupfemscalar for details).
+!#
+!# The second type of routines is given by gfsc_buildResidualXXX. They can be
+!# used to update/initialise the residual term applying some sort of algebraic
+!# flux correction. Importantly, the family of AFC schemes gives rise to nonlinear
+!# algebraic equations that need to be solved iteratively. Thus, it is usefull to
+!# build the compensating antidiffusion into the residual vector rather than the
+!# right hand side. However, it is still possible to give a negative scaling factor.
+!#
+!# The third type of routines is used to assemble the Jacobian matrix for Newton's
+!# method. Here, the exact Jacobian matrix is approximated by means of second-order
+!# divided differences whereby the "perturbation parameter" is specified by the
+!# user. You should be aware of the fact, that in general the employed  flux limiters
+!# are not differentiable globally so that the construction of the Jacobian matrix
+!# is somehow "delicate". Even though the routines will produce some matrix without
+!# warnings, this matrix may be singular and/or ill-conditioned.
 !#
 !# The following routines are available:
 !#
@@ -949,7 +993,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM1D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -983,14 +1027,14 @@ CONTAINS
           C_ij(1)=C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1014,7 +1058,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1050,14 +1094,14 @@ CONTAINS
           C_ij(2)=C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1081,7 +1125,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM3D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1119,14 +1163,14 @@ CONTAINS
           C_ij(3)=C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1151,7 +1195,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM1D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1185,14 +1229,14 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1217,7 +1261,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1253,14 +1297,14 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1285,7 +1329,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij,u_i,u_j
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
       REAL(DP), DIMENSION(NDIM3D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1323,14 +1367,14 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+B_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-B_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+B_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)-A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+A_ij(ivar)-S_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-A_ij(ivar)+S_ij(ivar)
           END DO
         END DO
       END DO
@@ -1354,7 +1398,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1389,16 +1433,16 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -1423,7 +1467,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1460,16 +1504,16 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -1494,7 +1538,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1533,16 +1577,16 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -1568,7 +1612,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1603,16 +1647,16 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -1638,7 +1682,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1675,16 +1719,16 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -1710,7 +1754,7 @@ CONTAINS
       TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
@@ -1749,16 +1793,16 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
             DO jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+B_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-B_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+B_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+A_ij(idx)+S_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)-A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+A_ij(idx)-S_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-A_ij(idx)+S_ij(idx)
             END DO
           END DO
         END DO
@@ -3753,7 +3797,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM1D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3783,13 +3827,13 @@ CONTAINS
           C_ij(1)=C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7Diag_1D
@@ -3811,7 +3855,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3843,13 +3887,13 @@ CONTAINS
           C_ij(2)=C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7Diag_2D
@@ -3871,7 +3915,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM3D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3905,13 +3949,13 @@ CONTAINS
           C_ij(3)=C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7Diag_3D
@@ -3934,7 +3978,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM1D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3964,13 +4008,13 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9Diag_1D
@@ -3993,7 +4037,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4025,13 +4069,13 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9Diag_2D
@@ -4054,7 +4098,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM3D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4088,13 +4132,13 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9Diag_3D
@@ -4116,7 +4160,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4146,13 +4190,13 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_1D
@@ -4174,7 +4218,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4206,13 +4250,13 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_2D
@@ -4234,7 +4278,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4268,13 +4312,13 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_3D
@@ -4297,7 +4341,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4327,13 +4371,13 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_1D
@@ -4356,7 +4400,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4388,13 +4432,13 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_2D
@@ -4417,7 +4461,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: K
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
@@ -4451,13 +4495,13 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
           
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
           
           ! Assemble the global operator
-          K(:,ii) = K(:,ii)+A_ij+B_ij
-          K(:,ij) = K(:,ij)-A_ij-B_ij
-          K(:,ji) = K(:,ji)+A_ij-B_ij
-          K(:,jj) = K(:,jj)-A_ij+B_ij
+          K(:,ii) = K(:,ii)+A_ij+S_ij
+          K(:,ij) = K(:,ij)-A_ij-S_ij
+          K(:,ji) = K(:,ji)+A_ij-S_ij
+          K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_3D
@@ -4542,7 +4586,7 @@ CONTAINS
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
-      
+
       ! Loop over all rows
       DO i = 1, NEQ
         
@@ -4564,7 +4608,7 @@ CONTAINS
 
           ! Compute local Roe matrix
           CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
+
           ! Compute scalar dissipation
           CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
 
@@ -6084,9 +6128,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6120,12 +6164,12 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_1D
@@ -6149,9 +6193,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6187,12 +6231,12 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_2D
@@ -6216,9 +6260,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6256,12 +6300,12 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_3D
@@ -6286,9 +6330,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6322,12 +6366,12 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_1D
@@ -6352,9 +6396,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6390,12 +6434,12 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_2D
@@ -6420,9 +6464,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6460,12 +6504,12 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rB_ij
-          res(j,:) = res(j,:)+rA_ij-rB_ij
+          res(i,:) = res(i,:)+rA_ij+rS_ij
+          res(j,:) = res(j,:)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_3D
@@ -6619,8 +6663,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6651,12 +6695,12 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_1D
@@ -6680,8 +6724,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6714,12 +6758,12 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_2D
@@ -6743,8 +6787,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6779,12 +6823,12 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat7_3D
@@ -6809,8 +6853,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6841,12 +6885,12 @@ CONTAINS
           C_ij(1) = C_ij(1)+Cx(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_1D
@@ -6871,8 +6915,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6905,12 +6949,12 @@ CONTAINS
           C_ij(2) = C_ij(2)+Cy(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_2D
@@ -6935,8 +6979,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,B_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rB_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
+      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
@@ -6971,12 +7015,12 @@ CONTAINS
           C_ij(3) = C_ij(3)+Cz(ij)
 
           ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, B_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, B_ij, NVAR, diff, 1, 0._DP, rB_ij, 1)
+          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rB_ij
-          res(:,j) = res(:,j)+rA_ij-rB_ij
+          res(:,i) = res(:,i)+rA_ij+rS_ij
+          res(:,j) = res(:,j)+rA_ij-rS_ij
         END DO
       END DO
     END SUBROUTINE doGalerkinMat9_3D
@@ -8284,7 +8328,7 @@ CONTAINS
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
-      
+
       ! Loop over all rows
       DO i = 1, NEQ
         
@@ -8303,11 +8347,11 @@ CONTAINS
           ! Compute averaged coefficients
           C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
+
           ! Compute local Roe matrix
           CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
           CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
+          
           ! Compute scalar dissipation
           CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
           rD_ij = dscale*d_ij(1)*diff
@@ -9204,8 +9248,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -9364,8 +9408,8 @@ CONTAINS
       END DO
       
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -9459,8 +9503,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (forward)
       DO i = 1, NEQ
@@ -9620,8 +9664,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -9715,8 +9759,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Z-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -9810,8 +9854,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Z-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -9971,8 +10015,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -10132,8 +10176,8 @@ CONTAINS
       END DO
       
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -10227,8 +10271,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (forward)
       DO i = 1, NEQ
@@ -10389,8 +10433,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -10484,8 +10528,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Z-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -10579,8 +10623,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Z-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -10901,8 +10945,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -11055,8 +11099,8 @@ CONTAINS
       END DO
       
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11147,8 +11191,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (forward)
       DO i = 1, NEQ
@@ -11302,8 +11346,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11394,8 +11438,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Z-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -11486,8 +11530,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Z-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -11640,8 +11684,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
       
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
@@ -11794,9 +11838,9 @@ CONTAINS
       END DO
       
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
-      
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
+
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
       qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
@@ -11886,9 +11930,9 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
-      
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
+
       ! Loop over all rows (forward)
       DO i = 1, NEQ
         
@@ -12042,8 +12086,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for X-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Y-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -12134,8 +12178,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Y-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Clear P's and Q's for Z-direction
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
@@ -12226,8 +12270,8 @@ CONTAINS
       END DO
 
       ! Compute nodal correction factors for Z-direction
-      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP)
-      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP)
+      rp(:,1:NEQ) = afcstab_limit( pp(:,1:NEQ), qp(:,1:NEQ), 1._DP, 1._DP)
+      rm(:,1:NEQ) = afcstab_limit(-pm(:,1:NEQ),-qm(:,1:NEQ), 1._DP, 1._DP)
 
       ! Loop over all rows (backward)
       DO i = NEQ, 1, -1
