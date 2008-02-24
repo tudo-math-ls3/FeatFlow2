@@ -520,7 +520,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
@@ -576,8 +576,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
               
@@ -628,8 +632,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! L1-error is:   int_... abs(u-u_h) dx
               
@@ -682,8 +690,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
               
@@ -992,7 +1004,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
@@ -1048,8 +1060,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+            !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
               
@@ -1165,8 +1181,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
               
@@ -1477,7 +1497,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
@@ -1533,8 +1553,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
               
@@ -1585,8 +1609,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! L1-error is:   int_... abs(u-u_h) dx
               
@@ -1661,8 +1689,12 @@ CONTAINS
             
               ! calculate the current weighting factor in the cubature formula
               ! in that cubature point.
+              !
+              ! Take the absolut value of the determinant of the mapping.
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
               
               ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
               
@@ -2715,7 +2747,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (p_elementDistributionRef%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistributionRef%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
             p_Ddetj(:,1:IELmax-IELset+1),&
@@ -2768,8 +2800,12 @@ CONTAINS
             
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
             
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
             
             ! L2-error is:   int_... (u_h-u_ref)*(u_h-u_ref) dx
             
@@ -3228,7 +3264,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (p_elementDistributionRef%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistributionRef%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
             p_Ddetj(:,1:IELmax-IELset+1),&
@@ -3281,8 +3317,12 @@ CONTAINS
             
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
             
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
             
             ! L1-error is:   int_... abs(u_h-u_ref) dx
             
@@ -3659,7 +3699,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
             p_Ddetj(:,1:IELmax-IELset+1),&
@@ -3697,8 +3737,12 @@ CONTAINS
             
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
             
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
             
             ! Mathematical expectation of the center of mass is:
             ! int_... x*u_h dx
@@ -3846,7 +3890,7 @@ CONTAINS
         ! coordinates of the points on the real element, too.
         ! Unfortunately, we need the real coordinates of the cubature points
         ! anyway for the function - so calculate them all.
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
             p_Ddetj(:,1:IELmax-IELset+1),&
@@ -3888,8 +3932,12 @@ CONTAINS
             
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
             
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
             
             ! Standard deviation is: int_... (x-\hat x_h)*(x-\hat x_h)*u_h dx
             ! summed up for all x,y and z

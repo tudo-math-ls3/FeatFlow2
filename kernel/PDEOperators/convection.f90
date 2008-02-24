@@ -2011,14 +2011,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonpar) THEN
       
-        CALL trafo_calctrafoabs_sim (p_relementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_relementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1), &
              p_DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_relementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_relementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1))
              
@@ -2204,6 +2204,13 @@ CONTAINS
 
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
+          !
+          ! Normally, we have to take the absolut value of the determinant 
+          ! of the mapping here!
+          ! In 2D, the determinant is always positive, whereas in 3D,
+          ! the determinant might be negative -- that's normal!
+          ! But because this routine only works in 2D, we can skip
+          ! the ABS here!
 
           OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
@@ -3509,14 +3516,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonpar) THEN
       
-        CALL trafo_calctrafoabs_sim (p_relementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_relementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1), &
              p_DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_relementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_relementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1))
              
@@ -3530,21 +3537,6 @@ CONTAINS
       CALL elem_generic_sim (p_relementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
             Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts)
-      !$OMP CRITICAL (display3)
-!      PRINT *,"Thread ID: ",omp_get_thread_num()
-!      PRINT *,"Dbas(1,1,1,1): ",Dbas(1,1,1,1)                      
-!      READ(*,*)
-!      print *,dbas
-!      READ(*,*)
-!      print *,p_dcoords
-!      READ(*,*)
-!      print *,p_djac
-!      READ(*,*)
-!      print *,p_ddetj
-!      READ(*,*)
-!      print *,p_dcubpts
-!      READ(*,*)
-      !$OMP END CRITICAL (display3)                  
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -3868,6 +3860,13 @@ CONTAINS
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Normally, we have to take the absolut value of the determinant 
+            ! of the mapping here!
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            ! But because this routine only works in 2D, we can skip
+            ! the ABS here!
 
             OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
@@ -4020,6 +4019,13 @@ CONTAINS
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Normally, we have to take the absolut value of the determinant 
+            ! of the mapping here!
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            ! But because this routine only works in 2D, we can skip
+            ! the ABS here!
 
             OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
@@ -4091,6 +4097,13 @@ CONTAINS
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Normally, we have to take the absolut value of the determinant 
+            ! of the mapping here!
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            ! But because this routine only works in 2D, we can skip
+            ! the ABS here!
 
             OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
@@ -5210,14 +5223,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rconfig%bconstViscosity)) THEN
       
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount),p_DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount))
               
@@ -6167,14 +6180,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rconfig%bconstViscosity)) THEN
       
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount),p_DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount))
               

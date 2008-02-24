@@ -2440,14 +2440,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
       
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
              rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
              IELmax-IELset+1,ncubp,Dcoords,&
              DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,Dcoords,&
              DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1))
              
@@ -2506,8 +2506,12 @@ CONTAINS
 
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
 
-            OM = Domega(ICUBP)*Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
 
             ! Loop over the additive factors in the bilinear form.
             DO IALBET = 1,rform%itermcount
@@ -2598,8 +2602,12 @@ CONTAINS
 
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
 
-            OM = Domega(ICUBP)*Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
 
             ! Loop over the additive factors in the bilinear form.
             DO IALBET = 1,rform%itermcount
@@ -3333,7 +3341,7 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
       
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
              p_rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
@@ -3341,7 +3349,7 @@ CONTAINS
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1))
              
@@ -3402,8 +3410,12 @@ CONTAINS
 
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
 
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
 
             ! Loop over the additive factors in the bilinear form.
             DO IALBET = 1,rform%itermcount
@@ -3504,8 +3516,12 @@ CONTAINS
 
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
 
-            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
 
             ! Loop over the additive factors in the bilinear form.
             DO IALBET = 1,rform%itermcount

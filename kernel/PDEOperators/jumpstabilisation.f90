@@ -656,14 +656,14 @@ CONTAINS
       ! we need the coordinates of the points on the real element, too.
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. bconstViscosity)) THEN
       
-        CALL trafo_calctrafoabs_sim (&
+        CALL trafo_calctrafo_sim (&
               p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount),p_DcubPtsReal)
       
       ELSE
       
-        CALL trafo_calctrafoabs_sim (p_elementDistribution%ctrafoType,&
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
               IELcount,ncubp,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELcount),p_Ddetj(:,1:IELcount))
               
