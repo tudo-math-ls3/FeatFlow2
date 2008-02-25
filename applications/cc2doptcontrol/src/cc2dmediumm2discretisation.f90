@@ -1294,7 +1294,7 @@ CONTAINS
         'ilevelTargetFlow',rproblem%roptcontrol%ilevelTargetFlow,0)
 
     CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'smeshTargetFlow',spar,'')
+        'smeshTargetFlow',spar,'''''')
     READ(spar,*) rproblem%roptcontrol%smeshTargetFlow
 
     CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
