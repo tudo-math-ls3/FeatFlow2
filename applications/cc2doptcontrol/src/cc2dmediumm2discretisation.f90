@@ -1294,6 +1294,10 @@ CONTAINS
         'ilevelTargetFlow',rproblem%roptcontrol%ilevelTargetFlow,0)
 
     CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
+        'smeshTargetFlow',spar,'')
+    READ(spar,*) rproblem%roptcontrol%smeshTargetFlow
+
+    CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
         'stargetFlow',spar,'')
     READ(spar,*) rproblem%roptcontrol%stargetFlow
 
@@ -1380,36 +1384,57 @@ CONTAINS
     INTEGER :: nactTimesteps
     
     ! At first, what is with the triangulation and discretisation?
-    ! Is the triangulation inside of the bounds specified by NLMIN/NLMAX
-    ! or not? If yes, we can use a predefined triangulation.
-    ! If not, we have to refine the mesh until we reach the destination
-    ! level.
-    IF (rproblem%roptcontrol%ilevelTargetFlow .LE. rproblem%NLMAX) THEN
-      ! Create references to the existing triangulation
-      rproblem%roptcontrol%p_rtriangulation => &
-        rproblem%RlevelInfo(rproblem%roptcontrol%ilevelTargetFlow)%rtriangulation
+    ! Are we using the same mesh / discretisation as we use for the
+    ! solution?
+    IF (rproblem%roptcontrol%smeshTargetFlow .EQ. '') THEN
+      ! Is the triangulation inside of the bounds specified by NLMIN/NLMAX
+      ! or not? If yes, we can use a predefined triangulation.
+      ! If not, we have to refine the mesh until we reach the destination
+      ! level.
+      IF (rproblem%roptcontrol%ilevelTargetFlow .LE. rproblem%NLMAX) THEN
+        ! Create references to the existing triangulation
+        rproblem%roptcontrol%p_rtriangulationTargetFlow => &
+          rproblem%RlevelInfo(rproblem%roptcontrol%ilevelTargetFlow)%rtriangulation
+          
+        rproblem%roptcontrol%p_rdiscrTargetFlow => &
+          rproblem%RlevelInfo(rproblem%roptcontrol%ilevelTargetFlow)%p_rdiscretisationPrimal
+      ELSE
+        iref = rproblem%roptcontrol%ilevelTargetFlow - rproblem%NLMAX
+        ALLOCATE(rproblem%roptcontrol%p_rtriangulationTargetFlow)
+        CALL tria_duplicate (&
+            rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,TR_SHARE_ALL)
+            
+        ! Refine
+        CALL tria_quickRefine2LevelOrdering(iref,&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+        CALL tria_initStandardMeshFromRaw (&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+            
+        ! Create a discretisation structure corresponding to that mesh.
+        ALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
+        CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
+            rproblem%roptcontrol%p_rdiscrTargetFlow)
         
-      rproblem%roptcontrol%p_rdiscrTargetFlow => &
-        rproblem%RlevelInfo(rproblem%roptcontrol%ilevelTargetFlow)%p_rdiscretisationPrimal
+      END IF
     ELSE
-      iref = rproblem%roptcontrol%ilevelTargetFlow - rproblem%NLMAX
-      ALLOCATE(rproblem%roptcontrol%p_rtriangulation)
-      CALL tria_duplicate (&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
-          rproblem%roptcontrol%p_rtriangulation,TR_SHARE_ALL)
-          
+      ! No, we use a different mesh. We must read it from discr and refine it!
+      ALLOCATE(rproblem%roptcontrol%p_rtriangulationTargetFlow)
+      CALL tria_readTriFile2D (rproblem%roptcontrol%p_rtriangulationTargetFlow, &
+          rproblem%roptcontrol%smeshTargetFlow, rproblem%p_rboundary)
+
       ! Refine
-      CALL tria_quickRefine2LevelOrdering(iref,&
-          rproblem%roptcontrol%p_rtriangulation,rproblem%p_rboundary)
+      CALL tria_quickRefine2LevelOrdering(rproblem%roptcontrol%ilevelTargetFlow-1,&
+          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
       CALL tria_initStandardMeshFromRaw (&
-          rproblem%roptcontrol%p_rtriangulation,rproblem%p_rboundary)
-          
+          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+      
       ! Create a discretisation structure corresponding to that mesh.
       ALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
       CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
-          rproblem%roptcontrol%p_rtriangulation,NDIM2D+1,&
+          rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
           rproblem%roptcontrol%p_rdiscrTargetFlow)
-      
     END IF
 
     ! Probably create a vector containing the target flow
@@ -1511,9 +1536,10 @@ CONTAINS
       CALL sptivec_releaseVector (rproblem%roptcontrol%rtargetFlowNonstat)
     END SELECT
 
-    IF (rproblem%roptcontrol%ilevelTargetFlow .LE. rproblem%NLMAX) THEN
+    IF ((rproblem%roptcontrol%smeshTargetFlow .EQ. '') .AND. &
+        (rproblem%roptcontrol%ilevelTargetFlow .LE. rproblem%NLMAX)) THEN
       ! Create references to the existing triangulation
-      NULLIFY(rproblem%roptcontrol%p_rtriangulation)
+      NULLIFY(rproblem%roptcontrol%p_rtriangulationTargetFlow)
       NULLIFY(rproblem%roptcontrol%p_rdiscrTargetFlow)
     ELSE
       ! Release the allocated triangulation/discretisation
@@ -1521,8 +1547,8 @@ CONTAINS
       CALL spdiscr_releaseBlockDiscr(rproblem%roptcontrol%p_rdiscrTargetFlow,.TRUE.)
       DEALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
       
-      CALL tria_done(rproblem%roptcontrol%p_rtriangulation)
-      DEALLOCATE(rproblem%roptcontrol%p_rtriangulation)
+      CALL tria_done(rproblem%roptcontrol%p_rtriangulationTargetFlow)
+      DEALLOCATE(rproblem%roptcontrol%p_rtriangulationTargetFlow)
     END IF
 
   END SUBROUTINE

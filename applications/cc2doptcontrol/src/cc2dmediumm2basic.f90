@@ -181,10 +181,15 @@ MODULE cc2dmediumm2basic
     ! Refinement level of the target flow.
     INTEGER :: ilevelTargetFlow = 0
     
+    ! Name of the TRI file with the mesh corresponding to target flow.
+    ! ='': Use the same mesh as for the computation of the solution
+    CHARACTER(SYS_STRLEN) :: smeshTargetFlow = ''
+
     ! Underlying mesh for the target flow if itypeTargetFlow<>0.
-    TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
+    TYPE(t_triangulation), POINTER :: p_rtriangulationTargetFlow => NULL()
     
     ! Discretisation structure specifying the discretisation of the
+    ! target flow.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscrTargetFlow => NULL()
     
     ! Solution vector containing a stationary target flow.

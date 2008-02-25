@@ -249,7 +249,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,imeshType,ncellsX
   
     ! Variable for a filename:  
     CHARACTER(LEN=256) :: sString
@@ -272,9 +272,26 @@ CONTAINS
     NULLIFY(rproblem%p_rboundary)
     CALL boundary_read_prm(rproblem%p_rboundary, sPrmFile)
         
-    ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
-        sTRIFile, rproblem%p_rboundary)
+    ! Now set up the basic triangulation. Which type of triangulation should
+    ! be set up?
+    CALL parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
+                              'imeshType',imeshType,0)
+    SELECT CASE (imeshType)
+    CASE (0)
+      ! Standard mesh, specified by a TRI file.
+      CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
+          sTRIFile, rproblem%p_rboundary)
+    CASE (1)
+      ! Sliced QUAD mesh with ncellsX cells on the coarse grid.
+      CALL parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
+                                'ncellsX',ncellsX,1)
+      CALL cc_generateSlicedQuadMesh(rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,&
+          ncellsX)
+    CASE DEFAULT
+      CALL output_line ('Unknown mesh type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
+      CALL sys_halt()
+    END SELECT
 
     ! Refine the mesh up to the minimum level
     CALL tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
@@ -323,6 +340,153 @@ CONTAINS
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
     
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE cc_generateSlicedQuadMesh (rtriangulation,ncellsX)
+  
+!<description>
+  ! This routine generates a standard [0,1]^2 QUAD mesh with ncellsX cells in
+  ! X-direction. By nature, these cells show an anisotropy of ncellsX:1.
+!</description>
+  
+!<input>
+  ! Number of cells in X-direction.
+  INTEGER, INTENT(IN) :: ncellsX
+!</input>
+    
+!<output>
+  ! Triangulation structure that receives the triangulation.
+  TYPE(t_triangulation), INTENT(OUT) :: rtriangulation
+!</output>
+    
+    ! local variables
+    INTEGER :: nbdVertives,nverticexX
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
+    INTEGER(I32) :: ivt, iel
+    INTEGER :: idim, ive
+    INTEGER(I32), DIMENSION(2) :: Isize
+    
+    ! Initialise the basic mesh
+    rtriangulation%ndim = NDIM2D
+    rtriangulation%NEL = ncellsX
+    rtriangulation%NVT = (ncellsX+1)*2
+    rtriangulation%NMT = 0
+    rtriangulation%NNVE = 4
+    rtriangulation%NBCT = 1
+    rtriangulation%InelOfType(:) = 0
+    rtriangulation%InelOfType(TRIA_NVEQUAD2D) = rtriangulation%NEL
+    
+    ! Allocate memory for the basic arrays on the heap
+    ! 2d array of size(NDIM2D, NVT)
+    Isize = (/NDIM2D,INT(rtriangulation%NVT,I32)/)
+    CALL storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointers to the coordinate array
+    ! p_Ddata2D is the pointer to the coordinate array
+    CALL storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+    
+    ! Initialise the point coordinates.
+    ! Odd vertices on the bottom, even vertices on top of the QUAD mesh,
+    ! numbered from left to right.
+    DO ivt=0,ncellsX
+      p_Ddata2D(1,2*ivt+1) = REAL(ivt,DP)/REAL(ncellsX,DP)
+      p_Ddata2D(2,2*ivt+1) = 0.0_DP
+
+      p_Ddata2D(1,2*ivt+2) = REAL(ivt,DP)/REAL(ncellsX,DP)
+      p_Ddata2D(2,2*ivt+2) = 1.0_DP
+    END DO
+    
+    ! Allocate memory for IverticesAtElement
+    ! build the old KVERT...
+    ! 2d array of size(NVE, NEL)
+    Isize = (/rtriangulation%NNVE,INT(rtriangulation%NEL,I32)/)
+    CALL storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the IverticesAtElement array and read the array
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_Idata2D)
+
+    ! Initialise the connectivity for the cells.
+    DO iel=0,ncellsX-1
+      p_Idata2D(1,iel+1) = 2*iel+1
+      p_Idata2D(2,iel+1) = 2*iel+3
+      p_Idata2D(3,iel+1) = 2*iel+4
+      p_Idata2D(4,iel+1) = 2*iel+2
+    END DO
+    
+    ! Allocate memory for InodalProperty 
+    CALL storage_new ('tria_read_tri2D', 'KNPR', &
+        INT(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+    
+    ! Get the pointer to the InodalProperty array
+    CALL storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_Idata)
+
+    ! All vertices are on the boundary
+    p_Idata(:) = 1
+    
+    ! Number of vertices on the boundary -- all of them
+    rtriangulation%NVBD = rtriangulation%NVT
+    
+    ! Allocate memory for IverticesAtBoundary.
+    CALL storage_new ('tria_generateBasicBoundary', &
+        'KVBD', INT(rtriangulation%NVBD,I32), &
+        ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        
+    ! Allocate memory for the boundary component index vector.
+    ! Initialise that with zero!
+    CALL storage_new ('tria_generateBasicBoundary', &
+        'KBCT', INT(rtriangulation%NBCT+1,I32), &
+        ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    
+    ! Get pointers to the arrays
+    CALL storage_getbase_int (&
+        rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+        
+    CALL storage_getbase_int (&
+        rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! The first element in p_IboundaryCpIdx is (as the head) always =1.
+    p_IboundaryCpIdx(1) = 1
+    p_IboundaryCpIdx(2) = 1 + rtriangulation%NVBD
+
+    ! Initialise the numbers of the vertices on the boundary
+    DO ivt=0,ncellsX
+      p_IverticesAtBoundary (ivt+1) = 2*ivt+1
+      p_IverticesAtBoundary (2*(ncellsX+1)-ivt) = 2*ivt+2
+    END DO
+    
+    ! Allocate memory for  and DvertexParameterValue
+    CALL storage_new ('tria_generateBasicBoundary', &
+        'DVBDP', INT(rtriangulation%NVBD,I32), &
+        ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+    
+    ! Get the array where to store boundary parameter values.
+    CALL storage_getbase_double (&
+        rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+    CALL storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+        
+    ! Initialise the parameter values of the vertices. For the bottommost
+    ! edge, they coincide wit the coordinate. For the topmost edge,
+    ! that's 3 - x-coordinate.
+    DO ivt=1,ncellsX+1
+      p_DvertexParameterValue (ivt) = p_Ddata2D(1,p_IverticesAtBoundary(ivt))
+      p_DvertexParameterValue (ncellsX+1+ivt) = &
+          3.0_DP - p_Ddata2D(1,p_IverticesAtBoundary(ncellsX+1+ivt))
+    END DO
+
   END SUBROUTINE
 
 END MODULE
