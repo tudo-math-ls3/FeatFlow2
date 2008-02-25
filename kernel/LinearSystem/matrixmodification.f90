@@ -449,6 +449,7 @@ CONTAINS
   
 !<description>
     ! This routine merges some pairs of lines of a given scalar matrix.
+    ! Note that the data (if any) will be cleared.
 !</description>
 
 !<input>
@@ -471,16 +472,39 @@ CONTAINS
         CALL sys_halt()
     END IF
 
-    ! At first we must take care of the matrix type.
+    ! At first we must take care of the matrix type and modify the structure
     SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
       CALL mergeLines_format9 (rmatrix, Irows)
+      
     CASE (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
       CALL mergeLines_format7 (rmatrix, Irows)
+      
+    CASE DEFAULT
+      CALL output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
     END SELECT
 
-    print *, "Lines merged"
-    STOP
+    ! Next, resize the data accordingly (if present)
+    IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
+      SELECT CASE (rmatrix%cinterleavematrixFormat)
+      CASE (LSYSSC_MATRIXUNDEFINED)
+        CALL storage_realloc('mmod_mergeLines', rmatrix%NA, rmatrix%h_DA,&
+            ST_NEWBLOCK_ZERO, .FALSE.)
+        
+      CASE (LSYSSC_MATRIXD)
+        CALL storage_realloc('mmod_mergeLines', rmatrix%NA*rmatrix%NVAR,&
+            rmatrix%h_DA, ST_NEWBLOCK_ZERO, .FALSE.)
+        
+      CASE (LSYSSC_MATRIX1)
+        CALL storage_realloc('mmod_mergeLines', rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR,&
+            rmatrix%h_DA, ST_NEWBLOCK_ZERO, .FALSE.)
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
+      END SELECT
+    END IF
 
   CONTAINS
     
@@ -497,8 +521,6 @@ CONTAINS
       INTEGER(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
       INTEGER              :: h_ImergeWithRow
 
-      print *, Irows
-      
       ! Allocate temporal memory
       CALL storage_new('mergeLines_format7', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
           h_ImergeWithRow, ST_NEWBLOCK_ZERO)
@@ -523,50 +545,24 @@ CONTAINS
         p_ImergeWithRow(irow) = jrow
         p_ImergeWithRow(jrow) = irow
 
-        ! Treat diagonal entry of row irow separately
-        DO jld = p_Kld(jrow)+1, p_Kld(jrow+1)-1
-          IF (p_Kcol(jld) .EQ. irow) EXIT
-          IF (p_Kcol(jld) .LT. irow) CYCLE
-          naIncr = naIncr+1
-          EXIT
-        END DO
-        
         ! Loop over row number irow
-        DO ild = p_Kld(irow)+1, p_Kld(irow+1)-1
+        loop1: DO ild = p_Kld(irow), p_Kld(irow+1)-1
           icol = p_Kcol(ild)
-          DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-            IF (p_Kcol(jld) .EQ. icol) EXIT
-            IF (p_Kcol(jld) .LT. icol) EXIT
-            naIncr = naIncr+1
-            EXIT
-          END DO
-        END DO
-
-        ! Treat diagonal entry of row jrow separately
-        DO ild = p_Kld(irow)+1, p_Kld(irow+1)-1
-          IF (p_Kcol(ild) .EQ. jrow) EXIT
-          IF (p_Kcol(ild) .LT. jrow) CYCLE
+          loop2: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+            IF (p_Kcol(jld) .EQ. icol) CYCLE loop1
+          END DO loop2
           naIncr = naIncr+1
-          EXIT
-        END DO
-        
-        ! Loop over row number jrow
-        DO jld = p_Kld(jrow)+1, p_Kld(jrow+1)-1
-          jcol = p_Kcol(jld)
-          DO ild = p_Kld(irow), p_Kld(irow+1)-1
-            IF (p_Kcol(ild) .EQ. jcol) EXIT
-            IF (p_Kcol(ild) .LT. jcol) EXIT
-            naIncr = naIncr+1
-            EXIT
-          END DO
-        END DO
-      END DO
+        END DO loop1
 
-      DO ieq = 1, rmatrix%NEQ
-        PRINT *, p_Kcol(p_Kld(ieq):p_Kld(ieq+1)-1)
+        ! Loop over row number jrow
+        loop3: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+          jcol = p_Kcol(jld)
+          loop4: DO ild = p_Kld(irow), p_Kld(irow+1)-1
+            IF (p_Kcol(ild) .EQ. jcol) CYCLE loop3
+          END DO loop4
+          naIncr = naIncr+1
+        END DO loop3
       END DO
-      pause
-      print *, "---"
 
       ! Ok, we now know the number of nonzero entries that need to be added to the
       ! global matrix, hence, set new matix dimension and resize Kcol
@@ -581,8 +577,6 @@ CONTAINS
       ! Loop over all equations of the matrix but in reverse order (!!!)
       DO ieq = rmatrix%NEQ, 1, -1
 
-        print *, "Processing row",ieq
-
         ! Ok, so what do we have to do with this row
         IF (p_ImergeWithRow(ieq) .EQ. 0) THEN
           
@@ -591,8 +585,11 @@ CONTAINS
 
           ! Just copy the row without modifications
           DO ild = p_Kld(ieq+1)-1, p_Kld(ieq), -1
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(ild)
-            naIncr         = naIncr-1
+
+            ! Decrease position counter
+            naIncr = naIncr-1
           END DO
           
           ! Update Kld for next column and reduce number of nonzero entries
@@ -603,35 +600,49 @@ CONTAINS
 
           ! The two rows have already been merged, hence 
           ! we can adopt all entries from the indicated row
-          jeq    = p_ImergeWithRow(ieq)
+          jeq = p_ImergeWithRow(ieq)
+
+          ! Set current position
           naIncr = na
 
           ! Just copy the row without modifications
           DO jld = p_Kld(jeq+1)-1, p_Kld(jeq), -1
-            IF (p_Kcol(jld) .EQ. ieq) CYCLE
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
-            naIncr         = naIncr-1
+            
+            ! Decrease position counter
+            naIncr = naIncr-1
           END DO
 
-          ! Sort row according to format 7 format
-          DO ild = naIncr, na
-            IF (p_Kcol(ild) .GT. jeq) EXIT
-            p_Kcol(ild-1) = p_Kcol(ild)
-            p_Kcol(ild)   = jeq
-          END DO
-          p_Kcol(naIncr) = ieq
-          naIncr = naIncr-1
+          ! Sort row according to format 7 format. First we need to find the position of the diagonal entry
+          ! and swap the diagonal entry from the copied row with the entry of the current row. Then we need
+          ! to move the diagonal entry from the copied row to its correct position.
+          sort: DO ild = naIncr+1, na
+            IF (p_Kcol(ild) .EQ. ieq) THEN
+              ! Swap the first entry which corresponds to the diagonal entry of the copied row with current position
+              p_Kcol(ild)      = jeq
+              p_Kcol(naIncr+1) = ieq
+              
+              ! Move the swapped diagonal entry from the copied row to its correct position
+              DO jld = ild+1, na
+                IF (p_Kcol(jld) .GT. jeq) EXIT sort
+                p_Kcol(jld-1) = p_Kcol(jld)
+                p_Kcol(jld)   = jeq
+              END DO
+              EXIT sort
+            END IF
+          END DO sort
           
           ! Update Kld for next column and reduce number of nonzero entries
           p_Kld(ieq+1) = na+1
-          na = naIncr
+          na           = naIncr
 
         ELSE
           
           ! We actually have to merge the two rows
           jeq = p_ImergeWithRow(ieq)
 
-          ! First, sort the row that should b merged into the current row in ascending order.
+          ! First, sort the row that should be merged into the current row in ascending order.
           ! This is mandatory since the matrix is stored in format 7 so that the diagonal
           ! entry is at the first position and not stored in-between.
           DO jld = p_Kld(jeq)+1, p_Kld(jeq+1)-1
@@ -641,11 +652,14 @@ CONTAINS
           END DO
           
           ! Ok, now the row is in ascending order
-          naIncr = na
           ild = p_Kld(ieq+1)-1
           jld = p_Kld(jeq+1)-1
 
+          ! Set current position
+          naIncr = na
+
           ! Loop in reverse order until both rows have been processed
+          ! Note that the diagonal entry of row irow is treated below
           DO WHILE((ild .GT. p_Kld(ieq)) .AND. (jld .GE. p_Kld(jeq)))
 
             ! Get column indices for both rows and recude position counter by one
@@ -671,32 +685,40 @@ CONTAINS
 
           ! Copy leftover from the row that corresponds to JEQ?
           DO WHILE (jld .GE. p_Kld(jeq))
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
+
+            ! Decrease position counter
             naIncr = naIncr-1
             jld    = jld-1
           END DO
-
+          
           ! Copy leftover from the row that corresponds to IEQ?
+          ! Here, we explicitly copy the diagonal entry to the first position.
           DO WHILE (ild .GE. p_Kld(ieq))
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(ild)
+            
+            ! Decrease position counter
             naIncr = naIncr-1
             ild    = ild-1
           END DO
 
-          ! That's it. ! Update Kld for next column and adjust number of nonzero entries
+          ! That's it! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
-          na = naIncr
+          na           = naIncr
         END IF
+
+        ! Ok, if we process two consecutive rows, then we must also adjust the starting position
+        IF ((p_ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
       END DO
 
-      p_Kld(1) = na
-
-      DO ieq = 1, rmatrix%NEQ
-        PRINT *, p_Kcol(p_Kld(ieq):p_Kld(ieq+1)-1)
-      END DO
-      
-      stop
-
+      ! Consistency check. If na is not zero then something went wrong
+      IF (na .NE. 0) THEN
+        CALL output_line('An internal error occured; please contact the Featflow team!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mergeLines_format7')
+        CALL sys_halt()
+      END IF
     END SUBROUTINE mergeLines_format7
 
     
@@ -714,8 +736,6 @@ CONTAINS
       INTEGER(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
       INTEGER              :: h_ImergeWithRow
 
-      print *, Irows
-      
       ! Allocate temporal memory
       CALL storage_new('mergeLines_format7', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
           h_ImergeWithRow, ST_NEWBLOCK_ZERO)
@@ -742,26 +762,22 @@ CONTAINS
         p_ImergeWithRow(jrow) = irow
 
         ! Loop over row number irow
-        DO ild = p_Kld(irow), p_Kld(irow+1)-1
+        loop1: DO ild = p_Kld(irow), p_Kld(irow+1)-1
           icol = p_Kcol(ild)
-          DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-            IF (p_Kcol(jld) .EQ. icol) EXIT
-            IF (p_Kcol(jld) .LT. icol) EXIT
-            naIncr = naIncr+1
-            EXIT
-          END DO
-        END DO
-        
+          loop2: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+            IF (p_Kcol(jld) .EQ. icol) CYCLE loop1
+          END DO loop2
+          naIncr = naIncr+1
+        END DO loop1
+
         ! Loop over row number jrow
-        DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+        loop3: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
           jcol = p_Kcol(jld)
-          DO ild = p_Kld(irow), p_Kld(irow+1)-1
-            IF (p_Kcol(ild) .EQ. jcol) EXIT
-            IF (p_Kcol(ild) .LT. jcol) EXIT
-            naIncr = naIncr+1
-            EXIT
-          END DO
-        END DO
+          loop4: DO ild = p_Kld(irow), p_Kld(irow+1)-1
+            IF (p_Kcol(ild) .EQ. jcol) CYCLE loop3
+          END DO loop4
+          naIncr = naIncr+1
+        END DO loop3
       END DO
 
       ! Ok, we now know the number of nonzero entries that need to be added to the
@@ -776,17 +792,23 @@ CONTAINS
 
       ! Loop over all equations of the matrix but in reverse order (!!!)
       DO ieq = rmatrix%NEQ, 1, -1
-
+        
         ! Ok, so what do we have to do with this row
         IF (p_ImergeWithRow(ieq) .EQ. 0) THEN
           
           ! Set current position
           naIncr = na
-
+          
           ! Just copy the row without modifications
           DO ild = p_Kld(ieq+1)-1, p_Kld(ieq), -1
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(ild)
-            naIncr         = naIncr-1
+
+            ! Check for diagonal entry
+            IF (p_Kcol(naIncr) .EQ. ieq) p_Kdiagonal(ieq) = naIncr
+            
+            ! Decrease position counter
+            naIncr = naIncr-1
           END DO
           
           ! Update Kld for next column and adjust number of nonzero entries
@@ -797,28 +819,38 @@ CONTAINS
 
           ! The two rows have already been merged, hence 
           ! we can adopt all entries from the indicated row
-          jeq    = p_ImergeWithRow(ieq)
+          jeq = p_ImergeWithRow(ieq)
+
+          ! Set current position
           naIncr = na
 
           ! Just copy the row without modifications
           DO jld = p_Kld(jeq+1)-1, p_Kld(jeq), -1
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
-            naIncr         = naIncr-1
+            
+            ! Check for diagonal entry
+            IF (p_Kcol(naIncr) .EQ. ieq) p_Kdiagonal(ieq) = naIncr
+
+            ! Decrease position counter
+            naIncr = naIncr-1
           END DO
           
           ! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
-          na = naIncr
+          na           = naIncr
 
         ELSE
           
           ! We actually have to merge the two rows
           jeq = p_ImergeWithRow(ieq)
 
-          ! The rows are in ascendin order
-          naIncr = na
+          ! The rows are in ascending order
           ild = p_Kld(ieq+1)-1
           jld = p_Kld(jeq+1)-1
+
+          ! Set current position
+          naIncr = na
 
           ! Loop in reverse order until both rows have been processed
           DO WHILE((ild .GE. p_Kld(ieq)) .AND. (jld .GE. p_Kld(jeq)))
@@ -827,7 +859,7 @@ CONTAINS
             icol = p_Kcol(ild)
             jcol = p_Kcol(jld)
 
-            ! Which is the next column that should be processed
+            ! Which is the next column that should be processed?
             IF (jcol .GT. icol) THEN
               p_Kcol(naIncr) = jcol
               jld = jld-1
@@ -840,38 +872,54 @@ CONTAINS
               ild = ild-1
             END IF
 
+            ! Check for diagonal entry
+            IF (p_Kcol(naIncr) .EQ. ieq) p_Kdiagonal(ieq) = naIncr
+
             ! Decrease position counter
             naIncr = naIncr-1
           END DO
 
           ! Copy leftover from the row that corresponds to JEQ?
           DO WHILE (jld .GE. p_Kld(jeq))
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
+
+            ! Check for diagonal entry
+            IF (p_Kcol(naIncr) .EQ. ieq) p_Kdiagonal(ieq) = naIncr
+            
+            ! Decrease position counter
             naIncr = naIncr-1
             jld    = jld-1
           END DO
 
           ! Copy leftover from the row that corresponds to IEQ?
           DO WHILE (ild .GE. p_Kld(ieq))
+            ! Copy column index
             p_Kcol(naIncr) = p_Kcol(ild)
+
+            ! Check for diagonal entry
+            IF (p_Kcol(naIncr) .EQ. ieq) p_Kdiagonal(ieq) = naIncr
+
+            ! Decrease position counter
             naIncr = naIncr-1
             ild    = ild-1
           END DO
 
-          ! That's it. ! Update Kld for next column and adjust number of nonzero entries
+          ! That's it! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
-          na = naIncr
+          na           = naIncr
         END IF
+
+        ! Ok, if we process two consecutive rows, then we must also adjust the starting position
+        IF ((p_ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
       END DO
 
-      p_Kld(1) = na
-
-      DO ieq = 1, rmatrix%NEQ
-        PRINT *, p_Kcol(p_Kld(ieq):p_Kld(ieq+1)-1)
-      END DO
-      
-      stop
-
+      ! Consistency check. If na is not zero then something went wrong
+      IF (na .NE. 0) THEN
+        CALL output_line('An internal error occured; please contact the Featflow team!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mergeLines_format9')
+        CALL sys_halt()
+      END IF
     END SUBROUTINE mergeLines_format9
   END SUBROUTINE mmod_mergeLines
 
