@@ -197,35 +197,35 @@ GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),pentium)
-OPTFLAGS  += -mfpmath=sse
+OPTFLAGS  += -msse
 FCFLAGS   += -march=pentium
 CCFLAGS   += -march=pentium
 CPPFLAGS   += -march=pentium
 endif
 
 ifeq ($(FFCPU),pentiumpro)
-OPTFLAGS  += -mfpmath=sse
+OPTFLAGS  += -msse
 FCFLAGS   += -march=pentiumpro
 CCFLAGS   += -march=pentiumpro
 CPPFLAGS   += -march=pentiumpro
 endif
 
 ifeq ($(FFCPU),pentium2)
-OPTFLAGS  += -mfpmath=sse
+OPTFLAGS  += -msse
 FCFLAGS   += -march=pentium2
 CCFLAGS   += -march=pentium2
 CPPFLAGS   += -march=pentium2
 endif
 
 ifeq ($(FFCPU),pentium3)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse
+OPTFLAGS  += -mmmx -msse
 FCFLAGS   += -march=pentium3
 CCFLAGS   += -march=pentium3
 CPPFLAGS   += -march=pentium3
 endif
 
 ifeq ($(FFCPU),pentiumm)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse #-mfpmath=sse2
+OPTFLAGS  += -mmmx -msse -msse2
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 CPPFLAGS   += -march=pentium-m
@@ -233,13 +233,13 @@ endif
 
 ifeq ($(FFCPU),pentium4)
 ifeq ($(FFCORE),northwood)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
+OPTFLAGS  += -mmmx -msse -msse2
 FCFLAGS   += -march=pentium4
 CCFLAGS   += -march=pentium4
 CPPFLAGS   += -march=pentium4
 endif
 ifeq ($(FFCORE),prescott)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2 -mfpmath=sse3
+OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=prescott
 CCFLAGS   += -march=prescott
 endif
