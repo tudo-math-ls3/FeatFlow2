@@ -36,7 +36,7 @@ TIMENLMIN = 1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 4 # 5
+TIMENLMAX = 3 # 5
 
 # ----------------------------------------------------------------------
 
@@ -87,12 +87,12 @@ nminIterations     = 1
 
 # Maximum number of steps
       
-nmaxIterations     = 10 0 10
+nmaxIterations     = 1 0 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 8 15 2 10 2 5 1E-8 0.001
+depsRel            = 1E-8 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -116,12 +116,12 @@ ioutputLevel       = 2 3
 # Filename prefix for GMV output.
 # ='': Disable GMV output
 
-sgmvFileName = 'gmv/u3_4.gmv'
+sgmvFileName = './gmv/u3_4.gmv'
 
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
 
-sfinalSolutionFileName = 'ns/solution'
+sfinalSolutionFileName = ''
 
 ##############
 [TIME-DEFCORR]
@@ -181,13 +181,13 @@ nmaxSimulRefLevel = 0
 # Other values e.g.:
 #   2.0 = two refinements in time per refinement in space
 #   0.5 = two refinements in space per refinement in time
-dspacetimeRefFactor = 2.0
+dspacetimeRefFactor = 1.0
 
 # Minimum number of time-MG sweeps per nonlinear time-iteration
-nminIterations = 0
+nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
-nmaxIterations = 100 00
+nmaxIterations = 10 0 00
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -198,7 +198,7 @@ depsRel            = 1E-8 1E-2
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-0 5
+depsAbs            = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -248,7 +248,7 @@ domega = 0.7 0.5 0.7
 domegaPrecond = 1.0
 
 # Number of smoothing steps
-nsmSteps = 2
+nsmSteps = 4
 
 # Switch smoothing on/off.
 # =1: do smoothing as pre- and/or postsmoother, respectively.
@@ -274,7 +274,7 @@ istoppingCriterion = 1
 
 # Output level of the smoother
 
-ioutputLevel = 1 2
+ioutputLevel = 0 2
 
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
@@ -303,7 +303,7 @@ ctypeCoarseGridSolver = 5 4 0 2 5 4
 nminIterations = 1 3
 
 # Maximum number of time-iterations on the coarsest time-mesh
-nmaxIterations = 10 20
+nmaxIterations = 100 20
 
 # Damping parameter
 domega = 1.0 1.0 1.0 1.0
@@ -311,7 +311,7 @@ domega = 1.0 1.0 1.0 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 6 13 13 3 1E-10 
+depsRel            = 1E-6 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -325,7 +325,7 @@ ddivRel            = 1E20
 
 # Output level of the solver.
 
-ioutputLevel = 2 2 3
+ioutputLevel = 0 2 3
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -360,7 +360,7 @@ domega = 1.0 1.0 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-9 13 13 3 1E-10 
+depsRel            = 1E-13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -376,7 +376,7 @@ ddivRel            = 1E20
 # If a subsolver is embedded in the solver, it receives the output level
 # ioutputLevel-2.
 
-ioutputLevel = 0 0 2 3
+ioutputLevel = 0 2 3
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
