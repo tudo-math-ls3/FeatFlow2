@@ -31,7 +31,6 @@ MODULE matrixmodification
   USE storage
   USE linearsystemscalar
   USE genoutput
-  USE sort
   
   IMPLICIT NONE
 
@@ -445,16 +444,20 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mmod_mergeLines (rmatrix,Irows)
+  SUBROUTINE mmod_mergeLines (rmatrix,Irows,bsymmetric)
   
 !<description>
     ! This routine merges some pairs of lines of a given scalar matrix.
-    ! Note that the data (if any) will be cleared.
+    ! Note that the data (if any) will be cleared. If the optional parameter
+    ! bsymmetric=.TRUE., then the sparsity pattern will be symmetric.
 !</description>
 
 !<input>
     ! A list of row numbers of all the rows which are to be merged.
     INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:,:) :: Irows
+    
+    ! OPTIONAL: If bsymmetric=.TRUE. the sparsity pattern will be symmetric
+    LOGICAL, INTENT(IN), OPTIONAL                    :: bsymmetric
 !</input>
 
 !<inputoutput>
@@ -464,6 +467,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! local variables
+     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_ImergeWithRow
+     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+     INTEGER(PREC_MATIDX) :: ieq,ild,jld,irow,jrow,icol,jcol,naIncr
+     INTEGER              :: h_ImergeWithRow
+
     ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
     IF (IAND(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0 .OR.&
         IAND(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)   .NE. 0) THEN
@@ -471,19 +480,81 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
         CALL sys_halt()
     END IF
+    
+    ! Allocate temporal memory
+    CALL storage_new('mmod_mergeLines', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
+        h_ImergeWithRow, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int(h_ImergeWithRow, p_ImergeWithRow)
 
+    ! Get Kld and Kcol
+    CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
+    CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+
+    ! Loop over the list of rows to be merged
+    naIncr = 0
+    DO ieq = 1, SIZE(Irows,2)
+      
+      ! Get row numbers to be merged
+      irow = Irows(1, ieq)
+      jrow = Irows(2, ieq)
+      
+      ! If both numbers are identical, then nothing needs to be done
+      IF (irow .EQ. jrow) CYCLE
+      
+      ! Mark rows for merging
+      p_ImergeWithRow(irow) = jrow
+      p_ImergeWithRow(jrow) = irow
+      
+      ! Loop over row number irow
+      loop1: DO ild = p_Kld(irow), p_Kld(irow+1)-1
+        icol = p_Kcol(ild)
+        loop2: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+          IF (p_Kcol(jld) .EQ. icol) CYCLE loop1
+        END DO loop2
+        naIncr = naIncr+1
+      END DO loop1
+      
+      ! Loop over row number jrow
+      loop3: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
+        jcol = p_Kcol(jld)
+        loop4: DO ild = p_Kld(irow), p_Kld(irow+1)-1
+          IF (p_Kcol(ild) .EQ. jcol) CYCLE loop3
+        END DO loop4
+        naIncr = naIncr+1
+      END DO loop3
+    END DO
+    
+    ! Ok, we now know the number of nonzero entries that need to be added to the
+    ! global matrix, hence, set new matix dimension and resize Kcol
+    rmatrix%NA = rmatrix%NA+naIncr
+    CALL storage_realloc('mmod_mergeLines', rmatrix%NA, rmatrix%h_Kcol,&
+        ST_NEWBLOCK_NOINIT, .TRUE.)
+    
     ! At first we must take care of the matrix type and modify the structure
     SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
-      CALL mergeLines_format9 (rmatrix, Irows)
+      CALL mergeLines_format9 (rmatrix, p_ImergeWithRow)
+      
+      ! Do we have to generate a symmetric sparsity graph?
+      IF (PRESENT(bsymmetric)) THEN
+        IF (bsymmetric) CALL mergeColumns_format9(rmatrix, p_ImergeWithRow)
+      END IF
       
     CASE (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
-      CALL mergeLines_format7 (rmatrix, Irows)
+      CALL mergeLines_format7 (rmatrix, p_ImergeWithRow)
       
+      ! Do we have to generate a symmetric sparsity graph?
+      IF (PRESENT(bsymmetric)) THEN
+        IF (bsymmetric) CALL mergeColumns_format7(rmatrix, p_ImergeWithRow)
+      END IF
+
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
     END SELECT
+
+    ! Free temporal storage
+    CALL storage_free(h_ImergeWithRow)
 
     ! Next, resize the data accordingly (if present)
     IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
@@ -509,76 +580,29 @@ CONTAINS
   CONTAINS
     
     ! ****************************************
-    ! The merging routine for format 7
+    ! The row merging routine for format 7
 
-    SUBROUTINE mergeLines_format7(rmatrix, Irows)
-      TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
-      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:,:) :: Irows
+    SUBROUTINE mergeLines_format7(rmatrix, ImergeWithRow)
+      TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrix
+      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: ImergeWithRow
       
       ! local variables
-      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_ImergeWithRow
+      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
       INTEGER(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
-      INTEGER              :: h_ImergeWithRow
-
-      ! Allocate temporal memory
-      CALL storage_new('mergeLines_format7', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
-          h_ImergeWithRow, ST_NEWBLOCK_ZERO)
-      CALL storage_getbase_int(h_ImergeWithRow, p_ImergeWithRow)
 
       ! Get Kld and Kcol
       CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
       CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       
-      ! Loop over the list of rows to be merged
-      naIncr = 0
-      DO ieq = 1, SIZE(Irows,2)
-        
-        ! Get row numbers to be merged
-        irow = Irows(1, ieq)
-        jrow = Irows(2, ieq)
-
-        ! If both numbers are identical, then nothing needs to be done
-        IF (irow .EQ. jrow) CYCLE
-
-        ! Mark rows for merging
-        p_ImergeWithRow(irow) = jrow
-        p_ImergeWithRow(jrow) = irow
-
-        ! Loop over row number irow
-        loop1: DO ild = p_Kld(irow), p_Kld(irow+1)-1
-          icol = p_Kcol(ild)
-          loop2: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-            IF (p_Kcol(jld) .EQ. icol) CYCLE loop1
-          END DO loop2
-          naIncr = naIncr+1
-        END DO loop1
-
-        ! Loop over row number jrow
-        loop3: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-          jcol = p_Kcol(jld)
-          loop4: DO ild = p_Kld(irow), p_Kld(irow+1)-1
-            IF (p_Kcol(ild) .EQ. jcol) CYCLE loop3
-          END DO loop4
-          naIncr = naIncr+1
-        END DO loop3
-      END DO
-
-      ! Ok, we now know the number of nonzero entries that need to be added to the
-      ! global matrix, hence, set new matix dimension and resize Kcol
-      rmatrix%NA = rmatrix%NA+naIncr
-      CALL storage_realloc('mergeLines_format7', rmatrix%NA, rmatrix%h_Kcol,&
-          ST_NEWBLOCK_NOINIT, .TRUE.)
-      CALL lsyssc_getbase_Kcol(rmatrix,p_Kcol)
-
       ! Initialize current position
       na = rmatrix%NA
 
       ! Loop over all equations of the matrix but in reverse order (!!!)
       DO ieq = rmatrix%NEQ, 1, -1
 
-        ! Ok, so what do we have to do with this row
-        IF (p_ImergeWithRow(ieq) .EQ. 0) THEN
+        ! Ok, so what do we have to do with this row?
+        IF (ImergeWithRow(ieq) .EQ. 0) THEN
           
           ! Set current position
           naIncr = na
@@ -596,11 +620,11 @@ CONTAINS
           p_Kld(ieq+1) = na+1
           na           = naIncr
           
-        ELSEIF (p_ImergeWithRow(ieq) .GT. ieq) THEN
+        ELSEIF (ImergeWithRow(ieq) .GT. ieq) THEN
 
           ! The two rows have already been merged, hence 
           ! we can adopt all entries from the indicated row
-          jeq = p_ImergeWithRow(ieq)
+          jeq = ImergeWithRow(ieq)
 
           ! Set current position
           naIncr = na
@@ -640,7 +664,7 @@ CONTAINS
         ELSE
           
           ! We actually have to merge the two rows
-          jeq = p_ImergeWithRow(ieq)
+          jeq = ImergeWithRow(ieq)
 
           ! First, sort the row that should be merged into the current row in ascending order.
           ! This is mandatory since the matrix is stored in format 7 so that the diagonal
@@ -710,7 +734,7 @@ CONTAINS
         END IF
 
         ! Ok, if we process two consecutive rows, then we must also adjust the starting position
-        IF ((p_ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
+        IF ((ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
       END DO
 
       ! Consistency check. If na is not zero then something went wrong
@@ -723,69 +747,21 @@ CONTAINS
 
     
     ! ****************************************
-    ! The merging routine for format 9
+    ! The row merging routine for format 9
 
-    SUBROUTINE mergeLines_format9(rmatrix, Irows)
-      TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
-      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:,:) :: Irows
+    SUBROUTINE mergeLines_format9(rmatrix, ImergeWithRow)
+      TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrix
+      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: ImergeWithRow
       
       ! local variables
       INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_ImergeWithRow
       INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
       INTEGER(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
-      INTEGER              :: h_ImergeWithRow
-
-      ! Allocate temporal memory
-      CALL storage_new('mergeLines_format7', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
-          h_ImergeWithRow, ST_NEWBLOCK_ZERO)
-      CALL storage_getbase_int(h_ImergeWithRow, p_ImergeWithRow)
-
-      ! Get Kld and Kcol
+      
+      ! Get Kld, Kcol and Kdiagonal
       CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
       CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       CALL lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-      
-      ! Loop over the list of rows to be merged
-      naIncr = 0
-      DO ieq = 1, SIZE(Irows,2)
-        
-        ! Get row numbers to be merged
-        irow = Irows(1, ieq)
-        jrow = Irows(2, ieq)
-
-        ! If both numbers are identical, then nothing needs to be done
-        IF (irow .EQ. jrow) CYCLE
-
-        ! Mark rows for merging
-        p_ImergeWithRow(irow) = jrow
-        p_ImergeWithRow(jrow) = irow
-
-        ! Loop over row number irow
-        loop1: DO ild = p_Kld(irow), p_Kld(irow+1)-1
-          icol = p_Kcol(ild)
-          loop2: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-            IF (p_Kcol(jld) .EQ. icol) CYCLE loop1
-          END DO loop2
-          naIncr = naIncr+1
-        END DO loop1
-
-        ! Loop over row number jrow
-        loop3: DO jld = p_Kld(jrow), p_Kld(jrow+1)-1
-          jcol = p_Kcol(jld)
-          loop4: DO ild = p_Kld(irow), p_Kld(irow+1)-1
-            IF (p_Kcol(ild) .EQ. jcol) CYCLE loop3
-          END DO loop4
-          naIncr = naIncr+1
-        END DO loop3
-      END DO
-
-      ! Ok, we now know the number of nonzero entries that need to be added to the
-      ! global matrix, hence, set new matix dimension and resize Kcol
-      rmatrix%NA = rmatrix%NA+naIncr
-      CALL storage_realloc('mergeLines_format9', rmatrix%NA, rmatrix%h_Kcol,&
-          ST_NEWBLOCK_NOINIT, .TRUE.)
-      CALL lsyssc_getbase_Kcol(rmatrix,p_Kcol)
 
       ! Initialize current position
       na = rmatrix%NA
@@ -793,8 +769,8 @@ CONTAINS
       ! Loop over all equations of the matrix but in reverse order (!!!)
       DO ieq = rmatrix%NEQ, 1, -1
         
-        ! Ok, so what do we have to do with this row
-        IF (p_ImergeWithRow(ieq) .EQ. 0) THEN
+        ! Ok, so what do we have to do with this row?
+        IF (ImergeWithRow(ieq) .EQ. 0) THEN
           
           ! Set current position
           naIncr = na
@@ -815,11 +791,11 @@ CONTAINS
           p_Kld(ieq+1) = na+1
           na           = naIncr
           
-        ELSEIF (p_ImergeWithRow(ieq) .GT. ieq) THEN
+        ELSEIF (ImergeWithRow(ieq) .GT. ieq) THEN
 
           ! The two rows have already been merged, hence 
           ! we can adopt all entries from the indicated row
-          jeq = p_ImergeWithRow(ieq)
+          jeq = ImergeWithRow(ieq)
 
           ! Set current position
           naIncr = na
@@ -843,7 +819,7 @@ CONTAINS
         ELSE
           
           ! We actually have to merge the two rows
-          jeq = p_ImergeWithRow(ieq)
+          jeq = ImergeWithRow(ieq)
 
           ! The rows are in ascending order
           ild = p_Kld(ieq+1)-1
@@ -911,7 +887,7 @@ CONTAINS
         END IF
 
         ! Ok, if we process two consecutive rows, then we must also adjust the starting position
-        IF ((p_ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
+        IF ((ImergeWithRow(ieq) .EQ. ieq-1) .AND. (ieq .NE. 1)) p_Kld(ieq) = na+1
       END DO
 
       ! Consistency check. If na is not zero then something went wrong
@@ -921,6 +897,292 @@ CONTAINS
         CALL sys_halt()
       END IF
     END SUBROUTINE mergeLines_format9
+
+
+    ! ****************************************
+    ! The column merging routine for format 7
+
+    SUBROUTINE mergeColumns_format7(rmatrix, ImergeWithRow)
+      TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrix
+      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: ImergeWithRow
+      
+      ! local variables
+      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KldAux
+      INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol,p_KcolAux
+      INTEGER(PREC_MATIDX) :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      INTEGER              :: h_KldAux,h_KcolAux
+
+      ! Allocate temporal memory
+      CALL storage_new('mergeColumns_format7', 'p_KldAux', rmatrix%NEQ+1, ST_INT,&
+          h_KldAux, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int(h_KldAux, p_KldAux)
+
+      ! Get Kld and Kcol
+      CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
+      CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+
+      ! Compute number of nonzero entries that need to be inserted into the matrix.
+      ! First, compute the number of nonzero entries present in each row.
+      DO ieq = 1, rmatrix%NEQ
+        p_KldAux(ieq) = p_Kld(ieq+1)-p_Kld(ieq)
+      END DO
+
+      ! Next, subtract the number of nonzero entries present in each column. 
+      DO ild = 1, rmatrix%NA
+        icol = p_Kcol(ild)
+        p_KldAux(icol) = p_KldAux(icol)-1
+      END DO
+
+      ! If an entry is zero, then the number of nonzero entries in the corresponding
+      ! row equals the number of nonzero entries in the corresponding column and
+      ! nothing needs to be done. A negative entry indicates that the number of 
+      ! nonzero entries in the corresponding column exceeds the number of nonzero
+      ! entries in the corresponding column. Hence, we must fill the missing entries.
+      naIncr = 0
+      DO ieq = 1, rmatrix%NEQ
+        p_KldAux(ieq) = -MIN(p_KldAux(ieq), 0)
+        naIncr        =  naIncr+p_KldAux(ieq)
+      END DO
+
+      ! Return of no new entries need to be considered
+      IF (naIncr .EQ. 0) THEN
+        CALL storage_free(h_KldAux)
+        RETURN
+      END IF
+
+      ! Make a copy of the original column indices
+      h_KcolAux = ST_NOHANDLE
+      CALL storage_copy(rmatrix%h_Kcol, h_KcolAux)
+      CALL storage_getbase_int(h_KcolAux, p_KcolAux)
+
+      ! Ok, we now know the number of nonzero entries that need to be added to the
+      ! global matrix, hence, set new matix dimension and resize Kcol
+      rmatrix%NA = rmatrix%NA+naIncr
+      CALL storage_realloc('mergeLines_format7', rmatrix%NA, rmatrix%h_Kcol,&
+          ST_NEWBLOCK_NOINIT, .TRUE.)
+      CALL lsyssc_getbase_Kcol(rmatrix,p_Kcol)
+
+      ! Adjust the row separator and copy its original content to p_KldAux
+      idxIncr     = p_KldAux(1)+p_Kld(2)-p_Kld(1)
+      p_KldAux(1) = p_Kld(1)
+
+      DO ieq = 2, rmatrix%NEQ
+        ! Compute number of nonzero entries in subsequent row
+        iidxIncr = p_KldAux(ieq)+p_Kld(ieq+1)-p_Kld(ieq)
+
+        ! Copy original entry
+        p_KldAux(ieq) = p_Kld(ieq)
+
+        ! Adjust absolut position for current row
+        p_Kld(ieq) = p_Kld(ieq-1)+idxIncr
+
+        ! Swap increment
+        idxIncr = iidxIncr
+      END DO
+      p_KldAux(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ+1)
+      p_Kld(rmatrix%NEQ+1)    = p_Kld(rmatrix%NEQ)+idxIncr
+      
+      ! In the first step, move the column data to their new positions
+      DO ieq = rmatrix%NEQ, 1, -1
+        ! Compute offset to new position
+        idxIncr = p_Kld(ieq)-p_KldAux(ieq)
+
+        ! Copy data
+        IF (idxIncr .GT. 0) THEN
+          DO ild = p_KldAux(ieq+1)-1, p_KldAux(ieq), -1
+            p_Kcol(ild+idxIncr) = p_Kcol(ild)
+          END DO
+        END IF
+      END DO
+
+      ! Loop over all matrix rows
+      loop1: DO ieq = 1, rmatrix%NEQ
+        
+        ! If the row has not been merged then skip it
+        IF (ImergeWithRow(ieq) .EQ. 0) CYCLE
+        
+        ! Otherwise, we process all entries of the current row
+        ! and check if the corresponding column entries exist
+        loop2: DO ild = p_KldAux(ieq)+1, p_KldAux(ieq+1)-1
+
+          ! Get column number
+          icol = p_KcolAux(ild)
+
+          ! Skip diagonal entries
+          IF (icol .EQ. ieq) CYCLE loop2
+          
+          ! Loop over row number icol and check if entry ieq exists
+          loop3: DO jld = p_Kld(icol)+1, p_Kld(icol+1)-1
+
+            ! Get column number
+            jcol = p_Kcol(jld)
+
+            ! Did we find the entry?
+            IF (jcol .EQ. ieq) EXIT
+
+            ! Skip left off-diagonal entries
+            IF (jcol .LT. ieq) CYCLE
+            
+            ! No, the entry was not found
+            DO jjld = p_Kld(icol+1)-1, jld+1, -1
+              p_Kcol(jjld) = p_Kcol(jjld-1)
+            END DO
+            p_Kcol(jld) = ieq
+            EXIT
+          END DO loop3
+        END DO loop2
+      END DO loop1
+      
+      ! Free temporal storage
+      CALL storage_free(h_KldAux)
+      CALL storage_free(h_KcolAux)      
+    END SUBROUTINE mergeColumns_format7
+
+    
+    ! ****************************************
+    ! The column merging routine for format 9
+
+    SUBROUTINE mergeColumns_format9(rmatrix, ImergeWithRow)
+      TYPE(t_matrixScalar), INTENT(INOUT)            :: rmatrix
+      INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: ImergeWithRow
+      
+      ! local variables
+      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KldAux
+      INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol,p_KcolAux
+      INTEGER(PREC_MATIDX) :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      INTEGER              :: h_KldAux,h_KcolAux
+
+      ! Allocate temporal memory
+      CALL storage_new('mergeColumns_format9', 'p_KldAux', rmatrix%NEQ+1, ST_INT,&
+          h_KldAux, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int(h_KldAux, p_KldAux)
+
+      ! Get Kld and Kcol
+      CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
+      CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+
+      ! Compute number of nonzero entries that need to be inserted into the matrix.
+      ! First, compute the number of nonzero entries present in each row.
+      DO ieq = 1, rmatrix%NEQ
+        p_KldAux(ieq) = p_Kld(ieq+1)-p_Kld(ieq)
+      END DO
+
+      ! Next, subtract the number of nonzero entries present in each column. 
+      DO ild = 1, rmatrix%NA
+        icol = p_Kcol(ild)
+        p_KldAux(icol) = p_KldAux(icol)-1
+      END DO
+
+      ! If an entry is zero, then the number of nonzero entries in the corresponding
+      ! row equals the number of nonzero entries in the corresponding column and
+      ! nothing needs to be done. A negative entry indicates that the number of 
+      ! nonzero entries in the corresponding column exceeds the number of nonzero
+      ! entries in the corresponding column. Hence, we must fill the missing entries.
+      naIncr = 0
+      DO ieq = 1, rmatrix%NEQ
+        p_KldAux(ieq) = -MIN(p_KldAux(ieq), 0)
+        naIncr        =  naIncr+p_KldAux(ieq)
+      END DO
+
+      ! Return of no new entries need to be considered
+      IF (naIncr .EQ. 0) THEN
+        CALL storage_free(h_KldAux)
+        RETURN
+      END IF
+
+      ! Make a copy of the original column indices
+      h_KcolAux = ST_NOHANDLE
+      CALL storage_copy(rmatrix%h_Kcol, h_KcolAux)
+      CALL storage_getbase_int(h_KcolAux, p_KcolAux)
+
+      ! Ok, we now know the number of nonzero entries that need to be added to the
+      ! global matrix, hence, set new matix dimension and resize Kcol
+      rmatrix%NA = rmatrix%NA+naIncr
+      CALL storage_realloc('mergeLines_format9', rmatrix%NA, rmatrix%h_Kcol,&
+          ST_NEWBLOCK_NOINIT, .TRUE.)
+      CALL lsyssc_getbase_Kcol(rmatrix,p_Kcol)
+
+      ! Adjust the row separator and copy its original content to p_KldAux
+      idxIncr     = p_KldAux(1)+p_Kld(2)-p_Kld(1)
+      p_KldAux(1) = p_Kld(1)
+
+      DO ieq = 2, rmatrix%NEQ
+        ! Compute number of nonzero entries in subsequent row
+        iidxIncr = p_KldAux(ieq)+p_Kld(ieq+1)-p_Kld(ieq)
+
+        ! Copy original entry
+        p_KldAux(ieq) = p_Kld(ieq)
+
+        ! Adjust absolut position for current row
+        p_Kld(ieq) = p_Kld(ieq-1)+idxIncr
+
+        ! Swap increment
+        idxIncr = iidxIncr
+      END DO
+      p_KldAux(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ+1)
+      p_Kld(rmatrix%NEQ+1)    = p_Kld(rmatrix%NEQ)+idxIncr
+      
+      ! In the first step, move the column data to their new positions
+      DO ieq = rmatrix%NEQ, 1, -1
+        ! Compute offset to new position
+        idxIncr = p_Kld(ieq)-p_KldAux(ieq)
+
+        ! Copy data
+        IF (idxIncr .GT. 0) THEN
+          DO ild = p_KldAux(ieq+1)-1, p_KldAux(ieq), -1
+            p_Kcol(ild+idxIncr) = p_Kcol(ild)
+          END DO
+        END IF
+      END DO
+
+      ! Loop over all matrix rows
+      loop1: DO ieq = 1, rmatrix%NEQ
+        
+        ! If the row has not been merged then skip it
+        IF (ImergeWithRow(ieq) .EQ. 0) CYCLE
+        
+        ! Otherwise, we process all entries of the current row
+        ! and check if the corresponding column entries exist
+        loop2: DO ild = p_KldAux(ieq), p_KldAux(ieq+1)-1
+
+          ! Get column number
+          icol = p_KcolAux(ild)
+
+          ! Skip diagonal entries
+          IF (icol .EQ. ieq) CYCLE loop2
+          
+          ! Loop over row number icol and check if entry ieq exists
+          loop3: DO jld = p_Kld(icol), p_Kld(icol+1)-1
+
+            ! Get column number
+            jcol = p_Kcol(jld)
+
+            ! Did we find the entry?
+            IF (jcol .EQ. ieq) EXIT
+
+            ! Skip left off-diagonal entries
+            IF (jcol .LT. ieq) CYCLE
+            
+            ! No, the entry was not found
+            DO jjld = p_Kld(icol+1)-1, jld+1, -1
+              p_Kcol(jjld) = p_Kcol(jjld-1)
+            END DO
+            p_Kcol(jld) = ieq
+            EXIT
+          END DO loop3
+        END DO loop2
+      END DO loop1
+      
+      ! Rebuild the diagonal array
+      CALL lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      CALL lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+
+      ! Free temporal storage
+      CALL storage_free(h_KldAux)
+      CALL storage_free(h_KcolAux)      
+    END SUBROUTINE mergeColumns_format9
   END SUBROUTINE mmod_mergeLines
 
 END MODULE matrixmodification
