@@ -1300,7 +1300,7 @@ CONTAINS
 
     ! local variables
     REAL(DP), DIMENSION(SIZE(Dd)) :: rv1
-    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z, dot
+    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z
     INTEGER  :: its, i, j, jj, k, l, nm, n, m, idot
     INTEGER, PARAMETER :: MAX_ITS = 30
     LOGICAL :: btransposed
