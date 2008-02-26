@@ -36,4 +36,14 @@ REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: R_ij
 REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: L_ij
 END SUBROUTINE fcb_getCharacteristics
 
+SUBROUTINE fcb_getFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+USE fsystem
+
+REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
+REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+REAL(DP),               INTENT(IN)  :: dscale
+REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij,F_ji
+
+END SUBROUTINE fcb_getFlux
+
 END INTERFACE

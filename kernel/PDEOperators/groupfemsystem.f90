@@ -75,19 +75,15 @@
 !#        of the divergence term $div(F)$ by means of the Galerkin method 
 !#        and some sort of artificial dissipation (if required)
 !#
-!# 5.) gfsys_buildResidualGalerkin = gfsys_buildResScalarGalerkin /
-!#                                   gfsys_buildResBlockGalerkin
-!#     -> assemble the residual for standard Galerkin scheme
+!# 5.) gfsys_buildResidual = gfsys_buildResScalar /
+!#                           gfsys_buildResBlock
+!#     -> assemble the residual vector
 !#
-!# 6.) gfsys_buildResidualUpwind = gfsys_buildResScalarUpwind /
-!#                                 gfsys_buildResBlockUpwind
-!#     -> assemble the residual for discrete upwinding scheme
-!#
-!# 7.) gfsys_buildResidualTVD = gfsys_buildResScalarTVD /
+!# 6.) gfsys_buildResidualTVD = gfsys_buildResScalarTVD /
 !#                              gfsys_buildResBlockTVD
 !#     -> assemble the residual for FEM-TVD stabilisation
 !#
-!# 6.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
+!# 7.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
 !#                              gfsys_buildDivJacobianBlock
 !#     -> assemble the Jacobian matrix
 !#
@@ -122,8 +118,7 @@ MODULE groupfemsystem
   PUBLIC :: gfsys_isMatrixCompatible
   PUBLIC :: gfsys_isVectorCompatible
   PUBLIC :: gfsys_buildDivOperator
-  PUBLIC :: gfsys_buildResidualGalerkin
-  PUBLIC :: gfsys_buildResidualUpwind
+  PUBLIC :: gfsys_buildResidual
   PUBLIC :: gfsys_buildResidualTVD
   PUBLIC :: gfsys_buildDivJacobian
 
@@ -204,14 +199,9 @@ MODULE groupfemsystem
      MODULE PROCEDURE gfsys_buildDivOperatorBlock
   END INTERFACE
 
-  INTERFACE gfsys_buildResidualGalerkin
-    MODULE PROCEDURE gfsys_buildResScalarGalerkin
-    MODULE PROCEDURE gfsys_buildResBlockGalerkin
-  END INTERFACE
-
-  INTERFACE gfsys_buildResidualUpwind
-    MODULE PROCEDURE gfsys_buildResScalarUpwind
-    MODULE PROCEDURE gfsys_buildResBlockUpwind
+  INTERFACE gfsys_buildResidual
+    MODULE PROCEDURE gfsys_buildResScalar
+    MODULE PROCEDURE gfsys_buildResBlock
   END INTERFACE
 
   INTERFACE gfsys_buildResidualTVD
@@ -666,7 +656,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER      :: p_Kcol
     REAL(DP), DIMENSION(:), POINTER                  :: p_Cx,p_Cy,p_Cz,p_u
     INTEGER :: h_Ksep
-    INTEGER :: idim,ndim,ivar,jvar
+    INTEGER :: idim,ndim
     LOGICAL :: bisFullMatrix
 
     ! Check if block vector contains only one block and if
@@ -2029,7 +2019,8 @@ CONTAINS
       REAL(DP), DIMENSION(NDIM1D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
-      
+      INTEGER                     :: ivar
+
       ! Loop over all rows
       DO i = 1, NEQ
         
@@ -2093,7 +2084,8 @@ CONTAINS
       REAL(DP), DIMENSION(NDIM2D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
-      
+      INTEGER                     :: ivar
+
       ! Loop over all rows
       DO i = 1, NEQ
         
@@ -2158,6 +2150,7 @@ CONTAINS
       REAL(DP), DIMENSION(NDIM3D) :: C_ij
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
+      INTEGER                     :: ivar
       
       ! Loop over all rows
       DO i = 1, NEQ
@@ -5975,14 +5968,12 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResBlockGalerkin(RmatrixC, ru,&
-      fcb_getRoeMatrix, dscale, rres)
+  SUBROUTINE gfsys_buildResBlock(RmatrixC, ru,fcb_getFlux, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for standard
-    ! Galerkin scheme. If the vectors contain only one block,
-    ! then the scalar counterpart of this routine is called with
-    ! the scalar subvectors.
+    ! This subroutine assembles the residual vector for block vectors.
+    ! If the vector contains only one block, then the scalar counterpart
+    ! of this routine is called with the scalar subvector.
 !</description>
 
 !<input>
@@ -6008,14 +5999,14 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    REAL(DP), DIMENSION(:), POINTER             :: p_Cx,p_Cy,p_Cz,p_u,p_res
     INTEGER :: h_Ksep
 
     
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
-      CALL gfsys_buildResScalarGalerkin(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getRoeMatrix, dscale, rres%RvectorBlock(1))
+      CALL gfsys_buildResScalar(RmatrixC, ru%RvectorBlock(1),&
+          fcb_getFlux, dscale, rres%RvectorBlock(1))
       RETURN       
     END IF
 
@@ -6042,25 +6033,25 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doResidualMat7_1D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+         CALL doResidualMat7_2D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doResidualMat7_3D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
         CALL sys_halt()
       END SELECT
     
@@ -6074,32 +6065,32 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doResidualMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+         CALL doResidualMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doResidualMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
         CALL sys_halt()
       END SELECT
       
 
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockGalerkin')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
       CALL sys_halt()
     END SELECT
     
@@ -6111,10 +6102,10 @@ CONTAINS
     ! Here, the working routines follow
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 1D
+    ! Assemble residual vector in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6128,12 +6119,10 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
+      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
+      INTEGER(PREC_MATIDX)        :: ij,ji
+      INTEGER(PREC_VECIDX)        :: i,j
    
       ! Loop over all rows
       DO i = 1, NEQ
@@ -6147,39 +6136,28 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
+
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_1D
+    END SUBROUTINE doResidualMat7_1D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 2D
+    ! Assemble residual vector in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6193,10 +6171,8 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6212,41 +6188,29 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_2D
+    END SUBROUTINE doResidualMat7_2D
 
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 3D
+    ! Assemble residual vector in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6260,10 +6224,8 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6279,43 +6241,30 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_3D
+    END SUBROUTINE doResidualMat7_3D
 
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 1D
+    ! Assemble residual vector in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6330,10 +6279,8 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6349,39 +6296,28 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_1D
+    END SUBROUTINE doResidualMat9_1D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 2D
+    ! Assemble residual vector in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6396,10 +6332,8 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6415,41 +6349,29 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_2D
+    END SUBROUTINE doResidualMat9_2D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 3D
+    ! Assemble residual vector in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6464,10 +6386,8 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j,F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6483,49 +6403,36 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
+          ! Compute the fluxes
+          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rS_ij
-          res(j,:) = res(j,:)+rA_ij-rS_ij
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_3D
-  END SUBROUTINE gfsys_buildResBlockGalerkin
+    END SUBROUTINE doResidualMat9_3D
+  END SUBROUTINE gfsys_buildResBlock
   
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResScalarGalerkin(RmatrixC, ru,&
-      fcb_getRoeMatrix, dscale, rres)
+  SUBROUTINE gfsys_buildResScalar(RmatrixC, ru,&
+      fcb_getFlux, dscale, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector for standard
-    ! Galerkin scheme. Note that the vectors are required as scalar
-    ! vectors which are stored in the interleave format.
+    ! This subroutine assembles the residual vector. Note that the vectors are
+    ! required as scalar vectors which are stored in the interleave format.
 !</description>
 
 !<input>
@@ -6551,7 +6458,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    REAL(DP), DIMENSION(:), POINTER             :: p_Cx,p_Cy,p_Cz,p_u,p_res
     INTEGER :: h_Ksep
 
     ! Check if vectors are compatible
@@ -6577,25 +6484,25 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doResidualMat7_1D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+         CALL doResidualMat7_2D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+        CALL doResidualMat7_3D(p_Kld, p_Kcol, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
         CALL sys_halt()
       END SELECT
     
@@ -6609,32 +6516,32 @@ CONTAINS
       SELECT CASE(SIZE(RmatrixC,1))
       CASE (NDIM1D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-        CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doResidualMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
         
       CASE (NDIM2D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-         CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+         CALL doResidualMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
         
       CASE (NDIM3D)
         CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
         CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
         CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-        CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        CALL doResidualMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
             RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
         
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
         CALL sys_halt()
       END SELECT
       
 
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarGalerkin')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
       CALL sys_halt()
     END SELECT
 
@@ -6646,10 +6553,10 @@ CONTAINS
     ! Here, the working routines follow
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 1D
+    ! Assemble residual vector in 1D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6663,9 +6570,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6681,36 +6587,25 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_1D
+    END SUBROUTINE doResidualMat7_1D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 2D
+    ! Assemble residual vector in 2D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6724,9 +6619,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6742,38 +6636,26 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_2D
+    END SUBROUTINE doResidualMat7_2D
 
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 3D
+    ! Assemble residual vector in 3D
     ! All matrices are stored in matrix format 7
 
-    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6787,9 +6669,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6805,40 +6686,27 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_3D
+    END SUBROUTINE doResidualMat7_3D
 
     
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 1D
+    ! Assemble residual vector in 1D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6853,9 +6721,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6871,36 +6738,25 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_1D
+    END SUBROUTINE doResidualMat9_1D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 2D
+    ! Assemble residual vector in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6915,9 +6771,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6933,38 +6788,26 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_2D
+    END SUBROUTINE doResidualMat9_2D
 
 
     !**************************************************************
-    ! Assemble residual for high-order Galerkin operator in 3D
+    ! Assemble residual vector in 3D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doResidualMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, dscale, res)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -6979,9 +6822,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
       
       ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rS_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j
    
@@ -6998,33 +6840,20 @@ CONTAINS
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute the fluxes
+          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, S_ij, NVAR, diff, 1, 0._DP, rS_ij, 1)
-
           ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rS_ij
-          res(:,j) = res(:,j)+rA_ij-rS_ij
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_3D
-  END SUBROUTINE gfsys_buildResScalarGalerkin
+    END SUBROUTINE doResidualMat9_3D
+  END SUBROUTINE gfsys_buildResScalar
 
   ! *****************************************************************************
 
