@@ -691,8 +691,6 @@ CONTAINS
   INTEGER :: icurrentRegion
   INTEGER(I32) :: ccompl
   TYPE(t_bcRegion), POINTER :: p_rbcRegion
-  LOGICAL :: bbuildAll
-  TYPE(t_collection), POINTER :: p_rcoll
   
   ! Pointer to the boundary condition object
   TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
