@@ -1,12 +1,28 @@
 INTERFACE
 
-SUBROUTINE fcb_getVelocity(u_i,u_j,i,j,v_ij,v_ji)
+!<subroutine>
+
+SUBROUTINE fcb_calcVelocity(u_i,u_j,i,j,v_ij,v_ji)
+
+!<description>
+    ! This subroutine computes the (characteristic) velocity
+    ! for the edge that connects nodes I and J.
+!</description>
+
 USE fsystem
+USE dofmapping
 
-REAL(DP), INTENT(IN)                :: u_i,u_j
-INTEGER, INTENT(IN)                 :: i,j
-REAL(DP), DIMENSION(:), INTENT(OUT) :: v_ij,v_ji
+!<input>
+  REAL(DP), INTENT(IN)                :: u_i,u_j
+  INTEGER(PREC_DOFIDX),  INTENT(IN)   :: i,j
+!</input>
 
-END SUBROUTINE fcb_getVelocity
+!<output>
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: v_ij,v_ji
+!</output>
+
+!</subroutine>
+
+END SUBROUTINE fcb_calcVelocity
 
 END INTERFACE

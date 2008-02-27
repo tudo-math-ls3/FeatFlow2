@@ -22,7 +22,7 @@
 !# and Turek in a series of publications. As a starting point for systems of
 !# conservation laws, the reader is referred to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compressible Euler
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compsressible Euler
 !#     Equations", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
 !#     Algorithms, and Applications, Springer, 2005, 207-250.
 !#
@@ -213,34 +213,6 @@ MODULE groupfemsystem
     MODULE PROCEDURE gfsys_buildDivJacobianScalar
     MODULE PROCEDURE gfsys_buildDivJacobianBlock
   END INTERFACE
-
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
-
-!<constants>
-!<constantblock description="Global format flags for convective operator">
-
-  ! Galerkin transport operator (only diagonal part)
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_GALERKINDIAG = 0
-
-  ! Galerkin transport operator
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_GALERKIN     = 1
-
-  ! Upwind by scalar dissipation (only diagonal part)
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_SCALARDIAG   = 2
-
-  ! Upwind by scalar dissipation
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_SCALAR       = 3
-
-  ! Upwind by tensorial dissipation (only diagonal part)
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_TENSORDIAG   = 4
-
-  ! Upwind by tensorial dissipation
-  INTEGER, PARAMETER, PUBLIC :: GFSYS_TENSOR       = 5
-
-!</constantblock>
-!</constants>
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -600,7 +572,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivOperatorBlock(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, iassembly, bclear, rmatrixL)
+      fcb_calcMatrix, bclear, rmatrixL)
 
 !<description>
     ! This subroutine assembles the discrete transport operator $K$ so that
@@ -623,15 +595,6 @@ CONTAINS
 
     ! solution vector
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
-
-    ! type of assembly
-    !   iassembly = 0 : diagonal + Galerkin
-    !   iassembly = 1 :            Galerkin
-    !   iassembly = 2 : diagonal + scalar dissipation
-    !   iassembly = 3 :            scalar dissipation
-    !   iassembly = 4 : diagonal + tensorial dissipation
-    !   iassembly = 5 :            tensorial dissipation
-    INTEGER, INTENT(IN)                            :: iassembly
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -664,8 +627,7 @@ CONTAINS
     IF (ru%nblocks .EQ. 1   .AND.&
         rmatrixL%ndiagblocks .EQ. 1) THEN
       CALL gfsys_buildDivOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getRoeMatrix, fcb_getDissipation, iassembly,&
-          bclear, rmatrixL%RmatrixBlock(1,1))
+          fcb_calcMatrix, bclear, rmatrixL%RmatrixBlock(1,1))
       RETURN       
     END IF
 
@@ -723,113 +685,50 @@ CONTAINS
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
       CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
-      ! What type of assembly should be performed
-      SELECT CASE(iassembly)
+      ! What type of matrix are we?
+      IF (bisFullMatrix) THEN
         
-      CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL doGalerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
+
         CASE (NDIM2D)
-          CALL doGalerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
+
         CASE (NDIM3D)
-          CALL doGalerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+          CALL sys_halt()
         END SELECT
         
+      ELSE
 
-       CASE (GFSYS_GALERKIN)     ! Galerkin
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-          
+        SELECT CASE(ndim)
+        CASE (NDIM1D)
+          CALL doOperatorMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
 
-       CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doScalarDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doScalarDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doScalarDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-         
-         
-       CASE (GFSYS_SCALAR)       ! scalar dissipation
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-           
-          
-       CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doTensorDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doTensorDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doTensorDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-         
-         
-       CASE (GFSYS_TENSOR)       ! tensorial dissipation
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
+        CASE (NDIM2D)
+          CALL doOperatorMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
 
-          
-       CASE DEFAULT
-          CALL output_line('Invalid type of assembly!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+        CASE (NDIM3D)
+          CALL doOperatorMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
           CALL sys_halt()
-      END SELECT
+        END SELECT
+
+      END IF
       
       ! Release diagonal separator
       CALL storage_free(h_Ksep)
@@ -845,117 +744,54 @@ CONTAINS
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
       CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
 
-      ! What type of assembly should be performed
-      SELECT CASE(iassembly)
+      ! What type of matrix are we?
+      IF (bisFullMatrix) THEN
         
-      CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL doGalerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
+
         CASE (NDIM2D)
-          CALL doGalerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
+
         CASE (NDIM3D)
-          CALL doGalerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-        END SELECT
-        
 
-       CASE (GFSYS_GALERKIN)     ! Galerkin
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-          
-
-       CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doScalarDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doScalarDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doScalarDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-         
-         
-       CASE (GFSYS_SCALAR)       ! scalar dissipation
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-           
-          
-       CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doTensorDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doTensorDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doTensorDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-         
-         
-       CASE (GFSYS_TENSOR)       ! tensorial dissipation
-         IF (.NOT.bisFullMatrix) THEN
-           CALL output_line('Block matrix has some empty blocks!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-           CALL sys_halt()
-         END IF
-         SELECT CASE(ndim)
-         CASE (NDIM1D)
-           CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
-         CASE (NDIM2D)
-           CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
-         CASE (NDIM3D)
-           CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-               rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
-         END SELECT
-
-          
-       CASE DEFAULT
-          CALL output_line('Invalid type of assembly!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
           CALL sys_halt()
-      END SELECT
+        END SELECT
+
+      ELSE
+
+        SELECT CASE(ndim)
+        CASE (NDIM1D)
+          CALL doOperatorMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, rarray)
+
+        CASE (NDIM2D)
+          CALL doOperatorMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, rarray)
+
+        CASE (NDIM3D)
+          CALL doOperatorMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              rmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, rarray)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+          CALL sys_halt()
+        END SELECT
+
+      END IF
       
       ! Release diagonal separator
       CALL storage_free(h_Ksep)
-
+      
     CASE DEFAULT
       CALL output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
@@ -967,10 +803,10 @@ CONTAINS
     ! Here, the working routines follow
     
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 1D
+    ! Assemble block-diagonal divergence operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -984,7 +820,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1004,20 +840,14 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1028,14 +858,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_1D
+    END SUBROUTINE doOperatorMat7Diag_1D
 
     
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 2D
+    ! Assemble block-diagonal divergence operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1049,7 +879,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1069,22 +899,15 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-          C_ij(2)=C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1095,14 +918,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_2D
+    END SUBROUTINE doOperatorMat7Diag_2D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 3D
+    ! Assemble block-diagonal divergence operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1116,7 +939,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1136,24 +959,16 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-          C_ij(2)=C_ij(2)+Cy(ij)
-          C_ij(3)=C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1164,14 +979,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_3D
+    END SUBROUTINE doOperatorMat7Diag_3D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 1D
+    ! Assemble block-diagonal divergence operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1186,7 +1001,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1206,21 +1021,15 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
 
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
-          
           ! Assemble the global operator
           DO ivar = 1, NVAR
             K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+A_ij(ivar)+S_ij(ivar)
@@ -1230,14 +1039,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_1D
+    END SUBROUTINE doOperatorMat9Diag_1D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 2D
+    ! Assemble block-diagonal divergence operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1252,7 +1061,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1272,22 +1081,15 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1298,14 +1100,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_2D
+    END SUBROUTINE doOperatorMat9Diag_2D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 2D
+    ! Assemble block-diagonal divergence operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1320,7 +1122,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij,u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       INTEGER                     :: ivar
@@ -1340,24 +1142,16 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1368,14 +1162,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_3D
+    END SUBROUTINE doOperatorMat9Diag_3D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
+    ! Assemble divergence operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1390,7 +1184,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1410,20 +1204,14 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1437,14 +1225,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_1D
+    END SUBROUTINE doOperatorMat7_1D
 
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
+    ! Assemble divergence operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1459,7 +1247,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1479,22 +1267,15 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1508,14 +1289,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_2D
+    END SUBROUTINE doOperatorMat7_2D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
+    ! Assemble divergence operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1530,7 +1311,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1550,24 +1331,16 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1581,14 +1354,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_3D
+    END SUBROUTINE doOperatorMat7_3D
 
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
+    ! Assemble divergence operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1604,7 +1377,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1624,20 +1397,14 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1651,14 +1418,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_1D
+    END SUBROUTINE doOperatorMat9_1D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
+    ! Assemble divergence operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1674,7 +1441,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1694,22 +1461,15 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1723,14 +1483,14 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_2D
+    END SUBROUTINE doOperatorMat9_2D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
+    ! Assemble divergence operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+    SUBROUTINE doOperatorMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
         Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
@@ -1746,7 +1506,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar,jvar,idx
@@ -1766,24 +1526,16 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           DO ivar = 1, NVAR
@@ -1797,1662 +1549,7 @@ CONTAINS
           END DO
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_3D
-
-    
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_2D
-
-    
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_3D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_2D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij,u_i,u_j
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_3D
-
-    
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_3D
-
-    
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)
-            END DO
-          END DO
-          
-          ! Apply the scalar dissipation I*d_ij
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)-d_ij(1)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)+d_ij(1)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+d_ij(1)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-d_ij(1)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_3D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_2D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_3D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_2D
-
-
-     !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NVAR)   :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      INTEGER                     :: ivar
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            L(ivar,ivar)%DA(ii) = L(ivar,ivar)%DA(ii)+A_ij(ivar)-D_ij(ivar)
-            L(ivar,ivar)%DA(ij) = L(ivar,ivar)%DA(ij)-A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(ji) = L(ivar,ivar)%DA(ji)+A_ij(ivar)+D_ij(ivar)
-            L(ivar,ivar)%DA(jj) = L(ivar,ivar)%DA(jj)-A_ij(ivar)-D_ij(ivar)
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)      :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      TYPE(t_array), DIMENSION(:,:), INTENT(INOUT)       :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar,jvar,idx
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          
-          ! Assemble the global operator
-          DO ivar = 1, NVAR
-            DO jvar = 1, NVAR
-              idx = NVAR*(ivar-1)+jvar
-              L(jvar,ivar)%DA(ii) = L(jvar,ivar)%DA(ii)+A_ij(idx)-D_ij(idx)
-              L(jvar,ivar)%DA(ij) = L(jvar,ivar)%DA(ij)-A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(ji) = L(jvar,ivar)%DA(ji)+A_ij(idx)+D_ij(idx)
-              L(jvar,ivar)%DA(jj) = L(jvar,ivar)%DA(jj)-A_ij(idx)-D_ij(idx)
-            END DO
-          END DO
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_3D
+    END SUBROUTINE doOperatorMat9_3D
   END SUBROUTINE gfsys_buildDivOperatorBlock
 
   ! *****************************************************************************
@@ -3460,7 +1557,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivOperatorScalar(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, iassembly, bclear, rmatrixL)
+      fcb_calcMatrix, bclear, rmatrixL)
 
 !<description>
     ! This subroutine assembles the discrete transport operator $K$ so that
@@ -3480,15 +1577,6 @@ CONTAINS
     
     ! scalar solution vector
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
-
-    ! type of assembly
-    !   iassembly = 0 : diagonal + Galerkin
-    !   iassembly = 1 :            Galerkin
-    !   iassembly = 2 : diagonal + scalar dissipation
-    !   iassembly = 3 :            scalar dissipation
-    !   iassembly = 4 : diagonal + tensorial dissipation
-    !   iassembly = 5 :            tensorial dissipation
-    INTEGER, INTENT(IN)                            :: iassembly
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -3560,95 +1648,53 @@ CONTAINS
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
       CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
-      ! What type of assembly should be performed
-      SELECT CASE(iassembly)
+      ! What type of matrix are we?
+      SELECT CASE(rmatrixL%cinterleavematrixFormat)
         
-      CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
+      CASE (LSYSSC_MATRIX1)
+        
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL doGalerkinMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doGalerkinMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doGalerkinMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
-        
-      CASE (GFSYS_GALERKIN)     ! Galerkin
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
-        
-      CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doScalarDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doScalarDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doScalarDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
 
-      CASE (GFSYS_SCALAR)       ! scalar dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
+
         CASE (NDIM3D)
-          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
+          CALL sys_halt()
         END SELECT
         
+      CASE (LSYSSC_MATRIXD)
         
-      CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL doTensorDissMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
+
         CASE (NDIM2D)
-          CALL doTensorDissMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
+
         CASE (NDIM3D)
-          CALL doTensorDissMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+          CALL doOperatorMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
+          CALL sys_halt()
         END SELECT
         
-
-      CASE (GFSYS_TENSOR)       ! tensorial dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-
-
       CASE DEFAULT
-        CALL output_line('Invalid type of assembly!',&
+        CALL output_line('Unsupported interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
         CALL sys_halt()
       END SELECT
@@ -3667,95 +1713,53 @@ CONTAINS
       CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
       CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
       
-      ! What type of assembly should be performed
-      SELECT CASE(iassembly)
+      ! What type of matrix are we?
+      SELECT CASE(rmatrixL%cinterleavematrixFormat)
         
-      CASE (GFSYS_GALERKINDIAG) ! diagonal + Galerkin
+      CASE (LSYSSC_MATRIX1)
+        
         SELECT CASE(ndim)
         CASE (NDIM1D)
-          CALL doGalerkinMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doGalerkinMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doGalerkinMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
-        
-      CASE (GFSYS_GALERKIN)     ! Galerkin
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
 
-      CASE (GFSYS_SCALARDIAG)   ! diagonal + scalar dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doScalarDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
         CASE (NDIM2D)
-          CALL doScalarDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doScalarDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
-        
-      CASE (GFSYS_SCALAR)       ! scalar dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
 
-        
-      CASE (GFSYS_TENSORDIAG)   ! diagonal + tensorial dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doTensorDissMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doTensorDissMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
         CASE (NDIM3D)
-          CALL doTensorDissMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          CALL doOperatorMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
-        
-        
-      CASE (GFSYS_TENSOR)       ! tensorial dissipation
-        SELECT CASE(ndim)
-        CASE (NDIM1D)
-          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
-        CASE (NDIM2D)
-          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
-        CASE (NDIM3D)
-          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
-        END SELECT
 
+        CASE DEFAULT
+          CALL output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
+          CALL sys_halt() 
+        END SELECT
+        
+      CASE (LSYSSC_MATRIXD)
+        
+        SELECT CASE(ndim)
+        CASE (NDIM1D)
+          CALL doOperatorMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_L)
+
+        CASE (NDIM2D)
+          CALL doOperatorMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_L)
+
+        CASE (NDIM3D)
+          CALL doOperatorMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_L)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
+          CALL sys_halt()
+        END SELECT
         
       CASE DEFAULT
-        CALL output_line('Invalid type of assembly!',&
+        CALL output_line('Unsupported interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
         CALL sys_halt()
       END SELECT
@@ -3775,10 +1779,10 @@ CONTAINS
     ! Here, the working routines follow
     
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 1D
+    ! Assemble block-diagonal divergence operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doOperatorMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3791,7 +1795,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -3810,17 +1814,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -3829,14 +1827,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_1D
+    END SUBROUTINE doOperatorMat7Diag_1D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 2D
+    ! Assemble block-diagonal divergence operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doOperatorMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3849,7 +1847,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -3868,19 +1866,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-          C_ij(2)=C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -3889,14 +1880,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_2D
+    END SUBROUTINE doOperatorMat7Diag_2D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 3D
+    ! Assemble block-diagonal divergence operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doOperatorMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3909,7 +1900,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -3928,21 +1919,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1)=C_ij(1)+Cx(ij)
-          C_ij(2)=C_ij(2)+Cy(ij)
-          C_ij(3)=C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -3951,14 +1934,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7Diag_3D
+    END SUBROUTINE doOperatorMat7Diag_3D
 
     
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 1D
+    ! Assemble block-diagonal divergence operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doOperatorMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3972,7 +1955,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -3991,17 +1974,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4010,14 +1987,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_1D
+    END SUBROUTINE doOperatorMat9Diag_1D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 2D
+    ! Assemble block-diagonal divergence operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doOperatorMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4031,7 +2008,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -4050,19 +2027,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4071,14 +2041,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_2D
+    END SUBROUTINE doOperatorMat9Diag_2D
 
 
     !**************************************************************
-    ! Assemble block-diagonal high-order Galerkin operator K in 3D
+    ! Assemble block-diagonal divergence operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doOperatorMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4092,7 +2062,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)   :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
       
@@ -4111,21 +2081,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary contribution
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4134,14 +2096,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9Diag_3D
+    END SUBROUTINE doOperatorMat9Diag_3D
 
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
+    ! Assemble divergence operator K in 1D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doOperatorMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4154,7 +2116,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4173,17 +2135,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4192,14 +2148,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_1D
+    END SUBROUTINE doOperatorMat7_1D
 
     
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
+    ! Assemble divergence operator K in 2D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doOperatorMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4212,7 +2168,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4231,19 +2187,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4252,14 +2201,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_2D
+    END SUBROUTINE doOperatorMat7_2D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
+    ! Assemble divergence operator K in 3D
     ! All matrices are stored in matrix format 7
     
-    SUBROUTINE doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doOperatorMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4272,7 +2221,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4291,21 +2240,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4314,14 +2255,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat7_3D
+    END SUBROUTINE doOperatorMat7_3D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
+    ! Assemble divergence operator K in 1D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
+    SUBROUTINE doOperatorMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4335,7 +2276,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4354,17 +2295,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
           
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
@@ -4373,14 +2308,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_1D
+    END SUBROUTINE doOperatorMat9_1D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
+    ! Assemble divergence operator K in 2D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
+    SUBROUTINE doOperatorMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4394,7 +2329,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4413,20 +2348,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
           K(:,ij) = K(:,ij)-A_ij-S_ij
@@ -4434,14 +2362,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_2D
+    END SUBROUTINE doOperatorMat9_2D
 
 
     !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
+    ! Assemble divergence operator K in 3D
     ! All matrices are stored in matrix format 9
     
-    SUBROUTINE doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
+    SUBROUTINE doOperatorMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, K)
       
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -4455,7 +2383,7 @@ CONTAINS
       
       ! local variables
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,S_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)           :: i,j
       
@@ -4474,22 +2402,14 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+          
+          ! Compute matrices
+          CALL fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
 
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute averaged coefficients for boundary
-          C_ij(1) = C_ij(1)+Cx(ij)
-          C_ij(2) = C_ij(2)+Cy(ij)
-          C_ij(3) = C_ij(3)+Cz(ij)
-          
-          ! Compute local Roe matrix for boundary contribution
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, S_ij)
-          
           ! Assemble the global operator
           K(:,ii) = K(:,ii)+A_ij+S_ij
           K(:,ij) = K(:,ij)-A_ij-S_ij
@@ -4497,1478 +2417,14 @@ CONTAINS
           K(:,jj) = K(:,jj)-A_ij+S_ij
         END DO
       END DO
-    END SUBROUTINE doGalerkinMat9_3D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_2D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7Diag_3D
-    
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_2D
-
-    
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L
-    ! with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(1)      :: d_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-d_ij(1)
-          L(:,ij) = L(:,ij)-A_ij+d_ij(1)
-          L(:,ji) = L(:,ji)+A_ij+d_ij(1)
-          L(:,jj) = L(:,jj)-A_ij-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9Diag_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_2D
-    
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER, DIMENSION(NVAR)       :: idiag 
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-      INTEGER                        :: ivar
-
-      ! Initialize diagonal entries
-      idiag = (/ (NVAR*(ivar-1)+ivar, ivar = 1, NVAR) /)
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij
-          L(:,ij) = L(:,ij)-A_ij
-          L(:,ji) = L(:,ji)+A_ij
-          L(:,jj) = L(:,jj)-A_ij
-
-          ! Apply the scalar dissipation I*d_ij 
-          L(idiag,ii) = L(idiag,ii)-d_ij(1)
-          L(idiag,ij) = L(idiag,ij)+d_ij(1)
-          L(idiag,ji) = L(idiag,ji)+d_ij(1)
-          L(idiag,jj) = L(idiag,jj)-d_ij(1)
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_3D
-
-    
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_2D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7Diag_3D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM1D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_1D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM2D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_2D
-
-
-    !**************************************************************
-    ! Assemble block-diagonal low-order operator L 
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9Diag_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR)   :: A_ij
-      REAL(DP), DIMENSION(NVAR)   :: D_ij
-      REAL(DP), DIMENSION(NDIM3D) :: C_ij
-      INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)        :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9Diag_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_3D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_2D
-
-    
-    !**************************************************************
-    ! Assemble low-order operator L with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal,&
-        Ksep, NEQ, NVAR, Cx, Cy, Cz, u, L)
-      
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), DIMENSION(NVAR*NVAR,*), INTENT(INOUT)   :: L
-      
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ii,ij,ji,jj
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          
-          ! Assemble the global operator
-          L(:,ii) = L(:,ii)+A_ij-D_ij
-          L(:,ij) = L(:,ij)-A_ij+D_ij
-          L(:,ji) = L(:,ji)+A_ij+D_ij
-          L(:,jj) = L(:,jj)-A_ij-D_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_3D
+    END SUBROUTINE doOperatorMat9_3D
   END SUBROUTINE gfsys_buildDivOperatorScalar
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResBlock(RmatrixC, ru,fcb_getFlux, dscale, rres)
+  SUBROUTINE gfsys_buildResBlock(RmatrixC, ru, fcb_calcFlux, dscale, rres)
 
 !<description>
     ! This subroutine assembles the residual vector for block vectors.
@@ -6006,7 +2462,7 @@ CONTAINS
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
       CALL gfsys_buildResScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getFlux, dscale, rres%RvectorBlock(1))
+          fcb_calcFlux, dscale, rres%RvectorBlock(1))
       RETURN       
     END IF
 
@@ -6143,7 +2599,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6196,7 +2652,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6250,7 +2706,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6303,7 +2759,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6357,7 +2813,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6413,7 +2869,7 @@ CONTAINS
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -6428,7 +2884,7 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE gfsys_buildResScalar(RmatrixC, ru,&
-      fcb_getFlux, dscale, rres)
+      fcb_calcFlux, dscale, rres)
 
 !<description>
     ! This subroutine assembles the residual vector. Note that the vectors are
@@ -6591,7 +3047,7 @@ CONTAINS
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6641,7 +3097,7 @@ CONTAINS
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6692,7 +3148,7 @@ CONTAINS
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6742,7 +3198,7 @@ CONTAINS
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6766,9 +3222,9 @@ CONTAINS
       INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)           :: u
       REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)        :: res
       
       ! local variables
       REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji
@@ -6787,14 +3243,15 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
-          
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
           res(:,j) = res(:,j)+F_ji
@@ -6845,7 +3302,7 @@ CONTAINS
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute the fluxes
-          CALL fcb_getFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6856,1957 +3313,11 @@ CONTAINS
   END SUBROUTINE gfsys_buildResScalar
 
   ! *****************************************************************************
-
-!<subroutine>
-  
-  SUBROUTINE gfsys_buildResBlockUpwind(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
-
-!<description>
-    ! This subroutine assembles the residual vector for discrete
-    ! upwinding schemes. If the vectors contain only one block,
-    ! then the scalar counterpart of this routine is called with
-    ! the scalar subvectors.
-!</description>
-
-!<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
-    TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
-
-    ! solution vector
-    TYPE(t_vectorBlock), INTENT(IN)                :: ru
-
-    ! type of dissipation
-    !   AFCSTAB_SCALARDISSIPATION: scalar dissipation
-    !   AFCSTAB_TENSORDISSIPATION: tensorial dissipation
-    INTEGER, INTENT(IN)                            :: idissipation
-    
-    ! scaling factor
-    REAL(DP), INTENT(IN)                           :: dscale
-
-    ! callback functions to compute local matrices
-    INCLUDE 'intf_gfsyscallback.inc'
-!</input>
-
-!<inputoutput>
-    ! residual vector
-    TYPE(t_vectorBlock), INTENT(INOUT)             :: rres
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
-    INTEGER :: h_Ksep
-
-
-    ! Check if block vectors contain only one block.
-    IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
-      CALL gfsys_buildResScalarUpwind(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres%RvectorBlock(1))
-      RETURN       
-    END IF
-    
-    ! Check if vectors are compatible
-    CALL lsysbl_isVectorCompatible(ru, rres)
-
-    ! Set pointers
-    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
-    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
-    CALL lsysbl_getbase_double(ru,   p_u)
-    CALL lsysbl_getbase_double(rres, p_res)
-
-    ! Create diagonal Ksep=Kld
-    h_Ksep = ST_NOHANDLE
-    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
-    
-
-    ! What kind of dissipation should be applied?
-    SELECT CASE(idissipation)
-    CASE (AFCSTAB_SCALARDISSIPATION)
-      
-      ! What kind of matrix are we?
-      SELECT CASE(RmatrixC(1)%cmatrixFormat)
-      CASE(LSYSSC_MATRIX7)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-          CALL sys_halt()
-        END SELECT
-        
-        
-      CASE (LSYSSC_MATRIX9)
-        
-        ! Set pointer
-        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-          CALL sys_halt()
-        END SELECT
-      
-        
-      CASE DEFAULT
-        CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-        CALL sys_halt()
-      END SELECT
-
-
-    CASE (AFCSTAB_TENSORDISSIPATION)
-      
-      ! What kind of matrix are we?
-      SELECT CASE(RmatrixC(1)%cmatrixFormat)
-      CASE(LSYSSC_MATRIX7)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-          CALL sys_halt()
-        END SELECT
-        
-        
-      CASE (LSYSSC_MATRIX9)
-        
-        ! Set pointer
-        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-          CALL sys_halt()
-        END SELECT
-      
-        
-      CASE DEFAULT
-        CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-        CALL sys_halt()
-      END SELECT
-
-
-    CASE DEFAULT
-      CALL output_line('Unsupported type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlockUpwind')
-      CALL sys_halt()
-    END SELECT
-    
-    ! Release Ksep
-    CALL storage_free(h_Ksep)
-    
-  CONTAINS
-
-    ! Here, the working routines follow
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_2D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_3D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_3D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_2D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_3D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(IN)         :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute solution difference
-          diff = u_j-u_i
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u_i, u_j, C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(i,:) = res(i,:)+rA_ij+rD_ij
-          res(j,:) = res(j,:)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_3D
-  END SUBROUTINE gfsys_buildResBlockUpwind
-
-  ! *****************************************************************************
-
-!<subroutine>
-  
-  SUBROUTINE gfsys_buildResScalarUpwind(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, idissipation, dscale, rres)
-
-!<description>
-    ! This subroutine assembles the residual vector for discrete
-    ! upwinding schemes. Note that the vectors are required as scalar
-    ! vectors which are stored in the interleave format.
-!</description>
-
-!<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
-    TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
-
-    ! solution vector
-    TYPE(t_vectorScalar), INTENT(IN)               :: ru
-
-    ! type of dissipation
-    !   AFCSTAB_SCALARDISSIPATION: scalar dissipation
-    !   AFCSTAB_TENSORDISSIPATION: tensorial dissipation
-    INTEGER, INTENT(IN)                            :: idissipation
-    
-    ! scaling factor
-    REAL(DP), INTENT(IN)                           :: dscale
-
-    ! callback functions to compute local matrices
-    INCLUDE 'intf_gfsyscallback.inc'
-!</input>
-
-!<inputoutput>
-    ! residual vector
-    TYPE(t_vectorScalar), INTENT(INOUT)            :: rres
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
-    INTEGER :: h_Ksep
-
-    ! Check if vectors are compatible
-    CALL lsyssc_isVectorCompatible(ru,rres)
-
-    ! Set pointers
-    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
-    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
-    CALL lsyssc_getbase_double(ru,   p_u)
-    CALL lsyssc_getbase_double(rres, p_res)
-
-    ! Create diagonal Ksep=Kld
-    h_Ksep = ST_NOHANDLE
-    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
-    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
-
-
-    ! What kind of dissipation should be applied?
-    SELECT CASE(idissipation)
-    CASE (AFCSTAB_SCALARDISSIPATION)
-      
-      ! What kind of matrix are we?
-      SELECT CASE(RmatrixC(1)%cmatrixFormat)
-      CASE(LSYSSC_MATRIX7)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doScalarDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doScalarDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doScalarDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-          CALL sys_halt()
-        END SELECT
-        
-        
-      CASE (LSYSSC_MATRIX9)
-        
-        ! Set pointer
-        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doScalarDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doScalarDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doScalarDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-          CALL sys_halt()
-        END SELECT
-      
-        
-      CASE DEFAULT
-        CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-        CALL sys_halt()
-      END SELECT
-
-
-    CASE (AFCSTAB_TENSORDISSIPATION)
-      
-      ! What kind of matrix are we?
-      SELECT CASE(RmatrixC(1)%cmatrixFormat)
-      CASE(LSYSSC_MATRIX7)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doTensorDissMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doTensorDissMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doTensorDissMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-          CALL sys_halt()
-        END SELECT
-        
-        
-      CASE (LSYSSC_MATRIX9)
-        
-        ! Set pointer
-        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
-        
-        ! How many dimensions do we have?
-        SELECT CASE(SIZE(RmatrixC,1))
-        CASE (NDIM1D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL doTensorDissMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, dscale, p_res)
-          
-        CASE (NDIM2D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doTensorDissMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale, p_res)
-          
-        CASE (NDIM3D)
-          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
-          CALL doTensorDissMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
-          
-        CASE DEFAULT
-          CALL output_line('Unsupported spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-          CALL sys_halt()
-        END SELECT
-      
-        
-      CASE DEFAULT
-        CALL output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-        CALL sys_halt()
-      END SELECT
-
-      
-    CASE DEFAULT
-      CALL output_line('Unsupported type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarUpwind')
-      CALL sys_halt()
-    END SELECT
-    
-    ! Release Ksep
-    CALL storage_free(h_Ksep)
-
-  CONTAINS
-
-    ! Here, the working routines follow
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doScalarDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_2D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 7
-
-    SUBROUTINE doScalarDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat7_3D
-    
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doScalarDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-      
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 2D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_2D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator with scalar dissipation in 3D
-    ! All matrices are stored in matrix format 9
-
-    SUBROUTINE doScalarDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(1)         :: d_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-
-          ! Compute scalar dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, d_ij)
-          rD_ij = dscale*d_ij(1)*diff
-          
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doScalarDissMat9_3D
-    
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_1D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_2D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 7
-    
-    SUBROUTINE doTensorDissMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat7_3D
-
-
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 1D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_1D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_2D
-
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator
-    ! with tensorial dissipation in 3D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doTensorDissMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, Cz, u, dscale, res)
-
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
-      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
-      INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
-
-      ! local variables
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,D_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,rD_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j
-      
-      ! Loop over all rows
-      DO i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          C_ij(3) = 0.5_DP*(Cz(ji)-Cz(ij))
-          
-          ! Compute local Roe matrix
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Compute tensorial dissipation
-          CALL fcb_getDissipation(u(:,i), u(:,j), C_ij, D_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, D_ij, NVAR, diff, 1, 0._DP, rD_ij, 1)
-
-          ! Assemble residual vector
-          res(:,i) = res(:,i)+rA_ij+rD_ij
-          res(:,j) = res(:,j)+rA_ij-rD_ij
-        END DO
-      END DO
-    END SUBROUTINE doTensorDissMat9_3D
-  END SUBROUTINE gfsys_buildResScalarUpwind
-
-  ! *****************************************************************************
   
   !<subroutine>
   
   SUBROUTINE gfsys_buildResBlockTVD(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
-      rafcstab, dscale, rres)
+      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres)
 
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes.
@@ -8848,7 +3359,7 @@ CONTAINS
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
       CALL gfsys_buildResScalarTVD(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
+          fcb_calcFlux, fcb_calcCharacteristics,&
           rafcstab, dscale, rres%RvectorBlock(1))
       RETURN       
     END IF
@@ -8996,9 +3507,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -9023,31 +3534,22 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+           
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9093,16 +3595,13 @@ CONTAINS
 
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
-
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
           
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -9156,9 +3655,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -9182,32 +3681,23 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+                   
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9258,16 +3748,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -9298,11 +3784,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9350,15 +3836,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -9412,9 +3895,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -9438,32 +3921,24 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9514,16 +3989,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -9554,11 +4025,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9610,15 +4081,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -9649,11 +4117,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
@@ -9700,15 +4168,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficients
-          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
-
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -9763,9 +4228,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -9790,31 +4255,22 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -9861,15 +4317,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -9924,9 +4377,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -9950,32 +4403,23 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10026,16 +4470,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -10066,11 +4506,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10118,15 +4558,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -10181,9 +4618,9 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -10207,32 +4644,24 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
           
-          ! Compute solution difference
-          diff = u_j-u_i
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u_i, u_j, C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(i,:) = res(i,:)+rA_ij
-          res(j,:) = res(j,:)+rA_ij
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+                 
+          ! Assemble high-order residual vector
+          res(i,:) = res(i,:)+F_ij
+          res(j,:) = res(j,:)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10282,17 +4711,13 @@ CONTAINS
           
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
-          
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
+                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -10323,11 +4748,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10379,15 +4804,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -10418,11 +4840,11 @@ CONTAINS
           res(j,:) = res(j,:)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
@@ -10469,15 +4891,12 @@ CONTAINS
           ! Get solution values at nodes
           u_i = u(i,:); u_j = u(j,:)
 
-          ! Compute averaged coefficients
-          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
-
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -10516,8 +4935,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildResScalarTVD(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, fcb_getCharacteristics,&
-      rafcstab, dscale, rres)
+      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres)
     
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes
@@ -10697,8 +5115,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -10719,32 +5137,23 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-                   
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10788,15 +5197,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -10850,8 +5256,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -10872,33 +5278,24 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-                   
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -10945,17 +5342,13 @@ CONTAINS
           ! Get node number J, the corresponding matrix position JI,
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-          
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
+                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -10986,11 +5379,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11035,15 +5428,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -11097,8 +5487,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -11119,33 +5509,25 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-                   
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
-          
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+              
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+                    
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11193,16 +5575,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -11233,11 +5611,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11286,15 +5664,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -11325,11 +5700,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
@@ -11373,15 +5748,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
 
-          ! Compute averaged coefficients
-          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
-
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -11436,8 +5808,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM1D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -11458,32 +5830,23 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-                   
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
+              
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11527,15 +5890,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -11590,8 +5950,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM2D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -11612,32 +5972,23 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
 
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11685,16 +6036,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -11725,11 +6072,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11774,15 +6121,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -11837,8 +6181,8 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: diff,rA_ij,F_ij,W_ij,Lbd_ij,ka_ij,kb_ij
-      REAL(DP), DIMENSION(NDIM3D)    :: C_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
       INTEGER                        :: ivar
@@ -11859,33 +6203,25 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-                   
-          ! Compute solution difference
-          diff = u(:,j)-u(:,i)
           
-          ! Compute averaged coefficients a_ij:=(c_ji-c_ij)/2
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
           
-          ! Compute local Roe matrix and multiply it with the solution difference
-          !
-          !   rA_ij:=A_ij*(U_j-U_i),
-          !
-          ! where A_ij denotes the cumulated Roe matrix 
-          CALL fcb_getRoeMatrix(u(:,i), u(:,j), C_ij, A_ij)
-          CALL DGEMV('n', NVAR, NVAR, dscale, A_ij, NVAR, diff, 1, 0._DP, rA_ij, 1)
-          
-          ! Assemble high-order residual vector. Since A_ij is skew-symmetric, the 
-          ! contribution of A_ji to node j is identical to that of A_ij to node i
-          res(:,i) = res(:,i)+rA_ij
-          res(:,j) = res(:,j)+rA_ij
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
                    
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(1)*Lbd_ij
-          kb_ij = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -11933,16 +6269,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
           
-          ! Compute averaged coefficient
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-          
           ! Compute characteristic fluxes in X-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  C_ij(1)*Lbd_ij
-          kb_ij  = (C_ij(1)+Cx(ij))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
+          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
@@ -11973,11 +6305,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
@@ -12026,15 +6358,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute averaged coefficients
-          C_ij(2)=0.5_DP*(Cy(ji)-Cy(ij))
-
           ! Compute characteristic fluxes in Y-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(2)*Lbd_ij
-          kb_ij = (C_ij(2)+Cy(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -12065,11 +6394,11 @@ CONTAINS
           res(:,j) = res(:,j)-F_ij
 
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
@@ -12113,15 +6442,12 @@ CONTAINS
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
 
-          ! Compute averaged coefficients
-          C_ij(3)=0.5_DP*(Cz(ji)-Cz(ij))
-
           ! Compute characteristic fluxes in Z-direction
-          CALL fcb_getCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  C_ij(3)*Lbd_ij
-          kb_ij = (C_ij(3)+Cz(ij))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -12160,7 +6486,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivJacobianBlock(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, iassembly, hstep, bclear, rmatrixJ)
+      fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix.
@@ -12211,8 +6537,7 @@ CONTAINS
     IF (ru%nblocks .EQ. 1    .AND.&
         rmatrixJ%ndiagblocks .EQ. 1) THEN
       CALL gfsys_buildDivJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getRoeMatrix, fcb_getDissipation, iassembly, hstep, bclear,&
-          rmatrixJ%RmatrixBlock(1,1))
+          fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ%RmatrixBlock(1,1))
       RETURN       
     END IF
 
@@ -12225,7 +6550,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivJacobianScalar(RmatrixC, ru,&
-      fcb_getRoeMatrix, fcb_getDissipation, iassembly, hstep, bclear, rmatrixJ)
+      fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix

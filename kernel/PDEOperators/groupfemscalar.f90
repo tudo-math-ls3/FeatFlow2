@@ -421,7 +421,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildConvOperatorBlock(RmatrixC, ru,&
-      fcb_getVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
+      fcb_calcVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -482,7 +482,7 @@ CONTAINS
     ELSE
       
       CALL gfsc_buildConvOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
+          fcb_calcVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
     END IF
   END SUBROUTINE gfsc_buildConvOperatorBlock
@@ -491,7 +491,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_getVelocity,&
+  SUBROUTINE gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_calcVelocity,&
       bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
 !<description>
@@ -1136,7 +1136,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1175,7 +1175,7 @@ CONTAINS
         ii = Kld(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -1193,7 +1193,7 @@ CONTAINS
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1241,7 +1241,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -1280,7 +1280,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -1298,7 +1298,7 @@ CONTAINS
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -1346,7 +1346,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -1385,7 +1385,7 @@ CONTAINS
         ii = Kld(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -1403,7 +1403,7 @@ CONTAINS
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -1452,7 +1452,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1492,7 +1492,7 @@ CONTAINS
         ii = Kdiagonal(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -1510,7 +1510,7 @@ CONTAINS
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1559,7 +1559,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -1599,7 +1599,7 @@ CONTAINS
         ii = Kdiagonal(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -1617,7 +1617,7 @@ CONTAINS
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -1666,7 +1666,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -1706,7 +1706,7 @@ CONTAINS
         ii = Kdiagonal(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -1724,7 +1724,7 @@ CONTAINS
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -1772,7 +1772,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1818,7 +1818,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -1836,7 +1836,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -1892,7 +1892,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -1938,7 +1938,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -1956,7 +1956,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -2012,7 +2012,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2058,7 +2058,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -2076,7 +2076,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2133,7 +2133,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -2180,7 +2180,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -2198,7 +2198,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -2255,7 +2255,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -2302,7 +2302,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -2320,7 +2320,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -2377,7 +2377,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2424,7 +2424,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -2442,7 +2442,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2509,7 +2509,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -2574,7 +2574,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -2595,7 +2595,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -2672,7 +2672,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -2737,7 +2737,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -2758,7 +2758,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -2835,7 +2835,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2900,7 +2900,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -2921,7 +2921,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -2999,7 +2999,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -3065,7 +3065,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -3086,7 +3086,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -3164,7 +3164,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -3230,7 +3230,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -3251,7 +3251,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -3329,7 +3329,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -3395,7 +3395,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -3416,7 +3416,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -3493,7 +3493,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -3563,7 +3563,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -3584,7 +3584,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -3666,7 +3666,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -3736,7 +3736,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -3757,7 +3757,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -3839,7 +3839,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -3909,7 +3909,7 @@ CONTAINS
         ii = Kld(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -3930,7 +3930,7 @@ CONTAINS
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -4013,7 +4013,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -4084,7 +4084,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)
@@ -4105,7 +4105,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)
@@ -4188,7 +4188,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -4259,7 +4259,7 @@ CONTAINS
         ii = Kdiagonal(i)
         
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
@@ -4280,7 +4280,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -4363,7 +4363,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -4434,7 +4434,7 @@ CONTAINS
         ii = Kdiagonal(i)
 
         ! Compute local velocity coefficients for diagonal
-        CALL fcb_getVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
         
         ! Convective transport coefficients
         k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
@@ -4455,7 +4455,7 @@ CONTAINS
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Compute local velocity coefficients
-          CALL fcb_getVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
           
           ! Convective transport coefficients
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -6335,7 +6335,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvJacobianBlock(RmatrixC, ru, fcb_getVelocity,&
+  SUBROUTINE gfsc_buildConvJacobianBlock(RmatrixC, ru, fcb_calcVelocity,&
       hstep, bStabilize, bclear, rmatrixJ)
 
 !<description>
@@ -6386,7 +6386,7 @@ CONTAINS
     ELSE
       
       CALL gfsc_buildConvJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_getVelocity, hstep, bStabilize, bclear, rmatrixJ)
+          fcb_calcVelocity, hstep, bStabilize, bclear, rmatrixJ)
       
     END IF
   END SUBROUTINE gfsc_buildConvJacobianBlock
@@ -6395,7 +6395,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvJacobianScalar(RmatrixC, ru, fcb_getVelocity,&
+  SUBROUTINE gfsc_buildConvJacobianScalar(RmatrixC, ru, fcb_calcVelocity,&
       hstep, bStabilize, bclear, rmatrixJ)
 
 !<description>
@@ -6642,7 +6642,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -6650,7 +6650,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -6672,7 +6672,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -6680,7 +6680,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -6767,7 +6767,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -6775,7 +6775,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -6797,7 +6797,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -6805,7 +6805,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -6892,7 +6892,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -6900,7 +6900,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -6922,7 +6922,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -6930,7 +6930,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -7018,7 +7018,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -7026,7 +7026,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -7048,7 +7048,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -7056,7 +7056,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)
           k_ji = -v_ji(1)*Cx(ji)
           
@@ -7144,7 +7144,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -7152,7 +7152,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -7174,7 +7174,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -7182,7 +7182,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -7270,7 +7270,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           
@@ -7278,7 +7278,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -7300,7 +7300,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -7308,7 +7308,7 @@ CONTAINS
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           
@@ -7395,7 +7395,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7404,7 +7404,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7427,7 +7427,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7436,7 +7436,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7524,7 +7524,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7533,7 +7533,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7556,7 +7556,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7565,7 +7565,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7653,7 +7653,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7662,7 +7662,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7685,7 +7685,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7694,7 +7694,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7783,7 +7783,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7792,7 +7792,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7815,7 +7815,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7824,7 +7824,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)
           l_ji = -v_ji(1)*Cx(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7913,7 +7913,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7922,7 +7922,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7945,7 +7945,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -7954,7 +7954,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -8043,7 +8043,7 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -8052,7 +8052,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -8075,7 +8075,7 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -8084,7 +8084,7 @@ CONTAINS
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
           l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           d_ij =  MAX(-l_ij, 0._DP, -l_ji)
@@ -9685,7 +9685,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianBlockFCT(RmatrixC, rmatrixMC, ru, &
-      fcb_getVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -9742,7 +9742,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
-          fcb_getVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+          fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
     END IF
   END SUBROUTINE gfsc_buildJacobianBlockFCT
@@ -9752,7 +9752,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru,&
-      fcb_getVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -9971,7 +9971,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)
@@ -9988,7 +9988,7 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10016,7 +10016,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10033,7 +10033,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10086,7 +10086,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10103,7 +10103,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10131,7 +10131,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10148,7 +10148,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)
@@ -10229,7 +10229,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10246,7 +10246,7 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10274,7 +10274,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10291,7 +10291,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10344,7 +10344,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10361,7 +10361,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10389,7 +10389,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10406,7 +10406,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
@@ -10487,7 +10487,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10504,7 +10504,7 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10532,7 +10532,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10549,7 +10549,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10602,7 +10602,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10619,7 +10619,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10647,7 +10647,7 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10664,7 +10664,7 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_getVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
           l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
@@ -10697,7 +10697,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianBlockTVD(RmatrixC, rmatrixMC, ru, ru0,&
-      fcb_getVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -10758,7 +10758,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC,&
-          ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_getVelocity,&
+          ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_calcVelocity,&
           theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
     END IF
@@ -10769,7 +10769,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC, ru, ru0,&
-      fcb_getVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -11782,7 +11782,7 @@ CONTAINS
         dsign = -2*iperturb+3
         
         ! Compute perturbed velocity
-        CALL fcb_getVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
         
         ! Compute perturbation coefficients k_ij and k_ji
         l_ij = -SUM(v_ij*c_ij)
@@ -12563,7 +12563,7 @@ CONTAINS
         dsign = -2*iperturb+3
         
         ! Compute perturbed velocity
-        CALL fcb_getVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
+        CALL fcb_calcVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
 
         ! Compute perturbation coefficients k_ij and k_ji
         l_ij = -SUM(v_ij*c_ij)

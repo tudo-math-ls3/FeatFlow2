@@ -2,48 +2,86 @@
 ! of the discrete operators for hyperbolic systems
 
 ! ***************************************************************************
+
 INTERFACE
 
-SUBROUTINE fcb_getRoeMatrix(U_i, U_j, Dweight, A_ij)
-USE fsystem
+! ***************************************************************************
 
-REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
-REAL(DP), DIMENSION(:), INTENT(OUT) :: A_ij
+!<subroutine>
 
-END SUBROUTINE fcb_getRoeMatrix
-
-SUBROUTINE fcb_getDissipation(U_i, U_j, Dweight, D_ij)
+SUBROUTINE fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 USE fsystem
 
-REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
-REAL(DP), DIMENSION(:), INTENT(OUT) :: D_ij
+!<description>
+    ! This subroutine computes the characteristic transformation variables.
+!</description>
 
-END SUBROUTINE fcb_getDissipation
+!<input>
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
+!</input>
 
+!<output>
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: W_ij
+  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: Lbd_ij
+  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: R_ij
+  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: L_ij
+!</output>
 
-SUBROUTINE fcb_getCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+!</subroutine>
+
+END SUBROUTINE fcb_calcCharacteristics
+
+! ***************************************************************************
+
+!<subroutine>
+
+SUBROUTINE fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 USE fsystem
 
-REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
-REAL(DP), DIMENSION(:), INTENT(OUT) :: W_ij
-REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: Lbd_ij
-REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: R_ij
-REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: L_ij
-END SUBROUTINE fcb_getCharacteristics
+!<description>
+    ! This subroutine computes the internodal fluxes.
+!</description>
 
-SUBROUTINE fcb_getFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+!<input>
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+  REAL(DP),               INTENT(IN)  :: dscale
+!</input>
+
+!<output>
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij,F_ji
+!</output>
+
+!</subroutine>
+
+END SUBROUTINE fcb_calcFlux
+
+! ***************************************************************************
+
+!<subroutine>
+
+SUBROUTINE fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+
 USE fsystem
 
-REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
-REAL(DP),               INTENT(IN)  :: dscale
-REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij,F_ji
+!<description>
+    ! This subroutine computes the local matrices.
+!</description>
 
-END SUBROUTINE fcb_getFlux
+!<input>
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+!</input>
+
+!<outptu>
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: A_ij,S_ij
+!</output>
+
+!</subroutine>
+
+END SUBROUTINE fcb_calcMatrix
 
 END INTERFACE
