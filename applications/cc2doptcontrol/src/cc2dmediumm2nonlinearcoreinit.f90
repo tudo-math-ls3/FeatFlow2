@@ -460,6 +460,70 @@ CONTAINS
       CALL parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
           'dAdMatThreshold', rpreconditioner%rprecSpecials%dAdMatThreshold, 20.0_DP)
 
+    CASE (2:3)
+    
+      ! VANCA smoother: 1 step defect correction with nmaxIterations steps VANCA.
+      ! ismootherType defines the type of smoother to use.
+      SELECT CASE (ismootherType)
+      
+      CASE (0:7)
+
+        NULLIFY(p_rsmoother)
+      
+        ! This is some kind of VANCA smoother. Initialise the correct one.
+        SELECT CASE (ismootherType)
+        CASE (0)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+        CASE (1)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+        CASE (2)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+        CASE (3)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIRECT)
+        CASE (4)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+        CASE (5)
+          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAGDIR)
+        CASE (6)
+          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+          CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+              rpreconditioner%p_RfilterChain)
+        CASE (7)
+          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+          CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+              rpreconditioner%p_RfilterChain)
+        END SELECT
+        
+        ! Initialise the parameters -- if there are any.
+        CALL linsolinit_initParams (p_rsmoother,p_rparamList,&
+            ssmootherSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rsmoother,p_rparamList,&
+            ssmootherSection,p_rsmoother%calgorithm)
+        
+        ! Convert to a smoother with a defined number of smoothing steps.
+        CALL parlst_getvalue_int (p_rparamList, ssmootherSection, &
+                  'nsmoothingSteps', nsm, 4)
+        CALL linsol_convertToSmoother (p_rsmoother,nsm)
+        
+      CASE DEFAULT
+      
+        CALL output_line ('Unknown smoother.', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+        CALL sys_halt()
+        
+      END SELECT
+
+      ! Init defect correction, 1-step... with that smoother
+      IF (isolverType .EQ. 2) THEN
+        CALL linsol_initDefCorr (p_rsolverNode,p_rsmoother,rpreconditioner%p_RfilterChain)
+      ELSE
+        CALL linsol_initBiCGStab (p_rsolverNode,p_rsmoother,rpreconditioner%p_RfilterChain)
+      END IF
+      CALL linsolinit_initParams (p_rsolverNode,p_rparamList,&
+          ssolverSection,LINSOL_ALG_UNDEFINED)
+      CALL linsolinit_initParams (p_rsolverNode,p_rparamList,&
+          ssolverSection,p_rsolverNode%calgorithm)
+    
     END SELECT    
 
     ! Put the final solver node to the preconditioner structure.
