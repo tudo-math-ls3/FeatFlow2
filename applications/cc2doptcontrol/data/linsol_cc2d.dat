@@ -37,7 +37,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 6=BiCGStab with Full VANCA preconditioning
 # 7=BiCGStab with Diagonal VANCA preconditioning
 
-ismootherType = 7
+ismootherType = 6
 
 # Name of the section in this file which configures the smoother.
 
@@ -57,7 +57,7 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
 
 # ========================================================================
-# The following section specifies teh parameters for the solver.
+# The following section specifies the parameters for the solver.
 
 ####################
 [CC-MULTIGRIDSOLVER]
@@ -69,7 +69,7 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 5
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -212,3 +212,134 @@ spreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
 # Relaxation parameter
 
 domega             = 1.0
+
+
+
+
+#####################################################################
+
+
+
+# ========================================================================
+# The following section defines an alternative configuration of a linear
+# solver.
+
+####################
+[CC-PUREVANCASOLVER]
+####################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+# =2: Defect correction with VANCA preconditioner
+# =3: BiCGStab with VANCA preconditioner
+
+isolverType = 3
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = 'CC-PUREDEFCORR'
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANCA.
+# 1=General VANCA. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 2=Full VANCA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 4=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
+# 5=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 6=BiCGStab with Full VANCA preconditioning
+# 7=BiCGStab with Diagonal VANCA preconditioning
+
+ismootherType = 2
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = 'CC-PURESMOOTHER'
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANCA preconditioning.
+# =2: BiCGStab with diagonal VANCA preconditioning
+# =3: BiCGStab with full VANCA preconditioning
+
+icoarseGridSolverType = 0
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = ''
+
+################
+[CC-PUREDEFCORR]
+################
+
+# Relaxation parameter
+
+domega             = 1.0
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 1
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-2
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-2
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
+
+ioutputLevel       = 0
+
+# Relaxation parameter
+
+domega             = 1.0
+
+# Section in this file that defines the parameters of the preconditioner
+
+spreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
+
+# ========================================================================
+# The following section specifies the parameters for the smoother.
+
+#################
+[CC-PURESMOOTHER]
+#################
+
+# Number of pre- and postsmoothing steps
+
+nsmoothingSteps    = 1
+
+# Relaxation parameter
+
+domega             = 0.9
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
+
+ioutputLevel       = 0
