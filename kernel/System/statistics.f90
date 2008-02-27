@@ -567,7 +567,6 @@ module statistics
 !</subroutine>
 
     ! local loop variables
-    integer :: i,j
     integer :: icount, irate, icmax
 
     ! compute maximam measurable timespan
@@ -1187,7 +1186,6 @@ module statistics
 !</subroutine>
 
     ! local vars
-    integer :: i
     type(t_perfCounter),pointer :: rpcPointer
 
     ! first, all obligatory statistics
@@ -1488,8 +1486,6 @@ end function stat_sgetTime_byPCRef
     character(len=14) :: stimeRatio
   ! </result>
 !</function>
-
-    character(len=6) saux1, saux2
 
     if ((rpcG%rtimer%delapsedCPU .le. 0.0) .or. (rpcG%rtimer%delapsedReal .le. 0.0)) then
       stimeRatio="--/--"
