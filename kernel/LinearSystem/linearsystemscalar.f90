@@ -196,6 +196,9 @@
 !# 55.) lsyssc_packVector
 !#      -> Packs a scalar vector into another scalar vector
 !#
+!# 56.) lsyssc_createFullMatrix
+!#      -> Create a full square or rectangular matrix in matrix format 1
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -5737,6 +5740,9 @@ CONTAINS
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
   LOGICAL :: bentries,bstrucOwner,bentryOwner
+  INTEGER(PREC_MATIDX) :: NA,iA
+  INTEGER(PREC_VECIDX) :: j,nrows,ncols
+  INTEGER(I32) :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
   ! Matrix is already in that format.
   IF (rmatrix%cmatrixFormat .EQ. cmatrixFormat) RETURN
@@ -6038,6 +6044,112 @@ CONTAINS
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
       CALL sys_halt()
+    END SELECT
+
+  CASE (LSYSSC_MATRIX1)
+  
+    SELECT CASE (cmatrixFormat)
+    CASE (LSYSSC_MATRIX9)
+    
+      ! Get the matrix data
+      CALL lsyssc_getbase_double (rmatrix,p_Ddata2)
+    
+      ! If the matrix is virtually transposed, NCOLS and NEQ are exchanged.
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+        nrows = rmatrix%NCOLS
+        ncols = rmatrix%NEQ
+      ELSE
+        nrows = rmatrix%NEQ
+        ncols = rmatrix%NCOLS
+      END IF
+    
+      ! Count the number of nonzeroes
+      NA = 0
+      DO j = 1,ncols
+        DO i = 1,nrows
+          IF (p_Ddata2((j-1)*nrows+i) .NE. 0.0_DP) NA = NA+1
+        END DO
+      END DO
+      
+      ! Allocate Kcol, Kld, Da,Kdiagonal
+      CALL storage_new ('lsyssc_convertMatrix', 'Kcol', &
+            NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      CALL storage_new ('lsyssc_convertMatrix', 'Kld', &
+            nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+            nrows, ST_INT, h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+            
+      CALL storage_getbase_int (h_Kcol,p_Kcol)
+      CALL storage_getbase_int (h_Kld,p_Kld)
+      CALL storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
+    
+      ! Transfer the entries -- rowwise.
+      ! If we don't have to transfer the entries, simply set up the structure.
+      IF (bentries) THEN
+
+        ! Allocate memory for the entries
+        CALL storage_new ('lsyssc_convertMatrix', 'Da', &
+              NA, ST_DOUBLE, h_Da, ST_NEWBLOCK_NOINIT)
+        CALL storage_getbase_double (h_Da,p_Ddata)
+
+        iA = 0
+        DO i = 1,nrows
+          p_Kld(i) = iA+1
+          DO j = 1,ncols
+            IF (p_Ddata2((j-1)*nrows+i) .NE. 0.0_DP) THEN
+              iA = iA + 1
+              p_Ddata(iA) = p_Ddata2((j-1)*nrows+i)
+              p_Kcol(iA) = j
+            END IF
+            
+            ! p_Kdiagonal is set to the first entry on or above the diagonal.
+            IF (i .EQ. j) p_Kdiagonal(i) = iA
+          END DO
+          IF (i .GT. ncols) p_Kdiagonal(i) = iA  ! Kdiagonal was not set
+        END DO
+        p_Kld(nrows+1) = NA+1
+
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        IF (bentryOwner) THEN
+          CALL storage_free (rmatrix%h_Da)
+        END IF
+        
+        rmatrix%h_Da = h_Da
+        
+      ELSE
+      
+        iA = 0
+        DO i = 1,nrows
+          p_Kld(i) = iA+1
+          DO j = 1,ncols
+            IF (p_Ddata2((j-1)*nrows+i) .NE. 0.0_DP) THEN
+              iA = iA + 1
+              p_Kcol(iA) = j
+            END IF
+            
+            ! p_Kdiagonal is set to the first entry on or above the diagonal.
+            IF (i .EQ. j) p_Kdiagonal(i) = iA
+          END DO
+          IF (i .GT. ncols) p_Kdiagonal(i) = iA  ! Kdiagonal was not set
+        END DO
+        p_Kld(nrows+1) = NA+1
+
+        ! Don't touch the content. The result is left in an undefined state!
+        
+      END IF
+            
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+      
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kdiagonal = h_Kdiagonal
+      rmatrix%NA = NA
+      
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY))
+    
     END SELECT
 
   CASE (LSYSSC_MATRIX9INTL)
@@ -11376,6 +11488,57 @@ CONTAINS
       
     END SELECT
   
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_createFullMatrix (rmatrix,bclear,NEQ,ncols,cdataType)
+  
+!<description>
+  ! Creates a simple NEQ*ncols matrix in matrix structure 1.
+  ! No discretisation structure or similar will be attached to that matrix.
+!</description>
+
+!<input>
+  ! Number of rows in the matrix
+  INTEGER(PREC_VECIDX), INTENT(IN) :: NEQ
+  
+  ! Whether to initialise the matrix with zero or not.
+  LOGICAL, INTENT(IN) :: bclear
+  
+  ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
+  ! is assumed.
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: ncols
+  
+  ! OPTIONAL: Data type of the entries. A ST_xxxx constant. 
+  ! Default is ST_DOUBLE.
+  INTEGER, INTENT(IN), OPTIONAL :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The matrix to be initialised.
+  TYPE(t_matrixScalar), INTENT(OUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    rmatrix%NEQ = NEQ
+    rmatrix%NCOLS = NEQ
+    IF (PRESENT(ncols)) rmatrix%NCOLS = ncols
+    rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
+    rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+    IF (PRESENT(cdataType)) rmatrix%cdataType = cdataType
+    
+    IF (bclear) THEN
+      CALL storage_new1D ('lsyssc_createFullMatrix', 'h_Da', &
+          rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_ZERO)
+    ELSE
+      CALL storage_new1D ('lsyssc_createFullMatrix', 'h_Da', &
+          rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+    END IF
+    
   END SUBROUTINE
 
   !****************************************************************************
