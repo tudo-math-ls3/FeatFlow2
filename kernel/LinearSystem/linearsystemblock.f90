@@ -4206,7 +4206,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_resizeVecBlockDirect (rx, Isize, bclear, NEQMAX)
+  SUBROUTINE lsysbl_resizeVecBlockDirect (rx, Isize, bclear, bcopy, NEQMAX)
 
 !<description>
   ! Resize the vector block structure rx. Isize is an array
@@ -4240,6 +4240,9 @@ CONTAINS
     ! Whether to fill the vector with zero initially
     LOGICAL, INTENT(IN)                            :: bclear
 
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL                  :: bcopy
+
     ! OPTIONAL: Maximum length of the vector
     INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL     :: NEQMAX
 
@@ -4255,11 +4258,12 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    TYPE(t_vectorBlock)                 :: rxTmp
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata,p_DdataTmp
+    REAL(SP), DIMENSION(:), POINTER     :: p_Fdata,p_FDataTmp
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata,p_IdataTmp
     INTEGER(PREC_VECIDX) :: iNEQ,iisize,i,n
-    LOGICAL              :: bcopy
-
-    ! Set copy flag
-    bcopy = .NOT.bclear
+    LOGICAL              :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
@@ -4280,6 +4284,14 @@ CONTAINS
     iNEQ   = rx%NEQ
     IF (PRESENT(NEQMAX)) iNEQ = MAX(iNEQ,NEQMAX)
 
+    ! Set copy/clear attributes
+    bdocopy = (.NOT.bclear)
+    IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
+
+    ! Do we have to copy the content?
+    IF (bdocopy) CALL lsysbl_duplicateVector(rx, rxTmp,&
+        LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+
     ! Get current size of vector memory
     CALL storage_getsize(rx%h_Ddata, iisize)
 
@@ -4289,10 +4301,10 @@ CONTAINS
       ! Yes, so adopt the new size. Note that some extra memory is
       ! allocated if the optional argument NEQMAX is specified
       iisize = iNEQ
-
+      
       ! Reallocate the memory for handle h_Ddata
       CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
-          ST_NEWBLOCK_NOINIT, bcopy)  
+          ST_NEWBLOCK_NOINIT, .FALSE.)
       
     ELSEIF (PRESENT(NEQMAX)) THEN
 
@@ -4308,18 +4320,19 @@ CONTAINS
         IF (iisize == 0) THEN
           ! If nothing is left, then the vector can also be release
           CALL lsysbl_releaseVector(rx)
+          CALL lsysbl_releaseVector(rxTmp)
           RETURN
         ELSE
-          ! Otherwise, 
+          ! Reallocate the memory for handle h_Ddata
           CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
-              ST_NEWBLOCK_NOINIT, bcopy)
+              ST_NEWBLOCK_NOINIT, .FALSE.)
         END IF
       END IF
     END IF
-    
+
     ! Should the vector be cleared?
     IF (bclear) CALL storage_clear(rx%h_Ddata)
-        
+
     ! Restore the structure of the scalar subvectors
     n=1
     DO i=1,rx%nblocks
@@ -4339,13 +4352,50 @@ CONTAINS
       rx%RvectorBlock(i)%h_iSortPermutation = ST_NOHANDLE
     END DO
 
+    ! If the content should be copied use the temporal vector
+    IF (bdocopy) THEN
+      SELECT CASE(rx%cdataType)
+      CASE (ST_DOUBLE)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
+          CALL lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
+        END DO
+
+      CASE (ST_SINGLE)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
+          CALL lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
+        END DO
+
+      CASE (ST_INT)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
+          CALL lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
+        END DO
+
+      CASE DEFAULT
+        CALL output_line('Unsupported data format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
+        CALL sys_halt()
+      END SELECT
+
+      ! Release temporal vector
+      CALL lsysbl_releaseVector(rxTmp)
+    END IF
+
   END SUBROUTINE lsysbl_resizeVecBlockDirect
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_resizeVecBlockDirectDims (rx, isize, bclear, NEQMAX)
+  SUBROUTINE lsysbl_resizeVecBlockDirectDims (rx, isize, bclear, bcopy, NEQMAX)
 
 !<description>
   ! Resize the vector block structure rx. Isize is an integer value
@@ -4374,10 +4424,13 @@ CONTAINS
 !<input>
     
     ! Integer with desired length of all vector blocks
-    INTEGER(PREC_VECIDX), INTENT(IN) :: isize
+    INTEGER(PREC_VECIDX), INTENT(IN)               :: isize
 
     ! Whether to fill the vector with zero initially
     LOGICAL, INTENT(IN)                            :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL                  :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
     INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL     :: NEQMAX
@@ -4400,14 +4453,14 @@ CONTAINS
     Isubsize(1:rx%nblocks) = isize
 
     ! Call the direct resize routine
-    CALL lsysbl_resizeVecBlockDirect(rx, Isubsize(1:rx%nblocks), bclear, NEQMAX)
+    CALL lsysbl_resizeVecBlockDirect(rx, Isubsize(1:rx%nblocks), bclear, bcopy, NEQMAX)
   END SUBROUTINE
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_resizeVecBlockIndirect (rx, rTemplate, bclear)
+  SUBROUTINE lsysbl_resizeVecBlockIndirect (rx, rTemplate, bclear, bcopy)
 
 !<description>
   ! Resize the vector block structure rx so that is resembles that of
@@ -4437,6 +4490,9 @@ CONTAINS
 
     ! Whether to fill the vector with zero initially
     LOGICAL, INTENT(IN)                            :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL                  :: bcopy
 
 !</input>
 
@@ -4483,7 +4539,7 @@ CONTAINS
       CALL storage_getsize(rTemplate%h_Ddata,NEQMAX)
       
       ! Resize vector directly
-      CALL lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, NEQMAX)
+      CALL lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, bcopy, NEQMAX)
     END IF
 
   END SUBROUTINE
@@ -4492,7 +4548,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_resizeVecBlockIndMat (rtemplateMat, rx, bclear)
+  SUBROUTINE lsysbl_resizeVecBlockIndMat (rtemplateMat, rx, bclear, bcopy)
 
 !<description>
     ! Resize the vector block structure rx so that it is compatible with
@@ -4517,11 +4573,14 @@ CONTAINS
 
 !<input>
     ! A template matrix structure
-    TYPE(t_matrixBlock), INTENT(IN) :: rtemplateMat
+    TYPE(t_matrixBlock), INTENT(IN)    :: rtemplateMat
 
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
-    LOGICAL, INTENT(IN), OPTIONAL   :: bclear
+    LOGICAL, INTENT(IN), OPTIONAL      :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL      :: bcopy
 !</input>
 
 !<inputoutput>
@@ -4533,16 +4592,17 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_VECIDX) :: isize,i,j,n
-    LOGICAL              :: bcopy
-
-    ! Set copy flag
-    bcopy = .NOT.bclear
+    LOGICAL              :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
       PRINT *, "lsysbl_resizeVecBlockIndMat: A copied vector cannot be resized!"
       CALL sys_halt()
     END IF
+
+    ! Set copy/clear attributes
+    bdocopy = (.NOT.bclear)
+    IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
 
     ! Check if vector exists?
     IF (rx%NEQ == 0 .OR.&
@@ -4567,7 +4627,7 @@ CONTAINS
 
         ! Yes, reallocate memory for handle h_Ddata
         CALL storage_realloc('lsysbl_resizeVecBlockIndMat', rx%NEQ, rx%h_Ddata, &
-            ST_NEWBLOCK_NOINIT, bcopy)
+            ST_NEWBLOCK_NOINIT, bdocopy)
       END IF
 
       n=1
