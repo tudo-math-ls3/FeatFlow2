@@ -4975,7 +4975,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildResBlockFCT(rmatrixMC, rmatrixML, ru,&
-      theta, tstep, binitResidual, rres, rafcstab)
+      theta, tstep, binit, rres, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector and applies
@@ -5004,7 +5004,7 @@ CONTAINS
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    LOGICAL, INTENT(IN)                :: binitResidual
+    LOGICAL, INTENT(IN)                :: binit
 !</input>
 
 !<inputoutput>
@@ -5026,7 +5026,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru%RvectorBlock(1),&
-          theta, tstep, binitResidual, rres%RvectorBlock(1), rafcstab)
+          theta, tstep, binit, rres%RvectorBlock(1), rafcstab)
 
     END IF
   END SUBROUTINE gfsc_buildResBlockFCT
@@ -5036,7 +5036,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru,&
-      theta, tstep, binitResidual, rres, rafcstab)
+      theta, tstep, binit, rres, rafcstab)
 
 !<description>
 
@@ -5060,7 +5060,7 @@ CONTAINS
     !    conservation laws", Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
-    ! 2. Semi-implicit FEM-FCT algorith
+    ! 2. Semi-implicit FEM-FCT algorithm
     !
     !    This is the FCT algorithm that should be used by default. It
     !    is quite efficient since the nodal correction factors are
@@ -5075,7 +5075,7 @@ CONTAINS
     !    problems", Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
     !
-    ! 3. Linearized FEM-FCT algorithms
+    ! 3. Linearized FEM-FCT algorithm
     !
     !    A new trend in the development of FCT algorithms is to
     !    linearise the raw antidiffusive fluxes about an intermediate
@@ -5111,7 +5111,7 @@ CONTAINS
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    LOGICAL, INTENT(IN)                 :: binitResidual
+    LOGICAL, INTENT(IN)                 :: binit
 !</input>
 
 !<inputoutput>
@@ -5165,7 +5165,7 @@ CONTAINS
     CASE (AFCSTAB_FEMFCT)
 
       ! Should we build up the initial residual?
-      IF (binitResidual) THEN
+      IF (binit) THEN
         
         ! Do we have a fully implicit time discretisation?
         IF (theta < 1.0_DP) THEN
@@ -5224,7 +5224,7 @@ CONTAINS
     CASE (AFCSTAB_FEMFCT_EXP)
 
       ! Should we build up the initial residual?
-      IF (binitResidual) THEN
+      IF (binit) THEN
         ! Initialise the flux limiter
         CALL doInit_explFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
             p_MC, p_u, theta, tstep, rafcstab%NEDGE,&
