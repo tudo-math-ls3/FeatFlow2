@@ -12,16 +12,19 @@
 !#
 !# The following routines can be found here
 !#
-!#  1.) system_init
+!#  1.) system_init = system_init_simple /
+!#                    system_init_ext
 !#      -> Initialise system-wide settings
 !#
 !#  2.) sys_version
 !#      -> Get kernal version number
 !#
-!#  3.) sys_toupper
+!#  3.) sys_toupper = sys_toupper_replace /
+!#                    sys_toupper_copy
 !#      -> Convert a string to uppercase
 !#
-!#  4.) sys_tolower
+!#  4.) sys_tolower = sys_tolower_replace /
+!#                    sys_tolower_copy
 !#      -> Convert a string to lowercase
 !#
 !#  5.) sys_upcase
