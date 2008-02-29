@@ -4604,6 +4604,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    TYPE(t_vectorBlock)                 :: rxTmp
+    REAL(DP), DIMENSION(:), POINTER     :: p_Ddata,p_DdataTmp
+    REAL(SP), DIMENSION(:), POINTER     :: p_Fdata,p_FDataTmp
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata,p_IdataTmp
     INTEGER(PREC_VECIDX) :: isize,i,j,n
     LOGICAL              :: bdocopy
 
@@ -4631,10 +4635,27 @@ CONTAINS
         CALL sys_halt()
       END IF
 
-      ! Update the global NEQ
-      rx%NEQ = rtemplateMat%NCOLS
+      ! If the vector should be cleared, then the sorting strategy (if any)
+      ! can be ignored and reset. Otherwise, the vector needs to be unsorted
+      ! prior to copying some part of it. Afterwards, no sorting strategy is
+      ! available in any case.
+      IF (bdocopy) THEN
+        DO i = 1, rx%nblocks
+          IF (rx%RvectorBlock(i)%isortStrategy > 0) THEN
+            CALL lsyssc_vectorActivateSorting(rx%RvectorBlock(i),.FALSE.)
+          END IF
+        END DO
+        ! Make a copy of the unsorted content
+        CALL lsysbl_duplicateVector(rx, rxTmp,&
+            LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+      END IF
+
+      ! Get current size of vector memory
       CALL storage_getsize(rx%h_Ddata, isize)
 
+      ! Update the global NEQ
+      rx%NEQ = rtemplateMat%NCOLS
+      
       ! Do we really have to reallocate the vector physically?
       IF (rx%NEQ > isize) THEN
 
@@ -4706,6 +4727,43 @@ CONTAINS
     ! Should the vector be cleared?
     IF (bclear) THEN
       CALL lsysbl_clearVector (rx)
+    END IF
+
+    ! If the content should be copied use the temporal vector
+    IF (bdocopy) THEN
+      SELECT CASE(rx%cdataType)
+      CASE (ST_DOUBLE)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
+          CALL lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
+        END DO
+
+      CASE (ST_SINGLE)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
+          CALL lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
+        END DO
+
+      CASE (ST_INT)
+        DO i=1,rx%nblocks
+          CALL lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
+          CALL lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
+          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          CALL lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
+        END DO
+
+      CASE DEFAULT
+        CALL output_line('Unsupported data format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndMat')
+        CALL sys_halt()
+      END SELECT
+
+      ! Release temporal vector
+      CALL lsysbl_releaseVector(rxTmp)
     END IF
     
   END SUBROUTINE
