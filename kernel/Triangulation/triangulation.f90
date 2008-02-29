@@ -396,8 +396,9 @@ MODULE triangulation
   
   INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPEDGESIDX    = 2**29
   INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPFACESIDX    = 2**30  
-  
-  
+
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEXIDX      =-2**1
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEX         =-2**2
   
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
@@ -985,18 +986,18 @@ MODULE triangulation
     ! Handle to 
     !       p_IedgesAtFace = array [1..NNVA,1..NAT] of integer.
     ! The numbers of the edges adjacent to a face in 3D. 
-    INTEGER        :: h_IedgesAtFace
+    INTEGER        :: h_IedgesAtFace = ST_NOHANDLE
     
     ! handle to an index array that is used to
     ! acces the IedgesAtVertices array
     ! this way we can get the edges attached
     ! to a vertex
-    INTEGER        :: h_IedgesAtVertexIdx
+    INTEGER        :: h_IedgesAtVertexIdx = ST_NOHANDLE
     
     ! here we can store the edges adjacent
     ! to a vertex, to access this array
     ! use the IedgesAtVertexIdx array
-    INTEGER        :: h_IedgesAtVertex
+    INTEGER        :: h_IedgesAtVertex = ST_NOHANDLE
 
   END TYPE
 
@@ -2113,13 +2114,17 @@ CONTAINS
     CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPFACESIDX,&
           rtriangulation%h_IboundaryCpFacesIdx)
      
-    if(rtriangulation%h_IedgesAtVertexIdx .NE. ST_NOHANDLE)then
-      call storage_free(rtriangulation%h_IedgesAtVertexIdx)     
-    end if
-    
-    if(rtriangulation%h_IedgesAtVertex .NE. ST_NOHANDLE)then
-      call storage_free(rtriangulation%h_IedgesAtVertex)
-    end if
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEXIDX,&
+          rtriangulation%h_IedgesAtVertexIdx)
+!!$    if(rtriangulation%h_IedgesAtVertexIdx .NE. ST_NOHANDLE)then
+!!$      call storage_free(rtriangulation%h_IedgesAtVertexIdx)     
+!!$    end if
+
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
+          rtriangulation%h_IedgesAtVertex)
+!!$    if(rtriangulation%h_IedgesAtVertex .NE. ST_NOHANDLE)then
+!!$      call storage_free(rtriangulation%h_IedgesAtVertex)
+!!$    end if
            
            
     
@@ -3166,7 +3171,7 @@ CONTAINS
   
   END FUNCTION
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -6579,7 +6584,7 @@ CONTAINS
 
   END SUBROUTINE
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -6632,7 +6637,7 @@ CONTAINS
 
   END SUBROUTINE tria_exportTriFile
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -6860,7 +6865,8 @@ CONTAINS
   
   end subroutine
   
-  !************************************************************************  
+!************************************************************************  
+
 !<subroutine>  
   subroutine tria_readRawTriangulation3d(iunit,rtriangulation)
   
@@ -6981,7 +6987,7 @@ CONTAINS
   
   end subroutine
   
-  !************************************************************************  
+!************************************************************************  
   
 !<subroutine>  
   subroutine tria_genRawBoundary3d(rtriangulation,rboundary)
@@ -7273,6 +7279,7 @@ CONTAINS
     end subroutine ! end tria_genElementsAtVertex3D
 
 !************************************************************************    
+
 !<subroutine>      
   recursive subroutine tria_mergesort(p_ConnectorList, l, r, pos)
    
@@ -10247,119 +10254,148 @@ CONTAINS
 !====================================================================
 
 !<subroutine>  
-  subroutine tria_genEdgesAtVertex(rtriangulation)
+  SUBROUTINE tria_genEdgesAtVertex(rtriangulation)
 !<description>
-  ! The routine produces an array pair that
-  ! helps you find all edges that are attached to
+    ! The routine produces an array pair that
+    ! helps you find all edges that are attached to
   ! a particular vertex
 !</description>
   
 !<inputoutput>
-  ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+    ! The triangulation structure to be updated.
+    type(t_triangulation), intent(INOUT) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
-  ! local variables
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  
-  integer(prec_edgeidx), dimension(:), pointer :: p_IedgesAtVertexIdx
-  integer(prec_edgeidx), dimension(:), pointer :: p_IedgesAtVertex
-  
-  integer :: iee, iGlobal, isize, index
-  ! edgesatelement, dann verticesatedge und fertig
+    ! local variables
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
     
-  ! get the array out of the triangulation structure
-  call storage_getbase_int2d(rtriangulation%h_IedgesAtElement, &
-  p_IedgesAtElement)
-  
-  call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge, &
-  p_IverticesAtEdge)
-
-  isize = rtriangulation%NVT+1
-
-  ! allocate memory
-  call storage_new ('tria_genEdgesAtVertex', 'IedgesAtVertexIdx', &
-      int(isize,I32), ST_INT, &
-      rtriangulation%h_IedgesAtVertexIdx, ST_NEWBLOCK_NOINIT)
-
-  call storage_getbase_int(rtriangulation%h_IedgesAtVertexIdx, &
-  p_IedgesAtVertexIdx)
-
-  
-  ! initialize the p_IedgesAtVertexIdx array
-  p_IedgesAtVertexIdx(1) = 1
-  p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = 0
-  
-  ! loop over all edges
-  do iee=1,rtriangulation%NMT
+    integer(prec_edgeidx), dimension(:), pointer :: p_IedgesAtVertexIdx
+    integer(prec_edgeidx), dimension(:), pointer :: p_IedgesAtVertex
     
-    ! get the global vertex index 
-    iGlobal=p_IverticesAtEdge(1,iee)
-    ! increase the edge count for this vertex
-    p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
-
-    ! get the global vertex index 
-    iGlobal=p_IverticesAtEdge(2,iee)
-    ! increase the edge count for this vertex
-    p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
-  
-  end do ! iee
-  
-  ! sum up the entries to get the index array
-  do iee=2,rtriangulation%NVT+1
-    p_IedgesAtVertexIdx(iee) = p_IedgesAtVertexIdx(iee) + & 
-    p_IedgesAtVertexIdx(iee-1)
-  end do
-  
-  ! the size of the p_IedgesAtVertex array
-  isize = p_IedgesAtVertexIdx(rtriangulation%NVT+1)-1
-  
-  ! allocate memory
-  call storage_new ('tria_genEdgesAtVertex', 'IedgesAtVertex', &
-      int(isize,I32), ST_INT, &
-      rtriangulation%h_IedgesAtVertex, ST_NEWBLOCK_NOINIT)
-  
-  call storage_getbase_int(rtriangulation%h_IedgesAtVertex, &
-  p_IedgesAtVertex)  
-  ! shift the array positions    
-  p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = &
-  p_IedgesAtVertexIdx(1:rtriangulation%NVT)    
+    integer :: iee, iGlobal, isize, index
+    ! edgesatelement, dann verticesatedge und fertig
+    
+    ! Is everything here we need?
+    IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IedgesAtElement not available!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtVertex')
+      CALL sys_halt()
+    END IF
+    
+    IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtEdge not available!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtVertex')
+      CALL sys_halt()
+    END IF
+    
+    ! Get the array out of the triangulation structure
+    CALL storage_getbase_int2d(rtriangulation%h_IedgesAtElement, &
+        p_IedgesAtElement)
+    
+    CALL storage_getbase_int2d(rtriangulation%h_IverticesAtEdge, &
+        p_IverticesAtEdge)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IedgesAtVertexIdx .EQ. ST_NOHANDLE) THEN
+      isize = rtriangulation%NVT+1
+      CALL storage_new ('tria_genEdgesAtVertex', 'IedgesAtVertexIdx', &
+          INT(isize,I32), ST_INT, &
+          rtriangulation%h_IedgesAtVertexIdx, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_IedgesAtVertexIdx, isize)
+      IF (isize .NE. rtriangulation%NVT+1) THEN
+        ! If the size is wrong, reallocate memory.
+        isize = rtriangulation%NVT+1
+        CALL storage_realloc ('tria_genEdgesAtVertex', &
+            INT(isize,I32), rtriangulation%h_IedgesAtVertexIdx, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_int(rtriangulation%h_IedgesAtVertexIdx, &
+        p_IedgesAtVertexIdx)
+    
+    ! initialize the p_IedgesAtVertexIdx array
+    p_IedgesAtVertexIdx(1) = 1
+    p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = 0
+    
+    ! loop over all edges
+    DO iee=1,rtriangulation%NMT
       
-  ! loop over all edges
-  do iee=1,rtriangulation%NMT
-  
-    ! get the global vertex index
-    iGlobal=p_IverticesAtEdge(1,iee)
+      ! get the global vertex index 
+      iGlobal=p_IverticesAtEdge(1,iee)
+      ! increase the edge count for this vertex
+      p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
+      
+      ! get the global vertex index 
+      iGlobal=p_IverticesAtEdge(2,iee)
+      ! increase the edge count for this vertex
+      p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
+      
+    END DO ! iee
     
-    ! get the index into the p_IedgesAtVertex array
-    index = p_IedgesAtVertexIdx(iGlobal+1)
+    ! sum up the entries to get the index array
+    DO iee=2,rtriangulation%NVT+1
+      p_IedgesAtVertexIdx(iee) = p_IedgesAtVertexIdx(iee) + & 
+          p_IedgesAtVertexIdx(iee-1)
+    END DO
     
-    ! write the edge number into the array
-    p_IedgesAtVertex(index) = iee
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IedgesAtVertex .EQ. ST_NOHANDLE) THEN
+      isize = p_IedgesAtVertexIdx(rtriangulation%NVT+1)-1
+      CALL storage_new ('tria_genEdgesAtVertex', 'IedgesAtVertex', &
+          INT(isize,I32), ST_INT, &
+          rtriangulation%h_IedgesAtVertex, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_IedgesAtVertex, isize)
+      IF (isize .NE. p_IedgesAtVertexIdx(rtriangulation%NVT+1)-1) THEN
+        isize = p_IedgesAtVertexIdx(rtriangulation%NVT+1)-1
+        CALL storage_realloc ('tria_genEdgesAtVertex', &
+            INT(isize,I32), rtriangulation%h_IedgesAtVertex, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
     
-    ! increase the edge count by one
-    p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
-
-    ! repeat procedure for the 2nd vertex of the edge
-    ! get the global vertex index
-    iGlobal=p_IverticesAtEdge(2,iee)
-    ! get the index into the p_IedgesAtVertex array
-    index = p_IedgesAtVertexIdx(iGlobal+1)
+    CALL storage_getbase_int(rtriangulation%h_IedgesAtVertex, &
+        p_IedgesAtVertex)  
     
-    ! write the edge number into the array
-    p_IedgesAtVertex(index) = iee
+    ! shift the array positions    
+    p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = &
+        p_IedgesAtVertexIdx(1:rtriangulation%NVT)    
     
-    ! increase the edge count by one
-    p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
-  
-  end do ! iee
-  
-  end subroutine ! end tria_genEdgesAtVertex
-  
-  
+    ! loop over all edges
+    DO iee=1,rtriangulation%NMT
+      
+      ! get the global vertex index
+      iGlobal=p_IverticesAtEdge(1,iee)
+      
+      ! get the index into the p_IedgesAtVertex array
+      index = p_IedgesAtVertexIdx(iGlobal+1)
+      
+      ! write the edge number into the array
+      p_IedgesAtVertex(index) = iee
+      
+      ! increase the edge count by one
+      p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
+      
+      ! repeat procedure for the 2nd vertex of the edge
+      ! get the global vertex index
+      iGlobal=p_IverticesAtEdge(2,iee)
+      ! get the index into the p_IedgesAtVertex array
+      index = p_IedgesAtVertexIdx(iGlobal+1)
+      
+      ! write the edge number into the array
+      p_IedgesAtVertex(index) = iee
+      
+      ! increase the edge count by one
+      p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
+      
+    END DO ! iee
+    
+  END subroutine tria_genEdgesAtVertex
   
 END MODULE
 
