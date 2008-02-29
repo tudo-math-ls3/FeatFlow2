@@ -387,10 +387,8 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**22  ! KVAR 
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**23  ! KAREA
   INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**24  ! K???
-  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATFACE           = 2**23 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGEIDX        = 2**24
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**25
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEXIDX      = 2**26
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATFACE           = 2**25 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**26
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**27
   INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATBOUNDARY       = 2**28
   
@@ -2093,10 +2091,10 @@ CONTAINS
            rtriangulation%h_IedgesAtFace)
            
     ! Bit 25: K????       
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGEIDX, &
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
            rtriangulation%h_IfacesAtEdgeIdx)
        
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEXIDX, &
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
            rtriangulation%h_IfacesAtVertexIdx)
 
     call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
@@ -2116,15 +2114,9 @@ CONTAINS
      
     CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEXIDX,&
           rtriangulation%h_IedgesAtVertexIdx)
-!!$    if(rtriangulation%h_IedgesAtVertexIdx .NE. ST_NOHANDLE)then
-!!$      call storage_free(rtriangulation%h_IedgesAtVertexIdx)     
-!!$    end if
 
     CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex)
-!!$    if(rtriangulation%h_IedgesAtVertex .NE. ST_NOHANDLE)then
-!!$      call storage_free(rtriangulation%h_IedgesAtVertex)
-!!$    end if
            
            
     
