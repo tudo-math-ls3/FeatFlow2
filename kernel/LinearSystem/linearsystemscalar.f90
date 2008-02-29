@@ -680,6 +680,11 @@ MODULE linearsystemscalar
     MODULE PROCEDURE lsyssc_createVectorIntl
   END INTERFACE
 
+  INTERFACE lsyssc_createVecByDiscr
+    MODULE PROCEDURE lsyssc_createVecByDiscr
+    MODULE PROCEDURE lsyssc_createVecByDiscrIntl
+  END INTERFACE
+
   INTERFACE lsyssc_resizeVector
     MODULE PROCEDURE lsyssc_resizeVectorDirect
     MODULE PROCEDURE lsyssc_resizeVectorIndirect
@@ -1671,23 +1676,23 @@ CONTAINS
   ! A block discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
   TYPE(t_spatialDiscretisation),INTENT(IN), TARGET :: rdiscretisation
-  
+
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
+  LOGICAL, INTENT(IN), OPTIONAL                    :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+  INTEGER, INTENT(IN),OPTIONAL                     :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: NEQMAX
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL       :: NEQMAX
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated appropriately.
   ! A pointer to rdiscretisation is saved to r.
-  TYPE(t_vectorScalar),INTENT(OUT) :: rx
+  TYPE(t_vectorScalar),INTENT(OUT)                 :: rx
 !</output>
   
 !</subroutine>
@@ -1707,6 +1712,78 @@ CONTAINS
   
   ! Create a new vector with that block structure
   CALL lsyssc_createVector (rx, NEQ, bcl, cdataType, NEQMAX)
+  
+  ! Initialise further data of the block vector
+  rx%p_rspatialDiscretisation => rdiscretisation
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_createVecByDiscrIntl (rdiscretisation,rx,NVAR,bclear,cdataType,NEQMAX)
+  
+!<description>
+  ! Initialises the vector structure rx based on a discretisation
+  ! structure rDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx accordint to the number of 
+  ! DOF's indicated by the spatial discretisation structures in 
+  ! rdiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  TYPE(t_spatialDiscretisation),INTENT(IN), TARGET :: rdiscretisation
+  
+  ! Desired number of local variables
+  INTEGER, INTENT(IN)                              :: NVAR
+
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  LOGICAL, INTENT(IN), OPTIONAL                    :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
+  INTEGER, INTENT(IN),OPTIONAL                     :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL       :: NEQMAX
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated appropriately.
+  ! A pointer to rdiscretisation is saved to r.
+  TYPE(t_vectorScalar),INTENT(OUT)                 :: rx
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: cdata
+  INTEGER(PREC_VECIDX) :: NEQ
+  LOGICAL :: bcl
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
+  
+  bcl = .FALSE.
+  IF (PRESENT(bclear)) bcl = bclear
+  
+  ! Get NEQ:
+  NEQ = dof_igetNDofGlob(rdiscretisation)
+  
+  ! Create a new vector with that block structure
+  CALL lsyssc_createVector (rx, NEQ, NVAR, bcl, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
   rx%p_rspatialDiscretisation => rdiscretisation
