@@ -4279,21 +4279,34 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    ! Update the global NEQ and set working dimensions
-    rx%NEQ = MAX (0,SUM(Isize))
-    iNEQ   = rx%NEQ
+    ! Set working dimensions
+    iNEQ = MAX(0,SUM(Isize))
     IF (PRESENT(NEQMAX)) iNEQ = MAX(iNEQ,NEQMAX)
 
     ! Set copy/clear attributes
     bdocopy = (.NOT.bclear)
     IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
 
-    ! Do we have to copy the content?
-    IF (bdocopy) CALL lsysbl_duplicateVector(rx, rxTmp,&
-        LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+    ! If the vector should be cleared, then the sorting strategy (if any)
+    ! can be ignored and reset. Otherwise, the vector needs to be unsorted
+    ! prior to copying some part of it. Afterwards, no sorting strategy is
+    ! available in any case.
+    IF (bdocopy) THEN
+      DO i = 1, rx%nblocks
+        IF (rx%RvectorBlock(i)%isortStrategy > 0) THEN
+          CALL lsyssc_vectorActivateSorting(rx%RvectorBlock(i),.FALSE.)
+        END IF
+      END DO
+      ! Make a copy of the unsorted content
+      CALL lsysbl_duplicateVector(rx, rxTmp,&
+          LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+    END IF
 
     ! Get current size of vector memory
     CALL storage_getsize(rx%h_Ddata, iisize)
+
+    ! Update the global NEQ.
+    rx%NEQ = MAX(0,SUM(Isize))
 
     ! Do we really have to reallocate the vector physically?
     IF (rx%NEQ > iisize) THEN
