@@ -79,11 +79,15 @@
 !#                           gfsys_buildResBlock
 !#     -> assemble the residual vector
 !#
-!# 6.) gfsys_buildResidualTVD = gfsys_buildResScalarTVD /
+!# 6.) gfsys_buildResidualFCT = gfsys_buildResScalarFCT /
+!#                              gfsys_buildResBlockFCT
+!#     -> assemble the residual for FEM-FCT stabilisation
+!#
+!# 7.) gfsys_buildResidualTVD = gfsys_buildResScalarTVD /
 !#                              gfsys_buildResBlockTVD
 !#     -> assemble the residual for FEM-TVD stabilisation
 !#
-!# 7.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
+!# 8.) gfsys_buildDivJacobian = gfsys_buildDivJacobianScalar /
 !#                              gfsys_buildDivJacobianBlock
 !#     -> assemble the Jacobian matrix
 !#
@@ -119,6 +123,7 @@ MODULE groupfemsystem
   PUBLIC :: gfsys_isVectorCompatible
   PUBLIC :: gfsys_buildDivOperator
   PUBLIC :: gfsys_buildResidual
+  PUBLIC :: gfsys_buildResidualFCT
   PUBLIC :: gfsys_buildResidualTVD
   PUBLIC :: gfsys_buildDivJacobian
 
@@ -204,6 +209,11 @@ MODULE groupfemsystem
     MODULE PROCEDURE gfsys_buildResBlock
   END INTERFACE
 
+  INTERFACE gfsys_buildResidualFCT
+    MODULE PROCEDURE gfsys_buildResScalarFCT
+    MODULE PROCEDURE gfsys_buildResBlockFCT
+  END INTERFACE
+
   INTERFACE gfsys_buildResidualTVD
     MODULE PROCEDURE gfsys_buildResScalarTVD
     MODULE PROCEDURE gfsys_buildResBlockTVD
@@ -270,7 +280,7 @@ CONTAINS
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
     rafcstab%NEDGE = INT(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
                      rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ), I32)
-    
+
     ! What kind of stabilisation are we?
     SELECT CASE(rafcstab%ctypeAFCstabilisation)
       
@@ -283,7 +293,7 @@ CONTAINS
       ALLOCATE(rafcstab%RnodalVectors(6))
       DO i = 1, 6
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .FALSE., ST_DOUBLE)
+            rafcstab%NEQ,rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
 
     CASE DEFAULT
@@ -341,7 +351,7 @@ CONTAINS
       ALLOCATE(rafcstab%RnodalVectors(6))
       DO i = 1, 6
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ*rafcstab%NVAR, .FALSE., ST_DOUBLE)
+            rafcstab%NEQ,rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
 
     CASE DEFAULT
@@ -383,7 +393,7 @@ CONTAINS
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+    LOGICAL, INTENT(OUT), OPTIONAL  :: bcompatible
 !</output>
 !</subroutine>
 
@@ -407,8 +417,8 @@ CONTAINS
     END IF
 
     ! Matrix/operator must have the same size
-    IF (rafcstab%NEQ   .NE. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .OR.&
-        rafcstab%NVAR  .NE. rmatrixBlock%RmatrixBlock(1,1)%NVAR .OR.&
+    IF (rafcstab%NVAR  .NE. rmatrixBlock%ndiagblocks .OR.&
+        rafcstab%NEQ   .NE. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .OR.&
         rafcstab%NEDGE .NE. INT(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
         rmatrixBlock%RmatrixBlock(1,1)%NEQ),I32)) THEN
       IF (PRESENT(bcompatible)) THEN
@@ -450,7 +460,7 @@ CONTAINS
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+    LOGICAL, INTENT(OUT), OPTIONAL   :: bcompatible
 !</output>
 !</subroutine>
 
@@ -497,7 +507,7 @@ CONTAINS
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+    LOGICAL, INTENT(OUT), OPTIONAL  :: bcompatible
 !</output>
 !</subroutine>
 
@@ -549,7 +559,7 @@ CONTAINS
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+    LOGICAL, INTENT(OUT), OPTIONAL   :: bcompatible
 !</output>
 !</subroutine>
 
@@ -2643,7 +2653,7 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
+
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
@@ -3314,7 +3324,349 @@ CONTAINS
 
   ! *****************************************************************************
   
-  !<subroutine>
+!<subroutine>
+  
+  SUBROUTINE gfsys_buildResBlockFCT(RmatrixC, rmatrixMC, ru,&
+      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres, ruPredict)
+
+!<description>
+    ! This subroutine assembles the residual vector for FEM-FCT schemes.
+    ! If the vectors contain only one block, then the scalar counterpart
+    ! of this routine is called with the scalar subvectors.
+!</description>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
+
+    ! consistent mass matrix
+    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixMC
+
+    ! solution vector
+    TYPE(t_vectorBlock), INTENT(IN)                :: ru
+
+    ! predicted solution vector (low-order)
+    TYPE(t_vectorBlock), INTENT(IN), OPTIONAL      :: ruPredict
+
+    ! scaling factor
+    REAL(DP), INTENT(IN)                           :: dscale
+
+    ! callback functions to compute local matrices
+    INCLUDE 'intf_gfsyscallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    TYPE(t_afcstab), INTENT(INOUT)                 :: rafcstab
+
+    ! residual vector
+    TYPE(t_vectorBlock), INTENT(INOUT)             :: rres
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vectors contain only one block.
+    IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
+      IF (PRESENT(ruPredict)) THEN
+        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
+            fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale,&
+            rres%RvectorBlock(1), ruPredict%RvectorBlock(1))
+      ELSE
+        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
+            fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres%RvectorBlock(1))
+      END IF
+      RETURN       
+    END IF
+    
+    ! Check if vectors are compatible
+    CALL lsysbl_isVectorCompatible(ru, rres)
+    CALL gfsys_isVectorCompatible(rafcstab, ru)
+
+
+  END SUBROUTINE gfsys_buildResBlockFCT
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru, &
+      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres, ruPredict)
+    
+!<description>
+    ! This subroutine assembles the residual vector for FEM-FCT schemes.
+!</description>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
+
+    ! consistent mass matrix
+    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixMC
+
+    ! solution vector
+    TYPE(t_vectorScalar), INTENT(IN)               :: ru
+
+    ! predicted solution vector (low-order)
+    TYPE(t_vectorScalar), INTENT(IN), OPTIONAL     :: ruPredict
+
+    ! scaling factor
+    REAL(DP), INTENT(IN)                           :: dscale
+
+    ! callback functions to compute local matrices
+    INCLUDE 'intf_gfsyscallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    TYPE(t_afcstab), INTENT(INOUT)                 :: rafcstab
+    
+    ! residual vector
+    TYPE(t_vectorScalar), INTENT(INOUT)            :: rres
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_L,p_u,p_uPredict,p_res
+    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    INTEGER :: h_Ksep
+
+    ! Check if vectors are compatible
+    CALL lsyssc_isVectorCompatible(ru, rres)
+    CALL gfsys_isVectorCompatible(rafcstab, ru)
+
+    ! Check if predictor is available
+    IF (PRESENT(ruPredict)) THEN
+      CALL lsyssc_isVectorCompatible(ru, ruPredict)
+      CALL lsyssc_copyVector(ruPredict, rafcstab%RnodalVectors(7))
+    END IF
+
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
+    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsyssc_getbase_double(ru,   p_u)
+    CALL lsyssc_getbase_double(rres, p_res)
+
+    ! Create diagonal Ksep=Kld
+    h_Ksep = ST_NOHANDLE
+    CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+    CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+
+    ! What kind of stabilisation should be applied?
+    SELECT CASE(rafcstab%ctypeAFCstabilisation)
+      
+    CASE (AFCSTAB_FEMFCT)
+
+      ! Check if stabilisation is prepeared
+      IF (IAND(rafcstab%iSpec, AFCSTAB_INITIALISED) .EQ. 0) THEN
+        CALL output_line('Stabilisation has not been initialised',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+        CALL sys_halt()
+      END IF
+      
+      ! Set pointers
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredict)
+      
+      ! Set specifiers for Ps, Qs and Rs
+      rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_LIMITER)
+     
+      ! What kind of matrix are we?
+      SELECT CASE(RmatrixC(1)%cmatrixFormat)
+      CASE(LSYSSC_MATRIX7)
+
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE (LSYSSC_MATRIX9)
+        
+        ! Set pointer
+        CALL lsyssc_getbase_Kdiagonal(RmatrixC(1), p_Kdiagonal)
+
+        ! How many dimensions do we have?
+        SELECT CASE(SIZE(RmatrixC,1))
+        CASE (NDIM1D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+
+        CASE (NDIM2D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_uPredict,&
+              dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)         
+
+        CASE (NDIM3D)
+          CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          CALL sys_halt()
+        END SELECT
+
+      CASE DEFAULT
+        CALL output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+        CALL sys_halt()
+      END SELECT
+      
+    CASE DEFAULT
+      CALL output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+      CALL sys_halt()
+    END SELECT
+    
+    ! Release Ksep
+    CALL storage_free(h_Ksep)
+
+  CONTAINS
+    
+    !**************************************************************
+    ! Initialisation of the semi-implicit FEM-FCT procedure
+    
+    SUBROUTINE doInitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, uPredict, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u,uPredict
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,T_ij
+      REAL(DP), DIMENSION(NVAR)      :: Diff,F_ij,F_ji,V_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+
+      ! Clear P's and Q's
+      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
+      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+                    
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
+
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
+
+          ! Compute characteristic variables for predicted values
+          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, V_ij, L_ij=T_ij)
+
+          ! Upper/lower bounds
+          qp(:,i) = MAX(qp(:,i),V_ij); qp(:,j) = MAX(qp(:,j),-V_ij)
+          qm(:,i) = MIN(qm(:,i),V_ij); qm(:,j) = MIN(qm(:,j),-V_ij)
+
+          ! Compute characteristic variables
+          CALL fcb_calcCharacteristics(u(:,i), u(:,j), C_ij, W_ij)
+
+          
+
+!!$          ! Determine fluxes
+!!$          diff = u(i)-u(j);   f_ij = tstep*d_ij*diff
+!!$          flux(iedge) = f_ij; flux0(iedge) = -m_ij*diff
+!!$          
+!!$          ! Sum of positive/negative fluxes
+!!$          pp(:,i) = pp(:,i)+MAX(0._DP,F_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-F_ij)
+!!$          pm(:,i) = pm(:,i)+MIN(0._DP,F_ij); pm(:,j) = pm(:,j)+MIN(0._DP,-F_ij)
+!!$          
+!!$          ! Upper/lower bounds
+!!$          Diff = uPredict(:,j)-uPredict(:,i)
+!!$          qp(:,i) = MAX(qp(:,i),Diff); qp(:,j) = MAX(qp(:,j),-Diff)
+!!$          qm(:,i) = MIN(qm(:,i),Diff); qm(:,j) = MIN(qm(:,j),-Diff)
+
+        END DO
+      END DO
+      
+    END SUBROUTINE doInitFCTMat9_2D
+
+    !**************************************************************
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of FCT-type in 2D
+    ! All matrices are stored in matrix format 9
+
+    SUBROUTINE doLimitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        Cx, Cy, u, uPredict, dscale, pp, pm, qp, qm, rp, rm, res)
+
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
+      INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER, INTENT(IN)                               :: NVAR
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
+      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u,uPredict
+      REAL(DP), INTENT(IN)                              :: dscale
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
+      INTEGER(PREC_MATIDX)           :: ij,ji
+      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      INTEGER                        :: ivar
+
+      PRINT *, "Es hat soweit funktioniert"
+      STOP
+
+    END SUBROUTINE doLimitFCTMat9_2D
+  END SUBROUTINE gfsys_buildResScalarFCT
+
+  ! *****************************************************************************
+  
+!<subroutine>
   
   SUBROUTINE gfsys_buildResBlockTVD(RmatrixC, ru,&
       fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres)
@@ -3665,7 +4017,7 @@ CONTAINS
       ! Clear P's and Q's
       pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
       qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
-      
+
       ! Loop over all rows (forward)
       DO i = 1, NEQ
         
@@ -5058,6 +5410,7 @@ CONTAINS
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+
           CALL doLimitTVDMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, dscale,&
               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
@@ -6047,7 +6400,7 @@ CONTAINS
           
           ! Construct characteristic fluxes
           DO ivar = 1, NVAR
-            
+
             ! Limit characteristic fluxes
             IF (ka_ij(ivar) < 0) THEN
               IF (F_ij(ivar) > 0) THEN

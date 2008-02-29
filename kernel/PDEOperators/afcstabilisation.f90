@@ -49,6 +49,7 @@ MODULE afcstabilisation
   USE fsystem
   USE genoutput
   USE linearsystemscalar
+  USE linearsystemblock
   USE paramlist
   USE storage
   USE triangulation
@@ -261,10 +262,13 @@ MODULE afcstabilisation
     INTEGER :: h_IsortPermutation                      = ST_NOHANDLE
 
     ! Auxiliary nodal vectors; used internally
-    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RnodalVectors => NULL()
+    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RnodalVectors      => NULL()
+
+    ! Auxiliary nodal block vectors; used internally
+    TYPE(t_vectorBlock), DIMENSION(:), POINTER  :: RnodalBlockVectors => NULL()
 
     ! Auxiliary edge vectors; used internally
-    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RedgeVectors  => NULL()
+    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RedgeVectors       => NULL()
   END TYPE t_afcstab
 !</typeblock>
 !</types>
@@ -397,6 +401,15 @@ CONTAINS
       DEALLOCATE(rafcstab%RnodalVectors)
     END IF
 
+    ! Release auxiliary nodal block vectors
+    IF (ASSOCIATED(rafcstab%RnodalBlockVectors)) THEN
+      DO i = LBOUND(rafcstab%RnodalBlockVectors,1),&
+             UBOUND(rafcstab%RnodalBlockVectors,1)
+        CALL lsysbl_releaseVector(rafcstab%RnodalBlockVectors(i))
+      END DO
+      DEALLOCATE(rafcstab%RnodalBlockVectors)
+    END IF
+
     ! Release auxiliary edge vectors
     IF (ASSOCIATED(rafcstab%RedgeVectors)) THEN
       DO i = LBOUND(rafcstab%RedgeVectors,1),&
@@ -474,7 +487,16 @@ CONTAINS
         DO i = LBOUND(rafcstab%RnodalVectors,1),&
                UBOUND(rafcstab%RnodalVectors,1)
           CALL lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
-              rafcstab%NEQ, .FALSE.)
+              rafcstab%NEQ, .FALSE., .FALSE.)
+        END DO
+      END IF
+
+      ! Resize auxiliary nodal vectors
+      IF(ASSOCIATED(rafcstab%RnodalBlockVectors)) THEN
+        DO i = LBOUND(rafcstab%RnodalBlockVectors,1),&
+               UBOUND(rafcstab%RnodalBlockVectors,1)
+          CALL lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
+              rafcstab%NEQ, .FALSE., .FALSE.)
         END DO
       END IF
     END IF
@@ -512,7 +534,7 @@ CONTAINS
         DO i = LBOUND(rafcstab%RedgeVectors,1),&
                UBOUND(rafcstab%RedgeVectors,1)
           CALL lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
-              rafcstab%NEDGE, .FALSE.)
+              rafcstab%NEDGE, .FALSE., .FALSE.)
         END DO
       END IF
     END IF
