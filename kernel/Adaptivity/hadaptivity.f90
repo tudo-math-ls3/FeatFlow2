@@ -1984,35 +1984,35 @@ CONTAINS
     
     CALL output_line('Adaptivity statistics:')
     CALL output_line('----------------------')
-    CALL output_line('Total number of grid refinement steps:       '//&
+    CALL output_line('Total number of grid refinement steps:           '//&
         TRIM(sys_siL(rhadapt%nRefinementSteps,3)))
-    CALL output_line('Total number of grid coarsening steps:       '//&
+    CALL output_line('Total number of grid coarsening steps:           '//&
         TRIM(sys_siL(rhadapt%nCoarseningSteps,3)))
-    CALL output_line('Total number of grid smoothing  steps:       '//&
+    CALL output_line('Total number of grid smoothing  steps:           '//&
         TRIM(sys_siL(rhadapt%nSmoothingSteps,3)))
-    CALL output_line('Strategy for grid refinement and coarsening: '//&
+    CALL output_line('Strategy for grid refinement and coarsening:     '//&
         TRIM(sys_siL(rhadapt%iadaptationStrategy,3)))
-    CALL output_line('Total/initial number of elements:            '//&
+    CALL output_line('Total number of elements (initially):            '//&
         TRIM(sys_siL(rhadapt%NEL,15))//"("//TRIM(sys_siL(rhadapt%NEL0,15))//")")
-    CALL output_line('Total/initial number of vertices:            '//&
+    CALL output_line('Total number of vertices (initially):            '//&
         TRIM(sys_siL(rhadapt%NVT,15))//"("//TRIM(sys_siL(rhadapt%NVT0,15))//")")
-    CALL output_line('Total/initial number of vertices at boundary:'//&
+    CALL output_line('Total number of vertices at boundary(initially): '//&
         TRIM(sys_siL(rhadapt%NVBD,15))//"("//TRIM(sys_siL(rhadapt%NVBD0,15))//")")
     CALL output_lbrk
 
     CALL output_line('Handles:')
     CALL output_line('--------')
-    CALL output_line('h_Imarker:                '//&
+    CALL output_line('h_Imarker:                 '//&
         TRIM(sys_siL(rhadapt%h_Imarker,15)))
-    CALL output_line('h_IvertexAge:             '//&
+    CALL output_line('h_IvertexAge:              '//&
         TRIM(sys_siL(rhadapt%h_IvertexAge,15)))
-    CALL output_line('h_InodalProperty:         '//&
+    CALL output_line('h_InodalProperty:          '//&
         TRIM(sys_siL(rhadapt%h_InodalProperty,15)))
-    CALL output_line('h_IverticesAtElement:     '//&
+    CALL output_line('h_IverticesAtElement:      '//&
         TRIM(sys_siL(rhadapt%h_IverticesAtElement,15)))
-    CALL output_line('h_IneighboursAtelement:   '//&
+    CALL output_line('h_IneighboursAtElement:    '//&
         TRIM(sys_siL(rhadapt%h_IneighboursAtElement,15)))
-    CALL output_line('h_ImidneighboursAtelement:'//&
+    CALL output_line('h_ImidneighboursAtElement: '//&
         TRIM(sys_siL(rhadapt%h_ImidneighboursAtElement,15)))
     CALL output_lbrk
 
