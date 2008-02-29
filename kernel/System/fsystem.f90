@@ -216,23 +216,56 @@ MODULE fsystem
   TYPE t_sysconfig
 
     ! project id
-    CHARACTER(LEN=SYS_STRLEN) :: sprojectID
+    CHARACTER(LEN=SYS_STRLEN) :: sprojectID    = ''
 
     ! project directory
-    CHARACTER(LEN=SYS_STRLEN) :: sprojectDir
+    CHARACTER(LEN=SYS_STRLEN) :: sprojectDir   = ''
+
+    ! starting time of this project
+    INTEGER                   :: iprojectStart = 0
     
   END TYPE
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Global time measurement
+  TYPE t_clock
+
+    ! The name of the clock
+    CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
+
+    ! Starting time
+    INTEGER  :: istart  = 0
+
+    ! Stopping time
+    INTEGER  :: istop   = 0
+
+    ! Activation flag
+    LOGICAL  :: bactive = .FALSE.
+
+    ! Total time elapsed
+    REAL(DP) :: dtime   = 0.0_DP
+
+    ! Pointer to encompassing clock
+    TYPE(t_clock), POINTER :: rencompClock => NULL()
+
+  END TYPE t_clock
 
 !</typeblock>
 
 !</types>
 
 !<globals>
+  ! Global time measurement structure
+  TYPE(t_clock), DIMENSION(:), ALLOCATABLE, TARGET, SAVE :: rclock
+
   ! maximal measurable time span in seconds (system-dependend)
   REAL(DP) :: sys_dtimeMax
 
   ! global system configuration
-  TYPE (t_sysconfig), TARGET :: sys_sysconfig
+  TYPE (t_sysconfig), TARGET, SAVE :: sys_sysconfig
   
   ! Halt mode. This variable defines the way, sys_halt halts the program.
   ! One of the SYS_HALT_xxxx constants.
@@ -255,6 +288,298 @@ MODULE fsystem
   END INTERFACE
 
 CONTAINS
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_initClock(nclock)
+
+!<description>
+
+    ! This routine initializes the time measurement.
+
+!</description>
+
+!<input>
+
+    ! Number of clocks.
+    INTEGER, INTENT(IN) :: nclock
+
+!</input>
+
+!</subroutine>
+
+    IF (ALLOCATED(rclock)) THEN
+      PRINT *, "sys_initClock: Time measurement is already initialised!"
+      CALL sys_halt()
+    END IF
+    
+    ALLOCATE(rclock(nclock))
+    
+  END SUBROUTINE sys_initClock
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_doneClock
+
+!<description>
+
+    ! This routine releases the time measurement.
+
+!</description>
+
+!</subroutine>
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_doneClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+    
+    DEALLOCATE(rclock)
+    
+  END SUBROUTINE sys_doneClock
+
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_setClock(iclock, sname)
+
+!<description>
+
+  ! This routine sets a clock for time measurement.
+
+!</description>
+
+!<input>
+
+    ! Number of the clock
+    INTEGER, INTENT(IN)          :: iclock
+
+    ! Name of the clock
+    CHARACTER(LEN=*), INTENT(IN) :: sname
+
+!</input>
+
+!</subroutine>
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_setClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+    
+    IF (iclock .GT. SIZE(rclock)) THEN
+      PRINT *, "sys_setClock: Clock number exceeds maximum number of clocks!"
+      CALL sys_halt()
+    END IF
+    
+    rclock(iclock)%sname   = sname
+    rclock(iclock)%istart  = 0
+    rclock(iclock)%istop   = 0
+    rclock(iclock)%bactive = .FALSE.
+    rclock(iclock)%dtime   = 0.0_DP
+    
+    NULLIFY(rclock(iclock)%rencompClock)
+
+  END SUBROUTINE sys_setClock
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_setEncompClock(iclock, iencompClock)
+
+!<description>
+
+  ! This routine sets an encompassing clock for a given clock.
+
+!</description>
+
+!<input>
+
+    ! Number of the clock
+    INTEGER, INTENT(IN) :: iclock
+
+    ! Number of the encompassing clock
+    INTEGER, INTENT(IN) :: iencompClock
+
+!</input>
+    
+!</subroutine>
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_setEncompClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+    
+    IF (MAX(iclock,iencompClock) .GT. SIZE(rclock)) THEN
+      PRINT *, "sys_setEncompClock: Clock number(s) exceed maximum number of clocks!"
+      CALL sys_halt()
+    END IF
+    
+    rclock(iclock)%rencompClock => rclock(iencompClock)
+    
+  END SUBROUTINE sys_setEncompClock
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_startClock(iclock)
+
+!<description>
+
+    ! This routine starts the given clock.
+
+!</description>
+
+!<input>
+
+    ! Number of the clock
+    INTEGER, INTENT(IN) :: iclock
+
+!</input>
+
+!</subroutine>
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_startClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+    
+    IF (iclock .GT. SIZE(rclock)) THEN
+      PRINT *, "sys_startClock: Clock number exceeds maximum number of clocks!"
+      CALL sys_halt()
+    END IF
+    
+    ! Start time measurement
+    rclock(iclock)%bactive = .TRUE.
+    CALL system_clock(rclock(iclock)%istart)
+
+  END SUBROUTINE sys_startClock
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_stopClock(iclock)
+
+!<description>
+
+    ! This routine stops the given clock.
+
+!</description>
+
+!<input>
+
+    ! Number of the clock
+    INTEGER, INTENT(IN) :: iclock
+
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: irate
+    
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_stopClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+    
+    IF (iclock .GT. SIZE(rclock)) THEN
+      PRINT *, "sys_stopClock: Clock number exceeds maximum number of clocks!"
+      CALL sys_halt()
+    END IF
+    
+    IF (.NOT.rclock(iclock)%bactive) THEN
+      PRINT *, "sys_stopClock: Clock has not been started, skipping!"
+      RETURN
+    END IF
+
+    ! Stop time measurement
+    rclock(iclock)%bactive = .FALSE.
+    CALL system_clock(rclock(iclock)%istop, irate)
+    
+    ! Calculate elapsed time
+    rclock(iclock)%dtime = rclock(iclock)%dtime+&
+        REAL(rclock(iclock)%istop-rclock(iclock)%istart, DP)/REAL(irate, DP)
+    
+  END SUBROUTINE sys_stopClock
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_stopClockAll
+
+!<description>
+
+    ! This routine stops all clocks.
+
+!</description>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iclock
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_stopClockAll: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+
+    DO iclock = 1, SIZE(rclock)
+      CALL sys_stopClock(iclock)
+    END DO
+
+  END SUBROUTINE sys_stopClockAll
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_infoClock
+
+!<description>
+
+    ! This routine prints information about the clock
+
+!</description>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: dtotaltime
+    INTEGER  :: iclock,icount,irate,icmax
+
+    IF (.NOT.ALLOCATED(rclock)) THEN
+      PRINT *, "sys_infoClock: Time measurement is not initialised!"
+      CALL sys_halt()
+    END IF
+
+    ! Compute total cpu time
+    CALL system_clock(icount,irate,icmax)
+    dtotaltime = REAL(icount-sys_sysconfig%iprojectStart, DP)/REAL(irate, DP)
+    
+    WRITE(*,FMT='(A)') 'Time measurement:'
+    WRITE(*,FMT='(A)') '-----------------'
+    WRITE(*,*)
+    WRITE(*,FMT='(A,T35,A,T60,A)') 'Clock name', 'elapsed time in seconds', 'Percentage of total time'
+    WRITE(*,FMT='(85("="))')
+
+    ! Print out all clocks
+    DO iclock = 1, SIZE(rclock)
+      WRITE(*,FMT='(A,T35,A,T60,A)') TRIM(ADJUSTL(rclock(iclock)%sname)),&
+                               TRIM(sys_sdE(rclock(iclock)%dtime, 2)),&
+                               TRIM(sys_sdE(100/dtotaltime*rclock(iclock)%dtime,5))
+    END DO
+
+  END SUBROUTINE sys_infoClock
 
 !************************************************************************
 
@@ -399,6 +724,7 @@ CONTAINS
     ! Initialise the global sysconfig structure
     sys_sysconfig%sprojectID = sprojectID
     sys_sysconfig%sprojectDir = sprojectDir
+    sys_sysconfig%iprojectStart = icount
 
     ! Set value of Pi = 3.14..
     SYS_PI=ASIN(1.0_DP)*2.0_DP
