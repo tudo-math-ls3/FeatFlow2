@@ -377,29 +377,73 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**12  ! DVBDP 
   INTEGER(I32), PARAMETER :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**13  ! DMBDP 
   INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATBOUNDARY       = 2**14  ! KMBD  
-  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATEDGE        = 2**16  ! KEAN  
-  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**17  ! KVBDI 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**18  ! KMBDI 
-  INTEGER(I32), PARAMETER :: TR_SHARE_DELEMENTAREA           = 2**19  ! DAREA 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IREFINEMENTPATCH       = 2**20   
-  INTEGER(I32), PARAMETER :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**21  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATEDGE        = 2**15  ! KEAN  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**16  ! KVBDI 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**17  ! KMBDI 
+  INTEGER(I32), PARAMETER :: TR_SHARE_DELEMENTAREA           = 2**18  ! DAREA 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IREFINEMENTPATCH       = 2**19   
+  INTEGER(I32), PARAMETER :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**20  
   
-  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**22  ! KVAR 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**23  ! KAREA
-  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**24  ! K???
-  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATFACE           = 2**25 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**26
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**27
-  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATBOUNDARY       = 2**28
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATFACE        = 2**21  ! KVAR 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATELEMENT        = 2**22  ! KAREA
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATFACE        = 2**23  ! K???
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATFACE           = 2**24 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATEDGE           = 2**25
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATVERTEX         = 2**26
+  INTEGER(I32), PARAMETER :: TR_SHARE_IFACESATBOUNDARY       = 2**27
   
-  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPEDGESIDX    = 2**29
-  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPFACESIDX    = 2**30  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPEDGESIDX    = 2**28
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPFACESIDX    = 2**29  
 
-  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEXIDX      =-2**1
-  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEX         =-2**2
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEXIDX      = 2**30
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATVERTEX         = 2**31
   
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
+
+!</constantblock>
+
+!<constantblock description="Generation flags. Specifies which information should \
+!                            be generated in the standard mesh">
+
+  INTEGER(I32), PARAMETER :: TR_GEN_DVERTEXCOORDS          = TR_SHARE_DVERTEXCOORDS
+  INTEGER(I32), PARAMETER :: TR_GEN_DFREEVERTEXCOORDINATES = TR_SHARE_DFREEVERTEXCOORDINATES
+  INTEGER(I32), PARAMETER :: TR_GEN_IVERTICESATELEMENT     = TR_SHARE_IVERTICESATELEMENT
+  INTEGER(I32), PARAMETER :: TR_GEN_IEDGESATELEMENT        = TR_SHARE_IEDGESATELEMENT
+  INTEGER(I32), PARAMETER :: TR_GEN_INEIGHBOURSATELEMENT   = TR_SHARE_INEIGHBOURSATELEMENT
+  INTEGER(I32), PARAMETER :: TR_GEN_IELEMENTSATVERTEX      = TR_SHARE_IELEMENTSATVERTEX
+  INTEGER(I32), PARAMETER :: TR_GEN_IELEMENTSATEDGE        = TR_SHARE_IELEMENTSATEDGE
+  INTEGER(I32), PARAMETER :: TR_GEN_INODALPROPERTY         = TR_SHARE_INODALPROPERTY
+  INTEGER(I32), PARAMETER :: TR_GEN_KMM                    = TR_SHARE_KMM
+  INTEGER(I32), PARAMETER :: TR_GEN_IVERTICESATBOUNDARY    = TR_SHARE_IVERTICESATBOUNDARY
+  INTEGER(I32), PARAMETER :: TR_GEN_IELEMENTSATBOUNDARY    = TR_SHARE_IELEMENTSATBOUNDARY
+  INTEGER(I32), PARAMETER :: TR_GEN_IBOUNDARYCPIDX         = TR_SHARE_IBOUNDARYCPIDX
+  INTEGER(I32), PARAMETER :: TR_GEN_DVERTEXPARAMETERVALUE  = TR_SHARE_DVERTEXPARAMETERVALUE
+  INTEGER(I32), PARAMETER :: TR_GEN_DEDGEPARAMETERVALUE    = TR_SHARE_DEDGEPARAMETERVALUE
+  INTEGER(I32), PARAMETER :: TR_GEN_IEDGESATBOUNDARY       = TR_SHARE_IEDGESATBOUNDARY
+  INTEGER(I32), PARAMETER :: TR_GEN_IVERTICESATEDGE        = TR_SHARE_IVERTICESATEDGE
+  INTEGER(I32), PARAMETER :: TR_GEN_IBOUNDARYVERTEXPOS     = TR_SHARE_IBOUNDARYVERTEXPOS
+  INTEGER(I32), PARAMETER :: TR_GEN_IBOUNDARYEDGEPOS       = TR_SHARE_IBOUNDARYEDGEPOS
+  INTEGER(I32), PARAMETER :: TR_GEN_DELEMENTAREA           = TR_SHARE_DELEMENTAREA
+  INTEGER(I32), PARAMETER :: TR_GEN_IREFINEMENTPATCH       = TR_SHARE_IREFINEMENTPATCH
+  INTEGER(I32), PARAMETER :: TR_GEN_ICOARSEGRIDELEMENT     = TR_SHARE_ICOARSEGRIDELEMENT
+  
+  INTEGER(I32), PARAMETER :: TR_GEN_IVERTICESATFACE        = TR_SHARE_IVERTICESATFACE
+  INTEGER(I32), PARAMETER :: TR_GEN_IFACESATELEMENT        = TR_SHARE_IFACESATELEMENT
+  INTEGER(I32), PARAMETER :: TR_GEN_IELEMENTSATFACE        = TR_SHARE_IELEMENTSATFACE
+  INTEGER(I32), PARAMETER :: TR_GEN_IEDGESATFACE           = TR_SHARE_IEDGESATFACE
+  INTEGER(I32), PARAMETER :: TR_GEN_IFACESATEDGE           = TR_SHARE_IFACESATEDGE
+  INTEGER(I32), PARAMETER :: TR_GEN_IFACESATVERTEX         = TR_SHARE_IFACESATVERTEX
+  INTEGER(I32), PARAMETER :: TR_GEN_IFACESATBOUNDARY       = TR_SHARE_IFACESATBOUNDARY
+  
+  INTEGER(I32), PARAMETER :: TR_GEN_IBOUNDARYCPEDGESIDX    = TR_SHARE_IBOUNDARYCPEDGESIDX
+  INTEGER(I32), PARAMETER :: TR_GEN_IBOUNDARYCPFACESIDX    = TR_SHARE_IBOUNDARYCPFACESIDX
+
+  INTEGER(I32), PARAMETER :: TR_GEN_IEDGESATVERTEXIDX      = TR_SHARE_IEDGESATVERTEXIDX
+  INTEGER(I32), PARAMETER :: TR_GEN_IEDGESATVERTEX         = TR_SHARE_IEDGESATVERTEX
+  
+  ! Share everything
+  INTEGER(I32), PARAMETER :: TR_GEN_ALL = NOT(0_I32)
 
 !</constantblock>
   
@@ -2836,7 +2880,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_initStandardMeshFromRaw(rtriangulation,rboundary)
+  SUBROUTINE tria_initStandardMeshFromRaw(rtriangulation,rboundary,igenflag)
 
 !<description>
   ! This routine creates all 'standard' arrays based on a 'raw'
@@ -2855,73 +2899,146 @@ CONTAINS
   ! If not specified, information about boundary vertices (e.g. 
   ! parameter values of edge midpoints in 2D) are not initialised.
   TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+
+  ! OPTIONAL: Flags which can be used to prevent the creation of some structure.
+  ! Note that this routine does not check the dependency of structure.
+  INTEGER(I32), INTENT(IN), OPTIONAL     :: igenflag
 !</input>
 
 !<inputoutput>
   ! Triangulation structure to be initialised.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  TYPE(t_triangulation), INTENT(INOUT)   :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
+    ! local variables
+    INTEGER(I32) :: iflag
+
+    iflag = TR_GEN_ALL
+    IF (PRESENT(igenflag)) iflag = igenflag
+ 
+
     SELECT CASE (rtriangulation%ndim)
     CASE (NDIM1D)
       ! Generate all standard arrays for 1D meshes.
-      CALL tria_genElementsAtVertex2D    (rtriangulation)
-      CALL tria_genNeighboursAtElement1D (rtriangulation)
-      CALL tria_genElementVolume1D       (rtriangulation)
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATVERTEX))&
+          CALL tria_genElementsAtVertex2D (rtriangulation)
 
-      CALL tria_sortBoundaryVertices2D   (rtriangulation)
-      CALL tria_genElementsAtBoundary2D  (rtriangulation)
-      CALL tria_genBoundaryVertexPos2D   (rtriangulation)
+      IF (checkGen(iflag, TR_GEN_INEIGHBOURSATELEMENT))&
+          CALL tria_genNeighboursAtElement1D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_DELEMENTAREA))&
+          CALL tria_genElementVolume1D (rtriangulation)
+      
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATBOUNDARY) .OR.&
+          checkGen(iflag, TR_GEN_IBOUNDARYVERTEXPOS)) THEN
+        CALL tria_sortBoundaryVertices2D  (rtriangulation)
+        CALL tria_genElementsAtBoundary2D (rtriangulation)
+        CALL tria_genBoundaryVertexPos2D  (rtriangulation)
+      END IF
        
     CASE (NDIM2D)
       ! Generate all standard arrays for 2D meshes.
-      CALL tria_genElementsAtVertex2D    (rtriangulation)
-      CALL tria_genNeighboursAtElement2D (rtriangulation)
-      CALL tria_genEdgesAtElement2D      (rtriangulation)
-      CALL tria_genElementsAtEdge2D      (rtriangulation)
-      CALL tria_genVerticesAtEdge2D      (rtriangulation)
-      CALL tria_genEdgeNodalProperty2D   (rtriangulation)
-      CALL tria_genElementVolume2D       (rtriangulation)
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATVERTEX))&
+          CALL tria_genElementsAtVertex2D (rtriangulation)
 
-      CALL tria_sortBoundaryVertices2D   (rtriangulation)
-      CALL tria_genElementsAtBoundary2D  (rtriangulation)
-      CALL tria_genEdgesAtBoundary2D     (rtriangulation)
-      IF (PRESENT(rboundary)) THEN
-        CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+      IF (checkGen(iflag, TR_GEN_INEIGHBOURSATELEMENT))&
+          CALL tria_genNeighboursAtElement2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IEDGESATELEMENT))&
+          CALL tria_genEdgesAtElement2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATEDGE))&
+          CALL tria_genElementsAtEdge2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IVERTICESATEDGE))&
+          CALL tria_genVerticesAtEdge2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_INODALPROPERTY))&
+          CALL tria_genEdgeNodalProperty2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_DELEMENTAREA))&
+          CALL tria_genElementVolume2D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATBOUNDARY) .OR.&
+          checkGen(iflag, TR_GEN_IEDGESATBOUNDARY)    .OR.&
+          checkGen(iflag, TR_GEN_DEDGEPARAMETERVALUE) .OR.&
+          checkGen(iflag, TR_GEN_IBOUNDARYVERTEXPOS)  .OR.&
+          checkGen(iflag, TR_GEN_IBOUNDARYEDGEPOS)) THEN
+        CALL tria_sortBoundaryVertices2D (rtriangulation)
+
+        IF (checkGen(iflag, TR_GEN_IELEMENTSATBOUNDARY))&
+            CALL tria_genElementsAtBoundary2D (rtriangulation)
+
+        IF (checkGen(iflag, TR_GEN_IEDGESATBOUNDARY))&
+            CALL tria_genEdgesAtBoundary2D (rtriangulation)
+        
+        IF (PRESENT(rboundary) .AND. &
+            checkGen(iflag, TR_GEN_DEDGEPARAMETERVALUE))&
+            CALL tria_genEdgeParameterValue2D (rtriangulation,rboundary)
+        
+        IF (checkGen(iflag, TR_GEN_IBOUNDARYVERTEXPOS))&
+            CALL tria_genBoundaryVertexPos2D (rtriangulation)
+        
+        IF (checkGen(iflag, TR_GEN_IBOUNDARYEDGEPOS))&
+            CALL tria_genBoundaryEdgePos2D (rtriangulation)
       END IF
-      CALL tria_genBoundaryVertexPos2D   (rtriangulation)
-      CALL tria_genBoundaryEdgePos2D     (rtriangulation)
-      call tria_genEdgesAtVertex         (rtriangulation)
+      
+      IF (checkGen(iflag, TR_GEN_IEDGESATVERTEX))&
+          CALL tria_genEdgesAtVertex (rtriangulation)
       
     CASE (NDIM3D)
-    ! vertices at element info provided by tri-File
-    call tria_genElementsAtVertex3D   (rtriangulation)
-    call tria_genNeighboursAtElement3D(rtriangulation)
-    call tria_genEdgesAtElement3D     (rtriangulation)
-    call tria_genElementsAtEdge3D     (rtriangulation)
-    call tria_genVerticesAtEdge3D     (rtriangulation)
-    
-    ! faces have global numbers
-    ! nvt+nmt+1 = first face
-    call tria_genFacesAtElement       (rtriangulation)
-    call tria_genVerticesAtFace       (rtriangulation)
-    call tria_genElementsAtFace       (rtriangulation) 
-    call tria_genEdgesAtFace          (rtriangulation)
-    call tria_genFacesAtEdge          (rtriangulation)
-    call tria_genFacesAtVertex        (rtriangulation)
-    
-    !----BOUNDARY------
-    call tria_genFacesAtBoundary      (rtriangulation)
-    call tria_genEdgesAtBoundary3D    (rtriangulation)
+      ! vertices at element info provided by tri-File
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATVERTEX))&
+          CALL tria_genElementsAtVertex3D (rtriangulation)
 
-    !----Properties----!
-    call tria_genEdgeNodalProperty3d  (rtriangulation)
-    call tria_genFaceNodalProperty3d  (rtriangulation)
+      IF (checkGen(iflag, TR_GEN_INEIGHBOURSATELEMENT))&
+          CALL tria_genNeighboursAtElement3D (rtriangulation)
 
-    
-    ! CALL tria_genElementVolume3d       (rtriangulation)
+      IF (checkGen(iflag, TR_GEN_IEDGESATELEMENT))&
+          CALL tria_genEdgesAtElement3D (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATEDGE))&
+          CALL tria_genElementsAtEdge3D (rtriangulation)
+      
+      IF (checkGen(iflag, TR_GEN_IVERTICESATEDGE))&
+          CALL tria_genVerticesAtEdge3D (rtriangulation)
+      
+      ! faces have global numbers
+      ! nvt+nmt+1 = first face
+      IF (checkGen(iflag, TR_GEN_IFACESATELEMENT))&
+          CALL tria_genFacesAtElement (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IVERTICESATFACE))&
+          CALL tria_genVerticesAtFace (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IELEMENTSATFACE))&
+          CALL tria_genElementsAtFace (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IEDGESATFACE))&
+          CALL tria_genEdgesAtFace (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IFACESATEDGE))&
+          CALL tria_genFacesAtEdge (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IFACESATVERTEX))&
+          CALL tria_genFacesAtVertex (rtriangulation)
+      
+      !----BOUNDARY------
+      IF (checkGen(iflag, TR_GEN_IFACESATBOUNDARY))&
+          CALL tria_genFacesAtBoundary (rtriangulation)
+
+      IF (checkGen(iflag, TR_GEN_IEDGESATBOUNDARY))&
+          CALL tria_genEdgesAtBoundary3D (rtriangulation)
+      
+      !----Properties----!
+      IF (checkGen(iflag, TR_GEN_INODALPROPERTY)) THEN
+        CALL tria_genEdgeNodalProperty3d (rtriangulation)
+        CALL tria_genFaceNodalProperty3d (rtriangulation)
+      END IF
+      
+      ! CALL tria_genElementVolume3d       (rtriangulation)
     
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
@@ -2929,6 +3046,19 @@ CONTAINS
       CALL sys_halt()
     END SELECT
 
+  CONTAINS
+    
+    FUNCTION checkGen (igenFlag,ibitfield)
+      
+      ! Checks if igenFlag has all bits ibitfield set.
+      INTEGER(I32), INTENT(IN) :: igenFlag
+      INTEGER(I32), INTENT(IN) :: ibitfield
+      
+      LOGICAL                  :: checkGen
+      
+      checkGen = (IAND(igenFlag,ibitfield) .EQ. ibitfield)
+
+    END FUNCTION checkGen
   END SUBROUTINE
 
 !************************************************************************
