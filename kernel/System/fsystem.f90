@@ -223,6 +223,9 @@ MODULE fsystem
 
     ! starting time of this project
     INTEGER                   :: iprojectStart = 0
+
+    ! starting time of this project (long time runs)
+    INTEGER, DIMENSION(8)     :: iprojectStartLong = 0
     
   END TYPE
 
@@ -237,19 +240,22 @@ MODULE fsystem
     CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
 
     ! Starting time
-    INTEGER  :: istart  = 0
+    INTEGER  :: istart       = 0
 
     ! Stopping time
-    INTEGER  :: istop   = 0
-
-    ! Activation flag
-    LOGICAL  :: bactive = .FALSE.
+    INTEGER  :: istop        = 0
 
     ! Total time elapsed
-    REAL(DP) :: dtime   = 0.0_DP
+    INTEGER :: icount        = 0
 
-    ! Pointer to encompassing clock
-    TYPE(t_clock), POINTER :: rencompClock => NULL()
+    ! Total overflow of system clock
+    INTEGER :: ioverflow     = 0
+
+    ! Activation flag
+    LOGICAL  :: bactive      = .FALSE.
+
+    ! Number of encompassing clock
+    INTEGER  :: iencompClock = 0
 
   END TYPE t_clock
 
@@ -377,13 +383,13 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    rclock(iclock)%sname   = sname
-    rclock(iclock)%istart  = 0
-    rclock(iclock)%istop   = 0
-    rclock(iclock)%bactive = .FALSE.
-    rclock(iclock)%dtime   = 0.0_DP
-    
-    NULLIFY(rclock(iclock)%rencompClock)
+    rclock(iclock)%sname        = sname
+    rclock(iclock)%istart       = 0
+    rclock(iclock)%istop        = 0
+    rclock(iclock)%icount       = 0
+    rclock(iclock)%ioverflow    = 0
+    rclock(iclock)%bactive      = .FALSE.
+    rclock(iclock)%iencompClock = 0
 
   END SUBROUTINE sys_setClock
 
@@ -421,7 +427,7 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    rclock(iclock)%rencompClock => rclock(iencompClock)
+    rclock(iclock)%iencompClock = iencompClock
     
   END SUBROUTINE sys_setEncompClock
 
@@ -459,7 +465,6 @@ CONTAINS
     ! Start time measurement
     rclock(iclock)%bactive = .TRUE.
     CALL system_clock(rclock(iclock)%istart)
-
   END SUBROUTINE sys_startClock
 
 !************************************************************************
@@ -484,8 +489,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: irate
-    
+    INTEGER :: icount,irate,icountmax
+
     IF (.NOT.ALLOCATED(rclock)) THEN
       PRINT *, "sys_stopClock: Time measurement is not initialised!"
       CALL sys_halt()
@@ -503,12 +508,31 @@ CONTAINS
 
     ! Stop time measurement
     rclock(iclock)%bactive = .FALSE.
-    CALL system_clock(rclock(iclock)%istop, irate)
+    CALL system_clock(rclock(iclock)%istop, irate, icountmax)
     
-    ! Calculate elapsed time
-    rclock(iclock)%dtime = rclock(iclock)%dtime+&
-        REAL(rclock(iclock)%istop-rclock(iclock)%istart, DP)/REAL(irate, DP)
-    
+    ! Calculate elapsed time. Note that the stopping time may be smaller
+    ! than the starting time. In this case the maximum number of counts
+    ! has been reached and must be considered.
+    IF (rclock(iclock)%istart  .GT. rclock(iclock)%istop) THEN
+      icount = icountmax-rclock(iclock)%istart
+      icount = icount+rclock(iclock)%istop
+      IF (rclock(iclock)%icount .GT. icountmax-icount) THEN
+        rclock(iclock)%icount    = rclock(iclock)%icount-icountmax
+        rclock(iclock)%icount    = rclock(iclock)%icount+icount
+        rclock(iclock)%ioverflow = rclock(iclock)%ioverflow+1
+      ELSE
+        rclock(iclock)%icount =  rclock(iclock)%icount+icount
+      END IF
+    ELSE
+      icount = rclock(iclock)%istop-rclock(iclock)%istart
+      IF (rclock(iclock)%icount .GT. icountmax-icount) THEN
+        rclock(iclock)%icount    = rclock(iclock)%icount-icountmax
+        rclock(iclock)%icount    = rclock(iclock)%icount+icount
+        rclock(iclock)%ioverflow = rclock(iclock)%ioverflow+1
+      ELSE
+        rclock(iclock)%icount = rclock(iclock)%icount+icount
+      END IF
+    END IF
   END SUBROUTINE sys_stopClock
 
 !************************************************************************
@@ -554,31 +578,126 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dtotaltime
-    INTEGER  :: iclock,icount,irate,icmax
+    TYPE(t_clock), DIMENSION(:), ALLOCATABLE :: rclockTmp
+    REAL(DP) :: dtotaltime,dtime,dtimeself
+    INTEGER  :: iclock,icount,irate,icountmax
+    INTEGER  :: ndays,nsecs,nsec1,nsec2
+    INTEGER, DIMENSION(8) :: istopLong
+
+    WRITE(*,FMT='(A)') 'Time measurement:'
+    WRITE(*,FMT='(A)') '-----------------'
+
+    ! Compute total cpu time
+    CALL system_clock(icount,irate,icountmax)
+    CALL date_and_time(values=istopLong)
+
+    ! Compute number of days elapsed
+    ndays = calender_to_julian(istopLong(1), istopLong(2), istopLong(3))-&
+        calender_to_julian(sys_sysconfig%iprojectStartLong(1),&
+                           sys_sysconfig%iprojectStartLong(2),&
+                           sys_sysconfig%iprojectStartLong(3))
+
+    ! Compute number of seconds elapsed
+    nsec1 = istopLong(5)*3600+istopLong(6)*60+istopLong(7)
+    nsec2 = sys_sysconfig%iprojectStartLong(5)*3600+&
+            sys_sysconfig%iprojectStartLong(6)*60+&
+            sys_sysconfig%iprojectStartLong(7)
+
+    IF (nsec2 .LT. nsec1) THEN
+      nsecs = 86400-(nsec2-nsec1)
+    ELSE
+      nsecs = nsec2-nsec1
+    END IF
+
+    ! Compute total time from system clock
+    IF (icount .LT. sys_sysconfig%iprojectStart) THEN
+      dtime = REAL(icountmax+icount-sys_sysconfig%iprojectStart, DP)/REAL(irate, DP)
+    ELSE
+      dtime = REAL(icount-sys_sysconfig%iprojectStart, DP)/REAL(irate, DP)
+    END IF
+
+    ! Ok, now we have two times. Check which measurement can be used
+    dtotaltime = REAL(icountmax, DP)/REAL(irate, DP)
+
+    IF (ndays .LE. INT(dtotaltime/86400._DP)) THEN
+      dtotaltime = dtime
+      WRITE(*,FMT='(A)') 'Simulation ran '//TRIM(sys_sdEL(dtime, 2))//' seconds'
+    ELSE
+      dtotaltime = REAL(ndays*86400+nsecs, DP)
+      WRITE(*,FMT='(A)') 'Simulation ran '//TRIM(sys_siL(ndays, 15))//' days and '//&
+                                            TRIM(sys_siL(nsecs, 15))//' seconds'
+    END IF
 
     IF (.NOT.ALLOCATED(rclock)) THEN
       PRINT *, "sys_infoClock: Time measurement is not initialised!"
       CALL sys_halt()
     END IF
 
-    ! Compute total cpu time
-    CALL system_clock(icount,irate,icmax)
-    dtotaltime = REAL(icount-sys_sysconfig%iprojectStart, DP)/REAL(irate, DP)
+    ! Make a copy of the system clock
+    ALLOCATE(rclockTmp(SIZE(rclock)))
+    rclockTmp = rclock
+
+    ! Subtract the individual times from the encompassing clocks
+    DO iclock = 1, SIZE(rclockTmp)
+      IF (rclockTmp(iclock)%iencompClock .NE. 0) THEN
+        rclockTmp(rclockTmp(iclock)%iencompClock)%icount =&
+            rclockTmp(rclockTmp(iclock)%iencompClock)%icount-rclockTmp(iclock)%icount
+        IF (rclockTmp(rclockTmp(iclock)%iencompClock)%icount .LT. 0) THEN
+          rclockTmp(rclockTmp(iclock)%iencompClock)%icount =&
+              rclockTmp(rclockTmp(iclock)%iencompClock)%icount+icountmax
+          rclockTmp(rclockTmp(iclock)%iencompClock)%ioverflow =&
+              rclockTmp(rclockTmp(iclock)%iencompClock)%ioverflow-1  
+        END IF
+      END IF
+    END DO
     
-    WRITE(*,FMT='(A)') 'Time measurement:'
-    WRITE(*,FMT='(A)') '-----------------'
+    ! Check consistency
+    DO iclock = 1, SIZE(rclockTmp)
+      IF (rclockTmp(iclock)%icount .LT. 0 .OR.&
+          rclockTmp(iclock)%ioverflow .LT. 0) THEN
+        PRINT *, "sys_infoClock: Time measurement is incorrect!"
+        CALL sys_halt()
+      END IF
+    END DO
+
     WRITE(*,*)
-    WRITE(*,FMT='(A,T35,A,T60,A)') 'Clock name', 'elapsed time in seconds', 'Percentage of total time'
+    WRITE(*,FMT='(A,T35,A,T60,A)') 'Clock name', 'elapsed time (%)', 'self time (%)'
     WRITE(*,FMT='(85("="))')
 
     ! Print out all clocks
     DO iclock = 1, SIZE(rclock)
-      WRITE(*,FMT='(A,T35,A,T60,A)') TRIM(ADJUSTL(rclock(iclock)%sname)),&
-                               TRIM(sys_sdE(rclock(iclock)%dtime, 2)),&
-                               TRIM(sys_sdE(100/dtotaltime*rclock(iclock)%dtime,5))
+      
+      ! Compute time in seconds
+      dtime = rclock(iclock)%ioverflow*REAL(icountmax, DP)/REAL(irate, DP)+&
+              REAL(rclock(iclock)%icount, DP)/REAL(irate, DP)
+      dtimeself = rclockTmp(iclock)%ioverflow*REAL(icountmax, DP)/REAL(irate, DP)+&
+                  REAL(rclockTmp(iclock)%icount, DP)/REAL(irate, DP)
+
+      WRITE(*,FMT='(A,T35,A,T60,A)')&
+          TRIM(ADJUSTL(rclock(iclock)%sname)),&
+          TRIM(sys_sdEL(dtime, 2))//' ('//&
+          TRIM(sys_sdL(100._DP/dtotaltime*dtime, 2))//')',&
+          TRIM(sys_sdEL(dtimeself, 2))//' ('//&
+          TRIM(sys_sdL(100._DP/dtotaltime*dtimeself,2))//')'
     END DO
 
+    ! Free unused memory
+    DEALLOCATE(rclockTmp)
+
+  CONTAINS
+
+    FUNCTION calender_to_julian(year, month, day) RESULT(ivalue)
+      INTEGER, INTENT(IN) :: year
+      INTEGER, INTENT(IN) :: month
+      INTEGER, INTENT(IN) :: day
+
+      INTEGER             :: ivalue
+
+      ivalue = day-32075+&
+               1461*(year+4800+(month-14)/12)/4+&
+               367*(month-2-((month-14)/12)*12)/12-&
+               3*((year+4900+(month-14)/12)/100)/4
+    END FUNCTION calender_to_julian
   END SUBROUTINE sys_infoClock
 
 !************************************************************************
@@ -718,12 +837,15 @@ CONTAINS
     ! system_clock is not a FEAT, but a basic FORTRAN 90 routine
     CALL system_clock(icount,irate,icmax)
 
+    ! use data_and_time to measure long time runs
+    CALL date_and_time(values=sys_sysconfig%iprojectStartLong)
+
     ! maximal measurable time span in seconds (system-dependend)
     sys_dtimeMax = REAL(icmax,DP)/REAL(irate,DP)
 
     ! Initialise the global sysconfig structure
-    sys_sysconfig%sprojectID = sprojectID
-    sys_sysconfig%sprojectDir = sprojectDir
+    sys_sysconfig%sprojectID    = sprojectID
+    sys_sysconfig%sprojectDir   = sprojectDir
     sys_sysconfig%iprojectStart = icount
 
     ! Set value of Pi = 3.14..
