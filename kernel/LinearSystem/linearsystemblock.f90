@@ -4372,7 +4372,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
           CALL lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Ddata), SIZE(p_DdataTmp))
           CALL lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
         END DO
 
@@ -4380,7 +4380,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
           CALL lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Fdata), SIZE(p_FdataTmp))
           CALL lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
         END DO
 
@@ -4388,7 +4388,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
           CALL lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Idata), SIZE(p_IdataTmp))
           CALL lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
         END DO
 
@@ -4736,7 +4736,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
           CALL lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Ddata), SIZE(p_DdataTmp))
           CALL lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
         END DO
 
@@ -4744,7 +4744,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
           CALL lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Fdata), SIZE(p_FdataTmp))
           CALL lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
         END DO
 
@@ -4752,7 +4752,7 @@ CONTAINS
         DO i=1,rx%nblocks
           CALL lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
           CALL lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
-          n = MIN(rx%RvectorBlock(i)%NEQ, rxTmp%RvectorBlock(i)%NEQ)
+          n = MIN(SIZE(p_Idata), SIZE(p_IdataTmp))
           CALL lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
         END DO
 
