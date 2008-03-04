@@ -9779,21 +9779,21 @@ CONTAINS
       djy = Djac(8)*Djac(3) - Djac(2)*Djac(9)
       djz = Djac(2)*Djac(6) - Djac(5)*Djac(3)
       Dbas(1,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(1,1) + djy*Dhelp(1,2) + djz*Dhelp(1,3))
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
       Dbas(2,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(2,1) + djy*Dhelp(2,2) + djz*Dhelp(2,3))
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
       Dbas(3,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(3,1) + djy*Dhelp(3,2) + djz*Dhelp(3,3))
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
       Dbas(4,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(4,1) + djy*Dhelp(4,2) + djz*Dhelp(4,3))
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
       Dbas(5,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(5,1) + djy*Dhelp(5,2) + djz*Dhelp(5,3))
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
       Dbas(6,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(6,1) + djy*Dhelp(6,2) + djz*Dhelp(6,3))
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
       Dbas(7,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(7,1) + djy*Dhelp(7,2) + djz*Dhelp(7,3))
+          (djx*Dhelp(7,1) - djy*Dhelp(7,2) + djz*Dhelp(7,3))
       Dbas(8,DER_DERIV3D_X) = dxj * &
-          (djx*Dhelp(8,1) + djy*Dhelp(8,2) + djz*Dhelp(8,3))
+          (djx*Dhelp(8,1) - djy*Dhelp(8,2) + djz*Dhelp(8,3))
 !    endif
     
     ! y-derivatives on current element
@@ -9802,21 +9802,21 @@ CONTAINS
       djy = Djac(1)*Djac(9) - Djac(7)*Djac(3)
       djz = Djac(4)*Djac(3) - Djac(1)*Djac(6)
       Dbas(1,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(1,1) + djy*Dhelp(1,2) + djz*Dhelp(1,3))
+          (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
       Dbas(2,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(2,1) + djy*Dhelp(2,2) + djz*Dhelp(2,3))
+          (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
       Dbas(3,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(3,1) + djy*Dhelp(3,2) + djz*Dhelp(3,3))
+          (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
       Dbas(4,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(4,1) + djy*Dhelp(4,2) + djz*Dhelp(4,3))
+          (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
       Dbas(5,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(5,1) + djy*Dhelp(5,2) + djz*Dhelp(5,3))
+          (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
       Dbas(6,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(6,1) + djy*Dhelp(6,2) + djz*Dhelp(6,3))
+          (-djx*Dhelp(6,1) + djy*Dhelp(6,2) - djz*Dhelp(6,3))
       Dbas(7,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(7,1) + djy*Dhelp(7,2) + djz*Dhelp(7,3))
+          (-djx*Dhelp(7,1) + djy*Dhelp(7,2) - djz*Dhelp(7,3))
       Dbas(8,DER_DERIV3D_Y) = dxj * &
-          (djx*Dhelp(8,1) + djy*Dhelp(8,2) + djz*Dhelp(8,3))
+          (-djx*Dhelp(8,1) + djy*Dhelp(8,2) - djz*Dhelp(8,3))
 !    endif
 
     ! z-derivatives on current element
@@ -9825,21 +9825,21 @@ CONTAINS
       djy = Djac(7)*Djac(2) - Djac(1)*Djac(8)
       djz = Djac(1)*Djac(5) - Djac(4)*Djac(2)
       Dbas(1,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(1,1) + djy*Dhelp(1,2) + djz*Dhelp(1,3))
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
       Dbas(2,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(2,1) + djy*Dhelp(2,2) + djz*Dhelp(2,3))
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
       Dbas(3,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(3,1) + djy*Dhelp(3,2) + djz*Dhelp(3,3))
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
       Dbas(4,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(4,1) + djy*Dhelp(4,2) + djz*Dhelp(4,3))
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
       Dbas(5,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(5,1) + djy*Dhelp(5,2) + djz*Dhelp(5,3))
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
       Dbas(6,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(6,1) + djy*Dhelp(6,2) + djz*Dhelp(6,3))
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
       Dbas(7,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(7,1) + djy*Dhelp(7,2) + djz*Dhelp(7,3))
+          (djx*Dhelp(7,1) - djy*Dhelp(7,2) + djz*Dhelp(7,3))
       Dbas(8,DER_DERIV3D_Z) = dxj * &
-          (djx*Dhelp(8,1) + djy*Dhelp(8,2) + djz*Dhelp(8,3))
+          (djx*Dhelp(8,1) - djy*Dhelp(8,2) + djz*Dhelp(8,3))
 !    endif
 !  endif
     
@@ -9997,21 +9997,21 @@ CONTAINS
         djy = Djac(8,i)*Djac(3,i) - Djac(2,i)*Djac(9,i)
         djz = Djac(2,i)*Djac(6,i) - Djac(5,i)*Djac(3,i)
         Dbas(1,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+            (djx*Dhelp(1,1,i) - djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
         Dbas(2,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+            (djx*Dhelp(2,1,i) - djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
         Dbas(3,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+            (djx*Dhelp(3,1,i) - djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
         Dbas(4,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+            (djx*Dhelp(4,1,i) - djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
         Dbas(5,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+            (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
         Dbas(6,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+            (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
         Dbas(7,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+            (djx*Dhelp(7,1,i) - djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
         Dbas(8,DER_DERIV3D_X,i) = Dxj(i) * &
-            (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+            (djx*Dhelp(8,1,i) - djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
 !      END DO
 !    ENDIF
     
@@ -10022,21 +10022,21 @@ CONTAINS
         djy = Djac(1,i)*Djac(9,i) - Djac(7,i)*Djac(3,i)
         djz = Djac(4,i)*Djac(3,i) - Djac(1,i)*Djac(6,i)
         Dbas(1,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+            (-djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) - djz*Dhelp(1,3,i))
         Dbas(2,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+            (-djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) - djz*Dhelp(2,3,i))
         Dbas(3,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+            (-djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) - djz*Dhelp(3,3,i))
         Dbas(4,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+            (-djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) - djz*Dhelp(4,3,i))
         Dbas(5,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+            (-djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) - djz*Dhelp(5,3,i))
         Dbas(6,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+            (-djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) - djz*Dhelp(6,3,i))
         Dbas(7,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+            (-djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) - djz*Dhelp(7,3,i))
         Dbas(8,DER_DERIV3D_Y,i) = Dxj(i) * &
-            (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+            (-djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) - djz*Dhelp(8,3,i))
 !      END DO
 !    ENDIF
 
@@ -10047,21 +10047,21 @@ CONTAINS
         djy = Djac(7,i)*Djac(2,i) - Djac(1,i)*Djac(8,i)
         djz = Djac(1,i)*Djac(5,i) - Djac(4,i)*Djac(2,i)
         Dbas(1,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+            (djx*Dhelp(1,1,i) - djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
         Dbas(2,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+            (djx*Dhelp(2,1,i) - djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
         Dbas(3,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+            (djx*Dhelp(3,1,i) - djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
         Dbas(4,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+            (djx*Dhelp(4,1,i) - djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
         Dbas(5,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+            (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
         Dbas(6,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+            (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
         Dbas(7,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+            (djx*Dhelp(7,1,i) - djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
         Dbas(8,DER_DERIV3D_Z,i) = Dxj(i) * &
-            (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+            (djx*Dhelp(8,1,i) - djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
       END DO
 !    ENDIF
 !  ENDIF
@@ -10245,21 +10245,21 @@ CONTAINS
           djy = Djac(8,i,j)*Djac(3,i,j) - Djac(2,i,j)*Djac(9,i,j)
           djz = Djac(2,i,j)*Djac(6,i,j) - Djac(5,i,j)*Djac(3,i,j)
           Dbas(1,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+              (djx*Dhelp(1,1,i) - djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
           Dbas(2,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+              (djx*Dhelp(2,1,i) - djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
           Dbas(3,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+              (djx*Dhelp(3,1,i) - djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
           Dbas(4,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+              (djx*Dhelp(4,1,i) - djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
           Dbas(5,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+              (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+              (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
           Dbas(7,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+              (djx*Dhelp(7,1,i) - djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
           Dbas(8,DER_DERIV3D_X,i,j) = Dxj(i) * &
-              (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+              (djx*Dhelp(8,1,i) - djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
         END DO
 !      ENDIF
       
@@ -10270,21 +10270,21 @@ CONTAINS
           djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
           djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
           Dbas(1,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+              (-djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) - djz*Dhelp(1,3,i))
           Dbas(2,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+              (-djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) - djz*Dhelp(2,3,i))
           Dbas(3,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+              (-djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) - djz*Dhelp(3,3,i))
           Dbas(4,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+              (-djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) - djz*Dhelp(4,3,i))
           Dbas(5,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+              (-djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) - djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+              (-djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) - djz*Dhelp(6,3,i))
           Dbas(7,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+              (-djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) - djz*Dhelp(7,3,i))
           Dbas(8,DER_DERIV3D_Y,i,j) = Dxj(i) * &
-              (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+              (-djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) - djz*Dhelp(8,3,i))
         END DO
 !      ENDIF
 
@@ -10295,21 +10295,21 @@ CONTAINS
           djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
           djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
           Dbas(1,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(1,1,i) + djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
+              (djx*Dhelp(1,1,i) - djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
           Dbas(2,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(2,1,i) + djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
+              (djx*Dhelp(2,1,i) - djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
           Dbas(3,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(3,1,i) + djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
+              (djx*Dhelp(3,1,i) - djy*Dhelp(3,2,i) + djz*Dhelp(3,3,i))
           Dbas(4,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(4,1,i) + djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
+              (djx*Dhelp(4,1,i) - djy*Dhelp(4,2,i) + djz*Dhelp(4,3,i))
           Dbas(5,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
+              (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
+              (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
           Dbas(7,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
+              (djx*Dhelp(7,1,i) - djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
           Dbas(8,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-              (djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
+              (djx*Dhelp(8,1,i) - djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
         END DO
 !      ENDIF
     END DO
