@@ -803,7 +803,7 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: iblock,jblock,i !,icp
+    INTEGER :: iblock,jblock,i,inumEntries !,icp
     LOGICAL :: boffdiagSubmatrix
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
     
@@ -813,12 +813,14 @@ CONTAINS
     ! is a list of all discretised boundary conditions in the system.
     IF (PRESENT(rdiscreteBC)) THEN
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      inumEntries = rdiscreteBC%inumEntriesUsed
     ELSE
       IF (.NOT. ASSOCIATED(rmatrix%p_rdiscreteBC)) THEN
         ! There are no BC's available, so we cannot do anything!
         RETURN
       END IF
       p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+      inumEntries = rmatrix%p_rdiscreteBC%inumEntriesUsed
     END IF
     
     IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
@@ -828,7 +830,7 @@ CONTAINS
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rmatrix%p_rdiscreteBC%inumEntriesUsed
+    DO i=1, inumEntries
     
       ! What for BC's do we have here?
       SELECT CASE (p_RdiscreteBC(i)%itype)

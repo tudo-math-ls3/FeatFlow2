@@ -481,7 +481,7 @@ CONTAINS
       ! local variables
       INTEGER :: i,j
       INTEGER(PREC_VECIDX) :: irow
-      INTEGER(PREC_MATIDX) :: irowoffset,narow
+      INTEGER(PREC_MATIDX) :: irowoffset
       
       Icolumns(:) = 0
       Irows(:) = 0
@@ -489,14 +489,12 @@ CONTAINS
       ! Loop through all matrix blocks.
       DO i=1,rsourceMatrix%ndiagBlocks
       
-        narow = 0
-        
         DO j=1,rsourceMatrix%ndiagBlocks
-          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
+          ! When checking for the presence of the matrix, don't respect
+          ! the scaling factor; we only want to get the size of the matrix 
+          ! columns/rows!
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j,.TRUE.)) THEN
             
-            ! Calculate the number of entries in this matrix-row-block
-            narow = narow + rsourceMatrix%RmatrixBlock(i,j)%NA
-          
             Icolumns(j+1) = rsourceMatrix%RmatrixBlock(i,j)%NCOLS
             Irows(i+1) = rsourceMatrix%RmatrixBlock(i,j)%NEQ
           
