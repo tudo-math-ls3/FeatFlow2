@@ -171,6 +171,10 @@
 !# 49.) lsysbl_convertMatFromScalar
 !#      -> Converts a scalar matrix to a 1x1 block vector, whereby the
 !#         block matrix takes over leadership of the data.
+!#
+!# 50.) lsysbl_insertSubmatrix
+!#      -> Insert a block matrix into another block matrix
+!#
 !# </purpose>
 !##############################################################################
 
@@ -4977,4 +4981,119 @@ CONTAINS
     
   END SUBROUTINE
   
+  ! ***************************************************************************
+  
+!<subroutine>
+ 
+  SUBROUTINE lsysbl_insertSubmatrix (rsourceMatrix,rdestMatrix,&
+                                     cdupStructure, cdupContent,&
+                                     iy,ix)
+  
+!<description>
+  ! Inserts the block matrix as submatrix into another block matrix.
+  !
+  ! (iy,ix) is the upper left position in the destination matrix where
+  ! rdestMatrix where rsourceMatrix should be inserted.
+!</description>
+
+  ! The source matrix to put into the destination matrix.
+  TYPE(t_matrixBlock), INTENT(IN) :: rsourceMatrix
+  
+  ! Duplication flag that decides on how to set up the structure
+  ! of rdestMatrix. This duplication flag is applied to all submatrices
+  ! of rsourceMatrix.
+  !
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  !   matrix structure is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  !   Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   structural data as rsourceMatrix and therefore shares the same structure.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  !   If rdestMatrix already contains allocated memory, structural data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the structure; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same structure
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same structure).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: cdupStructure
+  
+  ! Duplication flag that decides on how to set up the content
+  ! of rdestMatrix. This duplication flag is applied to all submatrices
+  ! of rsourceMatrix.
+  !
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  !   matrix content is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed.
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   matrix content data as rsourceMatrix and therefore shares the same content.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  !   If necessary, new memory is allocated for the content.
+  !   If rdestMatrix already contains allocated memory, content data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the content; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same content
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same content).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: cdupContent
+  
+  ! X- and Y-position in the destination matrix where rsourceMatrix
+  ! should be put to.
+  INTEGER, INTENT(IN)                            :: iy,ix
+!</input>
+
+!<inputoutput>
+  ! Destination matrix where the source matrix should be put into. 
+  TYPE(t_matrixBlock), INTENT(INOUT)             :: rdestMatrix
+!</inputoutput>  
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i,j
+    
+    ! loop over all columns and rows in the source matrix
+    DO j=1,rsourceMatrix%ndiagBlocks
+      DO i=1,rsourceMatrix%ndiagBlocks
+        ! Copy the submatrix from the source matrix to the destination
+        ! matrix.
+        CALL lsyssc_duplicateMatrix (rsourceMatrix%RmatrixBlock(i,j),&
+            rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1),&
+            cdupStructure,cdupContent)
+      END DO
+    END DO
+
+  END SUBROUTINE
+
 END MODULE
