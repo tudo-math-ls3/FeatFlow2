@@ -6,8 +6,8 @@
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValuesFBC (Icomponents,rdiscretisation,rbcRegion, &
-                                      Revaluation, p_rcollection)
+    SUBROUTINE fgetBoundaryValuesFBC (Icomponents,rdiscretisation,&
+                                      Revaluation, rcollection)
     
     USE collection
     USE spatialdiscretisation
@@ -43,15 +43,9 @@
     ! analytic boundary boundary description etc.
     TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
     
-    ! Boundary condition region that is currently being processed.
-    ! (This e.g. defines the type of boundary conditions that are 
-    !  currently being calculated (Dirichlet, Robin,...), as well as information
-    !  about the current boundary region 'what is discretised at the moment'.)
-    TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-    
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                                 :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), OPTIONAL                                :: rcollection
 
   !</input>
   

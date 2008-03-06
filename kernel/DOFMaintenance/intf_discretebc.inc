@@ -9,7 +9,7 @@
   !<subroutine>
 
     SUBROUTINE fgetBoundaryValuesMR (Icomponents,rdiscretisation,rmeshRegion,&
-                                     cinfoNeeded,Dcoords,p_rcollection,Dvalues)
+                                     cinfoNeeded,Dcoords,Dvalues,rcollection)
     
     USE collection
     USE spatialdiscretisation
@@ -48,9 +48,9 @@
     ! calculated.
     REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
 
-    ! A pointer to a collection structure to provide additional 
+    ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                                 :: p_rcollection
+    TYPE(t_collection), INTENT(IN), OPTIONAL                    :: rcollection
 
   !</input>
   

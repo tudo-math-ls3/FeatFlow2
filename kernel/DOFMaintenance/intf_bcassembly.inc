@@ -5,8 +5,8 @@
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                   cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+    SUBROUTINE fgetBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
     
     USE collection
     USE spatialdiscretisation
@@ -37,11 +37,8 @@
     ! analytic boundary boundary description etc.
     TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
     
-    ! Boundary condition region that is currently being processed.
-    ! (This e.g. defines the type of boundary conditions that are
-    !  currently being calculated, as well as information about the current
-    !  boundary segment 'where we are at the moment'.)
-    TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
+    ! Boundary region that is currently being processed.
+    TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
     
     ! The element number on the boundary which is currently being processed
     INTEGER(I32), INTENT(IN)                                    :: ielement
@@ -82,9 +79,9 @@
     !            stress should be computed.
     REAL(DP), INTENT(IN)                                        :: dwhere
      
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                  :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
   !</input>
   

@@ -202,10 +202,11 @@
 !#    PROGRAM Test
 !#      TYPE(t_collection) :: rcollection
 !#      ...
-!#      rcollection%Iquickaccess(1) = 1       ! Number of boundary component e.g.
-!#      rcollection%Iquickaccess(2) = 3       ! Number of Dirichlet-segment e.g.
-!#      rcollection%Dquickaccess(1) = 1.0_DP  ! Inflow speed e.g.
-!#      CALL bcasm_discretiseBC (...,callback,rcollection)
+!#      rcollection%Iquickaccess(1) = 1         ! Number of boundary component e.g.
+!#      rcollection%Iquickaccess(2) = 3         ! Number of Dirichlet-segment e.g.
+!#      rcollection%Dquickaccess(1) = 1.0_DP    ! Inflow speed e.g.
+!#      rcollection%SquickAccess(1) = 'PARPROF' ! Name of the profile
+!#      CALL bcasm_newDirichletBConRealBD (...,callback,rcollection)
 !#      ...
 !#    END PROGRAM
 !#
@@ -214,12 +215,22 @@
 !#      iboundaryComponent = rcollection%Iquickaccess(1)
 !#      iinflowSegment = rcollection%Iquickaccess(2)
 !#      dinfowSpeed    = rcollection%Dquickaccess(1)
+!#      sname          = rcollection%Squickaccess(1)
 !#      IF ((iboundaryComponent .EQ. rbcRegion%iboundCompIdx) .AND.
 !#          (iinflowSegment .EQ. rbcRegion%iboundSegIdx)) THEN
 !#        Dvalues(1) = dinflowSpeed
 !#      END IF
 !#      ...
 !#    END SUBROUTINE
+!#
+!#  rcollection%p_rvectorQuickAccessX and rcollection%p_rmatrixQuickAccessX
+!#  provides pointers for some user defined matrices and vectors which
+!#  can be accessed directly.
+!# 
+!#  The rcollection%p_rnextCollection pointer is also user defined. Here,
+!#  the user can set a pointer to another collection structure if necessary.
+!#  This allows to build a small list of collection structures that can 
+!#  directly be accessed.
 !#
 !# STORE ONLY SMALL-SIZE ARRAYS
 !#
@@ -281,6 +292,9 @@ MODULE collection
 
   ! Length of each 'quick-access' array in the collection.
   INTEGER, PARAMETER :: COLLCT_QALENGTH = 128
+  
+  ! Number of 'quick-access' strings in the collection
+  INTEGER, PARAMETER :: COLLCT_QASTRINGS = 4
 !</constantblock>
 
 !<constantblock description="Type identifier for values">
@@ -530,6 +544,7 @@ MODULE collection
   
   TYPE t_collection
   
+    ! USER DEFINED:
     ! Quick-access array for integers. This is a short, temporary
     ! array that can be used by the application to save intermediate
     ! values (e.g. some information that is to pass and to be accessed
@@ -537,8 +552,9 @@ MODULE collection
     ! No long life information should be stored here. Long-life
     ! information should be named and added as such to the collection 
     ! directly. The collection itself does not maintain this array!
-    INTEGER(I32), DIMENSION(COLLCT_QALENGTH) :: IquickAccess
+    INTEGER(I32), DIMENSION(COLLCT_QALENGTH) :: IquickAccess = 0
   
+    ! USER DEFINED:
     ! Quick-access array for reals. This is a short, temporary
     ! array that can be used by the application to save intermediate
     ! values (e.g. some information that is to pass and to be accessed
@@ -546,8 +562,49 @@ MODULE collection
     ! No long life information should be stored here. Long-life
     ! information should be named and added as such to the collection 
     ! directly. The collection itself does not maintain this array!
-    REAL(DP), DIMENSION(COLLCT_QALENGTH) :: DquickAccess
+    REAL(DP), DIMENSION(COLLCT_QALENGTH) :: DquickAccess = 0.0_DP
   
+    ! USER DEFINED:
+    ! A simple string array for direct access.
+    CHARACTER(LEN=SYS_STRLEN), DIMENSION(COLLCT_QASTRINGS) :: SquickAccess
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    TYPE(t_vectorBlock), POINTER :: p_rvectorQuickAccess1 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    TYPE(t_vectorBlock), POINTER :: p_rvectorQuickAccess2 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    TYPE(t_vectorBlock), POINTER :: p_rvectorQuickAccess3 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    TYPE(t_vectorBlock), POINTER :: p_rvectorQuickAccess4 => NULL()
+    
+    ! USER DEFINED:
+    ! A quick access pointer to a matrix.
+    TYPE(t_vectorBlock), POINTER :: p_rmatrixQuickAccess1 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a matrix.
+    TYPE(t_vectorBlock), POINTER :: p_rmatrixQuickAccess2 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a matrix.
+    TYPE(t_vectorBlock), POINTER :: p_rmatrixQuickAccess3 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a matrix.
+    TYPE(t_vectorBlock), POINTER :: p_rmatrixQuickAccess4 => NULL()
+
+    ! USER DEFINED:
+    ! A quick access pointer to another collection structure.
+    ! Can be used to link collection structures.
+    TYPE(t_collection), POINTER :: p_rnextCollection => NULL()
+    
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
     ! unnamed section.

@@ -148,6 +148,12 @@ MODULE discretefbc
   ! sharing the same boundary conditions, discretised in the same way).
   TYPE t_discreteFBC
   
+    ! Total number of allocated t_discreteFBCEntry structures in p_RdiscFBCList.
+    INTEGER :: inumEntriesAlloc = 0
+    
+    ! Total number of used t_discreteFBCEntry structures in p_RdiscFBCList.
+    INTEGER :: inumEntriesUsed = 0
+
     ! An array of t_discreteFBCEntry structures. Each structure describes
     ! one discrete fictitions boundary boundary condition - so one group of
     ! objects with the same 'boundary' condition discretised
