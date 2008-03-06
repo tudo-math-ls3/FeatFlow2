@@ -598,16 +598,16 @@ MODULE linearsolver
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_GENERALDIRECT     = 1
 
-  ! Simple VANCA, 2D Navier-Stokes proble, general discretisation
+  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation
   INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVST           = 2
 
-  ! Simple VANCA, 2D Navier-Stokes proble, general discretisation.
+  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVSTDIRECT     = 3
 
-  ! Full VANCA, 2D Navier-Stokes proble, general discretisation
+  ! Full VANCA, 2D Navier-Stokes problem, general discretisation
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVST          = 4
 
   ! Full VANCA, 2D Navier-Stokes problem, general discretisation.
@@ -633,6 +633,24 @@ MODULE linearsolver
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTOCDIAGDIR = 23
+
+  ! Simple VANCA, 3D Navier-Stokes problem, general discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_3DNAVST           = 30
+
+  ! Simple VANCA, 3D Navier-Stokes problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_3DNAVSTDIRECT     = 31
+
+  ! Full VANCA, 3D Navier-Stokes problem, general discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_3DFNAVST          = 32
+
+  ! Full VANCA, 3D Navier-Stokes problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_3DFNAVSTDIRECT    = 33
 
 !</constantblock>
 
@@ -1004,7 +1022,7 @@ MODULE linearsolver
     ! for improved speed.
     INTEGER             :: csubtypeVANCA
   
-    ! For general 2D Navier-Stokes problem
+    ! For general 2D/3D Navier-Stokes problem
     TYPE(t_vanca)       :: rvanca
   
     ! Temporary vector to use during the solution process
@@ -4931,7 +4949,7 @@ CONTAINS
   END SUBROUTINE
   
 ! *****************************************************************************
-! Routines for the VANCA CC2D solver
+! Routines for the VANCA CC2D/CC3D solver
 ! *****************************************************************************
 
 !<subroutine>
@@ -4944,7 +4962,7 @@ CONTAINS
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
   !
-  ! VANCA is somehopw a special type of solver. There is one general VANCA
+  ! VANCA is somehow a special type of solver. There is one general VANCA
   ! solver, which applies to many situations, but which is quite slow.
   ! For higher performance, system-specific VANCA subsolvers must be created
   ! with hardcoded treatment of matrices/vectors!
@@ -5008,7 +5026,7 @@ CONTAINS
   RECURSIVE SUBROUTINE linsol_alterVANCA (rsolverNode, ralterConfig)
   
 !<description>
-  ! This routine allows on-line modification of the VACNA solver.
+  ! This routine allows on-line modification of the VANCA solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration 
   ! in this structure, the solver reacts.
 !</description>
@@ -5105,13 +5123,26 @@ CONTAINS
 
     CASE (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  ,&
           LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
-      ! Block (3,1) and (3,2) must be virtually transposed
+      ! Blocks (3,1) and (3,2) must be virtually transposed
       IF ((IAND(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) .OR. &
           (IAND(p_rmat%RmatrixBlock(3,2)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .EQ. 0)) THEN
         ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
       END IF
+
+    CASE (LINSOL_VANCA_3DNAVST  , LINSOL_VANCA_3DNAVSTDIRECT  ,&
+          LINSOL_VANCA_3DFNAVST , LINSOL_VANCA_3DFNAVSTDIRECT )
+      ! Blocks (4,1), (4,2) and (4,3) must be virtually transposed
+      IF ((IAND(p_rmat%RmatrixBlock(4,1)%imatrixSpec, &
+            LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) .OR. &
+          (IAND(p_rmat%RmatrixBlock(4,2)%imatrixSpec, &
+            LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) .OR. &
+          (IAND(p_rmat%RmatrixBlock(4,3)%imatrixSpec, &
+            LSYSSC_MSPEC_TRANSPOSED) .EQ. 0)) THEN
+        ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
+      END IF
+      
     END SELECT
     
     ! Set the compatibility flag only for the maximum level -- this is a
@@ -5266,6 +5297,18 @@ CONTAINS
       CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANCA%rvanca,&
                                 VANCAPC_2DNAVIERSTOKESOPTC,VANCATP_DIAGOPTC)
+
+    CASE (LINSOL_VANCA_3DNAVST  , LINSOL_VANCA_3DNAVSTDIRECT  )
+      ! Diagonal-type VANCA for Navier-Stokes
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_3DNAVIERSTOKES,VANCATP_DIAGONAL)
+                                
+    CASE (LINSOL_VANCA_3DFNAVST , LINSOL_VANCA_3DFNAVSTDIRECT )
+      ! Full VANCA for Navier-Stokes
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_3DNAVIERSTOKES,VANCATP_FULL)
                                 
     END SELECT
       

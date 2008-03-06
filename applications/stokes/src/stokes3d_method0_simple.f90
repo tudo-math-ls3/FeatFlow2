@@ -7,8 +7,8 @@
 !# This module is a demonstation program how to solve a Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses the BiCGStab solver with a general VANCA preconditioner
-!# for 3D saddle point problems on a single grid.
+!# The routine uses the BiCGStab solver with a simple-VANCA preconditioner
+!# for 3D saddle point problems, Jacobi-Type on a single grid.
 !# </purpose>
 !##############################################################################
 
@@ -32,8 +32,6 @@ MODULE stokes3d_method0_simple
   
   USE stokes3d_callback
   USE stokes3d_aux
-  
-  !USE matrixio
   
   IMPLICIT NONE
 
@@ -322,16 +320,14 @@ CONTAINS
                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
     
     ! Furthermore, put B1^T and B2^T to the block matrix.
-    ! Note that we really create copies of our matrices, as the
-    ! general VANCA cannot handle virtually transposed matrices!
     CALL lsyssc_transposeMatrix (rmatrixB1, rmatrix%RmatrixBlock(4,1),&
-                                 LSYSSC_TR_ALL)
+                                 LSYSSC_TR_VIRTUAL)
 
     CALL lsyssc_transposeMatrix (rmatrixB2, rmatrix%RmatrixBlock(4,2),&
-                                 LSYSSC_TR_ALL)
+                                 LSYSSC_TR_VIRTUAL)
 
     CALL lsyssc_transposeMatrix (rmatrixB3, rmatrix%RmatrixBlock(4,3),&
-                                 LSYSSC_TR_ALL)
+                                 LSYSSC_TR_VIRTUAL)
 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
@@ -416,9 +412,7 @@ CONTAINS
     ! modifies the vectors/matrix according to the boundary conditions.
     CALL vecfil_discreteBCrhs (rrhs)
     CALL vecfil_discreteBCsol (rvector)
-    !CALL matio_writeBlockMatrixHR(rmatrix, 'stokes3d', .TRUE., 0, 'st3d_0_1.txt','(E20.10)')
     CALL matfil_discreteBC (rmatrix)
-    !CALL matio_writeBlockMatrixHR(rmatrix, 'stokes3d', .TRUE., 0, 'st3d_0_2.txt','(E20.10)')
 
     ! Create a temporary vector we need that for some preparation.
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .FALSE.)
@@ -438,7 +432,7 @@ CONTAINS
     ! automatically filters the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
-    CALL linsol_initVANCA (p_rpreconditioner)
+    CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DNAVST)
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
     ! Set the output level of the solver to 2 for some output

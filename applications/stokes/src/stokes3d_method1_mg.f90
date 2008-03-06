@@ -7,9 +7,8 @@
 !# This module is a demonstation program how to solve a Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses the general VANCA smoother for saddle point problems.
-!# As there currently is no simple-VANCA preconditioner for 3D problems, we
-!# (temporarily) have to use the general VANCA here.
+!# The routine uses the simple-VANCA smoother for 3D saddle point problems,
+!# Jacobi-Type, for a multigrid solver.
 !# </purpose>
 !##############################################################################
 
@@ -400,13 +399,13 @@ CONTAINS
 
       ! Furthermore, put B1^T, B2^T and B3^T to the block matrix.
       CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB1, &
-          Rlevels(i)%rmatrix%RmatrixBlock(4,1),LSYSSC_TR_ALL)
+          Rlevels(i)%rmatrix%RmatrixBlock(4,1),LSYSSC_TR_VIRTUAL)
 
       CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
-          Rlevels(i)%rmatrix%RmatrixBlock(4,2),LSYSSC_TR_ALL)
+          Rlevels(i)%rmatrix%RmatrixBlock(4,2),LSYSSC_TR_VIRTUAL)
 
       CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB3, &
-          Rlevels(i)%rmatrix%RmatrixBlock(4,3),LSYSSC_TR_ALL)
+          Rlevels(i)%rmatrix%RmatrixBlock(4,3),LSYSSC_TR_VIRTUAL)
 
       ! Update the structural information of the block matrix, as we manually
       ! changed the submatrices:
@@ -534,7 +533,7 @@ CONTAINS
     CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
     ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-    CALL linsol_initVANCA (p_rpreconditioner)
+    CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DNAVST)
     CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     
     ! Add the coarse grid level.
@@ -545,7 +544,7 @@ CONTAINS
     DO i = NLMIN+1, NLMAX
     
       ! Set up the general VANCA smoother.
-      CALL linsol_initVANCA (p_rsmoother)
+      CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DNAVST)
       
       ! We will use 4 smoothing steps with damping parameter 0.7
       CALL linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
@@ -673,7 +672,7 @@ CONTAINS
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata3)
     
     ! In case we use the VTK exporter, which supports vector output, we will
-    ! pass the X- and Y-velocity at once to the ucd module.
+    ! pass the X-,Y- and Z-velocity at once to the ucd module.
     CALL ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2,p_Ddata3)
 
     ! If we use the GMV exporter, we might replace the line above by the
