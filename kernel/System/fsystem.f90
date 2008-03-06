@@ -578,7 +578,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_clock), DIMENSION(:), ALLOCATABLE :: rclockTmp
+    TYPE(t_clock), DIMENSION(:), POINTER :: rclockTmp
     REAL(DP) :: dtotaltime,dtime,dtimeself
     INTEGER  :: iclock,icount,irate,icountmax
     INTEGER  :: ndays,nsecs,nsec1,nsec2
