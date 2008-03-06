@@ -251,7 +251,7 @@ CONTAINS
     END DO
     
     ! Discretise the boundary conditions at the new time instant
-    CALL hc5_initDiscreteBC (rproblem,.TRUE.)
+    CALL hc5_initDiscreteBC (rproblem)
           
     ! Implement boundary conditions into the RHS vector, the solution vector
     ! and the current system matrices.

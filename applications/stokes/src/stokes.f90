@@ -42,6 +42,7 @@ PROGRAM stokes
   ! Initialise system-wide settings:
   
   CALL system_init()
+  CALL output_init()
 
   ! The very second thing in every program: 
   ! Initialise the storage management: 
@@ -50,45 +51,45 @@ PROGRAM stokes
   CALL storage_init(999, 100)
 
   ! Call the problem to solve. 2d stokes 0:
-  PRINT *
-  PRINT *,'Calculating 2D Stokes-Problem 0 - simple'
-  PRINT *,'----------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 0 - simple')
+  CALL output_line('----------------------------------------')
   CALL stokes2d_0_simple
 
   ! Call the problem to solve. 2d stokes 1:
-  PRINT *
-  PRINT *,'Calculating 2D Stokes-Problem 1 - multigrid'
-  PRINT *,'-------------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 1 - multigrid')
+  CALL output_line('-------------------------------------------')
   CALL stokes2d_1_mg
 
   ! Call the problem to solve. 2d stokes 2:
-  PRINT *
-  PRINT *,'Calculating 2D Stokes-Problem 2 - simple VANCA'
-  PRINT *,'----------------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
+  CALL output_line('----------------------------------------------')
   CALL stokes2d_2_sv
 
   ! Call the problem to solve. 2d stokes 2:
-  PRINT *
-  PRINT *,'Calculating 2D Stokes-Problem 2 - general VANCA'
-  PRINT *,'-----------------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
+  CALL output_line('-----------------------------------------------')
   CALL stokes2d_2_gv
 
   ! Call the problem to solve. 3d stokes 0:
-  PRINT *
-  PRINT *,'Calculating 3D Stokes-Problem 0 - simple'
-  PRINT *,'----------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 3D Stokes-Problem 0 - simple')
+  CALL output_line('----------------------------------------')
   CALL stokes3d_0_simple
 
   ! Call the problem to solve. 3d stokes 1:
-  PRINT *
-  PRINT *,'Calculating 3D Stokes-Problem 1 - multigrid'
-  PRINT *,'-------------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating 3D Stokes-Problem 1 - multigrid')
+  CALL output_line('-------------------------------------------')
   CALL stokes3d_1_mg
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
+  CALL output_lbrk()
   CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish

@@ -24,7 +24,7 @@
 !# timestep. The time domain is [0,T] and discretised by a simple explicit 
 !# Euler.
 !#
-!# The module is an extension of the standard poisson solver poisson_method1.
+!# The module is an extension of the standard poisson solver.
 !# Right hand side and boundary conditions are precomputed and kept constant
 !# over time to reduce computational time.
 !# </purpose>
@@ -110,10 +110,8 @@ CONTAINS
 
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
     TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_bcRegion), POINTER :: p_rbcRegion
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -188,21 +186,20 @@ CONTAINS
                                    EL_E011,CUB_TRZ,rtriangulation, p_rboundary)
                                    !CUB_G2X2
 
-    ! As soon as we have a discretisation structure, it's possible to initialise
-    ! the (analytical) bounadry conditions.
+    ! Up to now, everything is 'analytical'.
+    ! Let's change that, let's start to discretise!
+    !
+    ! 1.) Boundary conditions
     !
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     !
-    ! At first, we need the analytic description of the boundary conditions.
-    ! Initialise a structure for boundary conditions which accepts this:
+    ! Create a t_discreteBC structure where we store all discretised boundary
+    ! conditions.
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
     !
-    ! Set p_rboundaryConditions to create a new structure on the heap.
-    NULLIFY (p_rboundaryConditions)
-    CALL bcond_initBC (p_rboundaryConditions,p_rboundary)
-    
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
     ! some kind of boundary condition.
@@ -214,54 +211,36 @@ CONTAINS
     CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
     
     ! We use this boundary region and specify that we want to have Dirichlet
-    ! boundary there. The following routine adds a new 'boundary condition region'
-    ! for the first segment to the boundary condition structure.
-    ! The region will be set up as 'Dirichlet boundary'.
-    ! We specify icomponent='1' to indicate that we set up the
-    ! Dirichlet BC's for the first (here: one and only) component in the solution
-    ! vector.
-    ! The routine also returns the created object in p_rbcRegion so that we can
-    ! modify it - but accept it as it is, so we can ignore that.
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
+    ! boundary there. The following call does the following:
+    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
+    !   We specify icomponent='1' to indicate that we set up the
+    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   solution vector.
+    ! - Discretise the boundary condition so that the BC's can be applied
+    !   to matrices and vectors
+    ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                      rboundaryRegion,rdiscreteBC,&
+                                      getBoundaryValues)
+                              
     ! Now to the edge 2 of boundary component 1 the domain. We use the
     ! same two routines to add the boundary condition to p_rboundaryConditions.
     CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
+    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                      rboundaryRegion,rdiscreteBC,&
+                                      getBoundaryValues)
+                              
     ! Edge 3 of boundary component 1.
-    ! Commented out, here we use Neumann boundary.
-    ! CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    ! CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-    !                                    rboundaryRegion,p_rbcRegion)
+    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                      rboundaryRegion,rdiscreteBC,&
+                                      getBoundaryValues)
     
     ! Edge 4 of boundary component 1. That's it.
     CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
-    ! The boundary conditions are set up, but still the block discretisation
-    ! does not know about it. So inform the discretisation which
-    ! analytic boundary conditions to use:
-    rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
-
-    ! Up to now, everything is 'analytical'.
-    ! Let's change that, let's start to discretise!
-    !
-    ! 1.) Boundary conditions
-    !
-    ! For the discrete problem, we need a discrete version of the above
-    ! boundary conditions. So we have to discretise them.
-    ! The following routine gives back p_rdiscreteBC, a pointer to a
-    ! discrete version of the boundary conditions. Remark that
-    ! the pointer has to be nullified before calling the routine,
-    ! otherwise, the routine tries to update the boundary conditions
-    ! in p_rdiscreteBC!
-    NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rdiscretisation,p_rdiscreteBC,.FALSE., &
-                             getBoundaryValues)
+    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                      rboundaryRegion,rdiscreteBC,&
+                                      getBoundaryValues)
 
     ! 2.) Matrices
     !
@@ -335,7 +314,7 @@ CONTAINS
     
     ! Hang the pointer of the boudnary conditions into the matrix. That way, these
     ! boundary conditions are always connected to that matrix.
-    rmatrixBlock%p_rdiscreteBC => p_rdiscreteBC
+    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
     
     ! To give an overview, we now have (concerning the matrices):
     !
@@ -368,7 +347,7 @@ CONTAINS
     
     ! Hang the pointer into the vector. That way, these
     ! boundary conditions are always connected to that vector.
-    rrhsBlock%p_rdiscreteBC => p_rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => rdiscreteBC
                              
     ! We have a block vector for the RHS, but that's not enough. What we
     ! need in total is
@@ -537,11 +516,8 @@ CONTAINS
     CALL lsyssc_releaseMatrix (rmatrixMass)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
 
-    ! ...and also the corresponding analytic description.
-    CALL bcond_doneBC (p_rboundaryConditions)
-    
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
     CALL spdiscr_releaseBlockDiscr(rdiscretisation)

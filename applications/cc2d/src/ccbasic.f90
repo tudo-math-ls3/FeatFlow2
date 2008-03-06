@@ -47,7 +47,7 @@ MODULE ccbasic
 
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation) :: rdiscretisation
 
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
@@ -69,18 +69,20 @@ MODULE ccbasic
     ! Temporary vector in the size of the RHS/solution vector on that level.
     TYPE(t_vectorBlock) :: rtempVector
 
-    ! A variable describing the discrete boundary conditions fo the velocity
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    ! A variable describing the discrete boundary conditions fo the velocity.
+    ! Points to NULL until the BC's are discretised for the first time.
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC => NULL()
   
     ! A structure for discrete fictitious boundary conditions
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    ! Points to NULL until the BC's are discretised for the first time.
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC => NULL()
     
     ! Nonstationary simulation: Mass matrix
     TYPE(t_matrixScalar) :: rmatrixMass
 
     ! Nonstationary simulation: A scalar discretisation structure that 
     ! specifies how to generate the mass matrix.
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
+    TYPE(t_spatialDiscretisation) :: rdiscretisationMass
 
     ! This flag signales whether there are Neumann boundary components
     ! visible on the boundary of this level or not. If there are no

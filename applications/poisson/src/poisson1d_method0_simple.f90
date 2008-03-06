@@ -89,7 +89,7 @@ CONTAINS
 
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -221,13 +221,14 @@ CONTAINS
     ! dirichlet boundary conditions by hand instead of discretising an analytic
     ! boundary condition function using a boundary structure.
     !
-    NULLIFY(p_rdiscreteBC)
+    ! Initialise the structure that collects the discrete BC's:
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
 
     ! In 1D we have 2 possibilities to describe Dirichlet BCs on the interval
     ! ends. One possibility is to use the bcasm_initDirichletBC_1D routine.
     ! The following call would prescribe 0 on both interval ends:
     !
-    ! CALL bcasm_initDirichletBC_1D(rdiscretisation, p_rdiscreteBC, 0.0_DP, 0.0_DP)
+    ! CALL bcasm_initDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
     !
     ! The second possibility is using mesh regions:
     !
@@ -236,8 +237,8 @@ CONTAINS
     CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation)
     
     ! Describe Dirichlet BCs on that mesh region
-    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, rmeshRegion,&
-                                  1, getBoundaryValuesMR_1D, NULL())
+    CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, rmeshRegion,&
+                                  getBoundaryValuesMR_1D)
     
     ! Free the mesh region structure as we won't need it anymore
     CALL mshreg_done(rmeshRegion)
@@ -245,8 +246,8 @@ CONTAINS
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    rmatrixBlock%p_rdiscreteBC => p_rdiscreteBC
-    rrhsBlock%p_rdiscreteBC => p_rdiscreteBC
+    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => rdiscreteBC
                              
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -395,7 +396,7 @@ CONTAINS
     CALL lsyssc_releaseMatrix (rmatrix)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.

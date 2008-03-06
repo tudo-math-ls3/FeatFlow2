@@ -55,10 +55,8 @@
 !#        'intf_coefficientVectorSc.inc'
 !#
 !# 7.) getBoundaryValues
-!#     -> Returns analitical values on the boundary of the
+!#     -> Returns analytical values on the boundary of the
 !#        problem to solve.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
 !#
 !# 8.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
@@ -82,11 +80,11 @@
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
 !#
-!# -> p_rcollection%IquickAccess(1)   = 0: stationary, 
-!#                                      1: nonstationary with explicit time stepping
-!# -> p_rcollection%DquickAccess(1)   = current simulation time
-!# -> p_rcollection%DquickAccess(2)   = minimum simulation time
-!# -> p_rcollection%DquickAccess(3)   = maximum simulation time
+!# -> rcollection%IquickAccess(1)   = 0: stationary, 
+!#                                    1: nonstationary with explicit time stepping
+!# -> rcollection%DquickAccess(1)   = current simulation time
+!# -> rcollection%DquickAccess(2)   = minimum simulation time
+!# -> rcollection%DquickAccess(3)   = maximum simulation time
 !#
 !# After the assembly, cc_doneCollectForAssembly is called to clean up.
 !# Note: Information stored in the quick-access array are of temporary
@@ -110,7 +108,6 @@ MODULE cccallback
   USE mprimitives
   
   USE ccbasic
-  USE ccboundaryconditionparser
   
   IMPLICIT NONE
 
@@ -824,274 +821,76 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  ! Values on the real boundary.
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+  SUBROUTINE getBoundaryValues (sexpressionName,rdiscretisation,rboundaryRegion,&
+                                dwhere, dvalue, rcollection)
   
   USE collection
   USE spatialdiscretisation
   USE discretebc
   
 !<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions. It calculates a special quantity on the boundary, which is
-  ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
+  ! This routine is called for all segments on the real boundary which are
+  ! marked in the DAT file with "evaluate expression of type -2".
+  ! sexpressionName is the name of the expression from the DAT file.
+  ! The other parameters define the current position on the boundary.
+  ! The routine has to return a value which is used as the result of an
+  ! expression, e.g. as Diichlet value on the boundary.
+  !
+  ! The routine is allowed to return SYS_INFINITY. The behaviour of this
+  ! value depends on the type of boundary conditions. For Dirichlet
+  ! boundary segments, all points where SYS_INFINITY is returned are
+  ! treated as Neumann points.
 !</description>
   
 !<input>
-  ! Component specifier.
-  ! For Dirichlet boundary: 
-  !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
-  !   2=2nd solution component, e.g. Y-velocity,...)
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
-
+  ! Name of the expression to be evaluated. This name is configured in the
+  ! DAT file for the boundary conditions.
+  CHARACTER(LEN=*), INTENT(IN) :: sexpressionName
+  
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
+  ! Boundary region that is currently being processed.
+  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
   
-  
-  ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
-  
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  INTEGER, INTENT(IN)                                         :: cinfoNeeded
-  
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  INTEGER, INTENT(IN)                                         :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   dwhere = 0 (not used)
+  ! Current parameter value of the point on the boundary.
+  ! 0-1-parametrisation.
   REAL(DP), INTENT(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
-
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 !</input>
 
 !<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  !
-  ! The function may return SYS_INFINITY as a value. This indicates the
-  ! framework to ignore the node and treat it as 'natural boundary condition'
-  ! node.
-  REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+  ! Return value of the expression. May be SYS_INFINITY.
+  REAL(DP), INTENT(OUT) :: dvalue
 !</output>
   
 !</subroutine>
 
-    INTEGER :: icomponent,iexprtyp
-    
-    REAL(DP) :: dtime
-    
+    ! REAL(DP) :: dtime
+    ! REAL(DP) :: dx,dy
+    !
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+    !
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
-    ELSE
-      dtime = 0.0_DP
-    END IF
-    
-    ! Use boundary conditions from DAT files.
-    SELECT CASE (cinfoNeeded)
-    
-    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
-          DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
-      
-      ! Dirichlet boundary conditions
-    
-      ! Get from the current component of the PDE we are discretising:
-      icomponent = Icomponents(1)
-      
-      ! -> 1=X-velocity, 2=Y-velocity.
-      
-      ! Return zero Dirichlet boundary values for all situations by default.
-      Dvalues(1) = 0.0_DP
+    !
+    ! dtime = 0.0_DP
+    ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
 
-      ! Now, depending on the problem, calculate the return value.
-      
-      ! Get the type of the expression to evaluate from the 
-      ! integer tag of the BC-region - if there is an expression to evaluate
-      ! at all.
-      iexprtyp = rbcRegion%ibdrexprtype
-            
-      ! Now, which boundary condition do we have here?                       
-      SELECT CASE (rbcRegion%ctype)
-      CASE (BC_DIRICHLET)
-        ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
-        Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
-                                    iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
-                                    dwhere, rbcRegion%stag,dtime,&
-                                    p_rcollection)
-    
-      CASE (BC_PRESSUREDROP)
-        ! Normal stress / pressure drop. Evaluate Evaluate the 
-        ! expression iexprtyp.
-        Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
-                                    iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
-                                    dwhere, rbcRegion%stag,dtime,&
-                                    p_rcollection)
-      END SELECT
-      
-    END SELECT
-  
-  CONTAINS
-  
-    ! Auxiliary function: Evaluate a scalar expression on the boundary.
-    
-    REAL(DP) FUNCTION evalBoundary (rdiscretisation, rboundaryRegion, &
-                                    ityp, ivalue, dvalue, dpar, stag, dtime, p_rcollection)
-    
-    ! Discretisation structure of the underlying discretisation
-    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
-    
-    ! Current boundary region
-    TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
-    
-    ! Type of expression to evaluate.
-    ! One of the BDC_xxxx constants from ccboundaryconditionparser.f90.
-    INTEGER, INTENT(IN) :: ityp
-    
-    ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
-    ! the expression in the expression object to evaluate.
-    ! Otherwise unused.
-    INTEGER, INTENT(IN) :: ivalue
-    
-    ! Double precision parameter for simple expressions
-    REAL(DP), INTENT(IN) :: dvalue
-    
-    ! Current parameter value of the point on the boundary.
-    ! 0-1-parametrisation.
-    REAL(DP), INTENT(IN) :: dpar
+    dvalue = 0.0_DP
 
-    ! String tag that defines more complicated BC's.
-    CHARACTER(LEN=*), INTENT(IN) :: stag
-    
-    ! For nonstationary simulation: Simulation time.
-    ! =0 for stationary simulations.
-    REAL(DP), INTENT(IN) :: dtime
-    
-    ! A compiled expression for evaluation at runtime
-    TYPE(t_fparser), POINTER :: p_rparser
-    
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                  :: p_rcollection
-
-      ! local variables
-      REAL(DP) :: d,dx,dy
-      CHARACTER(LEN=PARLST_MLDATA) :: sexpr
-      REAL(DP), DIMENSION(SIZE(SEC_EXPRVARIABLES)) :: Rval
-      
-      SELECT CASE (ityp)
-      CASE (BDC_USERDEF)
-        ! This is a hardcoded, user-defined identifier.
-        ! In stag, the name of the identifier is noted.
-        ! Get the identifier itself from the collection.
-        CALL collct_getvalue_string (p_rcollection, stag, sexpr, &
-                                     0, SEC_SBDEXPRESSIONS)
-                                     
-        ! Now we can decide on 'sexpr' how to evaluate.
-        ! By default, we return 0.0. A user defined calculation can be added here!
-        evalBoundary = 0.0_DP
-      
-      CASE (BDC_VALDOUBLE)
-        ! A simple constant, given by dvalue
-        evalBoundary = dvalue
-
-      CASE (BDC_EXPRESSION)
-        ! A complex expression.
-        ! Get the expression object from the collection.
-        
-        p_rparser => collct_getvalue_pars (p_rcollection, BDC_BDPARSER, &
-                                   0, SEC_SBDEXPRESSIONS)
-                                   
-        ! Set up an array with variables for evaluating the expression.
-        ! Give the values in exactly the same order as specified
-        ! by SEC_EXPRVARIABLES!
-        Rval = 0.0_DP
-        
-        CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-                                rboundaryRegion%iboundCompIdx, &
-                                dpar, dx, dy)
-        
-        ! Get the local parameter value 0 <= d <= 1.
-        ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
-        ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
-        !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
-        IF (d .LT. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-                                         rboundaryRegion%iboundCompIdx)
-        d = d - rboundaryRegion%dminParam
-        
-        Rval(1) = dx
-        Rval(2) = dy
-        ! Rval(3) = .
-        Rval(4) = d
-        Rval(5) = dpar
-        Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                                            rboundaryRegion%iboundCompIdx, dpar, &
-                                            BDR_PAR_01, BDR_PAR_LENGTH) 
-        Rval(7) = dtime
-        
-        ! Evaluate the expression. ivalue is the number of
-        ! the expression to evaluate.
-        CALL fparser_evalFunction (p_rparser, ivalue, Rval, evalBoundary)
-        
-      CASE (BDC_VALPARPROFILE)
-        ! A parabolic profile. dvalue expresses the
-        ! maximum value of the profile. 
-        !
-        ! Get the local parameter value 0 <= d <= 1.
-        ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
-        ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
-        !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
-        IF (d .LT. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-                                         rboundaryRegion%iboundCompIdx)
-        d = d - rboundaryRegion%dminParam
-    
-        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
-      END SELECT
-    
-    END FUNCTION
-    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1099,78 +898,72 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValuesFBC (Icomponents,rdiscretisation,rbcRegion, &
-                                   Revaluation, p_rcollection)
+  SUBROUTINE getBoundaryValuesFBC (Icomponents,rdiscretisation,&
+                                      Revaluation, rcollection)
+    
+    USE collection
+    USE spatialdiscretisation
+    USE discretefbc
+    
+  !<description>
+    ! This subroutine is called during the discretisation of boundary
+    ! conditions on fictitious boundary components. It calculates a special quantity 
+    ! on the boundary, which is then used by the discretisation routines to 
+    ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
+    !
+    ! The routine must calculate the values on all elements of the element
+    ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
+    ! where information is to be retrieved. Dvalues is filled with function values
+    ! while Binside is set to TRUE for every vertex/edge that is inside of the
+    ! corresponding fictitious boundary region (identified by rbcRegion).
+  !</description>
+    
+  !<input>
+    ! Component specifier.
+    ! For Dirichlet boundary: 
+    !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
+    !   the value should be calculated for 
+    !   (e.g. 1=1st solution component, e.g. X-velocity, 
+    !         2=2nd solution component, e.g. Y-velocity,...,
+    !         3=3rd solution component, e.g. pressure)
+    !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
+    !     (1=x, 2=y component)
+    INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
   
-  USE collection
-  USE spatialdiscretisation
-  USE discretefbc
-  
-!<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions on fictitious boundary components. It calculates a special quantity 
-  ! on the boundary, which is then used by the discretisation routines to 
-  ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
-  !
-  ! The routine must calculate the values on all elements of the element
-  ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
-  ! where information is to be retrieved. Dvalues is filled with function values
-  ! while Binside is set to TRUE for every vertex/edge that is inside of the
-  ! corresponding fictitious boundary region (identified by rbcRegion).
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary: 
-  !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-  !   the value should be calculated for 
-  !   (e.g. 1=1st solution component, e.g. X-velocity, 
-  !         2=2nd solution component, e.g. Y-velocity,...,
-  !         3=3rd solution component, e.g. pressure)
-  !   Example: Icomponents(:) = [1,2] -> Compute values for X- and Y-velocity
-  !     (1=x, 2=y component)
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
+    
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), OPTIONAL                                :: rcollection
 
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
+  !</input>
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are 
-  !  currently being calculated (Dirichlet, Robin,...), as well as information
-  !  about the current boundary region 'what is discretised at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                                 :: p_rcollection
-
-!</input>
-
-!<inputoutput>
-  ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
-  ! where to evaluate and which accepts the return values.
-  ! This callback routine must check out the cinfoNeeded-entry in this structure
-  ! to find out what to evaluate.
-  ! The other entries in this structure describe where to evaluate.
-  ! The result of the evaluation must be written into the p_Dvalues array entry
-  ! in this structure.
-  !
-  ! The number of structures in this array depend on what to evaluate:
-  !
-  ! For Dirichlet boudary:
-  !   revaluation contains as many entries as Icomponents; every entry in
-  !   Icomponent corresponds to one entry in revaluation
-  !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
-  !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-  !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
-  !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
-  !
-  TYPE(t_discreteFBCevaluation), DIMENSION(:), INTENT(INOUT) :: Revaluation
-!</inputoutput>
-  
-!</subroutine>
+  !<inputoutput>
+    ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+    ! where to evaluate and which accepts the return values.
+    ! This callback routine must check out the cinfoNeeded-entry in this structure
+    ! to find out what to evaluate.
+    ! The other entries in this structure describe where to evaluate.
+    ! The result of the evaluation must be written into the p_Dvalues array entry
+    ! in this structure.
+    !
+    ! The number of structures in this array depend on what to evaluate:
+    !
+    ! For Dirichlet boudary:
+    !   revaluation contains as many entries as Icomponents; every entry in
+    !   Icomponent corresponds to one entry in revaluation
+    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+    !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
+    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+    !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
+    !
+    TYPE(t_discreteFBCevaluation), DIMENSION(:), INTENT(INOUT) :: Revaluation
+  !</inputoutput>
+    
+  !</subroutine>
 
     ! local variables
     REAL(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
@@ -1183,93 +976,88 @@ CONTAINS
     ! Note: the definition of (analytic) fictitious boundary components 
     ! is performed in 'cc_parseFBDconditions'.
     
-    ! Are we evaluating our fictitious boundary component?
-    IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
-    
-      ! Get the triangulation array for the point coordinates
-      p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
-      CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-                                     p_DvertexCoordinates)
-      CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-                                  p_IverticesAtElement)
-      CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
-                                  p_IverticesAtEdge)
+    ! Get the triangulation array for the point coordinates
+    p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                    p_DvertexCoordinates)
+    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+                                p_IverticesAtElement)
+    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
+                                p_IverticesAtEdge)
 
-      ! Definition of the circle
-      dxcenter = 0.6
-      dycenter = 0.2
-      dradius  = 0.05
-      
-      ! Loop through the points where to evaluate:
-      DO idx = 1,Revaluation(1)%nvalues
-      
-        ! Get the number of the point to process; may also be number of an
-        ! edge or element...
-        ipoint = Revaluation(1)%p_Iwhere(idx)
-        
-        ! Get x- and y-coordinate
-        CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-                         p_DvertexCoordinates,&
-                         p_IverticesAtElement,p_IverticesAtEdge,&
-                         p_rtriangulation%NVT,&
-                         dx,dy)
-        
-        ! Get the distance to the center
-        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-        
-        ! Point inside?
-        IF (ddistance .LE. dradius) THEN
-        
-          ! Denote in the p_Iinside array that we prescribe a value here:
-          Revaluation(1)%p_Iinside (idx) = 1
-          Revaluation(2)%p_Iinside (idx) = 1
-          
-          ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
-          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-          Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-        
-        END IF
-        
-      END DO
-
-!      ! Definition of a 2nd circle
-!      dxcenter = 1.1
-!      dycenter = 0.31
-!      dradius  = 0.05
-!      
-!      ! Loop through the points where to evaluate:
-!      DO idx = 1,Revaluation(1)%nvalues
-!      
-!        ! Get the number of the point to process; may also be number of an
-!        ! edge or element...
-!        ipoint = Revaluation(1)%p_Iwhere(idx)
-!        
-!        ! Get x- and y-coordinate
-!        CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-!                         p_DvertexCoordinates,&
-!                         p_IverticesAtElement,p_IverticesAtEdge,&
-!                         p_rtriangulation%NVT,&
-!                         dx,dy)
-!        
-!        ! Get the distance to the center
-!        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!        
-!        ! Point inside?
-!        IF (ddistance .LE. dradius) THEN
-!        
-!          ! Denote in the p_Iinside array that we prescribe a value here:
-!          Revaluation(1)%p_Iinside (idx) = 1
-!          Revaluation(2)%p_Iinside (idx) = 1
-!          
-!          ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
-!          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-!          Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!        
-!        END IF
-!        
-!      END DO
+    ! Definition of the circle
+    dxcenter = 0.6
+    dycenter = 0.2
+    dradius  = 0.05
     
-    END IF
+    ! Loop through the points where to evaluate:
+    DO idx = 1,Revaluation(1)%nvalues
+    
+      ! Get the number of the point to process; may also be number of an
+      ! edge or element...
+      ipoint = Revaluation(1)%p_Iwhere(idx)
+      
+      ! Get x- and y-coordinate
+      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
+                        p_DvertexCoordinates,&
+                        p_IverticesAtElement,p_IverticesAtEdge,&
+                        p_rtriangulation%NVT,&
+                        dx,dy)
+      
+      ! Get the distance to the center
+      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+      
+      ! Point inside?
+      IF (ddistance .LE. dradius) THEN
+      
+        ! Denote in the p_Iinside array that we prescribe a value here:
+        Revaluation(1)%p_Iinside (idx) = 1
+        Revaluation(2)%p_Iinside (idx) = 1
+        
+        ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
+        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
+      
+      END IF
+      
+    END DO
+
+!    ! Definition of a 2nd circle
+!    dxcenter = 1.1
+!    dycenter = 0.31
+!    dradius  = 0.05
+!    
+!    ! Loop through the points where to evaluate:
+!    DO idx = 1,Revaluation(1)%nvalues
+!    
+!      ! Get the number of the point to process; may also be number of an
+!      ! edge or element...
+!      ipoint = Revaluation(1)%p_Iwhere(idx)
+!      
+!      ! Get x- and y-coordinate
+!      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
+!                       p_DvertexCoordinates,&
+!                       p_IverticesAtElement,p_IverticesAtEdge,&
+!                       p_rtriangulation%NVT,&
+!                       dx,dy)
+!      
+!      ! Get the distance to the center
+!      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+!      
+!      ! Point inside?
+!      IF (ddistance .LE. dradius) THEN
+!      
+!        ! Denote in the p_Iinside array that we prescribe a value here:
+!        Revaluation(1)%p_Iinside (idx) = 1
+!        Revaluation(2)%p_Iinside (idx) = 1
+!        
+!        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
+!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
+!      
+!      END IF
+!      
+!    END DO
     
   CONTAINS
   

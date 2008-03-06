@@ -54,7 +54,7 @@ MODULE poisson3d_method1_mg
     TYPE(t_matrixBlock) :: rmatrix
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC) :: rdiscreteBC
   
   END TYPE
   
@@ -91,7 +91,7 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), ALLOCATABLE :: Rlevels
+    TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
     
     ! An object for saving the boundary mesh region
     TYPE(t_meshregion) :: rmeshRegion
@@ -281,23 +281,24 @@ CONTAINS
     ! using mesh-regions.
     DO i = NLMIN, NLMAX
     
-      ! Set the pointer to NULL - bcasm_newDirichletBConMR will allocate it
-      NULLIFY(Rlevels(i)%p_rdiscreteBC)
+      ! Create a t_discreteBC structure where we store all discretised boundary
+      ! conditions.
+      CALL bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
       ! Create a mesh region describing the mesh's boundary based on the
       ! nodal-property-array of the current triangulation.
       CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation)
       
       ! Describe Dirichlet BCs on that mesh region
-      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, &
-        Rlevels(i)%p_rdiscreteBC,rmeshRegion,1,getBoundaryValuesMR_3D,NULL())
+      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 1,&
+        Rlevels(i)%rdiscreteBC,rmeshRegion,getBoundaryValuesMR_3D)
       
       ! Free the mesh region structure as we won't need it anymore
       CALL mshreg_done(rmeshRegion)
 
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
-      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%p_rdiscreteBC
+      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
       
       ! Also implement the boundary conditions into the matrix.
       CALL matfil_discreteBC (Rlevels(i)%rmatrix)
@@ -305,7 +306,7 @@ CONTAINS
     END DO ! level loop
 
     ! Our right-hand-side also needs to know the boundary conditions.
-    rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%p_rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
 
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -459,7 +460,7 @@ CONTAINS
 
     ! Release our discrete version of the boundary conditions
     DO i = NLMAX, NLMIN, -1
-      CALL bcasm_releaseDiscreteBC (Rlevels(i)%p_rdiscreteBC)
+      CALL bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
     END DO
 
     ! Release the discretisation structure and all spatial discretisation

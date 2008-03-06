@@ -249,8 +249,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -276,12 +276,8 @@ CONTAINS
   ! analytic boundary boundary description etc.
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
+  ! Boundary region that is currently being processed.
+  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
   INTEGER(I32), INTENT(IN)                                    :: ielement
@@ -303,7 +299,7 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  INTEGER, INTENT(IN)                                         :: iwhere
+  INTEGER(I32), INTENT(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -314,9 +310,9 @@ CONTAINS
   !   dwhere = 0 (not used)
   REAL(DP), INTENT(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 
@@ -330,27 +326,34 @@ CONTAINS
   
 !</subroutine>
 
-  ! In this problem, we are definitely only asked for point values
-  ! on the boundary.
-  IF (cinfoNeeded .NE. DISCBC_NEEDFUNC) THEN
-    PRINT *,'getBoundaryValues: Only point values implemented!'
-    STOP
-  END IF
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! REAL(DP) :: dx,dy
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
-  ! Return zero Dirichlet boundary values for all situations.
-  SELECT CASE (rbcRegion%rboundaryRegion%iboundSegIdx)
-  CASE (1)
-    ! Initial conditions on segment 1: sin(Pi*x). 
-    ! dwhere=x here since we are on the unit square on the first segment,
-    ! i.e. the parameter value coincides with the x-coordinate. Otherwise,
-    ! we would have to ask the analytic boundary for the forrect x-position.
-    Dvalues(1) = SIN(dwhere * SYS_PI)
-  CASE (2,3,4)
-    ! Boundary values on segment 2,4 is =0.
-    ! Boundary segment 3 should not occur.
-    Dvalues(1) = 0.0_DP
-  ! elsewhere: does not occur.
-  END SELECT
+    ! In this problem, we are definitely only asked for point values
+    ! on the boundary.
+    IF (cinfoNeeded .NE. DISCBC_NEEDFUNC) THEN
+      PRINT *,'getBoundaryValues: Only point values implemented!'
+      STOP
+    END IF
+
+    ! Return zero Dirichlet boundary values for all situations.
+    SELECT CASE (rboundaryRegion%iboundSegIdx)
+    CASE (1)
+      ! Initial conditions on segment 1: sin(Pi*x). 
+      ! dwhere=x here since we are on the unit square on the first segment,
+      ! i.e. the parameter value coincides with the x-coordinate. Otherwise,
+      ! we would have to ask the analytic boundary for the forrect x-position.
+      Dvalues(1) = SIN(dwhere * SYS_PI)
+    CASE (2,3,4)
+      ! Boundary values on segment 2,4 is =0.
+      ! Boundary segment 3 should not occur.
+      Dvalues(1) = 0.0_DP
+    ! elsewhere: does not occur.
+    END SELECT
   
   END SUBROUTINE
 

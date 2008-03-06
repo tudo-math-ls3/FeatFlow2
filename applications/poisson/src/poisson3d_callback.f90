@@ -340,7 +340,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE getBoundaryValues_3D (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                   cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -404,9 +404,9 @@ CONTAINS
   !   dwhere = 0 (not used)
   REAL(DP), INTENT(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 
@@ -438,7 +438,7 @@ CONTAINS
   !<subroutine>
 
   SUBROUTINE getBoundaryValuesMR_3D (Icomponents,rdiscretisation,rmeshRegion,&
-                                      cinfoNeeded,Dcoords,p_rcollection,Dvalues)
+                                      cinfoNeeded,Dcoords,Dvalues,rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -477,9 +477,9 @@ CONTAINS
   ! calculated.
   REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                                 :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 

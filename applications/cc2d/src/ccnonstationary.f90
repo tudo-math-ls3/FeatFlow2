@@ -431,7 +431,7 @@ CONTAINS
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
     IF (rproblem%iboundary .NE. 0) THEN
-      CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+      CALL cc_updateDiscreteBC (rproblem)
     END IF
 
     ! -------------------------------------------    

@@ -96,7 +96,7 @@ CONTAINS
     TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -127,7 +127,7 @@ CONTAINS
     ! Declarations for projecting a vector to the Q1 space for GMV export
     TYPE(t_vectorBlock) :: rprjVector
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
-    TYPE(t_discreteBC), POINTER ::p_rdiscreteBC_Q1
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC_Q1
 
     ! Ok, let's start. 
     !
@@ -221,15 +221,18 @@ CONTAINS
     ! description of the domain's boundary, therefore we need a discrete
     ! (mesh-dependent) description of the mesh's boundary. This can be done
     ! using mesh-regions.
-    NULLIFY(p_rdiscreteBC)
+    !
+    ! Create a t_discreteBC structure where we store all discretised boundary
+    ! conditions.
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
     
     ! Create a mesh region describing the mesh's boundary based on the
     ! nodal-property-array of the current triangulation.
     CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation)
     
     ! Describe Dirichlet BCs on that mesh region
-    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, rmeshRegion,&
-                                  1, getBoundaryValuesMR_3D, NULL())
+    CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, rmeshRegion,&
+                                  getBoundaryValuesMR_3D, NULL())
     
     ! We will not free the mesh region structure here, as we will need it
     ! later for calculating the Q1 solution.
@@ -237,8 +240,8 @@ CONTAINS
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    rmatrixBlock%p_rdiscreteBC => p_rdiscreteBC
-    rrhsBlock%p_rdiscreteBC => p_rdiscreteBC
+    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => rdiscreteBC
                              
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -328,17 +331,17 @@ CONTAINS
 
     ! Step 4: Discretise the boundary condition according to the Q1
     ! discretisation:
-    NULLIFY(p_rdiscreteBC_Q1)
+    CALL bcasm_initDiscreteBC(rdiscreteBC_Q1)
     
     ! Describe Dirichlet BCs on the mesh region which was created before
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, p_rdiscreteBC_Q1, rmeshRegion,&
-                                  1, getBoundaryValuesMR_3D, NULL())
+    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 1, rdiscreteBC_Q1, rmeshRegion,&
+                                  getBoundaryValuesMR_3D)
     
     ! Free the mesh region structure as we won't need it anymore
     CALL mshreg_done(rmeshRegion)
 
     ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rdiscreteBC_Q1
+    rprjVector%p_rdiscreteBC => rdiscreteBC_Q1
 
     ! Step 5: Set up a boundary condition filter for Dirichtley boundary conditions
     ! and pass the vetor through it. This finally implement the Dirichtley 
@@ -365,7 +368,7 @@ CONTAINS
     CALL ucd_release (rexport)
 
     ! Step 7: Release our discrete version of the boundary conditions of Q1.
-    CALL bcasm_releaseDiscreteBC(p_rdiscreteBC_Q1)
+    CALL bcasm_releaseDiscreteBC(rdiscreteBC_Q1)
     
     ! Release the block matrix/vectors rprjVector
     CALL lsysbl_releaseVector(rprjVector)
@@ -410,7 +413,7 @@ CONTAINS
     CALL lsyssc_releaseMatrix (rmatrix)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.

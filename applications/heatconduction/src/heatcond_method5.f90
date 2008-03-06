@@ -146,7 +146,6 @@ CONTAINS
     CALL hc5_initParamTriang (rproblem%ilvmin,rproblem%ilvmax,rproblem)
     CALL hc5_initDiscretisation (rproblem)    
     CALL hc5_initMatVec (rproblem,rparams)    
-    CALL hc5_initAnalyticBC (rproblem)   
 
     ! Use the auxiliary RHS vector on the finest level to create an
     ! initial RHS and solution vector, which we pass later to the timeloop.
@@ -156,8 +155,8 @@ CONTAINS
     ! Calculate the initial RHS, don't incorporate any BC's.
     CALL hc5_calcRHS (rproblem,rrhs)  
     
-    ! Discretise the initial boundary conditions
-    CALL hc5_initDiscreteBC (rproblem,.FALSE.)
+    ! Discretise the boundary conditions
+    CALL hc5_initDiscreteBC (rproblem)
     
     ! Implement them into the initial solution vector, as we have a zero
     ! vector as initial solution.

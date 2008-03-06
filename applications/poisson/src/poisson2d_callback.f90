@@ -337,8 +337,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues_2D (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                   cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+  SUBROUTINE getBoundaryValues_2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -364,12 +364,8 @@ CONTAINS
   ! analytic boundary boundary description etc.
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
+  ! Boundary region that is currently being processed.
+  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
   INTEGER(I32), INTENT(IN)                                    :: ielement
@@ -402,9 +398,9 @@ CONTAINS
   !   dwhere = 0 (not used)
   REAL(DP), INTENT(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 
@@ -418,16 +414,15 @@ CONTAINS
   
 !</subroutine>
 
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! REAL(DP) :: dx,dy
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
-  ! To get the X/Y-coordinates of the boundary point, use:
-  !
-  ! REAL(DP) :: dx,dy
-  !
-  ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-  !     rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-
-  ! Return zero Dirichlet boundary values for all situations.
-  Dvalues(1) = 0.0_DP
+    ! Return zero Dirichlet boundary values for all situations.
+    Dvalues(1) = 0.0_DP
   
   END SUBROUTINE
 
@@ -436,8 +431,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValuesFBC_2D (Icomponents,rdiscretisation,rbcRegion, &
-                                      Revaluation, p_rcollection)
+  SUBROUTINE getBoundaryValuesFBC_2D (Icomponents,rdiscretisation,&
+                                      Revaluation, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -473,15 +468,9 @@ CONTAINS
   ! analytic boundary boundary description etc.
   TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are 
-  !  currently being calculated (Dirichlet, Robin,...), as well as information
-  !  about the current boundary region 'what is discretised at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                                 :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 
@@ -509,15 +498,13 @@ CONTAINS
   
 !</subroutine>
 
-    ! local variables
-    REAL(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordinates
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    INTEGER :: ipoint,idx
+      ! local variables
+      REAL(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordinates
+      TYPE(t_triangulation), POINTER :: p_rtriangulation
+      INTEGER :: ipoint,idx
 
-    ! Are we evaluating our fictitious boundary component?
-    IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
-    
+      
       ! Just make sure we are evaluating in the corners.
       IF (Revaluation(1)%cinfoNeeded .NE. DISCFBC_NEEDFUNC) THEN
         PRINT *,'FBC: only corner evaluation supported at the moment!'
@@ -591,8 +578,6 @@ CONTAINS
         
       END DO
     
-    END IF
-
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -600,7 +585,7 @@ CONTAINS
   !<subroutine>
 
   SUBROUTINE getBoundaryValuesMR_2D (Icomponents,rdiscretisation,rmeshRegion,&
-                                      cinfoNeeded,Dcoords,p_rcollection,Dvalues)
+                                      cinfoNeeded,Dcoords,Dvalues,rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -639,9 +624,9 @@ CONTAINS
   ! calculated.
   REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                                 :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 

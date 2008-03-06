@@ -53,7 +53,7 @@ MODULE poisson2d_method1_mg
     TYPE(t_matrixBlock) :: rmatrix
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC) :: rdiscreteBC
   
   END TYPE
   
@@ -91,7 +91,7 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), ALLOCATABLE :: Rlevels
+    TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -104,11 +104,8 @@ CONTAINS
     ! with data for the linear solver.
     TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
-    ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
+    ! A variable that is used to specify a region on the boundary.
     TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_bcRegion), POINTER :: p_rbcRegion
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
@@ -279,81 +276,38 @@ CONTAINS
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
         rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
     
-    ! Now we have the raw problem. What is missing is the definition of the boudary
-    ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
-    ! a discrete version of the analytic BC, which we can implement into the
-    ! solution/RHS vectors using the corresponding filter.
-    !
-    ! At first, we need the analytic description of the boundary conditions.
-    ! Initialise a structure for boundary conditions which accepts this:
-    !
-    ! Set p_rboundaryConditions to create a new structure on the heap.
-    NULLIFY (p_rboundaryConditions)
-    CALL bcond_initBC (p_rboundaryConditions,p_rboundary)
-    
-    ! We 'know' already (from the problem definition) that we have four boundary
-    ! segments in the domain. Each of these, we want to use for inforcing
-    ! some kind of boundary condition.
-    !
-    ! We ask the bondary routines to create a 'boundary region' - which is
-    ! simply a part of the boundary corresponding to a boundary segment.
-    ! A boundary region roughly contains the type, the min/max parameter value
-    ! and whether the endpoints are inside the region or not.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-    
-    ! We use this boundary region and specify that we want to have Dirichlet
-    ! boundary there. The following routine adds a new 'boundary condition region'
-    ! for the first segment to the boundary condition structure.
-    ! The region will be set up as 'Dirichlet boundary'.
-    ! We specify icomponent='1' to indicate that we set up the
-    ! Dirichlet BC's for the first (here: one and only) component in the solution
-    ! vector.
-    ! The routine also returns the created object in p_rbcRegion so that we can
-    ! modify it - but accept it as it is, so we can ignore that.
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
-    ! Now to the edge 2 of boundary component 1 the domain. We use the
-    ! same two routines to add the boundary condition to p_rboundaryConditions.
-    CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
-    ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-    
-    ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
-                                       rboundaryRegion,p_rbcRegion)
-                             
     DO i = NLMIN, NLMAX
     
-      ! The boundary conditions are set up, but still the block discretisation
-      ! does not know about it. So inform the discretisation which
-      ! analytic boundary conditions to use:
-      Rlevels(i)%rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
+      ! Initialise the discrete BC structure
+      CALL bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! For the discrete problem, we need a discrete version of the above
-      ! boundary conditions. So we have to discretise them.
-      ! The following routine gives back p_rdiscreteBC, a pointer to a
-      ! discrete version of the boundary conditions. Remark that
-      ! the pointer has to be nullified before calling the routine,
-      ! otherwise, the routine tries to update the boundary conditions
-      ! in p_rdiscreteBC!
-      NULLIFY(Rlevels(i)%p_rdiscreteBC)
+      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+                                        rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+                                        getBoundaryValues_2D)
+                               
+      ! Now to the edge 2 of boundary component 1 the domain. 
+      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+                                        rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+                                        getBoundaryValues_2D)
+                               
+      ! Edge 3 of boundary component 1.
+      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+                                        rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+                                        getBoundaryValues_2D)
       
-      ! Generate the discrete boundary conditions from the analytic ones.
-      CALL bcasm_discretiseBC (Rlevels(i)%rdiscretisation, &
-          Rlevels(i)%p_rdiscreteBC,.FALSE., getBoundaryValues_2D)
+      ! Edge 4 of boundary component 1. That's it.
+      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+                                        rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+                                        getBoundaryValues_2D)
       
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
-      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%p_rdiscreteBC
+      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
   
       ! Also implement the boundary conditions into the matrix.
       CALL matfil_discreteBC (Rlevels(i)%rmatrix)
@@ -361,7 +315,7 @@ CONTAINS
     END DO
 
     ! Our right-hand-side also needs to know the boundary conditions.
-    rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%p_rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
     
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -510,12 +464,9 @@ CONTAINS
 
     ! Release our discrete version of the boundary conditions
     DO i = NLMAX, NLMIN, -1
-      CALL bcasm_releaseDiscreteBC (Rlevels(i)%p_rdiscreteBC)
+      CALL bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
     END DO
 
-    ! ...and also the corresponding analytic description.
-    CALL bcond_doneBC (p_rboundaryConditions)
-    
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
     DO i = NLMAX, NLMIN, -1

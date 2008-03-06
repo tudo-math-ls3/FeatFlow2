@@ -89,7 +89,7 @@ CONTAINS
     
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC, p_rprjDiscreteBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC, rprjDiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -376,21 +376,20 @@ CONTAINS
     ! This task is performed by the following auxiliary routine:
     CALL st3daux_calcCubeDirichletRegion(rmeshRegion)
     
-    ! Now call the boundary condition assembly routine to get a discrete
-    ! description of our boundary conditions.
-    NULLIFY(p_rdiscreteBC)
+    ! Initialise the structure for discrete boundary conditions.
+    CALL bcasm_initDiscreteBC (rdiscreteBC)
     
-    ! Set Dirichlet BCs for X-velocity:
-    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, &
-                       rmeshRegion, 1, getBoundaryValuesMR_3D, NULL())
+    ! Assemble Dirichlet BCs for X-velocity:
+    CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
 
-    ! Set Dirichlet BCs for Y-velocity:
-    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, &
-                       rmeshRegion, 2, getBoundaryValuesMR_3D, NULL())
+    ! Assemble Dirichlet BCs for Y-velocity:
+    CALL bcasm_newDirichletBConMR(rdiscretisation, 2, rdiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
 
-    ! Set Dirichlet BCs for Z-velocity:
-    CALL bcasm_newDirichletBConMR(rdiscretisation, p_rdiscreteBC, &
-                       rmeshRegion, 3, getBoundaryValuesMR_3D, NULL())
+    ! Assemble Dirichlet BCs for Z-velocity:
+    CALL bcasm_newDirichletBConMR(rdiscretisation, 3, rdiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
     
     ! We do not need any boundary conditions for the pressure
     
@@ -400,9 +399,9 @@ CONTAINS
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    rmatrix%p_rdiscreteBC => p_rdiscreteBC
-    rrhs%p_rdiscreteBC => p_rdiscreteBC
-    rvector%p_rdiscreteBC => p_rdiscreteBC
+    rmatrix%p_rdiscreteBC => rdiscreteBC
+    rrhs%p_rdiscreteBC => rdiscreteBC
+    rvector%p_rdiscreteBC => rdiscreteBC
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -499,19 +498,22 @@ CONTAINS
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q1/Q0 
     ! discretisation:
-    NULLIFY(p_rprjDiscreteBC)
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, p_rprjDiscreteBC, &
-                       rmeshRegion, 1, getBoundaryValuesMR_3D, NULL())
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, p_rprjDiscreteBC, &
-                       rmeshRegion, 2, getBoundaryValuesMR_3D, NULL())
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, p_rprjDiscreteBC, &
-                       rmeshRegion, 3, getBoundaryValuesMR_3D, NULL())
+    !
+    ! Initialise the structure for discrete boundary conditions.
+    CALL bcasm_initDiscreteBC (rprjDiscreteBC)
+    
+    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 1, rprjDiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 2, rprjDiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
+                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
     
     ! Now we don't need the mesh region anymore, so release it
     CALL mshreg_done(rmeshRegion)
 
     ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rprjDiscreteBC
+    rprjVector%p_rdiscreteBC => rprjDiscreteBC
     
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the attached discrete boundary
@@ -570,8 +572,8 @@ CONTAINS
     CALL lsyssc_releaseMatrix (rmatrixB1)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (p_rprjDiscreteBC)
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rprjDiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.

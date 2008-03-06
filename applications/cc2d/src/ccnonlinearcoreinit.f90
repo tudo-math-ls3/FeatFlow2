@@ -145,7 +145,7 @@ CONTAINS
     TYPE(t_nonlinearCCMatrix) :: rnonlinearCCMatrix
   
     ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    p_rdiscretisation => rlevelInfo%rdiscretisation
     
     ! Get a pointer to the template FEM matrix.
     p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
@@ -181,10 +181,10 @@ CONTAINS
     rnonlinearCCMatrix%dtheta = 1.0_DP   ! A velocity block
     rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
-    rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
     rnonlinearCCMatrix%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rnonlinearCCMatrix%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
-    rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
     rnonlinearCCMatrix%p_rmatrixStokes => rlevelInfo%rmatrixStokes
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
@@ -279,7 +279,7 @@ CONTAINS
     ! all our matrices that we want to use.
     DO ilevel = nlmin,nlmax
       rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisation => &
-        rproblem%RlevelInfo(ilevel)%p_rdiscretisation
+        rproblem%RlevelInfo(ilevel)%rdiscretisation
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
@@ -736,9 +736,9 @@ CONTAINS
         imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rnonlinearIteration%rpreconditioner%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
-              p_rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks),&
+              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks),&
             rproblem%RlevelInfo(i)% &
-              p_rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks)))
+              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear

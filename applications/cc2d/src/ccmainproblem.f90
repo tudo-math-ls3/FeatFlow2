@@ -184,7 +184,7 @@ CONTAINS
       DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
         CALL output_lbrk ()
         CALL output_line ('Level '//sys_siL(i,5))
-        CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.FALSE.)
+        CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.FALSE.)
       END DO
     END IF
     
@@ -208,12 +208,6 @@ CONTAINS
     CALL output_lbrk ()
     CALL output_line ("Time for matrix initialisation: "//&
       TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising analytic boundary conditions...')
-    END IF
-    CALL cc_initAnalyticBC (p_rproblem)   
 
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)

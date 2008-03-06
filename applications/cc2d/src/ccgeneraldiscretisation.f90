@@ -162,12 +162,11 @@ CONTAINS
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector.
       ALLOCATE(p_rdiscretisation)
-      CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,nequations,&
-                                     p_rtriangulation, p_rboundary)
+      CALL spdiscr_initBlockDiscr2D (&
+          rproblem%RlevelInfo(i)%rdiscretisation,nequations,&
+          p_rtriangulation, p_rboundary)
 
-      ! Save the discretisation structure to our local LevelInfo structure
-      ! for later use.
-      rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
 
       SELECT CASE (ielementType)
       CASE (0)
@@ -420,13 +419,11 @@ CONTAINS
         ! Copy the discretisation structure of the first (Stokes) block
         ! and replace the cubature-formula identifier by that which is to be
         ! used for the mass matrix.
-        ALLOCATE(p_rdiscretisationMass)
-        p_rdiscretisationMass = p_rdiscretisation%RspatialDiscretisation(1)
+        CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(1), &
+            rproblem%RlevelInfo(i)%rdiscretisationMass, .TRUE.)
+            
+        p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
         
-        ! Mark the mass matrix discretisation structure as copy of another one -
-        ! to prevent accidental deallocation of memory.
-        p_rdiscretisationMass%bisCopy = .TRUE.
-
         CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                     'scubStokes',sstr,'')
         IF (sstr .EQ. '') THEN
@@ -480,8 +477,6 @@ CONTAINS
         
         END IF
        
-        rproblem%RlevelInfo(i)%p_rdiscretisationMass => p_rdiscretisationMass
-        
       END IF
       
     END DO
@@ -511,11 +506,8 @@ CONTAINS
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
       
       ! Remove the block discretisation structure and all substructures.
-      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
       
-      ! Remove the discretisation from the heap.
-      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)
-
       ! -----------------------------------------------------------------------
       ! Time-dependent problem
       ! -----------------------------------------------------------------------
@@ -524,9 +516,7 @@ CONTAINS
                                        'ITIMEDEPENDENCE', j, 0)
       IF (j .NE. 0) THEN
         ! Release the mass matrix discretisation.
-        ! Don't release the content as we created it as a copy of the Stokes
-        ! discretisation structure.
-        DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationMass)
+        CALL spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
       END IF
 
     END DO
@@ -587,7 +577,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       ! Ask the problem structure to give us the discretisation structure
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! The global system looks as follows:
       !
@@ -671,7 +661,7 @@ CONTAINS
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
         CALL lsysbl_createVecBlockByDiscr (&
-            rproblem%RlevelInfo(i)%p_rdiscretisation,&
+            rproblem%RlevelInfo(i)%rdiscretisation,&
             rproblem%RlevelInfo(i)%rtempVector,.TRUE.)
       END IF
 
@@ -685,9 +675,9 @@ CONTAINS
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
     CALL lsysbl_createVecBlockByDiscr (&
-        rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation,rrhs,.TRUE.)
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (&
-        rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation,rvector,.TRUE.)
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.TRUE.)
 
   END SUBROUTINE
 
@@ -736,7 +726,7 @@ CONTAINS
     ! -----------------------------------------------------------------------
     
     ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    p_rdiscretisation => rlevelInfo%rdiscretisation
     
     ! Get a pointer to the (scalar) Stokes matrix:
     p_rmatrixStokes => rlevelInfo%rmatrixStokes
@@ -814,7 +804,7 @@ CONTAINS
       ! Change the discretisation structure of the mass matrix to the
       ! correct one; at the moment it points to the discretisation structure
       ! of the Stokes matrix...
-      p_rmatrixMass%p_rspatialDiscretisation => rlevelInfo%p_rdiscretisationMass
+      p_rmatrixMass%p_rspatialDiscretisation => rlevelInfo%rdiscretisationMass
 
       ! Call the standard matrix setup routine to build the matrix.                    
       CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
@@ -1007,7 +997,7 @@ CONTAINS
       READ(sfileString,*) sfile
 
       CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev)%p_rdiscretisation,rvector1,.FALSE.)
+          rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.FALSE.)
       
       ! Read in the vector
       CALL vecio_readBlockVectorHR (&
@@ -1018,7 +1008,7 @@ CONTAINS
         
         ! Initialise a vector for the higher level and a prolongation structure.
         CALL lsysbl_createVectorBlock (&
-            rproblem%RlevelInfo(ilev+1)%p_rdiscretisation,rvector2,.FALSE.)
+            rproblem%RlevelInfo(ilev+1)%rdiscretisation,rvector2,.FALSE.)
         
         CALL mlprj_initProjectionVec (rprojection,rvector2)
         
@@ -1111,7 +1101,7 @@ CONTAINS
       
       ! Initialise a vector for the lower level and a prolongation structure.
       CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev-1)%p_rdiscretisation,rvector2,.FALSE.)
+          rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.FALSE.)
       
       CALL mlprj_initProjectionVec (rprojection,rvector2)
       

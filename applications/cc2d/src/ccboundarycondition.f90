@@ -9,20 +9,17 @@
 !#
 !# The following files can be found here:
 !#
-!# 1.) cc_initAnalyticBC
-!#     -> Initialise analytic boundary conditions
-!#
-!# 2.) cc_initDiscreteBC
+!# 1.) cc_initDiscreteBC
 !#     -> Discretise analytic boundary conditions, create discrete
 !#        boundary conditions
 !#
-!# 3.) cc_updateDiscreteBC
+!# 2.) cc_updateDiscreteBC
 !#     -> Reassemble discrete boundary conditions
 !#
-!# 4.) cc_doneBC
-!#     -> Release discrete and analytic boundary conditions
+!# 3.) cc_doneBC
+!#     -> Release discrete boundary conditions
 !#
-!# 5.) cc_implementBC
+!# 4.) cc_implementBC
 !#     -> Implement discrete boundary conditions into solution/RHS vectors
 !#        and matrix on finest level
 !#
@@ -63,53 +60,6 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_initAnalyticBC (rproblem)
-  
-!<description>
-  ! This initialises the analytic boundary conditions of the problem
-  ! and saves them to the problem structure.
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-
-    ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
-    
-    INTEGER :: i
-  
-    ! Initialise the boundary condition by parsing the parameter files.
-    ! This initialises rproblem%p_rboundaryConditions by parsing DAT-file 
-    ! parameters in the parameter list rproblem%rparamList
-    CALL cc_parseBDconditions (rproblem)
-
-    ! Initialise the boundary conditions of fictitious boundary components
-    CALL cc_parseFBDconditions (rproblem)    
-
-    ! Install the analytic boundary conditions into all discretisation
-    ! structures on all levels.
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-      
-      ! Ask the problem structure to give us the discretisation structure...
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-      
-      ! and inform the discretisation which analytic boundary conditions to use:
-      p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
-
-    END DO
-    
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
   SUBROUTINE cc_initDiscreteBC (rproblem,rvector,rrhs)
   
 !<description>
@@ -132,72 +82,30 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
+    ! local variables
+    INTEGER :: i
 
-  ! A pointer to the system matrix and the RHS vector as well as 
-  ! the discretisation
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    ! A pointer to the system matrix and the RHS vector as well as 
+    ! the discretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
-  ! Pointer to structure for saving discrete BC's:
-  TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-  TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    ! Pointer to structure for saving discrete BC's:
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
     
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
-      ! For the discrete problem, we need a discrete version of the above
-      ! boundary conditions. So we have to discretise them.
-      ! The following routine gives back p_rdiscreteBC, a pointer to a
-      ! discrete version of the boundary conditions. Remark that
-      ! the pointer has to be nullified before calling the routine,
-      ! otherwise, the routine tries to update the boundary conditions
-      ! in p_rdiscreteBC!
-      ! getBoundaryValues is a callback routine that specifies the
-      ! values on the boundary. We pass our collection structure as well
-      ! to this routine, so the callback routine has access to everything what is
-      ! in the collection.
-      !
-      ! On maximum level, discretrise everything. On lower level, discretise
-      ! only for the implementation into the matrices and defect vector. 
-      ! That's enough, as the lower levels are only used for preconditioning 
-      ! of defect vectors.
+      ! Initialise the BC/FBC structures.
+      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      CALL bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       
-      NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      IF (i .EQ. rproblem%NLMAX) THEN
-        CALL bcasm_discretiseBC (p_rdiscretisation, &
-                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                .FALSE.,getBoundaryValues, &
-                                rproblem%rcollection)
-      ELSE
-        CALL bcasm_discretiseBC (p_rdiscretisation, &
-                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                .FALSE.,getBoundaryValues, &
-                                rproblem%rcollection,BCASM_DISCFORDEFMAT)
-      END IF
-                
-      ! The same way, discretise the fictitious boundary conditions and hang
-      ! them in into the matrix/vectors.
-      NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      IF (i .EQ. rproblem%NLMAX) THEN
-        CALL bcasm_discretiseFBC (p_rdiscretisation,&
-                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
-                                  getBoundaryValuesFBC,rproblem%rcollection)
-      ELSE
-        CALL bcasm_discretiseFBC (p_rdiscretisation,&
-                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
-                                  getBoundaryValuesFBC,rproblem%rcollection,&
-                                  BCASM_DISCFORDEFMAT)
-      END IF
-
+      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      CALL bcasm_initDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
@@ -227,8 +135,8 @@ CONTAINS
     rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
     
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    ! Call the update routine to assemble the BC's.
+    CALL cc_updateDiscreteBC (rproblem)
                 
   END SUBROUTINE
 
@@ -236,20 +144,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_updateDiscreteBC (rproblem, bforce)
+  SUBROUTINE cc_updateDiscreteBC (rproblem)
   
 !<description>
   ! This updates the discrete version of the boundary conditions. The BC's
   ! are reassembled according to the current situation of the simulation.
 !</description>
-
-!<input>
-  ! Normally, only those BC's are update that are marked as 'nonstatic'
-  ! (e.g. for time-dependent simulation). When bforce=TRUE, all discrete
-  ! BC's are rebuild, which might be necessary in optimisation environments
-  ! when testing multiple stationary configurations.
-  LOGICAL, INTENT(IN) :: bforce
-!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -274,53 +174,19 @@ CONTAINS
     
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
-      ! For the discrete problem, we need a discrete version of the above
-      ! boundary conditions. So we have to discretise them.
-      ! The following routine gives back p_rdiscreteBC, a pointer to a
-      ! discrete version of the boundary conditions. Remark that
-      ! the pointer has to be nullified before calling the routine,
-      ! otherwise, the routine tries to update the boundary conditions
-      ! in p_rdiscreteBC!
-      ! getBoundaryValues is a callback routine that specifies the
-      ! values on the boundary. We pass our collection structure as well
-      ! to this routine, so the callback routine has access to everything what is
-      ! in the collection.
-      !
-      ! On maximum level, discretrise everything. On lower level, discretise
-      ! only for the implementation into the matrices and defect vector. 
-      ! That's enough, as the lower levels are only used for preconditioning 
-      ! of defect vectors.
-      !
-      ! Note that we do not NULLIFY the pointer to the discrete BC's here.
-      ! That's the only difference to the initDiscreteBC routine above,
-      ! as this instructs bcasm_discretiseBC to update nonstatic BC's.
+      ! Clear the last discretised BC's. We are reassembling them.
+      CALL bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      CALL bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
       
-      IF (i .EQ. rproblem%NLMAX) THEN
-        CALL bcasm_discretiseBC (p_rdiscretisation, &
-                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                 bforce,getBoundaryValues, &
-                                 rproblem%rcollection)
-      ELSE
-        CALL bcasm_discretiseBC (p_rdiscretisation, &
-                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                 bforce,getBoundaryValues, &
-                                 rproblem%rcollection,BCASM_DISCFORDEFMAT)
-      END IF
-                
-      ! The same way, discretise the fictitious boundary conditions and hang
-      ! them in into the matrix/vectors.
-      IF (i .EQ. rproblem%NLMAX) THEN
-        CALL bcasm_discretiseFBC (p_rdiscretisation,&
-                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
-                                  getBoundaryValuesFBC,rproblem%rcollection)
-      ELSE
-        CALL bcasm_discretiseFBC (p_rdiscretisation,&
-                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
-                                  getBoundaryValuesFBC,rproblem%rcollection,&
-                                  BCASM_DISCFORDEFMAT)
-      END IF
+      ! Assemble boundary conditions
+      CALL cc_assembleBDconditions (rproblem,p_rdiscretisation,&
+          rproblem%RlevelInfo(i)%p_rdiscreteBC,rproblem%rcollection)
+      
+      ! Assemble the boundary conditions of fictitious boundary components
+      CALL cc_assembleFBDconditions (rproblem,p_rdiscretisation,&
+          rproblem%RlevelInfo(i)%p_rdiscreteFBC,rproblem%rcollection)
 
     END DO
 
@@ -360,13 +226,9 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i,ilvmax
+    ! local variables
+    INTEGER :: ilvmax
   
-  ! A pointer to the system matrix and the RHS vector as well as 
-  ! the discretisation
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%NLMAX
@@ -441,29 +303,20 @@ CONTAINS
   TYPE(t_fparser), POINTER :: p_rparser
 
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
+    
       ! Release our discrete version of the boundary conditions
-      CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      IF (ASSOCIATED(rproblem%RlevelInfo(i)%p_rdiscreteBC)) THEN
+        CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+        DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      END IF
       
       ! as well as the discrete version of the BC's for fictitious boundaries
-      CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      IF (ASSOCIATED(rproblem%RlevelInfo(i)%p_rdiscreteFBC)) THEN
+        CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+        DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      END IF
 
-      ! ...and also the corresponding analytic description.
-      CALL bcond_doneBC (rproblem%p_rboundaryConditions)
     END DO
-    
-    ! Release the parser object with all the expressions to be evaluated
-    ! on the boundary.
-    p_rparser => collct_getvalue_pars (rproblem%rcollection, BDC_BDPARSER, &
-                                       0, SEC_SBDEXPRESSIONS)
-    CALL fparser_release (p_rparser)
-    DEALLOCATE (p_rparser)
-
-    ! Remove the boundary value parser from the collection
-    CALL collct_deletevalue (rproblem%rcollection, BDC_BDPARSER)
-    
-    ! Remove the boundary-expression section we added earlier,
-    ! with all their content.
-    CALL collct_deletesection(rproblem%rcollection,SEC_SBDEXPRESSIONS)
     
   END SUBROUTINE
 

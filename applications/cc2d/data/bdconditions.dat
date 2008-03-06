@@ -27,6 +27,21 @@
 #        with the segment length)
 #    x = x-coordinate of the point on the boundary
 #    y = y-coordinate of the point on the boundary
+#
+# The following constants are defined:
+#
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+#
+# Moreover, all commands from the fparser.f90 are possible here,
+# e.g. if, min, max, sin, cos, tan, ceil, floor, exp, log, log10, sqrt,...
+#
+# Note: An expression defining Dirichlet boundary conditions may return
+# _INFTY at some points (x,y) on the boundary. This return value will
+# make the corresponding part on the boundary be treated as Neumann
+# boundary! Thus by defining an expression relative to a parameter
+# value and the time, it's possible to create moving boundary conditions.
 
 bdExpressions(6) =
   'pi'             0    3.14159265358979
@@ -41,17 +56,23 @@ bdExpressions(6) =
 [BDCONDITIONS]
 ##############
 
+# Whether there are Neumann boundary components in the domain.
+# =-1 : automatic detection (standard; does not work for moving boundary conditions!)
+# =0  : The boundary is pure Dirichlet.
+# =1  : There are Neumann or pressure drop boundary segments on the domain.
+
+ineumannBoundary = -1
+
 # For each boundary component, a bondary component specifier 
-# 'bdComponentX' must exist. [n] defined the number of sub-segments
+# 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
 # that follow. A sub-segment either corresponds to an actual boundary
 # segment or is a 'free' boundary segment anywhere on the boundary.
 # To each sub-segment, a boundary condition is associated.
 #
 # Definition of boundary segments always start at parameter value 0.0.
-# Each specified sub-segment allows either to specify the end parameter
-# value of the segment or the number of a segment on the real boundary
-# which end parameter should be used. Therefore, two forms are valid:
-# a)    0  4.0  3  [bdcid] ...
+# Each specified sub-segment allows to specify the end parameter
+# value of the segment:
+# "    0  4.0  3  [bdcid] ..."
 #   Creates a boundary condition segment starting from the 'current' 
 #   parameter value, ending at parameter value '4.0'. '3' specifies 
 #   that both, starting and ending point should belong to the segment.
@@ -61,20 +82,6 @@ bdExpressions(6) =
 #   value will result in a 'wrap around', of the boundary condition
 #   segment, letting it start at the beginning of the boundary component
 #   again.
-# b)    1  4  3  [bdcid] ...
-#   Creates a boundary condition segment starting at the 'current' 
-#   parameter value, ending at the endpoint of segment 4 on the real
-#   boundary - which usually ends at parameter value 4.0. A value
-#   of '0' here can be used to specify the rest of the boundary up 
-#   to the maximum parameter value.
-#   '3' specifies that both, starting and ending point should belong 
-#   to the segment.
-#   '1' is the number X of the boundary condition 'bdExpressionX'
-#   defined above.
-# Form a) allows to define 'free' boundary condition segments which
-# may cover multiple real boundary segments.
-# Form b) creates boundary segments that 'stick' to real boundary
-# segments.
 # The last values in the list "x y a [bdcid] ..." have the following 
 # meaning:
 #  a = 0: Start- and endpoint don't belong to the interval
@@ -86,31 +93,31 @@ bdExpressions(6) =
 #                main solution components (e.g. velocity) component.
 #                For every component, an expression identifier follows
 #                that defines the value on that part of the boundary.
-#                Example: 0  1.0  3  1  'Dirichlet0'  'Dirichlet0'
-#                         0  2.0  3  1  'Dirichlet1'  'Dirichlet0'
+#                Example:  1.0  3  1  'Dirichlet0'  'Dirichlet0'
+#                          2.0  3  1  'Dirichlet1'  'Dirichlet0'
 #                Dirichlet-0-values between parameter value 0..1 for X- and
 #                Y-velocity. Between parameter value 1..2: Dirichlet-1-value
 #                for X-vel., Dirichlet-0-value for Y-vel.
 #          = 2 : Pressure-drop / Normal-stress boundary condition.
 #                "..." specifies the name of the expression that is
 #                evaluated to give the normal stress.
-#                Example: 0  1.0  3  2  'PressValue1'
+#                Example:  1.0  3  3  'PressValue1'
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
 
 # Benchmark configuration:
 bdComponent1(4)=
-  0  1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-  0  2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
-  0  3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
-  0  4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
+   4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
 
 # Driven cavity would be:
 # bdComponent1(4)=
-#   0  1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-#   0  2.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-1/0 boundary
-#   0  3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
-#   0  4.0  3  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
+#    1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#    2.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-1/0 boundary
+#    3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
+#    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
-  0  4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boudary
+   4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boudary

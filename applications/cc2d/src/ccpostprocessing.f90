@@ -61,6 +61,7 @@ MODULE ccpostprocessing
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE ccboundaryconditionparser
   
   USE collection
   USE convection
@@ -483,8 +484,8 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
@@ -569,22 +570,22 @@ CONTAINS
     ! simulation is nonstationary.
     CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
+    ! Initialise the discrete BC structure
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
+    
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
-    NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
-                            BCASM_DISCFORSOL)
+    CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+        rdiscreteBC,rproblem%rcollection)
                             
     ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    rprjVector%p_rdiscreteBC => rdiscreteBC
     
     ! The same way, discretise boundary conditions of fictitious boundary components.
-    NULLIFY(p_rdiscreteFBC)
-    CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
-                              .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
-                              BCASM_DISCFORSOL)
-    rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+    CALL bcasm_initDiscreteFBC(rdiscreteFBC)
+    CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+        rdiscreteFBC,rproblem%rcollection)
+    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
@@ -693,8 +694,8 @@ CONTAINS
     CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-    CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+    CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
     IF (PRESENT(dtime)) THEN
       ! Update time stamp of last written out GMV.
@@ -808,7 +809,7 @@ CONTAINS
       
       ! Initialise a vector for the lower level and a prolongation structure.
       CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev-1)%p_rdiscretisation,rvector2,.FALSE.)
+          rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.FALSE.)
       
       CALL mlprj_initProjectionVec (rprojection,rvector2)
       
@@ -884,7 +885,7 @@ CONTAINS
     ! For simplicity, we use only the discretisation structure of the X-velocity
     ! to derive everything.
     
-    p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation
+    p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
     CALL spdiscr_deriveSimpleDiscrSc (&

@@ -48,8 +48,10 @@ MODULE heatcond_basic
     ! System matrix. May change during the time iteration    
     TYPE(t_matrixBlock) :: rmatrix
     
-    ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    ! A variable describing the discrete boundary conditions.
+    ! The variable points to NULL until the first boundary conditions
+    ! are assembled.
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC => NULL()
   
   END TYPE
   
@@ -93,9 +95,6 @@ MODULE heatcond_basic
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
-
-    ! A variable describing the analytic boundary conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
 
     ! A RHS vector on the finest level used for solving linear systems
     TYPE(t_vectorBlock) :: rrhs
