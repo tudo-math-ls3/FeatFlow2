@@ -10395,6 +10395,7 @@ CONTAINS
     integer(prec_edgeidx), dimension(:), pointer :: p_IedgesAtVertex
     
     integer :: iee, iGlobal, isize, index
+    INTEGER(PREC_VERTEXIDX) :: ivt
     ! edgesatelement, dann verticesatedge und fertig
     
     ! Is everything here we need?
@@ -10481,9 +10482,16 @@ CONTAINS
     CALL storage_getbase_int(rtriangulation%h_IedgesAtVertex, &
         p_IedgesAtVertex)  
     
-    ! shift the array positions    
-    p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = &
-        p_IedgesAtVertexIdx(1:rtriangulation%NVT)    
+    ! Shift the array positions.
+    !
+    ! Don't use an array operation here, may cause a stack overflow
+    ! (stupid Intel compiler!)
+    !
+    ! p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = &
+    !     p_IedgesAtVertexIdx(1:rtriangulation%NVT)    
+    DO ivt = rtriangulation%NVT,1,-1
+      p_IedgesAtVertexIdx(ivt+1) = p_IedgesAtVertexIdx(ivt)
+    END DO
     
     ! loop over all edges
     DO iee=1,rtriangulation%NMT
