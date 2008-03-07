@@ -144,8 +144,7 @@ CONTAINS
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&
          getBoundaryValues)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. We use the
-      ! same two routines to add the boundary condition to p_rboundaryConditions.
+      ! Now to the edge 2 of boundary component 1 the domain.
       CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&

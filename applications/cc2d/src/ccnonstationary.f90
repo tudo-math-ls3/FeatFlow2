@@ -61,9 +61,9 @@ MODULE ccnonstationary
   USE ccstationary
   USE adaptivetimestep
   USE cctimeanalysis
-  USE ccboundarycondition
   USE ccgeneraldiscretisation
   USE ccpostprocessing
+  USE ccboundarycondition
     
   IMPLICIT NONE
 

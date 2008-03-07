@@ -47,11 +47,11 @@ MODULE ccmainproblem
   USE ccbasic
   USE ccinitgeneralparameters
   USE ccinitparamtriang
-  USE ccboundarycondition
   USE ccgeneraldiscretisation
   USE ccpostprocessing
   USE ccstationary
   USE ccnonstationary
+  USE ccboundarycondition
   
   IMPLICIT NONE
   

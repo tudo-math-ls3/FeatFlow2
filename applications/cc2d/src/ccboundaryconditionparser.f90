@@ -186,7 +186,6 @@ CONTAINS
     ! We first set up the boundary conditions for the X-velocity, then those
     ! of the Y-velocity.
     !
-    ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     ! Get the expression/bc sections from the bondary condition block
     CALL parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
     CALL parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
