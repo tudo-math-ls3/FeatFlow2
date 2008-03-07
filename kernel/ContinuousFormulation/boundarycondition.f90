@@ -14,6 +14,14 @@
 !# For imposing boundary conditions into vectors, the boundary conditions
 !# first have to be 'discretised' using the module 'DiscreteBC'!
 !#
+!# IMPORTANT NOTE:
+!# THIS MODULE IS OUTDATED AND NOT USED ANYMORE! IT'S STILL CONTENT OF THE
+!# FEAT2 LIBRARY TO ALLOW A USER TO DEFINE ANALYTIC BONUDARY CONDITIONS ON
+!# APPLICATION LEVEL. THE KERNAL ROUTINES HOWEVER DON'T USE ANALYTICAL
+!# BOUNDARY CONDITIONS ANYMORE: BOUNDARY CONDITIONS ARE ALWAYS DIRECTLY
+!# ASSEMBLED INTO THEIR DISCRETE COUNTERPART SUCH THAT THEY CAN BE IMPLEMENTED
+!# INTO MATRICES/VECTORS!
+!#
 !# Neumann boundary conditions are usually imposed as 'do nothing' boundary
 !# conditions and therefore not realised in a special structure. This
 !# means, the module here realises all 'other' types of boundary conditions
@@ -115,44 +123,6 @@
 !# 8.) bcond_newFeastMirrorBConRealBD
 !#     -> Adds a Dirichlet boundary condition the real boundary to a 
 !#        boundary-condition object
-!#
-!# Frequently asked questions -- internal hints
-!# --------------------------------------------
-!# 1.) I have a vector which is discrtised by $Q_1$ and I have a vertex IVT
-!#     where I want to get the boundary condition of. How to do that?
-!#
-!#  That is a very rare and tricky case, but it's possible (at least in 2D)!
-!#  Although it's not the very fastest method, as you have to access
-!#  multiple routines and structures, you can do like that:
-!#
-!#  Assume, you have your point IVT and you know it's on the boundary.
-!#  Then: Figure out the boundary component and the parameter value.
-!#  From this information, ask the boundary condition functions for the
-!#  boundary condition region. From here you can access the
-!#  boundary condition. It looks like that:
-!#
-!#  ! Assume, rvector is a block vector providing a discretisation
-!#  ! structure. Get the discretisation structure.
-!#  p_rblockDiscr => rvector%p_rblockDiscretisation
-!#
-!#  ! Get the position of a vertex on the boundary:
-!#  iboundaryNode = tria_searchBoundaryNode(IVT,...)
-!#
-!#  ! Get the corresponding boundary component and parameter value
-!#  iboundCompIdx = InodalProperty (IVT)
-!#  dparam = DvertexParameterValue(iboundaryNode)
-!#
-!#  ! Get the boundary condition region containing that point
-!#  iindexBC = bcond_getBCRegion (p_rblockDiscr%p_rboundaryConditions,&
-!#                                iboundCompIdx,dparam)
-!#
-!#  ! If you want to access the analytic version of the boundary conditions, 
-!#  ! access them via:
-!#  p_ranalyticBC => p_rblockDiscr%p_rboundaryConditions(iindexBC)
-!#
-!#  ! If you want to access the corresponding discretised version of the
-!#  ! boundary conditions, access them via:
-!#  p_rdiscrBC => rvector%p_rdiscreteBC%p_RdiscBCList(iindexBC)
 !#
 !# </purpose>
 !##############################################################################

@@ -126,11 +126,6 @@ MODULE discretefbc
     ! structure describes.
     INTEGER                             :: itype = DISCFBC_TPUNDEFINED
     
-    ! Pointer to the boundary-condition structure defining the analytic
-    ! boundary conditions - or NULL(), if these BC does not arise
-    ! from analytic boundary conditions.
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
-    
     ! Structure for discrete Dirichlet BC's.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
     TYPE(t_discreteFBCDirichlet)        :: rdirichletFBCs

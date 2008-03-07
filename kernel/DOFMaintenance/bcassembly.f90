@@ -55,31 +55,8 @@
 !# 3.) bcasm_releaseDiscreteFBC
 !#     -> Release a structure with discrete FBC's; deallocates all used memory.
 !#
-!# 1.) bcasm_newDirichletBConFBD
+!# 4.) bcasm_newDirichletBConFBD
 !#     -> Discretises dirichlet boundary conditions on a 2D fictitious boundary domain
-!#
-!#
-!# Deprecated routines:
-!#
-!# 1.) bcasm_discretiseBC
-!#     -> Discretises the analytic boundary definitions in a discretisation
-!#        structure on the real bondary
-!#
-!# 2.) bcasm_releaseDiscreteBC
-!#     -> Cleans up a structure with discrete boundary conditions and
-!#        releases all memory allocated by it.
-!#
-!# 3.) bcasm_discretiseFBC
-!#     -> Discretises the analytic boundary definitions of fictitious boundary
-!#        objects in a discretisation structure
-!#
-!# 4.) bcasm_releaseDiscreteFBC
-!#     -> Cleans up a structure with discrete boundary conditions of fictitious
-!#        boundary objects and releases all memory allocated by it.
-!#
-!# 5.) bcasm_discretiseLevelDepBC
-!#     -> Discretises special, probably level-dependent boundary conditions.
-!#        Can (but normally need not to) be called after bcasm_discretiseBC.
 !#
 !# The actual worker routines called by the above general ones are:
 !#
@@ -106,7 +83,6 @@
 MODULE bcassembly
 
   USE fsystem
-  USE boundarycondition
   USE discretebc
   USE discretefbc
   USE collection
@@ -641,9 +617,9 @@ CONTAINS
       p_rdirichlet%nDOF = 1
 
       ! Allocate the arrays
-      CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_IdirichletDOFs', &
+      CALL storage_new1D('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_DdirichletValues', &
+      CALL storage_new1D('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
       
       ! Get the arrays for the dirichlet DOFs and values
@@ -716,9 +692,9 @@ CONTAINS
       p_rdirichlet%nDOF = 1
 
       ! Allocate the arrays
-      CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_IdirichletDOFs', &
+      CALL storage_new1D('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      CALL storage_new1D('bcasm_discrBCDirichlet_1D', 'h_DdirichletValues', &
+      CALL storage_new1D('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
       
       ! Get the arrays for the dirichlet DOFs and values
@@ -1175,7 +1151,6 @@ CONTAINS
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  ! A copy of this is added to the rboundaryConditions structure.
   TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
@@ -1287,9 +1262,6 @@ CONTAINS
     
     ! We have Dirichlet boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPDIRICHLET
-    
-    ! Connect to the boundary condition structure
-    p_rdiscreteBCentry%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
     
     ! Fill the structure for discrete Dirichlet BC's in the
     ! t_discreteBCEntry structure
@@ -1721,7 +1693,7 @@ CONTAINS
           
         CASE DEFAULT
         
-          PRINT *,'bcasm_discrBCDirichlet: Unsupported element!'
+          PRINT *,'bcasm_newDirichletBC: Unsupported element!'
           CALL sys_halt()
         
         END SELECT
@@ -1746,13 +1718,13 @@ CONTAINS
     
       ! Allocate arrays for storing these DOF's and their values - if values are
       ! computed.
-      CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletDOFs', &
+      CALL storage_new('bcasm_newDirichletBConRealBd', 'h_IdirichletDOFs', &
                       INT(icount,I32), ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
                       ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
       
       IF (IAND(casmComplexity,INT(NOT(BCASM_DISCFORDEFMAT),I32)) .NE. 0) THEN
-        CALL storage_new('bcasm_discrBCDirichlet', 'h_DdirichletValues', & 
+        CALL storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', & 
                         INT(icount,I32), ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                         ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_IdirichletValues)
@@ -1842,7 +1814,6 @@ CONTAINS
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  ! A copy of this is added to the rboundaryConditions structure.
   TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
 
   ! Configuration block for the FEAST mirror boundary conditions.
@@ -1934,9 +1905,6 @@ CONTAINS
 
     ! We have FEAST mirror boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPFEASTMIRROR
-    
-    ! Connect to the boundary condition structure
-    p_rdiscreteBCentry%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
     
     ! Fill the structure for discrete Dirichlet BC's in the
     ! t_discreteBCEntry structure
@@ -2079,7 +2047,6 @@ CONTAINS
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  ! A copy of this is added to the rboundaryConditions structure.
   TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
@@ -2181,9 +2148,6 @@ CONTAINS
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPPRESSUREDROP
     
-    ! Connect to the boundary condition structure
-    p_rdiscreteBCentry%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
-    
     ! Which components of the solution vector are affected by this boundary
     ! condition?
     p_rpressureDropBCs%ncomponents = NDIM2D
@@ -2225,7 +2189,7 @@ CONTAINS
                     ndofs, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
     ImodifierSize = (/INT(NDIM2D,I32),ndofs/)
-    CALL storage_new2D('bcasm_discrBCDirichlet', 'h_Dmodifier', & 
+    CALL storage_new2D('bcasm_discrBCpressureDrop', 'h_Dmodifier', & 
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
                       
@@ -2368,7 +2332,6 @@ CONTAINS
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  ! A copy of this is added to the rboundaryConditions structure.
   TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
@@ -2462,9 +2425,6 @@ CONTAINS
     !
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPSLIP
-    
-    ! Connect to the boundary condition structure
-    p_rdiscreteBCentry%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
     
     ! Which components of the solution vector are affected by this boundary
     ! condition?

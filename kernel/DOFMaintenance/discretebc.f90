@@ -34,7 +34,6 @@
 MODULE discretebc
 
   USE fsystem
-  USE boundarycondition
   USE dofmapping
   
   IMPLICIT NONE
@@ -259,11 +258,6 @@ MODULE discretebc
     ! The type identifier. Identifies the type of discrete BC's, this
     ! structure describes.
     INTEGER                             :: itype = DISCBC_TPUNDEFINED
-    
-    ! Pointer to the boundary-condition structure defining the analytic
-    ! boundary conditions - or NULL(), if these BC does not arise
-    ! from analytic boundary conditions.
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
     
     ! Structure for discrete Dirichlet BC's.
     ! Only valid if itype=DISCBC_TPDIRICHLET.

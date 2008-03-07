@@ -86,7 +86,6 @@ MODULE spatialdiscretisation
   USE storage
   USE triangulation
   USE boundary
-  USE boundarycondition
   USE transformation
   USE element
   USE cubature
@@ -294,9 +293,6 @@ MODULE spatialdiscretisation
     
     ! Pointer to the underlying triangulation of the mesh (2D)
     TYPE(t_triangulation), POINTER   :: p_rtriangulation     => NULL()
-
-    ! Pointer to the analytical description of the boundary conditions
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
 
     ! Number of solution components maintained by this structure.
     INTEGER                             :: ncomponents
@@ -589,7 +585,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initBlockDiscr (rblockDiscr,ncomponents,&
-                                     rtriangulation, rboundary, rboundaryConditions)
+                                     rtriangulation, rboundary)
   
 !<description>
   
@@ -615,10 +611,6 @@ CONTAINS
   ! OPTIONAL: The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
 
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
-  
 !</input>
   
 !<output>
@@ -639,11 +631,6 @@ CONTAINS
   ELSE
     NULLIFY(rblockDiscr%p_rboundary)
   END IF
-  IF (PRESENT(rboundaryConditions)) THEN
-    rblockDiscr%p_rboundaryConditions  => rboundaryConditions
-  ELSE
-    NULLIFY(rblockDiscr%p_rboundaryConditions)
-  END IF
 
   rblockDiscr%ncomponents            = ncomponents
   ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
@@ -657,7 +644,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initBlockDiscr2D (rblockDiscr,ncomponents,&
-                                       rtriangulation, rboundary, rboundaryConditions)
+                                       rtriangulation, rboundary)
   
 !<description>
   
@@ -683,11 +670,6 @@ CONTAINS
   ! OPTIONAL: The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
   
-  
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL   :: rboundaryConditions
-  
 !</input>
   
 !<output>
@@ -708,11 +690,6 @@ CONTAINS
   ELSE
     NULLIFY(rblockDiscr%p_rboundary)
   END IF
-  IF (PRESENT(rboundaryConditions)) THEN
-    rblockDiscr%p_rboundaryConditions  => rboundaryConditions
-  ELSE
-    NULLIFY(rblockDiscr%p_rboundaryConditions)
-  END IF
 
   rblockDiscr%ncomponents            = ncomponents
   ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
@@ -725,7 +702,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE spdiscr_createBlockDiscrInd (rspatialDiscr,rblockDiscr,rboundaryConditions)
+  SUBROUTINE spdiscr_createBlockDiscrInd (rspatialDiscr,rblockDiscr)
   
 !<description>
   ! This routine creates a block discretisation structure with one block from
@@ -742,10 +719,6 @@ CONTAINS
   ! block discretisation.
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rspatialDiscr
   
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
-  
 !</input>
   
 !<output>
@@ -759,8 +732,7 @@ CONTAINS
 
     ! Initialise a new block discretisation with one component.
     CALL spdiscr_initBlockDiscr2D (rblockDiscr,1,&
-        rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary, &
-        rboundaryConditions)
+        rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary)
     
     ! Put a copy of the spatial discretisation to first component
     ! of the the block discretisation. Share the data.
@@ -848,10 +820,6 @@ CONTAINS
     rdestDiscr%p_rtriangulation       => rsourceDiscr%p_rtriangulation     
     rdestDiscr%ncomponents            =  ncount       
     
-    ! Boundary conditions cannot be transferred! They are depending on the
-    ! global system, which may shrink and take another form here!
-    NULLIFY(rdestDiscr%p_rboundaryConditions)
-
     ! Copy all substructures -- from ifirstBlock to ilastBlock.
     ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
     ! structures. We set bshare=.TRUE. here, so the information is shared
@@ -901,7 +869,6 @@ CONTAINS
   ! Cut the connection to the other structures
   NULLIFY(rblockDiscr%p_rtriangulation)
   NULLIFY(rblockDiscr%p_rboundary)
-  NULLIFY(rblockDiscr%p_rboundaryConditions)
   
   ! Release substructures?
   IF (brelsub) THEN
@@ -925,7 +892,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initDiscr_simple (rspatialDiscr,ieltyp, ccubType,&
-                                       rtriangulation, rboundary, rboundaryConditions)
+                                       rtriangulation, rboundary)
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
@@ -950,10 +917,6 @@ CONTAINS
   
   ! The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
-  
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
 !</input>
   
 !<output>
@@ -1049,7 +1012,7 @@ CONTAINS
 
   SUBROUTINE spdiscr_initDiscr_triquad (rspatialDiscr,&
       ieltyptri,ieltypquad,ccubTypeTri,ccubTypeQuad,&
-      rtriangulation, rboundary, rboundaryConditions)
+      rtriangulation, rboundary)
   
 !<description>
   ! This routine initialises a discretisation structure for a conformal
@@ -1085,10 +1048,6 @@ CONTAINS
   
   ! The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
-  
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
 !</input>
   
 !<output>
@@ -1540,7 +1499,7 @@ CONTAINS
 
   SUBROUTINE spdiscr_initDiscr_combined (rspatialDiscr, &
                                ieltypTrial, ieltypTest, ccubType,&
-                               rtriangulation, rboundary, rboundaryConditions)
+                               rtriangulation, rboundary)
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
@@ -1570,10 +1529,6 @@ CONTAINS
   
   ! OPTIONAL: The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
-  
-  ! OPTIONAL: The analytical description of the boundary conditions.
-  ! Parameter can be ommitted if boundary conditions are not defined.
-  TYPE(t_boundaryConditions), TARGET, OPTIONAL   :: rboundaryConditions
 !</input>
   
 !<output>
@@ -1870,9 +1825,6 @@ CONTAINS
     ! Copy all information from the source discretisation structure containing
     ! all basic information.
     CALL spdiscr_deriveBlockDiscr(rsourceDiscr,rdestDiscr)
-    
-    ! Now add the missing information. Boundary conditions:
-    rdestDiscr%p_rboundaryConditions => rsourceDiscr%p_rboundaryConditions
     
     ! Concerning the substructures, at the moment we share the information.
     ! If bshare = false, we have to create copies.

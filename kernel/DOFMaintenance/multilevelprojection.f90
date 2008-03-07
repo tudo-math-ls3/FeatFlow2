@@ -43,46 +43,6 @@
 !#     -> Interpolated a solution from a fine grid to a coarse grid
 !#        (L2-projection in the primal space)
 !# 
-!#
-!# Frequently asked questions -- internal hints
-!# --------------------------------------------
-!# 1.) I have a special prolongation/restriction which is dependent on the
-!#     boundary condition! How can I get the boundary condition to a point?
-!#
-!#  That is a very rare and tricky case, but it's possible (at least in 2D)!
-!#  Although it's not the very fastest method, as you have to access
-!#  multiple routines and structures, you can do like that:
-!#
-!#  Assume, you have a point IVT and you know it's on the boundary.
-!#  Then: Figure out the boundary component and the parameter value.
-!#  From this information, ask the boundary condition functions for the
-!#  boundary condition region. From here you can access the
-!#  boundary condition. It looks like that:
-!#
-!#  ! Assume, rvector is a block vector providing a discretisation
-!#  ! structure. Get the discretisation structure.
-!#  p_rblockDiscr => rvector%p_rblockDiscretisation
-!#
-!#  ! Get the position of a vertex on the boundary:
-!#  iboundaryNode = tria_searchBoundaryNode(IVT,...)
-!#
-!#  ! Get the corresponding boundary component and parameter value
-!#  iboundCompIdx = InodalProperty (IVT)
-!#  dparam = DvertexParameterValue(iboundaryNode)
-!#
-!#  ! Get the boundary condition region containing that point
-!#  iindexBC = bcond_getBCRegion (p_rblockDiscr%p_rboundaryConditions,&
-!#                                iboundCompIdx,dparam)
-!#
-!#  ! If you want to access the analytic version of the boundary conditions, 
-!#  ! access them via:
-!#  p_ranalyticBC => p_rblockDiscr%p_rboundaryConditions(iindexBC)
-!#
-!#  ! If you want to access the corresponding discretised version of the
-!#  ! boundary conditions, access them via:
-!#  p_rdiscrBC => rvector%p_rdiscreteBC%p_RdiscBCList(iindexBC)
-!#     
-!#
 !# </purpose>
 !##############################################################################
 
