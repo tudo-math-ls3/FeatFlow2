@@ -582,6 +582,8 @@ CONTAINS
     CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
       rdiscreteFBC,rproblem%rcollection)
     
+    CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
+    
     ! Connect the vector with the BC's
     rprjVector%p_rdiscreteBC => rdiscreteBC
     rprjVector%p_rdiscreteBCfict => rdiscreteFBC
