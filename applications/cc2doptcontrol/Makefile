@@ -23,7 +23,7 @@ SRC = cc2dmediumm2basic.f90 cc2dmediumm2boundary.f90 \
   spacetimediscretisation.f90 spacetimeinterlevelprojection.f90 \
   spacetimelinearsystem.f90 spacetimevectors.f90 \
   timeboundaryconditions.f90 timediscretisation.f90 \
-  timeevaluation.f90 timerhsevaluation.f90 spacetimevana.f90
+  timeevaluation.f90 timerhsevaluation.f90 spacetimevanca.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
