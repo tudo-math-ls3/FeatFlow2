@@ -140,7 +140,7 @@ CONTAINS
     TYPE(t_ccmatrixComponents) :: rmatrixAssembly
   
     ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    p_rdiscretisation => rlevelInfo%rdiscretisation
     
     ! Get a pointer to the template FEM matrix.
     p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
@@ -188,7 +188,7 @@ CONTAINS
     rmatrixAssembly%dnewton2 = REAL(1-rproblem%iequation,DP)
     rmatrixAssembly%dkappa2 = 1.0_DP   ! Pressure block
     
-    rmatrixAssembly%p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    rmatrixAssembly%p_rdiscretisation => rlevelInfo%rdiscretisation
     rmatrixAssembly%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rmatrixAssembly%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
     rmatrixAssembly%p_rmatrixStokes => rlevelInfo%rmatrixStokes
@@ -333,6 +333,28 @@ CONTAINS
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
       CASE (2)
+        ! Defect correction with full VANCA preconditioning.
+        !
+        ! Create VANCA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+        
+        CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+            'spreconditionerSection', sstring, '')
+        READ (sstring,*) spreconditionerSection
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANCA as preconditioner.
+        CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rpreconditioner%p_RfilterChain)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rpreconditioner%calgorithm)
+        
+      CASE (3)
         ! BiCGSTab with diagonal VANCA preconditioning.
         !
         ! Create VANCA and initialise it with the parameters from the DAT file.
@@ -354,7 +376,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
-      CASE (3)
+      CASE (4)
         ! BiCGSTab with full VANCA preconditioning.
         !
         ! Create VANCA and initialise it with the parameters from the DAT file.
@@ -794,7 +816,7 @@ CONTAINS
       
       ! Get a pointer to the discretsation structure on the level
       ! where the preconditioner should act
-      p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%rdiscretisation
       
       ! The preconditioner is a linear solver, so ssection is the name of the section
       ! configuring the linear solver.
@@ -828,9 +850,9 @@ CONTAINS
         imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rpreconditioner%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
-              p_rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents),&
+              rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents),&
             rproblem%RlevelInfo(i)% &
-              p_rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents)))
+              rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear

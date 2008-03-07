@@ -63,7 +63,7 @@ CONTAINS
   REAL(DP), INTENT(IN) :: dalpha
   
   ! Collection structure of the main application. Is passed to the callback routines.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</input>
 
 !<output>

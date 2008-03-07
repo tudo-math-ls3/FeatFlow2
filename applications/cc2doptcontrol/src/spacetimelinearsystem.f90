@@ -440,8 +440,19 @@ CONTAINS
           
         ELSE
         
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
+          !rmatrixComponents%dr21 = 0.0_DP
+          !rmatrixComponents%dr22 = 0.0_DP
+
+          ! Must this be used instead of the above two lines?!?!?!?!?!?!?!?!?!?!?!?
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
 
         END IF
           
@@ -1066,7 +1077,7 @@ CONTAINS
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     ! Create a temp vector that contains the part of rd which is to be modified.
-    p_rdiscr => p_rspaceTimeDiscretisation%p_RlevelInfo%p_rdiscretisation
+    p_rdiscr => p_rspaceTimeDiscretisation%p_RlevelInfo%rdiscretisation
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
     
     ! The vector will be a defect vector. Assign the boundary conditions so
@@ -1133,7 +1144,7 @@ CONTAINS
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscretisation
+        p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation
     rmatrixComponents%p_rmatrixStokes         => &
         p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1             => &
@@ -1208,7 +1219,7 @@ CONTAINS
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rproblem)
       END IF
       
       ! The first and last substep is a little bit special concerning
@@ -1721,7 +1732,7 @@ CONTAINS
 !        ! Discretise the boundary conditions at the new point in time -- 
 !        ! if the boundary conditions are nonconstant in time!
 !        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!          CALL cc_updateDiscreteBC (rproblem)
 !        END IF
 !
 !        ! Implement the boundary conditions into the RHS.

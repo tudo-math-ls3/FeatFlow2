@@ -228,11 +228,9 @@ CONTAINS
       CALL output_lbrk ()
       CALL output_line ('Level '//sys_siL(i,10))
       CALL output_line ('---------')
-      CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.FALSE.)
+      CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.FALSE.)
     END DO
      
-    CALL cc_initAnalyticBC (p_rproblem)   
-
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
     CALL cc_generateBasicMatrices (p_rproblem)

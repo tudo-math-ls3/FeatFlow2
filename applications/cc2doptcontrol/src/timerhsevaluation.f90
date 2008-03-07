@@ -112,7 +112,7 @@ CONTAINS
     IF (rb%NEQtime .EQ. 0) THEN
       ! Create a new vector if rb is undefined.
       CALL sptivec_initVectorDiscr (rb,rspaceTimeDiscr%rtimeDiscr,&
-          rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
     END IF
 
     ! What's the current time discretisation? Depending on that,
@@ -179,11 +179,11 @@ CONTAINS
 
     ! Create temp vectors for the assembly
     CALL lsysbl_createVecBlockByDiscr (&
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector1,.TRUE.)
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector1,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (&
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector2,.TRUE.)
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector2,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (&
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector3,.TRUE.)
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector3,.TRUE.)
 
     ! Theta-scheme identifier.
     ! =1: impliciz Euler.
@@ -410,7 +410,7 @@ CONTAINS
 
     ! Create a temp vector for the assembly
     CALL lsysbl_createVecBlockByDiscr (&
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
 
     CALL lsysbl_getbase_double (rtempVector,p_Db)
 

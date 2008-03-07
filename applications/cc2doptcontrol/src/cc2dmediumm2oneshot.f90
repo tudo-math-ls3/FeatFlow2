@@ -196,7 +196,7 @@ CONTAINS
 !      ! Discretise the boundary conditions at the new point in time -- 
 !      ! if the boundary conditions are nonconstant in time!
 !      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!        CALL cc_updateDiscreteBC (rproblem)
 !      END IF
 !
 !      ! Implement the boundary conditions into the RHS.
@@ -233,7 +233,7 @@ CONTAINS
 !      ! Discretise the boundary conditions at the new point in time -- 
 !      ! if the boundary conditions are nonconstant in time!
 !      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!        CALL cc_updateDiscreteBC (rproblem)
 !      END IF
 !      
 !      ! The first and last substep is a little bit special concerning
@@ -704,7 +704,7 @@ CONTAINS
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
     rmatrixComponents%p_rmatrixStokes           => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1             => &
@@ -726,11 +726,11 @@ CONTAINS
     
     ! Solution vectors -- for the nonlinearity (if there is one).
     ! For the previous (1), current (2) and next (3) time step.
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorSol(1),.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorSol(2),.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorSol(3),.TRUE.)
     
     ! Load the last solution vectors for handling the nonlinearity.
@@ -755,7 +755,7 @@ CONTAINS
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rproblem)
       END IF
       
       ! The first and last substep is a little bit special concerning
@@ -1278,7 +1278,7 @@ CONTAINS
 !      ! Discretise the boundary conditions at the new point in time -- 
 !      ! if the boundary conditions are nonconstant in time!
 !      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!        CALL cc_updateDiscreteBC (rproblem)
 !      END IF
 !      
 !      ! The first and last substep is a little bit special concerning
@@ -1582,11 +1582,11 @@ CONTAINS
     TYPE(t_vectorBlock) :: rtempVector
 
     ! Create temp vectors for X, B and D.
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVector,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorX,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorB,.TRUE.)
         
     ! Attach the boundary conditions to the temp vectors.
@@ -1611,7 +1611,7 @@ CONTAINS
 !      ! Discretise the boundary conditions at the new point in time -- 
 !      ! if the boundary conditions are nonconstant in time!
 !      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!        CALL cc_updateDiscreteBC (rproblem)
 !      END IF
 !      
 !      ! Implement the boundary conditions into the global solution vector.
@@ -1768,7 +1768,7 @@ CONTAINS
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
     rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
     rmatrixComponents%p_rmatrixStokes           => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1             => &
@@ -1805,7 +1805,7 @@ CONTAINS
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+        CALL cc_updateDiscreteBC (rproblem)
       END IF
 
       ! DEBUG!!!      
@@ -1904,11 +1904,11 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix,rspaceTimePreconditioner
 
     ! Create temp vectors for X, B and D.
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVector,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorX,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+    CALL lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorB,.TRUE.)
         
     ! Attach the boundary conditions to the temp vectors.
@@ -1949,7 +1949,7 @@ CONTAINS
 !      ! Discretise the boundary conditions at the new point in time -- 
 !      ! if the boundary conditions are nonconstant in time!
 !      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-!        CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+!        CALL cc_updateDiscreteBC (rproblem)
 !      END IF
 !      
 !      ! Implement the boundary conditions into the global solution vector.
@@ -2225,11 +2225,11 @@ CONTAINS
     
     ! Create temp vectors for X, B and D.
     CALL lsysbl_createVecBlockByDiscr (&
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (&
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVectorX,.TRUE.)
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVectorX,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (&
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVectorB,.TRUE.)
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVectorB,.TRUE.)
         
     ! Attach the boundary conditions to the temp vectors.
     rtempVector%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
@@ -2318,7 +2318,7 @@ CONTAINS
         ilowerSpaceLevel = ispacelev
       END IF
       CALL sptipr_initProjection (rinterlevelProjection(ilev),&
-          RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,&
+          RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation,&
           ilowerSpaceLevel .NE. ispacelev)
          
       IF (ilev .EQ. 1) THEN
@@ -2578,7 +2578,7 @@ CONTAINS
       ALLOCATE(RspaceTimePrecondMatrix(ilev)%p_rsolution)
       CALL sptivec_initVector (RspaceTimePrecondMatrix(ilev)%p_rsolution,&
         RspaceTimeDiscr(ilev)%NEQtime,&
-        RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation)
+        RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation)
     END DO
 
     ! On the maximum level attach the solution vector.
@@ -2692,14 +2692,14 @@ CONTAINS
 
       DO ilev=SIZE(RspatialPrecond)-1,1,-1
         CALL lsysbl_enforceStructureDiscr(&
-            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscretisation,rtempVecFine)
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%rdiscretisation,rtempVecFine)
         rtempVecFine%p_rdiscreteBC =>&
             RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
         rtempVecFine%p_rdiscreteBCfict =>&
             RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
             
         CALL lsysbl_enforceStructureDiscr(&
-            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,rtempVecCoarse)
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation,rtempVecCoarse)
         rtempVecCoarse%p_rdiscreteBC =>&
             RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
         rtempVecCoarse%p_rdiscreteBCfict =>&

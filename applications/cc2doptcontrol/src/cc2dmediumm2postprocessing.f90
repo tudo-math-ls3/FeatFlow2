@@ -45,6 +45,7 @@ MODULE cc2dmediumm2postprocessing
   USE cc2dmediumm2basic
   USE cc2dmediumm2optcanalysis
   USE cc2dmedium_callback
+  USE cc2dmediumm2boundarydef
   
   USE spacetimediscretisation
   
@@ -141,8 +142,8 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
@@ -263,27 +264,18 @@ CONTAINS
     ! new discretisation:
     CALL spdp_projectSolution (rvector,rprjVector)
     
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    ! Discretise the boundary conditions for this discretisation
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
+    CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+      rdiscreteBC,rproblem%rcollection)
 
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
-    ! discretisation for implementing them into a solution vector.
-    NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
-                            BCASM_DISCFORSOL)
-                            
-    ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    CALL bcasm_initDiscreteFBC(rdiscreteFBC)
+    CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+      rdiscreteFBC,rproblem%rcollection)
     
-    ! The same way, discretise boundary conditions of fictitious boundary components.
-    NULLIFY(p_rdiscreteFBC)
-    CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
-                              .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
-                              BCASM_DISCFORSOL)
-    rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+    ! Connect the vector with the BC's
+    rprjVector%p_rdiscreteBC => rdiscreteBC
+    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
@@ -411,8 +403,8 @@ CONTAINS
     CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-    CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+    CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
   END SUBROUTINE
 
@@ -456,8 +448,8 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
@@ -581,22 +573,18 @@ CONTAINS
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
-    NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
-                            BCASM_DISCFORSOL)
-                            
-    ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    ! Discretise the boundary conditions for this discretisation
+    CALL bcasm_initDiscreteBC(rdiscreteBC)
+    CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+      rdiscreteBC,rproblem%rcollection)
+
+    CALL bcasm_initDiscreteFBC(rdiscreteFBC)
+    CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+      rdiscreteFBC,rproblem%rcollection)
     
-    ! The same way, discretise boundary conditions of fictitious boundary components.
-    NULLIFY(p_rdiscreteFBC)
-    CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
-                              .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
-                              BCASM_DISCFORSOL)
-    rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
-    
-    CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
+    ! Connect the vector with the BC's
+    rprjVector%p_rdiscreteBC => rdiscreteBC
+    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
@@ -687,8 +675,8 @@ CONTAINS
     CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-    CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+    CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
   END SUBROUTINE
 
@@ -741,15 +729,15 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
     
     ! Create a temp vector
     CALL lsysbl_createVecBlockByDiscr (&
-        rdiscr%p_rlevelInfo%p_rdiscretisation,&
+        rdiscr%p_rlevelInfo%rdiscretisation,&
         rvectorTmp,.TRUE.)
     
     ! Attach the boundary conditions to that vector
@@ -817,22 +805,18 @@ CONTAINS
       
       CALL cc_initCollectForAssembly(rproblem,rproblem%rcollection)
       
-      ! Discretise the boundary conditions according to the Q1/Q1/Q0 
-      ! discretisation for implementing them into a solution vector.
-      NULLIFY(p_rdiscreteBC)
-      CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                              .FALSE.,getBoundaryValues,rproblem%rcollection,&
-                              BCASM_DISCFORSOL)
-                              
-      ! Connect the vector to the BC's
-      rprjVector%p_rdiscreteBC => p_rdiscreteBC
+      ! Discretise the boundary conditions for this discretisation
+      CALL bcasm_initDiscreteBC(rdiscreteBC)
+      CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+        rdiscreteBC,rproblem%rcollection)
+
+      CALL bcasm_initDiscreteFBC(rdiscreteFBC)
+      CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+        rdiscreteFBC,rproblem%rcollection)
       
-      ! The same way, discretise boundary conditions of fictitious boundary components.
-      NULLIFY(p_rdiscreteFBC)
-      CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
-                                .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
-                                BCASM_DISCFORSOL)
-      rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+      ! Connect the vector with the BC's
+      rprjVector%p_rdiscreteBC => rdiscreteBC
+      rprjVector%p_rdiscreteBCfict => rdiscreteFBC
       
       CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
       
@@ -915,8 +899,8 @@ CONTAINS
       CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
       
       ! Throw away the discrete BC's - not used anymore.
-      CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-      CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
+      CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+      CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
       
     END DO
 
@@ -959,7 +943,7 @@ CONTAINS
     ! For simplicity, we use only the discretisation structure of the X-velocity
     ! to derive everything.
     
-    p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation
+    p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
     CALL spdiscr_deriveSimpleDiscrSc (&

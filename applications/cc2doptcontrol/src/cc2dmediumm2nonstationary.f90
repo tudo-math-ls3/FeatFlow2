@@ -159,11 +159,11 @@ CONTAINS
         rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX))
         
     CALL sptivec_initVector (rx,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
     CALL sptivec_initVector (rb,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
     CALL sptivec_initVector (rd,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
-        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation)
+        RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
 
     ! Read the target flow -- stationary or nonstationary
     CALL cc_initTargetFlow (rproblem,&
@@ -368,7 +368,7 @@ CONTAINS
     
     ! Create a temp vector
     CALL lsysbl_createVecBlockByDiscr (&
-        rspacetimediscr%p_rlevelInfo%p_rdiscretisation,rvectorTmp,.TRUE.)
+        rspacetimediscr%p_rlevelInfo%rdiscretisation,rvectorTmp,.TRUE.)
 
     ! Attach the boundary conditions to that vector
     rvectorTmp%p_rdiscreteBC => rspacetimediscr%p_rlevelInfo%p_rdiscreteBC

@@ -137,7 +137,7 @@ CONTAINS
     ELSE
       ! Create a temp vector
       CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
     END IF
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
@@ -163,7 +163,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -190,7 +190,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -258,7 +258,7 @@ CONTAINS
     ELSE
       ! Create a temp vector
       CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
     END IF
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
@@ -284,7 +284,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -311,7 +311,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -376,7 +376,7 @@ CONTAINS
     ELSE
       ! Create temp vectors
       CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,rtempVector,.TRUE.)
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
     END IF
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
@@ -400,7 +400,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -436,7 +436,7 @@ CONTAINS
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
         IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+          CALL cc_updateDiscreteBC (rproblem)
         END IF
         
         ! Implement the boundary conditions into the global solution vector.
@@ -788,7 +788,7 @@ CONTAINS
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
     IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+      CALL cc_updateDiscreteBC (rproblem)
     END IF
 
     ! Implement the boundary conditions into the RHS.
@@ -848,7 +848,7 @@ CONTAINS
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
     IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL cc_updateDiscreteBC (rproblem, .FALSE.)
+      CALL cc_updateDiscreteBC (rproblem)
     END IF
     
     CALL cc_implementBC (rproblem,rdefect=rtempVector)

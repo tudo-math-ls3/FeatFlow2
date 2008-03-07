@@ -47,11 +47,11 @@ MODULE cc2dmediumm2basic
 
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation) :: rdiscretisation
 
     ! An object specifying the block discretisation structure only for the
     ! primal space.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationPrimal
+    TYPE(t_blockDiscretisation) :: rdiscretisationPrimal
 
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
@@ -82,18 +82,20 @@ MODULE cc2dmediumm2basic
     ! Reference ro rtempVector(4:6), which corresponds to the dual solution.
     TYPE(t_vectorBlock) :: rtempVectorDual
 
-    ! A variable describing the discrete boundary conditions for the velocity
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    ! A variable describing the discrete boundary conditions for the velocity.
+    ! Points to NULL() until the BC's are discretised for the first time.
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC => NULL()
   
     ! A structure for discrete fictitious boundary conditions
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    ! Points to NULL() until the BC's are discretised for the first time.
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC => NULL()
     
     ! Mass matrix
     TYPE(t_matrixScalar) :: rmatrixMass
 
     ! Nonstationary simulation: A scalar discretisation structure that 
     ! specifies how to generate the mass matrix.
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
+    TYPE(t_spatialDiscretisation) :: rdiscretisationMass
     
     ! This flag signales whether there are Neumann boundary components
     ! visible on the boundary of this level or not. If there are no
