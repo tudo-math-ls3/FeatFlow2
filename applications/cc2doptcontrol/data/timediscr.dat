@@ -87,12 +87,16 @@ nminIterations     = 1
 
 # Maximum number of steps
       
-nmaxIterations     = 1 0 10
+nmaxIterations     = 30 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
 depsRel            = 1E-8 15 2 10 2 5 1E-8 0.001
+
+# Minimum relative difference between two iterates
+
+depsDiff           = 1E-3
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -187,7 +191,7 @@ dspacetimeRefFactor = 1.0
 nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
-nmaxIterations = 10 0 00
+nmaxIterations = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -199,6 +203,10 @@ depsRel            = 1E-8 1E-2
 # rel. error < depsRel
 
 depsAbs            = 1E-5
+
+# Minimum relative difference between two iterates
+
+depsDiff           = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
