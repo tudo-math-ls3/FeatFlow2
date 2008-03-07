@@ -435,26 +435,6 @@ CONTAINS
                 ! dual X-velocity if primal X-velocity exists
                 !
                 ! The 2nd element in IquickAccess saves the component number.
-                rcoll%IquickAccess(2) = 3
-                
-                ! Ditichlet-0 boundary
-                iexptyp = BDC_VALDOUBLE
-                rcoll%Dquickaccess(4) = 0.0_DP
-                rcoll%IquickAccess(3) = iexptyp
-                rcoll%SquickAccess(1) = ''
-                
-                ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,3,rboundaryRegion,rdiscreteBC,&
-                    cc_getBDconditions,rcoll)
-                    
-              END IF
-              
-              IF (sbdex2 .NE. '') THEN
-              
-                ! dual Y-velocity if primal Y-velocity exists
-                !
-                ! The 2nd element in IquickAccess saves the component number.
                 rcoll%IquickAccess(2) = 4
                 
                 ! Ditichlet-0 boundary
@@ -466,6 +446,26 @@ CONTAINS
                 ! Assemble the BC's.
                 CALL bcasm_newDirichletBConRealBD (&
                     rdiscretisation,4,rboundaryRegion,rdiscreteBC,&
+                    cc_getBDconditions,rcoll)
+                    
+              END IF
+              
+              IF (sbdex2 .NE. '') THEN
+              
+                ! dual Y-velocity if primal Y-velocity exists
+                !
+                ! The 2nd element in IquickAccess saves the component number.
+                rcoll%IquickAccess(2) = 5
+                
+                ! Ditichlet-0 boundary
+                iexptyp = BDC_VALDOUBLE
+                rcoll%Dquickaccess(4) = 0.0_DP
+                rcoll%IquickAccess(3) = iexptyp
+                rcoll%SquickAccess(1) = ''
+                
+                ! Assemble the BC's.
+                CALL bcasm_newDirichletBConRealBD (&
+                    rdiscretisation,5,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
               END IF
@@ -628,7 +628,7 @@ CONTAINS
                 ! X-velocity
                 !
                 ! The 2nd element in IquickAccess saves the component number.
-                rcoll%IquickAccess(2) = 3
+                rcoll%IquickAccess(2) = 4
                 
                 ! IquickAccess(3) saves the type of the expression
                 iexptyp = collct_getvalue_int (rcoll, sbdex3)
@@ -654,7 +654,7 @@ CONTAINS
               
                 ! Assemble the BC's.
                 CALL bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,3,rboundaryRegion,rdiscreteBC,&
+                    rdiscretisation,4,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
               END IF
@@ -664,7 +664,7 @@ CONTAINS
                 ! Y-velocity
                 !
                 ! The 1st element in IquickAccess saves the component number.
-                rcoll%IquickAccess(2) = 4
+                rcoll%IquickAccess(2) = 5
                 
                 ! IquickAccess(3) saves the type of the expression
                 iexptyp = collct_getvalue_int (rcoll, sbdex4)
@@ -690,7 +690,7 @@ CONTAINS
               
                 ! Assemble the BC's.
                 CALL bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
+                    rdiscretisation,5,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
               END IF
