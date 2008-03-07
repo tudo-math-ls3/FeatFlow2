@@ -220,9 +220,11 @@ MODULE cc2dmediumm2nonlinearcore
     ! Mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
     
-    ! Temporary vector for the interpolation of a solution to a lower level.
+    ! Temporary vectors for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
-    TYPE(t_vectorBlock), POINTER :: p_rtempVector => NULL()
+    TYPE(t_vectorBlock), POINTER :: p_rtempVector1 => NULL()
+    TYPE(t_vectorBlock), POINTER :: p_rtempVector2 => NULL()
+    TYPE(t_vectorBlock), POINTER :: p_rtempVector3 => NULL()
 
     ! Identty matrix for the pressure
     TYPE(t_matrixScalar), POINTER :: p_rmatrixIdentityPressure => NULL()
@@ -378,7 +380,7 @@ CONTAINS
   !<subroutine>
 
     SUBROUTINE cc_precondDefect (rpreconditioner,rmatrixComponents,&
-        rd,rx,bsuccess,rcollection)
+        rd,rx1,rx2,rx3,bsuccess,rcollection)
   
     USE linearsystemblock
     USE collection
@@ -414,8 +416,16 @@ CONTAINS
   !</inputoutput>
   
   !<input>
-    ! Current iteration vector.
-    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
+    ! Iteration vector of the 'previous' timestep. Can be undefined if there
+    ! is no previous timestep.
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx1
+
+    ! Iteration vector of the 'current' timestep.
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx2
+
+    ! Iteration vector of the 'next' timestep. Can be undefined if there
+    ! is no next timestep.
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx3
   !</input>
   
   !</subroutine>
@@ -438,7 +448,7 @@ CONTAINS
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_vec,p_def,p_da
     call lsysbl_getbase_double (rd,p_def)
-    call lsysbl_getbase_double (rx,p_vec)
+    call lsysbl_getbase_double (rx2,p_vec)
 
       SELECT CASE (rpreconditioner%ctypePreconditioning)
       CASE (CCPREC_NONE)
@@ -463,7 +473,7 @@ CONTAINS
         ! Assemble the preconditioner matrices in rpreconditioner
         ! on all levels that the solver uses.
         CALL assembleLinsolMatrices (rpreconditioner,rmatrixComponents,&
-            rcollection,bassembleNewton,rx)
+            rcollection,bassembleNewton,rx1,rx2,rx3)
           
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -539,7 +549,7 @@ CONTAINS
     CONTAINS
       
       SUBROUTINE assembleLinsolMatrices (rpreconditioner,rmatrixComponents,rcollection,&
-          bassembleNewton,rx)
+          bassembleNewton,rx1,rx2,rx3)
 
       USE linearsystemblock
       USE collection
@@ -565,15 +575,24 @@ CONTAINS
       !         (i.e. the linearised system matrix).
       LOGICAL, INTENT(IN) :: bassembleNewton
       
+      ! Current iteration vector of the 'previous' timestep. May be undefined
+      ! if there is no previous timestep. 
+      TYPE(t_vectorBlock), INTENT(IN), TARGET          :: rx1
+
       ! Current iteration vector. 
-      TYPE(t_vectorBlock), INTENT(IN), TARGET          :: rx
+      TYPE(t_vectorBlock), INTENT(IN), TARGET          :: rx2
+
+      ! Current iteration vector of the 'next' timestep. May be undefined
+      ! if there is no previous timestep. 
+      TYPE(t_vectorBlock), INTENT(IN), TARGET          :: rx3
 
       ! local variables
       REAL(DP) :: dnewton
       INTEGER :: ilev
       TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
       TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
-      TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
+      TYPE(t_vectorBlock), POINTER :: p_rvectorFine1,p_rvectorFine2,p_rvectorFine3
+      TYPE(t_vectorBlock), POINTER :: p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3
       TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
       TYPE(t_ccmatrixComponents) :: rmatrixAssembly
       INTEGER(PREC_MATIDX), DIMENSION(1), PARAMETER :: Irows = (/1/)
@@ -624,28 +643,40 @@ CONTAINS
           ! it to build the matrix!
           IF (ilev .EQ. rpreconditioner%NLMAX) THEN
           
-            p_rvectorCoarse => rx
+            p_rvectorCoarse1 => rx1
+            p_rvectorCoarse2 => rx2
+            p_rvectorCoarse3 => rx3
             
           ELSE
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
             
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
-            p_rvectorCoarse => rpreconditioner%RcoreEquation(ilev)%p_rtempVector
+            p_rvectorCoarse1 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector1
+            p_rvectorCoarse2 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector2
+            p_rvectorCoarse3 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector3
             
             ! Get the solution vector on level i+1. This is either the temporary
             ! vector on that level, or the solution vector on the maximum level.
             IF (ilev .LT. rpreconditioner%NLMAX-1) THEN
-              p_rvectorFine => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector
+              p_rvectorFine1 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector1
+              p_rvectorFine2 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector2
+              p_rvectorFine3 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector3
             ELSE
-              p_rvectorFine => rx
+              p_rvectorFine1 => rx1
+              p_rvectorFine2 => rx2
+              p_rvectorFine3 => rx3
             END IF
 
             ! Interpolate the solution from the finer grid to the coarser grid.
             ! The interpolation is configured in the interlevel projection
             ! structure we got from the collection.
-            CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
-                                             p_rvectorFine,p_rvectorTemp)
+            CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse1, &
+                                             p_rvectorFine1,p_rvectorTemp)
+            CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse2, &
+                                             p_rvectorFine2,p_rvectorTemp)
+            CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse3, &
+                                             p_rvectorFine3,p_rvectorTemp)
 
             ! Apply the filter chain to the temp vector.
             ! This implements the boundary conditions that are attached to it.
@@ -680,11 +711,13 @@ CONTAINS
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. rpreconditioner%NLMAX) THEN
             CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,rvector2=p_rvectorCoarse)
+                p_rmatrix,rmatrixAssembly,&
+                p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
           ELSE
             CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,rvector2=p_rvectorCoarse,&
-                rfineMatrix=p_rmatrixFine)
+                p_rmatrix,rmatrixAssembly,&
+                p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
+                p_rmatrixFine)
           END IF
 
           ! Boundary conditions

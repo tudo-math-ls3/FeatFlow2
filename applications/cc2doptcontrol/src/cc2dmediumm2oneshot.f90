@@ -1753,6 +1753,7 @@ CONTAINS
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
+    TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX3
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
@@ -1785,6 +1786,10 @@ CONTAINS
     rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
     rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
     
+    ! Create two additional temp vectors
+    CALL lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX1,.TRUE.)
+    CALL lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX3,.TRUE.)
+    
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
     !
@@ -1816,19 +1821,32 @@ CONTAINS
       CALL sptivec_getTimestepData (rx, 1+isubstep, rtempVectorX)
       CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
+      IF (isubstep .GT. 0) THEN
+        CALL sptivec_getTimestepData (rx, 1+isubstep-1, rtempVectorX1)
+      END IF
+
+      IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
+        CALL sptivec_getTimestepData (rx, 1+isubstep-3, rtempVectorX3)
+      END IF
+      
       ! Set up the matrix weights for the diagonal matrix
       CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
         isubstep,0,rmatrixComponents)
         
       ! Perform preconditioning of the defect with the method provided by the
       ! core equation module.
-      CALL cc_precondDefect (rpreconditioner,rmatrixComponents,&
-        rtempVectorD,rtempVectorX,bsuccess,rproblem%rcollection)      
+      CALL cc_precondDefect (rpreconditioner,rmatrixComponents,rtempVectorD,&
+        rtempVectorX1,rtempVectorX,rtempVectorX3,&
+        bsuccess,rproblem%rcollection)      
     
       ! Save back the preconditioned defect.
       CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD)
       
     END DO
+    
+    ! Release temp vectors
+    CALL lsysbl_releaseVector (rtempVectorX1)
+    CALL lsysbl_releaseVector (rtempVectorX3)
     
   END SUBROUTINE
 

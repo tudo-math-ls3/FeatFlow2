@@ -737,9 +737,17 @@ CONTAINS
       ! vector on that level, based on the matrix template.
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
-        p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
         CALL lsysbl_createVecBlockByDiscr (&
-            rproblem%RlevelInfo(i)%rdiscretisation,p_rtempVector,.TRUE.)
+            rproblem%RlevelInfo(i)%rdiscretisation,&
+            rproblem%RlevelInfo(i)%rtempVector1,.TRUE.)
+        CALL lsysbl_createVecBlockByDiscr (&
+            rproblem%RlevelInfo(i)%rdiscretisation,&
+            rproblem%RlevelInfo(i)%rtempVector2,.TRUE.)
+        CALL lsysbl_createVecBlockByDiscr (&
+            rproblem%RlevelInfo(i)%rdiscretisation,&
+            rproblem%RlevelInfo(i)%rtempVector3,.TRUE.)
+
+        p_rtempVector => rproblem%RlevelInfo(i)%rtempVector2
             
         ! The temp vectors for the primal and dual system share their memory
         ! with that temp vector.
@@ -1241,7 +1249,9 @@ CONTAINS
       IF (i .LT. rproblem%NLMAX) THEN
         CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorPrimal)
         CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorDual)
-        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
+        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector3)
+        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector2)
+        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector1)
       END IF
       
     END DO

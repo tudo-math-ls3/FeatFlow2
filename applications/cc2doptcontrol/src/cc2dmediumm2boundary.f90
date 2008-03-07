@@ -113,11 +113,15 @@ CONTAINS
       ! Also hang in the boundary conditions into the temporary vector that is
       ! used for the creation of solutions on lower levels.
       ! This allows us to filter this vector when we create it.
-      rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rtempVector1%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rtempVector2%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rtempVector3%p_rdiscreteBC => p_rdiscreteBC
       
       ! The same for the fictitious boudary boundary conditions.
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
-      rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVector1%p_rdiscreteBCfict => p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVector2%p_rdiscreteBCfict => p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVector3%p_rdiscreteBCfict => p_rdiscreteFBC
       
     END DO
 

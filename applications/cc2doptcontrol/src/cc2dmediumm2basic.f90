@@ -73,8 +73,10 @@ MODULE cc2dmediumm2basic
     ! B2-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB2
 
-    ! Temp vector for the full system.
-    TYPE(t_vectorBlock) :: rtempVector
+    ! Three temp vectors for the full system.
+    TYPE(t_vectorBlock) :: rtempVector1
+    TYPE(t_vectorBlock) :: rtempVector2
+    TYPE(t_vectorBlock) :: rtempVector3
     
     ! Reference ro rtempVector(1:3), which corresponds to the primal solution.
     TYPE(t_vectorBlock) :: rtempVectorPrimal

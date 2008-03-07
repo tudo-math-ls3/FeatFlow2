@@ -2289,7 +2289,7 @@ CONTAINS
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
-    TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX
+    TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX1,rtempVectorX2,rtempVectorX3
     TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditioner
     TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
     
@@ -2321,14 +2321,22 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorD,.TRUE.)
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
-        rtempVectorX,.TRUE.)
+        rtempVectorX1,.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rtempVectorX2,.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rtempVectorX3,.TRUE.)
         
     ! Attach the boundary conditions to the temp vectors.
     rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    rtempVectorX%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
@@ -2379,7 +2387,7 @@ CONTAINS
       END IF
 
       ! DEBUG!!!      
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+      CALL lsysbl_getbase_double (rtempVectorX2,p_Dx)
       CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
 
       ! Read in the RHS/solution/defect vector of the current timestep.
@@ -2387,11 +2395,19 @@ CONTAINS
       ! the content of rtempVector is not relevant; actually it's even
       ! zero by initialisation.
       IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+        IF (isubstep .GT. 0) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+              1+isubstep-1, rtempVectorX1)
+        END IF
         CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-            1+isubstep, rtempVectorX)
+            1+isubstep, rtempVectorX2)
+        IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+              1+isubstep+1, rtempVectorX3)
+        END IF
         
         ! DEBUG!!!
-        CALL lsysbl_getbase_double (rtempVectorX,p_Dsol)
+        CALL lsysbl_getbase_double (rtempVectorX2,p_Dsol)
       END IF
       CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
@@ -2405,7 +2421,8 @@ CONTAINS
       CALL cc_precondDefect (&
           rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner,&
           rmatrixComponents,&
-          rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
+          rtempVectorD,rtempVectorX1,rtempVectorX2,rtempVectorX3,&
+          bsuccess,rsolverNode%p_rproblem%rcollection)      
       CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
     
       ! Scale by omega
@@ -2416,7 +2433,9 @@ CONTAINS
       
     END DO
     
-    CALL lsysbl_releaseVector (rtempVectorX)
+    CALL lsysbl_releaseVector (rtempVectorX3)
+    CALL lsysbl_releaseVector (rtempVectorX2)
+    CALL lsysbl_releaseVector (rtempVectorX1)
     CALL lsysbl_releaseVector (rtempVectorD)
     
   END SUBROUTINE
@@ -2686,7 +2705,8 @@ CONTAINS
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccoptSpaceTimeMatrix), POINTER :: p_rspaceTimeMatrix
-    TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3,rtempVectorX
+    TYPE(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3
+    TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX2,rtempVectorX3
     TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditioner
     TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
     
@@ -2723,14 +2743,22 @@ CONTAINS
         rtempVectorD3,.TRUE.)
 
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
-        rtempVectorX,.TRUE.)
+        rtempVectorX1,.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rtempVectorX2,.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rtempVectorX3,.TRUE.)
         
     ! Attach the boundary conditions to the temp vectors.
     rtempVectorD2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorD2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    rtempVectorX%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorX3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorX3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! The weights in the rmatrixComponents structure are later initialised
     ! according to the actual situation when the matrix is to be used.
@@ -2836,7 +2864,7 @@ CONTAINS
       END IF
 
       ! DEBUG!!!      
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+      CALL lsysbl_getbase_double (rtempVectorX2,p_Dx)
       CALL lsysbl_getbase_double (rtempVectorD2,p_Dd)
 
       ! Read in the RHS/solution/defect vector of the current timestep.
@@ -2844,8 +2872,16 @@ CONTAINS
       ! the content of rtempVector is not relevant; actually it's even
       ! zero by initialisation.
       IF (ASSOCIATED(p_rspaceTimeMatrix%p_rsolution)) THEN
+        IF (isubstep .GT. 0) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+              1+isubstep-1, rtempVectorX1)
+        END IF
         CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-            1+isubstep, rtempVectorX)
+            1+isubstep, rtempVectorX2)
+        IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+              1+isubstep+1, rtempVectorX3)
+        END IF
       END IF
       
 
@@ -2878,7 +2914,8 @@ CONTAINS
       CALL cc_precondDefect (&
           rsolverNode%p_rsubnodeBlockSOR%p_rspatialPreconditioner,&
           rmatrixComponents,&
-          rtempVectorD2,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
+          rtempVectorD2,rtempVectorX1,rtempVectorX2,rtempVectorX3,&
+          bsuccess,rsolverNode%p_rproblem%rcollection)      
       CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
     
       ! Save back the preconditioned defect.
@@ -2890,7 +2927,9 @@ CONTAINS
       
     END DO
 
-    CALL lsysbl_releaseVector (rtempVectorX)
+    CALL lsysbl_releaseVector (rtempVectorX3)
+    CALL lsysbl_releaseVector (rtempVectorX2)
+    CALL lsysbl_releaseVector (rtempVectorX1)
     CALL lsysbl_releaseVector (rtempVectorD3)
     CALL lsysbl_releaseVector (rtempVectorD2)
     CALL lsysbl_releaseVector (rtempVectorD1)
@@ -3515,8 +3554,9 @@ CONTAINS
         CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
         CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
-            rmatrixComponents,&
-            rtempVectorRHS,rtempVectorSol(2),bsuccess,rsolverNode%p_rproblem%rcollection)      
+            rmatrixComponents,rtempVectorRHS,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
+            bsuccess,rsolverNode%p_rproblem%rcollection)      
         CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
@@ -3652,8 +3692,9 @@ CONTAINS
         CALL stat_startTimer (rsolverNode%rtimeSpacePrecond)
         CALL cc_precondDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
-            rmatrixComponents,&
-            rtempVectorRHS,rtempVectorSol(2),bsuccess,rsolverNode%p_rproblem%rcollection)      
+            rmatrixComponents,rtempVectorRHS,&
+            rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
+            bsuccess,rsolverNode%p_rproblem%rcollection)      
         CALL stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.

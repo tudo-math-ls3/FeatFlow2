@@ -639,8 +639,14 @@ CONTAINS
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
 
-      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector => &
-        rproblem%RlevelInfo(ilevel)%rtempVector
+      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector1 => &
+        rproblem%RlevelInfo(ilevel)%rtempVector1
+
+      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector2 => &
+        rproblem%RlevelInfo(ilevel)%rtempVector2
+
+      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector3 => &
+        rproblem%RlevelInfo(ilevel)%rtempVector3
 
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixIdentityPressure => &
         rproblem%RlevelInfo(ilevel)%rmatrixIdentityPressure
