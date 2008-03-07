@@ -217,7 +217,7 @@ CONTAINS
       ! velocity...
       CALL spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
-          EL_E030_3D, CUB_G2_3D, Rlevels(i)%rtriangulation)
+          EL_EM30_3D, CUB_G2_3D, Rlevels(i)%rtriangulation)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd and 3rd component (Y-/Z-velocity). This needs no

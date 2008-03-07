@@ -10,9 +10,6 @@
 !# poisson2d_method7.
 !# The element used here is EM30. For GMV output, it's interpolated
 !# to Q1 and then written to the output file.
-!#
-!# As the 3D EM30 element is currently not implemented, we'll use the E030
-!# element type for now...
 !# </purpose>
 !##############################################################################
 
@@ -154,7 +151,7 @@ CONTAINS
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   EL_E030_3D,CUB_G3_3D,rtriangulation)
+                                   EL_EM30_3D,CUB_G3_3D,rtriangulation)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.

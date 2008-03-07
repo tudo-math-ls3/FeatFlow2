@@ -152,7 +152,7 @@ CONTAINS
     ! For simplicity, we set up one discretisation structure for the 
     ! velocity...
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1),&
-                                   EL_E030_3D, CUB_G3_3D, rtriangulation)
+                                   EL_EM30_3D, CUB_G3_3D, rtriangulation)
                 
     ! ...and copy this structure also to the discretisation structure
     ! of the 2nd and 3rd component (Y-/Z-velocity). This needs no additional
