@@ -682,25 +682,20 @@ CONTAINS
       ! Get the information from evalBoundary.
       ! Note: The information about the BC's can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
-      !
-      ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-      ! to the application specific, global collection that may be of interest for
-      ! callback routines. rcollection itself is actually a 'local' collection,
-      ! a 'wrapper' for the rcollection of the application!
       SELECT CASE (rcollection%IquickAccess(1))
       CASE (1)
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
-            rcollection%p_rnextCollection)
+            rcollection)
     
       CASE (2)
         ! Normal stress / pressure drop. Evaluate the  expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
-            rcollection%p_rnextCollection)
+            rcollection)
             
       END SELECT
       
@@ -767,9 +762,14 @@ CONTAINS
                                      0, SEC_SBDEXPRESSIONS)
                                 
         ! Call the user defined callback routine to evaluate the expression.
+        !
+        ! As collection, we pass rcollection%p_rcollection here; this is a pointer
+        ! to the application specific, global collection that may be of interest for
+        ! callback routines. rcollection itself is actually a 'local' collection,
+        ! a 'wrapper' for the rcollection of the application!
         CALL getBoundaryValues (&
             stag,icomponent,rdiscretisation,rboundaryRegion,&
-            dpar, d, rcollection)     
+            dpar, d, rcollection%p_rnextCollection)
         
         evalBoundary = d
       
