@@ -1902,7 +1902,7 @@ CONTAINS
     CHARACTER(LEN=SYS_STRLEN) :: sstring,slinearSolver
     INTEGER :: nminIterations,nmaxIterations
 
-    REAL(DP) :: ddefNorm,dinitDefNorm,depsRel,depsAbs
+    REAL(DP) :: ddefNorm,dinitDefNorm,depsRel,depsAbs,dlastDefNorm,depsDiff
     
     TYPE(t_ccspatialPreconditioner) :: rpreconditioner
     
@@ -2026,6 +2026,7 @@ CONTAINS
       -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, ddefNorm,rproblem%MT_outputLevel .GE. 2)
         
     dinitDefNorm = ddefNorm
+    dlastDefNorm = 0.0_DP
     
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
@@ -2042,6 +2043,9 @@ CONTAINS
                                  'depsRel', depsRel, 1.0E-5_DP)
 
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DEFCORR', &
+                                 'depsDiff', depsDiff, 1.0E-5_DP)
+
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DEFCORR', &
                                  'depsAbs', depsAbs, 1.0E99_DP)
 
     iglobIter = 0
@@ -2052,7 +2056,8 @@ CONTAINS
 !      rtempvectorX, rtempvectorB, rtempVector)
     
     DO WHILE ((iglobIter .LT. nminIterations) .OR. &
-              (((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GE. depsAbs)) .AND. &
+              ((((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GE. depsAbs)) .AND.&
+                (ABS(ddefNorm-dlastDefNorm) .GE. depsDiff*dlastDefNorm)) .AND. &
                (iglobIter .LT. nmaxIterations)))
     
       iglobIter = iglobIter+1
@@ -2178,7 +2183,7 @@ CONTAINS
     LOGICAL :: bneumann
     REAL(DP), DIMENSION(4) :: Derror
     INTEGER(I32) :: nminIterations,nmaxIterations
-    REAL(DP) :: depsRel,depsAbs,domega,domegaPrecond
+    REAL(DP) :: depsRel,depsAbs,domega,domegaPrecond,depsDiff
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecond
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondPrimal
@@ -2195,7 +2200,7 @@ CONTAINS
     
     ! TYPE(t_spaceTimeVector) :: rtemp
 
-    REAL(DP) :: ddefNorm,dinitDefNorm
+    REAL(DP) :: ddefNorm,dinitDefNorm,dlastDefNorm
     
     CHARACTER(LEN=SYS_STRLEN) :: slinearSolver,sstring
     
@@ -2417,6 +2422,8 @@ CONTAINS
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'depsAbs', p_rcgrSolver%depsAbs, 1E-5_DP)
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'depsDiff', p_rcgrSolver%depsDiff, 0.0_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'ddivRel', p_rcgrSolver%ddivRel, 1.0_DP)
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                 'istoppingCriterion', p_rcgrSolver%istoppingCriterion, 0)
@@ -2434,6 +2441,8 @@ CONTAINS
                                       'depsRel', p_rprecond%depsRel, 1E-5_DP)
           CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
                                       'depsAbs', p_rprecond%depsAbs, 1E-5_DP)
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
+                                      'depsDiff', p_rprecond%depsDiff, 0.0_DP)
           CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
                                       'ddivRel', p_rprecond%ddivRel, 1.0_DP)
           CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEPRECOND', &
@@ -2519,6 +2528,9 @@ CONTAINS
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
                                     'depsAbs', p_rsmoother%depsAbs, 0.0_DP)
 
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'depsDiff', p_rsmoother%depsDiff, 0.0_DP)
+
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'istoppingCriterion', p_rsmoother%istoppingCriterion, 1)
 
@@ -2561,6 +2573,8 @@ CONTAINS
                                 'depsRel', p_rmgSolver%depsRel, 1E-5_DP)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
                                 'depsAbs', p_rmgSolver%depsAbs, 1E-5_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
+                                'depsDiff', p_rmgSolver%depsDiff, 0.0_DP)
     CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
                              'istoppingCriterion', p_rmgSolver%istoppingCriterion, 0)
 
@@ -2653,6 +2667,7 @@ CONTAINS
     !    '(''./debugdata/initdef.txt.'',I5.5)',.TRUE.)
         
     dinitDefNorm = ddefNorm
+    dlastDefNorm = 0.0_DP
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
@@ -2677,6 +2692,8 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
                                  'depsAbs', depsAbs, 1E-5_DP)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
+                                 'depsDiff', depsDiff, 0.0_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
                                  'domega', domega, 1.0_DP)
 
     ! Initalise statistic variables
@@ -2694,7 +2711,8 @@ CONTAINS
     ilinearIterations = 0
     
     DO WHILE ((iglobIter .LT. nminIterations) .OR. &
-              (((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GT. depsAbs)) &
+              ((((ddefNorm .GT. depsRel*dinitDefNorm) .OR. (ddefNorm .GE. depsAbs)) .AND.&
+                (ABS(ddefNorm-dlastDefNorm) .GE. depsDiff*dlastDefNorm)) &
               .AND. (iglobIter .LT. nmaxIterations)))
     
       iglobIter = iglobIter+1
@@ -2850,6 +2868,9 @@ CONTAINS
       
       iglobIter = rproblem%rdataOneshot%iglobIter
       ddefNorm = rproblem%rdataOneshot%ddefNorm
+      
+      ! Remember the last defect norm for the stopping criterion
+      dlastDefNorm = ddefNorm
       
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)

@@ -333,6 +333,16 @@ MODULE cc2dmediumm2spacetimesolver
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
     REAL(DP)                        :: depsAbs = 1E-5_DP
+    
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
+    ! Difference in the residual stopping criterion. Stop iteration if
+    ! !!defect_new!! - !!defect_old!! < depsDiff * !!defect_old!!.
+    ! This stopping criterion holds additionally to depsAbs/depsRel
+    ! in an OR sense -- i.e. the iteration is stopped if
+    ! !!defect_new!! - !!defect_old!! < depsDiff * !!defect_old!!
+    ! holds OR if the stopping criterion given by depsAbs/depsRel
+    ! holds!
+    REAL(DP)                        :: depsDiff = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Relative divergence criterion.  Treat iteration as
@@ -410,6 +420,9 @@ MODULE cc2dmediumm2spacetimesolver
     
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     INTEGER                    :: icurrentIteration
+    
+    ! STATUS FOR ITERATIVE SOLVERS: Last defect
+    REAL(DP)                   :: dlastDefect
     
     ! STATISTICS OUTPUT: Time for solving problems in space.
     TYPE(t_timer)              :: rtimeSpacePrecond
@@ -1238,6 +1251,15 @@ CONTAINS
       dvecNorm = sptivec_vectorNorm (rdef,rsolverNode%iresNorm)
     END IF
     
+    ! Relative difference in the residuals small enough?
+    IF (rsolverNode%depsDiff .NE. 0.0_DP) THEN
+      IF (ABS(dvecNorm-rsolverNode%dlastDefect) .LT. &
+              rsolverNode%depsDiff*rsolverNode%dlastDefect) THEN
+        loutput = .TRUE.
+        RETURN
+      END IF
+    END IF
+    
     SELECT CASE (rsolverNode%istoppingCriterion)
     
     CASE (SPTILS_STOP_ONEOF)
@@ -1261,7 +1283,7 @@ CONTAINS
           RETURN
         END IF
       END IF
-    
+      
     CASE DEFAULT
       ! Standard stopping criterion.
       ! Iteration stops if both the absolute and the relative criterium holds.
@@ -1865,6 +1887,7 @@ CONTAINS
     ! Initialize starting residuum
       
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! Check if out initial defect is zero. This may happen if the filtering
     ! routine filters "everything out"!
@@ -1922,6 +1945,7 @@ CONTAINS
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_rdef,rsolverNode%iresNorm)
      
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -3396,6 +3420,7 @@ CONTAINS
       dresInit = sptivec_vectorNorm (rd,LINALG_NORML2)
       IF (dresInit .EQ. 0.0_DP) dresInit = 1.0_DP
       rsolverNode%dinitialDefect = dresInit
+      rsolverNode%dlastDefect = 0.0_DP
       dres = dresInit
     END IF
     
@@ -4197,6 +4222,7 @@ CONTAINS
     ! Initialize starting residuum
       
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! Check if out initial defect is zero. This may happen if the filtering
     ! routine filters "everything out"!
@@ -4293,6 +4319,7 @@ CONTAINS
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
      
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -5750,6 +5777,7 @@ END SUBROUTINE
     ! Initialize starting residuum
       
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! Check if out initial defect is zero. This may happen if the filtering
     ! routine filters "everything out"!
@@ -5874,6 +5902,7 @@ END SUBROUTINE
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
      
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -6838,6 +6867,7 @@ END SUBROUTINE
     rsolverNode%iresult = 0
     rsolverNode%icurrentIteration = 0
     rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dlastDefect = 0.0_DP
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     
@@ -6871,6 +6901,8 @@ END SUBROUTINE
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = &
         p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%dinitialDefect
+      rsolverNode%dlastDefect = &
+        p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%dlastDefect
       rsolverNode%dfinalDefect = &
         p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%dfinalDefect
       rsolverNode%dconvergenceRate = &
@@ -6893,6 +6925,7 @@ END SUBROUTINE
 
       ! Initialize starting residuum
       rsolverNode%dinitialDefect = dres
+      rsolverNode%dlastDefect = 0.0_DP
 
       ! Check if out initial defect is zero. This may happen if the filtering
       ! routine filters "everything out"!
@@ -6902,7 +6935,7 @@ END SUBROUTINE
       
         ! final defect is 0, as initialised in the output variable above
         CALL sptivec_clearVector(rd)
-        rsolverNode%dfinalDefect = dres
+        rsolverNode%dlastDefect = dres
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
         rsolverNode%iiterations = 0
@@ -7402,6 +7435,7 @@ END SUBROUTINE
           IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                     (dres .LE. 1E99_DP))) dres = 0.0_DP
           
+          rsolverNode%dlastDefect = rsolverNode%dfinalDefect
           rsolverNode%dfinalDefect = dres
           
           ! Test if the iteration is diverged
