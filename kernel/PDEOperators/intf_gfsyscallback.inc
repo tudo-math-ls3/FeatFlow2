@@ -63,6 +63,32 @@ END SUBROUTINE fcb_calcFlux
 
 !<subroutine>
 
+SUBROUTINE fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij)
+
+USE fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes.
+!</description>
+
+!<input>
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+  REAL(DP),               INTENT(IN)  :: dscale
+!</input>
+
+!<output>
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij
+!</output>
+
+!</subroutine>
+
+END SUBROUTINE fcb_calcRawFlux
+
+! ***************************************************************************
+
+!<subroutine>
+
 SUBROUTINE fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 USE fsystem

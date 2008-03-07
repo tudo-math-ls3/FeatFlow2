@@ -287,13 +287,29 @@ CONTAINS
     CASE (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
       ! do nothing
 
-    CASE (AFCSTAB_FEMFCT, AFCSTAB_FEMGP, AFCSTAB_FEMTVD)
+    CASE (AFCSTAB_FEMTVD)
 
       ! Nodal vectors
       ALLOCATE(rafcstab%RnodalVectors(6))
       DO i = 1, 6
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ,rafcstab%NVAR, .FALSE., ST_DOUBLE)
+            rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
+      END DO
+      
+    CASE (AFCSTAB_FEMFCT)
+
+      ! Nodal vectors
+      ALLOCATE(rafcstab%RnodalVectors(7))
+      DO i = 1, 7
+        CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
+            rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
+      END DO
+
+      ! Edgewise vectors
+      ALLOCATE(rafcstab%RedgeVectors(2))
+      DO i = 1, 2
+        CALL lsyssc_createVector(rafcstab%RedgeVectors(i),&
+            rafcstab%NEDGE, rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
 
     CASE DEFAULT
@@ -343,15 +359,30 @@ CONTAINS
       
     CASE (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
       ! do nothing
-
       
-    CASE (AFCSTAB_FEMFCT, AFCSTAB_FEMGP, AFCSTAB_FEMTVD)
+    CASE (AFCSTAB_FEMTVD)
 
       ! Nodal vectors
       ALLOCATE(rafcstab%RnodalVectors(6))
       DO i = 1, 6
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ,rafcstab%NVAR, .FALSE., ST_DOUBLE)
+            rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
+      END DO
+
+    CASE (AFCSTAB_FEMFCT)
+
+      ! Nodal vectors
+      ALLOCATE(rafcstab%RnodalVectors(7))
+      DO i = 1, 7
+        CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
+            rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
+      END DO
+
+      ! Edgewise vectors
+      ALLOCATE(rafcstab%RedgeVectors(2))
+      DO i = 1, 2
+        CALL lsyssc_createVector(rafcstab%RedgeVectors(i),&
+            rafcstab%NEDGE, rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
 
     CASE DEFAULT
@@ -3326,8 +3357,9 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResBlockFCT(RmatrixC, rmatrixMC, ru,&
-      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres, ruPredict)
+  SUBROUTINE gfsys_buildResBlockFCT(RmatrixC, rmatrixML, ru,&
+      fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics, rafcstab,&
+      dscale, theta, tstep, rres, ruPredict, rmatrixMC)
 
 !<description>
     ! This subroutine assembles the residual vector for FEM-FCT schemes.
@@ -3339,8 +3371,8 @@ CONTAINS
     ! array of coefficient matrices C = (phi_i,D phi_j)
     TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
 
-    ! consistent mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixMC
+    ! lumped mass matrix
+    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixML
 
     ! solution vector
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
@@ -3348,8 +3380,17 @@ CONTAINS
     ! predicted solution vector (low-order)
     TYPE(t_vectorBlock), INTENT(IN), OPTIONAL      :: ruPredict
 
+    ! consistent mass matrix
+    TYPE(t_matrixScalar), INTENT(IN), OPTIONAL     :: rmatrixMC
+
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! implicitness parameter
+    REAL(DP), INTENT(IN)                           :: theta
+
+    ! time step size
+    REAL(DP), INTENT(IN)                           :: tstep
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -3367,12 +3408,15 @@ CONTAINS
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
       IF (PRESENT(ruPredict)) THEN
-        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
-            fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale,&
-            rres%RvectorBlock(1), ruPredict%RvectorBlock(1))
+        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixML,&
+            ru%RvectorBlock(1), fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics,&
+            rafcstab, dscale, theta, tstep, rres%RvectorBlock(1),&
+            ruPredict%RvectorBlock(1), rmatrixMC)
       ELSE
-        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
-            fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres%RvectorBlock(1))
+        CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixML,&
+            ru%RvectorBlock(1), fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics,&
+            rafcstab, dscale, theta, tstep, rres%RvectorBlock(1),&
+            rmatrixMC=rmatrixMC)
       END IF
       RETURN       
     END IF
@@ -3381,15 +3425,15 @@ CONTAINS
     CALL lsysbl_isVectorCompatible(ru, rres)
     CALL gfsys_isVectorCompatible(rafcstab, ru)
 
-
   END SUBROUTINE gfsys_buildResBlockFCT
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE gfsys_buildResScalarFCT(RmatrixC, rmatrixMC, ru, &
-      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres, ruPredict)
+  SUBROUTINE gfsys_buildResScalarFCT(RmatrixC, rmatrixML, ru,&
+      fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics, rafcstab,&
+      dscale, theta, tstep, rres, ruPredict, rmatrixMC)
     
 !<description>
     ! This subroutine assembles the residual vector for FEM-FCT schemes.
@@ -3399,8 +3443,8 @@ CONTAINS
     ! array of coefficient matrices C = (phi_i,D phi_j)
     TYPE(t_matrixScalar), DIMENSION(:), INTENT(IN) :: RmatrixC
 
-    ! consistent mass matrix
-    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixMC
+    ! lumped mass matrix
+    TYPE(t_matrixScalar), INTENT(IN)               :: rmatrixML
 
     ! solution vector
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
@@ -3408,8 +3452,17 @@ CONTAINS
     ! predicted solution vector (low-order)
     TYPE(t_vectorScalar), INTENT(IN), OPTIONAL     :: ruPredict
 
-    ! scaling factor
+    ! consistent mass matrix
+    TYPE(t_matrixScalar), INTENT(IN), OPTIONAL     :: rmatrixMC
+
+    ! scaling parameter
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! implicitness parameter
+    REAL(DP), INTENT(IN)                           :: theta
+
+    ! time step size
+    REAL(DP), INTENT(IN)                           :: tstep
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -3427,25 +3480,35 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_L,p_u,p_uPredict,p_res
-    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_MC,p_ML,p_u,p_uPredict,p_res
+    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_flux,p_flux0
     INTEGER :: h_Ksep
+    LOGICAL :: bmass
 
     ! Check if vectors are compatible
     CALL lsyssc_isVectorCompatible(ru, rres)
-    CALL gfsys_isVectorCompatible(rafcstab, ru)
+    CALL gfsys_isVectorCompatible (rafcstab, ru)
 
-    ! Check if predictor is available
+    ! Check if consistent mass matrix is available
+    bmass = PRESENT(rmatrixMC)
+    IF (bmass) THEN
+      CALL lsyssc_getbase_double(rmatrixMC, p_MC)
+    END IF
+
+    ! Check if predictor is available, then store it in
+    ! stabilisation structure for subsequent usage
     IF (PRESENT(ruPredict)) THEN
       CALL lsyssc_isVectorCompatible(ru, ruPredict)
-      CALL lsyssc_copyVector(ruPredict, rafcstab%RnodalVectors(7))
+      CALL lsyssc_copyVector (ruPredict, rafcstab%RnodalVectors(7))
     END IF
 
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
     CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsyssc_getbase_double(rmatrixML,   p_ML)
     CALL lsyssc_getbase_double(ru,   p_u)
     CALL lsyssc_getbase_double(rres, p_res)
+
 
     ! Create diagonal Ksep=Kld
     h_Ksep = ST_NOHANDLE
@@ -3472,6 +3535,8 @@ CONTAINS
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredict)
+      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(1) , p_flux)
+      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(2) , p_flux0)
       
       ! Set specifiers for Ps, Qs and Rs
       rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_LIMITER)
@@ -3513,10 +3578,35 @@ CONTAINS
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_uPredict,&
-              dscale, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)         
 
+          ! Do we have to initialize the flux limiter?
+          IF (PRESENT(ruPredict)) THEN
+            IF (bmass) THEN
+              CALL doInitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_ML, p_u, p_uPredict, theta, tstep,&
+                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0, p_MC)
+            ELSE
+              CALL doInitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_ML, p_u, p_uPredict, theta, tstep,&
+                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0)
+            END IF
+          END IF
+
+          ! Perform flux correction
+          IF (bmass) THEN
+            CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                p_Cx, p_Cy, p_u, p_uPredict, p_flux, p_flux0,&
+                dscale, theta, tstep, p_res, p_MC)
+          ELSE
+            CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                p_Cx, p_Cy, p_u, p_uPredict, p_flux, p_flux0,&
+                dscale, theta, tstep, p_res)
+          END IF
+          
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
@@ -3548,119 +3638,271 @@ CONTAINS
     !**************************************************************
     ! Initialisation of the semi-implicit FEM-FCT procedure
     
-    SUBROUTINE doInitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, uPredict, dscale, pp, pm, qp, qm, rp, rm, res)
+    SUBROUTINE doInitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep,&
+        NEQ, NEDGE, NVAR, Cx, Cy, ML, u, uPredict, theta, tstep,&
+        pp, pm, qp, qm, rp, rm, flux, flux0, MC)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
       INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER(PREC_MATIDX), INTENT(IN)                  :: NEDGE
       INTEGER, INTENT(IN)                               :: NVAR
-      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u,uPredict
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+      REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,ML
+      REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: u,uPredict
+      REAL(DP), INTENT(IN)                              :: theta,tstep
+      REAL(DP), DIMENSION(NVAR,NEQ),   INTENT(INOUT)    :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(INOUT)    :: flux,flux0
 
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,T_ij
-      REAL(DP), DIMENSION(NVAR)      :: Diff,F_ij,F_ji,V_ij,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: T_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,G_ij,U_ij,W_ij,Lbd_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      REAL(DP)                       :: cnrm
+      INTEGER(PREC_MATIDX)           :: ij,ji,iedge
+      INTEGER(PREC_VECIDX)           :: i,j,ieq
       INTEGER                        :: ivar
 
       ! Clear P's and Q's
-      pp(:,1:NEQ)=0; pm(:,1:NEQ)=0
-      qp(:,1:NEQ)=0; qm(:,1:NEQ)=0
+      CALL lalg_clearVectorDble2D(pp)
+      CALL lalg_clearVectorDble2D(pm)
+      CALL lalg_clearVectorDble2D(qp)
+      CALL lalg_clearVectorDble2D(qm)
       
-      ! Loop over all rows (forward)
-      DO i = 1, NEQ
+      IF (PRESENT(MC)) THEN
         
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        DO ij = Ksep(i)+1, Kld(i+1)-1
+        ! Initialize edge counter
+        iedge = 0
+
+        ! Loop over all rows (forward)
+        DO i = 1, NEQ
+          
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J. That is, explore the
+          ! upper triangular matrix
+          DO ij = Kdiagonal(i)+1, Kld(i+1)-1
           
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
 
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-                    
-          ! Compute the fluxes
-          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          ! Increase edge counter
+            iedge = iedge+1
+
+            ! Compute averaged coefficients
+            C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
+            C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+            cnrm    = SQRT(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))
+            
+            ! Compute characteristic variables for predicted values which gives
+            ! the characteristic flux difference and the transformation matrix
+            CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j),&
+                                         C_ij, W_ij, L_ij=T_ij)
+
+            W_ij = cnrm*W_ij
+
+            ! Update the upper/lower bounds from the predicted values
+            qp(:,i) = MAX(qp(:,i),W_ij); qp(:,j) = MAX(qp(:,j),-W_ij)
+            qm(:,i) =-MIN(qm(:,i),W_ij); qm(:,j) =-MIN(qm(:,j),-W_ij)
+
+
+            ! Compute characteristic flux differences adopting the transformation
+            ! matrix evaluated at the predicted solution values
+            U_ij = u(:,j)-u(:,i)
+            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
+
+            ! Store mass fluxes in characteristic variables
+            flux0(:,iedge) = 0.0_DP!MC(ij)*W_ij
+
+            ! Compute coefficients
+            C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+            C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+            ! Compute raw antidiffusive fluxes
+            CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep, F_ij)
+
+            ! Transform fluxes into characteristic variables
+            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
+            flux(:,iedge) = G_ij
+            
+            ! Sum of positive/negative fluxes
+            pp(:,i) = pp(:,i)+MAX(0._DP,G_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-G_ij)
+            pm(:,i) = pm(:,i)-MIN(0._DP,G_ij); pm(:,j) = pm(:,j)-MIN(0._DP,-G_ij)
+          END DO
+        END DO
+
+        ! Update the explicit part (if required)
+        IF (theta .LT. 1._DP) &
+            CALL lalg_vectorLinearCombDble2D(flux, flux0, 1._DP-theta, 1._DP)
+
+      ELSE
+
+        print *, "Keine MC da"
+        stop
+        
+        ! Update the explicit part (if required)
+        IF (theta .NE. 1._DP) THEN
+          CALL lalg_copyVectorDble2D(flux, flux0)
+          CALL lalg_scaleVectorDble2D(flux0, 1._DP-theta)
+        ELSE
+          CALL lalg_clearVectorDble2D(flux0)
+        END IF
+      END IF
+
+      ! Apply lumped mass matrix
+      DO ieq = 1, NEQ
+        rp(:,ieq) = ML(ieq)*qp(:,ieq)
+        rm(:,ieq) = ML(ieq)*qm(:,ieq)
+      END DO
+
+      ! Compute nodal correction factors
+      rp = afcstab_limit(pp, rp, 0._DP)
+      rm = afcstab_limit(pm, rm, 0._DP)
+      
+      ! Initialize edge counter
+      iedge = NEDGE+1
+      
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
           
-          ! Assemble high-order residual vector
-          res(:,i) = res(:,i)+F_ij
-          res(:,j) = res(:,j)+F_ji
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
+       
+          ! Decrease edge counter
+          iedge = iedge-1
 
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
-          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
-
-          ! Compute characteristic variables for predicted values
-          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, V_ij, L_ij=T_ij)
-
-          ! Upper/lower bounds
-          qp(:,i) = MAX(qp(:,i),V_ij); qp(:,j) = MAX(qp(:,j),-V_ij)
-          qm(:,i) = MIN(qm(:,i),V_ij); qm(:,j) = MIN(qm(:,j),-V_ij)
-
-          ! Compute characteristic variables
-          CALL fcb_calcCharacteristics(u(:,i), u(:,j), C_ij, W_ij)
-
-          
-
-!!$          ! Determine fluxes
-!!$          diff = u(i)-u(j);   f_ij = tstep*d_ij*diff
-!!$          flux(iedge) = f_ij; flux0(iedge) = -m_ij*diff
-!!$          
-!!$          ! Sum of positive/negative fluxes
-!!$          pp(:,i) = pp(:,i)+MAX(0._DP,F_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-F_ij)
-!!$          pm(:,i) = pm(:,i)+MIN(0._DP,F_ij); pm(:,j) = pm(:,j)+MIN(0._DP,-F_ij)
-!!$          
-!!$          ! Upper/lower bounds
-!!$          Diff = uPredict(:,j)-uPredict(:,i)
-!!$          qp(:,i) = MAX(qp(:,i),Diff); qp(:,j) = MAX(qp(:,j),-Diff)
-!!$          qm(:,i) = MIN(qm(:,i),Diff); qm(:,j) = MIN(qm(:,j),-Diff)
-
+          ! Perform symmetric flux limiting
+          DO ivar = 1, NVAR
+            IF (flux(ivar,iedge) > 0._DP) THEN
+              flux(ivar,iedge) = MIN(rp(ivar,i), rm(ivar,j))*flux(ivar,iedge)
+            ELSE
+              flux(ivar,iedge) = MIN(rm(ivar,i), rp(ivar,j))*flux(ivar,iedge)
+            END IF
+          END DO
         END DO
       END DO
-      
     END SUBROUTINE doInitFCTMat9_2D
+
 
     !**************************************************************
     ! Assemble residual for low-order operator plus
     ! algebraic flux correction of FCT-type in 2D
     ! All matrices are stored in matrix format 9
 
-    SUBROUTINE doLimitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        Cx, Cy, u, uPredict, dscale, pp, pm, qp, qm, rp, rm, res)
+    SUBROUTINE doLimitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep,&
+        NEQ, NEDGE, NVAR, Cx, Cy, u, uPredict, flux, flux0,&
+        dscale,theta, tstep, res, MC)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
       INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+      INTEGER(PREC_MATIDX), INTENT(IN)                  :: NEDGE
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
-      REAL(DP), DIMENSION(NVAR,*), INTENT(IN)           :: u,uPredict
-      REAL(DP), INTENT(IN)                              :: dscale
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: pp,pm,qp,qm,rp,rm
-      REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
+      REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
+      REAL(DP), DIMENSION(NVAR,NEQ),   INTENT(IN)       :: u,uPredict
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(IN)       :: flux,flux0
+      REAL(DP), INTENT(IN)                              :: dscale,theta,tstep
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)      :: res
 
-      REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR*NVAR) :: S_ij,T_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,G_ij,U_ij,W_ij,Lbd_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
-      INTEGER(PREC_MATIDX)           :: ij,ji
-      INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
+      REAL(DP)                       :: cnrm
+      INTEGER(PREC_MATIDX)           :: ij,ji,iedge
+      INTEGER(PREC_VECIDX)           :: i,j
       INTEGER                        :: ivar
 
-      PRINT *, "Es hat soweit funktioniert"
-      STOP
+      IF (PRESENT(MC)) THEN
 
+        ! Initialize edge counter
+        iedge = 0
+        
+        ! Loop over all rows
+        DO i = 1, NEQ
+          
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J. That is, explore the
+          ! upper triangular matrix
+          DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+    
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Compute averaged coefficients
+            C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
+            C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+            cnrm    = SQRT(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))
+            
+            ! Compute characteristic variables for predicted values which gives
+            ! the characteristic flux difference and the transformation matrix
+            CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j),&
+                                         C_ij, W_ij, R_ij=S_ij, L_ij=T_ij)
+            
+            ! Compute coefficients
+            C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+            C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+            
+            ! Compute the fluxes
+            CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+
+            ! Update the defect vector
+            res(:,i) = res(:,i)+F_ij
+            res(:,j) = res(:,j)+F_ji
+
+
+            ! Compute raw antidiffusive fluxes
+            CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, theta*tstep, F_ij)
+            
+            ! Transform fluxes into characteristic variables
+            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
+            
+            
+            ! Compute characteristic flux differences adopting the transformation
+            ! matrix evaluated at the predicted solution values
+            U_ij = u(:,i)-u(:,j)
+            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
+
+            ! Apply mass antidiffusion
+!!$            G_ij = G_ij + MC(ij)*W_ij+flux0(:,iedge)
+            G_ij = G_ij + flux0(:,iedge)
+
+            
+            ! Perform flux limiting
+            DO ivar = 1, NVAR
+              IF (G_ij(ivar) > 0._DP) THEN
+                G_ij(ivar) = MIN(G_ij(ivar),MAX(flux(ivar,iedge), 0._DP))
+              ELSE
+                G_ij(ivar) = MAX(G_ij(ivar),MIN(flux(ivar,iedge), 0._DP))
+              END IF
+            END DO
+
+            
+            ! Convert limited flux back to conservative variabels
+            CALL DGEMV('n', NVAR, NVAR, 1._DP, S_ij, NVAR, G_ij, 1, 0._DP, F_ij, 1)
+                        
+            ! Update the defect vector
+            res(:,i) = res(:,i)-F_ij
+            res(:,j) = res(:,j)+F_ij
+          END DO
+        END DO
+        
+      ELSE
+        
+      END IF
+      
     END SUBROUTINE doLimitFCTMat9_2D
   END SUBROUTINE gfsys_buildResScalarFCT
 
@@ -3703,7 +3945,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_L,p_u,p_res
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
     REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
     INTEGER :: h_Ksep
 
@@ -3859,7 +4101,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -3900,9 +4142,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -3952,9 +4194,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4007,7 +4249,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -4048,9 +4290,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4104,9 +4346,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4139,9 +4381,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4192,9 +4434,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4247,7 +4489,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -4289,9 +4531,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4345,9 +4587,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4380,9 +4622,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4437,9 +4679,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4472,9 +4714,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4524,9 +4766,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4580,7 +4822,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -4621,9 +4863,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4673,9 +4915,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4729,7 +4971,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -4770,9 +5012,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4826,9 +5068,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4861,9 +5103,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -4914,9 +5156,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -4970,7 +5212,7 @@ CONTAINS
       REAL(DP), DIMENSION(NEQ,NVAR), INTENT(INOUT)      :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NVAR)      :: u_i,u_j
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
@@ -5012,9 +5254,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5068,9 +5310,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5103,9 +5345,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5160,9 +5402,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5195,9 +5437,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5247,9 +5489,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5319,7 +5561,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
-    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_L,p_u,p_res
+    REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_u,p_res
     REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
     INTEGER :: h_Ksep
 
@@ -5468,7 +5710,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -5505,9 +5747,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5554,9 +5796,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5609,7 +5851,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -5647,9 +5889,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5700,9 +5942,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5735,9 +5977,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5785,9 +6027,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5840,7 +6082,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -5879,9 +6121,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -5932,9 +6174,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -5967,9 +6209,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6021,9 +6263,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6056,9 +6298,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6105,9 +6347,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6161,7 +6403,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM1D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -6198,9 +6440,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6247,9 +6489,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6303,7 +6545,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -6340,9 +6582,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6393,9 +6635,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6428,9 +6670,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6478,9 +6720,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6534,7 +6776,7 @@ CONTAINS
       REAL(DP), DIMENSION(NVAR,*), INTENT(INOUT)        :: res
 
       REAL(DP), DIMENSION(NVAR*NVAR) :: A_ij,R_ij,L_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,kb_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij
       REAL(DP), DIMENSION(NDIM3D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji
       INTEGER(PREC_VECIDX)           :: i,j,iloc,jloc
@@ -6573,9 +6815,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6626,9 +6868,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-          kb_ij  =  0.5_DP*(Cx(ji)+Cx(ij))*Lbd_ij
-          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+          F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6661,9 +6903,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6715,9 +6957,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cy(ji)+Cy(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
@@ -6750,9 +6992,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
           ! Update sums of downstream/upstream edge contributions
           DO ivar = 1, NVAR
@@ -6799,9 +7041,9 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-          kb_ij =  0.5_DP*(Cz(ji)+Cz(ij))*Lbd_ij
-          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-kb_ij, 2._DP*ABS(ka_ij)))*W_ij
+          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+          F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
           ! Construct characteristic fluxes
