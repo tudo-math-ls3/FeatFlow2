@@ -45,10 +45,10 @@ PROGRAM anisotropicdiffusion
   CALL storage_init(999, 100)
 
   ! Call the problem to solve. 
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating anisotropic diffusion problem with method 1')
-!  CALL output_line ('-------------------------------------------------------')
-!  CALL anisotropicdiffusion1
+  CALL output_lbrk ()
+  CALL output_line ('Calculating anisotropic diffusion problem with method 1')
+  CALL output_line ('-------------------------------------------------------')
+  CALL anisotropicdiffusion1
 
   ! Call the problem to solve. 
   CALL output_lbrk ()

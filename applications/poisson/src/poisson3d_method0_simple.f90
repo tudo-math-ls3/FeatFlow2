@@ -220,7 +220,7 @@ CONTAINS
     
     ! Describe Dirichlet BCs on that mesh region
     CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, rmeshRegion,&
-                                  getBoundaryValuesMR_3D, NULL())
+                                  getBoundaryValuesMR_3D)
     
     ! Free the mesh region structure as we won't need it anymore
     CALL mshreg_done(rmeshRegion)

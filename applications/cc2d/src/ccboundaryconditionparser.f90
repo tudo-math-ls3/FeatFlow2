@@ -564,7 +564,7 @@ CONTAINS
   !   3=3rd solution component, e.g. pressure)
   ! For pressure drop boundary / normal stress:
   !   Velocity components that are affected by the normal stress
-  !   (usually "1 2" for x- and y-velocity while returned value musr specify
+  !   (usually "1 2" for x- and y-velocity while returned value must specify
   !   the pressure at the boundary)
   INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
 
@@ -691,14 +691,14 @@ CONTAINS
       SELECT CASE (rcollection%IquickAccess(1))
       CASE (1)
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
-        Dvalues(1) = evalBoundary (rdiscretisation, rboundaryRegion, &
+        Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
             rcollection%p_rnextCollection)
     
       CASE (2)
         ! Normal stress / pressure drop. Evaluate the  expression iexprtyp.
-        Dvalues(1) = evalBoundary (rdiscretisation, rboundaryRegion, &
+        Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
             rcollection%p_rnextCollection)
@@ -711,8 +711,12 @@ CONTAINS
   
     ! Auxiliary function: Evaluate a scalar expression on the boundary.
     
-    REAL(DP) FUNCTION evalBoundary (rdiscretisation, rboundaryRegion, &
+    REAL(DP) FUNCTION evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
                                     ityp, ivalue, dvalue, dpar, stag, dtime, rcollection)
+    
+    ! Solution component for which the expression is evaluated.
+    ! 1 = X-velocity, 2 = y-velocity,...
+    INTEGER, INTENT(IN) :: icomponent
     
     ! Discretisation structure of the underlying discretisation
     TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
@@ -765,7 +769,7 @@ CONTAINS
                                 
         ! Call the user defined callback routine to evaluate the expression.
         CALL getBoundaryValues (&
-            stag,rdiscretisation,rboundaryRegion,&
+            stag,icomponent,rdiscretisation,rboundaryRegion,&
             dpar, d, rcollection)     
         
         evalBoundary = d

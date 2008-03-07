@@ -300,7 +300,6 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
-  TYPE(t_fparser), POINTER :: p_rparser
 
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
     

@@ -56,8 +56,8 @@ CONTAINS
 
   SUBROUTINE coeff_burgers (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
-                  Dcoefficients)
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -110,9 +110,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -143,7 +143,7 @@ CONTAINS
     Dcoefficients(4,:,:) = nu 
     
     ! From the collection, get the current solution vector
-    p_rsolution => collct_getvalue_vec (p_rcollection, 'RX')
+    p_rsolution => collct_getvalue_vec (rcollection, 'RX')
     
     ! In the first subvector of p_rsolution, there is our scalar solution u.
     !
@@ -175,8 +175,8 @@ CONTAINS
 
   SUBROUTINE coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,p_rcollection, &
-                  Dcoefficients)
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -225,9 +225,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   

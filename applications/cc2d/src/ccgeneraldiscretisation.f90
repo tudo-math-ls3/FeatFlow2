@@ -558,7 +558,6 @@ CONTAINS
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
-    TYPE(t_vectorBlock), POINTER :: p_rtempVector
 
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation

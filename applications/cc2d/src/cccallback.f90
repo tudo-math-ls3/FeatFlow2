@@ -200,8 +200,8 @@ CONTAINS
 
   SUBROUTINE coeff_Stokes (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
-                  Dcoefficients)
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -254,9 +254,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -280,8 +280,8 @@ CONTAINS
 
   SUBROUTINE coeff_Pressure (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
-                  Dcoefficients)
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -334,9 +334,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -361,8 +361,8 @@ CONTAINS
 
   SUBROUTINE coeff_RHS_x (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,p_rcollection, &
-                  Dcoefficients)
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -412,9 +412,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -432,8 +432,8 @@ CONTAINS
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
     ELSE
       dtime = 0.0_DP
     END IF
@@ -448,8 +448,8 @@ CONTAINS
 
   SUBROUTINE coeff_RHS_y (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,p_rcollection, &
-                  Dcoefficients)
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -499,9 +499,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -519,8 +519,8 @@ CONTAINS
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
     ELSE
       dtime = 0.0_DP
     END IF
@@ -535,8 +535,8 @@ CONTAINS
 
   SUBROUTINE ffunction_TargetX (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,p_rcollection, &
-                Dvalues)
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
   
   USE basicgeometry
   USE triangulation
@@ -587,8 +587,8 @@ CONTAINS
   TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                      :: p_rcollection
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   
 !</input>
 
@@ -607,10 +607,10 @@ CONTAINS
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
-      dtimeMax = p_rcollection%Dquickaccess(3)
-      itimedependence = p_rcollection%Iquickaccess(1)
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
     ELSE
       itimedependence = 0
       dtime = 0.0_DP
@@ -632,8 +632,8 @@ CONTAINS
 
   SUBROUTINE ffunction_TargetY (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,p_rcollection, &
-                Dvalues)
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
   
   USE basicgeometry
   USE triangulation
@@ -684,8 +684,8 @@ CONTAINS
   TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                      :: p_rcollection
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   
 !</input>
 
@@ -704,10 +704,10 @@ CONTAINS
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
-      dtimeMax = p_rcollection%Dquickaccess(3)
-      itimedependence = p_rcollection%Iquickaccess(1)
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
     ELSE
       itimedependence = 0
       dtime = 0.0_DP
@@ -729,8 +729,8 @@ CONTAINS
 
   SUBROUTINE ffunction_TargetP (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,p_rcollection, &
-                Dvalues)
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
   
   USE basicgeometry
   USE triangulation
@@ -781,8 +781,8 @@ CONTAINS
   TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                      :: p_rcollection
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   
 !</input>
 
@@ -801,10 +801,10 @@ CONTAINS
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    IF (ASSOCIATED(p_rcollection)) THEN
-      dtime = p_rcollection%Dquickaccess(1)
-      dtimeMax = p_rcollection%Dquickaccess(3)
-      itimedependence = p_rcollection%Iquickaccess(1)
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
     ELSE
       itimedependence = 0
       dtime = 0.0_DP
@@ -825,8 +825,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (sexpressionName,rdiscretisation,rboundaryRegion,&
-                                dwhere, dvalue, rcollection)
+  SUBROUTINE getBoundaryValues (sexpressionName,icomponent,rdiscretisation,&
+                                rboundaryRegion,dwhere, dvalue, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -850,6 +850,10 @@ CONTAINS
   ! Name of the expression to be evaluated. This name is configured in the
   ! DAT file for the boundary conditions.
   CHARACTER(LEN=*), INTENT(IN) :: sexpressionName
+  
+  ! Solution component that is currently being processed. 
+  ! 1 = X-velocity, 2 = y-velocity,...
+  INTEGER, INTENT(IN) :: icomponent
   
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
@@ -899,7 +903,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE getBoundaryValuesFBC (Icomponents,rdiscretisation,&
-                                      Revaluation, rcollection)
+                                   Revaluation, rcollection)
     
     USE collection
     USE spatialdiscretisation
@@ -965,6 +969,13 @@ CONTAINS
     
   !</subroutine>
 
+    ! Note: the definition of (analytic) fictitious boundary components 
+    ! is performed in 'cc_parseFBDconditions'.
+    !
+    ! By default, fictitious boundary handling is switched off!
+    ! To switch the handling on, uncomment tge bcasm_XXXX-call
+    ! in cc_parseFBDconditions!!!
+    
     ! local variables
     REAL(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordinates
@@ -972,9 +983,6 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     INTEGER :: ipoint,idx
-    
-    ! Note: the definition of (analytic) fictitious boundary components 
-    ! is performed in 'cc_parseFBDconditions'.
     
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation

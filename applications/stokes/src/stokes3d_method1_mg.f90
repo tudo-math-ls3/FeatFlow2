@@ -642,11 +642,11 @@ CONTAINS
     ! And prescribe Dirichlet boundary conditions
     CALL bcasm_initDiscreteBC (rprjDiscreteBC)
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 1, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 2, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
 
     ! Now we don't need the mesh region anymore, so release it
     CALL mshreg_done(rmeshRegion)

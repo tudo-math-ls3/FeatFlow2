@@ -270,7 +270,7 @@ CONTAINS
       CALL bcasm_initDiscreteBC(rdiscreteBC)
       !
       ! We 'know' already (from the problem definition) that we have four boundary
-      ! segments in the domain. Each of these, we want to use for inforcing
+      ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
       !
       ! We ask the bondary routines to create a 'boundary region' - which is

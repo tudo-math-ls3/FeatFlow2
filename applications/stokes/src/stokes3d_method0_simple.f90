@@ -381,15 +381,15 @@ CONTAINS
     
     ! Assemble Dirichlet BCs for X-velocity:
     CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
 
     ! Assemble Dirichlet BCs for Y-velocity:
     CALL bcasm_newDirichletBConMR(rdiscretisation, 2, rdiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
 
     ! Assemble Dirichlet BCs for Z-velocity:
     CALL bcasm_newDirichletBConMR(rdiscretisation, 3, rdiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     
     ! We do not need any boundary conditions for the pressure
     
@@ -503,11 +503,11 @@ CONTAINS
     CALL bcasm_initDiscreteBC (rprjDiscreteBC)
     
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 1, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 2, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     CALL bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
-                       rmeshRegion, getBoundaryValuesMR_3D, NULL())
+                       rmeshRegion, getBoundaryValuesMR_3D)
     
     ! Now we don't need the mesh region anymore, so release it
     CALL mshreg_done(rmeshRegion)

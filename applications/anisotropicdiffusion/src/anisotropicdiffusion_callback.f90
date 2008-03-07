@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poissoncallback </name>
+!# <name> anisotropicdiffusion_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -75,8 +75,8 @@ CONTAINS
 
   SUBROUTINE coeff_Laplace (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
-                  Dcoefficients)
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -129,9 +129,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -155,8 +155,8 @@ CONTAINS
 
   SUBROUTINE coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,p_rcollection, &
-                  Dcoefficients)
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -205,9 +205,9 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   
@@ -226,11 +226,11 @@ CONTAINS
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = p_rcollection%IquickAccess(1) 
-    A(1,1) = p_rcollection%DquickAccess(1) 
-    A(1,2) = p_rcollection%DquickAccess(2) 
-    A(2,1) = p_rcollection%DquickAccess(3) 
-    A(2,2) = p_rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1) 
+    A(1,1) = rcollection%DquickAccess(1) 
+    A(1,2) = rcollection%DquickAccess(2) 
+    A(2,1) = rcollection%DquickAccess(3) 
+    A(2,2) = rcollection%DquickAccess(4) 
 
     SELECT CASE (isolution)
     CASE (0,2)
@@ -270,8 +270,8 @@ CONTAINS
 
   SUBROUTINE getReferenceFunction (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,p_rcollection, &
-                Dvalues)
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
   
   USE basicgeometry
   USE triangulation
@@ -322,9 +322,9 @@ CONTAINS
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                      :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   
 !</input>
 
@@ -343,11 +343,11 @@ CONTAINS
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = p_rcollection%IquickAccess(1) 
-    A(1,1) = p_rcollection%DquickAccess(1) 
-    A(1,2) = p_rcollection%DquickAccess(2) 
-    A(2,1) = p_rcollection%DquickAccess(3) 
-    A(2,2) = p_rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1) 
+    A(1,1) = rcollection%DquickAccess(1) 
+    A(1,2) = rcollection%DquickAccess(2) 
+    A(2,1) = rcollection%DquickAccess(3) 
+    A(2,2) = rcollection%DquickAccess(4) 
 
   SELECT CASE (cderivative)
   CASE (DER_FUNC)
@@ -378,8 +378,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
+  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -405,12 +405,8 @@ CONTAINS
   ! analytic boundary boundary description etc.
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-  
+  ! Boundary region that is currently being processed.
+  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
   INTEGER(I32), INTENT(IN)                                    :: ielement
@@ -443,9 +439,9 @@ CONTAINS
   !   dwhere = 0 (not used)
   REAL(DP), INTENT(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collection), POINTER                  :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
 
 !</input>
 
@@ -458,22 +454,23 @@ CONTAINS
 !</output>
   
 !</subroutine>
+
     REAL(DP) :: dx,dy
     INTEGER :: isolution
     REAL(DP), DIMENSION(2,2) :: A
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = p_rcollection%IquickAccess(1) 
-    A(1,1) = p_rcollection%DquickAccess(1) 
-    A(1,2) = p_rcollection%DquickAccess(2) 
-    A(2,1) = p_rcollection%DquickAccess(3) 
-    A(2,2) = p_rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1) 
+    A(1,1) = rcollection%DquickAccess(1) 
+    A(1,2) = rcollection%DquickAccess(2) 
+    A(2,1) = rcollection%DquickAccess(3) 
+    A(2,2) = rcollection%DquickAccess(4) 
 
     ! Get the X/Y-coordinates of the boundary point:
     !
     CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-        rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+        rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
 !    ! Return zero Dirichlet boundary values for all situations.
 !    SELECT CASE (isolution)
@@ -762,7 +759,7 @@ CONTAINS
     daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
     CALL lsyssc_scaleVector(rindicator,1._DP/daux)
 
-    PRINT *, "!!gradient error!! = ",dgradientError
+    CALL output_line('!!gradient error!! = '//TRIM(sys_sdE(dgradientError,10)))
     
     ! Release temporal discretisation structure
     CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
