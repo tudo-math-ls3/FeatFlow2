@@ -70,19 +70,16 @@
 !# </purpose>
 !##############################################################################
 
+MODULE statistics
 
+  USE fsystem
+  USE genoutput
 
-module statistics
-
-  use fsystem
-  use genoutput
-
-
-  implicit none
+  IMPLICIT NONE
   
-  !<constants>
+!<constants>
   
-  !<constantblock description="constants for special timer values">
+!<constantblock description="constants for special timer values">
   
   REAL(DP), PARAMETER :: STAT_TIMER_NOT_RUNNING = -1.0d0
   
@@ -132,9 +129,10 @@ module statistics
   INTEGER, PARAMETER :: STAT_NONTRIVIALFLOP=16
   INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_COMPLETE=1
   INTEGER, PARAMETER :: STAT_PERFCOUNTER_MULTIDIM_COMPLETE=2
-  !</constantblock>
+
+!</constantblock>
   
-  !</constants>
+!</constants>
 
 
 !<types>
@@ -164,7 +162,7 @@ module statistics
 
 !<type>
   ! Timer object
-  type t_timer
+  TYPE t_timer
     ! elapsed CPU time (clock cycles / frequency)
     ! warning: might be inaccurate for GPU code or
     ! parallel code
@@ -181,9 +179,8 @@ module statistics
     ! value of sysclock counter during last call to stat_startTimer
     !  (to avoid floating point cancellation effects
     integer :: istartCount
-  end type t_timer
-  !</type>
-!</types>
+  END TYPE t_timer
+!</type>
 
 !<type>
   ! Performance counter object (combined timings, flops and memory transfers)
@@ -210,9 +207,9 @@ module statistics
     integer       :: irecursionGuard
 
   end type t_perfCounter
-  !</type>
+!</type>
   
-  !<type>
+!<type>
   ! Internal type to maintain all arrays for performance counters easily.
   ! Users should typically not use this, instead, use the getter and 
   ! pretty-printer functions below.
@@ -232,7 +229,8 @@ module statistics
 
   end type t_perfCounterData
   private :: t_perfCounterData
-  !</type>
+!</type>
+!</types>
 
   
 !<privatevars>
