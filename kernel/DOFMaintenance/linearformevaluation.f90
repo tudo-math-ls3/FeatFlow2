@@ -68,10 +68,10 @@ CONTAINS
   ! If .FALSE., the new entries are added to the existing entries.
   LOGICAL, INTENT(IN) :: bclear
   
-  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! A callback routine for the function to be discretised.
   INCLUDE 'intf_coefficientVectorSc.inc'
@@ -162,10 +162,10 @@ CONTAINS
   ! If .FALSE., the new matrix entries are added to the existing entries.
   LOGICAL, INTENT(IN) :: bclear
   
-  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -263,9 +263,6 @@ CONTAINS
   ! except if there are less elements in the discretisation.
   INTEGER :: nelementsPerBlock
   
-  ! Pointer to the collection structure or to NULL()
-  TYPE(t_collection), POINTER :: p_rcollection
-  
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
@@ -337,14 +334,6 @@ CONTAINS
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => rdiscretisation%p_rtriangulation
   
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
-
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
@@ -505,8 +494,8 @@ CONTAINS
       
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,icurrentElementDistr, rform, &
                 IELset,IELmax-IELset+1_I32,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
-                DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj,p_rcollection, &
-                Dcoefficients(:,:,1:IELmax-IELset+1_I32))
+                DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj, &
+                Dcoefficients(:,:,1:IELmax-IELset+1_I32),rcollection)
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
@@ -665,7 +654,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -763,9 +752,6 @@ CONTAINS
   ! except if there are less elements in the discretisation.
   INTEGER :: nelementsPerBlock
   
-  ! Pointer to the collection structure or to NULL()
-  TYPE(t_collection), POINTER :: p_rcollection
-  
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
@@ -841,14 +827,6 @@ CONTAINS
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => rdiscretisation%p_rtriangulation
   
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
-
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
@@ -1044,8 +1022,8 @@ CONTAINS
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                 IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
-                IdofsTest,rintSubset,p_rcollection, &
-                Dcoefficients(:,:,1:IELmax-IELset+1_I32))
+                IdofsTest,rintSubset, &
+                Dcoefficients(:,:,1:IELmax-IELset+1_I32),rcollection)
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.

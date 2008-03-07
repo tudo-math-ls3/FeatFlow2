@@ -7,8 +7,8 @@
 
     SUBROUTINE fcoeff_buildTrilMatrixSc_sim (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
-                  Dcoefficients)
+                  IdofsTrial,IdofsTest,rdomainIntSubset,&
+                  Dcoefficients, rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -60,9 +60,9 @@
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   

@@ -146,7 +146,7 @@ CONTAINS
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
   ! If not specified, the discretisation structure in the vector is used.
@@ -165,16 +165,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_collection), POINTER :: p_rcollection
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    
-    ! Let p_rcollection point to rcollection - or NULL if it's not
-    ! given.
-    IF (PRESENT(rcollection)) THEN
-      p_rcollection => rcollection
-    ELSE
-      p_rcollection => NULL()
-    END IF
     
     ! Get the correct discretisation structure and check if we can use it.
     IF (PRESENT(rdiscretisation)) THEN
@@ -213,13 +204,13 @@ CONTAINS
         SELECT CASE(p_rdiscretisation%ndimension)
         CASE (NDIM1D)
           CALL pperr_scalar1d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rcollection,p_rdiscretisation,ffunctionReference)
+                           p_rdiscretisation,ffunctionReference,rcollection)
         CASE (NDIM2D)
           CALL pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rcollection,p_rdiscretisation,ffunctionReference)
+                           p_rdiscretisation,ffunctionReference,rcollection)
         CASE (NDIM3D)
           CALL pperr_scalar3d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rcollection,p_rdiscretisation,ffunctionReference)
+                           p_rdiscretisation,ffunctionReference,rcollection)
         END SELECT
       ELSE
         CALL output_line('Single precision vectors currently not supported!',&
@@ -232,7 +223,7 @@ CONTAINS
     
       IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
         CALL pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rcollection,p_rdiscretisation,ffunctionReference)
+                           p_rdiscretisation,ffunctionReference,rcollection)
       ELSE
         CALL output_line('Single precision vectors currently not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
@@ -252,7 +243,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE pperr_scalar1d_conf (rvectorScalar,cerrortype,derror,&
-                                  p_rcollection,rdiscretisation,ffunctionReference)
+                                  rdiscretisation,ffunctionReference,rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -272,9 +263,9 @@ CONTAINS
   ! A discretisation structure specifying how to compute the error.
   TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
   
-  ! A pointer to the collection structure to pass to the callback routine;
-  ! or NULL, if none such a structure exists.
-  TYPE(t_collection), POINTER            :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -546,8 +537,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC1D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -602,8 +593,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC1D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -658,8 +649,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV1D_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1:2) = 0.0_DP
@@ -735,7 +726,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                                  p_rcollection,rdiscretisation,ffunctionReference)
+                                  rdiscretisation,ffunctionReference,rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -755,9 +746,9 @@ CONTAINS
   ! A discretisation structure specifying how to compute the error.
   TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
   
-  ! A pointer to the collection structure to pass to the callback routine;
-  ! or NULL, if none such a structure exists.
-  TYPE(t_collection), POINTER            :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information for callback routines.
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1030,8 +1021,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -1086,8 +1077,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -1138,15 +1129,15 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
 
             CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1:2) = 0.0_DP
           END IF
@@ -1227,7 +1218,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE pperr_scalar3d_conf (rvectorScalar,cerrortype,derror,&
-                                  p_rcollection,rdiscretisation,ffunctionReference)
+                                  rdiscretisation,ffunctionReference,rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1247,9 +1238,9 @@ CONTAINS
   ! A discretisation structure specifying how to compute the error.
   TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
   
-  ! A pointer to the collection structure to pass to the callback routine;
-  ! or NULL, if none such a structure exists.
-  TYPE(t_collection), POINTER            :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information for callback routines.
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1523,8 +1514,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC3D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -1579,8 +1570,8 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC3D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
           END IF
@@ -1635,20 +1626,20 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV3D_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
             CALL ffunctionReference (DER_DERIV3D_Y,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
 
             ! Calculate the Z-derivative to Dcoefficients(:,:,3)
             CALL ffunctionReference (DER_DERIV3D_Z,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                        IdofsTrial,rintSubset,p_rcollection, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,3))
+                        IdofsTrial,rintSubset, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,3),rcollection)
           ELSE
             Dcoefficients(:,1:IELmax-IELset+1_I32,1:3) = 0.0_DP
           END IF
@@ -1784,7 +1775,7 @@ CONTAINS
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
 
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
   ! Must be specified if rvectorScalar is not specified as this
@@ -1800,19 +1791,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_collection), POINTER :: p_rcollection
     TYPE(t_boundaryRegion) :: rboundaryReg
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     REAL(DP) :: dlocalError
     INTEGER :: ibdc
-    
-    ! Let p_rcollection point to rcollection - or NULL if it's not
-    ! given.
-    IF (PRESENT(rcollection)) THEN
-      p_rcollection => rcollection
-    ELSE
-      p_rcollection => NULL()
-    END IF
     
     ! Get the correct discretisation structure and check if we can use it.
     IF (PRESENT(rdiscretisation)) THEN
@@ -1846,8 +1828,8 @@ CONTAINS
     ! for all possible boundary regions and sum up the errors.
     IF (PRESENT(rboundaryRegion)) THEN
       CALL pperr_scalarBoundary2d_conf (cerrortype,ccubType,derror,&
-        rboundaryRegion,rvectorScalar,p_rcollection,ffunctionReference,&
-        p_rdiscretisation)
+        rboundaryRegion,rvectorScalar,ffunctionReference,&
+        p_rdiscretisation,rcollection)
     ELSE
       derror = 0.0_DP
       ! Create a boundary region for each boundary component and call
@@ -1856,8 +1838,8 @@ CONTAINS
         CALL boundary_createRegion (p_rdiscretisation%p_rboundary, &
             ibdc, 0, rboundaryReg)
         CALL pperr_scalarBoundary2d_conf (cerrortype,ccubType,dlocalError,&
-          rboundaryReg,rvectorScalar,p_rcollection,ffunctionReference,&
-          p_rdiscretisation)
+          rboundaryReg,rvectorScalar,ffunctionReference,&
+          p_rdiscretisation,rcollection)
         derror = derror + dlocalError
       END DO
     END IF
@@ -1869,8 +1851,8 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE pperr_scalarBoundary2d_conf (cerrortype,ccubType,derror,&
-      rboundaryRegion,rvectorScalar,p_rcollection,ffunctionReference,&
-      rdiscretisation)
+      rboundaryRegion,rvectorScalar,ffunctionReference,&
+      rdiscretisation,rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1897,9 +1879,9 @@ CONTAINS
   ! A discretisation structure specifying how to compute the error.
   TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
   
-  ! A pointer to the collection structure to pass to the callback routine;
-  ! or NULL, if none such a structure exists.
-  TYPE(t_collection), POINTER            :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information for callback routines.
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   ! OPTIONAL: A callback function that provides a coefficient in front
   ! of the FE function. If not specified, a value of 1 is assumed.
@@ -2149,7 +2131,7 @@ CONTAINS
         
         ! Evaluate the reference function on the boundary
         CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,2))
+            DpointsRef,Dpoints, Ielements(1:NEL), Dvalues(:,:,2),rcollection)
             
       END IF
       
@@ -2207,7 +2189,7 @@ CONTAINS
         
         ! Evaluate the reference function on the boundary
         CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,2))
+            DpointsRef,Dpoints, Ielements(1:NEL), Dvalues(:,:,2),rcollection)
             
       END IF
       
@@ -2273,11 +2255,11 @@ CONTAINS
         !
         ! X-derivative
         CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,3))
+            DpointsRef,Dpoints, Ielements(1:NEL), Dvalues(:,:,3),rcollection)
 
         ! Y-derivative
         CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,4))
+            DpointsRef,Dpoints, Ielements(1:NEL), Dvalues(:,:,4),rcollection)
             
       END IF
 

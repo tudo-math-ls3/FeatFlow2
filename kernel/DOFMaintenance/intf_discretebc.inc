@@ -50,7 +50,7 @@
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), INTENT(IN), OPTIONAL                    :: rcollection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL                 :: rcollection
 
   !</input>
   

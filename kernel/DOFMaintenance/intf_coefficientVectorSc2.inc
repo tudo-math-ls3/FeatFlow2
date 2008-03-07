@@ -9,8 +9,8 @@
 
     SUBROUTINE fcoeff_buildVectorSc_sim (rdiscretisation,ielementDistribution, rform, &
                   ielementStartIdx,nelements,npointsPerElement,Ielements,Dcoords, &
-                  DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj,p_rcollection, &
-                  Dcoefficients)
+                  DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj, &
+                  Dcoefficients,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -84,9 +84,9 @@
     ! reference element to each real element
     REAL(DP), DIMENSION(npointsPerElement,nelements), INTENT(IN) :: Ddetj
     
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                   :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
   

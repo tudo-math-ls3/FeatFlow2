@@ -313,6 +313,8 @@ CONTAINS
     
     ! Release memory
     DEALLOCATE(rdiscreteBC%p_RdiscBCList)
+    rdiscreteBC%inumEntriesUsed = 0
+    rdiscreteBC%inumEntriesAlloc = 0
 
   END SUBROUTINE
       
@@ -419,6 +421,8 @@ CONTAINS
     
     ! Release memory
     DEALLOCATE(rdiscreteFBC%p_RdiscFBCList)
+    rdiscreteFBC%inumEntriesUsed = 0
+    rdiscreteFBC%inumEntriesAlloc = 0
 
   END SUBROUTINE
       
@@ -1180,7 +1184,7 @@ CONTAINS
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2084,7 +2088,7 @@ CONTAINS
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2642,7 +2646,7 @@ CONTAINS
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2990,7 +2994,7 @@ CONTAINS
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 
 !</input>
 

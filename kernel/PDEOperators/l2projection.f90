@@ -117,7 +117,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
 
 !</input>
 

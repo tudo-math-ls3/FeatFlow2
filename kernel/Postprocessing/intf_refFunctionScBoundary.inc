@@ -6,7 +6,7 @@
   !<subroutine>
 
     SUBROUTINE ffunctionReference (cderivative,rdiscretisation, &
-                  DpointsRef, Dpoints, Ielements, p_rcollection, Dvalues)
+                  DpointsRef, Dpoints, Ielements, Dvalues, rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -57,9 +57,9 @@
     ! DIMENSION(nelements)
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   !</input>
   
   !<output>

@@ -246,10 +246,10 @@ CONTAINS
   ! If .FALSE., the new matrix entries are added to the existing entries.
   LOGICAL, INTENT(IN) :: bclear
   
-  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -265,17 +265,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  TYPE(t_collection), POINTER :: p_rcollection
   TYPE(t_matrixScalar) :: rmatrixBackup
   
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
-
   ! The matrix must be unsorted, otherwise we can't set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there's a structure behind the matrix! So the caller
@@ -1926,7 +1917,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -2030,9 +2021,6 @@ CONTAINS
   
   ! Some variables to support nonconstant coefficients in the matrix.
   
-  ! Pointer to the collection structure or to NULL()
-  TYPE(t_collection), POINTER :: p_rcollection
-  
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
@@ -2117,14 +2105,6 @@ CONTAINS
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => rdiscretisation%p_rtriangulation
   
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
-
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
@@ -2459,8 +2439,8 @@ CONTAINS
       IF (.NOT. rform%ballCoeffConstant) THEN
         CALL fcoeff_buildMatrixSc_sim (rdiscretisation,icurrentElementDistr, rform, &
                   IELset,IELmax-IELset+1,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
-                  DcubPtsRef,DcubPtsReal,p_IdofsTrial,IdofsTest,Djac,Ddetj,p_rcollection, &
-                  Dcoefficients)
+                  DcubPtsRef,DcubPtsReal,p_IdofsTrial,IdofsTest,Djac,Ddetj, &
+                  Dcoefficients,rcollection)
       END IF
       
       !CALL ZTIME(DT(8))                              
@@ -2752,7 +2732,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -2856,9 +2836,6 @@ CONTAINS
   
   ! Some variables to support nonconstant coefficients in the matrix.
   
-  ! Pointer to the collection structure or to NULL()
-  TYPE(t_collection), POINTER :: p_rcollection
-  
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
@@ -2960,14 +2937,6 @@ CONTAINS
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => p_rdiscretisation%p_rtriangulation
   
-  ! Let p_rcollection point to rcollection - or NULL if it's not
-  ! given.
-  IF (PRESENT(rcollection)) THEN
-    p_rcollection => rcollection
-  ELSE
-    p_rcollection => NULL()
-  END IF
-
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
@@ -3362,8 +3331,8 @@ CONTAINS
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
                   IELmax-IELset+1_I32,ncubp,&
-                  p_DcubPtsReal,p_IdofsTrial,IdofsTest,rintSubset,p_rcollection, &
-                  Dcoefficients)
+                  p_DcubPtsReal,p_IdofsTrial,IdofsTest,rintSubset, &
+                  Dcoefficients,rcollection)
       END IF
       
       ! Calculate the values of the basis functions.

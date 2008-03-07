@@ -138,7 +138,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
-      ffunction,dvalue,rboundaryRegion,p_rcollection)
+      ffunction,dvalue,rboundaryRegion,rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -165,9 +165,9 @@ CONTAINS
   ! If not specified, the reference function is assumed to be zero!
   INCLUDE 'intf_functionScBoundary2D.inc'
 
-  ! A pointer to the collection structure to pass to the callback routine;
-  ! or NULL, if none such a structure exists.
-  TYPE(t_collection), POINTER            :: p_rcollection
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 !</input>
 
 !<output>
@@ -392,7 +392,7 @@ CONTAINS
     
     ! Evaluate the function on the boundary
     CALL ffunction (DpointsRef, Dpoints, rboundaryRegion%iboundCompIdx,&
-        DpointPar,Ielements(1:NEL), p_rcollection, Dvalues(:,:))
+        DpointPar,Ielements(1:NEL), Dvalues(:,:),rcollection)
           
     ! Now, Dvalues1 contains in Dvalues1(:,:,1) the term
     ! "u(x,y)-u_h(x,y)" -- in every cubature point on every
@@ -495,7 +495,7 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE ffunctionFEevaluation2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
-        p_rcollection, Dvalues)
+        Dvalues,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -546,9 +546,9 @@ CONTAINS
     ! DIMENSION(nelements)
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   !</input>
   
   !<output>
@@ -566,7 +566,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel
 
     ! Get the vector with the FE function from the collection
-    p_rvector => collct_getvalue_vecsca (p_rcollection, 'vector')
+    p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
   
     ! Evaluate the FE function in the given points.
     DO iel=1,SIZE(Ielements)
@@ -639,7 +639,7 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE ffunctionNormalDeriv2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
-        p_rcollection, Dvalues)
+        Dvalues,rcollection)
     
     USE basicgeometry
     USE triangulation
@@ -690,9 +690,9 @@ CONTAINS
     ! DIMENSION(nelements)
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
 
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
   !</input>
   
   !<output>
@@ -713,7 +713,7 @@ CONTAINS
     REAL(DP) :: dnx,dny,dminPar,dmaxPar,dt
 
     ! Get the vector with the FE function from the collection
-    p_rvector => collct_getvalue_vecsca (p_rcollection, 'vector')
+    p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
   
     ! Allocate memory for the values of the derivative
     ALLOCATE(DderivX(UBOUND(Dvalues,1),UBOUND(Dvalues,2)))
