@@ -1,11 +1,11 @@
 
 # PRM-file of the domain
 
-sfilePRM = './pre/TRIA.prm'
+sfilePRM = './pre/quad2d.prm'
 
 # TRI-file of the mesh
 
-sfileTRI = './pre/TRIA.tri'
+sfileTRI = './pre/quad2d.tri'
 
 # Convert quad mesh to triangle mesh
 
@@ -19,7 +19,7 @@ dmeshDistortion=0.0
 # Element type to use for the discretisation.
 # 11=Q1, 1=P1, 13=Q2, 2=P2, -30=Q1~ nonparametric, -1=mixed P1/Q1
 
-ielementType = 1
+ielementType = -1
 
 # Type of stabilisation.
 # 0=none
@@ -33,10 +33,10 @@ dgamma = 0.01
 
 # Maximum level of the discretisation
 
-NLMAX = 4
+NLMAX = 3
 
 # Maximum number of refinement steps
-MAXhRefinementSteps = 3
+MAXhRefinementSteps = 6
 
 # Type of error estimator
 # 1=L2-projection, 2=node-based ZZ, 3=element-based ZZ, 4=face-based ZZ
@@ -54,7 +54,7 @@ dtheta = -40
 ddiffusionA11 = 1.0
 ddiffusionA12 = 0.0
 ddiffusionA21 = 0.0
-ddiffusionA22 = 1.0 0.001
+ddiffusionA22 = 0.001
 
 # Type of reference solution
 # 0: u=16x(1-x)y(1-y), 1 boundary component
@@ -63,7 +63,7 @@ ddiffusionA22 = 1.0 0.001
 # 3: u according to f=32*(y(1-y) + x(1-x))
 # 4: u=unknown, u(outer boundarry component)=0, u(inner BC)=2
 
-isolution = 0
+isolution = 4
 
 
 [adaptivity]
@@ -76,7 +76,7 @@ nsubdividemax = 5
 iadaptationStrategy = 1
 
 # Tolerance for grid refinement
-drefinementTolerance = 1e-3
+drefinementTolerance = 1.0E-3
 
 # Tolerance for grid recoarsening
-dcoarseningTolerance = 1e-12
+dcoarseningTolerance = 1.0E-4

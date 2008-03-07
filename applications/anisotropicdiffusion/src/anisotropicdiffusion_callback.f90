@@ -752,14 +752,17 @@ CONTAINS
     CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
         dgradientError,relementError=rindicator)
 
-    ! Compute L2-norm of solution
-    CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
+    ! rindicator is currently the absolute error. If the relative error
+    ! is to be used, the following lines must be commented in:
+    !    
+    ! ! Compute L2-norm of solution
+    ! CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError) 
+    !
+    ! ! Prepare indicator for grid refinement/coarsening
+    ! daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
+    ! CALL lsyssc_scaleVector(rindicator,1._DP/daux)
 
-    ! Prepare indicator for grid refinement/coarsening
-    daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
-    CALL lsyssc_scaleVector(rindicator,1._DP/daux)
-
-    CALL output_line('!!gradient error!! = '//TRIM(sys_sdE(dgradientError,10)))
+    CALL output_line('!!gradient error!! = '//TRIM(sys_sdEL(dgradientError,10)))
     
     ! Release temporal discretisation structure
     CALL spdiscr_releaseBlockDiscr(rdiscrBlock)

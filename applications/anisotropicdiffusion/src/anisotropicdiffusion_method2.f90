@@ -19,7 +19,8 @@
 !# just listing all commands necessary  for initialisation, discretisation, 
 !# solving (with Gauss elimination = UMFPACK) and cleanup.
 !#
-!# The module uses h-adaptivity to adapt the mesh.
+!# The module uses h-adaptivity to adapt the mesh. The parameters in the
+!# section [adaptivity] in the DAT file control the h-adaptivity!
 !# </purpose>
 !##############################################################################
 
@@ -853,26 +854,26 @@ CONTAINS
                                         getBoundaryValues,rcollection)
 
       ! Edge 1 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,1,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 2 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,2,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 3 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,3,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
       ! Edge 4 of boundary component 2. 
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,4,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
 

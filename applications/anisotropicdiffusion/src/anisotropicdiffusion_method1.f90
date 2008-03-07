@@ -197,7 +197,7 @@ CONTAINS
     ! Element type
     CALL parlst_getvalue_int (rparams, '', &
                               'ielementType', ieltype, 7)
-
+                              
     ! Type of stabilisation
     CALL parlst_getvalue_int (rparams, '', &
       'istabilisation', istabilisation, 0)
@@ -306,6 +306,14 @@ CONTAINS
     CASE (-30)
       CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
         EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+    CASE (-1)
+      CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+          EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
+          rtriangulation,p_rboundary)
+    CASE (-2)
+      CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+          EL_E002,EL_E013,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
+          rtriangulation,p_rboundary)
     END SELECT
                  
     ! Now as the discretisation is set up, we can start to generate
@@ -495,7 +503,7 @@ CONTAINS
 
     ! Start UCD export to GMV file:
     SELECT CASE (ieltype)
-    CASE (1,11)
+    CASE (-1,1,11)
       CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     CASE (2)
@@ -503,6 +511,12 @@ CONTAINS
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
+    CASE (-2)
+      CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u2.gmv')
+      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+          p_Ddata(1:rtriangulation%NVT),&
+          p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
+          p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:))
     CASE (13)
       CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
@@ -714,26 +728,26 @@ CONTAINS
                                         getBoundaryValues,rcollection)
 
       ! Edge 1 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,1,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 2 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,2,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 3 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,3,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
       ! Edge 4 of boundary component 2. 
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+      CALL boundary_createRegion(p_rboundary,2,4,rboundaryRegion)
+      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
 
