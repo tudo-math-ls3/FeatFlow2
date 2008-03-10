@@ -43,7 +43,7 @@ vpath %.inc include \
       src/geometry src/misc src/parametrization src/triangulation src
 
 # The name of the final executable
-EXEC=cc2dmedium-$(ID)
+EXEC=cc2d-$(ID)
 
 # used libraries
 FEATLIB= minisplib feat2d sysutils umfpack4 amd
