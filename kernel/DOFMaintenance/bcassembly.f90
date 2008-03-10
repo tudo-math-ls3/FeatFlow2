@@ -2995,6 +2995,8 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertsAtEdge,&
     p_IvertsAtFace, p_IvertsAtElem
+  INTEGER, DIMENSION(4) :: Iwhere
+  REAL(DP), DIMENSION(3) :: Dwhere
   INTEGER, DIMENSION(EL_MAXNBAS) :: IdofGlob
   LOGICAL :: buniform
   INTEGER :: iidx
@@ -3193,17 +3195,26 @@ CONTAINS
     ! for whatever reason, we will set it to the maximum of the array lengths.
     IF (ndofs .EQ. 0) ndofs = MAX(iregionNVT,iregionNMT,iregionNAT,iregionNEL)
     
+    ! Reset Iwhere
+    Iwhere = 0
+    
     ! First of all, go through all vertices in the mesh region (if any at all)
     DO i=1, iregionNVT
     
       ! Get the index of the vertice
       ivt = p_IvertexIdx(i)
       
+      ! Store it to Iwhere
+      Iwhere(1) = ivt
+      
       ! And go through all elements which are adjacent to this vertice
       DO idx=p_IelemAtVertIdx(ivt), p_IelemAtVertIdx(ivt+1)-1
       
         ! Get the index of the element
         iel = p_IelemAtVert(idx)
+        
+        ! Store the element number to Iwhere
+        Iwhere(4) = iel
         
         ! Get all global dofs on this element
         CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
@@ -3277,7 +3288,8 @@ CONTAINS
         ! This is a new DOF for the list - so call the boundary values callback
         ! routine to calculate the value
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, p_DvertexCoords(:,ivt), Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere, p_DvertexCoords(:,ivt), Dvalues,&
+            rcollection)
         
         ! Okay, finally add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3293,6 +3305,9 @@ CONTAINS
     
     END DO ! ivt
     
+    ! Reset Iwhere
+    Iwhere = 0
+    
     IF (p_rtria%ndim .EQ. NDIM2D) THEN
       
       ! Go through all edges in the mesh region
@@ -3301,12 +3316,18 @@ CONTAINS
         ! Get the index of the edge
         imt = p_IedgeIdx(i)
         
+        ! Store the edge number
+        Iwhere(2) = imt
+        
         ! And go through all elements which are adjacent to this edge
         DO idx = 1, 2
         
           ! Get the index of the element
           iel = p_IelemAtEdge2D(idx, imt)
           IF (iel .EQ. 0) CYCLE
+          
+          ! Store the element number
+          Iwhere(4) = iel
         
           ! Get all global dofs on this element
           CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
@@ -3375,11 +3396,14 @@ CONTAINS
           ! Calculate the coordinates of the edge midpoint
           Dcoord2D(1:2) = Q12 * (p_DvertexCoords(1:2, p_IvertsAtEdge(1,imt)) +&
             p_DvertexCoords(1:2, p_IvertsAtEdge(2,imt)))
+            
+          ! Dwhere is always 0
+          Dwhere = 0.0_DP
 
           ! This is a new DOF for the list - so call the boundary values callback
           ! routine to calculate the value
           CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-              cinfoNeeded, Dcoord2D, Dvalues, rcollection)
+              cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord2D, Dvalues, rcollection)
           
           ! Okay, finally add the DOF into the list
           CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3398,7 +3422,10 @@ CONTAINS
     ! Currently we don't have any 3D elements which have DOFs in the edges,
     ! so there is no ELSE IF-case for 3D.
     
-    END IF    
+    END IF
+    
+    ! Reset Iwhere
+    Iwhere = 0
     
     ! Go through all faces in the mesh region
     DO i=1, iregionNAT
@@ -3406,12 +3433,18 @@ CONTAINS
       ! Get the index of the face
       iat = p_IfaceIdx(i)
       
+      ! Store the face number
+      Iwhere(3) = iat
+      
       ! And go through all elements which are adjacent to this face
       DO idx=1,2
       
         ! Get the index of the element
         iel = p_IelemAtFace(idx,iat)
         IF (iel .EQ. 0) CYCLE
+        
+        ! Store the element number
+        Iwhere(4) = iel
       
         ! Get all global dofs on this element
         CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
@@ -3453,11 +3486,14 @@ CONTAINS
           p_DvertexCoords(1:3, p_IvertsAtFace(2,iat)) +&
           p_DvertexCoords(1:3, p_IvertsAtFace(3,iat)) +&
           p_DvertexCoords(1:3, p_IvertsAtFace(4,iat)))
+        
+        ! Dwhere is always (0, 0)
+        Dwhere = 0.0_DP
 
         ! This is a new DOF for the list - so call the boundary values callback
         ! routine to calculate the value
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord3D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
         
         ! Okay, finally add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3473,11 +3509,17 @@ CONTAINS
     
     END DO
     
+    ! Reset Iwhere
+    Iwhere = 0
+    
     ! Go through all elements in the mesh region
     DO i=1, iregionNEL
     
       ! Get the element index
       iel = p_IelementIdx(i)
+      
+      ! Store the element number
+      Iwhere(4) = iel
 
       ! Get all global dofs on this element
       CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
@@ -3500,9 +3542,12 @@ CONTAINS
         Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
         
+        ! Dwhere is 0
+        Dwhere = 0.0_DP
+        
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord1D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord1D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3515,10 +3560,13 @@ CONTAINS
         ! Calculate line-midpoint
         Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
+
+        ! Dwhere is 0
+        Dwhere = 0.0_DP
         
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord1D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord1D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3533,9 +3581,12 @@ CONTAINS
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
         
+        ! Dwhere is (1/3, 1/3)
+        Dwhere = Q13
+        
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord2D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
       
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3550,9 +3601,12 @@ CONTAINS
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
         
+        ! Dwhere is (1/3, 1/3)
+        Dwhere = Q13
+
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord2D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:2),Dcoord2D, Dvalues, rcollection)
       
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3568,9 +3622,12 @@ CONTAINS
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
         
+        ! Dwhere is (0,0)
+        Dwhere = 0.0_DP
+        
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord2D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3586,9 +3643,12 @@ CONTAINS
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
         
+        ! Dwhere is (0,0)
+        Dwhere = 0.0_DP
+        
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord2D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
@@ -3608,9 +3668,12 @@ CONTAINS
           p_DvertexCoords(1:2,p_IvertsAtElem(7,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(8,iel)))
         
+        ! Dwhere is (0,0,0)
+        Dwhere = 0.0_DP
+        
         ! Call the boundary condition callback routine
         CALL fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
-            cinfoNeeded, Dcoord3D, Dvalues, rcollection)
+            cinfoNeeded, Iwhere, Dwhere, Dcoord3D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         CALL addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)

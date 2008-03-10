@@ -415,7 +415,8 @@ CONTAINS
   !<subroutine>
 
   SUBROUTINE getBoundaryValuesMR_1D (Icomponents,rdiscretisation,rmeshRegion,&
-                                      cinfoNeeded,Dcoords,Dvalues,rcollection)
+                                      cinfoNeeded,Iwhere,Dwhere,Dcoords,Dvalues,&
+                                      rcollection)
   
   USE collection
   USE spatialdiscretisation
@@ -450,6 +451,23 @@ CONTAINS
   ! to return one or multiple information value in the result array.
   INTEGER, INTENT(IN)                                         :: cinfoNeeded
   
+  ! An array holding information about what type of DOF is currently processed.
+  ! The information is build up as follows:
+  ! Iwhere(1) = vertice number of the DOF, if the DOF is vertice-based, otherwise 0
+  ! Iwhere(2) = edge number of the DOF, if the DOF is edge-based, otherwise 0
+  ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
+  ! Iwhere(4) = currently processed element number.
+  ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
+  INTEGER, DIMENSION(4), INTENT(IN)                           :: Iwhere
+  
+  ! The coordinates of the point which is currently processed, given in
+  ! reference coordinates of the currently processed cell type (edge,face,element).
+  ! If the DOF is vertice-based, then Dwhere is undefined.
+  ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
+  ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
+  ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
+  REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dwhere
+
   ! The coordinates of the point for which the boundary values are to be
   ! calculated.
   REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
