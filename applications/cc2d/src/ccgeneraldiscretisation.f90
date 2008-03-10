@@ -557,7 +557,7 @@ CONTAINS
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
-
+    
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
@@ -714,6 +714,9 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
+    ! Structure for the bilinear form for assembling Stokes,...
+    ! TYPE(t_bilinearForm) :: rform
+
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
@@ -769,6 +772,11 @@ CONTAINS
 !    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
 !                                 p_rmatrixStokes,coeff_Stokes,&
 !                                 rproblem%rcollection)
+
+    ! The following call is a replacement for all the lines commented out
+    ! above. It directly sets up the Laplace matrix.
+    ! If it's necessary to modify the Laplace matrix, remove this command
+    ! and comment in the stuff above.
     CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
