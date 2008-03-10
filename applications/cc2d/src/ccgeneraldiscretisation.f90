@@ -161,7 +161,6 @@ CONTAINS
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector.
-      ALLOCATE(p_rdiscretisation)
       CALL spdiscr_initBlockDiscr2D (&
           rproblem%RlevelInfo(i)%rdiscretisation,nequations,&
           p_rtriangulation, p_rboundary)
