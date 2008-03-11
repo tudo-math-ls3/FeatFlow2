@@ -299,8 +299,8 @@ CONTAINS
     CASE (AFCSTAB_FEMFCT)
 
       ! Nodal vectors
-      ALLOCATE(rafcstab%RnodalVectors(5))
-      DO i = 1, 5
+      ALLOCATE(rafcstab%RnodalVectors(7))
+      DO i = 1, 7
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
@@ -372,8 +372,8 @@ CONTAINS
     CASE (AFCSTAB_FEMFCT)
 
       ! Nodal vectors
-      ALLOCATE(rafcstab%RnodalVectors(5))
-      DO i = 1, 5
+      ALLOCATE(rafcstab%RnodalVectors(7))
+      DO i = 1, 7
         CALL lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .FALSE., ST_DOUBLE)
       END DO
@@ -613,7 +613,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivOperatorBlock(RmatrixC, ru,&
-      fcb_calcMatrix, bclear, rmatrixL)
+      fcb_calcMatrix, dscale, bclear, rmatrixL)
 
 !<description>
     ! This subroutine assembles the discrete transport operator $K$ so that
@@ -636,6 +636,9 @@ CONTAINS
 
     ! solution vector
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
+
+    ! scaling factor
+    REAL(DP), INTENT(IN)                           :: dscale
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -660,7 +663,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER      :: p_Kcol
     REAL(DP), DIMENSION(:), POINTER                  :: p_Cx,p_Cy,p_Cz,p_u
     INTEGER :: h_Ksep
-    INTEGER :: idim,ndim
+    INTEGER :: idim,ndim,iblock,jblock
     LOGICAL :: bisFullMatrix
 
     ! Check if block vector contains only one block and if
@@ -668,7 +671,7 @@ CONTAINS
     IF (ru%nblocks .EQ. 1   .AND.&
         rmatrixL%ndiagblocks .EQ. 1) THEN
       CALL gfsys_buildDivOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcMatrix, bclear, rmatrixL%RmatrixBlock(1,1))
+          fcb_calcMatrix, dscale, bclear, rmatrixL%RmatrixBlock(1,1))
       RETURN       
     END IF
 
@@ -839,6 +842,22 @@ CONTAINS
       CALL sys_halt()
     END SELECT
     
+    ! Do we have to scale the matrix?
+    IF (dscale .NE. 1.0_DP) THEN
+      IF (bisFullMatrix) THEN
+        DO iblock = 1, rmatrixL%ndiagblocks
+          DO jblock = 1, rmatrixL%ndiagblocks
+            CALL lsyssc_scaleMatrix(rmatrixL%Rmatrixblock(iblock,jblock), dscale)
+          END DO
+        END DO
+      ELSE
+        DO iblock = 1, rmatrixL%ndiagblocks
+          CALL lsyssc_scaleMatrix(rmatrixL%Rmatrixblock(iblock,iblock), dscale)
+        END DO
+      END IF
+    END IF
+        
+
   CONTAINS
 
     ! Here, the working routines follow
@@ -1598,7 +1617,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivOperatorScalar(RmatrixC, ru,&
-      fcb_calcMatrix, bclear, rmatrixL)
+      fcb_calcMatrix, dscale, bclear, rmatrixL)
 
 !<description>
     ! This subroutine assembles the discrete transport operator $K$ so that
@@ -1618,6 +1637,9 @@ CONTAINS
     
     ! scalar solution vector
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
+
+    ! scaling factor
+    REAL(DP), INTENT(IN)                           :: dscale
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -1815,6 +1837,12 @@ CONTAINS
       CALL sys_halt()
     END SELECT
     
+
+    ! Do we have to scale the matrix?
+    IF (dscale .NE. 1._DP) THEN
+      CALL lsyssc_scaleMatrix(rmatrixL, dscale)
+    END IF
+
   CONTAINS
     
     ! Here, the working routines follow
@@ -3481,7 +3509,7 @@ CONTAINS
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep,p_Kdiagonal
     REAL(DP), DIMENSION(:), POINTER :: p_Cx,p_Cy,p_Cz,p_MC,p_ML,p_u,p_uPredict,p_res
-    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_fluxX,p_fluxX0,p_fluxY,p_fluxY0
+    REAL(DP), DIMENSION(:), POINTER :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_flux,p_flux0,p_fluxY,p_fluxY0
     INTEGER :: h_Ksep
     LOGICAL :: bmass
 
@@ -3499,7 +3527,7 @@ CONTAINS
     ! stabilisation structure for subsequent usage
     IF (PRESENT(ruPredict)) THEN
       CALL lsyssc_isVectorCompatible(ru, ruPredict)
-      CALL lsyssc_copyVector (ruPredict, rafcstab%RnodalVectors(5))
+      CALL lsyssc_copyVector (ruPredict, rafcstab%RnodalVectors(7))
     END IF
 
     ! Set pointers
@@ -3532,13 +3560,11 @@ CONTAINS
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
       CALL lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_rp)
-      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_rm)
-      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_uPredict)
-      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(1) , p_fluxX)
-      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(2) , p_fluxX0)
-      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(3) , p_fluxY)
-      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(4) , p_fluxY0)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+      CALL lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredict)
+      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(1) , p_flux)
+      CALL lsyssc_getbase_double(rafcstab%RedgeVectors(2) , p_flux0)
       
       ! Set specifiers for Ps, Qs and Rs
       rafcstab%iSpec = IOR(rafcstab%iSpec, AFCSTAB_LIMITER)
@@ -3556,6 +3582,22 @@ CONTAINS
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
+
+          IF (PRESENT(ruPredict)) THEN
+            
+            CALL doInitFCTMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                p_Cx, p_Cy, p_ML, p_u, p_uPredict, dscale, theta, tstep,&
+                p_qp, p_qm, p_flux0, p_res, p_MC)
+            
+          ELSE
+            
+            CALL doLimitFCTMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+                rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
+                p_Cx, p_Cy, p_u, p_uPredict, dscale, theta, tstep,&
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0, p_res, p_MC)
+            
+          END IF
 
         CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
@@ -3581,41 +3623,8 @@ CONTAINS
         CASE (NDIM2D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
-
-          IF (PRESENT(ruPredict)) THEN
-
-            ! Initialize flux limiter
-            IF (bmass) THEN
-              CALL doInitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_ML, p_u, p_uPredict, theta, tstep,&
-                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxX, p_fluxX0, p_fluxY, p_fluxY0, p_res, p_MC)
-            ELSE
-              CALL doInitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_ML, p_u, p_uPredict, theta, tstep,&
-                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxX, p_fluxX0, p_fluxY, p_fluxY0, p_res)
-            END IF
-
-          ELSE
-            
-            ! Apply flux limiter
-            IF (bmass) THEN
-              CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_u, p_uPredict, p_fluxX, p_fluxX0, p_fluxY, p_fluxY0,&
-                  dscale, theta, tstep, p_res, p_MC)
-            ELSE
-              CALL doLimitFCTMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_u, p_uPredict, p_fluxX, p_fluxX0, p_fluxY, p_fluxY0,&
-                  dscale, theta, tstep, p_res)
-            END IF
-
-          END IF
-
           
-        CASE (NDIM3D)
+      CASE (NDIM3D)
           CALL lsyssc_getbase_double(RmatrixC(1), p_Cx)
           CALL lsyssc_getbase_double(RmatrixC(2), p_Cy)
           CALL lsyssc_getbase_double(RmatrixC(3), p_Cz)
@@ -3642,17 +3651,18 @@ CONTAINS
     CALL storage_free(h_Ksep)
     
   CONTAINS
-    
+
     !**************************************************************
-    ! Initialisation of the semi-implicit FEM-FCT procedure
-    
-    SUBROUTINE doInitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep,&
-        NEQ, NEDGE, NVAR, Cx, Cy, ML, u, uPredict, theta, tstep,&
-        pp, pm, qp, qm, rp, rm, fluxX, fluxX0, fluxY, fluxY0, res, MC)
+    ! Assemble residual for low-order operator plus
+    ! algebraic flux correction of TVD-type in 2D
+    ! All matrices are stored in matrix format 7
+
+    SUBROUTINE doInitFCTMat7_2D(Kld, Kcol, Ksep,&
+        NEQ, NEDGE, NVAR, Cx, Cy, ML, u, uPredict,&
+        dscale, theta, tstep, qp, qm, flux0, res, MC)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
       INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
       INTEGER(PREC_MATIDX), INTENT(IN)                  :: NEDGE
@@ -3660,437 +3670,191 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,ML
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: u,uPredict
-      REAL(DP), INTENT(IN)                              :: theta,tstep
-      REAL(DP), DIMENSION(NVAR,NEQ),   INTENT(INOUT)    :: pp,pm,qp,qm,rp,rm
-      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(INOUT)    :: fluxX,fluxX0,fluxY,fluxY0
-      REAL(DP), DIMENSION(NVAR,NEQ),   INTENT(INOUT)    :: res
-
-      REAL(DP), DIMENSION(NVAR*NVAR) :: T_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,G_ij,U_ij,W_ij,Lbd_ij
+      REAL(DP), INTENT(IN)                              :: dscale,theta,tstep
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT)        :: qp,qm
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(OUT)      :: flux0
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)      :: res
+      
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,Diff
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
-      REAL(DP)                       :: cnrm
       INTEGER(PREC_MATIDX)           :: ij,ji,iedge
       INTEGER(PREC_VECIDX)           :: i,j,ieq
-      INTEGER                        :: ivar
 
-      ! Clear P's and Q's
-      CALL lalg_clearVectorDble2D(pp)
-      CALL lalg_clearVectorDble2D(pm)
+      ! Clear nodal vectors
       CALL lalg_clearVectorDble2D(qp)
       CALL lalg_clearVectorDble2D(qm)
-      
-      IF (PRESENT(MC)) THEN
-        
-        ! Initialize edge counter
-        iedge = 0
-        
-        ! Loop over all rows (forward)
-        DO i = 1, NEQ
-          
-          ! Loop over all off-diagonal matrix entries IJ which are
-          ! adjacent to node J such that I < J. That is, explore the
-          ! upper triangular matrix
-          DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-            
-            ! Get node number J, the corresponding matrix positions JI,
-            ! and let the separator point to the next entry
-            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-            
-            ! Increase edge counter
-            iedge = iedge+1
-            
-            ! Compute averaged coefficients
-            C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
-            C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
-            cnrm    = SQRT(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))
-          
-            C_ij = XDir2D
 
-            ! Compute characteristic variables for predicted values which gives
-            ! the characteristic flux difference and the transformation matrix
-            CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j),&
-                                         C_ij, W_ij, L_ij=T_ij)
-
-            W_ij=uPredict(:,j)-uPredict(:,i)
-            
-            ! Update the upper/lower bounds from the predicted values
-            qp(:,i) = MAX(qp(:,i),W_ij); qp(:,j) = MAX(qp(:,j),-W_ij)
-            qm(:,i) =-MIN(qm(:,i),W_ij); qm(:,j) =-MIN(qm(:,j),-W_ij)
-            
-
-            ! Compute characteristic flux differences adopting the transformation
-            ! matrix evaluated at the predicted solution values
-!            U_ij = u(:,j)-u(:,i)
-!            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
-            
-            ! Store mass fluxes in characteristic variables
-            fluxX0(:,iedge) = 0._DP!MC(ij)*W_ij
-
-            
-            ! Compute coefficients
-            C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-            C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-            
-            ! Compute the fluxes
-            CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
-
-            ! Update the defect vector for the initial iteration
-            res(:,i) = res(:,i)+F_ij
-            res(:,j) = res(:,j)+F_ji
-
-
-            C_ij=XDir2D; C_ji=-XDir2D
-
-            ! Compute raw antidiffusive fluxes
-            CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep, F_ij)
-            
-            G_ij=F_ij
-
-            ! Transform fluxes into characteristic variables
- !           CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
-            fluxX(:,iedge) = G_ij
-            
-            ! Sum of positive/negative fluxes
-            pp(:,i) = pp(:,i)+MAX(0._DP,G_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-G_ij)
-            pm(:,i) = pm(:,i)-MIN(0._DP,G_ij); pm(:,j) = pm(:,j)-MIN(0._DP,-G_ij)
-          END DO
-        END DO
-        
-        ! Update the explicit part (if required)
-        IF (theta .LT. 1._DP) &
-            CALL lalg_vectorLinearCombDble2D(fluxX, fluxX0, 1._DP-theta, 1._DP)
-        
-      ELSE
-        
-        print *, "Keine MC da"
-        stop
-        
-        ! Update the explicit part (if required)
-        IF (theta .NE. 1._DP) THEN
-          CALL lalg_copyVectorDble2D(fluxX, fluxX0)
-          CALL lalg_scaleVectorDble2D(fluxX0, 1._DP-theta)
-        ELSE
-          CALL lalg_clearVectorDble2D(fluxX0)
-        END IF
-      END IF
-      
-      ! Apply lumped mass matrix
-      DO ieq = 1, NEQ
-        qp(:,ieq) = ML(ieq)*qp(:,ieq)
-        qm(:,ieq) = ML(ieq)*qm(:,ieq)
-      END DO
-      
-      ! Compute nodal correction factors
-      rp = afcstab_limit(pp, qp, 0._DP)
-      rm = afcstab_limit(pm, qm, 0._DP)
-      
-      ! Initialize edge counter
-      iedge = NEDGE+1
-      
-      ! Loop over all rows (backward)
-      DO i = NEQ, 1, -1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
-          
-          ! Decrease edge counter
-          iedge = iedge-1
-          
-          ! Perform symmetric flux limiting
-          DO ivar = 1, NVAR
-            IF (fluxX(ivar,iedge) > 0._DP) THEN
-              fluxX(ivar,iedge) = MIN(rp(ivar,i), rm(ivar,j))*fluxX(ivar,iedge)
-            ELSE
-              fluxX(ivar,iedge) = MIN(rm(ivar,i), rp(ivar,j))*fluxX(ivar,iedge)
-            END IF
-          END DO
-          
-        END DO
-      END DO
-
-      ! Clear P's and Q's
-      CALL lalg_clearVectorDble2D(pp)
-      CALL lalg_clearVectorDble2D(pm)
-      CALL lalg_clearVectorDble2D(qp)
-      CALL lalg_clearVectorDble2D(qm)
-      
-      ! Initialize edge counter
+      ! Initialise edge counter
       iedge = 0
-      
+
       ! Loop over all rows (forward)
       DO i = 1, NEQ
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
-        DO ij = Kdiagonal(i)+1, Kld(i+1)-1
+        DO ij = Ksep(i)+1, Kld(i+1)-1
           
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
           ! Increase edge counter
           iedge = iedge+1
-          
-          ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
-          C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
-          cnrm    = SQRT(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))
-          
-          C_ij = YDir2D
-          
-          ! Compute characteristic variables for predicted values which gives
-          ! the characteristic flux difference and the transformation matrix
-          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j),&
-              C_ij, W_ij, L_ij=T_ij)
-          
-          W_ij=uPredict(:,j)-uPredict(:,i)
 
-          ! Update the upper/lower bounds from the predicted values
-          qp(:,i) = MAX(qp(:,i),W_ij); qp(:,j) = MAX(qp(:,j),-W_ij)
-          qm(:,i) =-MIN(qm(:,i),W_ij); qm(:,j) =-MIN(qm(:,j),-W_ij)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          
-          ! Compute characteristic flux differences adopting the transformation
-          ! matrix evaluated at the predicted solution values
-          U_ij = u(:,j)-u(:,i)
-          CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
-          
-          ! Store mass fluxes in characteristic variables
-          fluxY0(:,iedge) = 0._DP!MC(ij)*W_ij
-          
-          C_ij=YDir2D; C_ji=-YDir2D
-          
-          ! Compute raw antidiffusive fluxes
-          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep, F_ij)
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+                   
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
 
-          G_ij=F_ij
-         
-          ! Transform fluxes into characteristic variables
-!          CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
-          fluxY(:,iedge) = G_ij
+          ! Compute the explicit antidiffusive fluxes and store it
+          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, 1._DP, F_ij)
+          flux0(:,iedge) = MC(ij)*(u(:,j)-u(:,i))+(1._DP-theta)*tstep*F_ij
+
+          ! Compute the upper/lower bounds
+          Diff = uPredict(:,j)-uPredict(:,i)
           
-          ! Sum of positive/negative fluxes
-          pp(:,i) = pp(:,i)+MAX(0._DP,G_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-G_ij)
-          pm(:,i) = pm(:,i)-MIN(0._DP,G_ij); pm(:,j) = pm(:,j)-MIN(0._DP,-G_ij)
+          ! Upper/lower bounds
+          qp(:,i) = MAX(qp(:,i),Diff); qp(:,j) = MAX(qp(:,j),-Diff)
+          qm(:,i) = MIN(qm(:,i),Diff); qm(:,j) = MIN(qm(:,j),-Diff)
         END DO
       END DO
-      
-      ! Update the explicit part (if required)
-      IF (theta .LT. 1._DP) &
-          CALL lalg_vectorLinearCombDble2D(fluxY, fluxY0, 1._DP-theta, 1._DP)
 
-       ! Apply lumped mass matrix
+      ! Multiply upper/lower boundary by lumped mass matrix
       DO ieq = 1, NEQ
-        qp(:,ieq) = ML(ieq)*qp(:,ieq)
-        qm(:,ieq) = ML(ieq)*qm(:,ieq)
+        qp(:,ieq) =  ML(ieq)*qp(:,ieq)
+        qm(:,ieq) = -ML(ieq)*qm(:,ieq)
       END DO
-      
-      ! Compute nodal correction factors
-      rp = afcstab_limit(pp, qp, 0._DP)
-      rm = afcstab_limit(pm, qm, 0._DP)
-      
-      ! Initialize edge counter
-      iedge = NEDGE+1
-      
-      ! Loop over all rows (backward)
-      DO i = NEQ, 1, -1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); Ksep(j) = Ksep(j)-1; ji = Ksep(j)
-          
-          ! Decrease edge counter
-          iedge = iedge-1
-          
-          ! Perform symmetric flux limiting
-          DO ivar = 1, NVAR
-            IF (fluxY(ivar,iedge) > 0._DP) THEN
-              fluxY(ivar,iedge) = MIN(rp(ivar,i), rm(ivar,j))*fluxY(ivar,iedge)
-            ELSE
-              fluxY(ivar,iedge) = MIN(rm(ivar,i), rp(ivar,j))*fluxY(ivar,iedge)
-            END IF
-          END DO
-          
-        END DO
-      END DO
-    END SUBROUTINE doInitFCTMat9_2D
-    
-    
-    !**************************************************************
-    ! Assemble residual for low-order operator plus
-    ! algebraic flux correction of FCT-type in 2D
-    ! All matrices are stored in matrix format 9
-    
-    SUBROUTINE doLimitFCTMat9_2D(Kld, Kcol, Kdiagonal, Ksep,&
-        NEQ, NEDGE, NVAR, Cx, Cy, u, uPredict, fluxX, fluxX0, fluxY, fluxY0,&
-        dscale,theta, tstep, res, MC)
+    END SUBROUTINE doInitFCTMat7_2D
+
+
+    SUBROUTINE doLimitFCTMat7_2D(Kld, Kcol, Ksep,&
+        NEQ, NEDGE, NVAR, Cx, Cy, u, uPredict, dscale, theta, tstep,&
+        pp, pm, qp, qm, rp, rm, flux, flux0, res, MC)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kdiagonal
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Ksep
       INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
       INTEGER(PREC_MATIDX), INTENT(IN)                  :: NEDGE
       INTEGER, INTENT(IN)                               :: NVAR
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
-      REAL(DP), DIMENSION(NVAR,NEQ),   INTENT(IN)       :: u,uPredict
-      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(IN)       :: fluxX,fluxX0,fluxY,fluxY0
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: u,uPredict
       REAL(DP), INTENT(IN)                              :: dscale,theta,tstep
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: qp,qm
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT)        :: pp,pm,rp,rm
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(IN)       :: flux0
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(OUT)      :: flux
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)      :: res
 
-      REAL(DP), DIMENSION(NVAR*NVAR) :: S_ij,T_ij
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,G_ij,U_ij,W_ij,Lbd_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,Diff
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
-      REAL(DP)                       :: cnrm
       INTEGER(PREC_MATIDX)           :: ij,ji,iedge
-      INTEGER(PREC_VECIDX)           :: i,j
+      INTEGER(PREC_VECIDX)           :: i,j,ieq
       INTEGER                        :: ivar
-
-      IF (PRESENT(MC)) THEN
-
-        ! Initialize edge counter
-        iedge = 0
-        
-        ! Loop over all rows
-        DO i = 1, NEQ
-          
-          ! Loop over all off-diagonal matrix entries IJ which are
-          ! adjacent to node J such that I < J. That is, explore the
-          ! upper triangular matrix
-          DO ij = Kdiagonal(i)+1, Kld(i+1)-1
-            
-            ! Get node number J, the corresponding matrix positions JI,
-            ! and let the separator point to the next entry
-            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-    
-            ! Increase edge counter
-            iedge = iedge+1
-            
-            ! Compute averaged coefficients
-            C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
-            C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
-            cnrm    = SQRT(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))
-
-            C_ij=XDir2D
-            
-            ! Compute characteristic variables for predicted values which gives
-            ! the characteristic flux difference and the transformation matrix
-            CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j),&
-                                         C_ij, W_ij, R_ij=S_ij, L_ij=T_ij)
-            
-            ! Compute coefficients
-            C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-            C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-            
-            ! Compute the fluxes
-            CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
-
-            ! Update the defect vector
-            res(:,i) = res(:,i)+F_ij
-            res(:,j) = res(:,j)+F_ji
-
-
-            C_ij=XDir2D; C_ji=-XDir2D
-
-            ! Compute raw antidiffusive fluxes
-            CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij)
-            
-            ! Transform fluxes into characteristic variables
-!            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
-
-            G_ij = F_ij
-
-!!$            
-!!$            
-!!$            ! Compute characteristic flux differences adopting the transformation
-!!$            ! matrix evaluated at the predicted solution values
-!!$            U_ij = u(:,i)-u(:,j)
-!!$            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
-!!$
-            ! Apply mass antidiffusion
-!!$            G_ij = G_ij + MC(ij)*W_ij+flux0(:,iedge)
-            G_ij = G_ij+fluxX0(:,iedge)
-
-            
-            ! Perform flux limiting
-            DO ivar = 1, NVAR
-              IF (G_ij(ivar) > 0._DP) THEN
-                G_ij(ivar) = MIN(G_ij(ivar), MAX(fluxX(ivar,iedge), 0._DP))
-              ELSE
-                G_ij(ivar) = MAX(G_ij(ivar), MIN(fluxX(ivar,iedge), 0._DP))
-              END IF
-            END DO
-
-            G_ij=G_ij
-           
-            ! Convert limited flux back to conservative variabels
-!            CALL DGEMV('n', NVAR, NVAR, 1._DP, S_ij, NVAR, G_ij, 1, 0._DP, F_ij, 1)
-                        
-            ! Update the defect vector
-            res(:,i) = res(:,i)+F_ij
-            res(:,j) = res(:,j)-F_ij
-
-
-            C_ij=YDir2D; C_ji=-YDir2D
-
-            ! Compute raw antidiffusive fluxes
-            CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij)
-            
-            ! Transform fluxes into characteristic variables
-!            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
-
-            G_ij=F_ij
-!!$            
-!!$            
-!!$            ! Compute characteristic flux differences adopting the transformation
-!!$            ! matrix evaluated at the predicted solution values
-!!$            U_ij = u(:,i)-u(:,j)
-!!$            CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, U_ij, 1, 0._DP, W_ij, 1)
-!!$
-            ! Apply mass antidiffusion
-!!$            G_ij = G_ij + MC(ij)*W_ij+flux0(:,iedge)
-            G_ij = G_ij+fluxY0(:,iedge)
-
-            
-            ! Perform flux limiting
-            DO ivar = 1, NVAR
-              IF (G_ij(ivar) > 0._DP) THEN
-                G_ij(ivar) = MIN(G_ij(ivar), MAX(fluxY(ivar,iedge), 0._DP))
-              ELSE
-                G_ij(ivar) = MAX(G_ij(ivar), MIN(fluxY(ivar,iedge), 0._DP))
-              END IF
-            END DO
-
-            
-            ! Convert limited flux back to conservative variabels
-!            CALL DGEMV('n', NVAR, NVAR, 1._DP, S_ij, NVAR, G_ij, 1, 0._DP, F_ij, 1)
-            
-            F_ij=G_ij
-            
-            ! Update the defect vector
-            res(:,i) = res(:,i)+F_ij
-            res(:,j) = res(:,j)-F_ij
-
-            
-          END DO
-        END DO
-        
-      ELSE
-        
-      END IF
       
-    END SUBROUTINE doLimitFCTMat9_2D
+      ! Clear nodal vectors
+      CALL lalg_clearVectorDble2D(pp)
+      CALL lalg_clearVectorDble2D(pm)
+
+      ! Initialise edge counter
+      iedge = 0
+
+      ! Loop over all rows (forward)
+      DO i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        DO ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+
+          ! Increase edge counter
+          iedge = iedge+1
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
+          ! Compute the fluxes
+          CALL fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+                   
+          ! Assemble high-order residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)+F_ji
+          
+          ! Compute the implicit antidiffusive flux
+          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, 1._DP, F_ij)
+
+          ! Assemble raw antidiffusive flux from explicit and implicit parts
+          F_ij = flux0(:,iedge)+tstep*theta*F_ij+MC(ij)*(u(:,i)-u(:,j))
+
+          ! Perform prelimiting of the antidiffusive flux ...
+!          Diff = uPredict(:,j)-uPredict(:,i)
+!          DO ivar = 1, NVAR
+!            IF (F_ij(ivar)*Diff(ivar) .GE. 0._DP) F_ij(ivar) = 0._DP
+!          END DO
+
+          ! ... and store it
+          flux(:,iedge) = F_ij
+
+          ! Sums of positive/negative fluxes
+          pp(:,i) = pp(:,i)+MAX(0._DP,F_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-F_ij)
+          pm(:,i) = pm(:,i)-MIN(0._DP,F_ij); pm(:,j) = pm(:,j)-MIN(0._DP,-F_ij)
+        END DO
+      END DO
+
+      ! Apply the nodal limiter
+      rp = afcstab_limit( pp, qp, 0._DP, 1._DP)
+      rm = afcstab_limit( pm, qm, 0._DP, 1._DP)
+
+      DO ieq = 1, NEQ
+        rp(:,ieq) = MIN(rp(1,ieq), rp(4,ieq))
+        rm(:,ieq) = MIN(rm(1,ieq), rm(4,ieq))
+      END DO       
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Get raw antidiffusive flux
+          F_ij = flux(:,iedge)
+          
+          DO ivar = 1, NVAR
+            IF (F_ij(ivar) > 0._DP) THEN
+              F_ij(ivar) = MIN(rp(ivar,i), rm(ivar,j))*F_ij(ivar)
+            ELSE
+              F_ij(ivar) = MIN(rm(ivar,i), rp(ivar,j))*F_ij(ivar)
+            END IF
+          END DO
+          
+          ! Update the residual vector
+          res(:,i) = res(:,i)+F_ij
+          res(:,j) = res(:,j)-F_ij
+
+          ! Decrease edge counter
+          iedge = iedge-1
+        END DO
+      END DO
+    END SUBROUTINE doLimitFCTMat7_2D
+    
   END SUBROUTINE gfsys_buildResScalarFCT
 
   ! *****************************************************************************
@@ -7268,7 +7032,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivJacobianBlock(RmatrixC, ru,&
-      fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ)
+      fcb_calcMatrix, hstep, bclear, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix.
@@ -7287,15 +7051,6 @@ CONTAINS
     ! solution vector
     TYPE(t_vectorBlock), INTENT(IN)                :: ru
     
-    ! type of assembly
-    !   iassembly = 0 : diagonal + Galerkin
-    !   iassembly = 1 :            Galerkin
-    !   iassembly = 2 : diagonal + scalar dissipation
-    !   iassembly = 3 :            scalar dissipation
-    !   iassembly = 4 : diagonal + tensorial dissipation
-    !   iassembly = 5 :            tensorial dissipation
-    INTEGER, INTENT(IN)                            :: iassembly
-
     ! perturbation parameter
     REAL(DP), INTENT(IN)                           :: hstep
 
@@ -7316,10 +7071,10 @@ CONTAINS
 
     ! Check if block vector contains only one block and if
     ! global operator is stored in interleave format.
-    IF (ru%nblocks .EQ. 1    .AND.&
-        rmatrixJ%ndiagblocks .EQ. 1) THEN
+    IF ((ru%nblocks           .EQ. 1) .AND.&
+        (rmatrixJ%ndiagblocks .EQ. 1)) THEN
       CALL gfsys_buildDivJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ%RmatrixBlock(1,1))
+          fcb_calcMatrix, hstep, bclear, rmatrixJ%RmatrixBlock(1,1))
       RETURN       
     END IF
 
@@ -7332,10 +7087,13 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsys_buildDivJacobianScalar(RmatrixC, ru,&
-      fcb_calcFlux, iassembly, hstep, bclear, rmatrixJ)
+      fcb_calcMatrix, hstep, bclear, rmatrixJ)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix
+    ! This subroutine assembles the Jacobian matrix.
+    !
+    ! Note that this routine requires scalar matrices stored in the interleave
+    ! format.
 !</description>
 
 !<input>
@@ -7345,15 +7103,6 @@ CONTAINS
     ! solution vector
     TYPE(t_vectorScalar), INTENT(IN)               :: ru
     
-    ! type of assembly
-    !   iassembly = 0 : diagonal + Galerkin
-    !   iassembly = 1 :            Galerkin
-    !   iassembly = 2 : diagonal + scalar dissipation
-    !   iassembly = 3 :            scalar dissipation
-    !   iassembly = 4 : diagonal + tensorial dissipation
-    !   iassembly = 5 :            tensorial dissipation
-    INTEGER, INTENT(IN)                            :: iassembly
-
     ! perturbation parameter
     REAL(DP), INTENT(IN)                           :: hstep
 
@@ -7372,9 +7121,186 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Ksep
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    REAL(DP), DIMENSION(:), POINTER             :: p_Cx,p_Cy,p_Cz,p_J,p_u
+    INTEGER :: h_Ksep
+    INTEGER :: idim,ndim
 
-    PRINT *, "Jacobian matrix for systems is not yet implemented!"
-    STOP
+    ! Check if all matrices/vectors are compatible
+    CALL lsyssc_isMatrixCompatible(ru, rmatrixJ, .FALSE.)
+
+    ndim = SIZE(RmatrixC,1)
+    DO idim = 1, ndim
+      CALL lsyssc_isMatrixCompatible(rmatrixC(idim), rmatrixJ)
+    END DO
+        
+    ! Clear matrix?
+    IF (bclear) CALL lsyssc_clearMatrix(rmatrixJ)
+    
+    ! Set pointers
+    CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
+    CALL lsyssc_getbase_Kcol  (RmatrixC(1), p_Kcol)
+    CALL lsyssc_getbase_double(rmatrixJ, p_J)
+    CALL lsyssc_getbase_double(ru, p_u)
+
+    ! How many dimensions do we have?
+    SELECT CASE(ndim)
+    CASE (NDIM1D)
+      CALL lsyssc_getbase_double(rmatrixC(1), p_Cx)
+
+    CASE (NDIM2D)
+      CALL lsyssc_getbase_double(rmatrixC(1), p_Cx)
+      CALL lsyssc_getbase_double(rmatrixC(2), p_Cy)
+
+    CASE (NDIM3D)
+      CALL lsyssc_getbase_double(rmatrixC(1), p_Cx)
+      CALL lsyssc_getbase_double(rmatrixC(2), p_Cy)
+      CALL lsyssc_getbase_double(rmatrixC(3), p_Cz)
+
+    CASE DEFAULT
+      CALL output_line('Unsupported spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+      CALL sys_halt()
+    END SELECT
+    
+    ! What kind of matrix are we?
+    SELECT CASE(rmatrixJ%cmatrixFormat)
+    CASE(LSYSSC_MATRIX7INTL)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+      
+      ! What type of matrix are we?
+      SELECT CASE(rmatrixJ%cinterleavematrixFormat)
+        
+      CASE (LSYSSC_MATRIX1)
+        
+        SELECT CASE(ndim)
+!!$        CASE (NDIM1D)
+!!$          CALL doJacobianMat7_1D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_J)
+!!$
+!!$        CASE (NDIM2D)
+!!$          CALL doJacobianMat7_2D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_J)
+!!$
+!!$        CASE (NDIM3D)
+!!$          CALL doJacobianMat7_3D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_J)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE (LSYSSC_MATRIXD)
+        
+        SELECT CASE(ndim)
+!!$        CASE (NDIM1D)
+!!$          CALL doJacobianMat7Diag_1D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, p_J)
+!!$
+!!$        CASE (NDIM2D)
+!!$          CALL doJacobianMat7Diag_2D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, p_J)
+!!$
+!!$        CASE (NDIM3D)
+!!$          CALL doJacobianMat7Diag_3D(p_Kld, p_Kcol, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, p_J)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported spatial dimension!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+        CALL sys_halt()
+      END SELECT
+      
+      ! Release diagonal separator
+      CALL storage_free(h_Ksep)
+      
+      
+    CASE (LSYSSC_MATRIX9INTL)
+      
+      ! Set pointers
+      CALL lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      CALL storage_copy(RmatrixC(1)%h_Kld, h_Ksep)
+      CALL storage_getbase_int(h_Ksep, p_Ksep, RmatrixC(1)%NEQ+1)
+      
+      ! What type of matrix are we?
+      SELECT CASE(rmatrixJ%cinterleavematrixFormat)
+        
+      CASE (LSYSSC_MATRIX1)
+        
+        SELECT CASE(ndim)
+!!$        CASE (NDIM1D)
+!!$          CALL doJacobianMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, hstep, p_J)
+!!$
+!!$        CASE (NDIM2D)
+!!$          CALL doJacobianMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, hstep, p_J)
+!!$
+!!$        CASE (NDIM3D)
+!!$          CALL doJacobianMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, hstep, p_J)
+
+        CASE DEFAULT
+          CALL output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+          CALL sys_halt() 
+        END SELECT
+        
+      CASE (LSYSSC_MATRIXD)
+        
+        SELECT CASE(ndim)
+!!$        CASE (NDIM1D)
+!!$          CALL doJacobianMat9Diag_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_u, hstep, p_J)
+!!$
+!!$        CASE (NDIM2D)
+!!$          CALL doJacobianMat9Diag_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_u, hstep, p_J)
+!!$
+!!$        CASE (NDIM3D)
+!!$          CALL doJacobianMat9Diag_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+!!$              RmatrixC(1)%NEQ, ru%NVAR, p_Cx, p_Cy, p_Cz, p_u, hstep, p_J)
+          
+        CASE DEFAULT
+          CALL output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE DEFAULT
+        CALL output_line('Unsupported interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+        CALL sys_halt()
+      END SELECT
+      
+      ! Release diagonal separator
+      CALL storage_free(h_Ksep)
+      
+      
+    CASE DEFAULT
+      CALL output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivJacobianScalar')
+      CALL sys_halt()
+    END SELECT
+
   END SUBROUTINE gfsys_buildDivJacobianScalar
 
   !*****************************************************************************
