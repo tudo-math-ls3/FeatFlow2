@@ -2493,7 +2493,8 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResBlock(RmatrixC, ru, fcb_calcFlux, dscale, rres)
+  SUBROUTINE gfsys_buildResBlock(RmatrixC, ru,&
+      fcb_calcFlux, dscale, bclear, rres)
 
 !<description>
     ! This subroutine assembles the residual vector for block vectors.
@@ -2510,6 +2511,11 @@ CONTAINS
 
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -2531,12 +2537,15 @@ CONTAINS
     ! Check if block vectors contain only one block.
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
       CALL gfsys_buildResScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcFlux, dscale, rres%RvectorBlock(1))
+          fcb_calcFlux, dscale, bclear, rres%RvectorBlock(1))
       RETURN       
     END IF
 
     ! Check if vectors are compatible
     CALL lsysbl_isVectorCompatible(ru, rres)
+
+    ! Clear vector?
+    IF (bclear) CALL lsysbl_clearVector(rres)
 
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -2953,7 +2962,7 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE gfsys_buildResScalar(RmatrixC, ru,&
-      fcb_calcFlux, dscale, rres)
+      fcb_calcFlux, dscale, bclear, rres)
 
 !<description>
     ! This subroutine assembles the residual vector. Note that the vectors are
@@ -2969,6 +2978,11 @@ CONTAINS
 
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -2988,6 +3002,9 @@ CONTAINS
 
     ! Check if vectors are compatible
     CALL lsyssc_isVectorCompatible(ru, rres)
+    
+    ! Clear vector?
+    IF (bclear) CALL lsyssc_clearVector(rres)
 
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -3387,7 +3404,7 @@ CONTAINS
   
   SUBROUTINE gfsys_buildResBlockFCT(RmatrixC, rmatrixML, ru,&
       fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics, rafcstab,&
-      dscale, theta, tstep, rres, ruPredict, rmatrixMC)
+      dscale, theta, tstep, bclear, rres, ruPredict, rmatrixMC)
 
 !<description>
     ! This subroutine assembles the residual vector for FEM-FCT schemes.
@@ -3414,6 +3431,11 @@ CONTAINS
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
 
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
+
     ! implicitness parameter
     REAL(DP), INTENT(IN)                           :: theta
 
@@ -3438,12 +3460,12 @@ CONTAINS
       IF (PRESENT(ruPredict)) THEN
         CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixML,&
             ru%RvectorBlock(1), fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics,&
-            rafcstab, dscale, theta, tstep, rres%RvectorBlock(1),&
+            rafcstab, dscale, theta, tstep, bclear, rres%RvectorBlock(1),&
             ruPredict%RvectorBlock(1), rmatrixMC)
       ELSE
         CALL gfsys_buildResScalarFCT(RmatrixC, rmatrixML,&
             ru%RvectorBlock(1), fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics,&
-            rafcstab, dscale, theta, tstep, rres%RvectorBlock(1),&
+            rafcstab, dscale, theta, tstep, bclear, rres%RvectorBlock(1),&
             rmatrixMC=rmatrixMC)
       END IF
       RETURN       
@@ -3453,6 +3475,9 @@ CONTAINS
     CALL lsysbl_isVectorCompatible(ru, rres)
     CALL gfsys_isVectorCompatible(rafcstab, ru)
 
+    ! Clear vector?
+    IF (bclear) CALL lsysbl_clearVector(rres)
+
   END SUBROUTINE gfsys_buildResBlockFCT
 
   ! *****************************************************************************
@@ -3461,7 +3486,7 @@ CONTAINS
 
   SUBROUTINE gfsys_buildResScalarFCT(RmatrixC, rmatrixML, ru,&
       fcb_calcFlux, fcb_calcRawFlux, fcb_calcCharacteristics, rafcstab,&
-      dscale, theta, tstep, rres, ruPredict, rmatrixMC)
+      dscale, theta, tstep, bclear, rres, ruPredict, rmatrixMC)
     
 !<description>
     ! This subroutine assembles the residual vector for FEM-FCT schemes.
@@ -3485,6 +3510,11 @@ CONTAINS
 
     ! scaling parameter
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
 
     ! implicitness parameter
     REAL(DP), INTENT(IN)                           :: theta
@@ -3529,6 +3559,9 @@ CONTAINS
       CALL lsyssc_isVectorCompatible(ru, ruPredict)
       CALL lsyssc_copyVector (ruPredict, rafcstab%RnodalVectors(7))
     END IF
+
+    ! Clear vector?
+    IF (bclear) CALL lsyssc_clearVector(rres)
 
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -3861,8 +3894,8 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE gfsys_buildResBlockTVD(RmatrixC, ru,&
-      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres)
+  SUBROUTINE gfsys_buildResBlockTVD(RmatrixC, ru, fcb_calcFlux,&
+      fcb_calcCharacteristics, rafcstab, dscale, bclear, rres)
 
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes.
@@ -3879,6 +3912,11 @@ CONTAINS
 
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -3905,13 +3943,16 @@ CONTAINS
     IF ((ru%nblocks .EQ. 1) .AND. (rres%nblocks .EQ. 1) ) THEN
       CALL gfsys_buildResScalarTVD(RmatrixC, ru%RvectorBlock(1),&
           fcb_calcFlux, fcb_calcCharacteristics,&
-          rafcstab, dscale, rres%RvectorBlock(1))
+          rafcstab, dscale, bclear, rres%RvectorBlock(1))
       RETURN       
     END IF
 
     ! Check if vectors are compatible
     CALL lsysbl_isVectorCompatible(ru, rres)
     CALL gfsys_isVectorCompatible(rafcstab, ru)
+
+    ! Clear vector?
+    IF (bclear) CALL lsysbl_clearVector(rres)
     
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
@@ -5479,8 +5520,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsys_buildResScalarTVD(RmatrixC, ru,&
-      fcb_calcFlux, fcb_calcCharacteristics, rafcstab, dscale, rres)
+  SUBROUTINE gfsys_buildResScalarTVD(RmatrixC, ru, fcb_calcFlux,&
+      fcb_calcCharacteristics, rafcstab, dscale, bclear, rres)
     
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes
@@ -5495,6 +5536,11 @@ CONTAINS
 
     ! scaling factor
     REAL(DP), INTENT(IN)                           :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    LOGICAL, INTENT(IN)                            :: bclear
 
     ! callback functions to compute local matrices
     INCLUDE 'intf_gfsyscallback.inc'
@@ -5520,6 +5566,9 @@ CONTAINS
     ! Check if vectors are compatible
     CALL lsyssc_isVectorCompatible(ru, rres)
     CALL gfsys_isVectorCompatible(rafcstab, ru)
+
+    ! Clear vector?
+    IF (bclear) CALL lsyssc_clearVector(rres)
     
     ! Set pointers
     CALL lsyssc_getbase_Kld   (RmatrixC(1), p_Kld)
