@@ -484,7 +484,7 @@ MODULE boundary
 
 !<subroutine>
 
-  SUBROUTINE boundary_read_prm(p_rboundary, sfilename)
+  SUBROUTINE boundary_read_prm(rboundary, sfilename)
 
 !<description>
   ! This routine reads a .PRM file into memory. The boundary structure
@@ -501,7 +501,7 @@ MODULE boundary
   
 !<output>
   ! Boundary structure, to be filled with data
-  TYPE(t_boundary), POINTER :: p_rboundary
+  TYPE(t_boundary), INTENT(OUT) :: rboundary
 !</output>
   
 !</subroutine>
@@ -522,14 +522,6 @@ MODULE boundary
   ! Current parameter value in length-parametrisation
   REAL(DP) :: dmaxpar
   
-  ! Do we have a structure?
-  IF (.NOT. ASSOCIATED(p_rboundary)) THEN
-    ALLOCATE(p_rboundary)
-  ELSE
-    ! Release the old structure without removing it from the heap.
-    CALL boundary_release (p_rboundary,.TRUE.)
-  END IF
-
   ! Open the file
   CALL io_openFileForReading(sfilename, iunit)
   
@@ -537,37 +529,37 @@ MODULE boundary
   READ (iunit,*)
   
   ! Read NBCT - Number of boundary components
-  READ (iunit,*) p_rboundary%iboundarycount_g
+  READ (iunit,*) rboundary%iboundarycount_g
   
-  p_rboundary%iboundarycount = p_rboundary%iboundarycount_g
+  rboundary%iboundarycount = rboundary%iboundarycount_g
   
   ! Allocate an array containing handles. Each handle refers
   ! to integer data for a boundary component.
   CALL storage_new1D("boundary_read", "h_Idbldatavec_handles", &
-                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
-                  p_rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
-  CALL storage_getbase_int(p_rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)
+                  INT(rboundary%iboundarycount,I32), ST_INT, &
+                  rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_int(rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)
   
   ! Allocate an array containing of handles. Each handle refers
   ! to integer data for a boundary component.
   CALL storage_new("boundary_read", "h_Iintdatavec_handles", &
-                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
-                  p_rboundary%h_Iintdatavec_handles, ST_NEWBLOCK_ZERO)
-  CALL storage_getbase_int(p_rboundary%h_Iintdatavec_handles, p_IintSegInfo_handles)
+                  INT(rboundary%iboundarycount,I32), ST_INT, &
+                  rboundary%h_Iintdatavec_handles, ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_int(rboundary%h_Iintdatavec_handles, p_IintSegInfo_handles)
 
   ! Allocate an array containing the maximum parameter values for each
   ! boundary component in length-parametrisation
   CALL storage_new("boundary_read", "h_DmaxPar", &
-                  INT(p_rboundary%iboundarycount,I32), ST_DOUBLE, &
-                  p_rboundary%h_DmaxPar, ST_NEWBLOCK_ZERO)
-  CALL storage_getbase_double(p_rboundary%h_DmaxPar, p_DmaxPar)
+                  INT(rboundary%iboundarycount,I32), ST_DOUBLE, &
+                  rboundary%h_DmaxPar, ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_double(rboundary%h_DmaxPar, p_DmaxPar)
 
   ! Allocate an array containing the number of boundary segments in each
   ! boundary component
   CALL storage_new("boundary_read", "h_IsegCount", &
-                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
-                  p_rboundary%h_IsegCount, ST_NEWBLOCK_ZERO)
-  CALL storage_getbase_int(p_rboundary%h_IsegCount, p_IsegCount)
+                  INT(rboundary%iboundarycount,I32), ST_INT, &
+                  rboundary%h_IsegCount, ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_int(rboundary%h_IsegCount, p_IsegCount)
 
   ! No we have to gather information about boundary segments.
   ! This makes it necessary to read the boundary definition file
@@ -575,7 +567,7 @@ MODULE boundary
 
   ! Initialise the boundary components, loop through them
   
-  DO ibcomponent = 1,p_rboundary%iboundarycount_g
+  DO ibcomponent = 1,rboundary%iboundarycount_g
     ! Read "IBCT"
     READ (iunit,*)
     
@@ -673,7 +665,7 @@ MODULE boundary
   READ (iunit,*)  ! "PARAMETER"
   
   ! Read the boundary information
-  DO ibcomponent = 1,p_rboundary%iboundarycount_g
+  DO ibcomponent = 1,rboundary%iboundarycount_g
   
     ! dmaxPar counts for every bonudary component the length - and
     ! thus the maximum parameter value.
@@ -785,23 +777,15 @@ MODULE boundary
 
 !<subroutine>
 
-  SUBROUTINE boundary_release(p_rboundary,bkeepStructure)
+  SUBROUTINE boundary_release(rboundary)
 
 !<description>
   ! This routine releases a boundary object from memory.
 !</description>
 
-!<input>
-  ! OPTIONAL: If set to TRUE, the structure p_rboundary itself is not 
-  ! released from memory. If set to FALSE or not existent (the usual setting), 
-  ! the structure p_rboundary will also be removed from the heap after 
-  ! cleaning up.
-  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
-!</input>
-
 !<inputoutput>
   ! Boundary structure, to be released.
-  TYPE(t_boundary), POINTER :: p_rboundary
+  TYPE(t_boundary), INTENT(INOUT) :: rboundary
 !</inputoutput>
   
 !</subroutine>
@@ -810,16 +794,14 @@ MODULE boundary
   INTEGER :: i,ihandle
   INTEGER(I32), DIMENSION(:), POINTER :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
   
-  IF (.NOT. ASSOCIATED(p_rboundary)) RETURN
-  
   ! Get the pointers to the segment information arrays for the current
   ! boundary component:
-  CALL storage_getbase_int(p_rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-  CALL storage_getbase_int(p_rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
+  CALL storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
+  CALL storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
 
   ! Release the handles of the integer- and double-precision
   ! data blocks:
-  DO i=1,p_rboundary%iboundarycount
+  DO i=1,rboundary%iboundarycount
     ihandle = p_IintSegInfo_handles(i)
     CALL storage_free (ihandle)
     p_IintSegInfo_handles(i) = ihandle
@@ -830,20 +812,13 @@ MODULE boundary
   END DO
   
   ! Release all arrays in the structure
-  CALL storage_free (p_rboundary%h_Iintdatavec_handles)
-  CALL storage_free (p_rboundary%h_Idbldatavec_handles)
-  CALL storage_free (p_rboundary%h_IsegCount)
-  CALL storage_free (p_rboundary%h_DmaxPar)
+  CALL storage_free (rboundary%h_Iintdatavec_handles)
+  CALL storage_free (rboundary%h_Idbldatavec_handles)
+  CALL storage_free (rboundary%h_IsegCount)
+  CALL storage_free (rboundary%h_DmaxPar)
   
-  p_rboundary%iboundarycount_g = 0
-  p_rboundary%iboundarycount = 0
-
-  ! Deallocate the structure (if we are allowed to), finish.
-  IF (.NOT. PRESENT(bkeepStructure)) THEN
-    DEALLOCATE(p_rboundary)
-  ELSE
-    IF (.NOT. bkeepStructure) DEALLOCATE(p_rboundary)
-  END IF
+  rboundary%iboundarycount_g = 0
+  rboundary%iboundarycount = 0
 
   ! That's it...
 
