@@ -3621,14 +3621,14 @@ CONTAINS
             CALL doInitFCTMat7_2D(p_Kld, p_Kcol, p_Ksep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
                 p_Cx, p_Cy, p_ML, p_u, p_uPredict, dscale, theta, tstep,&
-                p_qp, p_qm, p_flux0, p_res, p_MC)
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0, p_res, p_MC)
             
           ELSE
             
             CALL doLimitFCTMat7_2D(p_Kld, p_Kcol, p_Ksep,&
                 rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NVAR,&
                 p_Cx, p_Cy, p_u, p_uPredict, dscale, theta, tstep,&
-                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0, p_res, p_MC)
+                p_flux, p_flux0, p_res, p_MC)
             
           END IF
 
@@ -3692,7 +3692,8 @@ CONTAINS
 
     SUBROUTINE doInitFCTMat7_2D(Kld, Kcol, Ksep,&
         NEQ, NEDGE, NVAR, Cx, Cy, ML, u, uPredict,&
-        dscale, theta, tstep, qp, qm, flux0, res, MC)
+        dscale, theta, tstep, pp,pm, qp, qm, rp, rm,&
+        flux, flux0, res, MC)
       
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3704,16 +3705,20 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: u,uPredict
       REAL(DP), INTENT(IN)                              :: dscale,theta,tstep
-      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT)        :: qp,qm
-      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(OUT)      :: flux0
+      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT)        :: pp,pm,qp,qm,rp,rm
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(OUT)      :: flux,flux0
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)      :: res
-      
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,Diff
+
+      REAL(DP), DIMENSION(NVAR*NVAR) :: T_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,G_ij,W_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji,iedge
       INTEGER(PREC_VECIDX)           :: i,j,ieq
+      INTEGER                        :: ivar
 
       ! Clear nodal vectors
+      CALL lalg_clearVectorDble2D(pp)
+      CALL lalg_clearVectorDble2D(pm)
       CALL lalg_clearVectorDble2D(qp)
       CALL lalg_clearVectorDble2D(qm)
 
@@ -3746,30 +3751,84 @@ CONTAINS
           res(:,i) = res(:,i)+F_ij
           res(:,j) = res(:,j)+F_ji
 
-          ! Compute the explicit antidiffusive fluxes and store it
-          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, 1._DP, F_ij)
-          flux0(:,iedge) = MC(ij)*(u(:,j)-u(:,i))+(1._DP-theta)*tstep*F_ij
 
-          ! Compute the upper/lower bounds
-          Diff = uPredict(:,j)-uPredict(:,i)
+          ! Compute the explicit antidiffusive fluxes and store it
+          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep, F_ij)
           
-          ! Upper/lower bounds
-          qp(:,i) = MAX(qp(:,i),Diff); qp(:,j) = MAX(qp(:,j),-Diff)
-          qm(:,i) = MIN(qm(:,i),Diff); qm(:,j) = MIN(qm(:,j),-Diff)
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
+          C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+
+          ! Compute characteristic variables based on the explicit predictor
+          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, W_ij, L_ij=T_ij)
+
+          W_ij=uPredict(:,j)-uPredict(:,i)
+
+          ! Update the upper/lower bounds
+          qp(:,i) = MAX(qp(:,i),W_ij); qp(:,j) = MAX(qp(:,j),-W_ij)
+          qm(:,i) = MIN(qm(:,i),W_ij); qm(:,j) = MIN(qm(:,j),-W_ij)
+
+          ! Transform fluxes into characteristic variables
+!          CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
+          G_ij=F_ij
+          flux0(:,iedge) = 0._DP
+          flux (:,iedge) = G_ij
+
+          ! Update the sums of positive/negative fluxes
+          pp(:,i) = pp(:,i)+MAX(0._DP,G_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-G_ij)
+          pm(:,i) = pm(:,i)+MIN(0._DP,G_ij); pm(:,j) = pm(:,j)+MIN(0._DP,-G_ij)
         END DO
       END DO
+
+      ! Adopt the explicit part (if required)
+      IF (theta < 1.0_DP) THEN
+        CALL lalg_vectorLinearCombDble2D(flux, flux0, 1.0_DP-theta, 1.0_DP)
+      END IF
 
       ! Multiply upper/lower boundary by lumped mass matrix
       DO ieq = 1, NEQ
         qp(:,ieq) =  ML(ieq)*qp(:,ieq)
-        qm(:,ieq) = -ML(ieq)*qm(:,ieq)
+        qm(:,ieq) =  ML(ieq)*qm(:,ieq)
+      END DO
+      
+      ! Apply the nodal limiter
+      rp = afcstab_limit( pp, qp, 0._DP)
+      rm = afcstab_limit(-pm,-qm, 0._DP)
+
+      ! Loop over all rows (backward)
+      DO i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Get explicit raw antidiffusive flux
+          G_ij=flux(:,iedge)
+
+          ! Perform flux limiting
+          DO ivar = 1, NVAR
+            IF (G_ij(ivar) > 0._DP) THEN
+              G_ij(ivar) = MIN(rp(ivar,i), rm(ivar,j))*G_ij(ivar)
+            ELSE
+              G_ij(ivar) = MIN(rm(ivar,i), rp(ivar,j))*G_ij(ivar)
+            END IF
+          END DO
+
+          flux(:,iedge) = G_ij
+
+          iedge = iedge-1
+        END DO
       END DO
     END SUBROUTINE doInitFCTMat7_2D
 
 
     SUBROUTINE doLimitFCTMat7_2D(Kld, Kcol, Ksep,&
         NEQ, NEDGE, NVAR, Cx, Cy, u, uPredict, dscale, theta, tstep,&
-        pp, pm, qp, qm, rp, rm, flux, flux0, res, MC)
+        flux, flux0, res, MC)
 
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)    :: Kld
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)    :: Kcol
@@ -3781,22 +3840,16 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL      :: MC
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: u,uPredict
       REAL(DP), INTENT(IN)                              :: dscale,theta,tstep
-      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(IN)         :: qp,qm
-      REAL(DP), DIMENSION(NVAR,NEQ), INTENT(OUT)        :: pp,pm,rp,rm
-      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(IN)       :: flux0
-      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(OUT)      :: flux
+      REAL(DP), DIMENSION(NVAR,NEDGE), INTENT(IN)       :: flux,flux0
       REAL(DP), DIMENSION(NVAR,NEQ), INTENT(INOUT)      :: res
 
-      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,Diff
+      REAL(DP), DIMENSION(NVAR*NVAR) :: S_ij,T_ij
+      REAL(DP), DIMENSION(NVAR)      :: F_ij,F_ji,G_ij,W_ij
       REAL(DP), DIMENSION(NDIM2D)    :: C_ij,C_ji
       INTEGER(PREC_MATIDX)           :: ij,ji,iedge
       INTEGER(PREC_VECIDX)           :: i,j,ieq
       INTEGER                        :: ivar
       
-      ! Clear nodal vectors
-      CALL lalg_clearVectorDble2D(pp)
-      CALL lalg_clearVectorDble2D(pm)
-
       ! Initialise edge counter
       iedge = 0
 
@@ -3825,65 +3878,42 @@ CONTAINS
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
           res(:,j) = res(:,j)+F_ji
+
           
           ! Compute the implicit antidiffusive flux
-          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, 1._DP, F_ij)
+          CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep*theta, F_ij)
+          
+          ! Compute averaged coefficients
+          C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
+          C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+
+          ! Compute characteristic variables based on the explicit predictor
+!          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, W_ij, R_ij=S_ij, L_ij=T_ij)
+
+          ! Transform fluxes into characteristic variables
+!          CALL DGEMV('n', NVAR, NVAR, 1._DP, T_ij, NVAR, F_ij, 1, 0._DP, G_ij, 1)
+
+          G_ij=F_ij
 
           ! Assemble raw antidiffusive flux from explicit and implicit parts
-          F_ij = flux0(:,iedge)+tstep*theta*F_ij+MC(ij)*(u(:,i)-u(:,j))
+          G_ij = flux0(:,iedge)+G_ij
 
-          ! Perform prelimiting of the antidiffusive flux ...
-!          Diff = uPredict(:,j)-uPredict(:,i)
-!          DO ivar = 1, NVAR
-!            IF (F_ij(ivar)*Diff(ivar) .GE. 0._DP) F_ij(ivar) = 0._DP
-!          END DO
-
-          ! ... and store it
-          flux(:,iedge) = F_ij
-
-          ! Sums of positive/negative fluxes
-          pp(:,i) = pp(:,i)+MAX(0._DP,F_ij); pp(:,j) = pp(:,j)+MAX(0._DP,-F_ij)
-          pm(:,i) = pm(:,i)-MIN(0._DP,F_ij); pm(:,j) = pm(:,j)-MIN(0._DP,-F_ij)
-        END DO
-      END DO
-
-      ! Apply the nodal limiter
-      rp = afcstab_limit( pp, qp, 0._DP, 1._DP)
-      rm = afcstab_limit( pm, qm, 0._DP, 1._DP)
-
-      DO ieq = 1, NEQ
-        rp(:,ieq) = MIN(rp(1,ieq), rp(4,ieq))
-        rm(:,ieq) = MIN(rm(1,ieq), rm(4,ieq))
-      END DO       
-
-      ! Loop over all rows (backward)
-      DO i = NEQ, 1, -1
-
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        DO ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-
-          ! Get raw antidiffusive flux
-          F_ij = flux(:,iedge)
-          
           DO ivar = 1, NVAR
-            IF (F_ij(ivar) > 0._DP) THEN
-              F_ij(ivar) = MIN(rp(ivar,i), rm(ivar,j))*F_ij(ivar)
+            IF (G_ij(ivar) > 0._DP) THEN
+              G_ij(ivar) = MIN(G_ij(ivar), MAX(flux(ivar,iedge), 0._DP))
             ELSE
-              F_ij(ivar) = MIN(rm(ivar,i), rp(ivar,j))*F_ij(ivar)
+              G_ij(ivar) = MAX(G_ij(ivar), MIN(flux(ivar,iedge), 0._DP))
             END IF
           END DO
-          
+
+ !         CALL DGEMV('n', NVAR, NVAR, 1._DP, S_ij, NVAR, G_ij, 1, 0._DP, F_ij, 1)
+
+          F_ij=G_ij
+
           ! Update the residual vector
           res(:,i) = res(:,i)+F_ij
           res(:,j) = res(:,j)-F_ij
 
-          ! Decrease edge counter
-          iedge = iedge-1
         END DO
       END DO
     END SUBROUTINE doLimitFCTMat7_2D
