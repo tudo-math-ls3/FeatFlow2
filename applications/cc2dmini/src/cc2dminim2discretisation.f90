@@ -104,7 +104,7 @@ CONTAINS
     DO i=rproblem%NLMIN,rproblem%NLMAX
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
-      p_rboundary => rproblem%p_rboundary
+      p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Now we can start to initialise the discretisation. At first, set up

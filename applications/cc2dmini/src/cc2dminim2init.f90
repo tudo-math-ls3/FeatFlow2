@@ -207,29 +207,27 @@ CONTAINS
     READ (sString,*) sTRIFile
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, sPrmFile)
+    CALL boundary_read_prm(rproblem%rboundary, sPrmFile)
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
-        sTRIFile, rproblem%p_rboundary)
+        sTRIFile, rproblem%rboundary)
 
     ! Refine the mesh up to the minimum level
     CALL tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
-        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
 
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
     CALL tria_initStandardMeshFromRaw (&
-        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
     
     ! Now, refine to level up to nlmax.
     DO i=rproblem%NLMIN+1,rproblem%NLMAX
       CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
-          rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
       CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
-          rproblem%p_rboundary)
+          rproblem%rboundary)
     END DO
 
   END SUBROUTINE
@@ -260,7 +258,7 @@ CONTAINS
     END DO
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    CALL boundary_release (rproblem%rboundary)
     
   END SUBROUTINE
 

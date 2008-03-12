@@ -36,8 +36,9 @@ MODULE cc2dminim2postprocessing
   
   USE collection
   USE convection
-    
+     
   USE cc2dminim2basic
+  USE cc2dminim2boundary
   USE cc2dmini_callback
   
   IMPLICIT NONE
@@ -80,7 +81,7 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC), TARGET :: rdiscreteBC
 
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%rvector
@@ -121,13 +122,10 @@ CONTAINS
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
-    NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
-                            BCASM_DISCFORSOL)
+    CALL c2d2_discretiseBC (rprjDiscretisation,rdiscreteBC)
                             
     ! Connect the vector to the BC's
-    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    rprjVector%p_rdiscreteBC => rdiscreteBC
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
@@ -172,7 +170,7 @@ CONTAINS
     CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
     
   END SUBROUTINE
 

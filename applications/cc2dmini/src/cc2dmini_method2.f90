@@ -137,7 +137,6 @@ CONTAINS
     CALL c2d2_initParamTriang (p_rproblem)
     CALL c2d2_initDiscretisation (p_rproblem)    
     CALL c2d2_initMatVec (p_rproblem)    
-    CALL c2d2_initAnalyticBC (p_rproblem)   
     CALL c2d2_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions

@@ -67,7 +67,7 @@ MODULE cc2dminim2basic
     TYPE(t_vectorBlock) :: rtempVector
 
     ! A variable describing the discrete boundary conditions fo the velocity
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteBC) :: rdiscreteBC
   
   END TYPE
   
@@ -88,7 +88,7 @@ MODULE cc2dminim2basic
     REAL(DP) :: dnu
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A solution vector and a RHS vector on the finest level. 
     TYPE(t_vectorBlock) :: rvector,rrhs
