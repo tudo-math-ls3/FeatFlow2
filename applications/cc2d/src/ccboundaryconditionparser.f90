@@ -169,7 +169,7 @@ CONTAINS
     TYPE(t_fparser), TARGET :: rparser
     
     ! Get the domain from the problem structure
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
     
     ! Get the triangulation on the highest level
     p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation

@@ -76,7 +76,7 @@ MODULE codire_method3
     INTEGER :: NLMAX
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
@@ -130,22 +130,20 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rproblem%RlevelInfo(1)%rtriangulation, &
-        './pre/QUAD.tri', rproblem%p_rboundary)
+        './pre/QUAD.tri', rproblem%rboundary)
     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &
-        rproblem%RlevelInfo(1)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(1)%rtriangulation,rproblem%rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(1)%rtriangulation, &
-        rproblem%p_rboundary)
+        rproblem%rboundary)
 
   END SUBROUTINE
 
@@ -180,7 +178,7 @@ CONTAINS
 
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
     p_rtriangulation => rproblem%RlevelInfo(1)%rtriangulation
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -783,7 +781,7 @@ CONTAINS
     CALL tria_done (rproblem%RlevelInfo(1)%rtriangulation)
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    CALL boundary_release (rproblem%rboundary)
     
   END SUBROUTINE
 

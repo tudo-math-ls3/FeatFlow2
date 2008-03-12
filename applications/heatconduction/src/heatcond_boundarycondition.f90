@@ -88,7 +88,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
   
     ! Get the domain from the discretisation
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
 
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the

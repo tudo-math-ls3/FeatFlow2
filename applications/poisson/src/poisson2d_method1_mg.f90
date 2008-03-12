@@ -94,7 +94,7 @@ CONTAINS
     TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
     
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
@@ -156,33 +156,31 @@ CONTAINS
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL to create a new structure on the heap.
-    NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation into our coarse level.
     CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             './pre/QUAD.tri', p_rboundary)
+                             './pre/QUAD.tri', rboundary)
     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (NLMIN-1,&
-        Rlevels(NLMIN)%rtriangulation,p_rboundary)
+        Rlevels(NLMIN)%rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
-        p_rboundary)
+        rboundary)
     
     ! Now refine the grid for the fine levels.
     DO i = NLMIN+1, NLMAX
 
       ! Refine the grid using the 2-Level-Ordering algorithm
       CALL tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
-          Rlevels(i)%rtriangulation,p_rboundary)
+          Rlevels(i)%rtriangulation,rboundary)
       
       ! Create a standard mesh
       CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
-        p_rboundary)
+        rboundary)
     
     END DO
 
@@ -192,7 +190,7 @@ CONTAINS
     ! Do this for all levels
     DO i = NLMIN, NLMAX
       CALL spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscretisation, 1, &
-                                     Rlevels(i)%rtriangulation, p_rboundary)
+                                     Rlevels(i)%rtriangulation, rboundary)
     END DO
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
@@ -202,7 +200,7 @@ CONTAINS
     DO i = NLMIN, NLMAX
       CALL spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1), &
-          EL_E011,CUB_G2X2,Rlevels(i)%rtriangulation, p_rboundary)
+          EL_E011,CUB_G2X2,Rlevels(i)%rtriangulation, rboundary)
     END DO
                  
     ! Now as the discretisation is set up, we can start to generate
@@ -282,25 +280,25 @@ CONTAINS
       CALL bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
       ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
       ! Now to the edge 2 of boundary component 1 the domain. 
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
@@ -481,7 +479,7 @@ CONTAINS
     DEALLOCATE(Rlevels)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (p_rboundary)
+    CALL boundary_release (rboundary)
 
   END SUBROUTINE
 

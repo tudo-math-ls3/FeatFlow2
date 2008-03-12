@@ -83,7 +83,7 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
     
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
@@ -288,12 +288,10 @@ CONTAINS
     !
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL to create a new structure on the heap.
-    NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, sfilePRM)
+    CALL boundary_read_prm(rboundary, sfilePRM)
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, sfileTRI, p_rboundary)
+    CALL tria_readTriFile2D (rtriangulation, sfileTRI, rboundary)
     
     ! Convert to triangle mesh?
     IF (iconvertToTriangleMesh .EQ. 1) THEN
@@ -301,7 +299,7 @@ CONTAINS
     END IF
     
     ! Refine it.
-    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,p_rboundary)
+    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
 
     ! Mesh distortion?
     IF (dmeshDistortion .NE. 0.0_DP) THEN
@@ -310,7 +308,7 @@ CONTAINS
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+    CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
     
     ! +------------------------------------------------------------------------
     ! | SETUP OF THE H-ADAPTIVITY
@@ -327,7 +325,7 @@ CONTAINS
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-        rtriangulation, p_rboundary)
+        rtriangulation, rboundary)
     
     ! Repeat the procedure until the maximum number of refinement
     ! steps has been reached. This will be checked below.
@@ -340,27 +338,27 @@ CONTAINS
       SELECT CASE (ieltype)
       CASE (1)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-            EL_E001,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+            EL_E001,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (2)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-            EL_E002,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+            EL_E002,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (11)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-            EL_E011,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+            EL_E011,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (13)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-            EL_E013,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+            EL_E013,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (-30)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-            EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+            EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (-1)
         CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
             EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
-            rtriangulation,p_rboundary)
+            rtriangulation,rboundary)
       CASE (-2)
         CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
             EL_E002,EL_E013,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
-            rtriangulation,p_rboundary)
+            rtriangulation,rboundary)
       CASE DEFAULT
         CALL output_line('Unsupproted element type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion_method2')
@@ -575,7 +573,7 @@ CONTAINS
       
       ! Create information about adjacencies and everything one needs from
       ! a triangulation.
-      CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+      CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
       
       ! +----------------------------------------------------------------------
       ! | TEMPORAL CLEANUP
@@ -649,7 +647,7 @@ CONTAINS
       
       ! Project the solution to P1/Q1 -> rvectorPostProc
       CALL spdiscr_initBlockDiscr2D (rdiscretisationPostProc,1,&
-          rtriangulation, p_rboundary)
+          rtriangulation, rboundary)
       CALL spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
           rvectorPostProc,rdiscretisationPostProc%RspatialDiscretisation(1))
           
@@ -738,7 +736,7 @@ CONTAINS
     CALL tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (p_rboundary)
+    CALL boundary_release (rboundary)
 
     ! Release the collection
     CALL collct_done (rcollection)
@@ -763,7 +761,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: isolution
   
   ! Current discretisation
-  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rdiscretisation
 !</input>
 
 !<inputoutput>

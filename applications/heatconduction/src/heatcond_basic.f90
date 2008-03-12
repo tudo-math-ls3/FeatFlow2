@@ -94,7 +94,7 @@ MODULE heatcond_basic
     INTEGER :: ilvmax
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A RHS vector on the finest level used for solving linear systems
     TYPE(t_vectorBlock) :: rrhs

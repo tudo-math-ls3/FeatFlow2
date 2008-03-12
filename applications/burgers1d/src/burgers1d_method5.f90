@@ -92,7 +92,7 @@ MODULE burgers1d_method5
     INTEGER :: ilvmax
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A solution vector and a RHS vector on the finest level. 
     TYPE(t_vectorBlock) :: rvector,rrhs
@@ -149,22 +149,20 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rproblem%rlevelInfo%rtriangulation, &
-        './pre/QUAD.tri', rproblem%p_rboundary)
+        './pre/QUAD.tri', rproblem%rboundary)
     
     ! Refine the mesh up to the maximum level
     CALL tria_quickRefine2LevelOrdering(rproblem%ilvmax-1,&
-        rproblem%rlevelInfo%rtriangulation,rproblem%p_rboundary)
+        rproblem%rlevelInfo%rtriangulation,rproblem%rboundary)
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
     CALL tria_initStandardMeshFromRaw (&
-        rproblem%rlevelInfo%rtriangulation,rproblem%p_rboundary)
+        rproblem%rlevelInfo%rtriangulation,rproblem%rboundary)
     
   END SUBROUTINE
 
@@ -202,7 +200,7 @@ CONTAINS
       
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
     p_rtriangulation => rproblem%rlevelInfo%rtriangulation
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -398,7 +396,7 @@ CONTAINS
     p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
     
     ! Get the domain from the problem structure
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
 
     ! Now we have the raw problem. What is missing is the definition of the boudary
     ! conditions.
@@ -977,7 +975,7 @@ CONTAINS
     CALL tria_done (rproblem%rlevelInfo%rtriangulation)
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    CALL boundary_release (rproblem%rboundary)
     
     CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
 

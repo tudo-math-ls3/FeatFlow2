@@ -99,7 +99,7 @@ CONTAINS
     TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
@@ -171,33 +171,31 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             './pre/QUAD.tri', p_rboundary)
+                             './pre/QUAD.tri', rboundary)
     
     ! Refine the mesh up to the minimum level
     CALL tria_quickRefine2LevelOrdering (NLMIN-1,&
-        Rlevels(NLMIN)%rtriangulation,p_rboundary)
+        Rlevels(NLMIN)%rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
-        p_rboundary)
+        rboundary)
     
     ! Now refine the grid for the fine levels.
     DO i = NLMIN+1, NLMAX
 
       ! Refine the grid using the 2-Level-Ordering algorithm
       CALL tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
-          Rlevels(i)%rtriangulation,p_rboundary)
+          Rlevels(i)%rtriangulation,rboundary)
       
       ! Create a standard mesh
       CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
-        p_rboundary)
+        rboundary)
     
     END DO
 
@@ -206,7 +204,7 @@ CONTAINS
     ! solution vector.
     DO i = NLMIN, NLMAX
       CALL spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscretisation, 3, &
-                                     Rlevels(i)%rtriangulation, p_rboundary)
+                                     Rlevels(i)%rtriangulation, rboundary)
     END DO
 
     ! rdiscretisation%RspatialDiscretisation is a list of scalar 
@@ -220,7 +218,7 @@ CONTAINS
       ! velocity...
       CALL spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
-          EL_EM30, CUB_G2X2, Rlevels(i)%rtriangulation, p_rboundary)
+          EL_EM30, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
@@ -234,7 +232,7 @@ CONTAINS
       ! functions.
       CALL spdiscr_initDiscr_combined (&
           Rlevels(i)%rdiscretisation%RspatialDiscretisation(3),&
-          EL_Q0,EL_EM30,CUB_G2X2,Rlevels(i)%rtriangulation,p_rboundary)
+          EL_Q0,EL_EM30,CUB_G2X2,Rlevels(i)%rtriangulation,rboundary)
     
     END DO
 
@@ -436,7 +434,7 @@ CONTAINS
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
       
       ! The endpoint of this segment should also be Dirichlet. We set this by
       ! changing the region properties in rboundaryRegion.
@@ -456,19 +454,19 @@ CONTAINS
                                         getBoundaryValues_2D)
                                
       ! Edge 2 is Neumann boundary, so it's commented out.
-      ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
       !                                    getBoundaryValues_2D)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
@@ -476,7 +474,7 @@ CONTAINS
       ! Now continue with defining the boundary conditions of the Y-velocity:
       !
       ! Define edge 1.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
       
       ! Edge with start- and endpoint.
       rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
@@ -487,19 +485,19 @@ CONTAINS
                                         getBoundaryValues_2D)
                                
       ! Edge 2 is Neumann boundary, so it's commented out.
-      ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
       !                                    getBoundaryValues_2D)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
@@ -653,7 +651,7 @@ CONTAINS
     CALL bcasm_initDiscreteBC(rprjDiscreteBC)
     !
     ! Edge 1 of boundary component 1, X-velocity.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
 
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
@@ -663,25 +661,25 @@ CONTAINS
                                        getBoundaryValues_2D)
                              
     ! Edge 2 is Neumann boundary, so it's commented out.
-    ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+    ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
     !                                    rboundaryRegion,rprjDiscreteBC,&
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
     ! Edge 1 of boundary component 1, Y-velocity.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
   
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
@@ -692,19 +690,19 @@ CONTAINS
                                        getBoundaryValues_2D)
                              
     ! Edge 2 is Neumann boundary, so it's commented out.
-    ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+    ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
     !                                    rboundaryRegion,rprjDiscreteBC,&
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
@@ -793,7 +791,7 @@ CONTAINS
     DEALLOCATE(Rlevels)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (p_rboundary)
+    CALL boundary_release (rboundary)
 
   END SUBROUTINE
 

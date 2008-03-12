@@ -73,7 +73,7 @@ MODULE poisson2d_method2
     INTEGER :: NLMAX
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
@@ -125,22 +125,21 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
+    ! Set rboundary to NULL() to create a new structure.
+    CALL boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rproblem%RlevelInfo(1)%rtriangulation, &
-        './pre/QUAD.tri', rproblem%p_rboundary)
+        './pre/QUAD.tri', rproblem%rboundary)
     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &
-        rproblem%RlevelInfo(1)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(1)%rtriangulation,rproblem%rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(1)%rtriangulation, &
-        rproblem%p_rboundary)
+        rproblem%rboundary)
     
   END SUBROUTINE
 
@@ -163,7 +162,7 @@ CONTAINS
   ! local variables
   
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary), POINTER :: rboundary
     
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
@@ -173,7 +172,7 @@ CONTAINS
     
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => rproblem%p_rboundary
+    rboundary => rproblem%rboundary
     p_rtriangulation => rproblem%RlevelInfo(1)%rtriangulation
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -181,7 +180,7 @@ CONTAINS
     ! solution vector. In this simple problem, we only have one block.
     ALLOCATE(p_rdiscretisation)
     CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
-                                   p_rtriangulation, p_rboundary)
+                                   p_rtriangulation, rboundary)
                                    
     ! SAve the discretisation structure to our local LevelInfo structure
     ! for later use.
@@ -194,7 +193,7 @@ CONTAINS
     CALL spdiscr_initDiscr_simple ( &
                  p_rdiscretisation%RspatialDiscretisation(1), &
                  EL_E011,CUB_G2X2, &
-                 p_rtriangulation, p_rboundary)
+                 p_rtriangulation, rboundary)
 
   END SUBROUTINE
 
@@ -372,7 +371,7 @@ CONTAINS
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
-    CALL boundary_createRegion(rproblem%p_rboundary,1,1,rboundaryRegion)
+    CALL boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
     
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
@@ -388,19 +387,19 @@ CONTAINS
         getBoundaryValues_2D,rproblem%rcollection)
                              
     ! Now to the edge 2 of boundary component 1 the domain. 
-    CALL boundary_createRegion(rproblem%p_rboundary,1,2,rboundaryRegion)
+    CALL boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(rproblem%p_rboundary,1,3,rboundaryRegion)
+    CALL boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(rproblem%p_rboundary,1,4,rboundaryRegion)
+    CALL boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
@@ -719,7 +718,7 @@ CONTAINS
     CALL tria_done (rproblem%RlevelInfo(1)%rtriangulation)
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    CALL boundary_release (rproblem%rboundary)
     
   END SUBROUTINE
 

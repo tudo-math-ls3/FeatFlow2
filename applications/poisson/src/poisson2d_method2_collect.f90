@@ -73,9 +73,8 @@ CONTAINS
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! At first, read in the parametrisation of the boundary and save
-    ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(p_rboundary)
+    ! it to p_rboundary.
+    ALLOCATE(p_rboundary)
     CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
 
     ! Now read in the basic triangulation.
@@ -121,7 +120,7 @@ CONTAINS
   ! local variables
   
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary), POINTER :: rboundary
     
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
@@ -131,7 +130,7 @@ CONTAINS
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => collct_getvalue_domain(rcollection,'DOMAIN')
+    rboundary => collct_getvalue_domain(rcollection,'DOMAIN')
     p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -139,7 +138,7 @@ CONTAINS
     ! solution vector. In this simple problem, we only have one block.
     ALLOCATE(p_rdiscretisation)
     CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
-                                   p_rtriangulation, p_rboundary)
+                                   p_rtriangulation, rboundary)
     
     ! p_rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
@@ -147,7 +146,7 @@ CONTAINS
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (p_rdiscretisation%RspatialDiscretisation(1), &
                                    EL_E011,CUB_G2X2, &
-                                   p_rtriangulation, p_rboundary)
+                                   p_rtriangulation, rboundary)
                                    
     ! Add the discretisation structure to the collection so that
     ! we can use it later.
@@ -743,6 +742,7 @@ CONTAINS
     
     ! Finally release the domain.
     CALL boundary_release (p_rboundary)
+    DEALLOCATE(p_rboundary)
     
     ! Remove everything from the collection.
     CALL collct_deletevalue (rcollection,'TRIA')

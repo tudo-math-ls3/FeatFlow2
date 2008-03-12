@@ -67,7 +67,7 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
     
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
@@ -146,19 +146,18 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL to create a new structure on the heap.
-    NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
+    ! Set rboundary to NULL to create a new structure on the heap.
+    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
+    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
     
     ! Refine it to get the coarse mesh.
-    CALL tria_quickRefine2LevelOrdering (NLMIN-1,rtriangulation,p_rboundary)
+    CALL tria_quickRefine2LevelOrdering (NLMIN-1,rtriangulation,rboundary)
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+    CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! +------------------------------------------------------------------------
     ! | SETUP OF THE H-ADAPTIVITY
@@ -184,7 +183,7 @@ CONTAINS
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   rtriangulation, p_rboundary)
+                                   rtriangulation, rboundary)
 
     ! Repeat the procedure until the maximum number of refinement
     ! steps has been reached. This will be checked below.
@@ -196,7 +195,7 @@ CONTAINS
       ! and cubature rule for this solution component:
       CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
           EL_P1,EL_Q1,CUB_G3_T,CUB_G2X2,rtriangulation, &
-          p_rboundary)
+          rboundary)
       
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -277,7 +276,7 @@ CONTAINS
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
       
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
@@ -293,19 +292,19 @@ CONTAINS
                                         getBoundaryValues_2D)
                                
       ! Now to the edge 2 of boundary component 1 the domain. 
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_2D)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
       CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_2D)
@@ -401,7 +400,7 @@ CONTAINS
       
       ! Create information about adjacencies and everything one needs from
       ! a triangulation.
-      CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+      CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
       
       ! +----------------------------------------------------------------------
       ! | TEMPORAL CLEANUP
@@ -499,7 +498,7 @@ CONTAINS
     CALL tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (p_rboundary)
+    CALL boundary_release (rboundary)
     
   END SUBROUTINE
 

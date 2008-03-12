@@ -347,11 +347,11 @@ CONTAINS
     ! 2nd boundary component - if it exists.
     IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
          ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
+        (boundary_igetNBoundComp(rproblem%rboundary) .GE. 2)) THEN
 
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
-      CALL boundary_createRegion (rproblem%p_rboundary, &
+      CALL boundary_createRegion (rproblem%rboundary, &
           2, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       df1 = 1.0_DP/1000.0_DP

@@ -176,7 +176,7 @@ MODULE ccbasic
     INTEGER :: isubEquation
         
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! iboundary parameter from the DAT file. Specifies whether to update
     ! boundary conditions in nonstationary simulations or not.

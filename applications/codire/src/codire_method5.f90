@@ -88,7 +88,7 @@ MODULE codire_method5
     TYPE(t_vectorBlock) :: rvector,rrhs
 
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
@@ -152,29 +152,27 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
-        './pre/QUAD.tri', rproblem%p_rboundary)
+        './pre/QUAD.tri', rproblem%rboundary)
     
     ! Refine the mesh up to the minimum level
     CALL tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
-        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%rboundary)
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
     CALL tria_initStandardMeshFromRaw (&
-        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%rboundary)
     
     ! Now, refine to level up to nlmax.
     DO i=rproblem%ilvmin+1,rproblem%ilvmax
       CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
-          rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
       CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
-          rproblem%p_rboundary)
+          rproblem%rboundary)
     END DO
     
   END SUBROUTINE
@@ -212,7 +210,7 @@ CONTAINS
     DO i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
-      p_rboundary => rproblem%p_rboundary
+      p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Now we can start to initialise the discretisation. At first, set up
@@ -478,7 +476,7 @@ CONTAINS
     ! A pointer to the domain
     TYPE(t_boundary), POINTER :: p_rboundary
     
-    p_rboundary => rproblem%p_rboundary
+    p_rboundary => rproblem%rboundary
 
     DO i=rproblem%ilvmin,rproblem%ilvmax
     
@@ -972,7 +970,7 @@ CONTAINS
     END DO
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    CALL boundary_release (rproblem%rboundary)
     
   END SUBROUTINE
 
