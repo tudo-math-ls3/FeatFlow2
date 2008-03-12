@@ -278,7 +278,7 @@ MODULE cc2dmediumm2basic
     INTEGER :: isubEquation
         
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    TYPE(t_boundary) :: rboundary
     
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions

@@ -467,7 +467,7 @@ CONTAINS
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector.
       CALL cc_get1LevelDiscretisation (rproblem%rparamList,&
-          rproblem%p_rboundary,p_rtriangulation,nequations,&
+          rproblem%rboundary,p_rtriangulation,nequations,&
           rproblem%RlevelInfo(i)%rdiscretisation)
 
       ! Save the discretisation structure to our local LevelInfo structure
@@ -1410,13 +1410,13 @@ CONTAINS
             
         ! Refine
         CALL tria_quickRefine2LevelOrdering(iref,&
-            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%rboundary)
         CALL tria_initStandardMeshFromRaw (&
-            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%rboundary)
             
         ! Create a discretisation structure corresponding to that mesh.
         ALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
-        CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
+        CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
             rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
             rproblem%roptcontrol%p_rdiscrTargetFlow)
         
@@ -1425,17 +1425,17 @@ CONTAINS
       ! No, we use a different mesh. We must read it from discr and refine it!
       ALLOCATE(rproblem%roptcontrol%p_rtriangulationTargetFlow)
       CALL tria_readTriFile2D (rproblem%roptcontrol%p_rtriangulationTargetFlow, &
-          rproblem%roptcontrol%smeshTargetFlow, rproblem%p_rboundary)
+          rproblem%roptcontrol%smeshTargetFlow, rproblem%rboundary)
 
       ! Refine
       CALL tria_quickRefine2LevelOrdering(rproblem%roptcontrol%ilevelTargetFlow-1,&
-          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%rboundary)
       CALL tria_initStandardMeshFromRaw (&
-          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%p_rboundary)
+          rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%rboundary)
       
       ! Create a discretisation structure corresponding to that mesh.
       ALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
-      CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%p_rboundary,&
+      CALL cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
           rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
           rproblem%roptcontrol%p_rdiscrTargetFlow)
     END IF
