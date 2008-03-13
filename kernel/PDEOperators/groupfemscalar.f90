@@ -726,8 +726,8 @@ CONTAINS
         CASE (AFCSTAB_FEMTVD, AFCSTAB_FEMGP)
           ! Set additional pointers
           CALL afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-          CALL afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
-          CALL afcstab_getbase_DcoeffsAtEdge(rafcstab,    p_DcoefficientsAtEdge)
+          CALL afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          CALL afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
 
           ! Adopt orientation convention IJ, such that L_ij < L_ji and
           ! generate edge structure for the flux limiter
