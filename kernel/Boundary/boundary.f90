@@ -2006,8 +2006,8 @@ MODULE boundary
 
         ! Calculate the x/y components of the normal vector from the 
         ! startpoint and the uni direction vector.
-        dnx0 = -p_DsegInfo(istartidx+6)
-        dny0 =  p_DsegInfo(istartidx+5)
+        dnx0 =  p_DsegInfo(istartidx+6)
+        dny0 = -p_DsegInfo(istartidx+5)
 
       ! case of circle segment
       CASE (BOUNDARY_TYPE_CIRCLE)
