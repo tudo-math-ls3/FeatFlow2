@@ -654,9 +654,9 @@ CONTAINS
     !    Weighted Samarski upwind
     ! 
     !    This implementation follows the documentation of
-    !    [F. Schieweck, Parallele L�sung der station�ren inkompressiblen
-    !     Navier-Stokes Gleichungen, Habilitation, Fakult�t f�r
-    !     Mathematik, Otto-von-Guericke-Universit�t Magdeburg]
+    !    [F. Schieweck, Parallele Loesung der stationaeren inkompressiblen
+    !     Navier-Stokes Gleichungen, Habilitation, Fakultaet fuer
+    !     Mathematik, Otto-von-Guericke-Universitaet Magdeburg]
     ! 
     !********************************************************************
     !
@@ -677,11 +677,11 @@ CONTAINS
     !       |            \  |               |
     !       X------Gk-------X---------------X
     !
-    !     The edges Gl and Gk enclose a diagonal edge Gkl of the above
+    !     The edges Gl and Gk enclose a diagonal edge Glk of the above
     !     triangle. The operator can now be rewritten by decomposition
     !     into the elements as
     !
-    !       n(z,u,v) ~= sum_l sum_k int_Gkl (z*n_lk) (u-u(Bl)) v(Bl) dGamma
+    !       n(z,u,v) ~= sum_l sum_k int_Glk (z*n_lk) (u-u(Bl)) v(Bl) dGamma
     !
     !     with Bl and Bk being the midpoints of the edges and n_lk being the
     !     outer normal vector of the edge Glk. 
@@ -4568,6 +4568,33 @@ CONTAINS
 
     dalphaMax=0.0_DP
     
+    ! In the next step, we calculate the 'maximum possible mesh with
+    ! in direction of the flow'; this is the maximum possible length
+    ! that a particle can cross in the current element.
+    ! The picture in mind is the following:
+    !
+    !          G3
+    !   +-------------X-------+
+    !   |            /        |
+    !   |           /         |
+    !   |          /          |
+    !   |         /           |
+    !   |        /            |
+    ! G4|       /             | G2
+    !   |      ^ (beta1,beta2)|
+    !   |     /               |
+    !   |    /                |
+    !   |   /                 |
+    !   |  /                  |
+    !   | /                   |
+    !   |/                    |
+    !   O---------------------+
+    !            G1
+    !
+    ! The vector (beta1,beta2) gives the direction of the flow.
+    ! A particle starting in point O and moves at most up to point X.
+    ! The length of the line (O,X) is the local mesh with h.
+    !
     ! Loop through the four corners of element JEL and check
     ! of a line with slope BETA=(xbeta1,xbeta2) starting in this
     ! corner really intersects with one of the edges of the element.
@@ -4620,6 +4647,13 @@ CONTAINS
 
     ! -----------------------------------------------------------------
     ! finally determine the local h=h_T
+    !
+    ! dalphaMax is the maximum alpha, normalised as 'parameter value',
+    ! i.e. dalphaMax=1.0 corresponds to a vector 1.0*(dbeta1,dbeta2).
+    ! We multiply with dunorm=|(dbeta1,dbeta2)| to get the actual length
+    ! of the vector which can be placed inside of the element.
+    !
+    ! Furthermore, we multiply with an additional weight 4. (why ?!?)
 
     dlocalH=dalphaMax*4.0_DP*dunorm
 
@@ -4653,6 +4687,8 @@ CONTAINS
   ! local variables
   DOUBLE PRECISION :: dsp
 
+    ! Scalar product of the line (xa,ya)->(xb,yb) with the
+    ! counterclockwise normal n1 of (beta1,beta2)
     dsp=BETA2*(XB-XA)-BETA1*(YB-YA)
     
     IF (dsp.eq.0.0_DP) THEN
@@ -4662,7 +4698,27 @@ CONTAINS
       
     ELSE  
 
+      ! Scalar product of (beta1,beta2) with the (inner) normal vector n2
+      ! of the line (xo,yo)->(xa,ya). 
       dlambda=(BETA1*(YA-YO)-BETA2*(XA-XO))/dsp
+
+      !                    (xb,yb)
+      !   +-----------------+
+      !   |                 |
+      !   |                 |
+      !   ^ n2              |
+      !   !                 |
+      !   !  (beta1,beta2)  |    (beta1,beta2)
+      !   !    ^            |    ^
+      !   !   /  ^__ n1     |   /
+      !   !  /      \__     |  /
+      !   ! /          \__  | /
+      !   !/              \_|/ 
+      !   +-----------------+
+      ! (xo,yo)            (xa,ya)
+      !
+      ! (What is this? Documentation incomplete. Has someone a good
+      ! reference?)
 
       ! is the intersection point inside of the element?
       IF ((dlambda.GE.-1E-1_DP).AND.(dlambda.LE.1.11E0_DP)) THEN
