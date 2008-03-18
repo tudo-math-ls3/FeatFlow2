@@ -8666,7 +8666,7 @@ CONTAINS
 
   !auxiliary vector containing the first derivatives on the reference element
   REAL(DP), DIMENSION(9,NDIM2D) :: Dhelp
-  REAL(DP) :: dx,dy, d1,d2,d3,d4
+  REAL(DP) :: dx,dy, d1,d2,d3,d4,x,y
 
   REAL(DP) :: dxj !auxiliary variable
 
@@ -8698,6 +8698,8 @@ CONTAINS
   
   dx = Dpoint(1)
   dy = Dpoint(2)
+  x = dx
+  y = dy
 
   ! Coordinate test
   IF ((Dcoords(1,1) .GT. Dcoords(1,2)) .OR. ((Dcoords(1,1) .EQ. Dcoords(1,2))&
@@ -8731,16 +8733,29 @@ CONTAINS
       
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC)) then
-    Dbas(1,DER_FUNC) = -Q4 - Q3*dy + Q3*dy**2 + Q3*dx**2*dy
-    Dbas(2,DER_FUNC) = -Q4 + Q3*dx + Q3*dx**2 - Q3*dx*dy**2
-    Dbas(3,DER_FUNC) = -Q4 + Q3*dy + Q3*dy**2 - Q3*dx**2*dy
-    Dbas(4,DER_FUNC) = -Q4 - Q3*dx + Q3*dx**2 + Q3*dx*dy**2
-    Dbas(5,DER_FUNC) = d1*(-Q3*dx - Q3*dx*dy + Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
-    Dbas(6,DER_FUNC) = d2*(-Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
-    Dbas(7,DER_FUNC) = d3*( Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
-    Dbas(8,DER_FUNC) = d4*( Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
-    Dbas(9,DER_FUNC) = 2.0_DP - Q5*dx**2 - Q5*dy**2
- 
+    !Dbas(1,DER_FUNC) = -Q4 - Q3*dy + Q3*dy**2 + Q3*dx**2*dy
+    !Dbas(2,DER_FUNC) = -Q4 + Q3*dx + Q3*dx**2 - Q3*dx*dy**2
+    !Dbas(3,DER_FUNC) = -Q4 + Q3*dy + Q3*dy**2 - Q3*dx**2*dy
+    !Dbas(4,DER_FUNC) = -Q4 - Q3*dx + Q3*dx**2 + Q3*dx*dy**2
+    !Dbas(5,DER_FUNC) = d1*(-Q3*dx - Q3*dx*dy + Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
+    !Dbas(6,DER_FUNC) = d2*(-Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
+    !Dbas(7,DER_FUNC) = d3*( Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
+    !Dbas(8,DER_FUNC) = d4*( Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
+    !Dbas(9,DER_FUNC) = 2.0_DP - Q5*dx**2 - Q5*dy**2
+    Dbas(1,DER_FUNC) = -1.D0/4.D0-3.D0/4.D0*y+3.D0/4.D0*y**2+3.D0/4.D0*x**2*y
+    Dbas(2,DER_FUNC) = -1.D0/4.D0+3.D0/4.D0*x+3.D0/4.D0*x**2-3.D0/4.D0*y**2*x
+    Dbas(3,DER_FUNC) = -1.D0/4.D0+3.D0/4.D0*y+3.D0/4.D0*y**2-3.D0/4.D0*x**2*y
+    Dbas(4,DER_FUNC) = -1.D0/4.D0-3.D0/4.D0*x+3.D0/4.D0*x**2+3.D0/4.D0*y**2*x
+    Dbas(5,DER_FUNC) = -3.D0/4.D0*x-3.D0/4.D0*x*y+9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3
+    Dbas(6,DER_FUNC) = -3.D0/4.D0*y+3.D0/4.D0*x*y+9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3
+    Dbas(7,DER_FUNC) = 3.D0/4.D0*x-3.D0/4.D0*x*y-9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3
+    Dbas(8,DER_FUNC) = 3.D0/4.D0*y+3.D0/4.D0*x*y-9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3
+    Dbas(9,DER_FUNC) = 2-3.D0/2.D0*x**2-3.D0/2.D0*y**2
+
     
 !  endif
   
@@ -8753,24 +8768,46 @@ CONTAINS
     dxj = 1.0_DP / ddetj
     
     ! x- and y-derivatives on reference element
-    Dhelp(1,1) =  Q5*dx*dy
-    Dhelp(2,1) =  Q3 + Q5*dx - Q3*dy**2
-    Dhelp(3,1) = -Q5*dx*dy
-    Dhelp(4,1) = -Q3 + Q5*dx + Q3*dy**2
-    Dhelp(5,1) = -Q3 - Q3*dy + Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
-    Dhelp(6,1) =  Q3*dy + Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
-    Dhelp(7,1) =  Q3 - Q3*dy - Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
-    Dhelp(8,1) =  Q3*dy - Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
-    Dhelp(9,1) = -3.0_DP*dx
-    Dhelp(1,2) = -Q3 + Q5*dy + Q3*dx**2
-    Dhelp(2,2) = -Q5*dx*dy
-    Dhelp(3,2) =  Q3 + Q5*dy - Q3*dx**2
-    Dhelp(4,2) =  Q5*dx*dy
-    Dhelp(5,2) = -Q3*dx + Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
-    Dhelp(6,2) = -Q3 + Q3*dx + Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
-    Dhelp(7,2) = -Q3*dx - Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
-    Dhelp(8,2) =  Q3 + Q3*dx - Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
-    Dhelp(9,2) = -3.0_DP*dy
+    !Dhelp(1,1) =  Q5*dx*dy
+    !Dhelp(2,1) =  Q3 + Q5*dx - Q3*dy**2
+    !Dhelp(3,1) = -Q5*dx*dy
+    !Dhelp(4,1) = -Q3 + Q5*dx + Q3*dy**2
+    !Dhelp(5,1) = -Q3 - Q3*dy + Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
+    !Dhelp(6,1) =  Q3*dy + Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
+    !Dhelp(7,1) =  Q3 - Q3*dy - Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
+    !Dhelp(8,1) =  Q3*dy - Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
+    !Dhelp(9,1) = -3.0_DP*dx
+    !Dhelp(1,2) = -Q3 + Q5*dy + Q3*dx**2
+    !Dhelp(2,2) = -Q5*dx*dy
+    !Dhelp(3,2) =  Q3 + Q5*dy - Q3*dx**2
+    !Dhelp(4,2) =  Q5*dx*dy
+    !Dhelp(5,2) = -Q3*dx + Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
+    !Dhelp(6,2) = -Q3 + Q3*dx + Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
+    !Dhelp(7,2) = -Q3*dx - Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
+    !Dhelp(8,2) =  Q3 + Q3*dx - Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
+    !Dhelp(9,2) = -3.0_DP*dy
+    Dhelp(1,1) = 3.D0/2.D0*x*y
+    Dhelp(2,1) = 3.D0/4.D0+3.D0/2.D0*x-3.D0/4.D0*y**2
+    Dhelp(3,1) = -3.D0/2.D0*x*y
+    Dhelp(4,1) = -3.D0/4.D0+3.D0/2.D0*x+3.D0/4.D0*y**2
+    Dhelp(5,1) = -3.D0/4.D0-3.D0/4.D0*y+9.D0/4.D0*y**2+45.D0/8.D0*x**2*y&
+                 -15.D0/8.D0*y**3
+    Dhelp(6,1) = 3.D0/4.D0*y+9.D0/2.D0*x*y+45.D0/8.D0*x**2*y-15.D0/8.D0*y**3
+    Dhelp(7,1) = 3.D0/4.D0-3.D0/4.D0*y-9.D0/4.D0*y**2+45.D0/8.D0*x**2*y&
+                 -15.D0/8.D0*y**3
+    Dhelp(8,1) = 3.D0/4.D0*y-9.D0/2.D0*x*y+45.D0/8.D0*x**2*y-15.D0/8.D0*y**3
+    Dhelp(9,1) = -3*x
+    Dhelp(1,2) = -3.D0/4.D0+3.D0/2.D0*y+3.D0/4.D0*x**2
+    Dhelp(2,2) = -3.D0/2.D0*x*y
+    Dhelp(3,2) = 3.D0/4.D0+3.D0/2.D0*y-3.D0/4.D0*x**2
+    Dhelp(4,2) = 3.D0/2.D0*x*y
+    Dhelp(5,2) = -3.D0/4.D0*x+9.D0/2.D0*x*y+15.D0/8.D0*x**3-45.D0/8.D0*y**2*x
+    Dhelp(6,2) = -3.D0/4.D0+3.D0/4.D0*x+9.D0/4.D0*x**2+15.D0/8.D0*x**3&
+                 -45.D0/8.D0*y**2*x
+    Dhelp(7,2) = -3.D0/4.D0*x-9.D0/2.D0*x*y+15.D0/8.D0*x**3-45.D0/8.D0*y**2*x
+    Dhelp(8,2) = 3.D0/4.D0+3.D0/4.D0*x-9.D0/4.D0*x**2+15.D0/8.D0*x**3&
+                 -45.D0/8.E0*y**2*x
+    Dhelp(9,2) = -3*y
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
