@@ -540,7 +540,9 @@ CONTAINS
     
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-        p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -926,6 +928,12 @@ CONTAINS
                   Dcoefficients,rcollection)
       END IF
       
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+      END IF
+
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -933,14 +941,16 @@ CONTAINS
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest)
+            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest,&
+            rintSubset%p_ItwistIndex)
             
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial)
+            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial,&
+            rintSubset%p_ItwistIndex)
       END IF
       
       ! Omit the calculation of the coefficient function values if they
@@ -948,7 +958,8 @@ CONTAINS
       IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
         CALL elem_generic_sim (p_elementDistributionFunc%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderFunc, DbasFunc, ncubp, IELmax-IELset+1, p_DcubPtsFunc)
+            BderFunc, DbasFunc, ncubp, IELmax-IELset+1, p_DcubPtsFunc,&
+            rintSubset%p_ItwistIndex)
       END IF
       
       ! ----------------- COEFFICIENT EVALUATION PHASE ---------------------

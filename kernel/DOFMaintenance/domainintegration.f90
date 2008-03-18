@@ -50,7 +50,7 @@ MODULE domainintegration
     INTEGER(I32), DIMENSION(:), POINTER           :: p_Ielements
     
     ! A list of the corner vertices of all elements in progress.
-    ! array [1..NDIM2D,1..TRIA_MAXNVE2D,1..Number of elements] of double
+    ! array [1..dimension,1..#vertices per element,1..Number of elements] of double
     REAL(DP), DIMENSION(:,:,:), POINTER           :: p_Dcoords
     
     ! A list of points in coordinates on the reference element.
@@ -76,6 +76,11 @@ MODULE domainintegration
     ! reference element to each real element in progress.
     ! array [1..npointsPerElement,1..Number of elements]
     REAL(DP), DIMENSION(:,:), POINTER             :: p_Ddetj
+    
+    ! Twist index array to define the orientation of faces/edges.
+    ! May point to NULL() if the element does not need twist indices.
+    ! array [1..NVE/NVA,1..Number of elements]
+    INTEGER(I32), DIMENSION(:,:), POINTER         :: p_ItwistIndex
 
   END TYPE
   
@@ -90,7 +95,8 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE domint_initIntegration (rintSubset,nelements,npointsPerElement,&
-                                     icoordSystem,ndimSpace,nverticesPerElement)
+                                     icoordSystem,ndimSpace,nverticesPerElement,&
+                                     ntwistIndexSize)
   
 !<description>
   ! This routine initialises a t_domainIntSubset structure. Memory is allocated
@@ -118,6 +124,10 @@ CONTAINS
   ! Number of vertices per element that are necessary to specify the 
   ! transformation from the reference to the real element
   INTEGER, INTENT(IN) :: nverticesPerElement
+  
+  ! Number of entries for the twist index array on each element.
+  ! May be 0, in that case, no twist index array is allocated
+  INTEGER, INTENT(IN) :: ntwistIndexSize
 !</input>
 
 !<output>
@@ -174,6 +184,13 @@ CONTAINS
     ! Allocate an array saving the coordinates of corner vertices of elements
     ALLOCATE(rintSubset%p_Ddetj(npointsPerElement,nelements))
 
+    ! Allocate memory for the twist index array.
+    IF (ntwistIndexSize .NE. 0) THEN
+      ALLOCATE(rintSubset%p_ItwistIndex(ntwistIndexSize,nelements))
+    ELSE
+      NULLIFY(rintSubset%p_ItwistIndex)
+    END IF
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -192,6 +209,9 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
+
+    ! Deallocate the twist index array
+    IF (ASSOCIATED(rintSubset%p_ItwistIndex)) DEALLOCATE(rintSubset%p_ItwistIndex)
 
     ! Deallocate an array saving the coordinates of corner vertices of elements
     DEALLOCATE(rintSubset%p_Ddetj)

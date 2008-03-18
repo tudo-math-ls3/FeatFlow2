@@ -1880,823 +1880,825 @@ CONTAINS
   
   END SUBROUTINE
 
-  !****************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrixScalar,&
-                                      fcoeff_buildMatrixSc_sim,rcollection)
-  
-!<description>
-  ! This routine calculates the entries of a finite element matrix.
-  ! The matrix structure must be prepared with bilf_createMatrixStructure
-  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF's
-  ! of all finite elements must 'match'. Trial and test functions may be
-  ! different.
-  ! In case the array for the matrix entries does not exist, the routine
-  ! allocates memory in size of the matrix of the heap for the matrix entries.
-  !
-  ! Double-precision version.
-  !
-  ! WARNING: THIS ROUTINE IS OUTDATED AND NOT USED. ONLY FOR TESTING AND
-  ! DEMONSTRATION PURPOSES! IT WEILL BE REMOVED SOONER OR LATER!
-!</description>
-
-!<input>
-  ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
-  
-  ! The bilinear form specifying the underlying PDE of the discretisation.
-  TYPE(t_bilinearForm), INTENT(IN) :: rform
-  
-  ! Whether to clear the matrix before calculating the entries.
-  ! If .FALSE., the new matrix entries are added to the existing entries.
-  LOGICAL, INTENT(IN) :: bclear
-  
-  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
-  ! callback function for nonconstant coefficients to provide additional
-  ! information. 
-  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
-  
-  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
-  ! Must be present if the matrix has nonconstant coefficients!
-  INCLUDE 'intf_coefficientMatrixSc2.inc'
-  OPTIONAL :: fcoeff_buildMatrixSc_sim
-!</input>
-
-!<inputoutput>
-  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: i,i1,j,icurrentElementDistr,IDFG, ICUBP, IALBET, IA, IB, NVE
-  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
-  INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
-  REAL(DP) :: OM,AUX, DB
-  
-  ! Array to tell the element which derivatives to calculate
-  LOGICAL, DIMENSION(EL_MAXNDER) :: BderTrialTempl, BderTestTempl, BderTrial, BderTest
-  
-  ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
-
-  ! For every cubature point on the reference element,
-  ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-  
-  ! number of cubature points on the reference element
-  INTEGER :: ncubp
-  
-  ! Pointer to KLD, KCOL, DA
-  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL
-  REAL(DP), DIMENSION(:), POINTER :: p_DA
-  
-  ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
-  
-  ! Allocateable arrays for the values of the basis functions - 
-  ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasTrial
-  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
-  
-  ! Number of entries in the matrix - for quicker access
-  INTEGER(PREC_DOFIDX) :: NA
-  INTEGER(I32) :: NEQ
-  
-  ! Number of local degees of freedom for trial and test functions
-  INTEGER :: indofTrial, indofTest
-  
-  ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  
-  ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
-  
-  ! Local matrices, used during the assembly.
-  ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
-  
-  ! An array receiving the coordinates of cubature points on
-  ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsRef
-
-  ! An array receiving the coordinates of cubature points on
-  ! the real element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsReal
-
-  ! Pointer to the point coordinates to pass to the element function.
-  ! Point either to DcubPtsRef or to DcubPtsReal, depending on whether
-  ! the trial/test element is parametric or not.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTest
-  
-  ! Array with coordinates of the corners that form the real element.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoords
-  
-  ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Djac
-  
-  ! Pointer to KVERT of the triangulation
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-  
-  ! Pointer to DCORVG of the triangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  
-  ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
-  
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
-  ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
-  
-  ! Some variables to support nonconstant coefficients in the matrix.
-  
-  ! Pointer to the coefficients that are computed by the callback routine.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
-  
-  !REAL(DP), DIMENSION(11) :: DT
-  
-  !CHARACTER(LEN=20) :: CFILE
-  
-  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
-    CALL output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-    CALL sys_halt()
-  END IF
-
-  ! Which derivatives of basis functions are needed?
-  ! Check the descriptors of the bilinear form and set BDERxxxx
-  ! according to these.
-
-  !CALL ZTIME(DT(1))
-
-  BderTrialTempl = .FALSE.
-  BderTestTempl = .FALSE.
-  
-  ! Loop through the additive terms
-  DO i=1,rform%itermCount
-    ! The desriptor Idescriptors gives directly the derivative
-    ! which is to be computed! Build template's for BDER.
-    ! We don't compute the actual BDER here, as there might be some special
-    ! processing if trial/test functions are identical!
-    !
-    ! At first build the descriptors for the trial functions
-    I1=rform%Idescriptors(1,I)
-    
-    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      CALL output_line ('Invalid descriptor!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-      CALL sys_halt()
-    ENDIF
-    
-    BderTrialTempl(I1)=.TRUE.
-
-    ! Then those of the test functions
-    I1=rform%Idescriptors(2,I)
-    
-    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      CALL output_line ('Invalid descriptor!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-      CALL sys_halt()
-    ENDIF
-    
-    BderTestTempl(I1)=.TRUE.
-  END DO
-  
-  ! Get information about the matrix:
-  NA = rmatrixScalar%NA
-  NEQ = rmatrixScalar%NEQ
-  
-  ! We need KCOL/KLD of our matrix
-  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
-  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
-  
-  ! Check if the matrix entries exist. If not, allocate the matrix.
-  IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
-
-    ! Clear the entries in the matrix - we need to start with zero
-    ! when assembling a new matrix!
-    CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
-                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
-                        ST_NEWBLOCK_ZERO)
-    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
-
-  ELSE
-  
-    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
-
-    ! If desired, clear the matrix before assembling.
-    IF (bclear) THEN
-      CALL lalg_clearVectorDble (p_DA)
-    END IF
-    
-  END IF
-  
-  ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => rdiscretisation%p_rtriangulation
-  
-  ! For saving some memory in smaller discretisations, we calculate
-  ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
-  
-  ! Get a pointer to the KVERT and DCORVG array
-  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
-                             p_IverticesAtElement)
-  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
-                             p_DvertexCoords)
-
-  ! Allocate memory for corner coordinates
-  ALLOCATE(DCoords(2,TRIA_MAXNVE2D,nelementsPerBlock))
-  
-  ! Now loop over the different element distributions (=combinations
-  ! of trial and test functions) in the discretisation.
-  !CALL ZTIME(DT(2))
-
-  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
-  
-    ! Activate the current element distribution
-    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
-  
-    ! Cancel if this element distribution is empty.
-    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
-
-    ! Get the number of local DOF's for trial and test functions
-    indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
-    indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
-    
-    ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
-    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      CALL output_line ('Element spaces incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-      CALL sys_halt()
-    END IF
-    
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
-    
-    ! Allocate arrays accepting cubature point coordinates.
-    ! It's at most as large as number of elements or length
-    ! of the element set.
-    ALLOCATE(DcubPtsRef(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
-    ALLOCATE(DcubPtsReal(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
-    
-    ! Put the cubature point coordinates in the right format to the
-    ! cubature-point array.
-    ! Initialise all entries in DcubPtsRef with the same coordinates -
-    ! as the cubature point coordinates are identical on all elements
-    DO j=1,SIZE(DcubPtsRef,3)
-      DO i=1,ncubp
-        DcubPtsRef(1,i,j) = Dxi(i,1)
-        DcubPtsRef(2,i,j) = Dxi(i,2)
-      END DO
-    END DO
-    
-    ! Allocate an array saving the coordinates of corner vertices of elements
-    ALLOCATE(Djac(p_rtriangulation%ndim**2,ncubp,nelementsPerBlock))
-    ALLOCATE(Ddetj(ncubp,nelementsPerBlock))
-    
-    ! Allocate arrays for the values of the test- and trial functions.
-    ! This is done here in the size we need it. Allocating it in-advance
-    ! with something like
-    !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
-    ! which reduces the speed by 50%!
-    
-    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%itestElement),&
-             ncubp,nelementsPerBlock))
-    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_elementDistribution%itrialElement), &
-             ncubp,nelementsPerBlock))
-
-    ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
-    ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
-
-    ! Check if one of the trial/test elements is nonparametric
-    bnonparTrial = elem_isNonparametric(p_elementDistribution%itrialElement)
-    bnonparTest  = elem_isNonparametric(p_elementDistribution%itestElement)
-                    
-    ! Let p_DcubPtsTrial / p_DcubPtsTest point either to DcubPtsReal or
-    ! DcubPtsRef - depending on whether the space is parametric or not.
-    IF (bnonparTrial) THEN
-      p_DcubPtsTrial => DcubPtsReal
-    ELSE
-      p_DcubPtsTrial => DcubPtsRef
-    END IF
-    
-    IF (bnonparTest) THEN
-      p_DcubPtsTest => DcubPtsReal
-    ELSE
-      p_DcubPtsTest => DcubPtsRef
-    END IF
-    
-    ! Allocate an array saving the local matrices for all elements
-    ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
-    ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(Kentry(indofTest,indofTrial,nelementsPerBlock))
-    ALLOCATE(Dentry(indofTest,indofTrial))
-    
-    ! In case of nonconstant coefficients in that part of the matrix, we
-    ! need an additional array to save all the coefficients:
-    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
-      IF (rform%ballCoeffConstant) THEN
-        CALL output_line ('Some oefficients are not constant &
-            &although thy should be!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-        CALL sys_halt()
-      END IF
-      IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-        CALL output_line ('Coefficient function not given!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
-        CALL sys_halt()
-      END IF
-      ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
-    END IF
-                    
-    ! p_IdofsTest points either to the just created array or to the
-    ! array with the DOF's of the trial functions - when trial and
-    ! test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
-    ! indicate whether there are identical trial and test functions
-    ! in one block!
-    bIdenticalTrialAndTest = p_elementDistribution%itrialElement .EQ. &
-                             p_elementDistribution%itestElement
-
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
-    ! space IdofTest (if both spaces are identical). 
-    ! We create a pointer for the trial space and not for the test space to
-    ! prevent pointer-arithmetic in the innerst loop below!
-    IF (bIdenticalTrialAndTest) THEN
-      p_IdofsTrial => IdofsTest
-      p_DbasTrial  => DbasTest
-      ! Build the actual combination of what the element should calculate.
-      ! As we evaluate only once, what the element must calculate is an
-      ! OR combination of the BDER from trial and test functions.
-      BderTrial = BderTrialTempl .OR. BderTestTempl
-      BderTest = BderTestTempl
-    ELSE
-      p_IdofsTrial => IdofsTrial
-      p_DbasTrial  => DbasTrial
-      
-      ! Build the actual combination of what the element should calculate.
-      ! Copy BDERxxxx to BDERxxxxAct
-      BderTrial = BderTrialTempl
-      BderTest = BderTestTempl
-    END IF
-    !CALL ZTIME(DT(3))
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
-                              p_IelementList)
-                              
-    ! Loop over the elements - blockwise.
-    DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
-    
-      ! We always handle BILF_NELEMSIM elements simultaneously.
-      ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
-      ! elements simultaneously.
-      
-      IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
-    
-      ! The outstanding feature with finite elements is: A basis
-      ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
-      !
-      !        #. . .#. . .#. . .#
-      !        .     .     .     .
-      !        .  *  .  *  .  *  .
-      !        #-----O-----O. . .#
-      !        |     |     |     .
-      !        |     | IEL |  *  .
-      !        #-----X-----O. . .#
-      !        |     |     |     .
-      !        |     |     |  *  .
-      !        #-----#-----#. . .#
-      !
-      ! --> On element IEL, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
-      !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
-      !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
-      !
-      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,IdofsTest)
-                                   
-      ! If the DOF's for the trial functions are different, calculate them, too.
-      IF (.NOT.bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                    .FALSE.,IdofsTrial)
-      END IF
-      !CALL ZTIME(DT(4))
-      ! For the assembly of the global matrix, we use a "local"
-      ! approach. At first we build a "local" system matrix according
-      ! to the current element. This contains all additive
-      ! contributions of element IEL, which are later added at the
-      ! right positions to the elements in the global system matrix.
-      !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
-      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-      ! "active" (i.e. have common support) on our current element, each 
-      ! giving an additive contribution to the system matrix.
-      !
-      ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTest,1..indofTrial) receives the position 
-      !   in the global system matrix, where the corresponding value 
-      !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
-      !  approach.)
-      !
-      ! We build local matrices for all our elements 
-      ! in the set simultaneously.
-      ! Loop through elements in the set and for each element,
-      ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
-
-        ! Loop through the trial functions
-        DO JDOFE=1,indofTrial
-        
-          ! Row JDOFE of the local matrix corresponds 
-          ! to row=global DOF KDFG(JDOFE) in the global matrix.
-          ! This is the "X" in the above picture.
-          ! Get the starting position of the corresponding row
-          ! to JCOL0:
-
-          JCOL0=p_KLD(p_IdofsTrial(JDOFE,IEL))
-          
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
-          ! All these have common support with our current basis function
-          ! and will therefore give an additive value to the global
-          ! matrix.
-          
-          DO IDOFE=1,indofTest
-            
-            ! Get the global DOF of the "O" which interacts with 
-            ! our "X".
-            
-            IDFG=IdofsTest(IDOFE,IEL)
-            
-            ! Starting in JCOL0 (which points to the beginning of
-            ! the line initially), loop through the elements in
-            ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
-            
-            DO JCOL=JCOL0,NA
-              IF (p_KCOL(JCOL) .EQ. IDFG) EXIT
-            END DO
-
-            ! Because columns in the global matrix are sorted 
-            ! ascendingly (except for the diagonal element),
-            ! the next search can start after the column we just found.
-            
-            ! JCOL0=JCOL+1
-            
-            ! Save the position of the matrix entry into the local
-            ! matrix.
-            
-            Kentry(IDOFE,JDOFE,IEL)=JCOL
-            
-          END DO ! IDOFE
-          
-        END DO ! JDOFE
-        
-      END DO ! IEL
-      !CALL ZTIME(DT(5))
-      ! Ok, we found the positions of the local matrix entries
-      ! that we have to change.
-      ! To calculate the matrix contributions, we have to evaluate
-      ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
-      !
-      ! We have the coordinates of the cubature points saved in the
-      ! coordinate array from above. Unfortunately for nonparametric
-      ! elements, we need the real coordinate.
-      ! Furthermore, we anyway need the coordinates of the element
-      ! corners and the Jacobian determinants corresponding to
-      ! all the points.
-      !
-      ! At first, get the coordinates of the corners of all the
-      ! elements in the current set. 
-      
-!      DO IEL=1,IELmax-IELset+1
-!        DCoords(:,:,IEL) = p_DvertexCoords(:, &
-!                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
+!  !****************************************************************************
+!
+!!<subroutine>
+!
+!  SUBROUTINE bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrixScalar,&
+!                                      fcoeff_buildMatrixSc_sim,rcollection)
+!  
+!!<description>
+!  ! This routine calculates the entries of a finite element matrix.
+!  ! The matrix structure must be prepared with bilf_createMatrixStructure
+!  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF's
+!  ! of all finite elements must 'match'. Trial and test functions may be
+!  ! different.
+!  ! In case the array for the matrix entries does not exist, the routine
+!  ! allocates memory in size of the matrix of the heap for the matrix entries.
+!  !
+!  ! Double-precision version.
+!  !
+!  ! WARNING: THIS ROUTINE IS OUTDATED AND NOT USED. ONLY FOR TESTING AND
+!  ! DEMONSTRATION PURPOSES! IT WEILL BE REMOVED SOONER OR LATER!
+!!</description>
+!
+!!<input>
+!  ! The underlying discretisation structure which is to be used to
+!  ! create the matrix.
+!  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+!  
+!  ! The bilinear form specifying the underlying PDE of the discretisation.
+!  TYPE(t_bilinearForm), INTENT(IN) :: rform
+!  
+!  ! Whether to clear the matrix before calculating the entries.
+!  ! If .FALSE., the new matrix entries are added to the existing entries.
+!  LOGICAL, INTENT(IN) :: bclear
+!  
+!  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+!  ! callback function for nonconstant coefficients to provide additional
+!  ! information. 
+!  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+!  
+!  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
+!  ! Must be present if the matrix has nonconstant coefficients!
+!  INCLUDE 'intf_coefficientMatrixSc2.inc'
+!  OPTIONAL :: fcoeff_buildMatrixSc_sim
+!!</input>
+!
+!!<inputoutput>
+!  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+!  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!!</inputoutput>
+!
+!!</subroutine>
+!
+!  ! local variables
+!  INTEGER :: i,i1,j,icurrentElementDistr,IDFG, ICUBP, IALBET, IA, IB, NVE
+!  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
+!  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
+!  INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
+!  REAL(DP) :: OM,AUX, DB
+!  
+!  ! Array to tell the element which derivatives to calculate
+!  LOGICAL, DIMENSION(EL_MAXNDER) :: BderTrialTempl, BderTestTempl, BderTrial, BderTest
+!  
+!  ! Cubature point coordinates on the reference element
+!  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+!
+!  ! For every cubature point on the reference element,
+!  ! the corresponding cubature weight
+!  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+!  
+!  ! number of cubature points on the reference element
+!  INTEGER :: ncubp
+!  
+!  ! Pointer to KLD, KCOL, DA
+!  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL
+!  REAL(DP), DIMENSION(:), POINTER :: p_DA
+!  
+!  ! An allocateable array accepting the DOF's of a set of elements.
+!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
+!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  
+!  ! Allocateable arrays for the values of the basis functions - 
+!  ! for test and trial spaces.
+!  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasTrial
+!  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
+!  
+!  ! Number of entries in the matrix - for quicker access
+!  INTEGER(PREC_DOFIDX) :: NA
+!  INTEGER(I32) :: NEQ
+!  
+!  ! Number of local degees of freedom for trial and test functions
+!  INTEGER :: indofTrial, indofTest
+!  
+!  ! The triangulation structure - to shorten some things...
+!  TYPE(t_triangulation), POINTER :: p_rtriangulation
+!  
+!  ! A pointer to an element-number list
+!  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+!  
+!  ! Local matrices, used during the assembly.
+!  ! Values and positions of values in the global matrix.
+!  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
+!  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
+!  
+!  ! An array receiving the coordinates of cubature points on
+!  ! the reference element for all elements in a set.
+!  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsRef
+!
+!  ! An array receiving the coordinates of cubature points on
+!  ! the real element for all elements in a set.
+!  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsReal
+!
+!  ! Pointer to the point coordinates to pass to the element function.
+!  ! Point either to DcubPtsRef or to DcubPtsReal, depending on whether
+!  ! the trial/test element is parametric or not.
+!  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
+!  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTest
+!  
+!  ! Array with coordinates of the corners that form the real element.
+!  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoords
+!  
+!  ! Arrays for saving Jacobian determinants and matrices
+!  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
+!  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Djac
+!  
+!  ! Pointer to KVERT of the triangulation
+!  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+!  
+!  ! Pointer to DCORVG of the triangulation
+!  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+!  
+!  ! Current element distribution
+!  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+!  
+!  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+!  ! except if there are less elements in the discretisation.
+!  INTEGER :: nelementsPerBlock
+!  
+!  ! Some variables to support nonconstant coefficients in the matrix.
+!  
+!  ! Pointer to the coefficients that are computed by the callback routine.
+!  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+!  
+!  !REAL(DP), DIMENSION(11) :: DT
+!  
+!  !CHARACTER(LEN=20) :: CFILE
+!  
+!  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+!    CALL output_line ('No discretisation associated!', &
+!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!    CALL sys_halt()
+!  END IF
+!
+!  ! Which derivatives of basis functions are needed?
+!  ! Check the descriptors of the bilinear form and set BDERxxxx
+!  ! according to these.
+!
+!  !CALL ZTIME(DT(1))
+!
+!  BderTrialTempl = .FALSE.
+!  BderTestTempl = .FALSE.
+!  
+!  ! Loop through the additive terms
+!  DO i=1,rform%itermCount
+!    ! The desriptor Idescriptors gives directly the derivative
+!    ! which is to be computed! Build template's for BDER.
+!    ! We don't compute the actual BDER here, as there might be some special
+!    ! processing if trial/test functions are identical!
+!    !
+!    ! At first build the descriptors for the trial functions
+!    I1=rform%Idescriptors(1,I)
+!    
+!    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
+!      CALL output_line ('Invalid descriptor!', &
+!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL sys_halt()
+!    ENDIF
+!    
+!    BderTrialTempl(I1)=.TRUE.
+!
+!    ! Then those of the test functions
+!    I1=rform%Idescriptors(2,I)
+!    
+!    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
+!      CALL output_line ('Invalid descriptor!', &
+!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL sys_halt()
+!    ENDIF
+!    
+!    BderTestTempl(I1)=.TRUE.
+!  END DO
+!  
+!  ! Get information about the matrix:
+!  NA = rmatrixScalar%NA
+!  NEQ = rmatrixScalar%NEQ
+!  
+!  ! We need KCOL/KLD of our matrix
+!  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
+!  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+!  
+!  ! Check if the matrix entries exist. If not, allocate the matrix.
+!  IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+!
+!    ! Clear the entries in the matrix - we need to start with zero
+!    ! when assembling a new matrix!
+!    CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
+!                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+!                        ST_NEWBLOCK_ZERO)
+!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!
+!  ELSE
+!  
+!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!
+!    ! If desired, clear the matrix before assembling.
+!    IF (bclear) THEN
+!      CALL lalg_clearVectorDble (p_DA)
+!    END IF
+!    
+!  END IF
+!  
+!  ! Get a pointer to the triangulation - for easier access.
+!  p_rtriangulation => rdiscretisation%p_rtriangulation
+!  
+!  ! For saving some memory in smaller discretisations, we calculate
+!  ! the number of elements per block. For smaller triangulations,
+!  ! this is NEL. If there are too many elements, it's at most
+!  ! BILF_NELEMSIM. This is only used for allocating some arrays.
+!  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
+!  
+!  ! Get a pointer to the KVERT and DCORVG array
+!  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
+!                             p_IverticesAtElement)
+!  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+!                             p_DvertexCoords)
+!
+!  ! Allocate memory for corner coordinates
+!  ALLOCATE(DCoords(2,TRIA_MAXNVE2D,nelementsPerBlock))
+!  
+!  ! Now loop over the different element distributions (=combinations
+!  ! of trial and test functions) in the discretisation.
+!  !CALL ZTIME(DT(2))
+!
+!  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+!  
+!    ! Activate the current element distribution
+!    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+!  
+!    ! Cancel if this element distribution is empty.
+!    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+!
+!    ! Get the number of local DOF's for trial and test functions
+!    indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+!    indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
+!    
+!    ! Get the number of corner vertices of the element
+!    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+!    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
+!      CALL output_line ('Element spaces incompatible!', &
+!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL sys_halt()
+!    END IF
+!    
+!    ! Initialise the cubature formula,
+!    ! Get cubature weights and point coordinates on the reference element
+!    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+!    
+!    ! Allocate arrays accepting cubature point coordinates.
+!    ! It's at most as large as number of elements or length
+!    ! of the element set.
+!    ALLOCATE(DcubPtsRef(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
+!    ALLOCATE(DcubPtsReal(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
+!    
+!    ! Put the cubature point coordinates in the right format to the
+!    ! cubature-point array.
+!    ! Initialise all entries in DcubPtsRef with the same coordinates -
+!    ! as the cubature point coordinates are identical on all elements
+!    DO j=1,SIZE(DcubPtsRef,3)
+!      DO i=1,ncubp
+!        DcubPtsRef(1,i,j) = Dxi(i,1)
+!        DcubPtsRef(2,i,j) = Dxi(i,2)
 !      END DO
-      DO IEL=1,IELmax-IELset+1
-        DO J = 1,NVE
-          DO I = 1,p_rtriangulation%ndim
-            DCoords(I,J,IEL) = p_DvertexCoords(I, &
-                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-          END DO
-        END DO
-      END DO
-      !CALL ZTIME(DT(6))
-      
-      ! Depending on the type of transformation, we must now choose
-      ! the mapping between the reference and the real element.
-      ! In case we use a nonparametric element or a nonconstant coefficient function,
-      ! we need the coordinates of the points on the real element, too.
-      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
-      
-        CALL trafo_calctrafo_sim (&
-             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
-             IELmax-IELset+1,ncubp,Dcoords,&
-             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
-      
-      ELSE
-      
-        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
-             IELmax-IELset+1,ncubp,Dcoords,&
-             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1))
-             
-      END IF
-      
-      !CALL ZTIME(DT(7))
-      
-      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
-      IF (.NOT. rform%ballCoeffConstant) THEN
-        CALL fcoeff_buildMatrixSc_sim (rdiscretisation,icurrentElementDistr, rform, &
-                  IELset,IELmax-IELset+1,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
-                  DcubPtsRef,DcubPtsReal,p_IdofsTrial,IdofsTest,Djac,Ddetj, &
-                  Dcoefficients,rcollection)
-      END IF
-      
-      !CALL ZTIME(DT(8))                              
-      ! Calculate the values of the basis functions.
-      ! Pass p_DcubPts as point coordinates, which point either to the
-      ! coordinates on the reference element (the same for all elements)
-      ! or on the real element - depending on whether this is a 
-      ! parametric or nonparametric element.
-      CALL elem_generic_sim (p_elementDistribution%itestElement, Dcoords, &
-            Djac(:,:,1:IELmax-IELset+1), Ddetj(:,1:IELmax-IELset+1), &
-            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest)
-            
-      ! Omit the calculation of the trial function values if they
-      ! are identical to the test function values.
-      IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim (p_elementDistribution%itrialElement, Dcoords, &
-            Djac(:,:,1:IELmax-IELset+1), Ddetj(:,1:IELmax-IELset+1), &
-            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial)
-      END IF
-      !CALL ZTIME(DT(9))
-      ! Values of all basis functions calculated. Now we can start 
-      ! to integrate!
-      !
-      ! We have two different versions for the integration - one
-      ! with constant coefficients and one with nonconstant coefficients.
-      !
-      ! Check the bilinear form which one to use:
-      
-      IF (rform%ballCoeffConstant) THEN
-      
-        ! Constant coefficients. The coefficients are to be found in
-        ! the Dcoefficients variable of the form.
-        !
-        ! Loop over the elements in the current set.
-
-        DO IEL=1,IELmax-IELset+1
-          
-          ! Clear the local matrix
-          Dentry = 0.0_DP
-          
-          ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
-
-            ! calculate the current weighting factor in the cubature formula
-            ! in that cubature point.
-            !
-            ! Take the absolut value of the determinant of the mapping.
-            ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
-
-            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
-
-            ! Loop over the additive factors in the bilinear form.
-            DO IALBET = 1,rform%itermcount
-            
-              ! Get from Idescriptors the type of the derivatives for the 
-              ! test and trial functions. The summand we calculate
-              ! here will be:
-              !
-              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
-              !
-              ! -> Ix=0: function value, 
-              !      =1: first derivative, 
-              !      =2: 2nd derivative,...
-              !    as defined in the module 'derivative'.
-              
-              IA = rform%Idescriptors(1,IALBET)
-              IB = rform%Idescriptors(2,IALBET)
-              
-              ! Multiply OM with the coefficient of the form.
-              ! This gives the actual value to multiply the
-              ! function value with before summing up to the integral.
-              AUX = OM * rform%Dcoefficients(IALBET)
-            
-              ! Now loop through all possible combinations of DOF's
-              ! in the current cubature point. The outer loop
-              ! loops through the "X" in the above picture,
-              ! the trial functions:
-
-              DO JDOFE=1,indofTrial
-              
-                ! Get the value of the (trial) basis function 
-                ! phi_i (our "X") in the cubature point:
-                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
-                
-                !Perform an inner loop through the other DOF's
-                ! (the "X"'s). 
-
-                DO IDOFE=1,indofTest
-                
-                  ! Get the value of the basis function 
-                  ! psi_j (our "O") in the cubature point. 
-                  ! Them multiply:
-                  !    DB * DBAS(..) * AUX
-                  ! ~= phi_i * psi_j * coefficient * cub.weight
-                  ! Summing this up gives the integral, so the contribution
-                  ! to the global matrix. 
-                  !
-                  ! Simply summing up DB * DBAS(..) * AUX would give
-                  ! the coefficient of the local matrix. We save this
-                  ! contriobution in the local matrix.
-
-                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
-                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                
-                END DO
-              
-              END DO ! JDOFE
-              
-            END DO ! IALBET
-
-          END DO ! ICUBP 
-          
-          ! Incorporate the local matrices into the global one.
-          ! Kentry gives the position of the additive contributions in Dentry.
-          DO JDOFE=1,indofTrial
-            DO IDOFE=1,indofTest
-              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
-            END DO
-          END DO
-
-        END DO ! IEL
-        
-      ELSE
-      
-        ! Nonconstant coefficients. The coefficients are to be found in
-        ! the Dcoefficients variable as computed above.
-        !
-        ! Loop over the elements in the current set.
-
-        DO IEL=1,IELmax-IELset+1
-          
-          ! Clear the local matrix
-          Dentry = 0.0_DP
-          
-          ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
-
-            ! calculate the current weighting factor in the cubature formula
-            ! in that cubature point.
-            !
-            ! Take the absolut value of the determinant of the mapping.
-            ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
-
-            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
-
-            ! Loop over the additive factors in the bilinear form.
-            DO IALBET = 1,rform%itermcount
-            
-              ! Get from Idescriptors the type of the derivatives for the 
-              ! test and trial functions. The summand we calculate
-              ! here will be:
-              !
-              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
-              !
-              ! -> Ix=0: function value, 
-              !      =1: first derivative, 
-              !      =2: 2nd derivative,...
-              !    as defined in the module 'derivative'.
-              
-              IA = rform%Idescriptors(1,IALBET)
-              IB = rform%Idescriptors(2,IALBET)
-              
-              ! Multiply OM with the coefficient of the form.
-              ! This gives the actual value to multiply the
-              ! function value with before summing up to the integral.
-              ! Get the precalculated coefficient from the coefficient array.
-              AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
-            
-              ! Now loop through all possible combinations of DOF's
-              ! in the current cubature point. The outer loop
-              ! loops through the "X" in the above picture,
-              ! the trial functions:
-
-              DO JDOFE=1,indofTrial
-              
-                ! Get the value of the (trial) basis function 
-                ! phi_i (our "X") in the cubature point:
-                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
-                
-                !Perform an inner loop through the other DOF's
-                ! (the "O"'s). 
-
-                DO IDOFE=1,indofTest
-                
-                  ! Get the value of the basis function 
-                  ! psi_j (our "O") in the cubature point. This is
-                  ! DBAS(KDFL(IDOFE),IB).
-                  ! Them multiply:
-                  !    DB * DBAS(..) * AUX
-                  ! ~= phi_i * psi_j * coefficient * cub.weight
-                  ! Summing this up gives the integral, so the contribution
-                  ! to the global matrix. 
-                  !
-                  ! Simply summing up DB * DBAS(..) * AUX would give
-                  ! the coefficient of the local matrix. We save this
-                  ! contriobution in the local matrix of element IEL.
-
-                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
-                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                
-                END DO
-              
-              END DO ! JDOFE
-              
-            END DO ! IALBET
-
-          END DO ! ICUBP 
-          
-          ! Incorporate the local matrices into the global one.
-          ! Kentry gives the position of the additive contributions in Dentry.
-          DO JDOFE=1,indofTrial
-            DO IDOFE=1,indofTest
-              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
-            END DO
-          END DO
-
-        END DO ! IEL
-
-      END IF ! rform%ballCoeffConstant
-
-      !CALL ZTIME(DT(10))
-    END DO ! IELset
-    
-    IF (.NOT. rform%ballCoeffConstant) THEN
-      DEALLOCATE(Dcoefficients)
-    END IF
-    DEALLOCATE(IdofsTest)
-    DEALLOCATE(DbasTrial)
-    DEALLOCATE(DbasTest)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Ddetj)
-    DEALLOCATE(Djac)
-    DEALLOCATE(DcubPtsReal)
-    DEALLOCATE(DcubPtsRef)
-
-  END DO ! icurrentElementDistr
-
-  ! Clean up memory, finish
-
-  DEALLOCATE(Dcoords)
-  !CALL ZTIME(DT(11))
-  
-  !DO i=2,11
-  !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
-  !END DO
-  
-  !CFILE = 'MATRIX2.TXT'
-  !CALL OWM17(p_DA,p_KCOL,p_KLD,&
-  !           NEQ,NEQ,.TRUE.,0,'MAT1  ',CFILE,'(D20.10)')
-
-  END SUBROUTINE
+!    END DO
+!    
+!    ! Allocate an array saving the coordinates of corner vertices of elements
+!    ALLOCATE(Djac(p_rtriangulation%ndim**2,ncubp,nelementsPerBlock))
+!    ALLOCATE(Ddetj(ncubp,nelementsPerBlock))
+!    
+!    ! Allocate arrays for the values of the test- and trial functions.
+!    ! This is done here in the size we need it. Allocating it in-advance
+!    ! with something like
+!    !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+!    !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+!    ! would lead to nonused memory blocks in these arrays during the assembly, 
+!    ! which reduces the speed by 50%!
+!    
+!    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%itestElement),&
+!             ncubp,nelementsPerBlock))
+!    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_elementDistribution%itrialElement), &
+!             ncubp,nelementsPerBlock))
+!
+!    ! Allocate memory for the DOF's of all the elements.
+!    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
+!    ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+!
+!    ! Check if one of the trial/test elements is nonparametric
+!    bnonparTrial = elem_isNonparametric(p_elementDistribution%itrialElement)
+!    bnonparTest  = elem_isNonparametric(p_elementDistribution%itestElement)
+!                    
+!    ! Let p_DcubPtsTrial / p_DcubPtsTest point either to DcubPtsReal or
+!    ! DcubPtsRef - depending on whether the space is parametric or not.
+!    IF (bnonparTrial) THEN
+!      p_DcubPtsTrial => DcubPtsReal
+!    ELSE
+!      p_DcubPtsTrial => DcubPtsRef
+!    END IF
+!    
+!    IF (bnonparTest) THEN
+!      p_DcubPtsTest => DcubPtsReal
+!    ELSE
+!      p_DcubPtsTest => DcubPtsRef
+!    END IF
+!    
+!    ! Allocate an array saving the local matrices for all elements
+!    ! in an element set.
+!    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+!    ! for this local matrix, but this would normally not fit to the cache
+!    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+!    ALLOCATE(Kentry(indofTest,indofTrial,nelementsPerBlock))
+!    ALLOCATE(Dentry(indofTest,indofTrial))
+!    
+!    ! In case of nonconstant coefficients in that part of the matrix, we
+!    ! need an additional array to save all the coefficients:
+!    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
+!      IF (rform%ballCoeffConstant) THEN
+!        CALL output_line ('Some oefficients are not constant &
+!            &although thy should be!', &
+!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!        CALL sys_halt()
+!      END IF
+!      IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
+!        CALL output_line ('Coefficient function not given!',&
+!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!        CALL sys_halt()
+!      END IF
+!      ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
+!    END IF
+!                    
+!    ! p_IdofsTest points either to the just created array or to the
+!    ! array with the DOF's of the trial functions - when trial and
+!    ! test functions are identical.
+!    ! We don't rely on bidenticalTrialAndTest purely, as this does not
+!    ! indicate whether there are identical trial and test functions
+!    ! in one block!
+!    bIdenticalTrialAndTest = p_elementDistribution%itrialElement .EQ. &
+!                             p_elementDistribution%itestElement
+!
+!    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+!    ! space IdofTest (if both spaces are identical). 
+!    ! We create a pointer for the trial space and not for the test space to
+!    ! prevent pointer-arithmetic in the innerst loop below!
+!    IF (bIdenticalTrialAndTest) THEN
+!      p_IdofsTrial => IdofsTest
+!      p_DbasTrial  => DbasTest
+!      ! Build the actual combination of what the element should calculate.
+!      ! As we evaluate only once, what the element must calculate is an
+!      ! OR combination of the BDER from trial and test functions.
+!      BderTrial = BderTrialTempl .OR. BderTestTempl
+!      BderTest = BderTestTempl
+!    ELSE
+!      p_IdofsTrial => IdofsTrial
+!      p_DbasTrial  => DbasTrial
+!      
+!      ! Build the actual combination of what the element should calculate.
+!      ! Copy BDERxxxx to BDERxxxxAct
+!      BderTrial = BderTrialTempl
+!      BderTest = BderTestTempl
+!    END IF
+!    !CALL ZTIME(DT(3))
+!    ! p_IelementList must point to our set of elements in the discretisation
+!    ! with that combination of trial/test functions
+!    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+!                              p_IelementList)
+!                              
+!    ! Loop over the elements - blockwise.
+!    DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+!    
+!      ! We always handle BILF_NELEMSIM elements simultaneously.
+!      ! How many elements have we actually here?
+!      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+!      ! elements simultaneously.
+!      
+!      IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+!    
+!      ! The outstanding feature with finite elements is: A basis
+!      ! function for a DOF on one element has common support only
+!      ! with the DOF's on the same element! E.g. for Q1:
+!      !
+!      !        #. . .#. . .#. . .#
+!      !        .     .     .     .
+!      !        .  *  .  *  .  *  .
+!      !        #-----O-----O. . .#
+!      !        |     |     |     .
+!      !        |     | IEL |  *  .
+!      !        #-----X-----O. . .#
+!      !        |     |     |     .
+!      !        |     |     |  *  .
+!      !        #-----#-----#. . .#
+!      !
+!      ! --> On element IEL, the basis function at "X" only interacts
+!      !     with the basis functions in "O". Elements in the 
+!      !     neighbourhood ("*") have no support, therefore we only have
+!      !     to collect all "O" DOF's.
+!      !
+!      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+!      !
+!      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+!      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+!      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+!                                  .TRUE.,IdofsTest)
+!                                   
+!      ! If the DOF's for the trial functions are different, calculate them, too.
+!      IF (.NOT.bIdenticalTrialAndTest) THEN
+!        CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+!                                    .FALSE.,IdofsTrial)
+!      END IF
+!      !CALL ZTIME(DT(4))
+!      ! For the assembly of the global matrix, we use a "local"
+!      ! approach. At first we build a "local" system matrix according
+!      ! to the current element. This contains all additive
+!      ! contributions of element IEL, which are later added at the
+!      ! right positions to the elements in the global system matrix.
+!      !
+!      ! We have indofTrial trial DOF's per element and
+!      ! indofTest test DOF's per element. Therefore there are
+!      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
+!      ! "active" (i.e. have common support) on our current element, each 
+!      ! giving an additive contribution to the system matrix.
+!      !
+!      ! We build a quadratic indofTrial*indofTest local matrix:
+!      ! Kentry(1..indofTest,1..indofTrial) receives the position 
+!      !   in the global system matrix, where the corresponding value 
+!      !   has to be added to.
+!      ! (The corresponding contrbutions can be saved separately, 
+!      !  but we directly add them to the global matrix in this 
+!      !  approach.)
+!      !
+!      ! We build local matrices for all our elements 
+!      ! in the set simultaneously.
+!      ! Loop through elements in the set and for each element,
+!      ! loop through the local matrices to initialise them:
+!      DO IEL=1,IELmax-IELset+1
+!
+!        ! Loop through the trial functions
+!        DO JDOFE=1,indofTrial
+!        
+!          ! Row JDOFE of the local matrix corresponds 
+!          ! to row=global DOF KDFG(JDOFE) in the global matrix.
+!          ! This is the "X" in the above picture.
+!          ! Get the starting position of the corresponding row
+!          ! to JCOL0:
+!
+!          JCOL0=p_KLD(p_IdofsTrial(JDOFE,IEL))
+!          
+!          ! Now we loop through the other DOF's on the current element
+!          ! (the "O"'s).
+!          ! All these have common support with our current basis function
+!          ! and will therefore give an additive value to the global
+!          ! matrix.
+!          
+!          DO IDOFE=1,indofTest
+!            
+!            ! Get the global DOF of the "O" which interacts with 
+!            ! our "X".
+!            
+!            IDFG=IdofsTest(IDOFE,IEL)
+!            
+!            ! Starting in JCOL0 (which points to the beginning of
+!            ! the line initially), loop through the elements in
+!            ! the row to find the position of column IDFG.
+!            ! Jump out of the DO loop if we find the column.
+!            
+!            DO JCOL=JCOL0,NA
+!              IF (p_KCOL(JCOL) .EQ. IDFG) EXIT
+!            END DO
+!
+!            ! Because columns in the global matrix are sorted 
+!            ! ascendingly (except for the diagonal element),
+!            ! the next search can start after the column we just found.
+!            
+!            ! JCOL0=JCOL+1
+!            
+!            ! Save the position of the matrix entry into the local
+!            ! matrix.
+!            
+!            Kentry(IDOFE,JDOFE,IEL)=JCOL
+!            
+!          END DO ! IDOFE
+!          
+!        END DO ! JDOFE
+!        
+!      END DO ! IEL
+!      !CALL ZTIME(DT(5))
+!      ! Ok, we found the positions of the local matrix entries
+!      ! that we have to change.
+!      ! To calculate the matrix contributions, we have to evaluate
+!      ! the elements to give us the values of the basis functions
+!      ! in all the DOF's in all the elements in our set.
+!      !
+!      ! We have the coordinates of the cubature points saved in the
+!      ! coordinate array from above. Unfortunately for nonparametric
+!      ! elements, we need the real coordinate.
+!      ! Furthermore, we anyway need the coordinates of the element
+!      ! corners and the Jacobian determinants corresponding to
+!      ! all the points.
+!      !
+!      ! At first, get the coordinates of the corners of all the
+!      ! elements in the current set. 
+!      
+!!      DO IEL=1,IELmax-IELset+1
+!!        DCoords(:,:,IEL) = p_DvertexCoords(:, &
+!!                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
+!!      END DO
+!      DO IEL=1,IELmax-IELset+1
+!        DO J = 1,NVE
+!          DO I = 1,p_rtriangulation%ndim
+!            DCoords(I,J,IEL) = p_DvertexCoords(I, &
+!                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
+!          END DO
+!        END DO
+!      END DO
+!      !CALL ZTIME(DT(6))
+!      
+!      ! Depending on the type of transformation, we must now choose
+!      ! the mapping between the reference and the real element.
+!      ! In case we use a nonparametric element or a nonconstant coefficient function,
+!      ! we need the coordinates of the points on the real element, too.
+!      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
+!      
+!        CALL trafo_calctrafo_sim (&
+!             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+!             IELmax-IELset+1,ncubp,Dcoords,&
+!             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
+!      
+!      ELSE
+!      
+!        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
+!             IELmax-IELset+1,ncubp,Dcoords,&
+!             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1))
+!             
+!      END IF
+!      
+!      !CALL ZTIME(DT(7))
+!      
+!      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
+!      IF (.NOT. rform%ballCoeffConstant) THEN
+!        CALL fcoeff_buildMatrixSc_sim (rdiscretisation,icurrentElementDistr, rform, &
+!                  IELset,IELmax-IELset+1,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
+!                  DcubPtsRef,DcubPtsReal,p_IdofsTrial,IdofsTest,Djac,Ddetj, &
+!                  Dcoefficients,rcollection)
+!      END IF
+!      
+!      !CALL ZTIME(DT(8))                              
+!      ! Calculate the values of the basis functions.
+!      ! Pass p_DcubPts as point coordinates, which point either to the
+!      ! coordinates on the reference element (the same for all elements)
+!      ! or on the real element - depending on whether this is a 
+!      ! parametric or nonparametric element.
+!      CALL elem_generic_sim (p_elementDistribution%itestElement, Dcoords, &
+!            Djac(:,:,1:IELmax-IELset+1), Ddetj(:,1:IELmax-IELset+1), &
+!            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest,&
+!            rintSubset%p_ItwistIndex)
+!            
+!      ! Omit the calculation of the trial function values if they
+!      ! are identical to the test function values.
+!      IF (.NOT. bidenticalTrialAndTest) THEN
+!        CALL elem_generic_sim (p_elementDistribution%itrialElement, Dcoords, &
+!            Djac(:,:,1:IELmax-IELset+1), Ddetj(:,1:IELmax-IELset+1), &
+!            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial,&
+!            rintSubset%p_ItwistIndex)
+!      END IF
+!      !CALL ZTIME(DT(9))
+!      ! Values of all basis functions calculated. Now we can start 
+!      ! to integrate!
+!      !
+!      ! We have two different versions for the integration - one
+!      ! with constant coefficients and one with nonconstant coefficients.
+!      !
+!      ! Check the bilinear form which one to use:
+!      
+!      IF (rform%ballCoeffConstant) THEN
+!      
+!        ! Constant coefficients. The coefficients are to be found in
+!        ! the Dcoefficients variable of the form.
+!        !
+!        ! Loop over the elements in the current set.
+!
+!        DO IEL=1,IELmax-IELset+1
+!          
+!          ! Clear the local matrix
+!          Dentry = 0.0_DP
+!          
+!          ! Loop over all cubature points on the current element
+!          DO ICUBP = 1, ncubp
+!
+!            ! calculate the current weighting factor in the cubature formula
+!            ! in that cubature point.
+!            !
+!            ! Take the absolut value of the determinant of the mapping.
+!            ! In 2D, the determinant is always positive, whereas in 3D,
+!            ! the determinant might be negative -- that's normal!
+!
+!            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
+!
+!            ! Loop over the additive factors in the bilinear form.
+!            DO IALBET = 1,rform%itermcount
+!            
+!              ! Get from Idescriptors the type of the derivatives for the 
+!              ! test and trial functions. The summand we calculate
+!              ! here will be:
+!              !
+!              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
+!              !
+!              ! -> Ix=0: function value, 
+!              !      =1: first derivative, 
+!              !      =2: 2nd derivative,...
+!              !    as defined in the module 'derivative'.
+!              
+!              IA = rform%Idescriptors(1,IALBET)
+!              IB = rform%Idescriptors(2,IALBET)
+!              
+!              ! Multiply OM with the coefficient of the form.
+!              ! This gives the actual value to multiply the
+!              ! function value with before summing up to the integral.
+!              AUX = OM * rform%Dcoefficients(IALBET)
+!            
+!              ! Now loop through all possible combinations of DOF's
+!              ! in the current cubature point. The outer loop
+!              ! loops through the "X" in the above picture,
+!              ! the trial functions:
+!
+!              DO JDOFE=1,indofTrial
+!              
+!                ! Get the value of the (trial) basis function 
+!                ! phi_i (our "X") in the cubature point:
+!                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
+!                
+!                !Perform an inner loop through the other DOF's
+!                ! (the "X"'s). 
+!
+!                DO IDOFE=1,indofTest
+!                
+!                  ! Get the value of the basis function 
+!                  ! psi_j (our "O") in the cubature point. 
+!                  ! Them multiply:
+!                  !    DB * DBAS(..) * AUX
+!                  ! ~= phi_i * psi_j * coefficient * cub.weight
+!                  ! Summing this up gives the integral, so the contribution
+!                  ! to the global matrix. 
+!                  !
+!                  ! Simply summing up DB * DBAS(..) * AUX would give
+!                  ! the coefficient of the local matrix. We save this
+!                  ! contriobution in the local matrix.
+!
+!                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
+!                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+!                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+!                
+!                END DO
+!              
+!              END DO ! JDOFE
+!              
+!            END DO ! IALBET
+!
+!          END DO ! ICUBP 
+!          
+!          ! Incorporate the local matrices into the global one.
+!          ! Kentry gives the position of the additive contributions in Dentry.
+!          DO JDOFE=1,indofTrial
+!            DO IDOFE=1,indofTest
+!              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+!            END DO
+!          END DO
+!
+!        END DO ! IEL
+!        
+!      ELSE
+!      
+!        ! Nonconstant coefficients. The coefficients are to be found in
+!        ! the Dcoefficients variable as computed above.
+!        !
+!        ! Loop over the elements in the current set.
+!
+!        DO IEL=1,IELmax-IELset+1
+!          
+!          ! Clear the local matrix
+!          Dentry = 0.0_DP
+!          
+!          ! Loop over all cubature points on the current element
+!          DO ICUBP = 1, ncubp
+!
+!            ! calculate the current weighting factor in the cubature formula
+!            ! in that cubature point.
+!            !
+!            ! Take the absolut value of the determinant of the mapping.
+!            ! In 2D, the determinant is always positive, whereas in 3D,
+!            ! the determinant might be negative -- that's normal!
+!
+!            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
+!
+!            ! Loop over the additive factors in the bilinear form.
+!            DO IALBET = 1,rform%itermcount
+!            
+!              ! Get from Idescriptors the type of the derivatives for the 
+!              ! test and trial functions. The summand we calculate
+!              ! here will be:
+!              !
+!              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
+!              !
+!              ! -> Ix=0: function value, 
+!              !      =1: first derivative, 
+!              !      =2: 2nd derivative,...
+!              !    as defined in the module 'derivative'.
+!              
+!              IA = rform%Idescriptors(1,IALBET)
+!              IB = rform%Idescriptors(2,IALBET)
+!              
+!              ! Multiply OM with the coefficient of the form.
+!              ! This gives the actual value to multiply the
+!              ! function value with before summing up to the integral.
+!              ! Get the precalculated coefficient from the coefficient array.
+!              AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
+!            
+!              ! Now loop through all possible combinations of DOF's
+!              ! in the current cubature point. The outer loop
+!              ! loops through the "X" in the above picture,
+!              ! the trial functions:
+!
+!              DO JDOFE=1,indofTrial
+!              
+!                ! Get the value of the (trial) basis function 
+!                ! phi_i (our "X") in the cubature point:
+!                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
+!                
+!                !Perform an inner loop through the other DOF's
+!                ! (the "O"'s). 
+!
+!                DO IDOFE=1,indofTest
+!                
+!                  ! Get the value of the basis function 
+!                  ! psi_j (our "O") in the cubature point. This is
+!                  ! DBAS(KDFL(IDOFE),IB).
+!                  ! Them multiply:
+!                  !    DB * DBAS(..) * AUX
+!                  ! ~= phi_i * psi_j * coefficient * cub.weight
+!                  ! Summing this up gives the integral, so the contribution
+!                  ! to the global matrix. 
+!                  !
+!                  ! Simply summing up DB * DBAS(..) * AUX would give
+!                  ! the coefficient of the local matrix. We save this
+!                  ! contriobution in the local matrix of element IEL.
+!
+!                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
+!                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+!                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+!                
+!                END DO
+!              
+!              END DO ! JDOFE
+!              
+!            END DO ! IALBET
+!
+!          END DO ! ICUBP 
+!          
+!          ! Incorporate the local matrices into the global one.
+!          ! Kentry gives the position of the additive contributions in Dentry.
+!          DO JDOFE=1,indofTrial
+!            DO IDOFE=1,indofTest
+!              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+!            END DO
+!          END DO
+!
+!        END DO ! IEL
+!
+!      END IF ! rform%ballCoeffConstant
+!
+!      !CALL ZTIME(DT(10))
+!    END DO ! IELset
+!    
+!    IF (.NOT. rform%ballCoeffConstant) THEN
+!      DEALLOCATE(Dcoefficients)
+!    END IF
+!    DEALLOCATE(IdofsTest)
+!    DEALLOCATE(DbasTrial)
+!    DEALLOCATE(DbasTest)
+!    DEALLOCATE(Kentry)
+!    DEALLOCATE(Dentry)
+!    DEALLOCATE(Ddetj)
+!    DEALLOCATE(Djac)
+!    DEALLOCATE(DcubPtsReal)
+!    DEALLOCATE(DcubPtsRef)
+!
+!  END DO ! icurrentElementDistr
+!
+!  ! Clean up memory, finish
+!
+!  DEALLOCATE(Dcoords)
+!  !CALL ZTIME(DT(11))
+!  
+!  !DO i=2,11
+!  !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
+!  !END DO
+!  
+!  !CFILE = 'MATRIX2.TXT'
+!  !CALL OWM17(p_DA,p_KCOL,p_KLD,&
+!  !           NEQ,NEQ,.TRUE.,0,'MAT1  ',CFILE,'(D20.10)')
+!
+!  END SUBROUTINE
 
   !****************************************************************************
 
@@ -2995,7 +2997,9 @@ CONTAINS
     
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,&
-        j,p_rtriangulation%ndim,NVE)
+        j,p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -3335,6 +3339,12 @@ CONTAINS
                   Dcoefficients,rcollection)
       END IF
       
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+      END IF
+      
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -3342,14 +3352,16 @@ CONTAINS
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest)
+            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest,&
+            rintSubset%p_ItwistIndex)
             
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial)
+            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial,&
+            rintSubset%p_ItwistIndex)
       END IF
       
       ! --------------------- DOF COMBINATION PHASE ------------------------

@@ -119,7 +119,7 @@ CONTAINS
     ! local variables
     LOGICAL :: bnonpar
     INTEGER :: cnonmesh
-    INTEGER :: ipoint,ieltype,indof,nve,ibas
+    INTEGER :: ipoint,ieltype,indof,nve,ibas,ntwistsize
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
@@ -147,6 +147,9 @@ CONTAINS
     
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+
+    ! Twist index array to define the orientation of faces/edges
+    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
 
     ! Ok, slow but general.
     
@@ -203,6 +206,9 @@ CONTAINS
     
     cnonmesh = FEVL_NONMESHPTS_NONE
     IF (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+    
+    ! Does the element need twist indices?
+    ntwistsize = elem_getTwistIndexSize(ieltype)
     
     ! We loop over all points.
 
@@ -299,14 +305,20 @@ CONTAINS
       CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
           Dcoord,DparPoint,Djac,ddetj)
 
+      ! If necessary, calculate the twist index array. The element may need it.
+      IF (ntwistSize .NE. 0) THEN
+        CALL trafo_calcTwistIndex(&
+          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel,ItwistIndex)
+      END IF
+
       ! Call the element to calculate the values of the basis functions
       ! in the point.
       IF (bnonpar) THEN
         CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, Dpoints(:,ipoint),Dbas)
+              Djac(:), ddetj, Bder, Dpoints(:,ipoint),Dbas,ItwistIndex)
       ELSE
         CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DparPoint,Dbas)
+              Djac(:), ddetj, Bder, DparPoint,Dbas,ItwistIndex)
       END IF
       
       dval = 0.0_DP
@@ -389,7 +401,7 @@ CONTAINS
 
     ! local variables
     LOGICAL :: bnonpar
-    INTEGER :: ipoint,ieltype,indof,nve,ibas,npoints
+    INTEGER :: ipoint,ieltype,indof,nve,ibas,npoints,ntwistsize
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
@@ -416,6 +428,9 @@ CONTAINS
 
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+
+    ! Twist index array to define the orientation of faces/edges
+    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
 
     ! Ok, slow but general.
     
@@ -490,6 +505,15 @@ CONTAINS
     Dcoord(1:UBOUND(p_DvertexCoords,1),1:nve) = &
       p_DvertexCoords(:,p_IverticesAtElement(:,ielement))
   
+    ! Does the element need twist indices?
+    ntwistsize = elem_getTwistIndexSize(ieltype)
+    
+    ! If necessary, calculate the twist index array. The element may need it.
+    IF (ntwistSize .NE. 0) THEN
+      CALL trafo_calcTwistIndex(&
+        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,ielement,ItwistIndex)
+    END IF
+
     ! We loop over all points
     DO ipoint = 1,npoints
     
@@ -519,10 +543,10 @@ CONTAINS
       ! in the point.
       IF (bnonpar) THEN
         CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DrealPoint,Dbas)
+              Djac(:), ddetj, Bder, DrealPoint,Dbas,ItwistIndex)
       ELSE
         CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DparPoint,Dbas)
+              Djac(:), ddetj, Bder, DparPoint,Dbas,ItwistIndex)
       END IF
       
       dval = 0.0_DP
@@ -563,7 +587,7 @@ CONTAINS
 
   SUBROUTINE fevl_evaluate_mult2 (rvectorScalar, Dcoords, Djac, Ddetj, &
                   ieltyp, IdofsTrial, npoints,  Dpoints, iderType,&
-                  Dvalues)
+                  Dvalues, ItwistIndex)
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
@@ -623,6 +647,13 @@ CONTAINS
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
   INTEGER, INTENT(IN)                            :: iderType
 
+  ! OPTIONAL: List of twist indices. For every edge/face on the cell, the twist
+  ! index defines the orientation of the edge/face. May be undefined if
+  ! the element does not need twist indices.
+  ! Can be omitted if the element does not need this information.
+  ! Array with DIMENSION(1:NVE/NVA)
+  INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: ItwistIndex
+
 !</input>
 
 !<output>
@@ -652,7 +683,7 @@ CONTAINS
   
   ! Evaluate the basis functions
   CALL elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, Dpoints)  
+                         Bder, DbasTrial, npoints, Dpoints, ItwistIndex)  
   
   IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
@@ -749,7 +780,7 @@ CONTAINS
 
     ! local variables
     LOGICAL :: bnonpar
-    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim
+    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim,ntwistsize
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
@@ -776,6 +807,9 @@ CONTAINS
 
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+
+    ! Twist index array to define the orientation of faces/edges
+    INTEGER(I32), DIMENSION(:,:), ALLOCATABLE :: ItwistIndex
 
     ! Ok, slow but general.
     
@@ -885,6 +919,17 @@ CONTAINS
         UBOUND(Dpoints,2),Dcoord,&
         p_DpointsRef,Djac,Ddetj)    
   
+    ! Does the element need twist indices?
+    ntwistsize = elem_getTwistIndexSize(ieltype)
+
+    ! If necessary, calculate the twist index array. The element may need it.
+    ! We always allocate so that we have something we can pass to the element...
+    ALLOCATE(ItwistIndex(MAX(1,ntwistSize),SIZE(Ielements)))
+    IF (ntwistSize .NE. 0) THEN
+      CALL trafo_calcTwistIndices(&
+        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,Ielements,ItwistIndex)
+    END IF
+
     ! Calculate the values of the basis functions in the given points.
     ALLOCATE(Dbas(indof,&
              elem_getMaxDerivative(ieltype),&
@@ -892,11 +937,11 @@ CONTAINS
     IF (bnonpar) THEN
       CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
                            Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-                           Dpoints)    
+                           Dpoints,ItwistIndex)    
     ELSE
       CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
                            Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-                           p_DpointsRef)    
+                           p_DpointsRef,ItwistIndex)    
     END IF
   
     ! Calculate the desired values. We loop over all points and all elements
@@ -944,6 +989,7 @@ CONTAINS
     END IF
     
     ! Release allocated memory
+    DEALLOCATE(ItwistIndex)
     DEALLOCATE(Dbas)
     DEALLOCATE(Ddetj)
     DEALLOCATE(Djac)
@@ -961,7 +1007,7 @@ CONTAINS
 
   SUBROUTINE fevl_evaluate_sim2 (rvectorScalar, Dcoords, Djac, Ddetj, &
                   ieltyp, IdofsTrial, npoints,  nelements, Dpoints, iderType,&
-                  Dvalues)
+                  Dvalues,ItwistIndex)
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
@@ -1029,6 +1075,12 @@ CONTAINS
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
   INTEGER, INTENT(IN)                            :: iderType
 
+  ! OPTIONAL: List of twist indices. For every edge/face on every cell, the twist
+  ! index defines the orientation of the edge/face. May be undefined if
+  ! the element does not need twist indices.
+  ! Can be omitted if the element does not need it.
+  ! Array with DIMENSION(1:NVE/NVA,nelements)
+  INTEGER, DIMENSION(:,:), INTENT(IN) :: ItwistIndex
 !</input>
 
 !<output>
@@ -1058,7 +1110,7 @@ CONTAINS
   
   ! Evaluate the basis functions
   CALL elem_generic_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, nelements, Dpoints)  
+                         Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndex)  
   
   IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   

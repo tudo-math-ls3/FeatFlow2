@@ -66,8 +66,10 @@
 !#     -> The multiple-point-evaluation routine for a generic element.\\
 !#
 !# 10.) elem_generic_sim
-!#     -> The multiple-point/element-evaluation routine for a generic element.
+!#     -> The multiple-point/element-evaluation routine for a generic element.\\
 !#
+!# 11.) elem_getTwistIndexSize
+!#     -> Calculate the size of the twist index array on one element.\\
 !#
 !#
 !#  FAQ - Some explainations
@@ -225,6 +227,76 @@
 !#   depending on the element -- with the ID of the transformation formula
 !#   from the reference to the real element! This allows an easier and more
 !#   transparent implementation of isoparametric elements!
+!#
+!#
+!# 5.) The elements has an optional parameter -- the so called 'twist index'.
+!#   What the heck is this and how to get it?
+!#
+!#   Well, most elements don't need the twist index, you can simply ignore
+!#   it. Nevertheless, it's a parameter for some special elements like E035,
+!#   which don't work without.
+!#   The twist index is an integer that defines the global orientation of edges
+!#   in 2D and faces in 3D. It allows to determine whether an edge/face belongs
+!#   to the 'current' element or to the 'neighbour' element and can be computed
+!#   with trafo_calcTwistIndex. The routine elem_getTwistIndexSize allows to
+!#   determine the size of the array for the twist indices.
+!#
+!#   First, imagine a situation in 2D. Think about an edge adjacent to two
+!#   elements:
+!#
+!#     ------+------
+!#           |
+!#           |
+!#      10   E  20
+!#           |
+!#           |
+!#     ------+------
+!#
+!#   We define the edge E to belong to the element with the smaller number.
+!#   When 'looking' from element 10 to the edge, the edge becomes twist
+!#   index 1, while when looking from element 20 to it, the edge receives
+!#   twist index -1. That way, the twist index defines whether the 'global' edge
+!#   is oriented counterclockwise (twist index = 1) or clockwise 
+!#   (twist index = -1) relative to the current element.
+!#
+!#   In 3D the situation is slightly more complicated. Thing about a face
+!#   adjacent to two elements. (To get a better overview, we depict the two
+!#   elements separately from each other; the face should be thought of being
+!#   shared by the elements:)
+!#
+!#                         
+!#         ----------3              2-------
+!#                  /|             /|
+!#                 / |            / |
+!#                /  |           /  |
+!#               /   |          /   |     20
+!#      --------4    |         3--------
+!#              | I  |         |  J |
+!#        10    |    2 <-------|--  1------
+!#              |   /     =-2  |   / 
+!#              |  /           |  /  
+!#              | /            | /   
+!#              |/             |/    
+!#      --------1  --------->  4-------
+!#                   =4
+!#
+!#   Every face has it's own local numbering, which is independent of the
+!#   local numbering of the vertices on the cell: While the cell has local
+!#   vertex numbers 1..8, the face has local vertex numbers 1..4 (and
+!#   there is also a mapping between the local face numbers and the local
+!#   vertex numbers, but this is not used). Again we define the face to
+!#   belong to the element with the smaller element number. This element
+!#   defines the 'global orientation' of the face and is by definition
+!#   oriented anticlockwise.
+!#   The value of the twist index now defines, which local vertex number
+!#   on the face of the neighbour element belongs to local vertex number 1
+!#   on the current face. In the above example, ItwistIndex(I,10)=4,
+!#   because local vertex number 1 on face I of element 10 maps to local
+!#   vertex number 4 of face J on element 20.
+!#   Similarly, ItwistIndex(J,20)=-2, because local vertex number 1 of face
+!#   J maps to local vertex number 2 of face I. the sign "-" signales that
+!#   face J is oriented clockwise in the global orientation, as it belongs
+!#   to element 10.
 !#
 !# </purpose>
 !##############################################################################
@@ -964,6 +1036,48 @@ CONTAINS
 
   END FUNCTION
 
+  ! ***************************************************************************
+
+!<function>  
+
+  ELEMENTAL INTEGER FUNCTION elem_getTwistIndexSize(ieltype)
+
+!<description>
+  ! This function determines for a given element type the number entries
+  ! in the twist index array.
+!</description>
+
+!<input>    
+  ! The element type identifier.
+  ! If 0 is specified here, the routine returns the maximum number of
+  ! necessary entries in a twist index array for all elements.
+  INTEGER(I32), INTENT(IN) :: ieltype
+!</input>
+
+!<result>
+  ! Size of the twist index array per element.
+  ! May be =0; in this case the element does not need twist indices.
+!</result>
+
+!</function>
+
+  SELECT CASE (ieltype)
+  CASE (0)
+    ! Return maximum number.
+    ! this can be 6 -- one for each face of an element.
+    elem_getTwistIndexSize = 6
+  CASE (EL_E035)
+    ! We need 1 twist index per edge per element, so we return
+    ! 4 for a quad element.
+    ! Defines the orientation of the edge.
+    elem_getTwistIndexSize = 4
+  CASE DEFAULT
+    ! No twist indices necessary
+    elem_getTwistIndexSize = 0
+  END SELECT
+
+  END FUNCTION
+
 !**************************************************************************
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
@@ -972,7 +1086,7 @@ CONTAINS
 !<subroutine>  
 
   PURE SUBROUTINE elem_generic (ieltyp, Dcoords, Djac, ddetj, Bder, &
-                                Dpoint, Dbas)
+                                Dpoint, Dbas, ItwistIndex)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
@@ -1026,6 +1140,13 @@ CONTAINS
   ! For parametric elements, the point must be on the reference element, 
   ! for nonparametric elements on the real element.
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+
+  ! OPTIONAL: List of twist indices. For every edge/face on the cell, the twist
+  ! index defines the orientation of the edge/face. May be undefined if
+  ! the element does not need twist indices.
+  ! Can be omitted if the element does not need this information.
+  ! Array with DIMENSION(1:NVE/NVA)
+  INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: ItwistIndex
 !</input>
   
 !<output>
@@ -1077,7 +1198,7 @@ CONTAINS
   CASE (EL_E031)
     CALL elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_E035)
-    CALL elem_E035 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    CALL elem_E035 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
   ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -1107,7 +1228,7 @@ CONTAINS
 !<subroutine>  
 
   PURE SUBROUTINE elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
-                                     Bder, Dbas, npoints, Dpoints)
+                                     Bder, Dbas, npoints, Dpoints, ItwistIndex)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
@@ -1126,7 +1247,7 @@ CONTAINS
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
-  
+
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
@@ -1155,6 +1276,13 @@ CONTAINS
   !   Dpoints(1,.)=x-coordinates,
   !   Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+  
+  ! OPTIONAL: List of twist indices. For every edge/face on the cell, the twist
+  ! index defines the orientation of the edge/face. May be undefined if
+  ! the element does not need twist indices.
+  ! Can be omitted if the element does not need this information
+  ! Array with DIMENSION(1:NVE/NVA)
+  INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: ItwistIndex
 !</input>
   
 !<output>
@@ -1221,7 +1349,7 @@ CONTAINS
     ! Compatibility handling: evaluate all points separately
     DO i=1,npoints
       CALL elem_generic (ieltyp, Dcoords, Djac(:,i), Ddetj(i), Bder, &
-                         Dpoints(:,i), Dbas(:,:,i))
+                         Dpoints(:,i), Dbas(:,:,i), ItwistIndex)
     END DO
   END SELECT
 
@@ -1232,7 +1360,7 @@ CONTAINS
 !<subroutine>  
 
   SUBROUTINE elem_generic_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                               Bder, Dbas, npoints, nelements, Dpoints)
+                               Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -1259,7 +1387,7 @@ CONTAINS
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
   REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
-  
+
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
   !  Djac(1,i,.) = J_i(1,1,.)
@@ -1299,6 +1427,13 @@ CONTAINS
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
+  
+  ! OPTIONAL: List of twist indices. For every edge/face on every cell, the twist
+  ! index defines the orientation of the edge/face. May be undefined if
+  ! the element does not need twist indices.
+  ! Can be omitted if the element does not need it.
+  ! Array with DIMENSION(1:NVE/NVA,nelements)
+  INTEGER, DIMENSION(:,:), INTENT(IN), OPTIONAL :: ItwistIndex
 !</input>
   
 !<output>
@@ -1387,10 +1522,19 @@ CONTAINS
                       Bder, Dbas, npoints, nelements, Dpoints)
   CASE DEFAULT
     ! Compatibility handling: evaluate on all elements separately
-    DO i=1,nelements
-      CALL elem_generic_mult (ieltyp, Dcoords(:,:,i), Djac(:,:,i), Ddetj(:,i), &
-                              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
-    END DO
+    IF (PRESENT(ItwistIndex)) THEN
+      DO i=1,nelements
+        CALL elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+            Djac(:,:,i), Ddetj(:,i), &
+            Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndex(:,i))
+      END DO
+    ELSE
+      DO i=1,nelements
+        CALL elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+            Djac(:,:,i), Ddetj(:,i), &
+            Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
+      END DO
+    END IF
   END SELECT
 
   END SUBROUTINE 
@@ -8603,7 +8747,7 @@ CONTAINS
  
 !<subroutine>  
 
-  PURE SUBROUTINE elem_E035 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  PURE SUBROUTINE elem_E035 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, &
                              Dpoint, Dbas)
 
   !<description>
@@ -8622,6 +8766,11 @@ CONTAINS
   ! Dcoords(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
+  ! List of twist indices. For every edge/face on every cell, the twist
+  ! index defines the orientation of the edge/face.
+  ! Array with DIMENSION(1:NVE/NVA)
+  INTEGER, DIMENSION(:), INTENT(IN) :: ItwistIndex
+
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
   !  Djac(1) = J(1,1)
@@ -8701,31 +8850,13 @@ CONTAINS
   x = dx
   y = dy
 
-  ! Coordinate test
-  IF ((Dcoords(1,1) .GT. Dcoords(1,2)) .OR. ((Dcoords(1,1) .EQ. Dcoords(1,2))&
-      .AND. (Dcoords(2,1) .GT. Dcoords(2,2)))) THEN
-    d1 = 1.0_DP
-  ELSE 
-    d1 = -1.0_DP
-  END IF
-  IF ((Dcoords(1,2) .GT. Dcoords(1,3)) .OR. ((Dcoords(1,2) .EQ. Dcoords(1,3))&
-      .AND. (Dcoords(2,2) .GT. Dcoords(2,3)))) THEN
-    d2 = 1.0_DP
-  ELSE 
-    d2 = -1.0_DP
-  END IF
-  IF ((Dcoords(1,3) .GT. Dcoords(1,4)) .OR. ((Dcoords(1,3) .EQ. Dcoords(1,4))&
-      .AND. (Dcoords(2,3) .GT. Dcoords(2,4)))) THEN
-    d3 = 1.0_DP
-  ELSE 
-    d3 = -1.0_DP
-  END IF
-  IF ((Dcoords(1,4) .GT. Dcoords(1,1)) .OR. ((Dcoords(1,4) .EQ. Dcoords(1,1))&
-      .AND. (Dcoords(2,4) .GT. Dcoords(2,1)))) THEN
-    d4 = 1.0_DP
-  ELSE 
-    d4 = -1.0_DP
-  END IF
+  ! Get the twist indixes that define the orientation of our edges.
+  ! A value of 1 is standard, a value if -1 results in a change of the
+  ! sign in the derivative of the basis functions of the first moment.
+  d1 = REAL(ItwistIndex(1),DP)
+  d2 = REAL(ItwistIndex(2),DP)
+  d3 = REAL(ItwistIndex(3),DP)
+  d4 = REAL(ItwistIndex(4),DP)
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
@@ -8746,14 +8877,14 @@ CONTAINS
     Dbas(2,DER_FUNC) = -1.D0/4.D0+3.D0/4.D0*x+3.D0/4.D0*x**2-3.D0/4.D0*y**2*x
     Dbas(3,DER_FUNC) = -1.D0/4.D0+3.D0/4.D0*y+3.D0/4.D0*y**2-3.D0/4.D0*x**2*y
     Dbas(4,DER_FUNC) = -1.D0/4.D0-3.D0/4.D0*x+3.D0/4.D0*x**2+3.D0/4.D0*y**2*x
-    Dbas(5,DER_FUNC) = -3.D0/4.D0*x-3.D0/4.D0*x*y+9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
-                       -15.D0/8.D0*x*y**3
-    Dbas(6,DER_FUNC) = -3.D0/4.D0*y+3.D0/4.D0*x*y+9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
-                       -15.D0/8.D0*x*y**3
-    Dbas(7,DER_FUNC) = 3.D0/4.D0*x-3.D0/4.D0*x*y-9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
-                       -15.D0/8.D0*x*y**3
-    Dbas(8,DER_FUNC) = 3.D0/4.D0*y+3.D0/4.D0*x*y-9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
-                       -15.D0/8.D0*x*y**3
+    Dbas(5,DER_FUNC) = (-3.D0/4.D0*x-3.D0/4.D0*x*y+9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3)*d1
+    Dbas(6,DER_FUNC) = (-3.D0/4.D0*y+3.D0/4.D0*x*y+9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3)*d2
+    Dbas(7,DER_FUNC) = (3.D0/4.D0*x-3.D0/4.D0*x*y-9.D0/4.D0*y**2*x+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3)*d3
+    Dbas(8,DER_FUNC) = (3.D0/4.D0*y+3.D0/4.D0*x*y-9.D0/4.D0*x**2*y+15.D0/8.D0*x**3*y&
+                       -15.D0/8.D0*x*y**3)*d4
     Dbas(9,DER_FUNC) = 2-3.D0/2.D0*x**2-3.D0/2.D0*y**2
 
     

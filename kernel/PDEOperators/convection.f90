@@ -1710,7 +1710,8 @@ CONTAINS
 
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,&
-        p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        elem_getTwistIndexSize(p_relementDistribution%itrialElement))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -2024,6 +2025,12 @@ CONTAINS
              
       END IF
       
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+      END IF
+
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -2031,7 +2038,7 @@ CONTAINS
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_relementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts)
+            Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts,rintSubset%p_ItwistIndex)
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -2155,7 +2162,8 @@ CONTAINS
         ! on all the elements
         CALL elem_generic_sim (EL_Q1, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              Bder, DbasALE, ncubp, IELmax-IELset+1, p_DcubPtsRef)
+              Bder, DbasALE, ncubp, IELmax-IELset+1, p_DcubPtsRef,&
+              rintSubset%p_ItwistIndex)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -3100,7 +3108,8 @@ CONTAINS
 
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,&
-        p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        elem_getTwistIndexSize(p_relementDistribution%itrialElement))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -3529,6 +3538,12 @@ CONTAINS
              
       END IF
      
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+      END IF
+
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -3536,7 +3551,7 @@ CONTAINS
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_relementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts)
+            Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts,rintSubset%p_ItwistIndex)
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -3754,7 +3769,8 @@ CONTAINS
         ! on all the elements
         CALL elem_generic_sim (EL_Q1, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              Bder, DbasALE, ncubp, IELmax-IELset+1, p_DcubPtsRef)
+              Bder, DbasALE, ncubp, IELmax-IELset+1, p_DcubPtsRef,&
+              rintSubset%p_ItwistIndex)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -4950,7 +4966,9 @@ CONTAINS
     i = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE)
+    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -5295,13 +5313,19 @@ CONTAINS
       ! Cubature prepared. Now we call the element subroutine to evaluate in the
       ! cubature points.
       !
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementsAtEdge (1:IELcount,IMT),rintSubset%p_ItwistIndex)
+      END IF
+      
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest)
+            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest,rintSubset%p_ItwistIndex)
             
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -5342,7 +5366,7 @@ CONTAINS
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial)
+            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          
@@ -5907,7 +5931,9 @@ CONTAINS
     i = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE)
+    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -6252,13 +6278,19 @@ CONTAINS
       ! Cubature prepared. Now we call the element subroutine to evaluate in the
       ! cubature points.
       !
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementsAtEdge (1:IELcount,IMT),rintSubset%p_ItwistIndex)
+      END IF
+
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest)
+            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest,rintSubset%p_ItwistIndex)
             
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -6299,7 +6331,7 @@ CONTAINS
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial)
+            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          

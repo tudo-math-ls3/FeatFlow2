@@ -567,7 +567,8 @@ CONTAINS
         CASE (EL_Q2T)
           ! DOF's in the edges
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_Q2T(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_Q2T(p_rtriangulation%NVT,p_rtriangulation%NMT,&
+              p_2darray, IelIdx, IdofGlob)
           RETURN
         END SELECT
         
@@ -1366,7 +1367,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_Q2T(iNVT, IedgesAtElement, IelIdx, IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_Q2T(iNVT, iNMT, IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1380,6 +1381,9 @@ CONTAINS
 
   ! Number of vertices in the triangulation.
   INTEGER(I32), INTENT(IN) :: iNVT
+
+  ! Number of edges in the triangulation.
+  INTEGER(I32), INTENT(IN) :: iNMT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
@@ -1402,9 +1406,6 @@ CONTAINS
 
   ! local variables 
   INTEGER(I32) :: i
-  INTEGER(PREC_EDGEIDX) :: iNMT
-  
-  inmt = UBOUND(IedgesAtElement,2)
   
   ! Loop through the elements to handle
   DO i=1,SIZE(IelIdx)

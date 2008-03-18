@@ -528,7 +528,9 @@ CONTAINS
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -626,6 +628,12 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              rintSubset%p_Ielements,rintSubset%p_ItwistIndex)
+        END IF
+
         ! At this point, we calculate the gradient information.
         ! As this routine handles the 2D case, we have an X- and Y-derivative.
         ! Calculate the X-derivative in the corners of the elements
@@ -636,13 +644,13 @@ CONTAINS
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_elementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))        
+              Dderivatives(:,1:IELmax-IELset+1_I32,1),rintSubset%p_ItwistIndex)        
 
         CALL fevl_evaluate_sim (rvector, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_elementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))        
+              Dderivatives(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
                     
          ! Sum up the derivative values in the destination vector.
          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -721,7 +729,7 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    INTEGER :: IVE,NVE,NVEMax
+    INTEGER :: IVE,NVE,NVEMax,ntwistsize
     INTEGER :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
     INTEGER :: i,j,k,ipoint,idx,icoordSystem
     INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax
@@ -888,6 +896,9 @@ CONTAINS
 
     ! Auxiliary integers
     INTEGER :: icubp,idim
+    
+    ! Twist index array to define the orientation of faces/edges
+    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
     
     !-----------------------------------------------------------------------
     ! (0)  Initialisation
@@ -1353,7 +1364,9 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-              ncubp, icoordSystem, p_rtriangulation%ndim, NVE)
+            ncubp, icoordSystem, p_rtriangulation%ndim, NVE,&
+            MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+                elem_getTwistIndexSize(p_elementDistribution%itestElement)))
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
@@ -1415,35 +1428,47 @@ CONTAINS
           ! Allocate memory for the values of the derivaties in the corners
           ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,p_rtriangulation%ndim))
           
+          ! If the element needs it, calculate the twist index array.
+          IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+            CALL trafo_calcTwistIndices(p_rtriangulation,&
+                IelementsInPatch(1:nelementsPerBlock),rintSubset%p_ItwistIndex)
+          END IF
+
           ! Calculate the derivative of the FE function in the cubature
           ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
           SELECT CASE(p_rtriangulation%ndim)
           CASE (NDIM1D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1),&
+                rintSubset%p_ItwistIndex)
             
           CASE (NDIM2D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1),&
+                rintSubset%p_ItwistIndex)
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2),&
+                rintSubset%p_ItwistIndex)
             
           CASE (NDIM3D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1),&
+                rintSubset%p_ItwistIndex)
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2),&
+                rintSubset%p_ItwistIndex)
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3))
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3),&
+                rintSubset%p_ItwistIndex)
 
           CASE DEFAULT
             CALL output_line('Invalid spatial dimension!',&
@@ -1487,7 +1512,7 @@ CONTAINS
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
           CALL elem_generic_sim(p_elementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
-              nelementsPerBlock, p_DcubPtsTrial)
+              nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
           
           
           !-----------------------------------------------------------------------
@@ -1535,7 +1560,9 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the destination FE space.
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-              nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE)
+            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE,&
+            MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+                elem_getTwistIndexSize(p_elementDistribution%itestElement)))
           p_DcubPtsRef =>  rintSubsetDest%p_DcubPtsRef
           p_DcubPtsReal => rintSubsetDest%p_DcubPtsReal
           p_Djac =>        rintSubsetDest%p_Djac
@@ -1612,7 +1639,7 @@ CONTAINS
           ! Evaluate the basis functions for the cubature points of the destination FE space
           CALL elem_generic_sim(p_elementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
-              nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
+              nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
           
           !---------------------------------------------------------------------
           ! Step 6: Evaluate the averaged derivative values at the cubature
@@ -1758,13 +1785,18 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
+              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax,0)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
           p_Ddetj =>       rintSubset%p_Ddetj
           p_Dcoords =>     rintSubset%p_DCoords
-
+          
+          ! Determine size of twist index array; if this is 0, no element needs
+          ! the twist index array.
+          ntwistsize = MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+                           elem_getTwistIndexSize(p_elementDistribution%itestElement))
+          
           ! Initialise arrays with zeros
           p_DcubPtsRef  = 0
           p_DcubPtsReal = 0
@@ -1775,7 +1807,7 @@ CONTAINS
           ! Allocate memory. This domain integration structure stores 
           ! all information of the destination FE space. 
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
+              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax, 0)
           
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
@@ -1880,6 +1912,11 @@ CONTAINS
                   p_Dcoords(:,:,idx), p_DcubPtsRef(:,:,idx), p_Djac(:,:,idx), &
                   p_Ddetj(:,idx), p_DcubPtsReal(:,:,idx))
 
+              ! If the element needs it, calculate the twist index array.
+              IF (ntwistsize .NE. 0) THEN
+                CALL trafo_calcTwistIndex(p_rtriangulation,IEL,ItwistIndex)
+              END IF
+
               !---------------------------------------------------------------------
               ! Step 2:  Perform sampling of consistent gradient values
               !---------------------------------------------------------------------
@@ -1891,39 +1928,45 @@ CONTAINS
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV1D_X, Dcoefficients(:,idx,1))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV1D_X, Dcoefficients(:,idx,1),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
               CASE (NDIM2D)
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_X, Dcoefficients(:,idx,1))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_X, Dcoefficients(:,idx,1),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
 
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_Y, Dcoefficients(:,idx,2))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_Y, Dcoefficients(:,idx,2),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
               CASE (NDIM3D)
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_X, Dcoefficients(:,idx,1))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_X, Dcoefficients(:,idx,1),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Y, Dcoefficients(:,idx,2))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Y, Dcoefficients(:,idx,2),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
                 CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
                     p_Djac(:,:,idx), p_Ddetj(:,idx), &
                     p_elementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Z, Dcoefficients(:,idx,3))
+                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Z, Dcoefficients(:,idx,3),&
+                    ItwistIndex)
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,3))
                 
               CASE DEFAULT
@@ -2006,7 +2049,7 @@ CONTAINS
           ! evaluate all values simultaneously and filter the required data afterwards.
           CALL elem_generic_sim(p_elementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
-              nelementsPerBlock, p_DcubPtsTrial)
+              nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
 
           ! Compute total number of sampling points
           nspoints = SUM(Inpoints(1:npatchesInCurrentBlock))
@@ -2239,7 +2282,7 @@ CONTAINS
               CALL elem_generic_mult(p_elementDistribution%itrialElement, &
                   p_Dcoords(:,:,idx), p_Djac(:,:,idx), p_Ddetj(:,idx), &
                   BderDest, Dpolynomials(:,:,:,idx), nlocalDOFsDest, &
-                  p_DcubPtsTrial(:,:,idx))
+                  p_DcubPtsTrial(:,:,idx),NULL())
             END DO
           END DO
           ilastElementDistr = 0
@@ -3417,7 +3460,9 @@ CONTAINS
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -3515,6 +3560,12 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+        END IF
+
         ! At this point, we calculate the gradient information.
         ! As this routine handles the 2D case, we have an X- and Y-derivative.
         ! Calculate the X-derivative in the corners of the elements
@@ -3525,13 +3576,13 @@ CONTAINS
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_elementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))        
+              Dderivatives(:,1:IELmax-IELset+1_I32,1),rintSubset%p_ItwistIndex)        
 
         CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_elementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+              Dderivatives(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)
 
         ! Sum up the derivative values in the destination vector.
         ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 

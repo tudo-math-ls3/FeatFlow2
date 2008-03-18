@@ -417,7 +417,9 @@ CONTAINS
       
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -522,6 +524,12 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              rintSubset%p_Ielements,rintSubset%p_ItwistIndex)
+        END IF
+
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
         
@@ -551,7 +559,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC1D,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -607,7 +615,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC1D,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -664,7 +672,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV1D_X,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
 
           
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
@@ -901,7 +909,9 @@ CONTAINS
       
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -1006,6 +1016,12 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              rintSubset%p_Ielements,rintSubset%p_ItwistIndex)
+        END IF
+
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
         
@@ -1035,7 +1051,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1091,7 +1107,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1150,13 +1166,13 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,3))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,3),rintSubset%p_ItwistIndex)        
 
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,4))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,4),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -1394,7 +1410,9 @@ CONTAINS
       
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -1499,6 +1517,12 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              rintSubset%p_Ielements,rintSubset%p_ItwistIndex)
+        END IF
+
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
         
@@ -1528,7 +1552,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC3D,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1584,7 +1608,7 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC3D,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1652,19 +1676,19 @@ CONTAINS
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_X,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,4))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,4),rintSubset%p_ItwistIndex)        
 
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Y,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,5))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,5),rintSubset%p_ItwistIndex)        
 
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Z,&
-               Dcoefficients(:,1:IELmax-IELset+1_I32,6))        
+               Dcoefficients(:,1:IELmax-IELset+1_I32,6),rintSubset%p_ItwistIndex)        
           
           ! Subtraction of Dcoefficients(:,:,1..3) from Dcoefficients(:,:,4..6) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -2633,7 +2657,9 @@ CONTAINS
 
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -2735,6 +2761,12 @@ CONTAINS
             p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)
             
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+        END IF
+
         ! L2-error uses only the values of the function.
 
         ! Calculate the values of the FE solution vector and the reference solution 
@@ -2751,7 +2783,7 @@ CONTAINS
               p_elementDistribution%itrialElement, &
               IdofsTrial, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrial, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock),rintSubset%p_ItwistIndex)
 
           ! solution reference vector
           CALL fevl_evaluate_sim (rvectorRef%RvectorBlock(iblock), &
@@ -2760,7 +2792,7 @@ CONTAINS
               p_elementDistributionRef%itrialElement, &
               IdofsTrialRef, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrialRef, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1),rintSubset%p_ItwistIndex)
 
         END DO
 
@@ -3150,7 +3182,9 @@ CONTAINS
 
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -3252,6 +3286,12 @@ CONTAINS
             p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)
             
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+        END IF
+
         ! L2-error uses only the values of the function.
 
         ! Calculate the values of the FE solution vector and the reference solution 
@@ -3268,7 +3308,7 @@ CONTAINS
               p_elementDistribution%itrialElement, &
               IdofsTrial, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrial, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock),rintSubset%p_ItwistIndex)
 
           ! solution reference vector
           CALL fevl_evaluate_sim (rvectorRef%RvectorBlock(iblock), &
@@ -3277,7 +3317,7 @@ CONTAINS
               p_elementDistributionRef%itrialElement, &
               IdofsTrialRef, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrialRef, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1),rintSubset%p_ItwistIndex)
 
         END DO
 
@@ -3599,7 +3639,9 @@ CONTAINS
 
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -3687,6 +3729,12 @@ CONTAINS
             p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)
 
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+        END IF
+
         ! Standard deviation uses only the values of the function.
 
         ! Calculate the values of the FE solution vector in the cubature 
@@ -3701,7 +3749,7 @@ CONTAINS
               p_elementDistribution%itrialElement, &
               IdofsTrial, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrial, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock),rintSubset%p_ItwistIndex)
 
         END DO
 
@@ -3790,7 +3838,9 @@ CONTAINS
 
       ! Allocate memory and get local references to it.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-          p_rtriangulation%ndim,NVE)
+        p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -3878,6 +3928,12 @@ CONTAINS
             p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)
 
+        ! If the element needs it, calculate the twist index array.
+        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+          CALL trafo_calcTwistIndices(p_rtriangulation,&
+              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
+        END IF
+
         ! Standard deviation uses only the values of the function.
 
         ! Calculate the values of the FE solution vector in the cubature 
@@ -3892,7 +3948,7 @@ CONTAINS
               p_elementDistribution%itrialElement, &
               IdofsTrial, ncubp, INT(IELmax-IELset+1), &
               p_DcubPtsTrial, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,iblock),rintSubset%p_ItwistIndex)
 
         END DO
 

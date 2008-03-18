@@ -46,42 +46,48 @@
 !#     -> calculates auxiliary Jacobian factors for the transformation
 !#        from a reference quadrilateral to a real quadrilateral
 !#
-!# 10.) trafo_calcJac
+!# 12.) trafo_calcJac
 !#     -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#        from  the reference to a real quadrilateral element
 !#
-!# 11.) trafo_calcRealCoords
+!# 13.) trafo_calcRealCoords
 !#      -> maps a point from the reference element to the real element
 !#
-!# 12.) trafo_calcTrafo_quad2d
+!# 14.) trafo_calcTrafo_quad2d
 !#      -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#         from  the reference to a real quadrilateral element
 !#       -> maps a point from the reference element to the real element
 !#      (so performing the same task as trafo_calcJac and trafo_calcRealCoords
 !#       in one routine)
 !#
-!# 13.) trafo_mapCubPts1Dto2D
+!# 15.) trafo_mapCubPts1Dto2D
 !#      -> Maps a set of 1D cubature point coordinates on the reference 
 !#         interval to an edge of a reference element.
 !#
-!# 14.) trafo_mapCubPts1Dto2DRefQuad
+!# 16.) trafo_mapCubPts1Dto2DRefQuad
 !#      -> Maps a set of 1D cubature point coordinates on the reference 
 !#         interval to an edge of the 2D reference quadrilateral.
 !#
-!# 15.) trafo_mapCubPts1Dto2DTriBary
+!# 17.) trafo_mapCubPts1Dto2DTriBary
 !#      -> Maps a set of 1D cubature point coordinates on the reference 
 !#         interval to an edge of the 2D reference triangle; barycentric
 !#         coordinates.
 !# 
-!# 16.) trafo_calcBackTrafo_quad2d
+!# 18.) trafo_calcBackTrafo_quad2d
 !#      -> Find the coordinates on the reference element 
 !#         for a given point in real world coordinates
 !# 
-!# 17.) trafo_calcRefCoords
+!# 19.) trafo_calcRefCoords
 !#      -> For a given point in world coordinates and an element, this 
 !#         routine calculates the coordinates of the point on the reference
 !#         element.
 !#         Supports triangular and quadrilateral mapping.
+!#
+!# 20.) trafo_calcTwistIndex
+!#      -> Calculate the twist indices for one element.
+!#
+!# 21.) trafo_calcTwistIndices
+!#      -> Calculates the twist indices for a couple of elements
 !#
 !#  FAQ - Some explainations
 !# --------------------------
@@ -3024,5 +3030,166 @@ CONTAINS
     END SELECT ! Dimension
   
   END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE trafo_calcTwistIndices(rtriangulation,IelIdx,ItwistIndex)
+  
+!<description>
+  ! Calculates the twist index for all elements in IelIdx.
+  ! The twist index defines for every edge (2D) / face (3D) the global
+  ! orientation of the face/edge.
+!</description>
+
+!<input>
+  ! Underlying triangulation.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! List of elements where the twist indices should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+!</input>
+
+!<output>
+  ! List of twist indices. For every edge/face on every cell, the twist
+  ! index defines the orientation of the edge/face.
+  ! Array with DIMENSION(1:NVE/NVA,1:SIZE(IelIdx))
+  !
+  ! 2D: The twist index is 1 if the edge belongs to the current element
+  ! (with the current element number smaller than the neighbour element)
+  ! and -1 if it belongs to the neighbour element (and is thus oriented
+  ! in the other way).
+  !
+  ! 3D: The absolute value of the twist index has the range 
+  ! 1..NVA and defines the number of the local face vertex on the neighbour 
+  ! element that corresponds to the local face vertex number 1 on the current
+  ! element.
+  ! The number is =0 if there is no neighbour. 
+  ! The number is > 0 if the vertices on a face are ordered globally
+  ! counterclockwise, relative to the current element.
+  ! The number is < 0 if the vertices on a face are ordered globally
+  ! clockwise, relative to the current element.
+  !
+  ! For a description of that array, see the documentation in the element
+  ! library.
+  INTEGER, DIMENSION(:,:), INTENT(OUT) :: ItwistIndex
+!</output>
+
+    ! local variables
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+    INTEGER(PREC_ELEMENTIDX) :: iel,ielneighbour
+    INTEGER(PREC_EDGEIDX) :: iedge
+    INTEGER :: imt
+
+    ! Dimension?
+    SELECT CASE (rtriangulation%ndim)
+    CASE (NDIM1D)
+      ! Currently no implementation, since not used!
+      ItwistIndex(:,:) = 0
+    CASE (NDIM2D)
+    
+      CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+          p_IneighboursAtElement)
+          
+      ! Chech the edge on each each element.
+      ! If the first vertex has the higher number, return a -1 for that edge.
+      DO iel=1,SIZE(IelIdx)
+        DO imt=1,UBOUND(p_IneighboursAtElement,1)
+          ielneighbour = p_IneighboursAtElement(imt,IelIdx(iel))
+          IF ((IelIdx(iel) .LT. ielneighbour) .OR. (ielneighbour .EQ. 0)) THEN
+            ItwistIndex(imt,iel) = 1
+          ELSE
+            ItwistIndex(imt,iel) = -1
+          END IF
+        END DO
+      END DO
+    
+    CASE (NDIM3D)
+      ! Currently no implementation, since not used!
+      ItwistIndex(:,:) = 0
+    END SELECT
+
+  END SUBROUTINE 
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE trafo_calcTwistIndex(rtriangulation,iel,ItwistIndex)
+  
+!<description>
+  ! Calculates the twist index for all elements in IelIdx.
+  ! The twist index defines for every edge (2D) / face (3D) the global
+  ! orientation of the face/edge.
+!</description>
+
+!<input>
+  ! Underlying triangulation.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! THe element number of which the twist indices should be computed.
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+!</input>
+
+!<output>
+  ! List of twist indices. For every edge/face on the cell, the twist
+  ! index defines the orientation of the edge/face.
+  ! Array with DIMENSION(1:NVE/NVA)
+  !
+  ! 2D: The twist index is 1 if an edge is oriented from a lower vertex
+  ! number to a higher vertex number and -1 if the edge is oriented
+  ! from a higher vertex number to a lower vertex number.
+  !
+  ! 3D: The absolute value of the twist index has the range 
+  ! 1..NVA and defines the number of the local face vertex on the neighbour 
+  ! element that corresponds to the local face vertex number 1 on the current
+  ! element.
+  ! The number is =0 if there is no neighbour. 
+  ! The number is > 0 if the vertices on a face are ordered globally
+  ! counterclockwise, relative to the current element.
+  ! The number is < 0 if the vertices on a face are ordered globally
+  ! clockwise, relative to the current element.
+  !
+  ! For a description of that array, see the documentation in the element
+  ! library.
+  INTEGER, DIMENSION(:), INTENT(OUT) :: ItwistIndex
+!</output>
+
+    ! local variables
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(PREC_EDGEIDX) :: iedge
+    INTEGER :: imt
+
+    ! Dimension?
+    SELECT CASE (rtriangulation%ndim)
+    CASE (NDIM1D)
+      ! Currently no implementation, since not used!
+      ItwistIndex(:) = 0
+    CASE (NDIM2D)
+    
+      CALL storage_getbase_int2d (rtriangulation%h_IverticesAtEdge,&
+          p_IverticesAtEdge)
+      CALL storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
+          p_IedgesAtElement)
+          
+      ! Chech the edge on each each element.
+      ! If the first vertex has the higher number, return a -1 for that edge.
+      DO imt=1,UBOUND(p_IedgesAtElement,1)
+        iedge = p_IedgesAtElement(imt,iel)
+        IF (p_IverticesAtEdge(1,iedge) .LT. p_IverticesAtEdge(2,iedge)) THEN
+          ItwistIndex(imt) = 1
+        ELSE
+          ItwistIndex(imt) = -1
+        END IF
+      END DO
+    
+    CASE (NDIM3D)
+      ! Currently no implementation, since not used!
+      ItwistIndex(:) = 0
+    END SELECT
+
+  END SUBROUTINE 
 
 END MODULE 

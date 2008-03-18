@@ -1201,11 +1201,16 @@ CONTAINS
     
     REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
     
-    REAL(DP) :: dpar
+    REAL(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2
     INTEGER :: nve,nnve
     
     INTEGER ::iidx
     TYPE(t_discreteBCEntry), POINTER :: p_rdiscreteBCentry
+    
+    ! Position of cubature points for 2-point Gauss formula on an edge.
+    ! Used for Q2T. 
+    REAL(DP), PARAMETER :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
+    REAL(DP), PARAMETER :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
     
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
@@ -1690,7 +1695,101 @@ CONTAINS
             END IF
 
           END IF
-          
+
+        CASE (EL_Q2T)
+        
+          ! The Q2T-element is only integral mean value based.
+          ! On the one hand, we have integral mean values over the edges.
+          ! On the other hand, we have integral mean values of function*parameter
+          ! value on the edge.
+          !
+          ! Edge inside? 
+          IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+            ! If parameter values are available, get the parameter value.
+            IF (ASSOCIATED(p_DedgeParameterValue)) &
+              dpar = p_DedgeParameterValue(I)
+
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    iedge,dpar, Dvalues,rcollection)
+                                      
+            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+              ! Save the computed function value
+              DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            END IF
+            
+            ! A value of SYS_INFINITY indicates a do-nothing node inside of
+            ! Dirichlet boundary.
+            IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+              ! Set the DOF number < 0 to indicate that it is Dirichlet
+              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            END IF
+            
+            ! That was the integral mean value. On the other hand, we now need
+            ! to set up
+            !             int_[-1,1] v(x(t)) * t dt
+            ! We do this by a 2-point gauss formula by asking the callback routine
+            ! for function values in the Gauss points.
+            !
+            ! Prepare the calculation of the parameter value of the point where
+            ! we evaluate the boundary.
+            !
+            ! 1st Gauss point
+            IF (ASSOCIATED(p_DedgeParameterValue)) THEN
+
+              ! TO BE IMPLEMENTED!!!
+              
+              ! dpar receives the parameter value of the first Gauss point.
+              
+              ! WARNING: INCOMPLETE!!!
+              dpar = p_DedgeParameterValue(I)
+            END IF
+            
+            ! Get the value in the Gauss point
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    iedge,dpar, Dvalues,rcollection)
+            dval1 = Dvalues(1)
+            
+            ! 2nd Gauss point
+            IF (ASSOCIATED(p_DedgeParameterValue)) THEN
+
+              ! TO BE IMPLEMENTED!!!
+              
+              ! dpar receives the parameter value of the first Gauss point.
+              
+              ! WARNING: INCOMPLETE!!!
+              dpar = p_DedgeParameterValue(I)
+            END IF
+            
+            ! Get the value in the Gauss point
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    iedge,dpar, Dvalues,rcollection)
+            dval2 = Dvalues(1)
+            
+            ! A value of SYS_INFINITY indicates a do-nothing node inside of
+            ! Dirichlet boundary.
+            IF ((dval1 .NE. SYS_INFINITY) .AND. (dval2 .NE. SYS_INFINITY)) THEN
+              
+              ! Calculate the integral
+              dval = (dval1*Q2G1) + (dval2*Q2G2)
+              
+              IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+                ! Save the computed function value
+                DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = dval 
+              END IF
+              
+              ! Set the DOF number < 0 to indicate that it is Dirichlet
+              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            END IF
+            
+            
+            
+          END IF
+
         CASE DEFAULT
         
           PRINT *,'bcasm_newDirichletBC: Unsupported element!'

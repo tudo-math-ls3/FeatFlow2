@@ -165,7 +165,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), POINTER               :: p_DvertexCoordinates
 
   ! other local variables
-  INTEGER :: iedgeidx,ivt1,ivt2,ilocaledge,nlocaledges,idfl,icp
+  INTEGER :: iedgeidx,ivt1,ivt2,ilocaledge,nlocaledges,idfl,icp,ntwistsize
   INTEGER(PREC_DOFIDX) :: neqU,neqP
   INTEGER(PREC_EDGEIDX) :: iedge,iedgeglobal
   INTEGER(PREC_ELEMENTIDX) :: iel
@@ -173,6 +173,7 @@ CONTAINS
   REAL(DP), DIMENSION(2) :: DintU, DintP
   REAL(DP) :: dpres
   REAL(DP), DIMENSION(NDIM2D) :: dvt1,dvt2,dtangential,dnormal
+  INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
 
     ! Get the vector data
     neqU = rvector%RvectorBlock(1)%NEQ
@@ -265,6 +266,9 @@ CONTAINS
     
     CALL storage_getbase_double (p_rtriangulation%h_DvertexParameterValue, &
                                  p_DvertexParameterValue)
+                                 
+    ! Does the element need twist indices?
+    ntwistsize = MAX(elem_getTwistIndexSize(ielemU),elem_getTwistIndexSize(ielemP))
 
     ! Is one of the elements nonparametric
     bnonparU = elem_isnonparametric(ielemU) 
@@ -294,12 +298,17 @@ CONTAINS
     ! We assemble the integral contributions separately
     DintU = 0.0_DP
     DintP = 0.0_DP
-
+    
     ! Loop through all edges along the boundary
     DO iedgeidx = p_IboundaryCpIdx(icp),p_IboundaryCpIdx(icp+1)-1
       
       ! Current element
       iel = p_IelementsAtBoundary(iedgeidx)
+      
+      ! If twist indices are necessary, calculate them
+      IF (ntwistSize .NE. 0) THEN
+        CALL trafo_calcTwistIndex(p_rtriangulation,iel,ItwistIndex)
+      END IF
       
       ! Egde number
       iedgeglobal = p_IedgesAtBoundary(iedgeidx)
@@ -398,18 +407,18 @@ CONTAINS
         ! Evaluate the U- and P-element in all our cubature points
         IF (bnonparU) THEN
           CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
-                                  BderU, DbasU, ncubp, DpointsReal)
+                                  BderU, DbasU, ncubp, DpointsReal,ItwistIndex)
         ELSE
           CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
-                                  BderU, DbasU, ncubp, DpointsRef)
+                                  BderU, DbasU, ncubp, DpointsRef,ItwistIndex)
         END IF
 
         IF (bnonparP) THEN
           CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
-                                  BderP, DbasP, ncubp, DpointsReal)
+                                  BderP, DbasP, ncubp, DpointsReal,ItwistIndex)
         ELSE
           CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
-                                  BderP, DbasP, ncubp, DpointsRef)
+                                  BderP, DbasP, ncubp, DpointsRef,ItwistIndex)
         END IF
         
         ! Loop over the cubature points on the current element

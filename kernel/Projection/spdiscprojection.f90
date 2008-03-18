@@ -170,7 +170,7 @@ CONTAINS
         ! Call the conversion routine
         CALL spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
                                p_IelementsAtVertexIdx,p_IelementsAtVertex)
-      CASE (EL_Q1T)
+      CASE (EL_Q1T,EL_Q2T)
         ! That's a little bit harder. We have to convert an FE space with DOF's
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
         ! is treated as if the DOF's were in the edge midpoints. The error

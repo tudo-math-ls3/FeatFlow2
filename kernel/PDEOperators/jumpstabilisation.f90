@@ -325,7 +325,9 @@ CONTAINS
     i = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE)
+    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE,&
+        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
+            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -672,13 +674,19 @@ CONTAINS
       ! Cubature prepared. Now we call the element subroutine to evaluate in the
       ! cubature points.
       !
+      ! If the element needs it, calculate the twist index array.
+      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
+        CALL trafo_calcTwistIndices(p_rtriangulation,&
+            p_IelementsAtEdge (1:IELcount,IMT),rintSubset%p_ItwistIndex)
+      END IF
+
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
       CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest)
+            BderTest, DbasTest, ncubp, IELcount, p_DcubPtsTest,rintSubset%p_ItwistIndex)
             
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -719,7 +727,7 @@ CONTAINS
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELcount), p_Ddetj(:,1:IELcount), &
-            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial)
+            BderTrial, DbasTrial, ncubp, IELcount, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          
