@@ -547,7 +547,7 @@ CONTAINS
     elem_igetNDofLoc = 4
   CASE (EL_Q2T)
     ! local DOF's for Ex35
-    elem_igetNDofLoc = 8
+    elem_igetNDofLoc = 9
   
   ! -= 3D element types =-
   CASE (EL_P0_3D, EL_Q0_3D)
@@ -669,6 +669,7 @@ CONTAINS
   CASE (EL_Q2T)
     ! local DOF's for Ex35
     ndofAtEdges    = 8
+    ndofAtElement  = 1
   
   ! -= 3D element types =-
   CASE (EL_P0_3D, EL_Q0_3D)
@@ -8664,7 +8665,7 @@ CONTAINS
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(8,NDIM2D) :: Dhelp
+  REAL(DP), DIMENSION(9,NDIM2D) :: Dhelp
   REAL(DP) :: dx,dy
 
   REAL(DP) :: dxj !auxiliary variable
@@ -8712,6 +8713,8 @@ CONTAINS
     Dbas(6,DER_FUNC) = -Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
     Dbas(7,DER_FUNC) =  Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3
     Dbas(8,DER_FUNC) =  Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
+    Dbas(9,DER_FUNC) = 2.0_DP - Q5*dx**2 - Q5*dy**2
+ 
     
 !  endif
   
@@ -8732,6 +8735,7 @@ CONTAINS
     Dhelp(6,1) =  Q3*dy + Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
     Dhelp(7,1) =  Q3 - Q3*dy - Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
     Dhelp(8,1) =  Q3*dy - Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
+    Dhelp(9,1) = -3.0_DP*dx
     Dhelp(1,2) = -Q3 + Q5*dy + Q3*dx**2
     Dhelp(2,2) = -Q5*dx*dy
     Dhelp(3,2) =  Q3 + Q5*dy - Q3*dx**2
@@ -8740,6 +8744,7 @@ CONTAINS
     Dhelp(6,2) = -Q3 + Q3*dx + Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
     Dhelp(7,2) = -Q3*dx - Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
     Dhelp(8,2) =  Q3 + Q3*dx - Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
+    Dhelp(9,2) = -3.0_DP*dy
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
@@ -8747,6 +8752,11 @@ CONTAINS
       Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
       Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(3,1) - Djac(2) * Dhelp(3,2))
       Dbas(4,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(4,1) - Djac(2) * Dhelp(4,2))
+      Dbas(5,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(5,1) - Djac(2) * Dhelp(5,2))
+      Dbas(6,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(6,1) - Djac(2) * Dhelp(6,2))
+      Dbas(7,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(7,1) - Djac(2) * Dhelp(7,2))
+      Dbas(8,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(8,1) - Djac(2) * Dhelp(8,2))
+      Dbas(9,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(9,1) - Djac(2) * Dhelp(9,2))
 !    endif
     
     ! y-derivatives on current element
@@ -8755,6 +8765,11 @@ CONTAINS
       Dbas(2,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(2,1) - Djac(1) * Dhelp(2,2))
       Dbas(3,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(3,1) - Djac(1) * Dhelp(3,2))
       Dbas(4,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(4,1) - Djac(1) * Dhelp(4,2))
+      Dbas(5,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(5,1) - Djac(1) * Dhelp(5,2))
+      Dbas(6,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(6,1) - Djac(1) * Dhelp(6,2))
+      Dbas(7,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(7,1) - Djac(1) * Dhelp(7,2))
+      Dbas(8,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(8,1) - Djac(1) * Dhelp(8,2))
+      Dbas(9,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(9,1) - Djac(1) * Dhelp(9,2))
 !    endif
 !  endif
     
