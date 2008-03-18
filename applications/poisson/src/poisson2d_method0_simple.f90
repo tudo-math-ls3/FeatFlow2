@@ -126,7 +126,7 @@ CONTAINS
         
     ! Now read in the basic triangulation.
     CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
-    CALL tria_rawGridToTri(rtriangulation) 
+     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
     
