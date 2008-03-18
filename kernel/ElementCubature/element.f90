@@ -8666,7 +8666,7 @@ CONTAINS
 
   !auxiliary vector containing the first derivatives on the reference element
   REAL(DP), DIMENSION(9,NDIM2D) :: Dhelp
-  REAL(DP) :: dx,dy
+  REAL(DP) :: dx,dy, d1,d2,d3,d4
 
   REAL(DP) :: dxj !auxiliary variable
 
@@ -8698,6 +8698,32 @@ CONTAINS
   
   dx = Dpoint(1)
   dy = Dpoint(2)
+
+  ! Coordinate test
+  IF ((Dcoords(1,1) .GT. Dcoords(1,2)) .OR. ((Dcoords(1,1) .EQ. Dcoords(1,2))&
+      .AND. (Dcoords(2,1) .GT. Dcoords(2,2)))) THEN
+    d1 = 1.0_DP
+  ELSE 
+    d1 = -1.0_DP
+  END IF
+  IF ((Dcoords(1,2) .GT. Dcoords(1,3)) .OR. ((Dcoords(1,2) .EQ. Dcoords(1,3))&
+      .AND. (Dcoords(2,2) .GT. Dcoords(2,3)))) THEN
+    d2 = 1.0_DP
+  ELSE 
+    d2 = -1.0_DP
+  END IF
+  IF ((Dcoords(1,3) .GT. Dcoords(1,4)) .OR. ((Dcoords(1,3) .EQ. Dcoords(1,4))&
+      .AND. (Dcoords(2,3) .GT. Dcoords(2,4)))) THEN
+    d3 = 1.0_DP
+  ELSE 
+    d3 = -1.0_DP
+  END IF
+  IF ((Dcoords(1,4) .GT. Dcoords(1,1)) .OR. ((Dcoords(1,4) .EQ. Dcoords(1,1))&
+      .AND. (Dcoords(2,4) .GT. Dcoords(2,1)))) THEN
+    d4 = 1.0_DP
+  ELSE 
+    d4 = -1.0_DP
+  END IF
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
@@ -8709,10 +8735,10 @@ CONTAINS
     Dbas(2,DER_FUNC) = -Q4 + Q3*dx + Q3*dx**2 - Q3*dx*dy**2
     Dbas(3,DER_FUNC) = -Q4 + Q3*dy + Q3*dy**2 - Q3*dx**2*dy
     Dbas(4,DER_FUNC) = -Q4 - Q3*dx + Q3*dx**2 + Q3*dx*dy**2
-    Dbas(5,DER_FUNC) = -Q3*dx - Q3*dx*dy + Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3
-    Dbas(6,DER_FUNC) = -Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
-    Dbas(7,DER_FUNC) =  Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3
-    Dbas(8,DER_FUNC) =  Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
+    Dbas(5,DER_FUNC) = d1*(-Q3*dx - Q3*dx*dy + Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
+    Dbas(6,DER_FUNC) = d2*(-Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
+    Dbas(7,DER_FUNC) = d3*( Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3)
+    Dbas(8,DER_FUNC) = d4*( Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3)
     Dbas(9,DER_FUNC) = 2.0_DP - Q5*dx**2 - Q5*dy**2
  
     
@@ -8724,7 +8750,7 @@ CONTAINS
   ! inverse of the transformation matrix (in each point) as
   ! stated above.
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
-    dxj = 0.5_DP / ddetj
+    dxj = 1.0_DP / ddetj
     
     ! x- and y-derivatives on reference element
     Dhelp(1,1) =  Q5*dx*dy
@@ -8752,10 +8778,10 @@ CONTAINS
       Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
       Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(3,1) - Djac(2) * Dhelp(3,2))
       Dbas(4,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(4,1) - Djac(2) * Dhelp(4,2))
-      Dbas(5,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(5,1) - Djac(2) * Dhelp(5,2))
-      Dbas(6,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(6,1) - Djac(2) * Dhelp(6,2))
-      Dbas(7,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(7,1) - Djac(2) * Dhelp(7,2))
-      Dbas(8,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(8,1) - Djac(2) * Dhelp(8,2))
+      Dbas(5,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(5,1) - Djac(2) * Dhelp(5,2))*d1
+      Dbas(6,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(6,1) - Djac(2) * Dhelp(6,2))*d2
+      Dbas(7,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(7,1) - Djac(2) * Dhelp(7,2))*d3
+      Dbas(8,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(8,1) - Djac(2) * Dhelp(8,2))*d4
       Dbas(9,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(9,1) - Djac(2) * Dhelp(9,2))
 !    endif
     
@@ -8765,10 +8791,10 @@ CONTAINS
       Dbas(2,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(2,1) - Djac(1) * Dhelp(2,2))
       Dbas(3,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(3,1) - Djac(1) * Dhelp(3,2))
       Dbas(4,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(4,1) - Djac(1) * Dhelp(4,2))
-      Dbas(5,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(5,1) - Djac(1) * Dhelp(5,2))
-      Dbas(6,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(6,1) - Djac(1) * Dhelp(6,2))
-      Dbas(7,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(7,1) - Djac(1) * Dhelp(7,2))
-      Dbas(8,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(8,1) - Djac(1) * Dhelp(8,2))
+      Dbas(5,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(5,1) - Djac(1) * Dhelp(5,2))*d1
+      Dbas(6,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(6,1) - Djac(1) * Dhelp(6,2))*d2
+      Dbas(7,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(7,1) - Djac(1) * Dhelp(7,2))*d3
+      Dbas(8,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(8,1) - Djac(1) * Dhelp(8,2))*d4
       Dbas(9,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(9,1) - Djac(1) * Dhelp(9,2))
 !    endif
 !  endif
