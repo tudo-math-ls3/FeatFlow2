@@ -341,6 +341,9 @@ MODULE element
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
   INTEGER(I32), PARAMETER :: EL_Q1T  = EL_2D + 30
+
+  ! General rotated biquadratic $\tilde Q2$ element, all variants.
+  INTEGER(I32), PARAMETER :: EL_Q2T  = EL_2D + 35
   
   ! Quadrilateral $Q_1$ element with one hanging node. In the property
   ! bitfield of the element identifier, the local number of the edge where there
@@ -381,7 +384,7 @@ MODULE element
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! non-parametric, integral mean value based
   INTEGER(I32), PARAMETER :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
-  
+
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
@@ -413,6 +416,9 @@ MODULE element
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   INTEGER(I32), PARAMETER :: EL_EM31 = EL_Q1T + EL_NONPARAMETRIC
 
+  ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~.
+  INTEGER(I32), PARAMETER :: EL_E035 = EL_Q2T
+  
   ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
@@ -539,6 +545,9 @@ CONTAINS
   CASE (EL_Q1T)
     ! local DOF's for Ex30
     elem_igetNDofLoc = 4
+  CASE (EL_Q2T)
+    ! local DOF's for Ex35
+    elem_igetNDofLoc = 8
   
   ! -= 3D element types =-
   CASE (EL_P0_3D, EL_Q0_3D)
@@ -657,6 +666,9 @@ CONTAINS
   CASE (EL_Q1T)
     ! local DOF's for Ex30
     ndofAtEdges    = 4
+  CASE (EL_Q2T)
+    ! local DOF's for Ex35
+    ndofAtEdges    = 8
   
   ! -= 3D element types =-
   CASE (EL_P0_3D, EL_Q0_3D)
@@ -756,7 +768,7 @@ CONTAINS
   CASE (EL_P0,EL_P1,EL_P2,EL_P3,EL_P1T)
     ! Triangular elements work in barycentric coordinates
     elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T,EL_Q2T)
     ! These work on the reference quadrilateral
     elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
   CASE (EL_Q1T+EL_NONPARAMETRIC)
@@ -813,7 +825,7 @@ CONTAINS
     ! Linear triangular transformation, 2D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
     
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T,EL_Q2T)
     ! Bilinear quadrilateral transformation, 2D.
     elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
   
@@ -929,6 +941,9 @@ CONTAINS
   CASE (EL_Q1T)
     ! Function + 1st derivative
     elem_getMaxDerivative = 3
+  CASE (EL_Q2T)
+    ! Function + 1st derivative
+    elem_getMaxDerivative = 3
   CASE (EL_P0_3D, EL_Q0_3D)
     ! Function
     elem_getMaxDerivative = 1
@@ -1035,6 +1050,7 @@ CONTAINS
     CALL elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_S31_1D)
     CALL elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+  ! 2D elements
   CASE (EL_P0)
     CALL elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_P1)
@@ -1059,6 +1075,9 @@ CONTAINS
     CALL elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_E031)
     CALL elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+  CASE (EL_E035)
+    CALL elem_E035 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+  ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_P1_3D)
@@ -8574,6 +8593,157 @@ CONTAINS
   END IF
     
   END SUBROUTINE 
+
+!**************************************************************************
+! Element subroutines for parametric Q2~ element, midpoint value based.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+!**************************************************************************
+ 
+!<subroutine>  
+
+  PURE SUBROUTINE elem_E035 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                             Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_Q2T.
+  INTEGER(I32), INTENT(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(1,2)
+  !  Djac(4) = J(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), INTENT(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  REAL(DP), DIMENSION(2), INTENT(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  !auxiliary vector containing the first derivatives on the reference element
+  REAL(DP), DIMENSION(4,NDIM2D) :: Dhelp
+  REAL(DP) :: dx,dy
+
+  REAL(DP) :: dxj !auxiliary variable
+  
+  ! The Q1 element is specified by four polynomials on the reference element.
+  ! These four polynomials are:
+  !
+  !  p_1(x,y) = -1/4 - 3/4*y + 3/4*y^2 + 3/4*y*x^2
+  !  p_2(x,y) = -1/4 + 3/4*x + 3/4*x^2 - 3/4*x*y^2
+  !  p_3(x,y) = ...
+  !  p_4(x,y) = 
+  !  p_5(x,y) = 
+  !  p_6(x,y) = 
+  !  p_7(x,y) = 
+  !  p_8(x,y) = 
+  !
+  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
+  ! for X1,X2,X3,X4 the four midpoints of the reference element [-1,1]x[-1,1].
+  
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  dx = Dpoint(1)
+  dy = Dpoint(2)
+    
+  ! Remark: The Q1~-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  ! If function values are desired, calculate them.
+!  if (el_bder(DER_FUNC)) then
+    Dbas(1,DER_FUNC) = 0.75_DP*dy*(dy + dx**2 - 1.0_DP) - 0.25_DP
+    Dbas(2,DER_FUNC) = 0.75_DP*dx*(dx - dy**2 + 1.0_DP) - 0.25_DP
+    Dbas(3,DER_FUNC) = 0.75_DP*dy*(dy - dx**2 + 1.0_DP) - 0.25_DP
+    Dbas(4,DER_FUNC) = 
+    Dbas(5,DER_FUNC) = 
+    Dbas(6,DER_FUNC) = 
+    Dbas(7,DER_FUNC) = 
+    Dbas(8,DER_FUNC) = 
+    
+!  endif
+  
+  ! If x-or y-derivatives are desired, calculate them.
+  ! The values of the derivatives are calculated by taking the
+  ! derivative of the polynomials and multiplying them with the
+  ! inverse of the transformation matrix (in each point) as
+  ! stated above.
+!  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+    dxj = 0.5E0_DP / ddetj
+    
+    ! x- and y-derivatives on reference element
+    Dhelp(1,1) = -dx
+    Dhelp(2,1) =  dx+1.0_DP
+    Dhelp(3,1) = -dx
+    Dhelp(4,1) =  dx-1.0_DP
+    Dhelp(1,2) =  dy-1.0_DP
+    Dhelp(2,2) = -dy
+    Dhelp(3,2) =  dy+1.0_DP
+    Dhelp(4,2) = -dy
+      
+    ! x-derivatives on current element
+!    if (Bder(DER_DERIV_X)) then
+      Dbas(1,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(1,1) - Djac(2) * Dhelp(1,2))
+      Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
+      Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(3,1) - Djac(2) * Dhelp(3,2))
+      Dbas(4,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(4,1) - Djac(2) * Dhelp(4,2))
+!    endif
+    
+    ! y-derivatives on current element
+!    if (Bder(DER_DERIV_Y)) then
+      Dbas(1,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(1,1) - Djac(1) * Dhelp(1,2))
+      Dbas(2,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(2,1) - Djac(1) * Dhelp(2,2))
+      Dbas(3,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(3,1) - Djac(1) * Dhelp(3,2))
+      Dbas(4,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(4,1) - Djac(1) * Dhelp(4,2))
+!    endif
+!  endif
+    
+  END SUBROUTINE 
+
 
 !**************************************************************************
 ! Element subroutines for parametric P0_3D element.
