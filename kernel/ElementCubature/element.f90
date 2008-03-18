@@ -8664,10 +8664,18 @@ CONTAINS
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(4,NDIM2D) :: Dhelp
+  REAL(DP), DIMENSION(8,NDIM2D) :: Dhelp
   REAL(DP) :: dx,dy
 
   REAL(DP) :: dxj !auxiliary variable
+
+  REAL(DP), PARAMETER :: Q1 = 2.25_DP
+  REAL(DP), PARAMETER :: Q2 = 1.875_DP
+  REAL(DP), PARAMETER :: Q3 = 0.75_DP
+  REAL(DP), PARAMETER :: Q4 = 0.25_DP
+  REAL(DP), PARAMETER :: Q5 = 1.5_DP
+  REAL(DP), PARAMETER :: Q6 = 5.625_DP
+  REAL(DP), PARAMETER :: Q7 = 4.5_DP
   
   ! The Q1 element is specified by four polynomials on the reference element.
   ! These four polynomials are:
@@ -8696,14 +8704,14 @@ CONTAINS
       
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC)) then
-    Dbas(1,DER_FUNC) = 0.75_DP*dy*(dy + dx**2 - 1.0_DP) - 0.25_DP
-    Dbas(2,DER_FUNC) = 0.75_DP*dx*(dx - dy**2 + 1.0_DP) - 0.25_DP
-    Dbas(3,DER_FUNC) = 0.75_DP*dy*(dy - dx**2 + 1.0_DP) - 0.25_DP
-    Dbas(4,DER_FUNC) = 
-    Dbas(5,DER_FUNC) = 
-    Dbas(6,DER_FUNC) = 
-    Dbas(7,DER_FUNC) = 
-    Dbas(8,DER_FUNC) = 
+    Dbas(1,DER_FUNC) = -Q4 - Q3*dy + Q3*dy**2 + Q3*dx**2*dy
+    Dbas(2,DER_FUNC) = -Q4 + Q3*dx + Q3*dx**2 - Q3*dx*dy**2
+    Dbas(3,DER_FUNC) = -Q4 + Q3*dy + Q3*dy**2 - Q3*dx**2*dy
+    Dbas(4,DER_FUNC) = -Q4 - Q3*dx + Q3*dx**2 + Q3*dx*dy**2
+    Dbas(5,DER_FUNC) = -Q3*dx - Q3*dx*dy + Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3
+    Dbas(6,DER_FUNC) = -Q3*dy + Q3*dx*dy + Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
+    Dbas(7,DER_FUNC) =  Q3*dx - Q3*dx*dy - Q1*dx*dy**2 + Q2*dx**3*dy - Q2*dx*dy**3
+    Dbas(8,DER_FUNC) =  Q3*dy + Q3*dx*dy - Q1*dx**2*dy + Q2*dx**3*dy - Q2*dx*dy**3
     
 !  endif
   
@@ -8713,17 +8721,25 @@ CONTAINS
   ! inverse of the transformation matrix (in each point) as
   ! stated above.
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
-    dxj = 0.5E0_DP / ddetj
+    dxj = 0.5_DP / ddetj
     
     ! x- and y-derivatives on reference element
-    Dhelp(1,1) = -dx
-    Dhelp(2,1) =  dx+1.0_DP
-    Dhelp(3,1) = -dx
-    Dhelp(4,1) =  dx-1.0_DP
-    Dhelp(1,2) =  dy-1.0_DP
-    Dhelp(2,2) = -dy
-    Dhelp(3,2) =  dy+1.0_DP
-    Dhelp(4,2) = -dy
+    Dhelp(1,1) =  Q5*dx*dy
+    Dhelp(2,1) =  Q3 + Q5*dx - Q3*dy**2
+    Dhelp(3,1) = -Q5*dx*dy
+    Dhelp(4,1) = -Q3 + Q5*dx + Q3*dy**2
+    Dhelp(5,1) = -Q3 - Q3*dy + Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
+    Dhelp(6,1) =  Q3*dy + Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
+    Dhelp(7,1) =  Q3 - Q3*dy - Q1*dy**2 + Q6*dx**2*dy - Q2*dy**3
+    Dhelp(8,1) =  Q3*dy - Q7*dx*dy + Q6*dx**2*dy - Q2*dy**3
+    Dhelp(1,2) = -Q3 + Q5*dy + Q3*dx**2
+    Dhelp(2,2) = -Q5*dx*dy
+    Dhelp(3,2) =  Q3 + Q5*dy - Q3*dx**2
+    Dhelp(4,2) =  Q5*dx*dy
+    Dhelp(5,2) = -Q3*dx + Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
+    Dhelp(6,2) = -Q3 + Q3*dx + Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
+    Dhelp(7,2) = -Q3*dx - Q7*dx*dy + Q2*dx**3 - Q6*dy**2*dx
+    Dhelp(8,2) =  Q3 + Q3*dx - Q1*dx**2 + Q2*dx**3 - Q6*dy**2*dx
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
