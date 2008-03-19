@@ -1707,29 +1707,12 @@ CONTAINS
           !
           ! Edge inside? 
           IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-            ! If parameter values are available, get the parameter value.
-            IF (ASSOCIATED(p_DedgeParameterValue)) &
-              dpar = p_DedgeParameterValue(I)
-
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                    iedge,dpar, Dvalues,rcollection)
-                                      
-            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
-              ! Save the computed function value
-              DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
-            END IF
             
-            ! A value of SYS_INFINITY indicates a do-nothing node inside of
-            ! Dirichlet boundary.
-            IF (Dvalues(1) .NE. SYS_INFINITY) THEN
-              ! Set the DOF number < 0 to indicate that it is Dirichlet
-              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
-            END IF
-            
-            ! That was the integral mean value. On the other hand, we now need
-            ! to set up for an edge E and x:[-1,1]->E the integral mean value:
+            ! We neet to set up two values for each edge E: On one hand the
+            ! integral mean value as for Q1T (with x:[-1,1]->E):
+            !             1/|E| int_[-1,1] v(x(t)) dt
+            ! which is called '0th moment', on the other hand the '1st moment',
+            ! which is the integral mean value:
             !             1/|E| int_[-1,1] v(x(t)) * t dt
             ! We do this by a 2-point gauss formula by asking the callback routine
             ! for function values in the Gauss points.
@@ -1788,30 +1771,44 @@ CONTAINS
               
               IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
 
-                ! Convert the parameter values of the corners of the edge
-                ! into length parametrisation. We need this to calculate the length
-                ! of the edge.
-                dpar1 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
-                    rboundaryRegion%iboundCompIdx, dpar1, &
-                    BDR_PAR_01, BDR_PAR_LENGTH)
+!                ! Convert the parameter values of the corners of the edge
+!                ! into length parametrisation. We need this to calculate the length
+!                ! of the edge.
+!                dpar1 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+!                    rboundaryRegion%iboundCompIdx, dpar1, &
+!                    BDR_PAR_01, BDR_PAR_LENGTH)
+!
+!                dpar2 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+!                    rboundaryRegion%iboundCompIdx, dpar2, &
+!                    BDR_PAR_01, BDR_PAR_LENGTH)
+!                    
+!                IF (dpar2 .EQ. 0.0_DP) THEN
+!                  ! Wrap around
+!                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
+!                    rboundaryRegion%iboundCompIdx,BDR_PAR_LENGTH)
+!                END IF
 
-                dpar2 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
-                    rboundaryRegion%iboundCompIdx, dpar2, &
-                    BDR_PAR_01, BDR_PAR_LENGTH)
-                    
-                IF (dpar2 .EQ. 0.0_DP) THEN
-                  ! Wrap around
-                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
-                    rboundaryRegion%iboundCompIdx,BDR_PAR_LENGTH)
-                END IF
+                ! Compute the integral mean value of the 0th moment -- that
+                ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
+                ! This is the same value as for Q1T, but we do the integration
+                ! manually by using Gauss.
+                dval = ( dval1 + dval2 ) * 0.5_DP
                 
-                ! Calculate the integral mean value
-                dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) / (dpar2-dpar1)
+                ! Save the computed value
+                DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = dval
+                
+                ! Calculate the integral mean value of the 1st moment:
+                !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
+                dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) * 0.5_DP
               
                 ! Save the computed function value
                 DdofValue(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = dval 
               END IF
               
+              ! Set the DOF number < 0 to indicate that it is Dirichlet
+              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+
               ! Set the DOF number < 0 to indicate that it is Dirichlet
               Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = &
                   -ABS(Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1))
