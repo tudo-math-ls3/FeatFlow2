@@ -1198,11 +1198,12 @@ CONTAINS
     INTEGER(I32), DIMENSION(:,:), POINTER       :: p_IverticesAtEdge,p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER             :: p_IdirichletValues
     INTEGER(I32), DIMENSION(:), POINTER         :: p_IdirichletDOFs
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_IboundaryCpIdx
     
     REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
     
     REAL(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2
-    INTEGER :: nve,nnve
+    INTEGER :: nve,nnve,nvbd
     
     INTEGER ::iidx
     TYPE(t_discreteBCEntry), POINTER :: p_rdiscreteBCentry
@@ -1230,6 +1231,7 @@ CONTAINS
     CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
     CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
     CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
 
     p_RelementDistribution => p_rspatialDiscretisation%RelementDistribution
     
@@ -1727,8 +1729,8 @@ CONTAINS
             END IF
             
             ! That was the integral mean value. On the other hand, we now need
-            ! to set up
-            !             int_[-1,1] v(x(t)) * t dt
+            ! to set up for an edge E and x:[-1,1]->E the integral mean value:
+            !             1/|E| int_[-1,1] v(x(t)) * t dt
             ! We do this by a 2-point gauss formula by asking the callback routine
             ! for function values in the Gauss points.
             !
@@ -1738,34 +1740,45 @@ CONTAINS
             ! 1st Gauss point
             IF (ASSOCIATED(p_DedgeParameterValue)) THEN
 
-              ! TO BE IMPLEMENTED!!!
-              
-              ! dpar receives the parameter value of the first Gauss point.
-              
-              ! WARNING: INCOMPLETE!!!
-              dpar = p_DedgeParameterValue(I)
+              ! Number of vertices on the current boundary component?
+              nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
+                     p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+                     
+              ! Get the start- and end-parameter value of the vertices on the edge.
+              dpar1 = p_DvertexParameterValue(I)
+              IF (I+1 .LT. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) THEN
+                dpar2 = p_DvertexParameterValue(I+1)
+              ELSE
+                dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
+                    rboundaryRegion%iboundCompIdx)
+              END IF
+
+              ! Calculate the position of the first Gauss point on that edge.
+              CALL mprim_linearRescale(Q2G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+            ELSE
+              ! Dummy; hopefully this is never used...
+              dpar = Q2G1
             END IF
             
             ! Get the value in the Gauss point
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                     iedge,dpar, Dvalues,rcollection)
             dval1 = Dvalues(1)
             
             ! 2nd Gauss point
             IF (ASSOCIATED(p_DedgeParameterValue)) THEN
 
-              ! TO BE IMPLEMENTED!!!
-              
-              ! dpar receives the parameter value of the first Gauss point.
-              
-              ! WARNING: INCOMPLETE!!!
-              dpar = p_DedgeParameterValue(I)
+              ! Calculate the position of the 2nd Gauss point on that edge.
+              CALL mprim_linearRescale(Q2G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+            ELSE
+              ! Dummy; hopefully this is never used...
+              dpar = Q2G2
             END IF
             
             ! Get the value in the Gauss point
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                     iedge,dpar, Dvalues,rcollection)
             dval2 = Dvalues(1)
             
@@ -1773,20 +1786,36 @@ CONTAINS
             ! Dirichlet boundary.
             IF ((dval1 .NE. SYS_INFINITY) .AND. (dval2 .NE. SYS_INFINITY)) THEN
               
-              ! Calculate the integral
-              dval = (dval1*Q2G1) + (dval2*Q2G2)
-              
               IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+
+                ! Convert the parameter values of the corners of the edge
+                ! into length parametrisation. We need this to calculate the length
+                ! of the edge.
+                dpar1 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+                    rboundaryRegion%iboundCompIdx, dpar1, &
+                    BDR_PAR_01, BDR_PAR_LENGTH)
+
+                dpar2 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+                    rboundaryRegion%iboundCompIdx, dpar2, &
+                    BDR_PAR_01, BDR_PAR_LENGTH)
+                    
+                IF (dpar2 .EQ. 0.0_DP) THEN
+                  ! Wrap around
+                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
+                    rboundaryRegion%iboundCompIdx,BDR_PAR_LENGTH)
+                END IF
+                
+                ! Calculate the integral mean value
+                dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) / (dpar2-dpar1)
+              
                 ! Save the computed function value
-                DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = dval 
+                DdofValue(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = dval 
               END IF
               
               ! Set the DOF number < 0 to indicate that it is Dirichlet
-              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+              Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1))
             END IF
-            
-            
             
           END IF
 
