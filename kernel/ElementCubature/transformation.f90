@@ -3077,38 +3077,45 @@ CONTAINS
 !</output>
 
     ! local variables
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielneighbour
-    INTEGER(PREC_EDGEIDX) :: iedge
-    INTEGER :: imt
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_ItwistIndex
+    INTEGER :: iel,iidx
 
-    ! Dimension?
-    SELECT CASE (rtriangulation%ndim)
-    CASE (NDIM1D)
-      ! Currently no implementation, since not used!
-      ItwistIndex(:,:) = 0
-    CASE (NDIM2D)
+    ! Copy the twist index from the triangulation
+    CALL storage_getbase_int2d(rtriangulation%h_ItwistIndex,p_ItwistIndex)
     
-      CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
-          p_IneighboursAtElement)
-          
-      ! Chech the edge on each each element.
-      ! If the first vertex has the higher number, return a -1 for that edge.
-      DO iel=1,SIZE(IelIdx)
-        DO imt=1,UBOUND(p_IneighboursAtElement,1)
-          ielneighbour = p_IneighboursAtElement(imt,IelIdx(iel))
-          IF ((IelIdx(iel) .LT. ielneighbour) .OR. (ielneighbour .EQ. 0)) THEN
-            ItwistIndex(imt,iel) = 1
-          ELSE
-            ItwistIndex(imt,iel) = -1
-          END IF
-        END DO
+    DO iel=1,SIZE(IelIdx)
+      DO iidx=1,UBOUND(p_ItwistIndex,1)
+        ItwistIndex(iidx,iel) = p_ItwistIndex(iidx,IelIdx(iel))
       END DO
-    
-    CASE (NDIM3D)
-      ! Currently no implementation, since not used!
-      ItwistIndex(:,:) = 0
-    END SELECT
+    END DO
+
+!    ! Dimension?
+!    SELECT CASE (rtriangulation%ndim)
+!    CASE (NDIM1D)
+!      ! Currently no implementation, since not used!
+!      ItwistIndex(:,:) = 0
+!    CASE (NDIM2D)
+!    
+!      CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+!          p_IneighboursAtElement)
+!          
+!      ! Chech the edge on each each element.
+!      ! If the first vertex has the higher number, return a -1 for that edge.
+!      DO iel=1,SIZE(IelIdx)
+!        DO imt=1,UBOUND(p_IneighboursAtElement,1)
+!          ielneighbour = p_IneighboursAtElement(imt,IelIdx(iel))
+!          IF ((IelIdx(iel) .LT. ielneighbour) .OR. (ielneighbour .EQ. 0)) THEN
+!            ItwistIndex(imt,iel) = 1
+!          ELSE
+!            ItwistIndex(imt,iel) = -1
+!          END IF
+!        END DO
+!      END DO
+!    
+!    CASE (NDIM3D)
+!      ! Currently no implementation, since not used!
+!      ItwistIndex(:,:) = 0
+!    END SELECT
 
   END SUBROUTINE 
 
@@ -3157,38 +3164,47 @@ CONTAINS
 !</output>
 
     ! local variables
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_EDGEIDX) :: iedge
-    INTEGER :: imt
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_ItwistIndex
+    INTEGER :: iidx
 
-    ! Dimension?
-    SELECT CASE (rtriangulation%ndim)
-    CASE (NDIM1D)
-      ! Currently no implementation, since not used!
-      ItwistIndex(:) = 0
-    CASE (NDIM2D)
+    ! Copy the twist index from the triangulation
+    CALL storage_getbase_int2d(rtriangulation%h_ItwistIndex,p_ItwistIndex)
     
-      CALL storage_getbase_int2d (rtriangulation%h_IverticesAtEdge,&
-          p_IverticesAtEdge)
-      CALL storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
-          p_IedgesAtElement)
-          
-      ! Chech the edge on each each element.
-      ! If the first vertex has the higher number, return a -1 for that edge.
-      DO imt=1,UBOUND(p_IedgesAtElement,1)
-        iedge = p_IedgesAtElement(imt,iel)
-        IF (p_IverticesAtEdge(1,iedge) .LT. p_IverticesAtEdge(2,iedge)) THEN
-          ItwistIndex(imt) = 1
-        ELSE
-          ItwistIndex(imt) = -1
-        END IF
-      END DO
-    
-    CASE (NDIM3D)
-      ! Currently no implementation, since not used!
-      ItwistIndex(:) = 0
-    END SELECT
+    DO iidx=1,UBOUND(p_ItwistIndex,1)
+      ItwistIndex(iidx) = p_ItwistIndex(iidx,iel)
+    END DO
+
+
+!    ! local variables
+!    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+!    INTEGER(PREC_ELEMENTIDX) :: ielneighbour
+!    INTEGER :: imt
+!
+!    ! Dimension?
+!    SELECT CASE (rtriangulation%ndim)
+!    CASE (NDIM1D)
+!      ! Currently no implementation, since not used!
+!      ItwistIndex(:) = 0
+!    CASE (NDIM2D)
+!    
+!      CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+!          p_IneighboursAtElement)
+!          
+!      ! Chech the edge on each each element.
+!      ! If the first vertex has the higher number, return a -1 for that edge.
+!      DO imt=1,UBOUND(p_IneighboursAtElement,1)
+!        ielneighbour = p_IneighboursAtElement(imt,iel)
+!        IF ((iel .LT. ielneighbour) .OR. (ielneighbour .EQ. 0)) THEN
+!          ItwistIndex(imt) = 1
+!        ELSE
+!          ItwistIndex(imt) = -1
+!        END IF
+!      END DO
+!
+!    CASE (NDIM3D)
+!      ! Currently no implementation, since not used!
+!      ItwistIndex(:) = 0
+!    END SELECT
 
   END SUBROUTINE 
 

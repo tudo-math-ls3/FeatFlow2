@@ -132,7 +132,7 @@ MODULE sortstrategy
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
     
     ! Pointer to the refinement-patch-index array of the level
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIdx
 
     ! Whether the corresponding discretisation on that level is uniform or not.
     LOGICAL :: bisUniform
@@ -1518,7 +1518,7 @@ CONTAINS
 
       ! local variables      
       INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
-      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIndex
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIdx
       TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtria
       INTEGER(PREC_DOFIDX) :: NEQ
       INTEGER :: hmarker
@@ -1542,8 +1542,8 @@ CONTAINS
           p_rtria => Rdiscretisation(ilev)%p_rtriangulation
           CALL storage_getbase_int (p_rtria%h_IrefinementPatch,&
               Rhierarchy(ilev)%p_IrefinementPatch)
-          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIndex,&
-              Rhierarchy(ilev)%p_IrefinementPatchIndex)
+          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
+              Rhierarchy(ilev)%p_IrefinementPatchIdx)
         END IF
             
         ! Information about the discretisation: Arrays that allow
@@ -1559,7 +1559,7 @@ CONTAINS
           ! A different element type for every element.
           ! Get a pointer to the array that defines the element distribution
           ! of the element. This allows us later to determine the element type.
-          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIndex,&
+          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
               Rhierarchy(ilev)%p_IelementDistr)
         END IF
       END DO
@@ -1608,9 +1608,9 @@ CONTAINS
             ! Set the start index to the first element in that patch
             ! of the finer mesh. Remember the maximum index 'where the patch ends).
             IpatchIndex(ilev) = &
-              Rhierarchy(ilev)%p_IrefinementPatchIndex(Ielement(ilev-1))
+              Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1))
             ImaxIndex(ilev) = &
-              Rhierarchy(ilev)%p_IrefinementPatchIndex(Ielement(ilev-1)+1)-1
+              Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1)+1)-1
               
             ! Get the element number of the first element in the patch.
             Ielement(ilev) = &
