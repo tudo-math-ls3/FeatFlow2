@@ -1221,6 +1221,14 @@ CONTAINS
     casmComplexity = BCASM_DISCFORALL
     IF (PRESENT(ccomplexity)) casmComplexity = ccomplexity
     
+    IF ((iequation .LT. 1) .OR. &
+        (iequation .GT. SIZE(rblockDiscretisation%RspatialDiscretisation))) THEN
+      CALL output_line (&
+          'Specified equation number is out of range:'//TRIM(sys_siL(iequation,10)), &
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConRealBd')
+      CALL sys_halt()
+    END IF
+    
     ! Which component is to be discretised?
     p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(iequation)
 
@@ -1633,7 +1641,7 @@ CONTAINS
             END IF
           END IF
 
-        CASE (EL_Q1T)
+        CASE (EL_Q1T,EL_Q1TB)
         
           ! The Q1T-element has different variants. Check which variant we have
           ! and choose the right way to calculate boundary values.
@@ -1698,7 +1706,7 @@ CONTAINS
 
           END IF
 
-        CASE (EL_Q2T)
+        CASE (EL_Q2T,EL_Q2TB)
         
           ! The Q2T-element is only integral mean value based.
           ! On the one hand, we have integral mean values over the edges.
