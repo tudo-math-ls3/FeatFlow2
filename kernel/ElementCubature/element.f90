@@ -7601,18 +7601,21 @@ CONTAINS
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
     dxj = 0.125E0_DP / ddetj
     
+    ! Remember that we defined dxj = (1/8) / det instead of 1/det, therefore
+    ! we have to multiply the derivatives of the fifth basis function by 8 !
+
     ! x- and y-derivatives on reference element
     Dhelp(1,1) = -6.0_DP*dx
     Dhelp(2,1) =  6.0_DP*dx+4.0_DP
     Dhelp(3,1) = -6.0_DP*dx
     Dhelp(4,1) =  6.0_DP*dx-4.0_DP
-    Dhelp(5,1) = 9.0_DP * dy
+    Dhelp(5,1) = 72.0_DP*dy
     
     Dhelp(1,2) =  6.0_DP*dy-4.0_DP
     Dhelp(2,2) = -6.0_DP*dy
     Dhelp(3,2) =  6.0_DP*dy+4.0_DP
     Dhelp(4,2) = -6.0_DP*dy
-    Dhelp(5,2) = 9.0_DP * dx
+    Dhelp(5,2) = 72.0_DP*dx
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
