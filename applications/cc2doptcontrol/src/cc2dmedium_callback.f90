@@ -863,6 +863,7 @@ CONTAINS
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(I32), DIMENSION(1,1) :: ItwistIndex
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -943,7 +944,7 @@ CONTAINS
         CALL fevl_evaluate_sim(p_rvector%RvectorBlock(1),rdomainIntSubset%p_Dcoords,&
             rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
             ieltype, IdofsTest, npointsPerElement,  nelements, &
-            Dpoints, DER_FUNC, Dvalues)
+            Dpoints, DER_FUNC, Dvalues, ItwistIndex)
         
       CASE (3:4)
         ! Target flow is specified by a block vector.
@@ -1078,6 +1079,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), ALLOCATABLE :: DvaluesAct
     REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DpointsAct
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsAct
+    INTEGER(I32), DIMENSION(1,1) :: ItwistIndex
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -1153,7 +1155,7 @@ CONTAINS
         CALL fevl_evaluate_sim(p_rvector%RvectorBlock(2),rdomainIntSubset%p_Dcoords,&
             rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
                   ieltype, IdofsTest, npointsPerElement,  nelements, &
-                  Dpoints, DER_FUNC, Dvalues)
+                  Dpoints, DER_FUNC, Dvalues, ItwistIndex)
         
       CASE (3:4)
         ! Target flow is specified by a block vector.

@@ -377,6 +377,7 @@ CONTAINS
     rtriangulation%NVT = (ncellsX+1)*2
     rtriangulation%NMT = 0
     rtriangulation%NNVE = 4
+    rtriangulation%NNEE = 4
     rtriangulation%NBCT = 1
     rtriangulation%InelOfType(:) = 0
     rtriangulation%InelOfType(TRIA_NVEQUAD2D) = rtriangulation%NEL

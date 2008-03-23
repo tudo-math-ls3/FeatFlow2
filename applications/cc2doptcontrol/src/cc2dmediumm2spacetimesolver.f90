@@ -1932,7 +1932,7 @@ CONTAINS
         ! Dimultaneously filter the defect for bondary conditions.
         CALL sptivec_copyVector (rd,p_rdef)
         CALL cc_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-            p_rx,p_rdef, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dresnorm,.TRUE.)
+            p_rx,p_rdef, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dresnorm,.FALSE.)
         
         ! Filter the defect for boundary conditions in space and time.
         !
@@ -3432,6 +3432,7 @@ CONTAINS
 !          rsolverNode%domega,0,1)
 !      CALL sptivec_copyVector (p_rx,rd)
 !      CALL sptivec_scaleVector (rd,0.7_DP)
+
 !      CALL lsysbl_releaseVector (rtempVectorRHS)
 !      CALL lsysbl_releaseVector (rtempVectorSol(3))
 !      CALL lsysbl_releaseVector (rtempVectorSol(2))
