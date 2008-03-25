@@ -2282,7 +2282,7 @@ CONTAINS
               CALL elem_generic_mult(p_elementDistribution%itrialElement, &
                   p_Dcoords(:,:,idx), p_Djac(:,:,idx), p_Ddetj(:,idx), &
                   BderDest, Dpolynomials(:,:,:,idx), nlocalDOFsDest, &
-                  p_DcubPtsTrial(:,:,idx),NULL())
+                  p_DcubPtsTrial(:,:,idx))
             END DO
           END DO
           ilastElementDistr = 0
