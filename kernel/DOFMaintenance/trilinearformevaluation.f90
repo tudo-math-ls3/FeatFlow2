@@ -705,6 +705,7 @@ CONTAINS
     ELSE
       p_IdofsFunc => IdofsFunc
       p_DbasFunc  => DbasFunc
+      BderFunc = BderFuncTempl
     END IF
 
     ! p_IelementList must point to our set of elements in the discretisation
