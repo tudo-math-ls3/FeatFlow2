@@ -845,7 +845,7 @@ CONTAINS
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
+        CALL fcoeff_buildTrilMatrixSc_sim (p_rdiscretisation,rform, &
                   IELmax-IELset+1_I32,ncubp,&
                   rintSubset%revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
