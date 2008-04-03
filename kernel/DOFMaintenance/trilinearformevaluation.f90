@@ -39,6 +39,8 @@ MODULE trilinearformevaluation
   USE cubature
   USE collection
   USE domainintegration
+  USE element
+  USE elementpreprocessing
   
   IMPLICIT NONE
 
