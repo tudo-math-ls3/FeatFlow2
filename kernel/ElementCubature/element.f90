@@ -71,6 +71,10 @@
 !# 11.) elem_getTwistIndexSize
 !#     -> Calculate the size of the twist index array on one element.\\
 !#
+!# 12.) elem_getEvaluationTag
+!#     -> Returns for an element it's 'evaluation tag'. This is a bitfield
+!#        which encodes what information an element needs if one wants
+!#        to evaluate it in a point.
 !#
 !#  FAQ - Some explainations
 !# --------------------------
@@ -556,7 +560,127 @@ MODULE element
 
 !</constantblock>
 
+!<constantblock description="Element evaluation tags. Defines the basis information that is \
+!  necessary to evaluate an element. All tags define bits of a bitfield and can be \
+!  combined by an OR command.">
+
+  ! Calculate the coordinates on the reference element of the points where to evaluate.
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_REFCOORDS    = 2**0
+
+  ! Calculate the real coordinates of the points where to evaluate.
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_REALCOORDS   = 2**1
+  
+  ! Calculate the Jacobian matrix of the points where to evaluate
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_JAC          = 2**2
+
+  ! Calculate the Jacobian determinant in the points where to evaluate
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_DETJ         = 2**3
+  
+  ! Calculate the twist indices for edges
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_TWISTIDXEDGE = 2**4
+
+  ! Calculate the twist indices for faces
+  INTEGER(I32), PARAMETER :: EL_EVLTAG_TWISTIDXFACE = 2**5
+  
+!</constantblock>
+
 !</constants>
+
+!<types>
+
+!<typeblock>
+
+  ! This structure collects information that is necessary by an element
+  ! to be evaluated on a set of points on a set of element cells.
+  TYPE t_evalElementSet
+  
+    ! Number of points on every element where to evalate the basis functions.
+    INTEGER :: npointsPerElement = 0
+    
+    ! Number of elements, this element set consists of
+    INTEGER  :: nelements = 0
+    
+    ! Array with coordinates of the corners that form the real element.
+    ! DIMENSION(#space dimensions,NVE,nelements)
+    !  Dcoords(1,.,.)=x-coordinates,
+    !  Dcoords(2,.,.)=y-coordinates.
+    !  Dcoords(3,.,.)=z-coordinates (only in 3D).
+    ! furthermore:
+    !  Dcoords(:,i,.) = Coordinates of vertex i
+    ! furthermore:
+    !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords => NULL()
+
+    ! Values of the Jacobian matrix that defines the mapping between the
+    ! reference element and the real elements. For every point i (e.g. in 2D):
+    !  Djac(1,i,.) = J_i(1,1,.)
+    !  Djac(2,i,.) = J_i(2,1,.)
+    !  Djac(3,i,.) = J_i(1,2,.)
+    !  Djac(4,i,.) = J_i(2,2,.)
+    ! Remark: Only used for calculating derivatives; can be set to 0.0
+    ! when derivatives are not used.
+    !  Djac(:,:,j) refers to the determinants of the points of element j.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac => NULL()
+    
+    ! Determinant of the mapping from the reference element to the real
+    ! elements for every of the npointsPerElement points on all the elements.
+    !  Ddetj(i,.) = Determinant of point i
+    !  Ddetj(:,j) = determinants of all points on element j
+    ! Remark: Only used for calculating derivatives; can be set to 1.0
+    ! when derivatives are not needed. Must not be set to 0.0!
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj => NULL()
+    
+    ! Array with coordinates of the points where to evaluate.
+    ! The coordinates are expected on the reference element.
+    ! It's assumed that:
+    !  Dpoints(1,.)=x-coordinates,
+    !  Dpoints(2,.)=y-coordinates.
+    !  Dpoints(3,.)=y-coordinates.
+    ! furthermore:
+    !  Dpoints(:,i,.) = Coordinates of point i
+    ! furthermore:
+    !  Dpoints(:,:,j) = Coordinates of all points on element j
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef => NULL()
+
+    ! Array with coordinates of the points where to evaluate.
+    ! The coordinates are expected on the real element.
+    ! It's assumed that:
+    !  Dpoints(1,.)=x-coordinates,
+    !  Dpoints(2,.)=y-coordinates.
+    !  Dpoints(3,.)=z-coordinates (only 3d).
+    ! furthermore:
+    !  Dpoints(:,i,.) = Coordinates of point i
+    ! furthermore:
+    !  Dpoints(:,:,j) = Coordinates of all points on element j
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsReal => NULL()
+    
+    ! List of twist indices for edges. For every edge on every cell, the twist
+    ! index defines the orientation of the edge. May be undefined if
+    ! the element does not need twist indices.
+    ! Array with DIMENSION(1:NVE/NVA,nelements)
+    INTEGER, DIMENSION(:,:), POINTER :: p_ItwistIndexEdge => NULL()
+
+    ! List of twist indices for faces (only 3D). For every edge on every cell, the 
+    ! twist index defines the orientation of the face. May be undefined if
+    ! the element does not need twist indices.
+    ! Array with DIMENSION(1:NVE/NVA,nelements)
+    INTEGER, DIMENSION(:,:), POINTER :: p_ItwistIndexFace => NULL()
+  
+    ! .TRUE., if the array with coordinates on the reference element
+    ! is maintained by the caller; prevents release of memory in the
+    ! cleanup routine in this case.
+    LOGICAL :: bforeignCoordsRef = .FALSE.
+    
+    ! .TRUE., if the array with coordinates on the real element
+    ! is maintained by the caller; prevents release of memory in the
+    ! cleanup routine in this case.
+    LOGICAL :: bforeignCoordsReal = .FALSE.
+  
+  END TYPE
+
+!</typeblock>
+
+!</types>
 
 CONTAINS
 
@@ -922,7 +1046,7 @@ CONTAINS
   
   CASE (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
     ! Linear line transformation, 1D
-    elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_1D
+    elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
   
   CASE (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
     ! Linear triangular transformation, 2D
@@ -1070,6 +1194,62 @@ CONTAINS
 
 !<function>  
 
+  ELEMENTAL INTEGER(I32) FUNCTION elem_getEvaluationTag(ieltype)
+
+!<description>
+  ! Returns for a given element its 'evaluation tag'. This tag is a bitfield
+  ! that defines for element ieltype which information have to be prepared
+  ! to evaluate it in a set of points.
+  !
+  ! If more that one finite element has to be evaluated in the same points,
+  ! the evaluation tags of all elements under consideration can be combined
+  ! using OR. With the resulting tag, a t_evalElementXXXX structure can be 
+  ! set up. This structure allows then to evaluate the element(s).
+!</description>
+
+!<input>    
+  ! The element type identifier.
+  INTEGER(I32), INTENT(IN) :: ieltype
+!</input>
+
+!<result>
+  ! The 'evaluation tag' of element type ieltype.
+!</result>
+
+!</function>
+
+    SELECT CASE (elem_getPrimaryElement(ieltype))
+    CASE (EL_P0_1D,EL_P0,EL_P0_3D)
+      ! No information about Jacobian necessary
+      elem_getEvaluationTag = 0
+    CASE (EL_Q2T,EL_Q2TB)
+      ! We need the twist indices. This element is 2D!
+      elem_getEvaluationTag = EL_EVLTAG_REFCOORDS + &
+        EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDXEDGE
+    CASE DEFAULT
+      ! Standard evaluation tag. Evaluate reference coordinates 
+      ! + Jac + Determinant of Jac for the transformation
+      elem_getEvaluationTag = EL_EVLTAG_REFCOORDS + &
+          EL_EVLTAG_JAC + EL_EVLTAG_DETJ
+    END SELECT
+
+    IF (elem_isNonparametric(ieltype)) THEN
+      ! Standard nonparametric element.
+      ! Calculate real coordinates (for the element)
+      elem_getEvaluationTag = &
+        IOR(elem_getEvaluationTag,EL_EVLTAG_REALCOORDS)
+    ELSE
+      ! Standard parametric element
+      elem_getEvaluationTag = &
+        IOR(elem_getEvaluationTag,EL_EVLTAG_REFCOORDS)
+    END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>  
+
   ELEMENTAL INTEGER FUNCTION elem_getTwistIndexSize(ieltype)
 
 !<description>
@@ -1091,21 +1271,92 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
-  CASE (0)
-    ! Return maximum number.
-    ! this can be 6 -- one for each face of an element.
-    elem_getTwistIndexSize = 6
-  CASE (EL_E035,EL_E037)
-    ! We need 1 twist index per edge per element, so we return
-    ! 4 for a quad element.
-    ! Defines the orientation of the edge.
-    elem_getTwistIndexSize = 4
-  CASE DEFAULT
-    ! No twist indices necessary
-    elem_getTwistIndexSize = 0
-  END SELECT
+    SELECT CASE (ieltype)
+    CASE (0)
+      ! Return maximum number.
+      ! this can be 6 -- one for each face of an element.
+      elem_getTwistIndexSize = 6
+    CASE (EL_E035,EL_E037)
+      ! We need 1 twist index per edge per element, so we return
+      ! 4 for a quad element.
+      ! Defines the orientation of the edge.
+      elem_getTwistIndexSize = 4
+    CASE DEFAULT
+      ! No twist indices necessary
+      elem_getTwistIndexSize = 0
+    END SELECT
 
+  END FUNCTION
+
+  !************************************************************************
+  
+!<function>  
+
+  ELEMENTAL LOGICAL FUNCTION elem_isNonparametric (ieltyp) RESULT (inonpar)
+
+  !<description>
+  
+  ! Determines whether an element ieltyp is parametric or nonparametric.
+  
+  !</description>
+  
+  !<result>
+  ! =true, if the element is nonparametric. 
+  ! =false, if the element is parametric.
+  !</result>
+  
+  !<input>
+  
+  ! Element type qualifier.
+  INTEGER(I32), INTENT(IN) :: ieltyp
+  
+  !</input>
+ 
+!</function>
+ 
+    inonpar = IAND(ieltyp,EL_NONPARAMETRIC) .NE. 0
+  
+  END FUNCTION
+
+  !************************************************************************
+  
+!<function>  
+
+  ELEMENTAL INTEGER(I32) FUNCTION elem_getPrimaryElement (ieltyp) RESULT (iresult)
+
+!<description>
+  ! Determines the 'primary' element type identifier. For standard elements
+  ! like $Q_1$, there is usually ieltyp=elem_getPrimaryElement(ieltyp).
+  ! But some elements like $\tilde Q_1$ have different modifications,
+  ! which are encoded in ieltyp. In this case, elem_getPrimaryElement
+  ! returns the element identifier of the element without any
+  ! modification; this can be seen as 'standard' or 'primary' element
+  ! type.
+  ! In case of $\tilde Q_1$ for example, there is
+  !    elem_getPrimaryElement(EL_E030) = elem_getPrimaryElement(EL_EM30)
+  !  = elem_getPrimaryElement(EL_E031) = elem_getPrimaryElement(EL_EM31)
+  !  = EL_Q1T,
+  ! which identifies the 'general' $\tilde Q_1$ element.
+!</description>
+  
+!<result>
+  ! The identifier of the 'standard' element, ieltyp refers to.
+!</result>
+  
+  !<input>
+  
+  ! Element type qualifier.
+   INTEGER(I32), INTENT(IN) :: ieltyp
+  
+  !</input>
+ 
+!</function>
+ 
+    ! To get the standard identifier, we just have to mask out all bits
+    ! except for bit 0..9. These 10 bits encode the standard element
+    ! identifier plus dimension.
+    iresult = IAND(ieltyp,EL_ELNRMASK)
+  
   END FUNCTION
 
 !**************************************************************************
@@ -1581,74 +1832,229 @@ CONTAINS
   
   !************************************************************************
   
-!<function>  
+!<subroutine>  
 
-  ELEMENTAL LOGICAL FUNCTION elem_isNonparametric (ieltyp) RESULT (inonpar)
-
-  !<description>
-  
-  ! Determines whether an element ieltyp is parametric or nonparametric.
-  
-  !</description>
-  
-  !<result>
-  ! =true, if the element is nonparametric. 
-  ! =false, if the element is parametric.
-  !</result>
-  
-  !<input>
-  
-  ! Element type qualifier.
-  INTEGER(I32), INTENT(IN) :: ieltyp
-  
-  !</input>
- 
-!</function>
- 
-    inonpar = IAND(ieltyp,EL_NONPARAMETRIC) .NE. 0
-  
-  END FUNCTION
-
-  !************************************************************************
-  
-!<function>  
-
-  ELEMENTAL INTEGER(I32) FUNCTION elem_getPrimaryElement (ieltyp) RESULT (iresult)
+  SUBROUTINE elem_generic_sim2 (ieltyp, revalElementSet, Bder, Dbas)
 
 !<description>
-  ! Determines the 'primary' element type identifier. For standard elements
-  ! like $Q_1$, there is usually ieltyp=elem_getPrimaryElement(ieltyp).
-  ! But some elements like $\tilde Q_1$ have different modifications,
-  ! which are encoded in ieltyp. In this case, elem_getPrimaryElement
-  ! returns the element identifier of the element without any
-  ! modification; this can be seen as 'standard' or 'primary' element
-  ! type.
-  ! In case of $\tilde Q_1$ for example, there is
-  !    elem_getPrimaryElement(EL_E030) = elem_getPrimaryElement(EL_EM30)
-  !  = elem_getPrimaryElement(EL_E031) = elem_getPrimaryElement(EL_EM31)
-  !  = EL_Q1T,
-  ! which identifies the 'general' $\tilde Q_1$ element.
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
 !</description>
+
+!<input>
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  TYPE(t_evalElementSet), INTENT(IN) :: revalElementSet
+
+  ! Element type identifier
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
-!<result>
-  ! The identifier of the 'standard' element, ieltyp refers to.
-!</result>
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder  
+!</input>
   
-  !<input>
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..EL_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  REAL(DP), DIMENSION(:,:,:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  INTEGER :: i
+
+  ! Choose the right element subroutine to call.
+  SELECT CASE (ieltyp)
+  CASE (EL_P0_1D)
+    CALL elem_P0_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
   
-  ! Element type qualifier.
-   INTEGER(I32), INTENT(IN) :: ieltyp
+  CASE (EL_P1_1D)
+    CALL elem_P1_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
   
-  !</input>
- 
-!</function>
- 
-    ! To get the standard identifier, we just have to mask out all bits
-    ! except for bit 0..9. These 10 bits encode the standard element
-    ! identifier plus dimension.
-    iresult = IAND(ieltyp,EL_ELNRMASK)
+  CASE (EL_P2_1D)
+    CALL elem_P2_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
   
-  END FUNCTION
+  CASE (EL_S31_1D)
+    CALL elem_S31_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P0)
+    CALL elem_P0_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P1)
+    CALL elem_P1_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P2)
+    CALL elem_P2_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P1T)
+    CALL elem_P1T_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_Q0)
+    CALL elem_Q0_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_Q1)
+    CALL elem_Q1_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_Q2)
+    CALL elem_Q2_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+    CALL elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsReal)
+  
+  CASE (EL_E030)
+    CALL elem_E030_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_EM31)
+    CALL elem_EM31_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsReal)
+  
+  CASE (EL_E031)
+    CALL elem_E031_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_E035)
+    CALL elem_E035_sim (ieltyp, revalElementSet%p_Dcoords,&
+      revalElementSet%p_ItwistIndexEdge, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P0_3D)
+    CALL elem_P0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_P1_3D)
+    CALL elem_P1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_Q0_3D)
+    CALL elem_Q0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_Q1_3D)
+    CALL elem_Q1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_EM30_3D)
+    CALL elem_EM30_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsReal)
+  
+  CASE (EL_E030_3D)
+    CALL elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+  CASE (EL_E031_3D)
+    CALL elem_E031_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+      revalElementSet%p_DpointsRef)
+  
+        
+  CASE DEFAULT
+    ! Compatibility handling: evaluate on all elements separately
+    IF (ASSOCIATED(revalElementSet%p_ItwistIndexEdge)) THEN
+      IF (elem_isNonparametric(ieltyp)) THEN
+        DO i=1,revalElementSet%nelements
+          CALL elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+              revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndexEdge(:,i))
+        END DO
+      ELSE
+        DO i=1,revalElementSet%nelements
+          CALL elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+              revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndexEdge(:,i))
+        END DO
+      END IF
+    ELSE
+      IF (elem_isNonparametric(ieltyp)) THEN
+        DO i=1,revalElementSet%nelements
+          CALL elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+              revalElementSet%p_DpointsReal(:,:,i))
+        END DO
+      ELSE
+        DO i=1,revalElementSet%nelements
+          CALL elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+              revalElementSet%p_DpointsRef(:,:,i))
+        END DO
+      END IF
+    END IF
+  END SELECT
+
+  END SUBROUTINE 
 
 !**************************************************************************
 ! Element subroutines for parametric P0_1D element.

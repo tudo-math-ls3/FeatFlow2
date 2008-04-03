@@ -262,8 +262,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,j,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
-  LOGICAL :: bnonparFunc, bnonparTest, bnonparTrial
+  INTEGER :: i,i1,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
   LOGICAL :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
   INTEGER(PREC_DOFIDX) :: JCOL0,JCOL,idertype
@@ -303,6 +302,13 @@ CONTAINS
   INTEGER(PREC_DOFIDX) :: NA,NVE
   INTEGER(I32) :: NEQ
   
+  ! Type of transformation from the reference to the real element 
+  INTEGER :: ctrafoType
+  
+  ! Element evaluation tag; collects some information necessary for evaluating
+  ! the elements.
+  INTEGER(I32) :: cevaluationTag
+  
   ! Number of local degees of freedom for trial and test functions
   INTEGER :: indofFunc, indofTrial, indofTest
   
@@ -319,31 +325,10 @@ CONTAINS
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
 
-  ! An array receiving the coordinates of cubature points on
-  ! the real element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsReal
-
-  ! Pointer to the point coordinates to pass to the element function.
-  ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
-  ! the trial/test element is parametric or not.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTest
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsFunc
-  
-  ! Array with coordinates of the corners that form the real element.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
-  
-  ! Arrays for saving Jacobian determinants and matrices
+  ! Pointer to the jacobian determinants
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac
-  
-  ! Pointer to KVERT of the triangulation
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-  
-  ! Pointer to DCORVG of the triangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   
   ! Current element distribution for discretisation and function $u$.
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -479,12 +464,6 @@ CONTAINS
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = MIN(TRILF_NELEMSIM,p_rtriangulation%NEL)
   
-  ! Get a pointer to the KVERT and DCORVG array
-  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
-                             p_IverticesAtElement)
-  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
-                             p_DvertexCoords)
-
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
 
@@ -516,50 +495,35 @@ CONTAINS
       CALL sys_halt()
     END IF
     
+    ! Get from the trial element space the type of coordinate system
+    ! that is used there:
+    ctrafoType = elem_igetTrafoType(p_elementDistribution%itrialElement)
+    
+    ! Allocate some memory to hold the cubature points on the reference element
+    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
+    ! Reformat the cubature points; they are in the wrong shape!
+    DO i=1,ncubp
+      DO k=1,UBOUND(p_DcubPtsRef,1)
+        p_DcubPtsRef(k,i) = Dxi(i,k)
+      END DO
+    END DO
+    
     ! Open-MP-Extension: Open threads here.
-    ! "j" is declared as private; shared gave errors with the Intel compiler
-    ! in Windows!?!
     ! Each thread will allocate its own local memory...
     !
     !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
-    !$OMP   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
-    !$OMP   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
+    !$OMP   p_Ddetj,kentry, dentry,DbasTest,DbasTrial, &
+    !$OMP   IdofsTest,IdofsTrial,p_DcubPtsTrial,cevaluationTag, &
     !$OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !$OMP   p_DbasTrial, BderTrial, BderTest, j, ielmax,IEL, idofe,jdofe,jcol0, &
+    !$OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
     !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,ifunc,aux, db,IdofsFunc,DbasFunc, &
-    !$OMP   bnonparFunc,p_DcubPtsFunc,bIdenticalFuncAndTrial,p_IdofsFunc, &
+    !$OMP   p_DcubPtsFunc,bIdenticalFuncAndTrial,p_IdofsFunc, &
     !$OMP   p_DbasFunc,iderType,p_IelementList,p_Ddata)    
-    
-    ! Get from the trial element space the type of coordinate system
-    ! that is used there:
-    j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
-    
-    ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
-        p_rtriangulation%ndim,NVE,&
-        MAX(elem_getTwistIndexSize(p_elementDistribution%itrialElement),&
-            elem_getTwistIndexSize(p_elementDistribution%itestElement)))
-    p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
-    p_DcubPtsReal => rintSubset%p_DcubPtsReal
-    p_Djac =>        rintSubset%p_Djac
-    p_Ddetj =>       rintSubset%p_Ddetj
-    p_Dcoords =>     rintSubset%p_DCoords
-    
-    ! Put the cubature point coordinates in the right format to the
-    ! cubature-point array.
-    ! Initialise all entries in p_DcubPtsRef with the same coordinates -
-    ! as the cubature point coordinates are identical on all elements
-    DO j=1,SIZE(p_DcubPtsRef,3)
-      DO i=1,ncubp
-        DO k=1,SIZE(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i,j) = Dxi(i,k)
-        END DO
-      END DO
-    END DO
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     !$OMP SINGLE
@@ -614,31 +578,6 @@ CONTAINS
     ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
     ALLOCATE(IdofsFunc(indofFunc,nelementsPerBlock))
 
-    ! Check if one of the trial/test elements is nonparametric
-    bnonparTrial = elem_isNonparametric(p_elementDistribution%itrialElement)
-    bnonparTest  = elem_isNonparametric(p_elementDistribution%itestElement)
-    bnonparFunc  = elem_isNonparametric(p_elementDistributionFunc%itrialElement)
-                    
-    ! Let p_DcubPtsTrial / p_DcubPtsTest point either to p_DcubPtsReal or
-    ! p_DcubPtsRef - depending on whether the space is parametric or not.
-    IF (bnonparTrial) THEN
-      p_DcubPtsTrial => p_DcubPtsReal
-    ELSE
-      p_DcubPtsTrial => p_DcubPtsRef
-    END IF
-    
-    IF (bnonparTest) THEN
-      p_DcubPtsTest => p_DcubPtsReal
-    ELSE
-      p_DcubPtsTest => p_DcubPtsRef
-    END IF
-
-    IF (bnonparFunc) THEN
-      p_DcubPtsFunc => p_DcubPtsReal
-    ELSE
-      p_DcubPtsFunc => p_DcubPtsRef
-    END IF
-    
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
@@ -870,97 +809,62 @@ CONTAINS
       ! the elements to give us the values of the basis functions
       ! in all the DOF's in all the elements in our set.
       !
-      ! We have the coordinates of the cubature points saved in the
-      ! coordinate array from above. Unfortunately for nonparametric
-      ! elements, we need the real coordinate.
-      ! Furthermore, we anyway need the coordinates of the element
-      ! corners and the Jacobian determinants corresponding to
-      ! all the points.
-      !
-      ! At first, get the coordinates of the corners of all the
-      ! elements in the current set. 
-      
-!      DO IEL=1,IELmax-IELset+1
-!        p_Dcoords(:,:,IEL) = p_DvertexCoords(:, &
-!                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
-!      END DO
-!      DO IEL=1,IELmax-IELset+1
-!        DO J = 1,NVE
-!          DO I = 1,NDIM2D
-!            p_Dcoords(I,J,IEL) = p_DvertexCoords(I, &
-!                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-!          END DO
-!        END DO
-!      END DO
-
-      CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
-          p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
-      
-      ! Depending on the type of transformation, we must now choose
-      ! the mapping between the reference and the real element.
-      ! In case we use a nonparametric element or a nonconstant coefficient function,
-      ! we need the coordinates of the points on the real element, too.
-      IF (bnonparTrial .OR. bnonparTest .OR. bnonparFunc .OR. &
-          (.NOT. rform%ballCoeffConstant)) THEN
-      
-        CALL trafo_calctrafo_sim (&
-             p_rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
-             IELmax-IELset+1,ncubp,p_Dcoords,&
-             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
-             p_DcubPtsReal)
-      
-      ELSE
-      
-        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType,&
-             IELmax-IELset+1,ncubp,p_Dcoords,&
-             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1))
-             
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%itrialElement)
+      cevaluationTag = IOR(cevaluationTag,&
+                      elem_getEvaluationTag(p_elementDistribution%itestElement))
+                      
+      IF (.NOT. rform%ballCoeffConstant) THEN
+        ! Evaluate real coordinates if not necessary.
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
       END IF
       
+      ! In the first loop, calculate the coordinates on the reference element.
+      ! In all later loops, use the precalculated information.
+      IF (IELset .EQ. 1) THEN
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFCOORDS)
+      ELSE
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+      END IF
+
+      ! Calculate all information that is necessary to evaluate the finite element
+      ! on all cells of our subset. This includes the coordinates of the points
+      ! on the cells.
+      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+          cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
+          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+
       ! If the matrix has nonconstant coefficients c(x,y) , calculate the 
       ! coefficients now.
       IF (.NOT. rform%ballCoeffConstant) THEN
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        CALL fcoeff_buildTrilMatrixSc_sim (p_rdiscretisation,rform, &
+        CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
                   IELmax-IELset+1_I32,ncubp,&
-                  p_DcubPtsReal,p_IdofsTrial,IdofsTest,rintSubset, &
-                  Dcoefficients,rcollection)
+                  rintSubset%revalElementSet%p_DpointsReal,&
+                  p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
       END IF
       
-      ! If the element needs it, calculate the twist index array.
-      IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
-        CALL trafo_calcTwistIndices(p_rtriangulation,&
-            p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
-      END IF
-
       ! Calculate the values of the basis functions.
-      ! Pass p_DcubPts as point coordinates, which point either to the
-      ! coordinates on the reference element (the same for all elements)
-      ! or on the real element - depending on whether this is a 
-      ! parametric or nonparametric element.
-      CALL elem_generic_sim (p_elementDistribution%itestElement, p_Dcoords, &
-            p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTest, DbasTest, ncubp, IELmax-IELset+1, p_DcubPtsTest,&
-            rintSubset%p_ItwistIndex)
-            
+      CALL elem_generic_sim2 (p_elementDistribution%itestElement, &
+          rintSubset%revalElementSet, BderTest, DbasTest)
+      
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim (p_elementDistribution%itrialElement, p_Dcoords, &
-            p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial,&
-            rintSubset%p_ItwistIndex)
+        CALL elem_generic_sim2 (p_elementDistribution%itrialElement, &
+            rintSubset%revalElementSet, BderTrial, DbasTrial)
       END IF
       
       ! Omit the calculation of the coefficient function values if they
       ! are identical to the trial function values.
       IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
-        CALL elem_generic_sim (p_elementDistributionFunc%itrialElement, p_Dcoords, &
-            p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-            BderFunc, DbasFunc, ncubp, IELmax-IELset+1, p_DcubPtsFunc,&
-            rintSubset%p_ItwistIndex)
+        CALL elem_generic_sim2 (p_elementDistributionFunc%itrialElement, &
+            rintSubset%revalElementSet, BderFunc, DbasFunc)
       END IF
       
       ! ----------------- COEFFICIENT EVALUATION PHASE ---------------------
@@ -1115,8 +1019,9 @@ CONTAINS
     !$OMP END DO
     
     ! Release memory
-    CALL domint_doneIntegration(rintSubset)
+    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
 
+    DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(Dcoefficients)
     DEALLOCATE(IdofsTrial)
     DEALLOCATE(IdofsTest)

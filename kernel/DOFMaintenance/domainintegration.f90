@@ -82,6 +82,12 @@ MODULE domainintegration
     ! array [1..NVE/NVA,1..Number of elements]
     INTEGER(I32), DIMENSION(:,:), POINTER         :: p_ItwistIndex
 
+
+
+    ! An element evaluation set structure that contains all information
+    ! needed to evaluate the finite element on all elements in p_Ielements.
+    TYPE(t_evalElementSet) :: revalElementSet
+
   END TYPE
   
 !</typeblock>

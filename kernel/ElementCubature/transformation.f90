@@ -227,37 +227,37 @@ MODULE transformation
   INTEGER, PARAMETER :: TRAFO_CS_UNDEFINED   = 0
 
   ! Parameter value [-1..1] on reference interval in 1D
-  INTEGER, PARAMETER :: TRAFO_CS_REF1D       = 1
+  INTEGER, PARAMETER :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
 
   ! Barycentric coordinates on triangle
-  INTEGER, PARAMETER :: TRAFO_CS_BARY2DTRI   = 2
+  INTEGER, PARAMETER :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
 
   ! 2D coordinates on reference triangle
-  INTEGER, PARAMETER :: TRAFO_CS_REF2DTRI    = 3
+  INTEGER, PARAMETER :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
 
   ! 2D coordinates on real triangle
-  INTEGER, PARAMETER :: TRAFO_CS_REAL2DTRI   = 4
+  INTEGER, PARAMETER :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
   
   ! 2D coordinates on reference quadrilateral
-  INTEGER, PARAMETER :: TRAFO_CS_REF2DQUAD   = 5
+  INTEGER, PARAMETER :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
 
   ! 2D coordinates on real quadrilateral
-  INTEGER, PARAMETER :: TRAFO_CS_REAL2DQUAD  = 6
+  INTEGER, PARAMETER :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
   
   ! Barycentric coordinates on tetrahedron
-  INTEGER, PARAMETER :: TRAFO_CS_BARY3DTETRA = 10
+  INTEGER, PARAMETER :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
   
   ! 3D coordinates on reference tetrahedron
-  INTEGER, PARAMETER :: TRAFO_CS_REF3DTETRA  = 11
+  INTEGER, PARAMETER :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
   
   ! 3D coodinates on real tetrahedron
-  INTEGER, PARAMETER :: TRAFO_CS_REAL3DTETRA = 12
+  INTEGER, PARAMETER :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
   
   ! 3D coordinates on reference hexahedron
-  INTEGER, PARAMETER :: TRAFO_CS_REF3DHEXA   = 13
+  INTEGER, PARAMETER :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
   
   ! 3D coordinates on real hexahedron
-  INTEGER, PARAMETER :: TRAFO_CS_REAL3DHEXA  = 14
+  INTEGER, PARAMETER :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
 !</constantblock>
 
 !</constants>
@@ -277,7 +277,9 @@ CONTAINS
 
 !<description>
   ! This function returns the dimensional constant that specifies which
-  ! dimension (1D, 2D,...) an element uses.
+  ! dimension (1D, 2D,...) of the space of the transformation.
+  ! For a mapping from the reference to the real element, this is the
+  ! number of dimensions of world coordinates.
 !</description>
 
 !<input>    
@@ -294,6 +296,86 @@ CONTAINS
 
     ! The dimension is encoded in two bits in the element quantifier!
     trafo_igetDimension = ISHFT(IAND(ctrafoType,TRAFO_DIM_DIMENSION),-8)
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>  
+
+  ELEMENTAL INTEGER FUNCTION trafo_igetReferenceDimension(ctrafoType)
+
+!<description>
+  ! For a given transformation, this routine returns the dimension of
+  ! the coordinate system on the reference element.
+  ! E.g.: 3 for barycentric coordinates in 2D.
+!</description>
+
+!<input>    
+  ! ID of transformation to calculate
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+!</input>
+
+!<result>
+  ! Dimension of the coordinate system on the reference element.
+!</result>
+
+!</function>
+
+    trafo_igetReferenceDimension = 0
+
+    ! What type of transformation do we have? First decide on the dimension,
+    ! then on the actual ID.
+    SELECT CASE (trafo_igetDimension(ctrafoType))
+
+    CASE (NDIM1D)
+      ! 1D elements. Lines. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! 1D linear line transformation. 
+        trafo_igetReferenceDimension = 1
+        
+      END SELECT
+    
+    CASE (NDIM2D)
+      ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+        ! 2D simplex -> linear triangular transformation. 
+        ! 3 DOF's in the transformation (given by the corners of the element)
+        trafo_igetReferenceDimension = 3
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! Bilinear transformation for cubic-shaped elements 
+        ! -> Bilinear quadrilateral transformation.
+        ! 4 DOF's in the transformation (given by the corners of the element)
+        trafo_igetReferenceDimension = 2
+      
+      END SELECT
+      
+    CASE (NDIM3D)
+      ! 3D elements. Tetrahedra, Hexahedra. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+        ! 3D simplex -> 4 dimensions (1 more than space)
+        trafo_igetReferenceDimension = 4
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! Trilinear hexahedral transformation -> dimension = space dimension
+        trafo_igetReferenceDimension = 3
+      
+      END SELECT
+      
+    END SELECT
 
   END FUNCTION
 
@@ -322,64 +404,64 @@ CONTAINS
 
 !</function>
 
-  trafo_igetNVE = 0
+    trafo_igetNVE = 0
 
-  ! What type of transformation do we have? First decide on the dimension,
-  ! then on the actual ID.
-  SELECT CASE (trafo_igetDimension(ctrafoType))
+    ! What type of transformation do we have? First decide on the dimension,
+    ! then on the actual ID.
+    SELECT CASE (trafo_igetDimension(ctrafoType))
 
-  CASE (NDIM1D)
-    ! 1D elements. Lines. Check the actual transformation
-    ! ID how to transform.
-  
-    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (NDIM1D)
+      ! 1D elements. Lines. Check the actual transformation
+      ! ID how to transform.
     
-    CASE (TRAFO_ID_LINSIMPLEX)
-      ! 1D simplex -> linear line transformation. 
-      ! 2 DOF's in the transformation (given by the corners of the element)
-      trafo_igetNVE = 2
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! 1D linear line transformation. 
+        ! 2 DOF's in the transformation (given by the corners of the element)
+        trafo_igetNVE = 2
+        
+      END SELECT
+    
+    CASE (NDIM2D)
+      ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+        ! 2D simplex -> linear triangular transformation. 
+        ! 3 DOF's in the transformation (given by the corners of the element)
+        trafo_igetNVE = 3
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! Bilinear transformation for cubic-shaped elements 
+        ! -> Bilinear quadrilateral transformation.
+        ! 4 DOF's in the transformation (given by the corners of the element)
+        trafo_igetNVE = 4
+      
+      END SELECT
+      
+    CASE (NDIM3D)
+      ! 3D elements. Tetrahedra, Hexahedra. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+        ! 3D simplex -> linear triangular transformation. 
+        ! 4 DOF's in the transformation (given by the corners of the element)
+        trafo_igetNVE = 4
+      
+      CASE (TRAFO_ID_MLINCUBE)
+        ! Trilinear transformation for cubic-shaped elements 
+        ! -> Trilinear hexahedral transformation.
+        ! 8 DOF's in the transformation (given by the corners of the element)
+        trafo_igetNVE = 8
+      
+      END SELECT
       
     END SELECT
-  
-  CASE (NDIM2D)
-    ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
-    ! ID how to transform.
-  
-    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    
-    CASE (TRAFO_ID_LINSIMPLEX)
-      ! 2D simplex -> linear triangular transformation. 
-      ! 3 DOF's in the transformation (given by the corners of the element)
-      trafo_igetNVE = 3
-    
-    CASE (TRAFO_ID_MLINCUBE)
-      ! Bilinear transformation for cubic-shaped elements 
-      ! -> Bilinear quadrilateral transformation.
-      ! 4 DOF's in the transformation (given by the corners of the element)
-      trafo_igetNVE = 4
-    
-    END SELECT
-    
-  CASE (NDIM3D)
-    ! 3D elements. Tetrahedra, Hexahedra. Check the actual transformation
-    ! ID how to transform.
-  
-    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    
-    CASE (TRAFO_ID_LINSIMPLEX)
-      ! 3D simplex -> linear triangular transformation. 
-      ! 4 DOF's in the transformation (given by the corners of the element)
-      trafo_igetNVE = 4
-    
-    CASE (TRAFO_ID_MLINCUBE)
-      ! Trilinear transformation for cubic-shaped elements 
-      ! -> Trilinear hexahedral transformation.
-      ! 8 DOF's in the transformation (given by the corners of the element)
-      trafo_igetNVE = 8
-    
-    END SELECT
-    
-  END SELECT
 
   END FUNCTION
 
@@ -438,7 +520,7 @@ CONTAINS
     
       SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
       
-      CASE (TRAFO_ID_LINSIMPLEX)
+      CASE (TRAFO_ID_MLINCUBE)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
         Dcoords (1,1:3) = p_DvertexCoords(1, p_IverticesAtElement(1:3, iel))
@@ -564,7 +646,7 @@ CONTAINS
     
       SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
       
-      CASE (TRAFO_ID_LINSIMPLEX)
+      CASE (TRAFO_ID_MLINCUBE)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
         !%OMP PARALLEL DO PRIVATE(ipoint)
@@ -730,7 +812,7 @@ CONTAINS
   CASE (NDIM1D)
     
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    CASE (TRAFO_ID_LINSIMPLEX)
+    CASE (TRAFO_ID_MLINCUBE)
     
       ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
       Djac(1) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
@@ -959,7 +1041,7 @@ CONTAINS
     ! 1D elements: Lines.
     
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    CASE (TRAFO_ID_LINSIMPLEX)
+    CASE (TRAFO_ID_MLINCUBE)
     
       IF(.NOT. PRESENT(DpointsReal)) THEN
 
@@ -1307,7 +1389,7 @@ CONTAINS
     ! 1D elements: Lines.
     
     SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
-    CASE (TRAFO_ID_LINSIMPLEX)
+    CASE (TRAFO_ID_MLINCUBE)
     
       IF(.NOT. PRESENT(DpointsReal)) THEN
         
@@ -2904,7 +2986,7 @@ CONTAINS
       
       SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
       
-      CASE (TRAFO_ID_LINSIMPLEX)
+      CASE (TRAFO_ID_MLINCUBE)
       
         ! Simple linear transformation of x \in [a,b] -> x' \in [-1,1]
         DparPoint(1) = -1.0_DP + 0.5_DP * (Dpoint(1) - Dcoord(1,1)) / (Dcoord(2,1)-Dcoord(1,1))
@@ -2989,7 +3071,7 @@ CONTAINS
       
       SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
       
-      CASE (TRAFO_ID_LINSIMPLEX)
+      CASE (TRAFO_ID_MLINCUBE)
       
         ! Simple linear transformation of x \in [-1,1] -> x' \in [a,b]
         Dpoint(1) = 0.5_DP*(Dcoord(2,1)-Dcoord(1,1))*(DpointRef(1)+1.0_DP)

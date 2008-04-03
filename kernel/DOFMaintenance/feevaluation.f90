@@ -29,6 +29,8 @@ MODULE feevaluation
   USE fsystem
   USE linearsystemscalar
   USE triasearch
+  USE element
+  USE elementpreprocessing
   
   IMPLICIT NONE
 
@@ -44,6 +46,7 @@ MODULE feevaluation
   INTERFACE fevl_evaluate_sim
     MODULE PROCEDURE fevl_evaluate_sim1
     MODULE PROCEDURE fevl_evaluate_sim2
+    MODULE PROCEDURE fevl_evaluate_sim3
   END INTERFACE
 
 !<constants>
@@ -733,6 +736,274 @@ CONTAINS
   
   END SUBROUTINE
 
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  SUBROUTINE fevl_evaluate_sim (iderType, Dvalues, rvectorScalar, Dpoints, &
+!      Ielements, DpointsRef)
+!                                      
+!!<description>
+!  ! This is a rather general finite element evaluation
+!  ! routine. It allows to evaluate a general (scalar) FE function specified
+!  ! by rvectorScalar in a set of points Dpoints on a set of elements Ielements. 
+!  ! The values of the FE function are written into Dvalues.
+!!</description>
+!
+!!<input>
+!  ! Type of function value to evaluate. One of the DER_xxxx constants,
+!  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+!  INTEGER, INTENT(IN)                            :: iderType
+!
+!  ! The scalar solution vector that is to be evaluated.
+!  TYPE(t_vectorScalar), INTENT(IN)              :: rvectorScalar
+!  
+!  ! A list of points where to evaluate. All points must be inside
+!  ! of element ielement.
+!  ! DIMENSION(1..ndim,1..npoints,1..nelements)
+!  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
+!  
+!  ! A list of elements containing the points in Dpoints.
+!  ! All elements in this list must be of the same type!!!
+!  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+!  
+!  ! OPTIONAL: Coordinates of the points on the reference element.
+!  ! If not specified, the coordinates are automatically calculated.
+!  ! DIMENSION(1..ndim,1..npoints,1..nelements)
+!  REAL(DP), DIMENSION(:,:,:), INTENT(IN), TARGET, OPTIONAL :: DpointsRef
+!!</input>
+!
+!!<output>
+!  ! Values of the FE function at the points specified by Dpoints.
+!  ! DIMENSION(1..npoints,1..nelements)
+!  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dvalues
+!!</output>
+!
+!!</subroutine>
+!
+!    ! local variables
+!    LOGICAL :: bnonpar
+!    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim,ntwistsize
+!    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
+!    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+!    REAL(DP) :: dval
+!    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef
+!    
+!    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!    
+!    ! Triangulation information
+!    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+!    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+!    
+!    ! Transformation
+!    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Djac
+!    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
+!    INTEGER(I32) :: ctrafoType
+!    
+!    ! Values of basis functions and DOF's
+!    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dbas
+!    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: Idofs
+!    
+!    ! Coordinates of the corners of one element
+!    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
+!
+!    ! List of element distributions in the discretisation structure
+!    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+!
+!    ! Twist index array to define the orientation of faces/edges
+!    INTEGER(I32), DIMENSION(:,:), ALLOCATABLE :: ItwistIndex
+!
+!    ! Ok, slow but general.
+!    
+!    ! Get triangulation information
+!    CALL storage_getbase_double2d (&
+!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_DvertexCoords,&
+!        p_DvertexCoords)
+!    CALL storage_getbase_int2d (&
+!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
+!        p_IverticesAtElement)
+!    
+!    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+!
+!    ! For uniform discretisations, we get the element type in advance...
+!    IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+!      
+!      ! Element type
+!      ieltype = p_RelementDistribution(1)%itrialElement
+!
+!      ! Get the number of local DOF's for trial and test functions
+!      indof = elem_igetNDofLoc(ieltype)
+!      
+!      ! Number of vertices on the element
+!      nve = elem_igetNVE(ieltype)
+!      
+!      ! Type of transformation from/to the reference element
+!      ctrafoType = elem_igetTrafoType(ieltype)
+!      
+!      ! Element nonparametric?
+!      bnonpar = elem_isNonparametric(ieltype)
+!      
+!      NULLIFY(p_IelementDistr)
+!    ELSE
+!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+!          p_IelementDistr)
+!    END IF
+!    
+!    ! Get the data vector
+!    SELECT CASE (rvectorScalar%cdataType)
+!    CASE (ST_DOUBLE) 
+!      CALL lsyssc_getbase_double(rvectorScalar,p_Ddata)
+!    CASE (ST_SINGLE)
+!      CALL lsyssc_getbase_single(rvectorScalar,p_Fdata)
+!    CASE DEFAULT
+!      CALL output_line ('Unsupported vector precision!',&
+!          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+!      CALL sys_halt()
+!    END SELECT
+!    
+!    ! What to evaluate?
+!    Bder = .FALSE.
+!    Bder(iderType) = .TRUE.
+!    
+!    ! Get the type of the element ielement
+!    IF (ASSOCIATED(p_IelementDistr)) THEN
+!      ! As all elements have the same type, we get the element
+!      ! characteristics by checking the first element.
+!      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%itrialElement
+!
+!      ! Get the number of local DOF's for trial and test functions
+!      indof = elem_igetNDofLoc(ieltype)
+!      
+!      ! Number of vertices on the element
+!      nve = elem_igetNVE(ieltype)
+!      
+!      ! Type of transformation from/to the reference element
+!      ctrafoType = elem_igetTrafoType(ieltype)
+!      
+!      ! Element nonparametric?
+!      bnonpar = elem_isNonparametric(ieltype)
+!      
+!    END IF
+!      
+!    ! Calculate the global DOF's on that element into IdofsTest.
+!    ALLOCATE(Idofs(indof,SIZE(Ielements)))
+!    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscretisation, &
+!        Ielements, .FALSE.,Idofs)
+!        
+!    ! Get the coordinates forming the elements
+!    ALLOCATE(Dcoord(UBOUND(p_DvertexCoords,1),NVE,SIZE(Ielements)))
+!    DO iel = 1,SIZE(Ielements)
+!      Dcoord(:,1:nve,iel) = &
+!        p_DvertexCoords(:,p_IverticesAtElement(:,Ielements(iel)))
+!    END DO
+!    
+!    ! Get the coordinates of all points on the reference element
+!    IF (PRESENT(DpointsRef)) THEN
+!      p_DpointsRef => DpointsRef
+!    ELSE
+!      ALLOCATE(p_DpointsRef(UBOUND(Dpoints,1),UBOUND(Dpoints,2),&
+!                            UBOUND(Dpoints,3)))
+!      ! Calculate the transformation of the point to the reference element
+!      DO iel = 1,SIZE(Ielements)
+!        DO ipoint = 1,UBOUND(Dpoints,2)
+!          CALL trafo_calcRefCoords (ctrafoType,Dcoord(:,:,iel),&
+!              Dpoints(:,ipoint,iel),p_DpointsRef(:,ipoint,iel))
+!        END DO
+!      END DO
+!    END IF
+!    
+!    ! Calculate the transformation of all the points from the reference
+!    ! to the real element(s).
+!    ndim = UBOUND(Dcoord,1)
+!    ALLOCATE(Djac(ndim*ndim,UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
+!    ALLOCATE(Ddetj(UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
+!    CALL trafo_calctrafo_sim (elem_igetTrafoType(ieltype),SIZE(Ielements),&
+!        UBOUND(Dpoints,2),Dcoord,&
+!        p_DpointsRef,Djac,Ddetj)    
+!  
+!    ! Does the element need twist indices?
+!    ntwistsize = elem_getTwistIndexSize(ieltype)
+!
+!    ! If necessary, calculate the twist index array. The element may need it.
+!    ! We always allocate so that we have something we can pass to the element...
+!    ALLOCATE(ItwistIndex(MAX(1,ntwistSize),SIZE(Ielements)))
+!    IF (ntwistSize .NE. 0) THEN
+!      CALL trafo_calcTwistIndices(&
+!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,Ielements,ItwistIndex)
+!    END IF
+!
+!    ! Calculate the values of the basis functions in the given points.
+!    ALLOCATE(Dbas(indof,&
+!             elem_getMaxDerivative(ieltype),&
+!             UBOUND(Dpoints,2), UBOUND(Dpoints,3)))
+!    IF (bnonpar) THEN
+!      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
+!                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
+!                           Dpoints,ItwistIndex)    
+!    ELSE
+!      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
+!                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
+!                           p_DpointsRef,ItwistIndex)    
+!    END IF
+!  
+!    ! Calculate the desired values. We loop over all points and all elements
+!    IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
+!      DO iel = 1, UBOUND(Dpoints,3)
+!        DO ipoint = 1,UBOUND(Dpoints,2)
+!      
+!          dval = 0.0_DP
+!        
+!          ! Now that we have the basis functions, we want to have the function values.
+!          ! We get them by multiplying the FE-coefficients with the values of the
+!          ! basis functions and summing up.
+!          !          
+!          ! Calculate the value in the point
+!          DO ibas = 1,indof
+!            dval = dval + p_Ddata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+!          END DO
+!        
+!          ! Save the value in the point
+!          Dvalues(ipoint,iel) = dval
+!        
+!        END DO ! ipoint
+!      END DO ! iel
+!
+!    ELSE IF (rvectorScalar%cdataType .EQ. ST_SINGLE) THEN
+!    
+!      DO iel = 1, UBOUND(Dpoints,3)
+!        DO ipoint = 1,UBOUND(Dpoints,2)
+!          
+!          ! Now that we have the basis functions, we want to have the function values.
+!          ! We get them by multiplying the FE-coefficients with the values of the
+!          ! basis functions and summing up.
+!          !
+!          ! Calculate the value in the point
+!          DO ibas = 1,indof
+!            dval = dval + p_Fdata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+!          END DO
+!        
+!          ! Save the value in the point
+!          Dvalues(ipoint,iel) = dval
+!        
+!        END DO ! ipoint
+!      END DO ! iel
+!      
+!    END IF
+!    
+!    ! Release allocated memory
+!    DEALLOCATE(ItwistIndex)
+!    DEALLOCATE(Dbas)
+!    DEALLOCATE(Ddetj)
+!    DEALLOCATE(Djac)
+!    IF (.NOT. PRESENT(DpointsRef)) THEN
+!      DEALLOCATE(p_DpointsRef)
+!    END IF
+!    DEALLOCATE(Dcoord)
+!    DEALLOCATE(Idofs)
+!
+!  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -780,46 +1051,38 @@ CONTAINS
 
     ! local variables
     LOGICAL :: bnonpar
-    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim,ntwistsize
+    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
+    
     REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef
     
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     REAL(SP), DIMENSION(:), POINTER :: p_Fdata
     
-    ! Triangulation information
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    ! The triangulation structure - to shorten some things...
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
     
     ! Transformation
-    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Djac
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
     INTEGER(I32) :: ctrafoType
     
     ! Values of basis functions and DOF's
     REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dbas
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: Idofs
-    
-    ! Coordinates of the corners of one element
-    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
 
+    ! Element evaluation set that collects element specific information
+    ! during the evaluation
+    TYPE(t_evalElementSet)  :: revalElementSet
+    INTEGER(I32) :: cevaluationTag
+    
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
-
-    ! Twist index array to define the orientation of faces/edges
-    INTEGER(I32), DIMENSION(:,:), ALLOCATABLE :: ItwistIndex
 
     ! Ok, slow but general.
     
     ! Get triangulation information
-    CALL storage_getbase_double2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_DvertexCoords,&
-        p_DvertexCoords)
-    CALL storage_getbase_int2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
+    p_rtriangulation => rvectorScalar%p_rspatialDiscretisation%p_rtriangulation
     
     p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
 
@@ -888,62 +1151,41 @@ CONTAINS
     CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscretisation, &
         Ielements, .FALSE.,Idofs)
         
-    ! Get the coordinates forming the elements
-    ALLOCATE(Dcoord(UBOUND(p_DvertexCoords,1),NVE,SIZE(Ielements)))
-    DO iel = 1,SIZE(Ielements)
-      Dcoord(:,1:nve,iel) = &
-        p_DvertexCoords(:,p_IverticesAtElement(:,Ielements(iel)))
-    END DO
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = elem_getEvaluationTag(ieltype)
     
+    ! Don't create coordinates on the reference element; we do this manually!
+    cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+                    
     ! Get the coordinates of all points on the reference element
-    IF (PRESENT(DpointsRef)) THEN
+    IF (.NOT. PRESENT(DpointsRef)) THEN
       p_DpointsRef => DpointsRef
     ELSE
       ALLOCATE(p_DpointsRef(UBOUND(Dpoints,1),UBOUND(Dpoints,2),&
-                            UBOUND(Dpoints,3)))
+               UBOUND(Dpoints,3)))
       ! Calculate the transformation of the point to the reference element
       DO iel = 1,SIZE(Ielements)
         DO ipoint = 1,UBOUND(Dpoints,2)
-          CALL trafo_calcRefCoords (ctrafoType,Dcoord(:,:,iel),&
+          CALL trafo_calcRefCoords (ctrafoType,revalElementSet%p_Dcoords(:,:,iel),&
               Dpoints(:,ipoint,iel),p_DpointsRef(:,ipoint,iel))
         END DO
       END DO
     END IF
     
-    ! Calculate the transformation of all the points from the reference
-    ! to the real element(s).
-    ndim = UBOUND(Dcoord,1)
-    ALLOCATE(Djac(ndim*ndim,UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
-    ALLOCATE(Ddetj(UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
-    CALL trafo_calctrafo_sim (elem_igetTrafoType(ieltype),SIZE(Ielements),&
-        UBOUND(Dpoints,2),Dcoord,&
-        p_DpointsRef,Djac,Ddetj)    
-  
-    ! Does the element need twist indices?
-    ntwistsize = elem_getTwistIndexSize(ieltype)
-
-    ! If necessary, calculate the twist index array. The element may need it.
-    ! We always allocate so that we have something we can pass to the element...
-    ALLOCATE(ItwistIndex(MAX(1,ntwistSize),SIZE(Ielements)))
-    IF (ntwistSize .NE. 0) THEN
-      CALL trafo_calcTwistIndices(&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,Ielements,ItwistIndex)
-    END IF
+    ! Calculate all information that is necessary to evaluate the finite element
+    ! on all cells of our subset. This includes the coordinates of the points
+    ! on the cells.
+    CALL elprep_prepareSetForEvaluation (revalElementSet,&
+        cevaluationTag, p_rtriangulation, Ielements, ctrafoType,DpointsRef=p_DpointsRef)
 
     ! Calculate the values of the basis functions in the given points.
     ALLOCATE(Dbas(indof,&
              elem_getMaxDerivative(ieltype),&
              UBOUND(Dpoints,2), UBOUND(Dpoints,3)))
-    IF (bnonpar) THEN
-      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
-                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-                           Dpoints,ItwistIndex)    
-    ELSE
-      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
-                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-                           p_DpointsRef,ItwistIndex)    
-    END IF
-  
+    CALL elem_generic_sim2 (ieltype, revalElementSet, Bder, Dbas)
+             
     ! Calculate the desired values. We loop over all points and all elements
     IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
       DO iel = 1, UBOUND(Dpoints,3)
@@ -989,14 +1231,18 @@ CONTAINS
     END IF
     
     ! Release allocated memory
-    DEALLOCATE(ItwistIndex)
+    ! Remove the reference to DpointsRef again
     DEALLOCATE(Dbas)
-    DEALLOCATE(Ddetj)
-    DEALLOCATE(Djac)
+
+    IF (.NOT. PRESENT(DpointsRef)) THEN
+      DEALLOCATE(revalElementSet%p_DpointsRef)
+    END IF
+  
+    CALL elprep_releaseElementSet(revalElementSet)
+    
     IF (.NOT. PRESENT(DpointsRef)) THEN
       DEALLOCATE(p_DpointsRef)
     END IF
-    DEALLOCATE(Dcoord)
     DEALLOCATE(Idofs)
 
   END SUBROUTINE
@@ -1111,6 +1357,136 @@ CONTAINS
   ! Evaluate the basis functions
   CALL elem_generic_sim (ieltyp, Dcoords, Djac, Ddetj, &
                          Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndex)  
+  
+  IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
+  
+    ! Get the data array from the vector
+    CALL lsyssc_getbase_double(rvectorScalar,p_Ddata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    DO iel=1,nelements
+      DO ipoint = 1,npoints
+        ! Calculate the value in the point
+        dval = 0.0_DP
+        DO ibas = 1,indofTrial
+          dval = dval + &
+                 p_Ddata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+        END DO
+        ! Save the value in the point
+        Dvalues(ipoint,iel) = dval
+      END DO
+    END DO
+    
+  ELSE IF (rvectorScalar%cdataType .EQ. ST_SINGLE) THEN
+  
+    ! Get the data array from the vector
+    CALL lsyssc_getbase_single(rvectorScalar,p_Fdata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    DO iel=1,nelements
+      DO ipoint = 1,npoints
+        ! Calculate the value in the point
+        dval = 0.0_DP
+        DO ibas = 1,indofTrial
+          dval = dval + &
+                 p_Fdata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+        END DO
+        ! Save the value in the point
+        Dvalues(ipoint,iel) = dval
+      END DO
+    END DO
+    
+  ELSE
+    PRINT *,'fevl_evaluate_sim: Unsupported vector precision'
+    CALL sys_halt()
+  END IF
+  
+  ! Release memory, finish
+  DEALLOCATE(DbasTrial)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                  ieltyp, IdofsTrial, iderType, Dvalues)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution vector
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! discretisation.
+  ! revalElementScalar must specify all information about where and how
+  ! to evaluate; e.g. the coordinates of the evaluation points are
+  ! to be fo9und here. The routine will then evaluate the element ieltyp
+  ! in these points.
+  !
+  ! This routine is specialised to evaluate in multiple elements. For this
+  ! purpose, the caller must make sure, that the same finite element type
+  ! is used on all elements where to evaluate!
+  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
+  ! is not allowed e.g.. 
+!</description>
+
+!<input>
+  ! Element evaluation set that contains all information necessary
+  ! for the evaluation (coordinates of the points, transformation,...)
+  TYPE(t_evalElementSet), INTENT(IN) :: revalElementSet
+
+  ! The scalar solution vector that is to be evaluated.
+  TYPE(t_vectorScalar), INTENT(IN)              :: rvectorScalar
+  
+  ! The FE function must be discretised with the same trial functions on all
+  ! elements where it should be evaluated here. ieltyp defines the type
+  ! of FE trial function that was used for the discretisation on those 
+  ! elements that we are concerning here.
+  INTEGER(I32), INTENT(IN)                      :: ieltyp
+
+  ! An array accepting the DOF's on all elements in the trial space
+  ! of the FE function.
+  ! DIMENSION(\#local DOF's in trial space,nelements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+  
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  INTEGER, INTENT(IN)                            :: iderType
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(npoints,nelements).
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: DbasTrial
+  INTEGER :: indofTrial,npoints,nelements
+  REAL(DP) :: dval
+  INTEGER :: iel,ipoint,ibas
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+  
+  npoints = UBOUND(Dvalues,1)
+  nelements = UBOUND(Dvalues,2)
+  
+  ! What to evaluate?
+  Bder = .FALSE.
+  Bder(iderType) = .TRUE.
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(ieltyp)
+  ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints,nelements))
+  
+  ! Evaluate the basis functions
+  CALL elem_generic_sim2 (ieltyp, revalElementSet, Bder, DbasTrial)
   
   IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   

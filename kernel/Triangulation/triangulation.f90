@@ -10777,7 +10777,6 @@ CONTAINS
       CALL storage_getsize (rtriangulation%h_ItwistIndex, Isize2)
       IF (Isize2(2) .NE. rtriangulation%NEL) THEN
         ! If the size is wrong, reallocate memory.
-        isize = rtriangulation%NVT+1
         CALL storage_realloc ('tria_genEdgesAtVertex', &
             Isize(2), rtriangulation%h_ItwistIndex, ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF

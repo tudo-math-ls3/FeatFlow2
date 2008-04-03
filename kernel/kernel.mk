@@ -34,7 +34,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	meshmodification.f90 mapleio.f90 jumpstabilisation.f90 \
 	boundaryintegral.f90 afcstabilisation.f90 groupfemscalar.f90 \
 	hadaptaux.f90 hadaptaux2d.f90 hadaptaux3d.f90 groupfemsystem.f90 \
-	meshregion.f90 pprocsolution.f90
+	meshregion.f90 pprocsolution.f90 elementpreprocessing.f90
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
