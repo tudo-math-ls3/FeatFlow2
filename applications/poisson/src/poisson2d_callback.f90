@@ -808,7 +808,7 @@ CONTAINS
     END SELECT
 
     ! Compute gradient error
-    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
+    CALL pperr_blockErrorEstimate(rgradient,rgradientRef,PPERR_L2ERROR,&
         dgradientError,relementError=rindicator)
     PRINT *, "!!gradient error!! = ",dgradientError
 
