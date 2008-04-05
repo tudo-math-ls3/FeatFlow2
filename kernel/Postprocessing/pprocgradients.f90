@@ -659,7 +659,7 @@ CONTAINS
     ! local variables
     INTEGER :: IVE,NVE,NVEMax,ntwistsize
     INTEGER :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
-    INTEGER :: i,j,k,ipoint,idx,icoordSystem
+    INTEGER :: i,j,k,ipoint,idx,idx2,icoordSystem,idxsubgroup
     INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax
     LOGICAL :: bnonparTrial
     INTEGER(PREC_ELEMENTIDX)    :: IEL,JEL,KEL
@@ -824,9 +824,6 @@ CONTAINS
 
     ! Auxiliary integers
     INTEGER :: icubp,idim
-    
-    ! Twist index array to define the orientation of faces/edges
-    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
     
     !-----------------------------------------------------------------------
     ! (0)  Initialisation
@@ -1675,7 +1672,60 @@ CONTAINS
           
           ! No, the discretisation is not uniform. In this case, we have to check the type
           ! of element for each individual element and adopt the FE spaces accordingly.
-          ilastElementDistr = 0
+          !
+          ! In the beginning, perform a short bubble-sort to sort the elements in each 
+          ! patch for their element distribution. 
+          !
+          ! Loop over the patches in the set
+          DO ipatch = 1, npatchesInCurrentBlock
+
+            ! Get the element distribution of the first element in the patch
+            IEL = IelementsInPatch(IelementsInPatchIdx(ipatch))
+            ilastElementDistr = p_IelementDistr(IEL)
+            
+            ! Now find all elements in the patch that are in the same element
+            ! distribution. Shift them to behind IEL. 
+            !
+            ! Loop over elements in patch
+            bigsort: DO idx = IelementsInPatchIdx(ipatch)+1,IelementsInPatchIdx(ipatch+1)-1
+              
+              ! Get global element number
+              IEL = IelementsInPatch(idx)
+
+              ! Get number of local element distribution
+              ilocalElementDistr = p_IelementDistr(IEL)
+              
+              ! If it's different to the current element distribution,
+              ! try to find another element in the patch which has that
+              ! distruibution and can be shifted to the front.
+              IF (ilocalElementDistr .NE. ilastElementDistr) THEN
+                
+                DO idx2 = idx+1,IelementsInPatchIdx(ipatch+1)-1
+                  ! Is there another element with element distribution
+                  ! ilastElementDistr?
+
+                  ilocalElementDistr = p_IelementDistr(IelementsInPatch(idx2))
+                  
+                  IF (ilocalElementDistr .EQ. ilastElementDistr) THEN
+                    ! Yep, we found one. Shift it to the front and continue
+                    ! with the next element.
+                    IEL = IelementsInPatch(idx2)
+                    IelementsInPatch(idx2) = IelementsInPatch(idx)
+                    IelementsInPatch(idx) = IEL
+                    CYCLE bigsort
+                  END IF
+                  
+                END DO
+                
+                ! No other element was found that belongs to the same element
+                ! group than IEL. In that case, we begin a new element distribution.
+                ilastElementDistr = ilocalElementDistr
+                
+              END IF
+
+            END DO bigsort
+            
+          END DO
 
           ! Reset number of sampling points
           Inpoints = 0
@@ -1742,24 +1792,51 @@ CONTAINS
           ! However, we may skip the re-initialisation of cubature points, etc.
           ! if the current elements belongs to the same element distribution as 
           ! the last one.
+          ilastElementDistr = 0
 
           ! Loop over the patches in the set
           DO ipatch = 1, npatchesInCurrentBlock
             
-            ! Loop over elements in patch
-            DO idx = IelementsInPatchIdx(ipatch),IelementsInPatchIdx(ipatch+1)-1
-              
-              ! Get global element number
-              IEL = IelementsInPatch(idx)
-
-              ! Get number of local element distribution
+            ! Loop over all elements in the patch.
+            idxsubgroup = IelementsInPatchIdx(ipatch)
+            
+            DO WHILE (idxsubgroup .LT. IelementsInPatchIdx(ipatch+1))
+            
+              ! Get the element distribution of the first element in the patch.
+              IEL = IelementsInPatch(idxsubgroup)
               ilocalElementDistr = p_IelementDistr(IEL)
-
-              ! Check if local element distribution corresponds to the last element 
-              ! distribution. Then we don't have to initialise everything again.
+              
+              ! Now, find the last element in the current patch which belongs to the
+              ! same group of elements; note that we sorted the elements in the patch
+              ! before, so all elements of the same element distribution are behind
+              ! each other. 
+              ! All these elements have the same basis functions, the same transformation,
+              ! coordinate system,...
+              !
+              ! Start at the end of the patch and find the last element within the
+              ! same element distribution as the first one. The loop ends
+              ! - if such an element is found or
+              ! - if no element is found; then (by Fortrag standard) idx2 points
+              !   also to the first element of the patch -- our 'reference' element
+              !   of the subgroup.
+              ! It's better to do the loop 'from end to the beginning' instead of
+              ! 'from start to the end' as there may be many patches containing only
+              ! elements of the same kind; in that case, the loop is immediately left
+              ! as the last element has the same kind as the first one.
+              DO idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
+                IF (ilocalElementDistr .EQ. p_IelementDistr(IelementsInPatch(idx2))) EXIT
+              END DO
+              
+              ! Ok, the elements of 'the same kind' can now be found between
+              ! positions idxsubgroup..idx2.
+              !
+              ! In case the 'local' element distribution changed, activate the new one.
+              ! This small check saves some time if there are some patches with completely
+              ! the same element type.
+              
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
 
-                ! Active local element distribution
+                ! Active the local element distribution of that group.
                 p_relementDistribution => p_rdiscrSource%RelementDistribution(ilocalElementDistr)
 
                 ! Get the number of local DOF's for trial functions
@@ -1779,7 +1856,7 @@ CONTAINS
                 ! Get from the trial element space the type of coordinate system
                 ! that is used in the local element distribution
                 icoordSystem = elem_igetCoordSystem(p_relementDistribution%itrialElement)
-                               
+                                
                 ! Check if one of the trial/test elements is nonparametric
                 bnonparTrial = elem_isNonparametric(p_relementDistribution%itestElement)
                 
@@ -1791,32 +1868,35 @@ CONTAINS
                   p_DcubPtsTrial => p_DcubPtsRef
                 END IF
                 
-                ! Save number of last element distribution
-                ilastElementDistr = ilocalElementDistr
               END IF
-
-              ! Put the cubature point coordinates in the right format to the 
-              ! cubature-point array.
-              ! Initialise all entries in p_DcubPtsRef with the same coordinates -
-              ! as the cubature point coordinates are identical on all elements.
-              ! Importantly, only those entries are copied which correspond to
-              ! the local element type. The remaining entries are left equal to zero.
-              DO i=1, ncubp
-                DO k=1,SIZE(p_DcubPtsRef,1)
-                  ! Could be solved using the TRANSPOSE operator - but often is's 
-                  ! faster this way...
-                  p_DcubPtsRef(k,i,idx) = Dxi(i,k)
-                END DO
-              END DO
-
+              
               ! Update number of sampling points for current patch
-              Inpoints(ipatch) = Inpoints(ipatch)+ncubp
+              Inpoints(ipatch) = Inpoints(ipatch) + ncubp*(idx2-idxsubgroup+1)
+
+              ! Loop over elements in subgroup
+              DO idx = idxsubgroup,idx2
+
+                ! Put the cubature point coordinates in the right format to the 
+                ! cubature-point array.
+                ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+                ! as the cubature point coordinates are identical on all elements.
+                ! Importantly, only those entries are copied which correspond to
+                ! the local element type. The remaining entries are left equal to zero.
+                DO i=1, ncubp
+                  DO k=1,SIZE(p_DcubPtsRef,1)
+                    ! Could be solved using the TRANSPOSE operator - but often is's 
+                    ! faster this way...
+                    p_DcubPtsRef(k,i,idx) = Dxi(i,k)
+                  END DO
+                END DO
+
+              END DO
               
               ! Store number of corners per element
-              IelementNVEInPatch(idx) = NVE
+              IelementNVEInPatch(idxsubgroup:idx2) = NVE
 
               ! Store number of cubature points per element
-              IelementNcubpInPatch(idx) = ncubp
+              IelementNcubpInPatch(idxsubgroup:idx2) = ncubp
 
               ! We have the coordinates of the cubature points saved in the
               ! coordinate array from above. Unfortunately for nonparametric
@@ -1826,9 +1906,10 @@ CONTAINS
               ! all the points.
               
               ! At first, get the coordinates of the corners of the element.
-              CALL trafo_getCoords(&
+              CALL trafo_getCoords_sim(&
                   elem_igetTrafoType(p_relementDistribution%itrialElement), &
-                  p_rtriangulation, IEL, p_Dcoords(:,:,idx))
+                  p_rtriangulation, IelementsInPatch(idxsubgroup:idx2), &
+                  p_Dcoords(:,:,idxsubgroup:idx2))
 
               ! Depending on the type of transformation, we must now choose
               ! the mapping between the reference and the real element.
@@ -1836,14 +1917,11 @@ CONTAINS
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
-              CALL trafo_calctrafo_mult (p_relementDistribution%ctrafoType, ncubp, &
-                  p_Dcoords(:,:,idx), p_DcubPtsRef(:,:,idx), p_Djac(:,:,idx), &
-                  p_Ddetj(:,idx), p_DcubPtsReal(:,:,idx))
-
-              ! If the element needs it, calculate the twist index array.
-              IF (ntwistsize .NE. 0) THEN
-                CALL trafo_calcTwistIndex(p_rtriangulation,IEL,ItwistIndex)
-              END IF
+              CALL trafo_calctrafo_sim (p_relementDistribution%ctrafoType, &
+                  idx2-idxsubgroup+1,ncubp, &
+                  p_Dcoords(:,:,idxsubgroup:idx2), p_DcubPtsRef(:,:,idxsubgroup:idx2), &
+                  p_Djac(:,:,idxsubgroup:idx2), &
+                  p_Ddetj(:,idxsubgroup:idx2), p_DcubPtsReal(:,:,idxsubgroup:idx2))
 
               !---------------------------------------------------------------------
               ! Step 2:  Perform sampling of consistent gradient values
@@ -1853,48 +1931,54 @@ CONTAINS
               ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
               SELECT CASE(p_rtriangulation%ndim)
               CASE (NDIM1D)
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV1D_X, Dcoefficients(:,idx,1),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV1D_X, &
+                    Dcoefficients(:,idxsubgroup:idx2,1))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
               CASE (NDIM2D)
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_X, Dcoefficients(:,idx,1),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_X, &
+                    Dcoefficients(:,idxsubgroup:idx2,1))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
 
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV2D_Y, Dcoefficients(:,idx,2),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_Y, &
+                    Dcoefficients(:,idxsubgroup:idx2,2))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
               CASE (NDIM3D)
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_X, Dcoefficients(:,idx,1),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
+                    Dcoefficients(:,idxsubgroup:idx2,1))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Y, Dcoefficients(:,idx,2),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
+                    Dcoefficients(:,idxsubgroup:idx2,2))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
-                CALL fevl_evaluate_mult (rvectorScalar, p_Dcoords(:,:,idx), &
-                    p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idx), ncubp, &
-                    p_DcubPtsTrial(:,:,idx), DER_DERIV3D_Z, Dcoefficients(:,idx,3),&
-                    ItwistIndex)
+                CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                    p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
+                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    ncubp, idx2-idxsubgroup+1,&
+                    p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_Z, &
+                    Dcoefficients(:,idxsubgroup:idx2,3))
 !!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,3))
                 
               CASE DEFAULT
@@ -1903,11 +1987,13 @@ CONTAINS
                 CALL sys_halt()
               END SELECT             
 
+              ! Subgroup finished, continue with the next one.
+              idxsubgroup = idx2 + 1
+              
             END DO
+              
           END DO   ! End of IPATCH loop
-          ilastElementDistr = 0
-
-
+          
           !---------------------------------------------------------------------
           ! Step 3: Prepare least-squares fitting
           !---------------------------------------------------------------------
@@ -2054,19 +2140,34 @@ CONTAINS
           p_Dcoords     = 0
 
           ! Loop over the patches in the set
+
+          ilastElementDistr = 0
+
           DO ipatch = 1, npatchesInCurrentBlock
             
-            ! Loop over elements in patch
-            DO idx = IelementsInPatchIdx(ipatch),IelementsInPatchIdx(ipatch+1)-1
-              
-              ! Get global element number
-              IEL = IelementsInPatch(idx)
-
-              ! Get number of local element distribution
+            ! Loop over all elements in the patch.
+            idxsubgroup = IelementsInPatchIdx(ipatch)
+            
+            DO WHILE (idxsubgroup .LT. IelementsInPatchIdx(ipatch+1))
+            
+              ! Get the element distribution of the first element in the patch.
+              IEL = IelementsInPatch(idxsubgroup)
               ilocalElementDistr = p_IelementDistr(IEL)
-
-              ! Check if local element distribution corresponds to the last element 
-              ! distribution. Then we don't have to initialise everything again.
+              
+              ! Now, find the last element in the current patch which belongs to the
+              ! same group of elements; note that we sorted the elements in the patch
+              ! before, so all elements of the same element distribution are behind
+              ! each other. 
+              DO idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
+                IF (ilocalElementDistr .EQ. p_IelementDistr(IelementsInPatch(idx2))) EXIT
+              END DO
+              
+              ! Ok, the elements of 'the same kind' can now be found between
+              ! positions idxsubgroup..idx2.
+              !
+              ! In case the 'local' element distribution changed, activate the new one.
+              ! This small check saves some time if there are some patches with completely
+              ! the same element type.
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
 
                 ! Active local element distribution
@@ -2113,11 +2214,13 @@ CONTAINS
               ! cubature-point array.
               ! Initialise all entries in p_DcubPtsRef with the same coordinates -
               ! as the cubature point coordinates are identical on all elements
-              DO i=1,nlocalDOFsDest
-                DO k=1,SIZE(p_DcubPtsRef,1)
-                  ! Could be solved using the TRANSPOSE operator - but often is's 
-                  ! faster this way...
-                  p_DcubPtsRef(k,i,idx) = Dxi(i,k)
+              DO idx = idxsubgroup,idx2
+                DO i=1,nlocalDOFsDest
+                  DO k=1,SIZE(p_DcubPtsRef,1)
+                    ! Could be solved using the TRANSPOSE operator - but often is's 
+                    ! faster this way...
+                    p_DcubPtsRef(k,i,idx) = Dxi(i,k)
+                  END DO
                 END DO
               END DO
               
@@ -2129,9 +2232,10 @@ CONTAINS
               ! all the points.
               
               ! At first, get the coordinates of the corners of the element
-              CALL trafo_getCoords (&
+              CALL trafo_getCoords_sim (&
                   elem_igetTrafoType(p_relementDistrDest%itrialElement), &
-                  p_rtriangulation, IEL , p_Dcoords(:,:,idx))
+                  p_rtriangulation, IelementsInPatch(idxsubgroup:idx2) , &
+                  p_Dcoords(:,:,idxsubgroup:idx2))
               
               ! Depending on the type of transformation, we must now choose
               ! the mapping between the reference and the real element.
@@ -2139,12 +2243,17 @@ CONTAINS
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
-              CALL trafo_calctrafo_mult (p_relementDistrDest%ctrafoType, nlocalDOFsDest, &
-                  p_Dcoords(:,:,idx), p_DcubPtsRef(:,:,idx), p_Djac(:,:,idx), &
-                  p_Ddetj(:,idx), p_DcubPtsReal(:,:,idx))
+              CALL trafo_calctrafo_sim (p_relementDistrDest%ctrafoType, &
+                  idx2-idxsubgroup+1,nlocalDOFsDest, &
+                  p_Dcoords(:,:,idxsubgroup:idx2),p_DcubPtsRef(:,:,idxsubgroup:idx2),&
+                  p_Djac(:,:,idxsubgroup:idx2), &
+                  p_Ddetj(:,idxsubgroup:idx2), p_DcubPtsReal(:,:,idxsubgroup:idx2))
+                  
+              ! Subgroup finished, continue with the next one.
+              idxsubgroup = idx2 + 1
+                  
             END DO
           END DO
-          ilastElementDistr = 0
           
           ! Next, we need to convert the physical coordinates of the curvature points
           ! to the local coordinates of the constant Jacobian "patch" elements. Note that 
@@ -2166,21 +2275,35 @@ CONTAINS
           Dpolynomials = 0.0_DP
 
           ! Loop over the patches in the set
+          ilastElementDistr = 0
+          
           DO ipatch = 1, npatchesInCurrentBlock
             
-            ! Loop over elements in patch
-            DO idx = IelementsInPatchIdx(ipatch),IelementsInPatchIdx(ipatch+1)-1
-              
-              ! Get global element number
-              IEL = IelementsInPatch(idx)
-              
-              ! Get number of local element distribution
+            ! Loop over all elements in the patch.
+            idxsubgroup = IelementsInPatchIdx(ipatch)
+            
+            DO WHILE (idxsubgroup .LT. IelementsInPatchIdx(ipatch+1))
+            
+              ! Get the element distribution of the first element in the patch.
+              IEL = IelementsInPatch(idxsubgroup)
               ilocalElementDistr = p_IelementDistr(IEL)
               
-              ! Check if local element distribution corresponds to the last element 
-              ! distribution. Then we don't have to initialise everything again.
+              ! Now, find the last element in the current patch which belongs to the
+              ! same group of elements; note that we sorted the elements in the patch
+              ! before, so all elements of the same element distribution are behind
+              ! each other. 
+              DO idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
+                IF (ilocalElementDistr .EQ. p_IelementDistr(IelementsInPatch(idx2))) EXIT
+              END DO
+              
+              ! Ok, the elements of 'the same kind' can now be found between
+              ! positions idxsubgroup..idx2.
+              !
+              ! In case the 'local' element distribution changed, activate the new one.
+              ! This small check saves some time if there are some patches with completely
+              ! the same element type.
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
-                
+
                 ! Active local element distribution
                 p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
                 
@@ -2203,14 +2326,22 @@ CONTAINS
               END IF
                 
               ! Calculate the transformation from the reference element to the real one
-              CALL trafo_calctrafo_mult(p_relementDistrDest%ctrafoType, nlocalDOFsDest, &
-                  p_Dcoords(:,:,idx), p_DcubPtsRef(:,:,idx), p_Djac(:,:,idx), p_Ddetj(:,idx))
+              CALL trafo_calctrafo_sim(p_relementDistrDest%ctrafoType, &
+                  idx2-idxsubgroup+1,nlocalDOFsDest, &
+                  p_Dcoords(:,:,idxsubgroup:idx2), p_DcubPtsRef(:,:,idxsubgroup:idx2),&
+                  p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2))
 
               ! Evaluate the basis functions for the cubature points of the destination FE space
-              CALL elem_generic_mult(p_relementDistribution%itrialElement, &
-                  p_Dcoords(:,:,idx), p_Djac(:,:,idx), p_Ddetj(:,idx), &
-                  BderDest, Dpolynomials(:,:,:,idx), nlocalDOFsDest, &
-                  p_DcubPtsTrial(:,:,idx))
+              CALL elem_generic_sim(p_relementDistribution%itrialElement, &
+                  p_Dcoords(:,:,idxsubgroup:idx2), p_Djac(:,:,idxsubgroup:idx2), &
+                  p_Ddetj(:,idxsubgroup:idx2), &
+                  BderDest, Dpolynomials(:,:,:,idxsubgroup:idx2), &
+                  nlocalDOFsDest,idx2-idxsubgroup+1, &
+                  p_DcubPtsTrial(:,:,idxsubgroup:idx2))
+                  
+              ! Subgroup finished, continue with the next one.
+              idxsubgroup = idx2 + 1
+                  
             END DO
           END DO
           ilastElementDistr = 0

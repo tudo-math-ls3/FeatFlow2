@@ -1544,7 +1544,7 @@ CONTAINS
   
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points:
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -1694,7 +1694,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2159,7 +2159,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2244,7 +2244,7 @@ CONTAINS
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2419,7 +2419,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2521,7 +2521,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2723,7 +2723,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2829,7 +2829,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3057,7 +3057,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3167,7 +3167,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3373,7 +3373,7 @@ CONTAINS
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -3452,7 +3452,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3540,7 +3540,7 @@ CONTAINS
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3618,7 +3618,7 @@ CONTAINS
   !  Djac(4,i) = J_i(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -3741,7 +3741,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3862,7 +3862,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -3870,7 +3870,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -3992,7 +3992,7 @@ CONTAINS
   !  Djac(4,i) = J_i(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -4119,7 +4119,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -4266,7 +4266,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -4274,7 +4274,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -4430,7 +4430,7 @@ CONTAINS
   !  Djac(4,i) = J_i(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -4555,7 +4555,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -4676,7 +4676,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -4684,7 +4684,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -4870,7 +4870,7 @@ CONTAINS
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -4950,7 +4950,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -5040,7 +5040,7 @@ CONTAINS
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -5121,7 +5121,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -5266,7 +5266,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -5401,7 +5401,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -5409,7 +5409,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -5561,7 +5561,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -5707,7 +5707,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -5867,7 +5867,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -5875,7 +5875,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -6047,7 +6047,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -6348,7 +6348,7 @@ CONTAINS
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -6582,7 +6582,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -6791,7 +6791,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -6799,7 +6799,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -7462,7 +7462,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -7608,7 +7608,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -7755,7 +7755,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -7763,7 +7763,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -7921,7 +7921,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -8122,7 +8122,7 @@ CONTAINS
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -8344,7 +8344,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -8545,7 +8545,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -8553,7 +8553,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -8922,7 +8922,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -9067,7 +9067,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -9214,7 +9214,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -9222,7 +9222,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -9384,7 +9384,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -9635,7 +9635,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -9845,7 +9845,7 @@ CONTAINS
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -9853,7 +9853,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -10084,7 +10084,7 @@ CONTAINS
   !  Djac(4) = J(2,2)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
@@ -10409,7 +10409,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -10498,7 +10498,7 @@ CONTAINS
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -10814,7 +10814,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -10972,7 +10972,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -11215,7 +11215,7 @@ CONTAINS
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -11312,7 +11312,7 @@ CONTAINS
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -11632,7 +11632,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -11866,7 +11866,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -12318,7 +12318,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -12536,7 +12536,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -12975,7 +12975,7 @@ CONTAINS
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -13195,7 +13195,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -13874,7 +13874,7 @@ CONTAINS
   !  Ddetj(i) = Determinant of point i
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -14198,7 +14198,7 @@ CONTAINS
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified

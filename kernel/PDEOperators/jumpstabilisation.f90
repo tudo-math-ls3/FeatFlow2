@@ -231,9 +231,6 @@ CONTAINS
   ! the reference element for all elements in a set.
   REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
 
-  ! Array with coordinates of the corners that form the real element.
-  REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
-  
   ! Cubature point weights
   REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
   

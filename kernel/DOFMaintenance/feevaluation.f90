@@ -1326,7 +1326,7 @@ CONTAINS
   ! the element does not need twist indices.
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(1:NVE/NVA,nelements)
-  INTEGER, DIMENSION(:,:), INTENT(IN) :: ItwistIndex
+  INTEGER, DIMENSION(:,:), INTENT(IN), OPTIONAL :: ItwistIndex
 !</input>
 
 !<output>
