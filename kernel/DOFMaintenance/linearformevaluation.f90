@@ -1481,14 +1481,14 @@ CONTAINS
                       elem_getEvaluationTag(p_elementDistribution%itestElement))
                       
       ! Evaluate real coordinates; they are needed in the callback function.
-      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
+      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       IF (IELset .EQ. 1) THEN
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
       END IF
 
       ! Calculate all information that is necessary to evaluate the finite element

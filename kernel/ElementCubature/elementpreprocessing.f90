@@ -11,11 +11,15 @@
 !# and whatever and set up evaluation structures. Calling the element routines
 !# with these evaluation structures will then evaluate the element there.
 !#
-!# 1.) elprep_prepareSetForEvaluation
+!# 1.) elprep_prepareForEvaluation
+!#     -> Prepares an element for the evaluation on a single point in a 
+!#        single cell.
+!#
+!# 2.) elprep_prepareSetForEvaluation
 !#     -> Prepares an element for the evaluation on multiple points on multiple
 !#        cells.
 !#
-!# 2.) elprep_releaseElementSet
+!# 3.) elprep_releaseElementSet
 !#     -> Releases an evaluation set for multiple points on multiple elements.
 !#
 !#  Frequently Asked Questions
@@ -61,6 +65,8 @@ MODULE elementpreprocessing
   USE fsystem
   USE triangulation
   USE element
+  
+  IMPLICIT NONE
 
 CONTAINS
 
@@ -69,7 +75,7 @@ CONTAINS
 !<subroutine>  
 
   SUBROUTINE elprep_prepareSetForEvaluation (revalElementSet, cevaluationTag, &
-      rtriangulation, IelementList, ctrafoType, Dpoints, DpointsRef, DpointsReal)
+      rtriangulation, IelementList, ctrafoType, Dpoints, DpointsRef, DpointsReal, Dcoords)
 
 !<description>
   ! This subroutine prepares a t_evalElementSet structure to be used for
@@ -87,7 +93,7 @@ CONTAINS
   ! Evaluation tag. This is a bitfield that specifies which information is
   ! prepared in the element set; it's a combination of EL_EVLTAG_XXXX-constants.
   !
-  ! Note: If EL_EVLTAG_REFCOORDS is not specified in this tag, the coordinates on
+  ! Note: If EL_EVLTAG_REFPOINTS is not specified in this tag, the coordinates on
   ! the reference element are assumed to be initialised! Dpoints is ignored
   ! in that case. This can be used to calculate this information only once
   ! in a first call while then using the same set of reference coordinates
@@ -107,28 +113,36 @@ CONTAINS
   ! points where to evaluate. These coordinates define on the reference the 
   ! coordinates of the cubature points where to evaluate the element.
   ! DIMENSION(ndimension,npointsPerElement)
-  ! Ignored if EL_EVLTAG_REFCOORDS is not specified in cevaluationTag.
+  ! Ignored if EL_EVLTAG_REFPOINTS is not specified in cevaluationTag.
   REAL(DP), DIMENSION(:,:), OPTIONAL :: Dpoints
   
   ! OPTIONAL: An array with coordinates of the points where to evaluate,
-  ! on the real element. For each element, a set of points can be
+  ! on the reference element. For each element, a set of points can be
   ! specified here.
-  ! A target to this array is saved in the revalElementSet structure. The array
+  ! A pointer to this array is saved in the revalElementSet structure. The array
   ! is assumed to be maintained by the caller.
   !
   ! If not specified, the routine will automatically set up that array
-  ! if necessary using Dpoints.
+  ! using Dpoints.
   REAL(DP), DIMENSION(:,:,:), TARGET, OPTIONAL :: DpointsRef
 
   ! OPTIONAL: An array with coordinates of the points where to evaluate,
-  ! on the reference element. For each element, a set of points can be
+  ! on the real element. For each element, a set of points can be
   ! specified here.
-  ! A target to this array is saved in the revalElementSet structure. The array
+  ! A pointer to this array is saved in the revalElementSet structure. The array
   ! is assumed to be maintained by the caller.
   !
   ! If not specified, the routine will automatically set up that array
-  ! if necessary using Dpoints.
+  ! using Dpoints.
   REAL(DP), DIMENSION(:,:,:), TARGET, OPTIONAL :: DpointsReal
+  
+  ! OPTIONAL: An array with vertices defining the elements.
+  ! A pointer to this array is saved in the revalElementSet structure. The array
+  ! is assumed to be maintained by the caller.
+  !
+  ! If not specified, the routine will automatically set up that array
+  ! using rtriangulation.
+  REAL(DP), DIMENSION(:,:,:), TARGET, OPTIONAL :: Dcoords
 !</input>
   
 !<inputoutput>
@@ -139,8 +153,8 @@ CONTAINS
 
 ! </subroutine>
 
-    INTEGER :: ndimRef,ndim,nverticesPerElement,nelements,ive,npointsPerElement
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_ItwistIndexEdge
+    INTEGER :: ndimRef,ndim,nverticesPerElement,nelements,npointsPerElement
+    INTEGER(I32), DIMENSION(:), POINTER :: p_ItwistIndexEdge
     INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
     
     ! Fetch some information
@@ -162,51 +176,53 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
     END IF
     
-    NULLIFY(p_ItwistIndexEdge)
-    IF (rtriangulation%h_ItwistIndex .NE. ST_NOHANDLE) THEN
-      CALL storage_getbase_int2d (rtriangulation%h_ItwistIndex,p_ItwistIndexEdge)
-    END IF
-  
     ! Probably save pointers to DpointsRef/DpointsReal.
     ! The default initialisation of the structure ensures that
-    ! bforeignCoordsRef/bforeignCoordsReal is initialised, even in an
+    ! bforeignPointsRef/bforeignPointsReal is initialised, even in an
     ! uninitialised structure.
     IF (PRESENT(DpointsRef)) THEN
       ! Save a pointer to DpointRef
-      IF (.NOT. revalElementSet%bforeignCoordsRef) THEN
+      IF (.NOT. revalElementSet%bforeignPointsRef) THEN
         DEALLOCATE(revalElementSet%p_DpointsRef)
       END IF
       revalElementSet%p_DpointsRef => DpointsRef
-      revalElementSet%bforeignCoordsRef = .TRUE.
+      revalElementSet%bforeignPointsRef = .TRUE.
     END IF 
 
     IF (PRESENT(DpointsReal)) THEN
       ! Save a pointer to DpointReal
-      IF (.NOT. revalElementSet%bforeignCoordsReal) THEN
+      IF (.NOT. revalElementSet%bforeignPointsReal) THEN
         DEALLOCATE(revalElementSet%p_DpointsReal)
       END IF
-      revalElementSet%p_DpointsRef => DpointsReal
-      revalElementSet%bforeignCoordsReal = .TRUE.
+      revalElementSet%p_DpointsReal => DpointsReal
+      revalElementSet%bforeignPointsReal = .TRUE.
     END IF 
-    
+
     ! Is the structure initialised?
     ! If yes, check the size of all the arrays. If it's different, deallocate
     ! and reallocate.
     IF (revalElementSet%npointsPerElement .NE. 0) THEN
 
       ! Corner coordinates for the transformation
-      IF (ASSOCIATED(revalElementSet%p_Dcoords)) THEN
+      IF (IAND(cevaluationTag,EL_EVLTAG_COORDS      ) .NE. 0) THEN
         IF (SIZE(revalElementSet%p_Dcoords) .LT. & 
             (ndim*nverticesPerElement*nelements)) THEN
-          DEALLOCATE(revalElementSet%p_Dcoords)
-        END IF
+          IF (.NOT. revalElementSet%bforeignCoords) THEN
+            ! Release the old Dcoords to create a new one.
+            DEALLOCATE(revalElementSet%p_Dcoords)
+          ELSE
+            CALL output_line ('Dcoords is too small!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+            CALL sys_halt()
+          END IF
+        END IF 
       END IF
     
-      IF (IAND(cevaluationTag,EL_EVLTAG_REFCOORDS   ) .NE. 0) THEN
+      IF (IAND(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .NE. 0) THEN
         IF (ASSOCIATED(revalElementSet%p_DpointsRef)) THEN
           IF (SIZE(revalElementSet%p_DpointsRef) .LT. & 
               (ndimRef*npointsPerElement*nelements)) THEN
-            IF (.NOT. revalElementSet%bforeignCoordsRef) THEN
+            IF (.NOT. revalElementSet%bforeignPointsRef) THEN
               DEALLOCATE(revalElementSet%p_DpointsRef)
             ELSE
               CALL output_line ('DpointsRef is too small!', &
@@ -217,11 +233,11 @@ CONTAINS
         END IF
       END IF
       
-      IF (IAND(cevaluationTag,EL_EVLTAG_REALCOORDS   ) .NE. 0) THEN
+      IF (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0) THEN
         IF (ASSOCIATED(revalElementSet%p_DpointsReal)) THEN
           IF (SIZE(revalElementSet%p_DpointsReal) .LT. &
               (ndim*npointsPerElement*nelements)) THEN
-            IF (.NOT. revalElementSet%bforeignCoordsRef) THEN
+            IF (.NOT. revalElementSet%bforeignPointsRef) THEN
               DEALLOCATE(revalElementSet%p_DpointsReal)
             ELSE
               CALL output_line ('DpointsReal is too small!', &
@@ -250,9 +266,9 @@ CONTAINS
       END IF
       
       IF (IAND(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .NE. 0) THEN
+
         IF (ASSOCIATED(revalElementSet%p_ItwistIndexEdge)) THEN
-          IF (SIZE(revalElementSet%p_ItwistIndexEdge) .LT. &
-              (UBOUND(p_ItwistIndexEdge,1)*nelements)) THEN
+          IF (SIZE(revalElementSet%p_ItwistIndexEdge) .LT. nelements) THEN
             DEALLOCATE(revalElementSet%p_ItwistIndexEdge)
           END IF
         END IF
@@ -270,21 +286,29 @@ CONTAINS
     ! Allocate necessary data arrays
     
     ! Calculate the transformation
-    IF (.NOT. ASSOCIATED(revalElementSet%p_Dcoords)) THEN
-      ALLOCATE(revalElementSet%p_Dcoords(ndim,nverticesPerElement,nelements))
+    IF (IAND(cevaluationTag,EL_EVLTAG_COORDS      ) .NE. 0) THEN
+      IF (.NOT. PRESENT(Dcoords)) THEN
+        IF (.NOT. ASSOCIATED(revalElementSet%p_Dcoords)) THEN
+          ALLOCATE(revalElementSet%p_Dcoords(ndim,nverticesPerElement,nelements))
+          revalElementSet%bforeignCoords = .FALSE.
+        END IF
+        CALL trafo_getCoords_sim (ctrafoType,&
+              rtriangulation,IelementList,revalElementSet%p_Dcoords)
+      ELSE
+        revalElementSet%p_Dcoords => Dcoords
+        revalElementSet%bforeignCoords = .TRUE.
+      END IF
     END IF
-    CALL trafo_getCoords_sim (ctrafoType,&
-          rtriangulation,IelementList,revalElementSet%p_Dcoords)
           
     ! Coordinates on the reference element are always necessary.
-    IF ((IAND(cevaluationTag,EL_EVLTAG_REFCOORDS   ) .NE. 0) .OR. &   
-        (IAND(cevaluationTag,EL_EVLTAG_REALCOORDS   ) .NE. 0)) THEN
+    IF ((IAND(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .NE. 0) .OR. &   
+        (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0)) THEN
       IF (.NOT. ASSOCIATED(revalElementSet%p_DpointsRef)) THEN
         ALLOCATE(revalElementSet%p_DpointsRef(ndimRef,npointsPerElement,nelements))
       END IF
       
       ! Calculate the coordinates on the reference element
-      IF (IAND(cevaluationTag,EL_EVLTAG_REFCOORDS   ) .NE. 0) THEN
+      IF (IAND(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .NE. 0) THEN
         IF (.NOT. PRESENT(Dpoints)) THEN
           CALL output_line ('Dpoints not specified!', &
               OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
@@ -297,7 +321,7 @@ CONTAINS
     ! Prepare memory for the Jacobian matrix and/or determinant
     IF ((IAND(cevaluationTag,EL_EVLTAG_JAC   ) .NE. 0) .OR. &
         (IAND(cevaluationTag,EL_EVLTAG_DETJ  ) .NE. 0) .OR. &
-        (IAND(cevaluationTag,EL_EVLTAG_REALCOORDS   ) .NE. 0)) THEN
+        (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0)) THEN
         
       IF (.NOT. ASSOCIATED(revalElementSet%p_Djac)) THEN
         ALLOCATE(revalElementSet%p_Djac(ndim*ndim,npointsPerElement,nelements))
@@ -307,9 +331,15 @@ CONTAINS
         ALLOCATE(revalElementSet%p_Ddetj(npointsPerElement,nelements))
       END IF
       
+      IF (.NOT. ASSOCIATED(revalElementSet%p_Dcoords)) THEN
+        CALL output_line ('Dcoords not available!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+        CALL sys_halt()
+      END IF
+      
       ! If real world coordinates must be calculated, we don't have to calculate
       ! the Jacobian stuff here; it's done below.
-      IF (IAND(cevaluationTag,EL_EVLTAG_REALCOORDS   ) .EQ. 0) THEN
+      IF (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .EQ. 0) THEN
         CALL trafo_calctrafo_sim (ctrafoType,&
              nelements,npointsPerElement,revalElementSet%p_Dcoords,&
              revalElementSet%p_DpointsRef,revalElementSet%p_Djac,revalElementSet%p_Ddetj)
@@ -318,12 +348,18 @@ CONTAINS
     END IF
     
     ! Calculate the coordinates on the real element
-    IF (IAND(cevaluationTag,EL_EVLTAG_REALCOORDS   ) .NE. 0) THEN
+    IF (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0) THEN
     
       IF (.NOT. ASSOCIATED(revalElementSet%p_DpointsReal)) THEN
         ALLOCATE(revalElementSet%p_DpointsReal(ndim,npointsPerElement,nelements))
       END IF
       
+      IF (.NOT. ASSOCIATED(revalElementSet%p_Dcoords)) THEN
+        CALL output_line ('Dcoords not available!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+        CALL sys_halt()
+      END IF
+
       ! Calculate the real world coordinates from the coordinates on the
       ! reference element. Calculate the Jacobial of the mapping from the
       ! reference element to the real elements.
@@ -337,18 +373,25 @@ CONTAINS
     ! Get the twist indices or the orientation of edges.
     IF (IAND(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .NE. 0) THEN
       
+      ! Get the twist index array
+      IF (rtriangulation%h_ItwistIndexEdges .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int (rtriangulation%h_ItwistIndexEdges,p_ItwistIndexEdge)
+      ELSE
+        CALL output_line ('Twist indices not available!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+        CALL sys_halt()
+      END IF
+      
       ! Allocate memory
       IF (.NOT. ASSOCIATED(revalElementSet%p_ItwistIndexEdge)) THEN
         ALLOCATE(&
-            revalElementSet%p_ItwistIndexEdge(UBOUND(p_ItwistIndexEdge,1),nelements))
+            revalElementSet%p_ItwistIndexEdge(nelements))
       END IF
-      
+
       ! Fetch the twist indices from the triangulation.
       DO ielidx = 1,nelements
         iel = IelementList(ielIdx)
-        DO ive = 1,UBOUND(p_ItwistIndexEdge,1)
-          revalElementSet%p_ItwistIndexEdge(ive,ielidx) = p_ItwistIndexEdge(ive,iel)
-        END DO
+        revalElementSet%p_ItwistIndexEdge(ielidx) = p_ItwistIndexEdge(iel)
       END DO
       
     END IF
@@ -418,14 +461,14 @@ CONTAINS
     END IF
 
     IF (ASSOCIATED(revalElementSet%p_DpointsRef) .AND. &
-        (.NOT. revalElementSet%bforeignCoordsRef)) THEN
+        (.NOT. revalElementSet%bforeignPointsRef)) THEN
       DEALLOCATE(revalElementSet%p_DpointsRef)
     ELSE
       NULLIFY(revalElementSet%p_DpointsRef)
     END IF
   
     IF (ASSOCIATED(revalElementSet%p_DpointsReal) .AND. &
-        (.NOT. revalElementSet%bforeignCoordsReal)) THEN
+        (.NOT. revalElementSet%bforeignPointsReal)) THEN
       DEALLOCATE(revalElementSet%p_DpointsReal)
     ELSE
       NULLIFY(revalElementSet%p_DpointsReal)
@@ -452,5 +495,153 @@ CONTAINS
 
   END SUBROUTINE
 
+  !************************************************************************
+  
+!<subroutine>  
+
+  SUBROUTINE elprep_prepareForEvaluation (revalElement, cevaluationTag, &
+      rtriangulation, ielement, ctrafoType, DpointRef, DpointReal, Dcoords)
+
+!<description>
+  ! This subroutine prepares a t_evalElement structure to be used for
+  ! the evaluation of a finite element in a single point on a single cell.
+  ! Dpoint contains the coordinates on the reference element where to
+  ! evaluate. This point is mapped onto the element ielement from the 
+  ! triangulation rtriangulation.
+  ! cevaluationTag specifies an 'evaluation tag' that defines which
+  ! information must be prepared by this routine; that tag can be obtained
+  ! by asking the finite element what it needs by calling 
+  ! elem_getEvaluationTag.
+!</description>
+
+!<input>
+  ! Evaluation tag. This is a bitfield that specifies which information is
+  ! prepared in the element set; it's a combination of EL_EVLTAG_XXXX-constants.
+  !
+  ! Note: If EL_EVLTAG_REFPOINTS is not specified in this tag, the coordinates on
+  ! the reference element are assumed to be initialised! Dpoints is ignored
+  ! in that case. This can be used to calculate this information only once
+  ! in a first call while then using the same set of reference coordinates
+  ! for all subsequent calls.
+  INTEGER(I32), INTENT(IN) :: cevaluationTag
+
+  ! Underlying triangulation of the domain
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! Element where to evaluate the basis functions
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielement
+  
+  ! Type of transformation from the reference element to the real element.
+  INTEGER, INTENT(IN) :: ctrafoType
+  
+  ! OPTIONAL: A tuple (x,y) (or (x,y,z) in 3D) of the point where to evaluate.
+  ! These coordinates define on the reference the coordinates of the cubature
+  ! points where to evaluate the element.
+  ! Ignored if EL_EVLTAG_REFPOINTS is not specified in cevaluationTag.
+  REAL(DP), DIMENSION(:), OPTIONAL :: DpointRef
+  
+  ! OPTIONAL: A tuple (x,y) (or (x,y,z) in 3D) of the point where to evaluate
+  ! on the real element. 
+  !
+  ! If not specified, the routine will automatically calculate its position
+  ! if necessary.
+  REAL(DP), DIMENSION(:), TARGET, OPTIONAL :: DpointReal
+  
+  ! OPTIONAL: An array with vertices defining the element.
+  !
+  ! If not specified, the routine will automatically set up that array
+  ! using rtriangulation.
+  REAL(DP), DIMENSION(:,:), TARGET, OPTIONAL :: Dcoords
+!</input>
+  
+!<inputoutput>
+  ! The element set that is to be initialised. If this is already initialised,
+  ! previous information is overwritten.
+  TYPE(t_evalElement), INTENT(INOUT) :: revalElement
+!</inputoutput>
+
+! </subroutine>
+
+    INTEGER(I32), DIMENSION(:), POINTER :: p_ItwistIndexEdge
+    
+    ! Calculate the transformation
+    IF (IAND(cevaluationTag,EL_EVLTAG_COORDS      ) .NE. 0) THEN
+      IF (.NOT. PRESENT(Dcoords)) THEN
+        CALL trafo_getCoords (ctrafoType,&
+              rtriangulation,ielement,revalElement%Dcoords)
+      ELSE
+        revalElement%Dcoords = Dcoords
+      END IF
+    END IF
+          
+    ! Coordinates on the reference element are always necessary.
+    IF ((IAND(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .NE. 0) .OR. &   
+        (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0)) THEN
+      
+      ! Calculate the coordinates on the reference element
+      IF (IAND(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .NE. 0) THEN
+        IF (.NOT. PRESENT(DpointRef)) THEN
+          CALL output_line ('Dpoints not specified!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+        END IF
+        revalElement%DpointRef = DpointRef
+      END IF
+    END IF
+    
+    ! Prepare memory for the Jacobian matrix and/or determinant
+    IF ((IAND(cevaluationTag,EL_EVLTAG_JAC   ) .NE. 0) .OR. &
+        (IAND(cevaluationTag,EL_EVLTAG_DETJ  ) .NE. 0)) THEN
+        
+      ! If real world coordinates must be calculated, we don't have to calculate
+      ! the Jacobian stuff here; it's done below.
+      IF (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .EQ. 0) THEN
+        CALL trafo_calctrafo (ctrafoType,&
+             revalElement%Dcoords,revalElement%DpointRef,revalElement%Djac,revalElement%ddetj)
+      END IF
+      
+    END IF
+    
+    ! Calculate the coordinates on the real element
+    IF (IAND(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .NE. 0) THEN
+    
+      ! Calculate the real world coordinates from the coordinates on the
+      ! reference element. Calculate the Jacobial of the mapping from the
+      ! reference element to the real element.
+      CALL trafo_calctrafo (ctrafoType,&
+          revalElement%Dcoords,revalElement%DpointRef,revalElement%Djac,revalElement%ddetj,&
+          revalElement%DpointReal)
+      
+    ELSE
+    
+      ! Take the predefined coordinates -- if specified.
+      IF (PRESENT(DpointReal)) THEN
+        ! Save a pointer to DpointReal
+        revalElement%DpointReal = DpointReal
+      END IF 
+
+    END IF
+
+    ! Get the twist indices or the orientation of edges.
+    IF (IAND(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .NE. 0) THEN
+      
+      ! Get the twist index array
+      IF (rtriangulation%h_ItwistIndexEdges .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int (rtriangulation%h_ItwistIndexEdges,p_ItwistIndexEdge)
+      ELSE
+        CALL output_line ('Twist indices not available!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+        CALL sys_halt()
+      END IF
+      
+      ! Fetch the twist indices from the triangulation.
+      revalElement%itwistIndexEdges = p_ItwistIndexEdge(ielement)
+      
+    END IF
+    
+    IF (IAND(cevaluationTag,EL_EVLTAG_TWISTIDXFACE   ) .NE. 0) THEN
+      ! not yet defined
+    END IF
+    
+  END SUBROUTINE
   
 END MODULE 

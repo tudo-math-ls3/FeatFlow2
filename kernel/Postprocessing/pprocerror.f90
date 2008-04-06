@@ -420,7 +420,7 @@ CONTAINS
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
       END IF
 
       ! Make sure that we have determinants.
@@ -466,7 +466,7 @@ CONTAINS
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
@@ -846,7 +846,7 @@ CONTAINS
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
       END IF
                       
       ! Make sure that we have determinants.
@@ -892,7 +892,7 @@ CONTAINS
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
@@ -1281,7 +1281,7 @@ CONTAINS
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
       END IF
                       
       ! Make sure that we have determinants.
@@ -1327,7 +1327,7 @@ CONTAINS
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! At this point, we must select the correct domain integration and coefficient
         ! calculation routine, depending which type of error we should compute!
@@ -2509,7 +2509,7 @@ CONTAINS
             
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! Depending on ctype, choose now the error to compute.
         SELECT CASE (ctype)
@@ -2978,7 +2978,7 @@ CONTAINS
             
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! Standard deviation uses only the values of the function.
 
@@ -3123,7 +3123,7 @@ CONTAINS
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! Standard deviation uses only the values of the function.
 

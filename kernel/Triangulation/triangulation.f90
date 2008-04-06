@@ -272,6 +272,90 @@
 !#    fine grid directly affects the vertex coordinates on all coarse grid
 !#    and vice versa. But that's not a bug, it's a feature :-)
 !# 
+!# 4.) What are twist indices?
+!#
+!#   Twist indices define a global orientation of edges and faces in a mesh.
+!#   There are two different fields for this in the triangulation: ItwistIndexEdges
+!#   and ItwistIndexFaces.
+!#
+!#   2D: Think about an edge adjacent to two elements:
+!#
+!#     ------+------
+!#           |
+!#           |
+!#      10   E  20
+!#           |
+!#           |
+!#     ------+------
+!#
+!#   We define the edge E to belong to the element with the smaller number.
+!#   When 'looking' from element 10 to the edge, the edge becomes twist
+!#   index 1, while when looking from element 20 to it, the edge receives
+!#   twist index 0. That way, the twist index defines whether the 'global' edge
+!#   is oriented counterclockwise (twist index = 1) or clockwise 
+!#   (twist index = 0) relative to the current element.
+!#
+!#   Each cell in 2D has 4 edges. The entry ItwistIndexEdges(iel) defines a
+!#   bitfield where the corresponding bit is set if the twist index is 1. So:
+!#    Bit 0 = twist index of edge 1
+!#    Bit 1 = twist index of edge 2
+!#    Bit 2 = twist index of edge 3
+!#    ...
+!#
+!#   3D: In 3D the situation is slightly more complicated. Here we have twist indices
+!#   for edges as well as for faces.
+!#
+!#   The twist indices for edges are defined relative to the face.
+!#   ItwistIndexEdges(iel) is again a bitfield that defines for each edge on
+!#   each face of the element its orientation. For simplicity, we always assume
+!#   that there are up to 4 edges on each face and up to 6 faces on an element
+!#   (which is the case for hexahedrals). Then the bitfield looks like this:
+!#
+!#     Bit         | 31..24 | 23..20 | 19..16 | 15..12 | 11..8  | 7..4   | 3..0
+!#     ------------+--------+--------+--------+--------+--------+--------+--------
+!#     Twist index | undef. | Face 6 | Face 5 | Face 4 | Face 3 | Face 2 | Face 1
+!#
+!#   Furthermore, the array ItwistIndexFaces defines for each element the orientation
+!#   of the faces. This is a 2D array of the form ItwistIndexFaces(iface,ielement).
+!#   To explain the meaning, we show here an example of two adjacent elements
+!#   with their local vertex numbering. (To get a better overview, we depict the two
+!#   elements separately from each other; the face should be thought of being
+!#   shared by the elements:)
+!#
+!#                         
+!#         ----------3              2-------
+!#                  /|             /|
+!#                 / |            / |
+!#                /  |           /  |
+!#               /   |          /   |     20
+!#      --------4    |         3--------
+!#              | I  |         |  J |
+!#        10    |    2 <-------|--  1------
+!#              |   /     =-2  |   / 
+!#              |  /           |  /  
+!#              | /            | /   
+!#              |/             |/    
+!#      --------1  --------->  4-------
+!#                   =4
+!#
+!#   Every face has it's own local numbering, which is independent of the
+!#   local numbering of the vertices on the cell: While the cell has local
+!#   vertex numbers 1..8, the face has local vertex numbers 1..4 (and
+!#   there is also a mapping between the local face numbers and the local
+!#   vertex numbers, but this is not used). Again we define the face to
+!#   belong to the element with the smaller element number. This element
+!#   defines the 'global orientation' of the face and is by definition
+!#   oriented anticlockwise.
+!#   The value of the twist index now defines, which local vertex number
+!#   on the face of the neighbour element belongs to local vertex number 1
+!#   on the current face. In the above example, ItwistIndexFaces(I,10)=4,
+!#   because local vertex number 1 on face I of element 10 maps to local
+!#   vertex number 4 of face J on element 20.
+!#   Similarly, ItwistIndexFaces(J,20)=-2, because local vertex number 1 of face
+!#   J maps to local vertex number 2 of face I. the sign "-" signales that
+!#   face J is oriented clockwise in the global orientation, as it belongs
+!#   to element 10.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1043,25 +1127,20 @@ MODULE triangulation
     ! use the IedgesAtVertexIdx array
     INTEGER        :: h_IedgesAtVertex = ST_NOHANDLE
     
-    ! Handle to the twist index array.
+    ! Handle to the twist index array for edges.
     ! Handle to 
-    !       p_ItwistIndex = array [1..NVA,1..NEL] of integer.
+    !       p_ItwistIndexEdges = array [1..NEL] of integer.
     !
-    ! 2D: The twist index is 1 if the edge belongs to the current element
-    ! (with the current element number smaller than the neighbour element)
-    ! and -1 if it belongs to the neighbour element (and is thus oriented
-    ! in the other way).
-    !
-    ! 3D: The absolute value of the twist index has the range 
-    ! 1..NVA and defines the number of the local face vertex on the neighbour 
-    ! element that corresponds to the local face vertex number 1 on the current
-    ! element.
-    ! The number is =0 if there is no neighbour. 
-    ! The number is > 0 if the vertices on a face are ordered globally
-    ! mathematically positive, relative to the current element.
-    ! The number is < 0 if the vertices on a face are ordered globally
-    ! mathematically negative, relative to the current element.
-    INTEGER        :: h_ItwistIndex = ST_NOHANDLE
+    ! Each entry is a bitfield. Each bit prescribes the orientation of
+    ! an edge in the element.
+    ! If the bit is set, the edge is positivly oriented relative to the
+    ! element, otherwise negatively; see the explaination above.
+    INTEGER        :: h_ItwistIndexEdges = ST_NOHANDLE
+
+    ! Handle to the twist index array for faces.
+    ! Handle to 
+    !       p_ItwistIndexEdges = array [1..#faces,1..NEL] of integer.
+    INTEGER        :: h_ItwistIndexFaces = ST_NOHANDLE
 
   END TYPE
 
@@ -1885,8 +1964,12 @@ CONTAINS
           rbackupTriangulation%h_IedgesAtVertexIdx)
 
     CALL checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
-          rtriangulation%h_ItwistIndex, &
-          rbackupTriangulation%h_ItwistIndex)
+          rtriangulation%h_ItwistIndexEdges, &
+          rbackupTriangulation%h_ItwistIndexEdges)
+
+    CALL checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
+          rtriangulation%h_ItwistIndexFaces, &
+          rbackupTriangulation%h_ItwistIndexFaces)
     
   CONTAINS
   
@@ -2103,8 +2186,8 @@ CONTAINS
           rbackupTriangulation%h_IedgesAtVertexIdx)
 
     CALL checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
-          rtriangulation%h_ItwistIndex, &
-          rbackupTriangulation%h_ItwistIndex)
+          rtriangulation%h_ItwistIndexFaces, &
+          rbackupTriangulation%h_ItwistIndexFaces)
     
   CONTAINS
   
@@ -2300,9 +2383,12 @@ CONTAINS
 
     CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex)
+
+    CALL checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
+          rtriangulation%h_ItwistIndexEdges)
            
     CALL checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
-          rtriangulation%h_ItwistIndex)
+          rtriangulation%h_ItwistIndexFaces)
            
     ! Clean up the rest of the structure
 
@@ -10669,76 +10755,6 @@ CONTAINS
   
   ! ***************************************************************************
 
-!#   The twist index is an integer that defines the global orientation of edges
-!#   in 2D and faces in 3D. It allows to determine whether an edge/face belongs
-!#   to the 'current' element or to the 'neighbour' element and can be computed
-!#   with trafo_calcTwistIndex. The routine elem_getTwistIndexSize allows to
-!#   determine the size of the array for the twist indices.
-!#
-!#   First, imagine a situation in 2D. Think about an edge adjacent to two
-!#   elements:
-!#
-!#     ------+------
-!#           |
-!#           |
-!#      10   E  20
-!#           |
-!#           |
-!#     ------+------
-!#
-!#   We define the edge E to belong to the element with the smaller number.
-!#   When 'looking' from element 10 to the edge, the edge becomes twist
-!#   index 1, while when looking from element 20 to it, the edge receives
-!#   twist index -1. That way, the twist index defines whether the 'global' edge
-!#   is oriented counterclockwise (twist index = 1) or clockwise 
-!#   (twist index = -1) relative to the current element.
-!#
-!#   In 3D the situation is slightly more complicated. Thing about a face
-!#   adjacent to two elements. (To get a better overview, we depict the two
-!#   elements separately from each other; the face should be thought of being
-!#   shared by the elements:)
-!#
-!#                         
-!#         ----------3              2-------
-!#                  /|             /|
-!#                 / |            / |
-!#                /  |           /  |
-!#               /   |          /   |     20
-!#      --------2    |         3--------
-!#              | I  |         |  J |
-!#        10    |    4 <-------|--  1------
-!#              |   /     =-4  |   / 
-!#              |  /           |  /  
-!#              | /            | /   
-!#              |/             |/    
-!#      --------1  --------->  4-------
-!#                   =4
-!#
-!#   Every face has it's own local numbering, which is independent of the
-!#   local numbering of the vertices on the cell: While the cell has local
-!#   vertex numbers 1..8, the face has local vertex numbers 1..4 (and
-!#   there is also a mapping between the local face numbers and the local
-!#   vertex numbers, , specified by the IverticesAtFace array, but 
-!#   this is not used here). Again we define the face to
-!#   belong to the element with the smaller element number. This element
-!#   defines the 'global orientation' of the face and is by definition
-!#   oriented anticlockwise.
-!#   The value of the twist index now defines, which local vertex number
-!#   on the face of the neighbour element belongs to local vertex number 1
-!#   on the current face. In the above example, ItwistIndex(I,10)=4,
-!#   because local vertex number 1 on face I of element 10 maps to local
-!#   vertex number 4 of face J on element 20.
-!#   Similarly, ItwistIndex(J,20)=-4, because local vertex number 1 of face
-!#   J maps to local vertex number 2 of face I. the sign "-" signales that
-!#   face J is oriented clockwise in the global orientation, as it belongs
-!#   to element 10.
-!#   Note that the twist index is unique except for the sign!
-!#   If the twist index is 4 on the one face when looking from one
-!#   element, it's -4 when looking from the other. That's the case by
-!#   nature of the local numbering. The local numbering of a face is
-!#   always counterclockwise when 'looking' from the center of a cell
-!#   to a face.
-
 !<subroutine>  
 
   SUBROUTINE tria_genTwistIndex(rtriangulation)
@@ -10753,41 +10769,35 @@ CONTAINS
   
 !</subroutine>
 
-    INTEGER, DIMENSION(2) :: Isize,Isize2
+    INTEGER(PREC_ELEMENTIDX) :: isize
 
-    ! How large has the twist array to be?
-    ! In 2D, the first dimension is the number of edges per element.
-    ! In 3D, the first dimension is the number of faces on each element.
-    ! The 2nd dimension is always the number of elements.
-    IF (rtriangulation%ndim .EQ. NDIM2D) THEN
-      Isize = (/rtriangulation%NNEE,INT(rtriangulation%NEL,I32)/)
-    ELSE IF (rtriangulation%ndim .EQ. NDIM3D) THEN
-      Isize = (/rtriangulation%NNAE,INT(rtriangulation%NEL,I32)/)
-    ELSE
+    IF (rtriangulation%ndim .EQ. NDIM1D) THEN
       ! 1D doesn't have twist indices.
       RETURN
     END IF
 
     ! Allocate memory if necessary
-    IF (rtriangulation%h_ItwistIndex .EQ. ST_NOHANDLE) THEN
-      CALL storage_new2d ('tria_genTwistIndex', 'ItwistIndex', &
-          Isize, ST_INT, &
-          rtriangulation%h_ItwistIndex, ST_NEWBLOCK_NOINIT)
+    IF (rtriangulation%h_ItwistIndexEdges .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('tria_genTwistIndex', 'ItwistIndexEdges', &
+          rtriangulation%NEL, ST_INT, &
+          rtriangulation%h_ItwistIndexEdges, ST_NEWBLOCK_NOINIT)
     ELSE
-      CALL storage_getsize (rtriangulation%h_ItwistIndex, Isize2)
-      IF (Isize2(2) .NE. rtriangulation%NEL) THEN
+      CALL storage_getsize (rtriangulation%h_ItwistIndexEdges, isize)
+      IF (isize .NE. rtriangulation%NEL) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genEdgesAtVertex', &
-            Isize(2), rtriangulation%h_ItwistIndex, ST_NEWBLOCK_NOINIT, .FALSE.)
+            rtriangulation%NEL, rtriangulation%h_ItwistIndexEdges, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
     
     ! Now we can start to generate the twist index.
     ! Call the appropriate generation routine.
     IF (rtriangulation%ndim .EQ. NDIM2D) THEN
-      CALL genTwistIndex2D(rtriangulation)
+      CALL genTwistIndexEdges2D(rtriangulation)
     ELSE IF (rtriangulation%ndim .EQ. NDIM3D) THEN
-      CALL genTwistIndex3D(rtriangulation)
+      ! CALL genTwistIndexEdges3D(rtriangulation)   ! not yet implemented
+      CALL genTwistIndexFaces3D(rtriangulation)
     END IF
 
 
@@ -10795,7 +10805,7 @@ CONTAINS
   
     ! ---------------------------------------------------------------
 
-    SUBROUTINE genTwistIndex2D(rtriangulation)
+    SUBROUTINE genTwistIndexEdges2D(rtriangulation)
     
     ! Generate the twist index for 2D meshes
     
@@ -10805,9 +10815,10 @@ CONTAINS
       ! local variables
       INTEGER(I32), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
       INTEGER(PREC_ELEMENTIDX) :: iel,ielneighbour
-      INTEGER(I32), DIMENSION(:,:), POINTER :: p_ItwistIndex
+      INTEGER(I32), DIMENSION(:), POINTER :: p_ItwistIndex
       INTEGER(PREC_EDGEIDX) :: iedge
       INTEGER :: imt
+      INTEGER(I32) :: itwistindex
     
       IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) THEN
         CALL output_line ('IverticesAtEdge not available!', &
@@ -10823,35 +10834,37 @@ CONTAINS
       
       CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
           p_IneighboursAtElement)
-      CALL storage_getbase_int2d (rtriangulation%h_ItwistIndex,&
+      CALL storage_getbase_int (rtriangulation%h_ItwistIndexEdges,&
           p_ItwistIndex)
           
       ! Chech the edge on each each element.
       ! If the first vertex has the higher number, the twist index is
-      ! one -- and -1 for the neighbour element.
+      ! one. In that case, set the appropriate bit in the twist index field.
       DO iel=1,rtriangulation%NEL
+        itwistindex = 0
         DO imt=1,UBOUND(p_IneighboursAtElement,1)
           ielneighbour = p_IneighboursAtElement(imt,iel)
           IF ((iel .LT. ielneighbour) .OR. (ielneighbour .EQ. 0)) THEN
-            p_ItwistIndex(imt,iel) = 1
-          ELSE
-            p_ItwistIndex(imt,iel) = -1
+            itwistindex = IOR(itwistindex,ISHFT(1,imt-1))
           END IF
         END DO
+        p_ItwistIndex(iel) = itwistindex
       END DO
           
     END SUBROUTINE
     
     ! ---------------------------------------------------------------
 
-    SUBROUTINE genTwistIndex3D(rtriangulation)
+    SUBROUTINE genTwistIndexFaces3D(rtriangulation)
     
     ! Generate the twist index for 3D meshes
 
     ! The triangulation where the twist index should be generated.
     TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
     
-      ! local variables
+    ! Implementation must be done again.
+    ! The calculation works, but the target array is not properly installed
+    ! in the triangulation structure!
     
       ! local variables
       INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
@@ -10907,7 +10920,7 @@ CONTAINS
           p_IfacesAtElement)
       CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
           p_IneighboursAtElement)
-      CALL storage_getbase_int2d (rtriangulation%h_ItwistIndex,&
+      CALL storage_getbase_int2d (rtriangulation%h_ItwistIndexFaces,&
           p_ItwistIndex)
           
       nva = rtriangulation%NNVA

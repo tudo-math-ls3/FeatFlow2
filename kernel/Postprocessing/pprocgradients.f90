@@ -563,7 +563,7 @@ CONTAINS
             
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! At this point, we calculate the gradient information.
         ! As this routine handles the 2D case, we have an X- and Y-derivative.
@@ -657,7 +657,7 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    INTEGER :: IVE,NVE,NVEMax,ntwistsize
+    INTEGER :: IVE,NVE,NVEMax
     INTEGER :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
     INTEGER :: i,j,k,ipoint,idx,idx2,icoordSystem,idxsubgroup
     INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax
@@ -1289,9 +1289,7 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-            ncubp, icoordSystem, p_rtriangulation%ndim, NVE,&
-            MAX(elem_getTwistIndexSize(p_relementDistribution%itrialElement),&
-                elem_getTwistIndexSize(p_relementDistribution%itestElement)))
+            ncubp, icoordSystem, p_rtriangulation%ndim, NVE,.FALSE.)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
@@ -1353,47 +1351,35 @@ CONTAINS
           ! Allocate memory for the values of the derivaties in the corners
           ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,p_rtriangulation%ndim))
           
-          ! If the element needs it, calculate the twist index array.
-          IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
-            CALL trafo_calcTwistIndices(p_rtriangulation,&
-                IelementsInPatch(1:nelementsPerBlock),rintSubset%p_ItwistIndex)
-          END IF
-
           ! Calculate the derivative of the FE function in the cubature
           ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
           SELECT CASE(p_rtriangulation%ndim)
           CASE (NDIM1D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1))
             
           CASE (NDIM2D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2))
             
           CASE (NDIM3D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
-                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3),&
-                rintSubset%p_ItwistIndex)
+                nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3))
 
           CASE DEFAULT
             CALL output_line('Invalid spatial dimension!',&
@@ -1437,7 +1423,7 @@ CONTAINS
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
           CALL elem_generic_sim(p_relementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
-              nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
+              nelementsPerBlock, p_DcubPtsTrial)
           
           
           !-----------------------------------------------------------------------
@@ -1485,9 +1471,7 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the destination FE space.
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE,&
-            MAX(elem_getTwistIndexSize(p_relementDistribution%itrialElement),&
-                elem_getTwistIndexSize(p_relementDistribution%itestElement)))
+            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE,.FALSE.)
           p_DcubPtsRef =>  rintSubsetDest%p_DcubPtsRef
           p_DcubPtsReal => rintSubsetDest%p_DcubPtsReal
           p_Djac =>        rintSubsetDest%p_Djac
@@ -1564,7 +1548,7 @@ CONTAINS
           ! Evaluate the basis functions for the cubature points of the destination FE space
           CALL elem_generic_sim(p_relementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
-              nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
+              nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
           
           !---------------------------------------------------------------------
           ! Step 6: Evaluate the averaged derivative values at the cubature
@@ -1763,17 +1747,12 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax,0)
+              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax,.FALSE.)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
           p_Ddetj =>       rintSubset%p_Ddetj
           p_Dcoords =>     rintSubset%p_DCoords
-          
-          ! Determine size of twist index array; if this is 0, no element needs
-          ! the twist index array.
-          ntwistsize = MAX(elem_getTwistIndexSize(p_relementDistribution%itrialElement),&
-                           elem_getTwistIndexSize(p_relementDistribution%itestElement))
           
           ! Initialise arrays with zeros
           p_DcubPtsRef  = 0
@@ -1785,7 +1764,7 @@ CONTAINS
           ! Allocate memory. This domain integration structure stores 
           ! all information of the destination FE space. 
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax, 0)
+              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax, .FALSE.)
           
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
@@ -2059,11 +2038,11 @@ CONTAINS
           ! cubature points of the elements present in the patch and store each polynomial 
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
           ! Note that we evaluate over the maximum number of cubature points present in
-          ! the patch. Altought some meaningless values may be generated, it is faster to
+          ! the patch. Although some meaningless values may be generated, it is faster to
           ! evaluate all values simultaneously and filter the required data afterwards.
           CALL elem_generic_sim(p_relementDistribution%itrialElement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
-              nelementsPerBlock, p_DcubPtsTrial,rintSubset%p_ItwistIndex)
+              nelementsPerBlock, p_DcubPtsTrial)
 
           ! Compute total number of sampling points
           nspoints = SUM(Inpoints(1:npatchesInCurrentBlock))
@@ -2255,7 +2234,7 @@ CONTAINS
             END DO
           END DO
           
-          ! Next, we need to convert the physical coordinates of the curvature points
+          ! Next, we need to convert the physical coordinates of the curbature points
           ! to the local coordinates of the constant Jacobian "patch" elements. Note that 
           ! NVE and icoordSystem have not been modified and can be savely used from above.
           CALL calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
@@ -3519,9 +3498,7 @@ CONTAINS
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,j,&
-        p_rtriangulation%ndim,NVE,&
-        MAX(elem_getTwistIndexSize(p_relementDistribution%itrialElement),&
-            elem_getTwistIndexSize(p_relementDistribution%itestElement)))
+        p_rtriangulation%ndim,NVE,.FALSE.)
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -3619,12 +3596,6 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
     
-        ! If the element needs it, calculate the twist index array.
-        IF (ASSOCIATED(rintSubset%p_ItwistIndex)) THEN
-          CALL trafo_calcTwistIndices(p_rtriangulation,&
-              p_IelementList(IELset:IELmax),rintSubset%p_ItwistIndex)
-        END IF
-
         ! At this point, we calculate the gradient information.
         ! As this routine handles the 2D case, we have an X- and Y-derivative.
         ! Calculate the X-derivative in the corners of the elements
@@ -3635,13 +3606,13 @@ CONTAINS
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1),rintSubset%p_ItwistIndex)        
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
 
         CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%itrialElement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2),rintSubset%p_ItwistIndex)
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
 
         ! Sum up the derivative values in the destination vector.
         ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 

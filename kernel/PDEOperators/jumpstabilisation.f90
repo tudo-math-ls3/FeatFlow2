@@ -387,7 +387,7 @@ CONTAINS
                     elem_getEvaluationTag(p_relementDistribution%itestElement))
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFCOORDS)
+    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
 
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative

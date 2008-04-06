@@ -1959,9 +1959,9 @@ CONTAINS
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       IF (IELset .EQ. 1) THEN
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
       END IF
 
       ! Calculate all information that is necessary to evaluate the finite element
@@ -3404,9 +3404,9 @@ CONTAINS
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       IF (IELset .EQ. 1) THEN
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
       END IF
       
       ! Calculate all information that is necessary to evaluate the finite element
@@ -4893,7 +4893,7 @@ CONTAINS
                     elem_getEvaluationTag(p_relementDistribution%itestElement))
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFCOORDS)
+    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
 
     ! We loop through all edges
     DO IMT = 1,p_rtriangulation%NMT
@@ -5795,7 +5795,7 @@ CONTAINS
                     elem_getEvaluationTag(p_relementDistribution%itestElement))
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFCOORDS)
+    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
 
     ! We loop through all edges
     DO IMT = 1,p_rtriangulation%NMT

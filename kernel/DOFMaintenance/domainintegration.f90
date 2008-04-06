@@ -77,10 +77,10 @@ MODULE domainintegration
     ! array [1..npointsPerElement,1..Number of elements]
     REAL(DP), DIMENSION(:,:), POINTER             :: p_Ddetj
     
-    ! Twist index array to define the orientation of faces/edges.
+    ! Twist index array to define the orientation of edges.
     ! May point to NULL() if the element does not need twist indices.
     ! array [1..NVE/NVA,1..Number of elements]
-    INTEGER(I32), DIMENSION(:,:), POINTER         :: p_ItwistIndex
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_ItwistIndex
 
 
 
@@ -102,7 +102,7 @@ CONTAINS
 
   SUBROUTINE domint_initIntegration (rintSubset,nelements,npointsPerElement,&
                                      icoordSystem,ndimSpace,nverticesPerElement,&
-                                     ntwistIndexSize)
+                                     btwistIndicesEdges)
   
 !<description>
   ! This routine initialises a t_domainIntSubset structure. Memory is allocated
@@ -131,9 +131,8 @@ CONTAINS
   ! transformation from the reference to the real element
   INTEGER, INTENT(IN) :: nverticesPerElement
   
-  ! Number of entries for the twist index array on each element.
-  ! May be 0, in that case, no twist index array is allocated
-  INTEGER, INTENT(IN) :: ntwistIndexSize
+  ! Whether to allocate the twist index array for edges or not.
+  LOGICAL, INTENT(IN) :: btwistIndicesEdges
 !</input>
 
 !<output>
@@ -191,8 +190,8 @@ CONTAINS
     ALLOCATE(rintSubset%p_Ddetj(npointsPerElement,nelements))
 
     ! Allocate memory for the twist index array.
-    IF (ntwistIndexSize .NE. 0) THEN
-      ALLOCATE(rintSubset%p_ItwistIndex(ntwistIndexSize,nelements))
+    IF (btwistIndicesEdges) THEN
+      ALLOCATE(rintSubset%p_ItwistIndex(nelements))
     ELSE
       NULLIFY(rintSubset%p_ItwistIndex)
     END IF

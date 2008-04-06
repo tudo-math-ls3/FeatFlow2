@@ -820,15 +820,15 @@ CONTAINS
                       
       IF (.NOT. rform%ballCoeffConstant) THEN
         ! Evaluate real coordinates if not necessary.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
       END IF
       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       IF (IELset .EQ. 1) THEN
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFCOORDS)
+        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
       END IF
 
       ! Calculate all information that is necessary to evaluate the finite element

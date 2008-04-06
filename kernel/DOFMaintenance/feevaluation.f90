@@ -34,21 +34,6 @@ MODULE feevaluation
   
   IMPLICIT NONE
 
-  ! There are two functions fevl_evaluate_mult which do the same -- with
-  ! different calling conventions and different complexities.
-  INTERFACE fevl_evaluate_mult
-    MODULE PROCEDURE fevl_evaluate_mult1
-    MODULE PROCEDURE fevl_evaluate_mult2
-  END INTERFACE
-
-  ! There are two functions fevl_evaluate_sim which do the same -- with
-  ! different calling conventions and different complexities.
-  INTERFACE fevl_evaluate_sim
-    MODULE PROCEDURE fevl_evaluate_sim1
-    MODULE PROCEDURE fevl_evaluate_sim2
-    MODULE PROCEDURE fevl_evaluate_sim3
-  END INTERFACE
-
 !<constants>
 
 !<constantblock description="Constants for the cnonmeshPoints parameter.">
@@ -65,6 +50,21 @@ MODULE feevaluation
 !</constantblock>
 
 !</constants>
+
+  ! There are two functions fevl_evaluate_mult which do the same -- with
+  ! different calling conventions and different complexities.
+  INTERFACE fevl_evaluate_mult
+    MODULE PROCEDURE fevl_evaluate_mult1
+    MODULE PROCEDURE fevl_evaluate_mult2
+  END INTERFACE
+
+  ! There are two functions fevl_evaluate_sim which do the same -- with
+  ! different calling conventions and different complexities.
+  INTERFACE fevl_evaluate_sim
+    MODULE PROCEDURE fevl_evaluate_sim1
+    MODULE PROCEDURE fevl_evaluate_sim2
+    MODULE PROCEDURE fevl_evaluate_sim3
+  END INTERFACE
 
 CONTAINS
 
@@ -120,9 +120,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bnonpar
     INTEGER :: cnonmesh
-    INTEGER :: ipoint,ieltype,indof,nve,ibas,ntwistsize
+    INTEGER :: ipoint,ieltype,indof,nve,ibas
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
@@ -131,13 +130,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     REAL(SP), DIMENSION(:), POINTER :: p_Fdata
     
-    ! Triangulation information
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    
     ! Transformation
-    REAL(DP), DIMENSION(4) :: Djac
-    REAL(DP) :: ddetj
     INTEGER(I32) :: ctrafoType
     REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint
     
@@ -145,25 +138,15 @@ CONTAINS
     REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
     
-    ! Coordinates of the corners of one element
-    REAL(DP), DIMENSION(UBOUND(Dpoints,1),TRIA_MAXNVE) :: Dcoord
-    
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
 
-    ! Twist index array to define the orientation of faces/edges
-    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
+    ! Evaluation structure and tag
+    TYPE(t_evalElement) :: revalElement
+    INTEGER(I32) :: cevaluationTag
 
     ! Ok, slow but general.
     
-    ! Get triangulation information
-    CALL storage_getbase_double2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_DvertexCoords,&
-        p_DvertexCoords)
-    CALL storage_getbase_int2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-        
     p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
     
     ! For uniform discretisations, we get the element type in advance...
@@ -182,8 +165,8 @@ CONTAINS
       ! Type of transformation from/to the reference element
       ctrafoType = elem_igetTrafoType(ieltype)
       
-      ! Element nonparametric?
-      bnonpar = elem_isNonparametric(ieltype)
+      ! Get the element evaluation tag; necessary for the preparation of the element
+      cevaluationTag = elem_getEvaluationTag(ieltype)
       
       NULLIFY(p_IelementDistr)
     ELSE
@@ -209,9 +192,6 @@ CONTAINS
     
     cnonmesh = FEVL_NONMESHPTS_NONE
     IF (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
-    
-    ! Does the element need twist indices?
-    ntwistsize = elem_getTwistIndexSize(ieltype)
     
     ! We loop over all points.
 
@@ -286,44 +266,33 @@ CONTAINS
         ! Type of transformation from/to the reference element
         ctrafoType = elem_igetTrafoType(ieltype)
         
-        ! Element nonparametric?
-        bnonpar = elem_isNonparametric(ieltype)
-        
+        ! Get the element evaluation tag; necessary for the preparation of the element
+        cevaluationTag = elem_getEvaluationTag(ieltype)
       END IF
         
       ! Calculate the global DOF's on that element into IdofsTest.
       CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscretisation, &
           iel,.FALSE.,Idofs)
+     
+      ! Get the element shape information
+      CALL elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
+          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, iel, ctrafoType)
           
-      ! Get the coordinates forming the current element
-      Dcoord(:,1:nve) = p_DvertexCoords(:,p_IverticesAtElement(:,iel))
-    
       ! Calculate the transformation of the point to the reference element
-      CALL trafo_calcRefCoords (ctrafoType,Dcoord,Dpoints(:,ipoint),DparPoint)
-    
-      ! Depending on the type of transformation, we must now choose
-      ! the mapping between the reference and the real element.
-      ! In case we use a nonparametric element, we need the 
-      ! coordinates of the points on the real element, too.
-      CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
-          Dcoord,DparPoint,Djac,ddetj)
+      CALL trafo_calcRefCoords (ctrafoType,revalElement%Dcoords,&
+          Dpoints(:,ipoint),DparPoint)
 
-      ! If necessary, calculate the twist index array. The element may need it.
-      IF (ntwistSize .NE. 0) THEN
-        CALL trafo_calcTwistIndex(&
-          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel,ItwistIndex)
-      END IF
+      ! Now calculate everything else what is necessary for the element    
+      CALL elprep_prepareForEvaluation (revalElement, &
+          IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, iel, &
+          ctrafoType, DparPoint, Dpoints(:,ipoint))
 
       ! Call the element to calculate the values of the basis functions
       ! in the point.
-      IF (bnonpar) THEN
-        CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, Dpoints(:,ipoint),Dbas,ItwistIndex)
-      ELSE
-        CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DparPoint,Dbas,ItwistIndex)
-      END IF
+      CALL elem_generic2 (ieltype, revalElement, Bder, Dbas)
       
+      ! Combine the basis functions to get the function value.
       dval = 0.0_DP
       IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
       
@@ -403,8 +372,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bnonpar
-    INTEGER :: ipoint,ieltype,indof,nve,ibas,npoints,ntwistsize
+    INTEGER :: ipoint,ieltype,indof,nve,ibas,npoints
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
@@ -412,28 +380,20 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     REAL(SP), DIMENSION(:), POINTER :: p_Fdata
     
-    ! Triangulation information
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    
     ! Transformation
-    REAL(DP), DIMENSION(4) :: Djac
-    REAL(DP) :: ddetj
     INTEGER(I32) :: ctrafoType
-    REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint,DrealPoint
+    REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint
     
     ! Values of basis functions and DOF's
     REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
     
-    ! Coordinates of the corners of one element
-    REAL(DP), DIMENSION(NDIM3D,TRIA_MAXNVE) :: Dcoord
-
     ! List of element distributions in the discretisation structure
     TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
 
-    ! Twist index array to define the orientation of faces/edges
-    INTEGER(I32), DIMENSION(MAX(1,elem_getTwistIndexSize(0))) :: ItwistIndex
+    ! Evaluation structure and tag
+    TYPE(t_evalElement) :: revalElement
+    INTEGER(I32) :: cevaluationTag
 
     ! Ok, slow but general.
     
@@ -448,14 +408,6 @@ CONTAINS
     ELSE
       npoints = UBOUND(Dpoints,2)
     END IF
-    
-    ! Get triangulation information
-    CALL storage_getbase_double2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_DvertexCoords,&
-        p_DvertexCoords)
-    CALL storage_getbase_int2d (&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
     
     p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
     
@@ -481,9 +433,9 @@ CONTAINS
     ! Type of transformation from/to the reference element
     ctrafoType = elem_igetTrafoType(ieltype)
     
-    ! Element nonparametric?
-    bnonpar = elem_isNonparametric(ieltype)
-    
+    ! Get the element evaluation tag; necessary for the preparation of the element
+    cevaluationTag = elem_getEvaluationTag(ieltype)
+
     ! Get the data vector
     SELECT CASE (rvectorScalar%cdataType)
     CASE (ST_DOUBLE) 
@@ -504,19 +456,10 @@ CONTAINS
     CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscretisation, &
         ielement,.FALSE.,Idofs)
         
-    ! Get the coordinates forming the current element
-    Dcoord(1:UBOUND(p_DvertexCoords,1),1:nve) = &
-      p_DvertexCoords(:,p_IverticesAtElement(:,ielement))
+    ! Get the element shape information
+    CALL elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
+        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, ctrafoType)
   
-    ! Does the element need twist indices?
-    ntwistsize = elem_getTwistIndexSize(ieltype)
-    
-    ! If necessary, calculate the twist index array. The element may need it.
-    IF (ntwistSize .NE. 0) THEN
-      CALL trafo_calcTwistIndex(&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,ielement,ItwistIndex)
-    END IF
-
     ! We loop over all points
     DO ipoint = 1,npoints
     
@@ -524,33 +467,26 @@ CONTAINS
         DparPoint(1:UBOUND(DpointsRef,1)) = DpointsRef(:,ipoint)
       ELSE
         ! Calculate the transformation of the point to the reference element
-        CALL trafo_calcRefCoords (ctrafoType,Dcoord,Dpoints(:,ipoint),DparPoint)
+        CALL trafo_calcRefCoords (ctrafoType,revalElement%Dcoords,Dpoints(:,ipoint),DparPoint)
       END IF
 
-      ! Depending on the type of transformation, we must now choose
-      ! the mapping between the reference and the real element.
-      ! In case we use a nonparametric element, we need the 
-      ! coordinates of the points on the real element, too.
-      ! If the world coordinates of the point are given, take them
-      ! If not, compute them in the transformation.
+      ! Now calculate everything else what is necessary for the element.
+      ! Don't calculate the shape of the cell again since we did this in advance above.
       IF (PRESENT(Dpoints)) THEN
-        DrealPoint(1:UBOUND(Dpoints,1)) = Dpoints(:,ipoint)
-        CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
-            Dcoord,DparPoint,Djac,ddetj)
+        CALL elprep_prepareForEvaluation (revalElement, &
+            IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+            rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, &
+            ctrafoType, DparPoint, Dpoints(:,ipoint))
       ELSE
-        CALL trafo_calcTrafo (elem_igetTrafoType(ieltype),&
-            Dcoord,DparPoint,Djac,ddetj,DrealPoint)
+        CALL elprep_prepareForEvaluation (revalElement, &
+            IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+            rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, &
+            ctrafoType, DparPoint)
       END IF
-    
+
       ! Call the element to calculate the values of the basis functions
       ! in the point.
-      IF (bnonpar) THEN
-        CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DrealPoint,Dbas,ItwistIndex)
-      ELSE
-        CALL elem_generic (ieltype, Dcoord, &
-              Djac(:), ddetj, Bder, DparPoint,Dbas,ItwistIndex)
-      END IF
+      CALL elem_generic2 (ieltype, revalElement, Bder, Dbas)
       
       dval = 0.0_DP
       IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
@@ -593,6 +529,7 @@ CONTAINS
                   Dvalues, ItwistIndex)
                                       
 !<description>
+  ! DEPRECATED!
   ! This routine allows to evaluate a finite element solution vector
   ! rvectorScalar simultaneously in multiple points on one elements in a 
   ! discretisation.
@@ -650,12 +587,10 @@ CONTAINS
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
   INTEGER, INTENT(IN)                            :: iderType
 
-  ! OPTIONAL: List of twist indices. For every edge/face on the cell, the twist
-  ! index defines the orientation of the edge/face. May be undefined if
-  ! the element does not need twist indices.
+  ! OPTIONAL: Twist index bitfield of the element. Defines for every edge its
+  ! orientation.
   ! Can be omitted if the element does not need this information.
-  ! Array with DIMENSION(1:NVE/NVA)
-  INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: ItwistIndex
+  INTEGER(I32), INTENT(IN), OPTIONAL :: itwistIndex
 
 !</input>
 
@@ -686,7 +621,7 @@ CONTAINS
   
   ! Evaluate the basis functions
   CALL elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, Dpoints, ItwistIndex)  
+                         Bder, DbasTrial, npoints, Dpoints, itwistIndex)  
   
   IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
@@ -1157,7 +1092,7 @@ CONTAINS
     cevaluationTag = elem_getEvaluationTag(ieltype)
     
     ! Don't create coordinates on the reference element; we do this manually!
-    cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFCOORDS))
+    cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
                     
     ! Get the coordinates of all points on the reference element
     IF (.NOT. PRESENT(DpointsRef)) THEN
@@ -1253,9 +1188,10 @@ CONTAINS
 
   SUBROUTINE fevl_evaluate_sim2 (rvectorScalar, Dcoords, Djac, Ddetj, &
                   ieltyp, IdofsTrial, npoints,  nelements, Dpoints, iderType,&
-                  Dvalues,ItwistIndex)
+                  Dvalues,ItwistIndexEdges)
                                       
 !<description>
+  ! DEPRECATED!
   ! This routine allows to evaluate a finite element solution vector
   ! rvectorScalar simultaneously in multiple points on multiple elements in a 
   ! discretisation.
@@ -1321,12 +1257,11 @@ CONTAINS
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
   INTEGER, INTENT(IN)                            :: iderType
 
-  ! OPTIONAL: List of twist indices. For every edge/face on every cell, the twist
-  ! index defines the orientation of the edge/face. May be undefined if
-  ! the element does not need twist indices.
+  ! OPTIONAL: List of twist indices. Defines for every element the
+  ! orgientation of the edges.
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(1:NVE/NVA,nelements)
-  INTEGER, DIMENSION(:,:), INTENT(IN), OPTIONAL :: ItwistIndex
+  INTEGER(I32), DIMENSION(:), INTENT(IN), OPTIONAL :: ItwistIndexEdges
 !</input>
 
 !<output>
@@ -1356,7 +1291,7 @@ CONTAINS
   
   ! Evaluate the basis functions
   CALL elem_generic_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndex)  
+                         Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndexEdges)  
   
   IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
