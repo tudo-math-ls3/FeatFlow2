@@ -132,7 +132,7 @@ CONTAINS
     ! Ok, let's start.
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 7
+    NLMAX = 5
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -363,26 +363,26 @@ CONTAINS
 
     ! 1st edge
     CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
+    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC_Q1,&
                                        getBoundaryValues_2D)
               
     ! 2nd edge               
     CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
+    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC_Q1,&
                                        getBoundaryValues_2D)
                              
     ! 3rd edge
     CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
+    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC_Q1,&
                                        getBoundaryValues_2D)
     
     ! 4th edge
     CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
+    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC_Q1,&
                                        getBoundaryValues_2D)
 
     ! Connect the vector to the BC's
