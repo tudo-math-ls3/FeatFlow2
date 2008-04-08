@@ -749,8 +749,8 @@ CONTAINS
     END SELECT
 
     ! Compute gradient error
-    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
-        dgradientError,relementError=rindicator)
+    CALL pperr_blockErrorEstimate(rgradient,rgradientRef,&
+        PPERR_L2ERROR, dgradientError,relementError=rindicator)
 
     ! rindicator is currently the absolute error. If the relative error
     ! is to be used, the following lines must be commented in:
