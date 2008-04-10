@@ -373,6 +373,13 @@ CONTAINS
   IF ((ccubType .GE. 350) .AND. (ccubType .LE. 499)) THEN
     IF ((NVE .NE. 4) .OR. (idim .NE. NDIM3D)) bcompatible = .FALSE.
   END IF
+  
+  ! Q2T with bubble does not work with G1X1, Trapezoidal rule and
+  ! G2X2 -- Laplace matrices would be indefinite because of the definition
+  ! of the bubble function!
+  IF (ielementType .EQ. EL_Q2TB) THEN
+    IF ((ccubType .GE. 201) .AND. (ccubType .LE. 204)) bcompatible = .FALSE.
+  END IF
 
   IF (.NOT. bcompatible) THEN
     CALL output_line ('Element and cubature formula not compatible!', &
