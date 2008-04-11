@@ -47,6 +47,14 @@
 !# 11.) mprim_SVD_backsubst
 !#      -> Perform back substitution for a singular value decomposition
 !#
+!# 12.) mprim_stdDeviation
+!#      -> Calculates the standard deviation of a vector
+!#
+!# 13.) mprim_meanDeviation
+!#      -> Calculates the mean deviation of a vector
+!#
+!# 14.) mprim_meanValue
+!#      -> Calculates the mean value of a vector
 !# </purpose>
 !##############################################################################
 
@@ -1986,4 +1994,377 @@ CONTAINS
     ! Compute x = B * aux
     CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
   END SUBROUTINE mprim_SVD_backsubst2
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_stdDeviationDble(Dval) RESULT(stdDev)
+
+!<description>
+    ! This function calculates the standard deviation of the given data
+!</description>
+
+!<input>
+    ! double data
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+!</input>
+
+!<result>
+    ! standard deviation
+    REAL(DP) :: stdDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(DP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = Dval(1)
+    
+    DO i = 2, SIZE(Dval)
+      mean = mean + Dval(i)
+    END DO
+    
+    mean = mean/REAL(SIZE(Dval), DP)
+
+    ! Compute standard deviation
+    stdDev = (Dval(1)-mean)*(Dval(1)-mean)
+
+    DO i = 2, SIZE(Dval)
+      stdDev = stdDev + (Dval(i)-mean)*(Dval(i)-mean)
+    END DO
+
+    stdDev = SQRT(stdDev/REAL(SIZE(Dval), DP))
+
+  END FUNCTION mprim_stdDeviationDble
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_stdDeviationSngl(Fval) RESULT(stdDev)
+
+!<description>
+    ! This function calculates the standard deviation of the given data
+!</description>
+
+!<input>
+    ! single data
+    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+!</input>
+
+!<result>
+    ! standard deviation
+    REAL(SP) :: stdDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(SP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = Fval(1)
+    
+    DO i = 2, SIZE(Fval)
+      mean = mean + Fval(i)
+    END DO
+    
+    mean = mean/REAL(SIZE(Fval), SP)
+
+    ! Compute standard deviation
+    stdDev = (Fval(1)-mean)*(Fval(1)-mean)
+
+    DO i = 2, SIZE(Fval)
+      stdDev = stdDev + (Fval(i)-mean)*(Fval(i)-mean)
+    END DO
+
+    stdDev = SQRT(stdDev/REAL(SIZE(Fval), SP))
+
+  END FUNCTION mprim_stdDeviationSngl
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_stdDeviationInt(Ival) RESULT(stdDev)
+
+!<description>
+    ! This function calculates the standard deviation of the given data
+!</description>
+
+!<input>
+    ! integer data
+    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+!</input>
+
+!<result>
+    ! standard deviation
+    REAL(DP) :: stdDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(DP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = REAL(Ival(1), DP)
+    
+    DO i = 2, SIZE(Ival)
+      mean = mean + REAL(Ival(i), DP)
+    END DO
+    
+    mean = mean/REAL(SIZE(Ival), DP)
+
+    ! Compute standard deviation
+    stdDev = (Ival(1)-mean)*(Ival(1)-mean)
+
+    DO i = 2, SIZE(Ival)
+      stdDev = stdDev + (Ival(i)-mean)*(Ival(i)-mean)
+    END DO
+
+    stdDev = SQRT(stdDev/REAL(SIZE(Ival), DP))
+
+  END FUNCTION mprim_stdDeviationInt
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_meanDeviationDble(Dval) RESULT(meanDev)
+
+!<description>
+    ! This function calculates the mean deviation of the given data
+!</description>
+
+!<input>
+    ! double data
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+!</input>
+
+!<result>
+    ! mean deviation
+    REAL(DP) :: meanDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(DP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = Dval(1)
+    
+    DO i = 2, SIZE(Dval)
+      mean = mean + Dval(i)
+    END DO
+    
+    mean = mean/REAL(SIZE(Dval), DP)
+
+    ! Compute mean deviation
+    meanDev = ABS(Dval(1)-mean)
+
+    DO i = 2, SIZE(Dval)
+      meanDev = meanDev + ABS(Dval(i)-mean)
+    END DO
+
+    meandev = meanDev/REAL(SIZE(Dval), DP)
+
+  END FUNCTION mprim_meanDeviationDble
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_meanDeviationSngl(Fval) RESULT(meanDev)
+
+!<description>
+    ! This function calculates the mean deviation of the given data
+!</description>
+
+!<input>
+    ! single data
+    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+!</input>
+
+!<result>
+    ! mean deviation
+    REAL(SP) :: meanDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(SP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = Fval(1)
+    
+    DO i = 2, SIZE(Fval)
+      mean = mean + Fval(i)
+    END DO
+    
+    mean = mean/REAL(SIZE(Fval), SP)
+
+    ! Compute mean deviation
+    meanDev = ABS(Fval(1)-mean)
+
+    DO i = 2, SIZE(Fval)
+      meanDev = meanDev + ABS(Fval(i)-mean)
+    END DO
+
+    meanDev = meanDev/REAL(SIZE(Fval), SP)
+
+  END FUNCTION mprim_meanDeviationSngl
+
+  !************************************************************************
+  
+!<function>
+
+  PURE FUNCTION mprim_meanDeviationInt(Ival) RESULT(meanDev)
+
+!<description>
+    ! This function calculates the mean deviation of the given data
+!</description>
+
+!<input>
+    ! integer data
+    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+!</input>
+
+!<result>
+    ! mean deviation
+    REAL(DP) :: meanDev
+!</result>
+!</function>
+
+    ! local variable
+    REAL(DP)     :: mean
+    INTEGER(I32) :: i
+    
+    ! Compute mean
+    mean = REAL(Ival(1), DP)
+    
+    DO i = 2, SIZE(Ival)
+      mean = mean + REAL(Ival(i), DP)
+    END DO
+    
+    mean = mean/REAL(SIZE(Ival), DP)
+
+    ! Compute mean deviation
+    meanDev = ABS(Ival(1)-mean)
+
+    DO i = 2, SIZE(Ival)
+      meanDev = meanDev + ABS(Ival(i)-mean)
+    END DO
+
+    meanDev = meanDev/REAL(SIZE(Ival), DP)
+
+  END FUNCTION mprim_meanDeviationInt
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_meanValueDble(Dval) RESULT(meanVal)
+
+!<description>
+    ! This function calculates the mean value of the given data
+!</description>
+
+!<input>
+    ! double data
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+!</input>
+
+!<result>
+    ! mean value
+    REAL(DP) :: meanVal
+!</result>
+!</function>
+
+    ! local variable
+    INTEGER(I32) :: i
+    
+    ! Compute mean value
+    meanVal = Dval(1)
+    
+    DO i = 2, SIZE(Dval)
+      meanVal = meanVal + Dval(i)
+    END DO
+    
+    meanVal = meanVal/REAL(SIZE(Dval), DP)
+  END FUNCTION mprim_meanValueDble
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_meanValueSngl(Fval) RESULT(meanVal)
+
+!<description>
+    ! This function calculates the mean value of the given data
+!</description>
+
+!<input>
+    ! single data
+    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+!</input>
+
+!<result>
+    ! mean value
+    REAL(SP) :: meanVal
+!</result>
+!</function>
+
+    ! local variable
+    INTEGER(I32) :: i
+    
+    ! Compute mean value
+    meanVal = Fval(1)
+    
+    DO i = 2, SIZE(Fval)
+      meanVal = meanVal + Fval(i)
+    END DO
+    
+    meanVal = meanVal/REAL(SIZE(Fval), SP)
+  END FUNCTION mprim_meanValueSngl
+
+  !************************************************************************
+
+!<function>
+
+  PURE FUNCTION mprim_meanValueInt(Ival) RESULT(meanVal)
+
+!<description>
+    ! This function calculates the mean value of the given data
+!</description>
+
+!<input>
+    ! integer data
+    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+!</input>
+
+!<result>
+    ! mean value
+    INTEGER :: meanVal
+!</result>
+!</function>
+
+    ! local variable
+    INTEGER(I32) :: i
+    
+    ! Compute mean value
+    meanVal = Ival(1)
+    
+    DO i = 2, SIZE(Ival)
+      meanVal = meanVal + Ival(i)
+    END DO
+    
+    meanVal = meanVal/SIZE(Ival)
+  END FUNCTION mprim_meanValueInt
+
 END MODULE mprimitives
