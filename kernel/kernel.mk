@@ -7,7 +7,7 @@ KERNEL=$(FEATFLOW)/kernel
 INCOMING=$(FEATFLOW)/incoming
 
 INCDIR:= $(INCDIR) -I$(KERNEL)/System -I$(KERNEL)/Triangulation \
-	-I$(KERNEL)/DOFMaintenance
+	-I$(KERNEL)/DOFMaintenance -I$(KERNEL)/Adaptivity
 
 KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	genoutput.f90 linearalgebra.f90 storage.f90 derivatives.f90 \
