@@ -71,6 +71,7 @@ MODULE pprocerror
   USE linearalgebra
   USE linearsystemscalar
   USE linearsystemblock
+  USE scalarpde
   USE spatialdiscretisation
   USE domainintegration
   USE collection
@@ -2942,6 +2943,7 @@ CONTAINS
 
       ! Make sure that we have determinants.
       cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
+      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
 
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
@@ -2975,6 +2977,7 @@ CONTAINS
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
+        p_DcubPtsReal => revalElementSet%p_DpointsReal
             
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
@@ -3082,12 +3085,35 @@ CONTAINS
       CALL cub_getCubPoints(p_relementDistribution%ccubTypeEval,&
           ncubp, Dxi, Domega)
 
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+
+      ! Allocate some memory to hold the cubature points on the reference element
+      ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+
+      ! Reformat the cubature points; they are in the wrong shape!
+      DO i=1,ncubp
+        DO k=1,UBOUND(p_DcubPtsRef,1)
+          p_DcubPtsRef(k,i) = Dxi(i,k)
+        END DO
+      END DO
+
       ! Allocate memory for the DOF's of all the elements.
       ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
 
       ! Allocate memory for the coefficients.
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,rvector%nblocks))
     
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+
+      ! Make sure that we have determinants.
+      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
+      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
+
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
       CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
@@ -3120,6 +3146,7 @@ CONTAINS
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
+        p_DcubPtsReal => revalElementSet%p_DpointsReal
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
@@ -3200,8 +3227,11 @@ CONTAINS
     END DO ! icurrentElementDistr
     
     ! ddeviation is ||deviation||^2, so take the square root at last.
-    ddeviation = SQRT(ddeviation)
-
+    IF (ddeviation .GE. HUGE(ddeviation)) THEN
+      ddeviation = 0._DP
+    ELSE
+      ddeviation = SQRT(ddeviation)
+    END IF
 
   END SUBROUTINE pperr_blockStandardDeviation
 END MODULE
