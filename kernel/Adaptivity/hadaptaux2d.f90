@@ -5661,11 +5661,12 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER    :: p_Dindicator
     INTEGER, DIMENSION(:),  POINTER    :: p_Imarker
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: p_IverticesAtElement
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: p_IneighboursAtElement
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: IverticesAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: IneighboursAtElement
+    INTEGER, DIMENSION(TRIA_MAXNVE)                    :: IvertexAge
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel,jel
-    INTEGER :: ive,nve,istate,jstate
+    INTEGER :: ive,nve,istate,jstate,isubdivide
 
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
@@ -5700,24 +5701,27 @@ CONTAINS
         nve=hadapt_getNVE(rhadapt,iel)
 
         ! Mark element for refinement
-        p_IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
-        p_IneighboursAtElement(1:nve)=rhadapt%p_IneighboursAtElement(1:nve,iel)
+        IverticesAtElement(1:nve)   = rhadapt%p_IverticesAtElement(1:nve,iel)
+        IneighboursAtElement(1:nve) = rhadapt%p_IneighboursAtElement(1:nve,iel)
 
         ! An element can only be refined, if all of its vertices do
         ! not exceed the number of admissible subdivision steps.
         ! So, check the element type and loop over the 3 or 4 vertices.
         SELECT CASE(nve)
+          
         CASE(TRIA_NVETRI2D)
           ! If triangle has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D))).EQ.&
-              rhadapt%NSUBDIVIDEMAX)) THEN
+          isubdivide = MAXVAL(ABS(rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVETRI2D))))
+          IF (isubdivide .EQ. rhadapt%NSUBDIVIDEMAX) THEN
 
             ! Check if triangle is an inner/outer red triangle
-            istate=redgreen_getStateTria(&
-                rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D)))
+            IvertexAge(1:TRIA_NVETRI2D)=&
+                rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVETRI2D))
+            istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
-            IF (istate .EQ. STATE_TRIA_REDINNER) THEN
+            IF ((istate .EQ. STATE_TRIA_REDINNER) .OR.&
+                (istate .EQ. STATE_TRIA_ROOT)) THEN
               ! Inner red triangle
               p_Imarker(iel)=MARK_ASIS
               
@@ -5726,8 +5730,8 @@ CONTAINS
               ! was performed. At the same time, all vertices of the element should
               ! be "locked" to prevent this element from coarsening
               DO ive=1,TRIA_NVETRI2D
-                rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                    -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive))) 
+                rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                    -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive))) 
               END DO
               CYCLE mark
 
@@ -5735,8 +5739,10 @@ CONTAINS
               
               ! Possibly outer red triangle, get state of neighbouring triangle
               jel=rhadapt%p_IneighboursAtElement(2,iel)
-              jstate=redgreen_getStateTria(&
-                  rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)))
+              IvertexAge(1:TRIA_NVETRI2D)=&
+                  rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel))
+              jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
+
               IF (jstate .EQ. STATE_TRIA_REDINNER) THEN
                 ! Outer red triangle
                 p_Imarker(iel)=MARK_ASIS
@@ -5746,8 +5752,8 @@ CONTAINS
                 ! was performed. At the same time, all vertices of the element should
                 ! be "locked" to prevent this element from coarsening
                 DO ive=1,TRIA_NVETRI2D
-                  rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                      -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive))) 
+                  rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                      -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive))) 
                 END DO
                 CYCLE mark
               END IF
@@ -5760,8 +5766,8 @@ CONTAINS
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,TRIA_NVETRI2D
-            rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+            rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
           END DO
           
           ! Update number of new vertices. In principle, we can increase the number of 
@@ -5770,11 +5776,11 @@ CONTAINS
           ! refinement previously. Hence, a new vertex is only added, if the edge
           ! is connected to the boundary or if the adjacent element has not been marked.
           DO ive=1,TRIA_NVETRI2D
-            IF (p_IneighboursAtElement(ive).EQ.0 .OR.&
-                p_IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
+            IF (IneighboursAtElement(ive).EQ.0 .OR.&
+                IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
-            ELSEIF((p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
-                   (p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
+            ELSEIF((p_Imarker(IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
+                   (p_Imarker(IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
             END IF
           END DO
@@ -5782,14 +5788,16 @@ CONTAINS
         CASE(TRIA_NVEQUAD2D)
           ! If quadrilateral has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D))).EQ.&
-              rhadapt%NSUBDIVIDEMAX)) THEN
-
+          isubdivide = MAXVAL(ABS(rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVEQUAD2D))))
+          IF (isubdivide .EQ. rhadapt%NSUBDIVIDEMAX) THEN
+            
             ! Check if quadrilateral is a red quadrilateral
-            istate=redgreen_getStateQuad(&
-                rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
+            IvertexAge(1:TRIA_NVEQUAD2D)=&
+                rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVEQUAD2D))
+            istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
-            IF (istate .EQ. STATE_QUAD_RED4) THEN
+            IF ((istate .EQ. STATE_QUAD_RED4) .OR.&
+                (istate .EQ. STATE_QUAD_ROOT)) THEN
               ! Red quadrilateral
               p_Imarker(iel)=MARK_ASIS
               
@@ -5798,8 +5806,8 @@ CONTAINS
               ! was performed. At the same time, all vertices of the element should
               ! be "locked" to prevent this element from coarsening
               DO ive=1,TRIA_NVEQUAD2D
-                rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                    -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive))) 
+                rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                    -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive))) 
               END DO
               
               CYCLE mark
@@ -5811,17 +5819,17 @@ CONTAINS
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,TRIA_NVEQUAD2D
-            rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+            rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
           END DO
           
           ! Update number of new vertices
           DO ive=1,TRIA_NVEQUAD2D
-            IF (p_IneighboursAtElement(ive).EQ.0 .OR. &
-                p_IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
+            IF (IneighboursAtElement(ive).EQ.0 .OR. &
+                IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
-            ELSEIF((p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
-                   (p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
+            ELSEIF((p_Imarker(IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
+                   (p_Imarker(IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
             END IF
           END DO
@@ -5916,8 +5924,8 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER                    :: p_Dindicator
     INTEGER,  DIMENSION(:), POINTER                    :: p_Imarker
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: p_IverticesAtElement
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: p_ImacroElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: IverticesAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: ImacroElement
     INTEGER, DIMENSION(TRIA_MAXNVE)                    :: IvertexAge
     INTEGER(PREC_VERTEXIDX)  :: i,j
     INTEGER(PREC_ELEMENTIDX) :: iel,jel,kel
@@ -5980,18 +5988,18 @@ CONTAINS
       nve=hadapt_getNVE(rhadapt,iel)
 
       ! Get local data for element iel
-      p_IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
+      IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
 
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
         IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D))
+            IverticesAtElement(1:TRIA_NVETRI2D))
         istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
       CASE(TRIA_NVEQUAD2D)
         IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+            IverticesAtElement(1:TRIA_NVEQUAD2D))
         istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
       CASE DEFAULT
@@ -6232,7 +6240,7 @@ CONTAINS
         nve=hadapt_getNVE(rhadapt,iel)
         
         ! Get local data for element iel
-        p_IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
+        IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
 
         ! Check if all vertices of the element are locked then delete element
         ! from the list of removable elements. This could also be done in the
@@ -6241,7 +6249,7 @@ CONTAINS
         ! computation of the exact element state for some elements. Heuristically,
         ! a large number of elements can be filtered out by this check in advance
         ! so that no detailed investigation of their vertices is required.
-        IF (ALL(rhadapt%p_IvertexAge(p_IverticesAtElement(1:nve)).LE.0)) THEN
+        IF (ALL(rhadapt%p_IvertexAge(IverticesAtElement(1:nve)).LE.0)) THEN
           p_Imarker(iel)=MERGE(MARK_ASIS_TRIA,MARK_ASIS_QUAD,nve .EQ. 3)
           CYCLE
         END IF
@@ -6250,12 +6258,12 @@ CONTAINS
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
           IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-              p_IverticesAtElement(1:TRIA_NVETRI2D))
+              IverticesAtElement(1:TRIA_NVETRI2D))
           istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
         CASE(TRIA_NVEQUAD2D)
           IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
-              p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+              IverticesAtElement(1:TRIA_NVEQUAD2D))
           istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
         CASE DEFAULT
@@ -6271,13 +6279,13 @@ CONTAINS
           ! Element IEL is one of four red quadrilaterals of a 1-quad : 4-quad refinement.
 
           ! If the interior vertex is locked then lock all vertices of the element
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
 
             ! Lock all other vertices. Note that the first vertiex and the third
             ! one are already locked, so that we have to consider vertices 2 and 4
             DO ive=2,TRIA_NVEQUAD2D,2
-              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                  -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+              rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                  -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
             END DO
 
             ! Delete element from list of removable elements
@@ -6289,8 +6297,8 @@ CONTAINS
           ! If three midpoint vertices of adjacent quadrilaterals are locked
           ! then all vertices of the four red sub-quadrilaterals must be locked
           ! in order to prevent the generation of blue quadrilaterals
-          ELSEIF(rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0 .AND.&
-                 rhadapt%p_IvertexAge(p_IverticesAtElement(4)) .LE. 0) THEN
+          ELSEIF(rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0 .AND.&
+                 rhadapt%p_IvertexAge(IverticesAtElement(4)) .LE. 0) THEN
             
             ! Check the midpoint of the counterclockwise neighboring element
             jel=rhadapt%p_IneighboursAtElement(2,iel)
@@ -6301,8 +6309,8 @@ CONTAINS
               ! vertex is locked, the nodes of all other quadrilaterals will be
               ! locked in the next loop of phase 2.
               DO ive=1,TRIA_NVEQUAD2D
-                rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                    -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+                rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                    -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
               END DO
 
               ! Delete element from list of removable elements
@@ -6322,8 +6330,8 @@ CONTAINS
               ! vertex is locked, the nodes of all other quadrilaterals will be
               ! locked in the next loop of phase 2.
               DO ive=1,TRIA_NVEQUAD2D
-                rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                    -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+                rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                    -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
               END DO
 
               ! Delete element from list of removable elements
@@ -6341,7 +6349,7 @@ CONTAINS
           ! Determine number of locked vertices of the inner triangle.
           ivertexLock=0
           DO ive=1,TRIA_NVETRI2D
-            IF (rhadapt%p_IvertexAge(p_IverticesAtElement(ive)) .LE. 0)&
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(ive)) .LE. 0)&
                 ivertexLock=ivertexLock+1
           END DO
           
@@ -6350,8 +6358,8 @@ CONTAINS
           CASE(2)
             ! If exactly two vertices are locked, then "lock" the third one, too.
             DO ive=1,TRIA_NVETRI2D
-              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                  -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+              rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                  -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
             END DO
             
             ! Delete element from list of removable elements
@@ -6370,12 +6378,12 @@ CONTAINS
           ! Element IEL is right green triangle of a 1-tria : 2-tria refinement.
           
           ! If the third vertex is locked, then "lock" all other vertices, too.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
             
             ! Lock all other vertices
             DO ive=1,2
-              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                  -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+              rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                  -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
             END DO
             
             ! Delete element from list of removable elements              
@@ -6389,12 +6397,12 @@ CONTAINS
           ! Element IEL is left green triangle of a 1-tria : 2-tria refinement.
           
           ! If the second vertex is locked, then "lock" all other vertices, too.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
             
             ! Lock all other vertices
             DO ive=1,TRIA_NVETRI2D,2
-              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=&
-                  -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
+              rhadapt%p_IvertexAge(IverticesAtElement(ive))=&
+                  -ABS(rhadapt%p_IvertexAge(IverticesAtElement(ive)))
             END DO
             
             ! Delete element from list of removable elements              
@@ -6423,18 +6431,18 @@ CONTAINS
       nve=hadapt_getNVE(rhadapt,iel)
 
       ! Get local data for element IEL
-      p_IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
+      IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
       
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
         IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D))
+            IverticesAtElement(1:TRIA_NVETRI2D))
         istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
       CASE(TRIA_NVEQUAD2D)
         IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+            IverticesAtElement(1:TRIA_NVEQUAD2D))
         istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
       CASE DEFAULT
@@ -6454,13 +6462,13 @@ CONTAINS
         ! recover the original macro triangle. If one vertex of the inner
         ! triangle is locked, then the inner red tiangle together with its three
         ! neighboring elements can be convertec into two green triangles.
-        IF (rhadapt%p_IvertexAge(p_IverticesAtElement(1)) .LE. 0) THEN
+        IF (rhadapt%p_IvertexAge(IverticesAtElement(1)) .LE. 0) THEN
           p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_1
 
-        ELSEIF(rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0) THEN
+        ELSEIF(rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
           p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_2
           
-        ELSEIF(rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+        ELSEIF(rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
           p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_3
           
         ELSE
@@ -6471,10 +6479,10 @@ CONTAINS
         ! We have to considered several situations depending on the state
         ! of the adjacent element that shares the second edge.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        p_IverticesAtElement(1:TRIA_NVETRI2D) = &
+        IverticesAtElement(1:TRIA_NVETRI2D) = &
             rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
         IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D))
+            IverticesAtElement(1:TRIA_NVETRI2D))
         jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
         ! What is the state of the "second-edge" neighbor?
@@ -6491,7 +6499,7 @@ CONTAINS
           ! element from the list of removable elements. Recall that both 
           ! vertices of the macro element are locked by definition so that it
           ! suffices to check the remaining (first) vertex.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(1)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(1)) .LE. 0) THEN
             ! Delete element from list of removable elements              
             p_Imarker(iel)=MARK_ASIS
             p_Imarker(jel)=MARK_ASIS
@@ -6510,8 +6518,8 @@ CONTAINS
           ! element from the list of removable elements. Recall that the vertex
           ! of the macro element is locked by definition so that it suffices to
           ! check the remaining second and third vertex individually.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0) THEN
-            IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
               ! Delete element from list of removable elements              
               p_Imarker(iel)=MARK_ASIS
               p_Imarker(jel)=MARK_ASIS
@@ -6530,7 +6538,7 @@ CONTAINS
               p_Imarker(kel)=MARK_ASIS
             END IF
           ELSE
-            IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
               ! Mark element for recoarsening together with its three neighbors,
               ! whereby the green outer triangle to the left is preserved.
               p_Imarker(iel)=MARK_ASIS
@@ -6563,10 +6571,10 @@ CONTAINS
         ! from a 1-quad : 4-tria refinement and all vertices of the left outer 
         ! green triangle are locked, then the above CASE will never be reached.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        p_IverticesAtElement(1:TRIA_NVETRI2D) = &
+        IverticesAtElement(1:TRIA_NVETRI2D) = &
             rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
         IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D))
+            IverticesAtElement(1:TRIA_NVETRI2D))
         jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
         ! What is the state of the "second-edge" neighbor?
@@ -6583,7 +6591,7 @@ CONTAINS
           ! element from the list of removable elements. Recall that both 
           ! vertices of the macro element are locked by definition so that it
           ! suffices to check the remaining (first) vertex.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(1)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(1)) .LE. 0) THEN
             ! Delete element from list of removable elements              
             p_Imarker(iel)=MARK_ASIS
             p_Imarker(jel)=MARK_ASIS
@@ -6602,8 +6610,8 @@ CONTAINS
           ! element from the list of removable elements. Recall that the vertex
           ! of the macro element is locked by definition so that it suffices to
           ! check the remaining second and third vertex individually.
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0) THEN
-            IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
               ! Delete element from list of removable elements              
               p_Imarker(iel)=MARK_ASIS
               p_Imarker(jel)=MARK_ASIS
@@ -6622,7 +6630,7 @@ CONTAINS
               p_Imarker(kel)=MARK_ASIS
             END IF
           ELSE
-            IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
               ! Mark element for recoarsening together with its three neighbors,
               ! whereby the green outer triangle to the left is preserved.
               p_Imarker(iel)=MARK_ASIS
@@ -6659,9 +6667,9 @@ CONTAINS
         jel=rhadapt%p_IneighboursAtElement(2,iel)
         
         ! Check if the second vertex is locked
-        IF (rhadapt%p_IvertexAge(p_IverticesAtElement(2)) .LE. 0) THEN
+        IF (rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
           ! Check if the third vertex is also locked
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
             ! Delete both elements from list of removable elements
             p_Imarker(iel)=MARK_ASIS
             p_Imarker(jel)=MARK_ASIS
@@ -6672,7 +6680,7 @@ CONTAINS
             p_Imarker(jel)=MARK_ASIS
           END IF
         ELSE
-          IF (rhadapt%p_IvertexAge(p_IverticesAtElement(3)) .LE. 0) THEN
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
             ! Mark element JEL for coarsening into three triangles,
             ! whereby the second vertex of element JEL is preserved
             p_Imarker(iel)=MARK_ASIS
@@ -6697,14 +6705,14 @@ CONTAINS
         ! remember its position by setting or clearing the corresponding bit of
         ! the integer ivertexLocked. In the same loop, we determine the numbers 
         ! of the four elements of the macro element.
-        p_ImacroElement(1)=iel
+        ImacroElement(1)=iel
         ivertexLock=MERGE(2,0,&
             rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(2,iel)) .LE. 0)
         
         DO ive=2,TRIA_NVEQUAD2D
-          p_ImacroElement(ive)=rhadapt%p_IneighboursAtElement(2,p_ImacroElement(ive-1))
+          ImacroElement(ive)=rhadapt%p_IneighboursAtElement(2,ImacroElement(ive-1))
           IF (rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(2,&
-              p_ImacroElement(ive))) .LE. 0) ivertexLock=ibset(ivertexLock,ive)
+              ImacroElement(ive))) .LE. 0) ivertexLock=ibset(ivertexLock,ive)
         END DO
         
         ! How many vertices are locked?
@@ -6714,93 +6722,93 @@ CONTAINS
           ! all remaining elements from the list of removable elements.
           p_Imarker(iel)=MARK_CRS_4QUAD1QUAD
           DO ive=2,TRIA_NVEQUAD2D
-            p_Imarker(p_ImacroElement(ive))=MARK_ASIS
+            p_Imarker(ImacroElement(ive))=MARK_ASIS
           END DO
 
         CASE(2)
           ! There is one vertex locked which is the second vertex of the first 
           ! element. All other elements are deleted from the list of removable elements
-          p_Imarker(p_ImacroElement(1))=MARK_CRS_4QUAD3TRIA
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_CRS_4QUAD3TRIA
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(4)
           ! There is one vertex locked which is the second vertex of the second
           ! element. All other elements are deleted from the list of removable elements
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_CRS_4QUAD3TRIA
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_CRS_4QUAD3TRIA
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(8)
           ! There is one vertex locked which is the second vertex of the third
           ! element. All other elements are deleted from the list of removable elements
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_CRS_4QUAD3TRIA
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_CRS_4QUAD3TRIA
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(16)
           ! There is one vertex locked which is the second vertex of the fourth
           ! element. All other elements are deleted from the list of removable elements
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_CRS_4QUAD3TRIA
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_CRS_4QUAD3TRIA
 
         CASE(10)
           ! There are two vertices locked which are the second vertices of the
           ! first and third elements. Mark the first element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_CRS_4QUAD2QUAD
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_CRS_4QUAD2QUAD
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(20)
           ! There are two vertices locked which are the second vertices of the
           ! second and fourth elements. Mark the second element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_CRS_4QUAD2QUAD
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_CRS_4QUAD2QUAD
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(18)
           ! There are two vertices locked which are the second and fourth vertices
           ! of the firth elements. Mark the firth element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_CRS_4QUAD4TRIA
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_CRS_4QUAD4TRIA
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(6)
           ! There are two vertices locked which are the second and fourth vertices
           ! of the second elements. Mark the second element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_CRS_4QUAD4TRIA
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_CRS_4QUAD4TRIA
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(12)
           ! There are two vertices locked which are the second and fourth vertices
           ! of the third elements. Mark the third element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_CRS_4QUAD4TRIA
-          p_Imarker(p_ImacroElement(4))=MARK_ASIS
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_CRS_4QUAD4TRIA
+          p_Imarker(ImacroElement(4))=MARK_ASIS
 
         CASE(24)
           ! There are two vertices locked which are the second and fourth vertices
           ! of the fourth elements. Mark the fourth element for recoarsening.
-          p_Imarker(p_ImacroElement(1))=MARK_ASIS
-          p_Imarker(p_ImacroElement(2))=MARK_ASIS
-          p_Imarker(p_ImacroElement(3))=MARK_ASIS
-          p_Imarker(p_ImacroElement(4))=MARK_CRS_4QUAD4TRIA
+          p_Imarker(ImacroElement(1))=MARK_ASIS
+          p_Imarker(ImacroElement(2))=MARK_ASIS
+          p_Imarker(ImacroElement(3))=MARK_ASIS
+          p_Imarker(ImacroElement(4))=MARK_CRS_4QUAD4TRIA
 
         CASE DEFAULT
           ! Delete all four elements from list of removable elements
           DO ive=1,TRIA_NVEQUAD2D
-            p_Imarker(p_ImacroElement(ive))=MARK_ASIS
+            p_Imarker(ImacroElement(ive))=MARK_ASIS
           END DO
         END SELECT
         
@@ -6846,7 +6854,7 @@ CONTAINS
 
     ! local variables
     INTEGER, DIMENSION(:), POINTER :: p_Imarker,p_Imodified
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: IverticesAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
     INTEGER(PREC_VERTEXIDX), DIMENSION(1)  :: Ivertices
     INTEGER(PREC_VERTEXIDX)  :: i,nvt
@@ -6968,20 +6976,20 @@ CONTAINS
         nve = hadapt_getNVE(rhadapt,iel)
         
         ! Get local data for element iel
-        p_IverticesAtElement(1:nve) = rhadapt%p_IverticesAtElement(1:nve, iel)
+        IverticesAtElement(1:nve) = rhadapt%p_IverticesAtElement(1:nve, iel)
       
         ! Are we triangular or quadrilateral element?
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
           p_Imarker(iel) = ibclr(p_Imarker(iel), 0)
           IvertexAge(1:TRIA_NVETRI2D) = &
-              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D))
+              rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVETRI2D))
           istate = redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
         CASE(TRIA_NVEQUAD2D)
           p_Imarker(iel) = ibset(p_Imarker(iel), 0)
           IvertexAge(1:TRIA_NVEQUAD2D) = &
-              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+              rhadapt%p_IvertexAge(IverticesAtElement(1:TRIA_NVEQUAD2D))
           istate = redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
         CASE DEFAULT
@@ -7598,9 +7606,9 @@ CONTAINS
             END IF
 
             ! Finally, "lock" all vertices of element JEL
-            p_IverticesAtElement(1:mve)=rhadapt%p_IverticesAtElement(1:mve,jel)
-            rhadapt%p_IvertexAge(p_IverticesAtElement(1:mve))=&
-                -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:mve)))
+            IverticesAtElement(1:mve)=rhadapt%p_IverticesAtElement(1:mve,jel)
+            rhadapt%p_IvertexAge(IverticesAtElement(1:mve))=&
+                -ABS(rhadapt%p_IvertexAge(IverticesAtElement(1:mve)))
           END IF
         END DO
       END DO
