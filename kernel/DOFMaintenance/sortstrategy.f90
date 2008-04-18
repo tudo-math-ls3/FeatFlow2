@@ -115,6 +115,10 @@ MODULE sortstrategy
   ! Stochastic renumbering / Random permutation.
   ! The permutation is completely random.
   INTEGER, PARAMETER :: SSTRAT_STOCHASTIC   = 6
+
+  ! Hierarchical renumbering: The permutation is calculated by a sequence of meshes,
+  ! regularly refined.
+  INTEGER, PARAMETER :: SSTRAT_HIERARCHICAL = 7
   
 !</constantblock>
 
