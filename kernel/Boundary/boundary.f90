@@ -1366,6 +1366,8 @@ MODULE boundary
   INTEGER, INTENT(IN) :: iboundCompIdx
 
   ! An array with parameter values of boundary points that should be converted.
+  ! Parameter values < 0 are not converted. Parameter values > maximum parameter
+  ! value are mapped to the range 0..maximum parameter value.
   REAL(DP), DIMENSION(:), INTENT(IN) :: DparSource
 
   ! Type of parametrisation of DparSource.
@@ -1430,84 +1432,89 @@ MODULE boundary
 
     DO iidx = 1,SIZE(DparSource)
     
-      dpar = MOD(DparSource(iidx),dtmax)
+      ! Don't convert parameter values < 0.
+      IF (DparSource(iidx) .GE. 0.0_DP) THEN
 
-      ! Find segment iseg the parameter values belong to.
-      ! Remember that in the first element in the double precision block of
-      ! each segment, the length of the segment is noted!
+        dpar = MOD(DparSource(iidx),dtmax)
       
-      dcurrentpar = 0.0_DP
-      
-      ! Determine the segment 
-      SELECT CASE (cparTypeSource)
-      CASE (BDR_PAR_01)
-      
-        ! Easy case: 0-1 parametrisation
-        iseg = AINT(dpar)
-
-        ! Determine Start index of the segment in the double-prec. block
-        istartidx = p_IsegInfo(1+2*iseg+1) 
-
-        ! Get the segment length for later use
-        dseglength  = p_DsegInfo(2+istartidx)
+        ! Find segment iseg the parameter values belong to.
+        ! Remember that in the first element in the double precision block of
+        ! each segment, the length of the segment is noted!
         
-        ! Start parameter value in length parametrisation
-        dcurrentpar = p_DsegInfo(1+istartidx)
+        dcurrentpar = 0.0_DP
         
-        ! Subtract the start position of the current boundary component
-        ! from the parameter value to get the 'local' parameter value
-        ! (0 .le. dparloc .le. 1.0)
-        dparloc = dpar - REAL(iseg,DP)
+        ! Determine the segment 
+        SELECT CASE (cparTypeSource)
+        CASE (BDR_PAR_01)
+        
+          ! Easy case: 0-1 parametrisation
+          iseg = AINT(dpar)
 
-      CASE (BDR_PAR_LENGTH)
-      
-        ! In the length-parametrisation, we have to search.
-        DO iseg = 0,p_IsegCount(iboundCompIdx)-1
-          
           ! Determine Start index of the segment in the double-prec. block
           istartidx = p_IsegInfo(1+2*iseg+1) 
+
+          ! Get the segment length for later use
+          dseglength  = p_DsegInfo(2+istartidx)
           
-          ! Get the start and end parameter value
+          ! Start parameter value in length parametrisation
           dcurrentpar = p_DsegInfo(1+istartidx)
-          dseglength = p_DsegInfo(2+istartidx)
-          dendpar = dcurrentpar + dseglength
           
-          ! At least one of the IF-commands in the loop will activate
-          ! the exit - because of the 'dt' check above!
-          IF (dpar .LT. dendpar) EXIT
+          ! Subtract the start position of the current boundary component
+          ! from the parameter value to get the 'local' parameter value
+          ! (0 .le. dparloc .le. 1.0)
+          dparloc = dpar - REAL(iseg,DP)
+
+        CASE (BDR_PAR_LENGTH)
+        
+          ! In the length-parametrisation, we have to search.
+          DO iseg = 0,p_IsegCount(iboundCompIdx)-1
+            
+            ! Determine Start index of the segment in the double-prec. block
+            istartidx = p_IsegInfo(1+2*iseg+1) 
+            
+            ! Get the start and end parameter value
+            dcurrentpar = p_DsegInfo(1+istartidx)
+            dseglength = p_DsegInfo(2+istartidx)
+            dendpar = dcurrentpar + dseglength
+            
+            ! At least one of the IF-commands in the loop will activate
+            ! the exit - because of the 'dt' check above!
+            IF (dpar .LT. dendpar) EXIT
+            
+          END DO
+
+          ! Subtract the start position of the current boundary component
+          ! from the parameter value to get the 'local' parameter value
+          ! (0 .le. dparloc .le. length(segment))
+          dparloc = dpar - dcurrentpar
+
+          IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
           
-        END DO
+          ! Divide by the segment length to get the local parameter value
+          ! in 0-1 parametrisation.
+          dparloc = dparloc / dseglength
 
-        ! Subtract the start position of the current boundary component
-        ! from the parameter value to get the 'local' parameter value
-        ! (0 .le. dparloc .le. length(segment))
-        dparloc = dpar - dcurrentpar
-
-        IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
+        END SELECT
         
-        ! Divide by the segment length to get the local parameter value
-        ! in 0-1 parametrisation.
-        dparloc = dparloc / dseglength
-
-      END SELECT
-      
-      ! The local parameter value dparloc is now always in the range 0..1.
-      !    
-      ! How shoule we convert?
-      SELECT CASE (cparTypeDest)
-      CASE (BDR_PAR_01)
-        ! Convert to 0-1. 
-        ! Take the number of teh segment as basis and add
-        ! the local parameter value to get the 0-1 parameter value.
-        DparDest(iidx) = REAL(iseg,DP) + dparloc
+        ! The local parameter value dparloc is now always in the range 0..1.
+        !    
+        ! How shoule we convert?
+        SELECT CASE (cparTypeDest)
+        CASE (BDR_PAR_01)
+          ! Convert to 0-1. 
+          ! Take the number of teh segment as basis and add
+          ! the local parameter value to get the 0-1 parameter value.
+          DparDest(iidx) = REAL(iseg,DP) + dparloc
+          
+        CASE (BDR_PAR_LENGTH)
+          ! Convert to length parametrisation. dparloc gives us the local
+          ! parameter value in 0-1 parametrisation. Interpolate
+          ! linearly.
+          DparDest(iidx) = dcurrentpar + dparloc*dseglength
         
-      CASE (BDR_PAR_LENGTH)
-        ! Convert to length parametrisation. dparloc gives us the local
-        ! parameter value in 0-1 parametrisation. Interpolate
-        ! linearly.
-        DparDest(iidx) = dcurrentpar + dparloc*dseglength
-      
-      END SELECT
+        END SELECT
+        
+      END IF
      
     END DO ! iidx
     
@@ -1673,6 +1680,7 @@ MODULE boundary
   
   ! The parameter value of the point to be checked.
   ! Must be in the range 0..max. par. value.
+  ! Points with negative parameer values are not in the region by definition.
   ! The parametrisation type (0-1 or length parametrisation) must match 
   ! the parametrisation in the boundary region rregion!
   REAL(DP), INTENT(IN) :: dparam
@@ -1693,6 +1701,14 @@ MODULE boundary
   
   ! Correct boundary component?
   IF (iboundCompIdx .NE. rregion%iboundCompIdx) RETURN
+  
+  ! If the parameter value is negative, the point is surely not in the
+  ! region. Parameter values must be positive!
+  ! (Note: Don't change this behaviour to 'rounding' into 0..tmax,
+  ! since there may be routines (like in the triangulation) thay
+  ! depend on this to figure out which vertices are on the physical
+  ! boundary and which not!)
+  IF (dparam .LT. 0.0_DP) RETURN
   
   ! Does the region cover the complete boundary?
   IF (rregion%dmaxParam-rregion%dminParam .GT. rregion%dmaxParamBC) THEN
