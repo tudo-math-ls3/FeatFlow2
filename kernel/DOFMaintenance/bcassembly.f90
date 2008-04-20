@@ -1226,7 +1226,7 @@ CONTAINS
     ! region, take it!
     elementloop: DO i=p_IboundaryCpIdx(rregion%iboundCompIdx),p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
     
-      ! Check if the vertex or edge touches the boudnary region
+      ! Check if the vertex or edge touches the boundary region
       IF (PRESENT(IvtLocal)) &
         bvertexInside = boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DvertexParameterValue(i))
         
