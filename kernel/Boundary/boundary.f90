@@ -1104,6 +1104,12 @@ MODULE boundary
                       OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
     CALL sys_halt()
   ENDIF
+  
+  IF (dt .LT. 0.0_DP) THEN 
+    CALL output_line ('Negative parameter values invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
+    CALL sys_halt()
+  END IF
 
   ! Get the pointers to the segment information arrays for the current
   ! boundary component:
