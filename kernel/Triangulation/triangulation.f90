@@ -85,6 +85,9 @@
 !# 19.) tria_generateSubdomain
 !#      -> Extract cells from a mesh and generate a subdomain from them
 !#
+!# 20.) tria_attachCells
+!#      -> Attaches a set of cells to an existing triangulation
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -1186,6 +1189,39 @@ MODULE triangulation
   END TYPE
 
 !</typeblock>
+
+!<typeblock>
+
+  ! Defines a set of cells (coordinates, connectivity) that can be
+  ! attached to a mesh.
+  TYPE t_cellSet
+    
+    ! Number of vertices in the set
+    INTEGER(PREC_VERTEXIDX) :: NVT = 0
+    
+    ! Number of elements in the set
+    INTEGER(PREC_ELEMENTIDX) :: NEL = 0
+    
+    ! Array with the coordinates of the vertices defining the cells.
+    ! DIMENSION(#dimensions,#vertices)
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords => NULL()
+    
+    ! Array defining the connectivity.
+    ! DIMENSION(max. #vertices per element, #elements)
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement => NULL()
+    
+    ! Array defining the nodal property of all vertices in the set.
+    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty => NULL()
+    
+    ! Array with parameter values for all vertices in the
+    ! cell set that are located on the physical boundary.
+    ! DIMENSION(#vertices).
+    ! Vertices not on the boundary are identified by DvertexPar(.) = -1.
+    REAL(DP), DIMENSION(:), POINTER :: p_DallVerticesParameterValue => NULL()
+    
+  END TYPE
+  
+!</types>
 
 !<typeblock>
   ! a connector connects to adjacent cells (i.e. a face in 3d)
@@ -4817,16 +4853,19 @@ CONTAINS
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) THEN
       ! We have as many elements on the boudary as vertices!
+      ! Initialise the array with zero to give proper values for elements on a
+      ! possible 'blind' boundary component -- as we don't calculate elements
+      ! adjacent to vertices on the 'blind' BC!
       CALL storage_new ('tria_genElementsAtBoundary2D', 'KEBD', &
           rtriangulation%NVBD, ST_INT, &
-          rtriangulation%h_IelementsAtBoundary, ST_NEWBLOCK_NOINIT)
+          rtriangulation%h_IelementsAtBoundary, ST_NEWBLOCK_ZERO)
     ELSE
       CALL storage_getsize (rtriangulation%h_IelementsAtBoundary, isize)
       IF (isize .NE. rtriangulation%NVBD) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genElementsAtBoundary2D', &
             rtriangulation%NVBD, rtriangulation%h_IelementsAtBoundary, &
-            ST_NEWBLOCK_NOINIT, .FALSE.)
+            ST_NEWBLOCK_ZERO, .FALSE.)
       END IF
     END IF
     
@@ -4835,7 +4874,7 @@ CONTAINS
     nnve = rtriangulation%NNVE
 
     ! Loop through all boundary components
-    DO ibct = 1,SIZE(p_IboundaryCpIdx)-1
+    DO ibct = 1,rtriangulation%NBCT
     
       ! On each boundary component, loop through all vertices
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
@@ -4978,7 +5017,7 @@ CONTAINS
 
     ! Loop through all boundary components
     !$OMP PARALLEL DO PRIVATE(ivbd,ivt,iel,ive)
-    DO ibct = 1,SIZE(p_IboundaryCpIdx)-1
+    DO ibct = 1,rtriangulation%NBCT
     
       ! On each boundary component, loop through all elements
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
@@ -5290,7 +5329,7 @@ CONTAINS
         p_DedgeParameterValue)
 
     ! Loop through all boundary components
-    DO ibct = 1,SIZE(p_IboundaryCpIdx)-1
+    DO ibct = 1,rtriangulation%NBCT
     
       ! Check if the BC is empty:
       IF (p_IboundaryCpIdx(ibct) .LT. p_IboundaryCpIdx(ibct+1)) THEN
@@ -11802,7 +11841,467 @@ CONTAINS
       !$OMP END PARALLEL DO
         
     END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_attachCells (rtriangulation,rcellSet,IvertexMapping,rtriaDest)
   
+!<description>
+  ! Extends a mesh by a set of cells. rcellSet defines a set of cells.
+  ! These cells are attached to the mesh rtriangulation. The new mesh is
+  ! created in rtriaDest and will be a 'raw' mesh.
+!</description>
+
+!<input>
+  ! A mesh which is to be extended.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  
+  ! A set of cells which is to be attached to rtriangulation.
+  ! At least, IverticesAtElement in this structure must be defined to create
+  ! a valid mesh. If DvertexCoords is undefined, all new vertices are set to
+  ! the origin. If InodalProperty is undefined, new vertices are treated
+  ! as 'inner' vertices.
+  TYPE(t_cellSet), INTENT(IN) :: rcellSet
+  
+  ! A vertex mapping. This mapping defines for every vertex in rcellSet
+  ! the number of that vertex in rtriangulation which coincides with it.
+  ! If a vertex in rcellSet is not related to a vertex in rtriangulation,
+  ! i.e. the vertex is a new vertex, the corresponding entry in IvertexMapping
+  ! must be =0.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: IvertexMapping
+!</input>
+
+!<output>
+  ! Receives the extended mesh.
+  TYPE(t_triangulation), INTENT(OUT) :: rtriaDest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsNew
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementNew
+    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalPropertyNew
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParNew
+    INTEGER :: h_IvertexMappingAux
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IvertexMappingAux
+    INTEGER(I32), DIMENSION(2) :: Isize
+    INTEGER(I32) :: i,j,idestpos,ivt,ivt2
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_VERTEXIDX) :: NVT,ipoint,ivtpos
+    INTEGER :: h_DvertParamTmp
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertParamTmp
+    
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElementSrc
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElementDest
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsSrc,p_DvertexCoordsDest
+    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalPropertySrc,p_InodalPropertyDest
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParSrc,p_DvertexParDest
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+
+    ! Get the arrays from the cell set
+    p_DvertexCoordsNew => rcellSet%p_DvertexCoords
+    p_IverticesAtElementNew => rcellSet%p_IverticesAtElement
+    p_InodalPropertyNew => rcellSet%p_InodalProperty
+    p_DvertexParNew => rcellSet%p_DallVerticesParameterValue
+    IF (.NOT. ASSOCIATED(p_IverticesAtElementNew)) THEN
+      CALL output_line('IverticesAtElementNew in the cell set undefined!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_attachCells')
+      CALL sys_halt()
+    END IF
+    
+    ! Set up basic information
+    rtriaDest%ndim = rtriangulation%ndim
+    rtriaDest%NMT = 0
+    rtriaDest%NNVE = MAX(rtriangulation%NNVE,UBOUND(p_IverticesAtElementNew,1))
+    rtriaDest%NNEE = rtriangulation%NNEE
+    rtriaDest%NBCT = rtriangulation%NBCT
+    rtriaDest%NEL = rtriangulation%NEL + rcellSet%NEL
+
+    ! Allocate memory for IverticesAtElement.
+    ! 2d array of size(NVE, NEL)
+    Isize = (/rtriaDest%NNVE,INT(rtriaDest%NEL,I32)/)
+    CALL storage_new2D ('tria_attachCells', 'KVERT', Isize, ST_INT, &
+        rtriaDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+
+    ! Get the pointer to the IverticesAtElement array
+    CALL storage_getbase_int2D(&
+        rtriaDest%h_IverticesAtElement,p_IverticesAtElementDest)
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_IverticesAtElementSrc)
+
+    ! Copy the first part of IverticesAtElement to the destination array; 
+    ! old cells are new cells.
+    DO j=1,rtriangulation%NEL
+      DO i=1,UBOUND(p_IverticesAtElementSrc,1)
+        p_IverticesAtElementDest(i,j) = p_IverticesAtElementSrc(i,j)
+      END DO
+    END DO
+    
+    ! Now we have to correct the vertex numbers. The new vertices are
+    ! expected in the numbering 1,2,3,4,... and must be modified to
+    ! fulfil the numbering NVT+1,NVT+2,... to be new vertices.
+    !
+    ! For that purpose, we create a new vertex mapping array. This array basically
+    ! receives the original vertex mapping array for all vertices that coincide
+    ! with existing vertices. For new vertices, we create here their
+    ! 'destination' number.
+    CALL storage_new ('tria_attachCells', 'IvertexMapping', SIZE(IvertexMapping), &
+        ST_INT, h_IvertexMappingAux, ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int (h_IvertexMappingAux,p_IvertexMappingAux)
+    
+    ipoint = rtriangulation%NVT
+    DO i=1,SIZE(p_IvertexMappingAux)
+      IF (IvertexMapping(i) .EQ. 0) THEN
+        ! New number, following NVT.
+        ipoint = ipoint+1
+        p_IvertexMappingAux(i) = ipoint
+      ELSE
+        ! Existing point
+        p_IvertexMappingAux(i) = IvertexMapping(i)
+      END IF
+    END DO
+    
+    ! ipoint is now the total number of vertices in the new mesh.
+    rtriadest%NVT = ipoint
+    
+    ! Position of the new cells
+    idestPos = rtriangulation%NEL
+    
+    ! Now, attach the cell connectivity and simultaneously renumber the vertices
+    DO j=1,rcellSet%NEL
+      DO i=1,UBOUND(p_IverticesAtElementNew,1)
+        p_IverticesAtElementDest(i,j+idestPos) = &
+            p_IvertexMappingAux(p_IverticesAtElementNew(i,j))
+      END DO
+    END DO
+    
+    ! Allocate memory for the basic arrays on the heap.
+    ! Initialise with zero, so new points are originally at the origin.
+    ! array of size(dimension, NVT)
+    Isize = (/rtriangulation%ndim,INT(rtriaDest%NVT,I32)/)
+    CALL storage_new2D ('tria_generateSubdomain', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriaDest%h_DvertexCoords, ST_NEWBLOCK_ZERO)
+        
+    ! Get the pointers to the coordinate array
+    ! p_Ddata2Ddest is the pointer to the coordinate array
+    CALL storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_DvertexCoordsSrc)
+    CALL storage_getbase_double2D(&
+        rtriaDest%h_DvertexCoords,p_DvertexCoordsDest)
+    
+    ! Copy the first part of DvertexCoords to the destination array; 
+    ! old vertices are new vertices.
+    DO j=1,rtriangulation%NVT
+      DO i=1,UBOUND(p_DvertexCoordsSrc,1)
+        p_DvertexCoordsDest(i,j) = p_DvertexCoordsSrc(i,j)
+      END DO
+    END DO
+    
+    ! If new vertex coordinates are present, initialise the new coordinates.
+    IF (ASSOCIATED(p_DvertexCoordsNew)) THEN
+    
+      DO j=1,rcellSet%NVT
+        ivt = p_IvertexMappingAux(j)
+        DO i=1,UBOUND(p_DvertexCoordsNew,1)
+          p_DvertexCoordsDest(i,ivt) = p_DvertexCoordsNew(i,j)
+        END DO
+      END DO
+      
+    END IF
+    
+    ! Allocate memory for InodalProperty 
+    CALL storage_new ('tria_generateSubdomain', 'KNPR', &
+        INT(rtriaDest%NVT,I32), ST_INT, &
+        rtriaDest%h_InodalProperty, ST_NEWBLOCK_ZERO)
+
+    ! Get pointers to the nodal property array
+    CALL storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_InodalPropertySrc)
+    CALL storage_getbase_int(&
+        rtriaDest%h_InodalProperty,p_InodalPropertyDest)
+
+    ! Copy the first part of InodalProperty
+    CALL lalg_copyVectorInt(p_InodalPropertySrc(1:rtriangulation%NVT),&
+        p_InodalPropertyDest(1:rtriangulation%NVT))
+    
+    ! If new nodal property information tags are present, initialise the nodal property
+    ! array for the new vertices.
+    IF (ASSOCIATED(p_InodalPropertyNew)) THEN
+
+      DO j=1,rcellSet%NVT
+        p_InodalPropertyDest(p_IvertexMappingAux(j)) = p_InodalPropertyNew(j)
+      END DO
+    
+    END IF
+    
+    ! Initialise InelOfType.
+    !    
+    ! Loop through the elements and determine how many elements
+    ! of each element type we have.
+    rtriaDest%InelOfType(:) = 0
+    DO iel=1,rtriaDest%NEL
+      ! start at the last index of element iel down to the first
+      DO i=rtriaDest%NNVE,1,-1
+        IF (p_IverticesAtElementDest(i,iel) .NE. 0) THEN
+          rtriaDest%InelOfType(i) = rtriaDest%InelOfType(i)+1
+          EXIT
+        END IF
+      END DO
+    END DO
+    
+    ! Generate basic boundary information
+    CALL genRawBoundary2D (rtriaDest)
+  
+    ! If we have boudary information, we can extract the parameter values
+    ! of the vertices on the physical boundary.    
+    IF (rtriangulation%h_DvertexParameterValue .NE. ST_NOHANDLE) THEN
+
+      ! Allocate memory for DvertexParameterValue
+      CALL storage_new ('tria_generateSubdomain', &
+          'DVBDP', INT(rtriaDest%NVBD,I32), &
+          ST_DOUBLE, rtriaDest%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+      
+      CALL storage_getbase_double (&
+          rtriangulation%h_DvertexParameterValue,p_DvertexParSrc)
+          
+      CALL storage_getbase_double (&
+          rtriaDest%h_DvertexParameterValue,p_DvertexParDest)
+
+      CALL storage_getbase_int (&
+          rtriaDest%h_IverticesAtBoundary,p_IverticesAtBoundary)
+      
+      IF (rtriangulation%h_IboundaryVertexPos .EQ. ST_NOHANDLE) THEN
+        CALL output_line ('Boundary search arrays not initialised!.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'tria_generateSubdomain')
+        CALL sys_halt()
+      END IF
+      
+      NVT = rtriangulation%NVT
+
+      ! Create temp array that holds the parameter values for all new
+      ! vertices on the boundary and is undefined for all other new vertices.      
+      CALL storage_new ('tria_attachCells', 'DvertParamTmp', ipoint-NVT, &
+          ST_DOUBLE, h_DvertParamTmp, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double (h_DvertParamTmp,p_DvertParamTmp)
+      
+      IF (ASSOCIATED(p_DvertexParNew)) THEN
+        ! Copy the parameter values, reordered according to the vertex mapping.
+        ! Copy only the parameter values of the 'new' vertices.
+        DO i=1,rcellSet%NVT
+          IF (p_IvertexMappingAux(i) .GT. NVT) &
+            p_DvertParamTmp(p_IvertexMappingAux(i)-NVT) = p_DvertexParNew(i)
+        END DO
+      ELSE
+        ! We don't know anything about the vertices; set their parameter value
+        ! to -1.
+        DO i=1,ipoint-NVT
+          p_DvertParamTmp(p_IvertexMappingAux(i)-NVT) = -1.0_DP
+        END DO
+      END IF
+      
+      ! Loop through all vertices on the boundary. Find out their position
+      ! in the original boundary-vertex array and get their parameter values.
+      DO ivt2=1,SIZE(p_IverticesAtBoundary)
+      
+        ivt = p_IverticesAtBoundary(ivt2)
+        
+        ! If this is a vertex on the real boundary...
+        IF (p_InodalPropertyDest(ivt) .LE. rtriaDest%NBCT) THEN
+      
+          ! Old or new vertex. ivt=vertex number in new mesh, NVT=#vertices in old mesh.
+          IF (ivt .LE. NVT) THEN
+      
+            ! Search the vertex position
+            CALL tria_searchBoundaryNode(ivt,rtriangulation,ivtpos)
+            
+            ! Get the parameter value.
+            p_DvertexParDest(ivt2) = p_DvertexParSrc(ivtpos)
+            
+          ELSE
+           
+            ! New vertex; take the parameter value from the cell set.
+            ! Take the parameter value from p_DvertParamTmp which collects the new
+            ! parameter values in reordered order, not including the old vertices.
+            p_DvertexParDest(ivt2) = p_DvertParamTmp(ivt-NVT)
+          
+          END IF
+          
+        ELSE
+        
+          ! Othewise, save -1.
+          p_DvertexParDest(ivt2) = -1.0_DP
+        
+        END IF
+        
+      END DO
+      
+      ! Release memory.
+      CALL storage_free (h_DvertParamTmp)
+      
+      ! Something's still missing here!
+      ! We have to delete all vertices from the boundary arrays that returned
+      ! from 'blind vertex' state to 'inner vertex' state, e.g. that don't belong
+      ! to the 'blind' boundary component anymore...
+      
+    END IF
+  
+    ! Release temp memory
+    CALL storage_free (h_IvertexMappingAux)
+    
+  CONTAINS
+
+    SUBROUTINE genRawBoundary2D (rtriangulation)
+
+    ! Auxiliary routine.
+    ! This routine initialises basic boundary arrays and cleans up 
+    ! a basic triangulation. That means:
+    ! -> NVBD is calculated
+    ! -> IboundaryCpIdx is created and generated
+    ! -> IverticesAtBoundary is created and generated.
+    !    The vertices are ordered for the boundary component according
+    !    to IboundaryCpIdx but not ordered for their parameter value.
+    
+    ! Triangulation to be initialised with basic data.
+    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+    
+      ! local variables
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+      REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+      INTEGER(PREC_VERTEXIDX) :: ivbd,ivt
+      INTEGER :: ibct
+      INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+
+      ! Get the pointer to the InodalProperty array
+      CALL storage_getbase_int(&
+          rtriangulation%h_InodalProperty,p_InodalProperty)
+
+      ! Calculate NVBD by simply counting how many elements
+      ! in p_InodalProperty are <> 0.
+      rtriangulation%NVBD = 0
+      ivbd = 0
+      !$OMP PARALLEL DO REDUCTION(+:ivbd)
+      DO ivt=1,rtriangulation%NVT
+        !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
+        IF (p_InodalProperty(ivt) .NE. 0) ivbd = ivbd+1
+      END DO
+      !$OMP END PARALLEL DO
+      rtriangulation%NVBD = ivbd
+
+      ! Allocate memory for IverticesAtBoundary.
+      CALL storage_new ('genRawBoundary2D', &
+          'KVBD', INT(rtriangulation%NVBD,I32), &
+          ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+          
+      ! Allocate memory for the boundary component index vector.
+      ! We reserve NBCT+1(+1) elements here, where the NBCT+1'th element
+      ! corresponds to the 'blind' boundary which came from inside of
+      ! the domain.
+      ! Initialise everything with zero!
+      CALL storage_new ('genRawBoundary2D', &
+          'KBCT', INT(rtriangulation%NBCT+2,I32), &
+          ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+      
+      ! Get pointers to the arrays
+      CALL storage_getbase_int (&
+          rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+          
+      CALL storage_getbase_double2D (&
+          rtriangulation%h_DvertexCoords,p_DvertexCoords)
+          
+      CALL storage_getbase_int (&
+          rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+      
+      ! The first element in p_IboundaryCpIdx is (as the head) always =1.
+      p_IboundaryCpIdx(1) = 1
+
+      ! Perform a first loop over all vertices to check which are on the
+      ! boundary. Count them. This way, we at first set up the boundary
+      ! component index vector p_IboundaryCpIdx.
+      ! In this first step, we save the number of vertices on each 
+      ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
+      DO ivt=1,rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .NE. 0) THEN
+          ibct = p_InodalProperty(ivt)
+          
+          ! Increase the number of vertices in that boundary component by 1.
+          ! The number of vertices on boundary component i is saved here
+          ! at p_IboundaryCpIdx(i+1) for later.
+          ! Note that the array was initialised with zero during the creation
+          ! process!
+          p_IboundaryCpIdx(ibct+1) = p_IboundaryCpIdx(ibct+1)+1
+
+        END IF
+      END DO
+      
+      ! Sum up the number of vertices on each boundary component to get the
+      ! actual index vector.
+      DO ibct = 2,rtriangulation%NBCT+2
+        p_IboundaryCpIdx(ibct) = p_IboundaryCpIdx(ibct)+p_IboundaryCpIdx(ibct-1)
+      END DO
+      
+      ! Shift the p_IboundaryCpIdx array by one position. That's a little trick in
+      ! the use of p_IboundaryCpIdx!
+      ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+      ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
+      !
+      !         i            1   2   3   4
+      ! p_IboundaryCpIdx(i)  1   8   6   4
+      !
+      ! Summing that up gave the actual indices:
+      !
+      !         i            1   2   3   4
+      ! p_IboundaryCpIdx(i)  1   9  15  19
+      !
+      ! which is already the correct index array.
+      ! Shifting p_IboundaryCpIdx by 1 will give:
+      !
+      !         i            1   2   3   4
+      ! p_IboundaryCpIdx(i)  1   1   9  15
+      
+      p_IboundaryCpIdx(2:rtriangulation%NBCT+2) = p_IboundaryCpIdx(1:rtriangulation%NBCT+1)
+      
+      ! Then, we again loop through all vertices and collect those on the
+      ! boundary. In that loop, we use p_IboundaryCpIdx(2:NBCT+2) as pointer and
+      ! increase them for every point we find. The loop will behave like
+      ! the first one, i.e. we'll again find 8,6 and 4 vertices on the boundary components
+      ! 1,2 and 3. Increasing the p_IboundaryCpIdx(2:NBCT+1) for boundary components
+      ! 1..NBCT the same way as done in the first loop will therefore again lead to
+      !
+      !         i            1   2   3   4
+      ! p_IboundaryCpIdx(i)  1   9  15  19
+      !
+      ! Ok, let's catch the actual vertices.
+      !      
+      ! Check all vertices to find out, which vertices are on the boundary.
+      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      DO ivt=1,rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .NE. 0) THEN
+          ! id of the boundary component
+          ibct = p_InodalProperty(ivt)
+          
+          ! set ivbd to the number of vertices on that boundary component
+          ! thus ivbd holds the current number of vertices found for
+          ! boundary component ibct and ivbd represents the current
+          ! position in the p_IverticesAtBoundary array
+          ivbd = p_IboundaryCpIdx(ibct+1)
+          ! we have found a new point on that boundary component
+          ! so increase the number of points by one
+          p_IboundaryCpIdx(ibct+1) = ivbd+1
+          
+          ! Store the vertex as boundary vertex
+          p_IverticesAtBoundary (ivbd) = ivt
+        END IF
+      END DO
+      !$OMP END PARALLEL DO
+     
+    END SUBROUTINE
 
   END SUBROUTINE
 
