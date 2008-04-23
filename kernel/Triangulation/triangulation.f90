@@ -10818,7 +10818,7 @@ CONTAINS
 !<description>
     ! The routine produces an array pair that
     ! helps you find all edges that are attached to
-  ! a particular vertex
+    ! a particular vertex
 !</description>
   
 !<inputoutput>
