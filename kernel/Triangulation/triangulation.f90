@@ -11460,7 +11460,7 @@ CONTAINS
     
     ! Allocate memory for the basic arrays on the heap
     ! array of size(dimension, NVT)
-    Isize = (/rtriangulation%ndim,INT(rtriangulation%NVT,I32)/)
+    Isize = (/rtriangulation%ndim,INT(rtriaDest%NVT,I32)/)
     CALL storage_new2D ('tria_generateSubdomain', 'DCORVG', Isize, ST_DOUBLE, &
         rtriaDest%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         

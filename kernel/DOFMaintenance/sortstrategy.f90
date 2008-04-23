@@ -916,7 +916,8 @@ CONTAINS
         CALL storage_getbase_double2d (&
             rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords)
             
-        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+        CALL sortCoords (p_Dcoords, &
+          Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
       
       CASE (EL_Q2)
       
@@ -965,7 +966,8 @@ CONTAINS
         END DO
         
         ! Sort for the coordinates
-        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+        CALL sortCoords (p_Dcoords, &
+            Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
 
         ! Release temp memory
         CALL storage_free (hhandle)
@@ -985,7 +987,8 @@ CONTAINS
         CALL tria_getPointsOnEdge (rdiscretisation%p_rtriangulation,p_Dcoords,1)
         
         ! Sort for the midpoint coordinates
-        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+        CALL sortCoords (p_Dcoords, &
+            Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
         
         ! Release temp array, finish
         CALL storage_free (hhandle)
@@ -1003,8 +1006,9 @@ CONTAINS
     END SELECT
   
     ! Calculate the inverse permutation, that's it.
-    CALL sstrat_calcInversePermutation (Ipermutation(1:UBOUND(p_Dcoords,2)), &
-                                        Ipermutation(UBOUND(p_Dcoords,2)+1:) )
+    CALL sstrat_calcInversePermutation (&
+        Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
+        Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
     
   CONTAINS
   

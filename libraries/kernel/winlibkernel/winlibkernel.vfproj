@@ -9,7 +9,7 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
@@ -38,7 +38,7 @@
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Adaptivity">
@@ -83,6 +83,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientMatrixSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientTrilMatrixSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientVectorSc.inc"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_discretebc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_fbcassembly.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\linearformevaluation.f90">
 			<FileConfiguration Name="Debug Parallel|Win32">
@@ -97,6 +98,7 @@
 		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\elementpreprocessing.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\transformation.f90"/></Filter>
 		<Filter Name="LinearAlgebra">
 		<File RelativePath="..\..\..\kernel\LinearAlgebra\linearalgebra.f90"/></Filter>
@@ -130,7 +132,6 @@
 		<Filter Name="Postprocessing">
 		<File RelativePath="..\..\..\kernel\Postprocessing\boundaryintegral.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScBoundary2D.inc"/>
-		<File RelativePath="..\..\..\kernel\Postprocessing\intf_innerfunctionScBoundary2D.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionSc.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionScBoundary.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\mapleio.f90"/>
