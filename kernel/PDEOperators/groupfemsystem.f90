@@ -3756,8 +3756,8 @@ CONTAINS
           CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep, F_ij)
           
           ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
-          C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic variables based on the explicit predictor
           CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, W_ij, L_ij=T_ij)
@@ -3884,8 +3884,8 @@ CONTAINS
           CALL fcb_calcRawFlux(u(:,i), u(:,j), C_ij, C_ji, tstep*theta, F_ij)
           
           ! Compute averaged coefficients
-          C_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji))
-          C_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+          C_ij(1) = 0.5_DP*(Cx(ji)-Cx(ij))
+          C_ij(2) = 0.5_DP*(Cy(ji)-Cy(ij))
 
           ! Compute characteristic variables based on the explicit predictor
 !          CALL fcb_calcCharacteristics(uPredict(:,i), uPredict(:,j), C_ij, W_ij, R_ij=S_ij, L_ij=T_ij)
@@ -4164,7 +4164,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4216,7 +4216,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -4312,7 +4312,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4368,7 +4368,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -4403,7 +4403,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4456,7 +4456,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -4553,7 +4553,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4609,7 +4609,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -4644,7 +4644,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4701,7 +4701,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -4736,7 +4736,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
@@ -4788,8 +4788,8 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
-          ks_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+          ks_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
           
@@ -4885,7 +4885,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -4937,7 +4937,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -5034,7 +5034,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5090,7 +5090,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -5125,7 +5125,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5178,7 +5178,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -5276,7 +5276,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5332,7 +5332,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -5367,7 +5367,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5424,7 +5424,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -5459,7 +5459,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
@@ -5511,7 +5511,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -5777,7 +5777,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5826,7 +5826,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -5919,7 +5919,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -5972,7 +5972,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -6007,7 +6007,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6057,7 +6057,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -6151,7 +6151,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6204,7 +6204,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -6239,7 +6239,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6293,7 +6293,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -6328,7 +6328,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
@@ -6377,7 +6377,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -6470,7 +6470,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6519,7 +6519,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -6612,7 +6612,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6665,7 +6665,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -6700,7 +6700,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6750,7 +6750,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -6845,7 +6845,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6898,7 +6898,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij  =  0.5_DP*(Cx(ij)-Cx(ji))*Lbd_ij
+          ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
           ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
           F_ij   = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij   =  ABS(ka_ij)*W_ij
@@ -6933,7 +6933,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           
@@ -6987,7 +6987,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cy(ij)-Cy(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
@@ -7022,7 +7022,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
 
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
 
@@ -7071,7 +7071,7 @@ CONTAINS
           CALL fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
           
           ! Compute antidiffusive fluxes
-          ka_ij =  0.5_DP*(Cz(ij)-Cz(ji))*Lbd_ij
+          ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
           ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
           F_ij  = -MAX(0._DP, MIN(ABS(ka_ij)-ks_ij, 2._DP*ABS(ka_ij)))*W_ij
           W_ij  =  ABS(ka_ij)*W_ij
