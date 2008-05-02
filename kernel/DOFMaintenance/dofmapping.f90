@@ -268,28 +268,35 @@ CONTAINS
     IelTypesPrimary = elem_getPrimaryElement(IelTypes)
     
     ! The number of global DOF's depends on the element type...
-    SELECT CASE (IelTypes(1))
+    SELECT CASE (IelTypesPrimary(1))
     CASE (EL_P0, EL_Q0)
-      SELECT CASE (IelTypes(2))
+      SELECT CASE (IelTypesPrimary(2))
       CASE (EL_P0, EL_Q0)
         ! DOF's in the cell midpoints
         NDFG_conformal2D_2el = rtriangulation%NEL
       END SELECT
       
     CASE (EL_P1, EL_Q1)
-      SELECT CASE (IelTypes(2))
+      SELECT CASE (IelTypesPrimary(2))
       CASE (EL_P1, EL_Q1)
         ! DOF's in the vertices
         NDFG_conformal2D_2el = rtriangulation%NVT
       END SELECT
     
     CASE (EL_P2,EL_Q2)
-      SELECT CASE (IelTypes(2))
+      SELECT CASE (IelTypesPrimary(2))
       CASE (EL_Q2)
         ! Number of vertices + Number of edges (edge midpoints) +
         ! Number of quads (quad midpoints)
         NDFG_conformal2D_2el = rtriangulation%NVT + rtriangulation%NMT + &
             rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+      END SELECT
+
+    CASE (EL_P1T,EL_Q1T)
+      SELECT CASE (IelTypesPrimary(2))
+      CASE (EL_P1T,EL_Q1T)
+        ! DOF's in the edge midpoints
+        NDFG_conformal2D_2el = rtriangulation%NMT
       END SELECT
       
     END SELECT
