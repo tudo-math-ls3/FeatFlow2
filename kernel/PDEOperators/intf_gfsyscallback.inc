@@ -125,7 +125,7 @@ USE fsystem
     !
     ! 1.) The skew-symmetric part of the local system matrix, i.e. $A_{ji}=-A_{ij}$
     !
-    ! 2.) The skew-symmetric part of the local system matrix, i.e. $S_{ji}=S_{ij}$
+    ! 2.) The symmetric part of the local system matrix, i.e. $S_{ji}=S_{ij}$
     !
 !</description>
 
