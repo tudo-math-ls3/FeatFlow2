@@ -350,7 +350,7 @@ CONTAINS
 
     Bder = .FALSE.
     SELECT CASE (cerrortype)
-    CASE (PPERR_L2ERROR) 
+    CASE (PPERR_L1ERROR, PPERR_L2ERROR) 
       Bder(DER_FUNC1D) = .TRUE.
     CASE (PPERR_H1ERROR) 
       Bder(DER_DERIV1D_X) = .TRUE.
@@ -775,7 +775,7 @@ CONTAINS
 
     Bder = .FALSE.
     SELECT CASE (cerrortype)
-    CASE (PPERR_L2ERROR) 
+    CASE (PPERR_L1ERROR, PPERR_L2ERROR) 
       Bder(DER_FUNC) = .TRUE.
     CASE (PPERR_H1ERROR) 
       Bder(DER_DERIV_X) = .TRUE.
@@ -1209,7 +1209,7 @@ CONTAINS
 
     Bder = .FALSE.
     SELECT CASE (cerrortype)
-    CASE (PPERR_L2ERROR) 
+    CASE (PPERR_L1ERROR, PPERR_L2ERROR) 
       Bder(DER_FUNC3D) = .TRUE.
     CASE (PPERR_H1ERROR) 
       Bder(DER_DERIV3D_X) = .TRUE.
