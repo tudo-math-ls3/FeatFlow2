@@ -421,7 +421,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildConvOperatorBlock(RmatrixC, ru,&
-      fcb_calcVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
+      fcb_calcConvection, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -482,7 +482,7 @@ CONTAINS
     ELSE
       
       CALL gfsc_buildConvOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcVelocity, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
+          fcb_calcConvection, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
     END IF
   END SUBROUTINE gfsc_buildConvOperatorBlock
@@ -491,7 +491,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_calcVelocity,&
+  SUBROUTINE gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_calcConvection,&
       bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
 
 !<description>
@@ -1115,7 +1115,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1135,12 +1135,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1163,7 +1162,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1174,12 +1173,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii)
 
+        ! Compute coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
 
@@ -1192,12 +1191,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1220,7 +1218,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1240,12 +1238,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1268,7 +1266,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1279,12 +1277,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
         
@@ -1297,12 +1295,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1325,7 +1323,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1345,12 +1343,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1373,7 +1372,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1384,12 +1383,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
 
@@ -1402,12 +1401,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1431,7 +1431,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1451,12 +1451,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1480,7 +1479,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1491,11 +1490,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficient
+        C_ii(1) = Cx(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
@@ -1509,12 +1508,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1538,7 +1536,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1557,13 +1555,13 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1587,7 +1585,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1598,12 +1596,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
 
@@ -1616,12 +1614,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1645,7 +1643,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1665,12 +1663,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
@@ -1694,7 +1693,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: K
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1705,12 +1704,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         K(ii) = K(ii)+k_ii
 
@@ -1723,12 +1722,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
           K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
@@ -1751,7 +1751,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1771,12 +1771,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -1806,7 +1805,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1817,12 +1816,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficient
+        C_ij(1) = Cx(ij)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
         
@@ -1835,12 +1834,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -1871,7 +1869,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1891,12 +1889,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -1926,7 +1924,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -1937,12 +1935,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
 
@@ -1955,12 +1953,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -1991,7 +1989,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2011,12 +2009,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2046,7 +2045,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2057,12 +2056,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
         
@@ -2075,12 +2074,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2112,7 +2112,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2132,12 +2132,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2168,7 +2167,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2179,12 +2178,12 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficient
+        C_ij(1) = Cx(ij)
 
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
         
@@ -2197,12 +2196,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2234,7 +2232,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2254,12 +2252,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2290,7 +2288,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2301,11 +2299,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -2319,12 +2317,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2356,7 +2354,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2376,12 +2374,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2412,7 +2411,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: L
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2423,11 +2422,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -2440,13 +2439,14 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i),u(j),i,j,v_ij,v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2482,7 +2482,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2508,12 +2508,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2559,7 +2558,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2573,11 +2572,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficient
+        C_ii(1) = Cx(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -2594,12 +2593,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2645,7 +2643,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2671,12 +2669,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2722,7 +2720,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2736,11 +2734,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -2757,12 +2755,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2808,7 +2806,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2834,12 +2832,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2885,7 +2884,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2899,11 +2898,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -2920,12 +2919,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -2972,7 +2972,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -2997,13 +2997,12 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3050,7 +3049,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3064,11 +3063,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficient
+        C_ii(1) = Cx(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3085,12 +3084,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3137,7 +3135,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3163,12 +3161,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3215,7 +3213,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3229,11 +3227,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3250,12 +3248,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3302,7 +3300,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3328,12 +3326,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3380,7 +3379,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3394,11 +3393,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3415,12 +3414,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3466,7 +3466,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3492,12 +3492,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3548,7 +3547,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3562,11 +3561,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3583,12 +3582,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3639,7 +3637,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3665,12 +3663,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3721,7 +3719,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3735,11 +3733,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
         
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3755,13 +3753,13 @@ CONTAINS
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3812,7 +3810,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3838,12 +3836,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3894,7 +3893,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -3908,11 +3907,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kld(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -3929,12 +3928,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -3986,7 +3986,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4012,12 +4012,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -4069,7 +4068,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4083,11 +4082,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -4104,12 +4103,11 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -4161,7 +4159,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4187,12 +4185,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -4244,7 +4242,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4258,11 +4256,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
         
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -4279,12 +4277,12 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -4336,7 +4334,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4362,12 +4360,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -4419,7 +4418,7 @@ CONTAINS
       REAL(DP), DIMENSION(:,:), INTENT(OUT)             :: DcoefficientsAtEdge
       
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ii,C_ij,C_ji
       REAL(DP)                    :: d_ij,k_ii,k_ij,k_ji
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
       INTEGER(PREC_VECIDX)        :: i,j
@@ -4433,11 +4432,11 @@ CONTAINS
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
 
-        ! Compute local velocity coefficients for diagonal
-        CALL fcb_calcVelocity(u(i), u(i), i, i, v_ij, v_ji)
-        
-        ! Convective transport coefficients
-        k_ii = -v_ij(1)*Cx(ii)-v_ij(2)*Cy(ii)-v_ij(3)*Cz(ii)
+        ! Compute coefficients
+        C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
+
+        ! Compute convection coefficients for diagonal
+        CALL fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii)+k_ii
@@ -4454,12 +4453,13 @@ CONTAINS
           ! and let the separator point to the next entry
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
-          ! Compute local velocity coefficients
-          CALL fcb_calcVelocity(u(i), u(j), i, j, v_ij, v_ji)
-          
-          ! Convective transport coefficients
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+          ! Compute convection coefficients
+          CALL fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = MAX(-k_ij, 0._DP, -k_ji)
@@ -6335,7 +6335,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvJacobianBlock(RmatrixC, ru, fcb_calcVelocity,&
+  SUBROUTINE gfsc_buildConvJacobianBlock(RmatrixC, ru, fcb_calcConvection,&
       hstep, bStabilize, bclear, rmatrixJ)
 
 !<description>
@@ -6386,7 +6386,7 @@ CONTAINS
     ELSE
       
       CALL gfsc_buildConvJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcVelocity, hstep, bStabilize, bclear, rmatrixJ)
+          fcb_calcConvection, hstep, bStabilize, bclear, rmatrixJ)
       
     END IF
   END SUBROUTINE gfsc_buildConvJacobianBlock
@@ -6395,7 +6395,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE gfsc_buildConvJacobianScalar(RmatrixC, ru, fcb_calcVelocity,&
+  SUBROUTINE gfsc_buildConvJacobianScalar(RmatrixC, ru, fcb_calcConvection,&
       hstep, bStabilize, bclear, rmatrixJ)
 
 !<description>
@@ -6592,7 +6592,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -6627,8 +6627,11 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
                     
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -6642,17 +6645,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -6672,17 +6671,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -6717,7 +6712,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -6752,8 +6747,12 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
                     
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -6767,17 +6766,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -6797,17 +6792,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -6842,7 +6833,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -6877,8 +6868,13 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
                     
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -6892,17 +6888,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -6922,17 +6914,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -6968,7 +6956,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7003,8 +6991,11 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7018,17 +7009,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7048,17 +7035,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)
-          k_ji = -v_ji(1)*Cx(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7094,7 +7077,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7129,8 +7112,12 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7144,17 +7131,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7174,17 +7157,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7220,7 +7199,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7255,8 +7234,13 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7270,17 +7254,13 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7300,17 +7280,13 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          k_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          k_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7345,7 +7321,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7380,8 +7356,11 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
                     
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7395,19 +7374,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7427,19 +7402,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7474,7 +7445,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7509,8 +7480,12 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
                     
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7524,19 +7499,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7556,19 +7527,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7603,7 +7570,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7638,8 +7605,13 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7653,19 +7625,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j) ,i ,j ,v_ij ,v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7685,19 +7653,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7733,7 +7697,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7768,8 +7732,11 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7783,19 +7750,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7815,19 +7778,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7863,7 +7822,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -7898,8 +7857,12 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7913,19 +7876,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7945,19 +7904,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7993,7 +7948,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                :: Cx,Cy,Cz,u
       REAL(DP), DIMENSION(:), INTENT(INOUT)             :: Jac
       
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       REAL(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       INTEGER(PREC_MATIDX)        :: ii,ij,ji,jj
       INTEGER(PREC_VECIDX)        :: i,j
@@ -8028,8 +7983,13 @@ CONTAINS
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
           
-          ! solution difference u_j-u_i
+          ! Compute solution difference u_j-u_i
           diff = u(j)-u(i)
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -8043,19 +8003,15 @@ CONTAINS
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -8075,19 +8031,15 @@ CONTAINS
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
-          d_ij =  MAX(-l_ij, 0._DP, -l_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+          d_ij = MAX(-l_ij, 0._DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij =(a_ij+l_ij+d_ij)/2._DP
@@ -9685,7 +9637,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianBlockFCT(RmatrixC, rmatrixMC, ru, &
-      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -9742,7 +9694,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
-          fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+          fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
     END IF
   END SUBROUTINE gfsc_buildJacobianBlockFCT
@@ -9752,7 +9704,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru,&
-      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -9936,7 +9888,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(INOUT)            :: Jac
 
       ! local variables
-      REAL(DP), DIMENSION(NDIM1D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM1D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX) :: iedge,ij,ji,ii,jj
       INTEGER(PREC_VECIDX) :: i,j
       REAL(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
@@ -9959,6 +9911,9 @@ CONTAINS
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
           
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -9971,11 +9926,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -9988,11 +9941,9 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10016,11 +9967,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
@@ -10033,11 +9982,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10073,6 +10020,9 @@ CONTAINS
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
                     
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -10086,11 +10036,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -10103,11 +10051,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
         
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10131,11 +10077,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
@@ -10148,11 +10092,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)
-          l_ji = -v_ji(1)*Cx(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10194,7 +10136,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(INOUT)            :: Jac
 
       ! local variables
-      REAL(DP), DIMENSION(NDIM2D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM2D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX) :: iedge,ij,ji,ii,jj
       INTEGER(PREC_VECIDX) :: i,j
       REAL(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
@@ -10217,6 +10159,10 @@ CONTAINS
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
           
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -10229,11 +10175,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -10246,11 +10190,9 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10274,11 +10216,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
@@ -10291,11 +10231,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10330,7 +10268,11 @@ CONTAINS
           
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
-                    
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+   
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -10344,11 +10286,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -10361,11 +10301,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
         
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10389,11 +10327,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
@@ -10406,11 +10342,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10452,7 +10386,7 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(INOUT)            :: Jac
 
       ! local variables
-      REAL(DP), DIMENSION(NDIM3D) :: v_ij,v_ji
+      REAL(DP), DIMENSION(NDIM3D) :: C_ij,C_ji
       INTEGER(PREC_MATIDX) :: iedge,ij,ji,ii,jj
       INTEGER(PREC_VECIDX) :: i,j
       REAL(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
@@ -10475,6 +10409,11 @@ CONTAINS
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
           
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -10487,11 +10426,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -10504,11 +10441,9 @@ CONTAINS
 
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10532,11 +10467,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           a_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
@@ -10549,11 +10482,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           b_ij = MC(ij)+theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10588,7 +10519,12 @@ CONTAINS
           
           ! Determine diagonal indices
           ii = Kdiagonal(i); jj = Kdiagonal(j)
-                    
+
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        
           ! Compute solution difference
           diff = u(i)-u(j)
           
@@ -10602,11 +10538,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)+hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
@@ -10619,11 +10553,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i)-hstep, u(j), i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
         
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10647,11 +10579,9 @@ CONTAINS
           !------------------------------------------------------------
           
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)+hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           a_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
@@ -10664,11 +10594,9 @@ CONTAINS
 
 
           ! Compute perturbed velocity
-          CALL fcb_calcVelocity(u(i), u(j)-hstep, i, j, v_ij, v_ji)
+          CALL fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
 
           ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          l_ij = -v_ij(1)*Cx(ij)-v_ij(2)*Cy(ij)-v_ij(3)*Cz(ij)
-          l_ji = -v_ji(1)*Cx(ji)-v_ji(2)*Cy(ji)-v_ji(3)*Cz(ji)
           b_ij = theta*tstep*MAX(-l_ij, 0._DP, -l_ji)
           
           ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
@@ -10697,7 +10625,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianBlockTVD(RmatrixC, rmatrixMC, ru, ru0,&
-      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -10758,7 +10686,7 @@ CONTAINS
     ELSE
 
       CALL gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC,&
-          ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_calcVelocity,&
+          ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_calcConvection,&
           theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
     END IF
@@ -10769,7 +10697,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC, ru, ru0,&
-      fcb_calcVelocity, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -11333,7 +11261,7 @@ CONTAINS
           
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM1D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
 
@@ -11357,7 +11285,7 @@ CONTAINS
 
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM1D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
         
@@ -11479,7 +11407,7 @@ CONTAINS
           
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM2D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
 
@@ -11503,7 +11431,7 @@ CONTAINS
 
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM2D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
         
@@ -11625,7 +11553,7 @@ CONTAINS
           
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM3D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
 
@@ -11649,7 +11577,7 @@ CONTAINS
 
           ! Update local coefficients
           CALL updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
-              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, NDIM3D,&
+              c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         END DO
         
@@ -11699,18 +11627,17 @@ CONTAINS
     !**************************************************************
     ! Update the local coefficients for FEM-TVD in arbitrary dimension
     SUBROUTINE updateJacobian_TVD(DcoefficientsAtEdge, u, pp, pm, qp, qm, &
-        c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, ndim, iloc, k,&
+        c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji, iloc, k,&
         pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
       
       REAL(DP), DIMENSION(:,:), INTENT(IN)                 :: DcoefficientsAtEdge
       REAL(DP), DIMENSION(:), INTENT(IN)                   :: u
       REAL(DP), DIMENSION(:), INTENT(IN)                   :: pp,pm,qp,qm
-      REAL(DP), DIMENSION(:), INTENT(IN)                   :: c_ij,c_ji      
+      REAL(DP), DIMENSION(:), INTENT(IN)                   :: C_ij,C_ji      
       REAL(DP), INTENT(IN)                                 :: tstep,hstep
       INTEGER(PREC_MATIDX), INTENT(IN)                     :: iedge
       INTEGER(PREC_VECIDX), INTENT(IN)                     :: i,j
       INTEGER(PREC_MATIDX), INTENT(IN)                     :: ij,ji
-      INTEGER, INTENT(IN)                                  :: ndim
       INTEGER, INTENT(IN)                                  :: iloc
       INTEGER(PREC_VECIDX), INTENT(IN)                     :: k
 
@@ -11721,7 +11648,6 @@ CONTAINS
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(INOUT)  :: Kloc
 
       ! local variables
-      REAL(DP), DIMENSION(ndim) :: v_ij,v_ji
       REAL(DP) :: d_ij,f_ij,l_ij,l_ji,diff,hstep_ik,hstep_jk,dsign
       INTEGER  :: iperturb
 
@@ -11781,13 +11707,10 @@ CONTAINS
         ! Compute correct sign of perturbation
         dsign = -2*iperturb+3
         
-        ! Compute perturbed velocity
-        CALL fcb_calcVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
+        ! Compute perturbed coefficients k_ij and k_ji
+        CALL fcb_calcConvection(u(i)+dsign*hstep_ik,&
+            u(j)+dsign*hstep_jk, C_ij, C_ji, i, j, l_ij, l_ji)
         
-        ! Compute perturbation coefficients k_ij and k_ji
-        l_ij = -SUM(v_ij*c_ij)
-        l_ji = -SUM(v_ji*c_ji)
-
         ! Compute diffusion coefficient
         d_ij = MAX(-l_ij, 0._DP, -l_ji)
 
@@ -12075,7 +11998,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM1D, iloc, k, &
+              iedge, i, j, ij, ji, iloc, k, &
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
 
@@ -12100,7 +12023,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM1D, iloc, k,&
+              iedge, i, j, ij, ji, iloc, k,&
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
         
@@ -12225,7 +12148,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM2D, iloc, k, &
+              iedge, i, j, ij, ji, iloc, k, &
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
 
@@ -12250,7 +12173,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM2D, iloc, k,&
+              iedge, i, j, ij, ji, iloc, k,&
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
         
@@ -12375,7 +12298,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM3D, iloc, k, &
+              iedge, i, j, ij, ji, iloc, k, &
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
 
@@ -12400,7 +12323,7 @@ CONTAINS
           ! Update local coefficients
           CALL updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
               pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep,&
-              iedge, i, j, ij, ji, NDIM3D, iloc, k,&
+              iedge, i, j, ij, ji, iloc, k,&
               pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
         END DO
         
@@ -12453,7 +12376,7 @@ CONTAINS
     ! Update the local coefficients for FEM-GP in arbitrary dimensions
     SUBROUTINE updateJacobian_GP(DcoefficientsAtEdge, MC, u, u0, flux, flux0,&
         pp, pm, qp, qm, c_ij, c_ji, theta, tstep, hstep, &
-        iedge, i, j, ij, ji, ndim, iloc, k,&
+        iedge, i, j, ij, ji, iloc, k,&
         pploc, pmloc, qploc, qmloc, fluxloc, fluxloc0, Kloc)
       
       REAL(DP), DIMENSION(:,:), INTENT(IN)                 :: DcoefficientsAtEdge
@@ -12461,12 +12384,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)                   :: u,u0
       REAL(DP), DIMENSION(:), INTENT(IN)                   :: flux,flux0
       REAL(DP), DIMENSION(:), INTENT(IN)                   :: pp,pm,qp,qm
-      REAL(DP), DIMENSION(:), INTENT(IN)                   :: c_ij,c_ji
+      REAL(DP), DIMENSION(:), INTENT(IN)                   :: C_ij,C_ji
       REAL(DP), INTENT(IN)                                 :: theta,tstep,hstep
       INTEGER(PREC_MATIDX), INTENT(IN)                     :: iedge
       INTEGER(PREC_VECIDX), INTENT(IN)                     :: i,j
       INTEGER(PREC_MATIDX), INTENT(IN)                     :: ij,ji
-      INTEGER, INTENT(IN)                                  :: ndim
       INTEGER, INTENT(IN)                                  :: iloc
       INTEGER(PREC_VECIDX), INTENT(IN)                     :: k
 
@@ -12477,7 +12399,6 @@ CONTAINS
       INTEGER(PREC_VECIDX), DIMENSION(:,:), INTENT(INOUT)  :: Kloc
 
       ! local variables
-      REAL(DP), DIMENSION(ndim) :: v_ij,v_ji
       REAL(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji
       REAL(DP) :: diff,diff1,diff0,hstep_ik,hstep_jk,dsign
       INTEGER  :: iperturb
@@ -12563,12 +12484,9 @@ CONTAINS
         dsign = -2*iperturb+3
         
         ! Compute perturbed velocity
-        CALL fcb_calcVelocity(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk, i, j, v_ij, v_ji)
+        CALL fcb_calcConvection(u(i)+dsign*hstep_ik,&
+            u(j)+dsign*hstep_jk, C_ij, C_ji, i, j, l_ij, l_ji)
 
-        ! Compute perturbation coefficients k_ij and k_ji
-        l_ij = -SUM(v_ij*c_ij)
-        l_ji = -SUM(v_ji*c_ji)
-        
         ! Compute diffusion coefficient
         d_ij = MAX(-l_ij, 0._DP, -l_ji)
 

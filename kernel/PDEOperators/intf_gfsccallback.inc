@@ -1,28 +1,36 @@
+! This file describes the interfaces of the callback routines
+! of the discrete operators for scalar conservation laws
+
+! ***************************************************************************
+
 INTERFACE
+
+! ***************************************************************************
 
 !<subroutine>
 
-SUBROUTINE fcb_calcVelocity(u_i,u_j,i,j,v_ij,v_ji)
+SUBROUTINE fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
-    ! This subroutine computes the (characteristic) velocity
-    ! for the edge that connects nodes I and J.
+    ! This subroutine computes the matrix coefficients $k_{ij}$ and $k_{ji}$
+    ! resulting from the discretisation of the convective operator.
 !</description>
 
 USE fsystem
 USE dofmapping
 
 !<input>
-  REAL(DP), INTENT(IN)                :: u_i,u_j
-  INTEGER(PREC_DOFIDX),  INTENT(IN)   :: i,j
+  REAL(DP),               INTENT(IN)  :: u_i,u_j
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+  INTEGER(PREC_DOFIDX),   INTENT(IN)  :: i,j
 !</input>
 
 !<output>
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: v_ij,v_ji
+  REAL(DP), INTENT(OUT)               :: k_ij,k_ji
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcVelocity
+END SUBROUTINE fcb_calcConvection
 
 END INTERFACE
