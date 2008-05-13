@@ -656,7 +656,6 @@ CONTAINS
       IF (rclockTmp(iclock)%icount .LT. 0 .OR.&
           rclockTmp(iclock)%ioverflow .LT. 0) THEN
         PRINT *, "sys_infoClock: Time measurement is incorrect!"
-        CALL sys_halt()
       END IF
     END DO
 
