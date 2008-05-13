@@ -4100,7 +4100,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_discr (rcollection, sparameter, value, badd, &
                                     ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4161,7 +4161,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_bldiscr (rcollection, sparameter, value, badd, &
                                       ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4222,7 +4222,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_tria (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4283,7 +4283,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_domain (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4344,7 +4344,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_bc (rcollection, sparameter, value, badd, &
                                  ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4405,7 +4405,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_vecsca (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4466,7 +4466,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_matsca (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4527,7 +4527,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_vec (rcollection, sparameter, value, badd, &
                                   ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4588,7 +4588,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_mat (rcollection, sparameter, value, badd, &
                                   ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4649,7 +4649,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_parlst (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4710,7 +4710,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_linsol (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4771,7 +4771,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_discbc (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4832,7 +4832,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_ilvpsc (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4893,7 +4893,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_ilvp (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -4954,7 +4954,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_coll (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -5015,7 +5015,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_pars (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -5076,7 +5076,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_geom (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -5137,7 +5137,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_fchn (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -5198,7 +5198,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_hadapt (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
@@ -5259,7 +5259,7 @@ CONTAINS
   SUBROUTINE collct_setvalue_afcstab (rcollection, sparameter, value, badd, &
                                       ilevel, ssectionName) 
 !<description>
-  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
   !  badd=false: an error is thrown,
