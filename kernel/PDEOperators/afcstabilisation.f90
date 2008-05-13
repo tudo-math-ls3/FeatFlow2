@@ -794,23 +794,24 @@ CONTAINS
       END DO
     END DO
     
-    ! Reshuffle pass 1. In addition, set the maximum number of edges
-    ! adjacent to one vertex. That is, take the maximum value of the
-    ! number of edges to the left of the diagonal plus the number of
-    ! edges to the right of the diagonal.
-    rafcstab%NNVEDGE = p_IsuperdiagonalEdgesIdx(2) - p_IsuperdiagonalEdgesIdx(1)
-    
+    ! Reshuffle pass 1.
     DO ieq = 2, neq
-      rafcstab%NNVEDGE = MAX(rafcstab%NNVEDGE,&
-          p_IsuperdiagonalEdgesIdx(ieq+1) - p_IsuperdiagonalEdgesIdx(ieq))
+      
       
       p_IsubdiagonalEdgesIdx(ieq) = p_IsubdiagonalEdgesIdx(ieq) +&
           p_IsubdiagonalEdgesIdx(ieq-1)
+      
     END DO
     p_IsubdiagonalEdgesIdx(neq+1) = p_IsubdiagonalEdgesIdx(neq+1) +&
         p_IsubdiagonalEdgesIdx(neq)
     
-    ! Store the subdiagonal edge numbers
+    ! Store the subdiagonal edge numbers. In addition, set the maximum
+    ! number of edges adjacent to one vertex. That is, take the maximum
+    ! value of the number of edges to the left of the diagonal plus 
+    ! the number of edges to the right of the diagonal.
+
+    rafcstab%NNVEDGE = 0! p_IsuperdiagonalEdgesIdx(2) - p_IsuperdiagonalEdgesIdx(1)
+
     DO ieq = 1, neq
       
       ! For each equation, loop over the edges which are located in
@@ -826,7 +827,13 @@ CONTAINS
         
         p_IsubdiagonalEdgesIdx(jeq) = istor
         p_IsubdiagonalEdges(istor)  = iedge
+
       END DO
+      
+      ! Compute the maximum number of edges adjacent to one vertex
+      rafcstab%NNVEDGE = MAX(rafcstab%NNVEDGE,&
+          p_IsuperdiagonalEdgesIdx(ieq+1) - p_IsuperdiagonalEdgesIdx(ieq) +&
+          p_IsubdiagonalEdgesIdx(ieq+1) - p_IsubdiagonalEdgesIdx(ieq))
     END DO
     
     ! Reshuffle pass 2: Adjust the index vector which was tainted in
