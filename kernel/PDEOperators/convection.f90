@@ -5669,7 +5669,7 @@ CONTAINS
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
   !   of the corner vertex ivt.
-  ! DmeshVelocity(3,ivt) gives the Z-velocity of the mesh, i.e. the Y-velocity
+  ! DmeshVelocity(3,ivt) gives the Z-velocity of the mesh, i.e. the Z-velocity
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
@@ -6622,11 +6622,8 @@ CONTAINS
           ! Normally, we have to take the absolut value of the determinant 
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
-          ! But because this routine only works in 2D, we can skip
-          ! the ABS here!
-
-          OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+          ! the determinant might be negative...
+          OM = Domega(ICUBP)* ABS(p_Ddetj(ICUBP,IEL))
 
           ! Current velocity in this cubature point:
           du1loc = Dvelocity (1,ICUBP,IEL)
