@@ -4519,7 +4519,7 @@ CONTAINS
         p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
     
     ! Loop through all elements and all edges on the elements
-    !$OMP PARALLEL DO PRIVATE(ive)
+    !$OMP PARALLEL DO PRIVATE(ive,ivt1,ivt2)
     DO iel = 1,UBOUND(p_IedgesAtElement,2)
     
       DO ive = 1,UBOUND(p_IedgesAtElement,1)
@@ -4541,6 +4541,13 @@ CONTAINS
           ! to the 'blind' part of the boundary.
           ivt1 = p_IverticesAtElement(ive,iel)
           ivt2 = p_IverticesAtElement(MOD(ive,UBOUND(p_IedgesAtElement,1))+1,iel)
+          
+          ! In case, ivt2=0, there is e.g. a triangle in a quad mesh and we hit a
+          ! non-assigned position in IverticesAtElement. So take the next 
+          ! assigned position -- which is of course the first position in the array
+          ! corresponding to the first vertex of the cell.
+          IF (ivt2 .EQ. 0) ivt2 = p_IverticesAtElement(1,iel)
+          
           IF (p_InodalProperty(ivt1) .EQ. p_InodalProperty(ivt2)) THEN
             ! Get the number of the boundary component from the vertex preceeding
             ! the edge and store it as information for the edge. 
