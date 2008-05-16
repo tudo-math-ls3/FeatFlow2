@@ -367,7 +367,7 @@ contains
 !======================================================================
 
 !<subroutine>
-      subroutine iluk_ilu(n,a,colind,rwptr, s,relax, lu,jlu,ilup,&
+      subroutine iluk_ilu(n,a,colind,rwptr, s,relax,&
                       ierr,mneed, rILUDecomp)
                       
 !<description>                      
@@ -426,7 +426,10 @@ contains
 !           gives milu(s), and values between give the multiplier to use
 !           before adding discarded fill to the diagonal.
 !
-! maxstr  = integer*4 giving amount of integer*4 word space available.
+!
+! rILUDecomp :
+!             a structure that stores the return values of this routine,
+!             which is an ILU-decomposition in a modified sparse row format(MSR)
 !
 ! intermediate variables:
 !========================
@@ -436,18 +439,6 @@ contains
 ! levels  = pointer to temp vector keeping all levels during symbfac.
 ! colptrs = pointer to temp vector keeping column pointers in numfac.
 !
-! on return:
-!=========== 
-!
-! lu, jlu = (pointers) matrix stored in modified sparse row (msr) format containing
-!           the l and u factors together. the diagonal (stored in
-!           lu(1:n) ) is inverted. each i-th row of the lu, jlu matrix 
-!           contains the i-th row of l (excluding the diagonal entry=1) 
-!           followed by the i-th row of u.  
-!                                                                        
-! ilup    = (pointer) integer*4 array of length n containing the pointers to        
-!           the beginning of each row of u in the matrix lu, jlu. 
-!                                                                       
 !  ierr is an error flag:
 !        ierr  = -i --> near zero pivot in step i
 !        ierr  = 0  --> all's OK
@@ -461,29 +452,22 @@ contains
 ! Storage requirements:
 !======================
 !
-!   jlu:	nzlu  		integer*4s.
-!   ilup:	n 		integer*4s.
-!   lu:		nzlu 		reals
+!   jlu :	nzlu  integer
+!   ilup:	n 		integer
+!   lu  :	nzlu	reals
 !
 !   temporary arrays
 !   ----------------
-!   rowll       n               integer*4s
-!   lastcol     n               integer*4s
-!   levels      nzlu            integer*4s
-!   colptrs     n               integer*4s
+!   rowll       n               integer
+!   lastcol     n               integer
+!   levels      nzlu            integer
+!   colptrs     n               integer
 !
 !  Warnings:
 !===========
 !
 ! 1) A must have nonzero diagonal entries, at least.  This does not assure
 !    completion of the factorization, however.
-! 2) The pointers ilup, jlu, lu are given as indices to the work array
-!    that is passed in.  So if the integer*4 work array is passed in as
-!    work(ptr), you will need to offset those pointers by the operations
-!        jlu  = jlu  + ptr -1
-!        ilup = ilup + ptr -1
-!        lu   = lu   + ptr -1
-!    on return.
 !
 !======================================================================== 
 
@@ -499,21 +483,33 @@ contains
       
       ! colind is another csr component and points to the
       ! column indices of A
-      integer, dimension(:), pointer :: rwptr, colind
-      real(dp) :: relax
-      real(dp), dimension(:), pointer :: a 
-      integer :: mneed, nzlu
-      logical :: milu
+!<input>      
+      integer, dimension(:), pointer, intent(IN) :: rwptr, colind
+      real(dp), intent(IN) :: relax
+      real(dp), dimension(:), pointer, intent(IN) :: a 
+
+!</input>      
       
-      type(t_MILUdecomp) :: rILUDecomp
+!</inputoutput>     
+      type(t_MILUdecomp), intent(INOUT) :: rILUDecomp
+      integer, intent(INOUT) :: mneed
+!</inputoutput>
+      
+!</subroutine>
+
+
+      ! local variables
+      integer :: nzlu
 
 !     ----------------------
-!     Pointers in work array
+!     current size of arrays
 !     ----------------------
-      integer ::  lu, jlu, ilup, isize
+      integer ::  isize
+
+      ! if the relax input parameter is non-zero, we
+      ! will perform a milu decomposition
+      logical :: milu
       
-      
-!</subroutine>      
       ! add integer handles for the temporary arrays
       integer :: h_rowll, h_lastcol, h_levels, h_colptrs
       
