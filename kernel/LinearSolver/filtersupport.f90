@@ -72,7 +72,7 @@
 !#    fictitious boundary components to a vector and filters the 3rd 
 !#    component of a block vector into the space $L^2_0$.
 !#
-!# c) Either appliy the filter chain to a matrix or vector, e.g.
+!# c) Either apply the filter chain to a matrix or vector, e.g.
 !#
 !#      filter_applyFilterChainVec (rx, RfilterChain)
 !#      filter_applyFilterChainMat (rmatrix, RfilterChain)
