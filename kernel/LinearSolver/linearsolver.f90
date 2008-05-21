@@ -65,7 +65,7 @@
 !#          linsol_initXXXX
 !#        + linsol_convertToSmoother  - Initialise a solver structure that can be 
 !#                                      attached as smoother to one level of multigrid.
-!#                                      *Not on the coars grid!'
+!#                                      *Not on the coarse grid!'
 !#     b) linsol_addMultigridLevel    - Add a multigrid level. First the coarse grid
 !#                                      must be added, then level 2, then level 3 etc.
 !#
@@ -181,7 +181,7 @@
 !#             $$ d := P^{-1}d $$
 !#
 !# which is actually the same as solving the linear system 
-!'
+!#
 !#             $$ Pd_{new} = d $$ 
 !#
 !# with the right hand side $d$ being a defect vector given from outside. 
@@ -269,10 +269,10 @@
 !#
 !#  4.) I want to plug in my own solver XY. What do I have to do?
 !#
-!#      Well, the all solvers are build up in the same way with the same
+!#      Well, all solvers are build up in the same way with the same
 !#      interfaces - that's the reason why every solver can be used as
 !#      a preconditioner in another one. If you want to create your
-!#      own solver and plug it into here, use the following guidline
+!#      own solver and plug it into here, use the following guideline
 !#      of what to do:
 !#      a) Add new solver identifier LINSOL_ALG_xxxx
 !#      b) Create solver-specific substructure (t_linsolSubnodeXXXX) if 
