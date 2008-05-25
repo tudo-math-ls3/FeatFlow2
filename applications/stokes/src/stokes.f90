@@ -50,29 +50,29 @@ PROGRAM stokes
   ! 2.) Initialise FEAT 2.0 storage management:
   CALL storage_init(999, 100)
 
-!  ! Call the problem to solve. 2d stokes 0:
-!  CALL output_lbrk()
-!  CALL output_line('Calculating 2D Stokes-Problem 0 - simple')
-!  CALL output_line('----------------------------------------')
-!  CALL stokes2d_0_simple
-!
-!  ! Call the problem to solve. 2d stokes 1:
-!  CALL output_lbrk()
-!  CALL output_line('Calculating 2D Stokes-Problem 1 - multigrid')
-!  CALL output_line('-------------------------------------------')
-!  CALL stokes2d_1_mg
-!
-!  ! Call the problem to solve. 2d stokes 2:
-!  CALL output_lbrk()
-!  CALL output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
-!  CALL output_line('----------------------------------------------')
-!  CALL stokes2d_2_sv
-!
-!  ! Call the problem to solve. 2d stokes 2:
-!  CALL output_lbrk()
-!  CALL output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
-!  CALL output_line('-----------------------------------------------')
-!  CALL stokes2d_2_gv
+  ! Call the problem to solve. 2d stokes 0:
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 0 - simple')
+  CALL output_line('----------------------------------------')
+  CALL stokes2d_0_simple
+
+  ! Call the problem to solve. 2d stokes 1:
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 1 - multigrid')
+  CALL output_line('-------------------------------------------')
+  CALL stokes2d_1_mg
+
+  ! Call the problem to solve. 2d stokes 2:
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
+  CALL output_line('----------------------------------------------')
+  CALL stokes2d_2_sv
+
+  ! Call the problem to solve. 2d stokes 2:
+  CALL output_lbrk()
+  CALL output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
+  CALL output_line('-----------------------------------------------')
+  CALL stokes2d_2_gv
 
   ! Call the problem to solve. 3d stokes 0:
   CALL output_lbrk()
