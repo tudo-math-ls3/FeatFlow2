@@ -10,9 +10,12 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) stdop_assembleLaplaceMatrix
-!#     -> Assembles a standard Laplace matrix
+!#     -> Assembles a standard 2D Laplace matrix
 !#
-!# 2.) stdop_assembleSimpleMatrix
+!# 2.) stdop_assembleLaplaceMatrix3D
+!#     -> Assembles a standard 3D Laplace matrix
+!#
+!# 3.) stdop_assembleSimpleMatrix
 !#     -> Assembles simple standard matrices like a mass matrix.
 !#
 !# </purpose>
@@ -89,6 +92,77 @@ CONTAINS
     rform%BconstantCoeff = .TRUE.
     rform%Dcoefficients(1)  = dalpha1
     rform%Dcoefficients(2)  = dalpha1
+
+    ! Now we can build the matrix entries.
+    CALL bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+
+  END SUBROUTINE
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE stdop_assembleLaplaceMatrix3D (rmatrix,bclear,dalpha)
+  
+!<description>
+  ! This routine assembles a Laplace matrix into rmatrix.
+!</description>
+
+!<input>
+  ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
+  ! before assembling the matrix.
+  LOGICAL, INTENT(IN), OPTIONAL :: bclear
+  
+  ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
+  ! to all entries. If not specified, 1.0 is assumed.
+  REAL(DP), INTENT(IN), OPTIONAL :: dalpha
+!</input>
+
+!<inputoutput>
+  ! Matrix structure where to save the entries of the Laplace matrix to.
+  ! The structure of the matrix (KCOL, KLD,...) as well as the discretisation
+  ! structure must already be given.
+  ! If the array for the matrix content does not exist, a new array is created.
+  ! If the array exist, the new entries of the Laplace operator overwrite
+  ! the old entries (if bclear=true) or are added to the old entries 
+  ! (if bclear=false).
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: dalpha1
+    LOGICAL :: bclear1
+    
+    ! A bilinear and linear form describing the analytic problem to solve
+    TYPE(t_bilinearForm) :: rform
+    
+    bclear1 = .TRUE.
+    dalpha1 = 1.0_DP
+    IF (PRESENT(bclear)) bclear1=bclear
+    IF (PRESENT(dalpha)) dalpha1=dalpha
+
+    ! For assembling of the entries, we need a bilinear form, 
+    ! which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 3D.
+    
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV3D_X
+    rform%Idescriptors(2,1) = DER_DERIV3D_X
+    rform%Idescriptors(1,2) = DER_DERIV3D_Y
+    rform%Idescriptors(2,2) = DER_DERIV3D_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
+
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .TRUE.
+    rform%BconstantCoeff = .TRUE.
+    rform%Dcoefficients(1)  = dalpha1
+    rform%Dcoefficients(2)  = dalpha1
+    rform%Dcoefficients(3)  = dalpha1
 
     ! Now we can build the matrix entries.
     CALL bilf_buildMatrixScalar (rform,bclear1,rmatrix)
