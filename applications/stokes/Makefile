@@ -32,7 +32,7 @@ vpath %.inc include \
 EXEC=stokes-$(ID)
 
 # used libraries
-FEATLIB= minisplib feat2d sysutils umfpack4 amd
+FEATLIB= minisplib sysutils umfpack4 amd
 
 # include make rules
 include $(FEATFLOW)/Rules_apps.mk
