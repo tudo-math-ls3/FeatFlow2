@@ -145,7 +145,7 @@ CONTAINS
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   EL_E001,CUB_TRZ_T,rtriangulation, rboundary)
+                                   EL_E011,CUB_G2X2,rtriangulation, rboundary)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
