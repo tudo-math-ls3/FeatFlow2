@@ -284,7 +284,8 @@ CONTAINS
 
       ! Create a mesh region describing the mesh's boundary based on the
       ! nodal-property-array of the current triangulation.
-      CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation)
+      CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation, &
+                                      MSHREG_IDX_ALL)
       
       ! Describe Dirichlet BCs on that mesh region
       CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 1,&

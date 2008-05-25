@@ -3,24 +3,24 @@
 	<Platforms>
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\..">
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" CompileOnly="true"/>
-				<Tool Name="VFCustomBuildTool"/>
+		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winstokes.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winstokes.pdb" SubSystem="subSystemConsole" StackReserveSize="65536" StackCommitSize="65536" AdditionalDependencies="..\libgoto_p4_1024-r0.94.lib"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
-		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
+				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" InlineFunctionExpansion="expandAnySuitable" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLinkerTool" SwitchesHaveChanged="true" MustRebuild="true" OutputFile="$(OUTDIR)/winstokes.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole" StackReserveSize="65536" StackCommitSize="65536" AdditionalDependencies="libgoto_p4_1024-r0.94.lib"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winstokes.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole" StackReserveSize="65536" StackCommitSize="65536" AdditionalDependencies="libgoto_p4_1024-r0.94.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="2D">
@@ -30,7 +30,7 @@
 		<File RelativePath="..\src\stokes2d_method2_gv.f90"/>
 		<File RelativePath="..\src\stokes2d_method2_sv.f90"/></Filter>
 		<Filter Name="3D">
-		<File RelativePath="..\src\stokes3d_aux.f90"/>
+		<File RelativePath="..\src\dom3d_cube.f90"/>
 		<File RelativePath="..\src\stokes3d_callback.f90"/>
 		<File RelativePath="..\src\stokes3d_method0_simple.f90"/>
 		<File RelativePath="..\src\stokes3d_method1_mg.f90"/></Filter>

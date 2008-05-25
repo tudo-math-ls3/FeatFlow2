@@ -225,7 +225,9 @@ CONTAINS
     
     ! Create a mesh region describing the mesh's boundary based on the
     ! nodal-property-array of the current triangulation.
-    CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation)
+    ! As we use the EM30 element here, which does only have DOFs in the faces,
+    ! we also only need to calculate the face index array of the mesh region.
+    CALL mshreg_createFromNodalProp(rmeshRegion, rtriangulation, MSHREG_IDX_FACE)
     
     ! Describe Dirichlet BCs on that mesh region
     CALL bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, rmeshRegion,&

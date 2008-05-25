@@ -31,7 +31,7 @@ MODULE stokes3d_method1_mg
   USE meshregion
   
   USE stokes3d_callback
-  USE stokes3d_aux
+  USE dom3d_cube
   
   IMPLICIT NONE
 
@@ -455,14 +455,14 @@ CONTAINS
 
       ! Now we need to implement the boundary conditions. To do this, we
       ! first need to create a mesh region describing the mesh's boundary.
-      CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation)
-      
       ! We want to prescribe Dirichlet on the cube's boundary, except for
-      ! the face where the X-coordinate is 1. So the next thing we need
-      ! to do is to kick out all faces, edges and vertices which
-      ! belong to the cube's face with X-coordinate 1.
-      ! This task is performed by the following auxiliary routine:
-      CALL st3daux_calcCubeDirichletRegion(rmeshRegion)
+      ! the face where the X-coordinate is 1. 
+      ! We could now manually create a mesh region based on the triangulation's
+      ! nodal-property array and then kick out everything that belongs to the
+      ! right face. But we will use the dom3d_cube module, which performs
+      ! this task for us.
+      CALL dom3d_cube_calcMeshRegion(rmeshRegion, Rlevels(i)%rtriangulation, &
+                                     DOM3D_CUBE_REG_STOKES)
 
       ! Initialise the structure for discrete boundary conditions.
       CALL bcasm_initDiscreteBC (Rlevels(i)%rdiscreteBC)
@@ -634,10 +634,8 @@ CONTAINS
     ! discretisation:
     
     ! Get the boundary mesh region on the finest level
-    CALL mshreg_createFromNodalProp(rmeshRegion, Rlevels(NLMAX)%rtriangulation)
-
-    ! Kick out the Neumann boundary condition face
-    CALL st3daux_calcCubeDirichletRegion(rmeshRegion)
+    CALL dom3d_cube_calcMeshRegion(rmeshRegion, Rlevels(NLMAX)%rtriangulation, &
+                                   DOM3D_CUBE_REG_STOKES)
 
     ! And prescribe Dirichlet boundary conditions
     CALL bcasm_initDiscreteBC (rprjDiscreteBC)
