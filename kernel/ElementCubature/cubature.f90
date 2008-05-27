@@ -285,21 +285,21 @@ CONTAINS
     cub_igetID =CUB_MIDAREA_3D
   CASE("TRZ_3D")
     cub_igetID=CUB_TRZ_3D
-  CASE("CUB_G2_3D")
+  CASE("G2_3D")
     cub_igetID=CUB_G2_3D
-  CASE("CUB_G3_3D")
+  CASE("G3_3D")
     cub_igetID=CUB_G3_3D
   
   ! 3D-formulas, tetrahedron
-  CASE("CUB_G1_3D_T")
+  CASE("G1_3D_T")
     cub_igetID=CUB_G1_3D_T
-  CASE("CUB_TRZ_3D_T")
+  CASE("TRZ_3D_T")
     cub_igetID=CUB_TRZ_3D_T
-  CASE("CUB_S2_3D_T")
+  CASE("S2_3D_T")
     cub_igetID=CUB_S2_3D_T
-  CASE("CUB_S3_3D_T")
+  CASE("S3_3D_T")
     cub_igetID=CUB_S3_3D_T
-  CASE("CUB_S5_3D_T")
+  CASE("S5_3D_T")
     cub_igetID=CUB_S5_3D_T
 
   CASE DEFAULT
