@@ -8056,7 +8056,7 @@ CONTAINS
 
   ! auxiliary vector containing the first derivatives on the reference element
   REAL(DP), DIMENSION(5,NDIM2D) :: Dhelp
-  REAL(DP) :: dx,dy
+  REAL(DP) :: dx,dy,dxy
 
   REAL(DP) :: dxj !auxiliary variable
   
@@ -8070,20 +8070,32 @@ CONTAINS
   !  p_4(x,y) =  3/8 (x^2-y^2)  -  1/2 x  +  1/4
   !  p_5(x,y) =  9 xy
   !
-  ! p_5 is constructed such that 1/|T|int_T p_5*p_5 * x*y dxdy = 1 and
-  ! int_T p_i*p_5 * x*y dxdy = 0 for i < 5 on the reference element T holds.
-  ! The weight "x*y" below the integral is the so called 'first moment',
-  ! which makes the approach unisolvent.
+  ! These five polynomials are constructed in a way such that they fulfill the
+  ! following conditions:
   !
-  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
-  ! for X1,X2,X3,X4 the ingegral over the four edges of the reference 
-  ! element [-1,1]x[-1,1].
+  ! For all i = 1,...,5
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Int_[-1,1] (p_i(Ej(t))  ) d(t) = kronecker(i,j  ) * |ej|
+  !     Int_[-1,1] (p_i(Ej(t))*t) d(t) = kronecker(i,j+4) * |ej|
+  !   }
+  !   Int_T (p_i(x,y)*x*y) d(x,y) = kronecker(i,5) * |T|
+  ! }
+  !
+  ! With:
+  ! ej being the j-th edge of the reference quadrilateral
+  ! Ej: [-1,1] -> ej being the parametrisation of an edge ej
+  ! |ej| = 2 being the length of the edge ej
+  ! T being the reference quadrilateral
+  ! |T| = 4 being the area of the reference quadrilateral
   
   ! Clear the output array
   !Dbas = 0.0_DP
   
   dx = Dpoint(1)
   dy = Dpoint(2)
+  dxy = dx**2 - dy**2
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
@@ -8091,11 +8103,11 @@ CONTAINS
       
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC)) then
-    Dbas(1,DER_FUNC) = 0.125E0_DP*(-3.0_DP*(dx**2-dy**2)-4.0_DP*dy+2.0_DP) 
-    Dbas(2,DER_FUNC) = 0.125E0_DP*( 3.0_DP*(dx**2-dy**2)+4.0_DP*dx+2.0_DP)
-    Dbas(3,DER_FUNC) = -0.125E0_DP*( 3.0_DP*(dx**2-dy**2)-4.0_DP*dy-2.0_DP)
-    Dbas(4,DER_FUNC) = -0.125E0_DP*(-3.0_DP*(dx**2-dy**2)+4.0_DP*dx-2.0_DP)
-    Dbas(5,DER_FUNC) = 9.0_DP * dx * dy
+    Dbas(1,DER_FUNC) =  0.125_DP*(-3.0_DP*dxy - 4.0_DP*dy + 2.0_DP) 
+    Dbas(2,DER_FUNC) =  0.125_DP*( 3.0_DP*dxy + 4.0_DP*dx + 2.0_DP)
+    Dbas(3,DER_FUNC) = -0.125_DP*( 3.0_DP*dxy - 4.0_DP*dy - 2.0_DP)
+    Dbas(4,DER_FUNC) = -0.125_DP*(-3.0_DP*dxy + 4.0_DP*dx - 2.0_DP)
+    Dbas(5,DER_FUNC) =  9.0_DP * dx * dy
 !  endif
   
   ! If x-or y-derivatives are desired, calculate them.
@@ -8111,14 +8123,14 @@ CONTAINS
 
     ! x- and y-derivatives on reference element
     Dhelp(1,1) = -6.0_DP*dx
-    Dhelp(2,1) =  6.0_DP*dx+4.0_DP
+    Dhelp(2,1) =  6.0_DP*dx + 4.0_DP
     Dhelp(3,1) = -6.0_DP*dx
-    Dhelp(4,1) =  6.0_DP*dx-4.0_DP
+    Dhelp(4,1) =  6.0_DP*dx - 4.0_DP
     Dhelp(5,1) = 72.0_DP*dy
     
-    Dhelp(1,2) =  6.0_DP*dy-4.0_DP
+    Dhelp(1,2) =  6.0_DP*dy - 4.0_DP
     Dhelp(2,2) = -6.0_DP*dy
-    Dhelp(3,2) =  6.0_DP*dy+4.0_DP
+    Dhelp(3,2) =  6.0_DP*dy + 4.0_DP
     Dhelp(4,2) = -6.0_DP*dy
     Dhelp(5,2) = 72.0_DP*dx
       
@@ -10233,7 +10245,7 @@ CONTAINS
   REAL(DP) :: d5,d6,d7,d8
 
   ! auxiliary variables
-  REAL(DP) :: dx,dy,dxj
+  REAL(DP) :: dx,dy,dx2,dy2,dxj
   
   ! A hand full of parameters to make the code less readable ^_^
   REAL(DP), PARAMETER :: Q1 = 0.25_DP  ! =  1/4
@@ -10243,6 +10255,8 @@ CONTAINS
   REAL(DP), PARAMETER :: Q5 = 2.25_DP  ! =  9/4
   REAL(DP), PARAMETER :: Q6 = 1.875_DP ! = 15/8
   REAL(DP), PARAMETER :: Q7 = 5.625_DP ! = 45/8
+  REAL(DP), PARAMETER :: Q8 = 6.25_DP  ! = 25/4
+  REAL(DP), PARAMETER :: Q9 = 37.5_DP  ! = 75/2
   REAL(DP), PARAMETER :: P1 = 1.0_DP
   REAL(DP), PARAMETER :: P2 = 2.0_DP
   REAL(DP), PARAMETER :: P3 = 3.0_DP
@@ -10251,19 +10265,43 @@ CONTAINS
   REAL(DP), PARAMETER :: P6 = 12.0_DP
   REAL(DP), PARAMETER :: P7 = 15.0_DP
 
-  ! The Q2~ element with bubble is specified by ten polynomials on the reference element.
-  ! These ten polynomials are:
+  ! The Q2~ element with bubble is specified by ten polynomials on the
+  ! reference element. These ten polynomials are:
   !
-  !  p_1(x,y) =  3/4*y*( x^2 + y - 1) - 1/4
-  !  p_2(x,y) =  3/4*x*(-y^2 + x + 1) - 1/4
-  !  p_3(x,y) =  3/4*y*(-x^2 + y + 1) - 1/4
-  !  p_4(x,y) =  3/4*x*( y^2 + x - 1) - 1/4
-  !  p_5(x,y) = -3/8*x*(y*(y*( 5*y - 6) - 5*x^2 + 2) + 2)
-  !  p_6(x,y) = -3/8*y*(x*(x*(-5*x - 6) + 5*y^2 - 2) + 2)
-  !  p_7(x,y) = -3/8*x*(y*(y*( 5*y + 6) - 5*x^2 + 2) - 2)
-  !  p_8(x,y) = -3/8*y*(x*(x*(-5*x + 6) + 5*y^2 - 2) - 2)
-  !  p_9(x,y) = -3/2*(x^2 + y^2) + 2
-  !  p_10(x,y)= (-1/2 + 3/2*x^2) * (-1/2+3/2*y^2)
+  !  p_1 (x,y) =  3/4*y*( x^2 + y - 1) - 1/4
+  !  p_2 (x,y) =  3/4*x*(-y^2 + x + 1) - 1/4
+  !  p_3 (x,y) =  3/4*y*(-x^2 + y + 1) - 1/4
+  !  p_4 (x,y) =  3/4*x*( y^2 + x - 1) - 1/4
+  !  p_5 (x,y) = -3/8*x*(y*(y*( 5*y - 6) - 5*x^2 + 2) + 2)
+  !  p_6 (x,y) = -3/8*y*(x*(x*(-5*x - 6) + 5*y^2 - 2) + 2)
+  !  p_7 (x,y) = -3/8*x*(y*(y*( 5*y + 6) - 5*x^2 + 2) - 2)
+  !  p_8 (x,y) = -3/8*y*(x*(x*(-5*x + 6) + 5*y^2 - 2) - 2)
+  !  p_9 (x,y) = -3/2*(x^2 + y^2) + 2
+  !  p_10(x,y) = 25/4*(3*x^2 - 1)*(3*y^2 - 1)
+  !
+  ! These ten polynomials are constructed in a way such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,10
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Int_[-1,1] (p_i(Ej(t))      ) d(t) = kronecker(i,j  ) * |ej|
+  !     Int_[-1,1] (p_i(Ej(t))*L1(t)) d(t) = kronecker(i,j+4) * |ej|
+  !   }
+  !   Int_T (p_i(x,y)            ) d(x,y) = kronecker(i, 9) * |T|
+  !   Int_T (p_i(x,y)*L2(x)*L2(y)) d(x,y) = kronecker(i,10) * |T|
+  ! }
+  !
+  ! With:
+  ! ej being the j-th edge of the reference quadrilateral
+  ! Ej: [-1,1] -> ej being the parametrisation of an edge ej
+  ! |ej| = 2 being the length of the edge ej
+  ! T being the reference quadrilateral
+  ! |T| = 4 being the area of the reference quadrilateral
+  ! L1 and L2 being the first two Legendre-Polynomials:
+  ! L1(x) := x
+  ! L2(x) := 1/2*(3*x^2 - 1)
   !
   ! Remark: Since the degree of the monoms goes up to 3 for these basis
   ! polynomials, the polynomials are evaluated using the Horner scheme.
@@ -10272,6 +10310,8 @@ CONTAINS
   !Dbas = 0.0_DP
   dx = Dpoint(1)
   dy = Dpoint(2)
+  dx2 = dx**2
+  dy2 = dy**2
 
   ! Get the twist indices that define the orientation of our edges.
   ! A value of 1 is standard, a value of -1 results in a change of the
@@ -10290,31 +10330,32 @@ CONTAINS
       
   ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC)) then
-!    Dbas(1,DER_FUNC) =  Q3*dy*( dx**2 + dy - P1) - Q1
-!    Dbas(2,DER_FUNC) =  Q3*dx*(-dy**2 + dx + P1) - Q1
-!    Dbas(3,DER_FUNC) =  Q3*dy*(-dx**2 + dy + P1) - Q1
-!    Dbas(4,DER_FUNC) =  Q3*dx*( dy**2 + dx - P1) - Q1
-!    Dbas(5,DER_FUNC) = -Q2*dx*(dy*(dy*( P4*dy - P5) - P4*dx**2 + P2) + P2)*d5
-!    Dbas(6,DER_FUNC) = -Q2*dy*(dx*(dx*(-P4*dx - P5) + P4*dy**2 - P2) + P2)*d6
-!    Dbas(7,DER_FUNC) = -Q2*dx*(dy*(dy*( P4*dy + P5) - P4*dx**2 + P2) - P2)*d7
-!    Dbas(8,DER_FUNC) = -Q2*dy*(dx*(dx*(-P4*dx + P5) + P4*dy**2 - P2) - P2)*d8
-!    Dbas(9,DER_FUNC) = -Q4*(dx**2 + dy**2) + P2
-    
+    Dbas(1,DER_FUNC) =  Q3*dy*( dx2 + dy - P1) - Q1
+    Dbas(2,DER_FUNC) =  Q3*dx*(-dy2 + dx + P1) - Q1
+    Dbas(3,DER_FUNC) =  Q3*dy*(-dx2 + dy + P1) - Q1
+    Dbas(4,DER_FUNC) =  Q3*dx*( dy2 + dx - P1) - Q1
+    Dbas(5,DER_FUNC) = -Q2*dx*(dy*(dy*( P4*dy - P5) - P4*dx2 + P2) + P2)*d5
+    Dbas(6,DER_FUNC) = -Q2*dy*(dx*(dx*(-P4*dx - P5) + P4*dy2 - P2) + P2)*d6
+    Dbas(7,DER_FUNC) = -Q2*dx*(dy*(dy*( P4*dy + P5) - P4*dx2 + P2) - P2)*d7
+    Dbas(8,DER_FUNC) = -Q2*dy*(dx*(dx*(-P4*dx + P5) + P4*dy2 - P2) - P2)*d8
+    Dbas(9,DER_FUNC) = -Q4*(dx2 + dy2) + P2
+    Dbas(10,DER_FUNC)=  Q8*(P3*dx2 - P1)*(P3*dy2 - P1)
+
     ! old FEAT 1.3 code
-    Dbas(1,DER_FUNC) = -1.D0/4.D0-dy/2+3.D0/4.D0*dy**2+(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy/2
-    Dbas(2,DER_FUNC) = -1.D0/4.D0+dx/2+3.D0/4.D0*dx**2-(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx/2
-    Dbas(3,DER_FUNC) = -1.D0/4.D0+dy/2+3.D0/4.D0*dy**2-(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy/2
-    Dbas(4,DER_FUNC) = -1.D0/4.D0-dx/2+3.D0/4.D0*dx**2+(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx/2
-    Dbas(5,DER_FUNC) = (-3.D0/4.D0*dx*dy+3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx+3.D0/&
-      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d5
-    Dbas(6,DER_FUNC) = (3.D0/4.D0*dx*dy+3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy+3.D0/&
-      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d6
-    Dbas(7,DER_FUNC) = (-3.D0/4.D0*dx*dy-3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx+3.D0/&
-      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d7
-    Dbas(8,DER_FUNC) = (3.D0/4.D0*dx*dy-3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy+3.D0/&
-      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d8
-    Dbas(9,DER_FUNC) = 2.D0-3.D0/2.D0*dx**2-3.D0/2.D0*dy**2
-    Dbas(10,DER_FUNC) = (-1.D0/2.D0+3.D0/2.D0*dx**2)*(-1.D0/2.D0+3.D0/2.D0*dy**2)
+!    Dbas(1,DER_FUNC) = -1.D0/4.D0-dy/2+3.D0/4.D0*dy**2+(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy/2
+!    Dbas(2,DER_FUNC) = -1.D0/4.D0+dx/2+3.D0/4.D0*dx**2-(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx/2
+!    Dbas(3,DER_FUNC) = -1.D0/4.D0+dy/2+3.D0/4.D0*dy**2-(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy/2
+!    Dbas(4,DER_FUNC) = -1.D0/4.D0-dx/2+3.D0/4.D0*dx**2+(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx/2
+!    Dbas(5,DER_FUNC) = (-3.D0/4.D0*dx*dy+3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx+3.D0/&
+!      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d5
+!    Dbas(6,DER_FUNC) = (3.D0/4.D0*dx*dy+3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy+3.D0/&
+!      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d6
+!    Dbas(7,DER_FUNC) = (-3.D0/4.D0*dx*dy-3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx+3.D0/&
+!      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d7
+!    Dbas(8,DER_FUNC) = (3.D0/4.D0*dx*dy-3.D0/2.D0*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy+3.D0/&
+!      4.D0*(5.D0/2.D0*dx**3-3.D0/2.D0*dx)*dy-3.D0/4.D0*dx*(5.D0/2.D0*dy**3-3.D0/2.D0*dy))*d8
+!    Dbas(9,DER_FUNC) = 2.D0-3.D0/2.D0*dx**2-3.D0/2.D0*dy**2
+!    Dbas(10,DER_FUNC) = (-1.D0/2.D0+3.D0/2.D0*dx**2)*(-1.D0/2.D0+3.D0/2.D0*dy**2)
 
     
 !  endif
@@ -10328,80 +10369,83 @@ CONTAINS
     dxj = 1.0_DP / ddetj
     
     ! x- and y-derivatives on reference element
-!    Dhelp(1,1) =  Q4*dx*dy
-!    Dhelp(2,1) = -Q3*dy**2 + Q4*dx + Q3
-!    Dhelp(3,1) = -Q4*dx*dy
-!    Dhelp(4,1) =  Q3*dy**2 + Q4*dx - Q3
-!    Dhelp(5,1) =  dy*(dy*(-Q6*dy + Q5) + Q7*dx**2 - Q3) - Q3
-!    Dhelp(6,1) = -Q2*dy*(dx*(-P7*dx - P6) + P4*dy**2 - P2)
-!    Dhelp(7,1) =  dy*(dy*(-Q6*dy - Q5) + Q7*dx**2 - Q3) + Q3
-!    Dhelp(8,1) = -Q2*dy*(dx*(-P7*dx + P6) + P4*dy**2 - P2)
-!    Dhelp(9,1) = -P3*dx
-!    Dhelp(1,2) =  Q3*dx**2 + Q4*dy - Q3
-!    Dhelp(2,2) = -Q4*dx*dy
-!    Dhelp(3,2) = -Q3*dx**2 + Q4*dy + Q3
-!    Dhelp(4,2) =  Q4*dx*dy
-!    Dhelp(5,2) = -Q2*dx*(dy*( P7*dy - P6) - P4*dx**2 + P2)
-!    Dhelp(6,2) =  dx*(dx*( Q6*dx + Q5) - Q7*dy**2 + Q3) - Q3
-!    Dhelp(7,2) =  Q2*dx*(dy*(-P7*dy - P6) + P4*dx**2 - P2)
-!    Dhelp(8,2) =  dx*(dx*( Q6*dx - Q5) - Q7*dy**2 + Q3) + Q3
-!    Dhelp(9,2) = -P3*dy
+    Dhelp(1,1) =  Q4*dx*dy
+    Dhelp(2,1) = -Q3*dy2 + Q4*dx + Q3
+    Dhelp(3,1) = -Q4*dx*dy
+    Dhelp(4,1) =  Q3*dy2 + Q4*dx - Q3
+    Dhelp(5,1) =  dy*(dy*(-Q6*dy + Q5) + Q7*dx2 - Q3) - Q3
+    Dhelp(6,1) = -Q2*dy*(dx*(-P7*dx - P6) + P4*dy2 - P2)
+    Dhelp(7,1) =  dy*(dy*(-Q6*dy - Q5) + Q7*dx2 - Q3) + Q3
+    Dhelp(8,1) = -Q2*dy*(dx*(-P7*dx + P6) + P4*dy2 - P2)
+    Dhelp(9,1) = -P3*dx
+    Dhelp(10,1)=  Q9*dx*(P3*dy2 - P1)
+    Dhelp(1,2) =  Q3*dx2 + Q4*dy - Q3
+    Dhelp(2,2) = -Q4*dx*dy
+    Dhelp(3,2) = -Q3*dx2 + Q4*dy + Q3
+    Dhelp(4,2) =  Q4*dx*dy
+    Dhelp(5,2) = -Q2*dx*(dy*( P7*dy - P6) - P4*dx2 + P2)
+    Dhelp(6,2) =  dx*(dx*( Q6*dx + Q5) - Q7*dy2 + Q3) - Q3
+    Dhelp(7,2) =  Q2*dx*(dy*(-P7*dy - P6) + P4*dx2 - P2)
+    Dhelp(8,2) =  dx*(dx*( Q6*dx - Q5) - Q7*dy2 + Q3) + Q3
+    Dhelp(9,2) = -P3*dy
+    Dhelp(10,2)=  Q9*dy*(P3*dx2 - P1)
+
     ! 'old' FEAT 1.3 code
-    Dhelp(1,1) = 3.D0/2.D0*dx*dy
-    Dhelp(2,1) = 3.D0/4.D0+3.D0/2.D0*dx-3.D0/4.D0*dy**2
-    Dhelp(3,1) = -3.D0/2.D0*dx*dy
-    Dhelp(4,1) = -3.D0/4.D0+3.D0/2.D0*dx+3.D0/4.D0*dy**2
-    Dhelp(5,1) = 3.D0/8.D0*dy-3.D0/4.D0+9.D0/4.D0*dy**2+3.D0/4.D0*(15.D0/2.D0*&
-                 dx**2-3.D0/2.D0)*dy-15.D0/8.D0*dy**3
-    Dhelp(6,1) = 15.D0/8.D0*dy+9.D0/2.D0*dx*dy+3.D0/4.D0*(15.D0/2.D0*dx**2-3.D0/&
-                 2.D0)*dy-15.D0/8.D0*dy**3
-    Dhelp(7,1) = 3.D0/8.D0*dy+3.D0/4.D0-9.D0/4.D0*dy**2+3.D0/4.D0*(15.D0/2.D0*&
-                 dx**2-3.D0/2.D0)*dy-15.D0/8.D0*dy**3
-    Dhelp(8,1) = 15.D0/8.D0*dy-9.D0/2.D0*dx*dy+3.D0/4.D0*(15.D0/2.D0*dx**2-3.D0/&
-                 2.D0)*dy-15.D0/8.D0*dy**3
-    Dhelp(9,1) = -3.D0*dx
-    Dhelp(10,1) = 3*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx
-    
-    Dhelp(1,2) = -3.D0/4.D0+3.D0/2.D0*dy+3.D0/4.D0*dx**2
-    Dhelp(2,2) = -3.D0/2.D0*dx*dy
-    Dhelp(3,2) = 3.D0/4.D0+3.D0/2.D0*dy-3.D0/4.D0*dx**2
-    Dhelp(4,2) = 3.D0/2.D0*dx*dy
-    Dhelp(5,2) = -15.D0/8.D0*dx+9.D0/2.D0*dx*dy+15.D0/8.D0*dx**3-3.D0/4.D0*dx*&
-                 (15.D0/2.D0*dy**2-3.D0/2.D0)
-    Dhelp(6,2) = -3.D0/8.D0*dx-3.D0/4.D0+9.D0/4.D0*dx**2+15.D0/8.D0*dx**3-3.D0/&
-                 4.D0*dx*(15.D0/2.D0*dy**2-3.D0/2.D0)
-    Dhelp(7,2) = -15.D0/8.D0*dx-9.D0/2.D0*dx*dy+15.D0/8.D0*dx**3-3.D0/4.D0*dx*&
-                 (15.D0/2.D0*dy**2-3.D0/2.D0)
-    Dhelp(8,2) = -3.D0/8.D0*dx+3.D0/4.D0-9.D0/4.D0*dx**2+15.D0/8.D0*dx**3-3.D0/&
-                 4.D0*dx*(15.D0/2.D0*dy**2-3.D0/2.D0)
-    Dhelp(9,2) = -3*dy
-    Dhelp(10,2) = 3*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy
+!    Dhelp(1,1) = 3.D0/2.D0*dx*dy
+!    Dhelp(2,1) = 3.D0/4.D0+3.D0/2.D0*dx-3.D0/4.D0*dy**2
+!    Dhelp(3,1) = -3.D0/2.D0*dx*dy
+!    Dhelp(4,1) = -3.D0/4.D0+3.D0/2.D0*dx+3.D0/4.D0*dy**2
+!    Dhelp(5,1) = 3.D0/8.D0*dy-3.D0/4.D0+9.D0/4.D0*dy**2+3.D0/4.D0*(15.D0/2.D0*&
+!                 dx**2-3.D0/2.D0)*dy-15.D0/8.D0*dy**3
+!    Dhelp(6,1) = 15.D0/8.D0*dy+9.D0/2.D0*dx*dy+3.D0/4.D0*(15.D0/2.D0*dx**2-3.D0/&
+!                 2.D0)*dy-15.D0/8.D0*dy**3
+!    Dhelp(7,1) = 3.D0/8.D0*dy+3.D0/4.D0-9.D0/4.D0*dy**2+3.D0/4.D0*(15.D0/2.D0*&
+!                 dx**2-3.D0/2.D0)*dy-15.D0/8.D0*dy**3
+!    Dhelp(8,1) = 15.D0/8.D0*dy-9.D0/2.D0*dx*dy+3.D0/4.D0*(15.D0/2.D0*dx**2-3.D0/&
+!                 2.D0)*dy-15.D0/8.D0*dy**3
+!    Dhelp(9,1) = -3.D0*dx
+!    Dhelp(10,1) = 3*(-1.D0/2.D0+3.D0/2.D0*dy**2)*dx
+!    
+!    Dhelp(1,2) = -3.D0/4.D0+3.D0/2.D0*dy+3.D0/4.D0*dx**2
+!    Dhelp(2,2) = -3.D0/2.D0*dx*dy
+!    Dhelp(3,2) = 3.D0/4.D0+3.D0/2.D0*dy-3.D0/4.D0*dx**2
+!    Dhelp(4,2) = 3.D0/2.D0*dx*dy
+!    Dhelp(5,2) = -15.D0/8.D0*dx+9.D0/2.D0*dx*dy+15.D0/8.D0*dx**3-3.D0/4.D0*dx*&
+!                 (15.D0/2.D0*dy**2-3.D0/2.D0)
+!    Dhelp(6,2) = -3.D0/8.D0*dx-3.D0/4.D0+9.D0/4.D0*dx**2+15.D0/8.D0*dx**3-3.D0/&
+!                 4.D0*dx*(15.D0/2.D0*dy**2-3.D0/2.D0)
+!    Dhelp(7,2) = -15.D0/8.D0*dx-9.D0/2.D0*dx*dy+15.D0/8.D0*dx**3-3.D0/4.D0*dx*&
+!                 (15.D0/2.D0*dy**2-3.D0/2.D0)
+!    Dhelp(8,2) = -3.D0/8.D0*dx+3.D0/4.D0-9.D0/4.D0*dx**2+15.D0/8.D0*dx**3-3.D0/&
+!                 4.D0*dx*(15.D0/2.D0*dy**2-3.D0/2.D0)
+!    Dhelp(9,2) = -3*dy
+!    Dhelp(10,2) = 3*(-1.D0/2.D0+3.D0/2.D0*dx**2)*dy
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
-      Dbas(1,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(1,1) - Djac(2)*Dhelp(1,2))
-      Dbas(2,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(2,1) - Djac(2)*Dhelp(2,2))
-      Dbas(3,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(3,1) - Djac(2)*Dhelp(3,2))
-      Dbas(4,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(4,1) - Djac(2)*Dhelp(4,2))
-      Dbas(5,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(5,1) - Djac(2)*Dhelp(5,2))*d5
-      Dbas(6,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(6,1) - Djac(2)*Dhelp(6,2))*d6
-      Dbas(7,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(7,1) - Djac(2)*Dhelp(7,2))*d7
-      Dbas(8,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(8,1) - Djac(2)*Dhelp(8,2))*d8
-      Dbas(9,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(9,1) - Djac(2)*Dhelp(9,2))
+      Dbas( 1,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(1,1) - Djac(2)*Dhelp(1,2))
+      Dbas( 2,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(2,1) - Djac(2)*Dhelp(2,2))
+      Dbas( 3,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(3,1) - Djac(2)*Dhelp(3,2))
+      Dbas( 4,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(4,1) - Djac(2)*Dhelp(4,2))
+      Dbas( 5,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(5,1) - Djac(2)*Dhelp(5,2))*d5
+      Dbas( 6,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(6,1) - Djac(2)*Dhelp(6,2))*d6
+      Dbas( 7,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(7,1) - Djac(2)*Dhelp(7,2))*d7
+      Dbas( 8,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(8,1) - Djac(2)*Dhelp(8,2))*d8
+      Dbas( 9,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(9,1) - Djac(2)*Dhelp(9,2))
       Dbas(10,DER_DERIV_X) =  dxj*(Djac(4)*Dhelp(10,1) - Djac(2)*Dhelp(10,2))
 !    endif
     
     ! y-derivatives on current element
 !    if (Bder(DER_DERIV_Y)) then
-      Dbas(1,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(1,1) - Djac(1)*Dhelp(1,2))
-      Dbas(2,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(2,1) - Djac(1)*Dhelp(2,2))
-      Dbas(3,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(3,1) - Djac(1)*Dhelp(3,2))
-      Dbas(4,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(4,1) - Djac(1)*Dhelp(4,2))
-      Dbas(5,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(5,1) - Djac(1)*Dhelp(5,2))*d5
-      Dbas(6,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(6,1) - Djac(1)*Dhelp(6,2))*d6
-      Dbas(7,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(7,1) - Djac(1)*Dhelp(7,2))*d7
-      Dbas(8,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(8,1) - Djac(1)*Dhelp(8,2))*d8
-      Dbas(9,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(9,1) - Djac(1)*Dhelp(9,2))
+      Dbas( 1,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(1,1) - Djac(1)*Dhelp(1,2))
+      Dbas( 2,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(2,1) - Djac(1)*Dhelp(2,2))
+      Dbas( 3,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(3,1) - Djac(1)*Dhelp(3,2))
+      Dbas( 4,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(4,1) - Djac(1)*Dhelp(4,2))
+      Dbas( 5,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(5,1) - Djac(1)*Dhelp(5,2))*d5
+      Dbas( 6,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(6,1) - Djac(1)*Dhelp(6,2))*d6
+      Dbas( 7,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(7,1) - Djac(1)*Dhelp(7,2))*d7
+      Dbas( 8,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(8,1) - Djac(1)*Dhelp(8,2))*d8
+      Dbas( 9,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(9,1) - Djac(1)*Dhelp(9,2))
       Dbas(10,DER_DERIV_Y) = -dxj*(Djac(3)*Dhelp(10,1) - Djac(1)*Dhelp(10,2))
 !    endif
 !  endif
