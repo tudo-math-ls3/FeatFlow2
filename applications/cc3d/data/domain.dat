@@ -1,0 +1,30 @@
+# ------------------------------------------------------------------------
+# Domain and triangulation
+#
+# This file contains parameters about the domain and (coarse grid)
+# triangulation of the problem.
+# Todo: Write something...
+# ------------------------------------------------------------------------
+
+[DOMAIN]
+
+# Domain Specifier
+# -=-=-=-=-=-=-=-=
+# Specifies which domain is to be used.
+# Currently there are 3 domains supported by CC3D:
+# 1 => DOM3D_CUBE
+#      This is the simple 3D [0,1]^3 cube domain.
+#
+# 2 => DOM3D_C3D0
+#      This is the "flow around a cylinder" domain. This is more or less
+#      a 3D version of the 2D 'bench1' domain.
+#
+# 3 => DOM3D_C3D1
+#      This if the "flow around a hexahedron" domain.
+#
+iDomain = 2
+
+# Filename of the coarse grid mesh of the domain.
+# sMesh = './pre/CUBE.tri'
+sMesh = './pre/C3D0.tri'
+# sMesh = './pre/C3D1.tri'
