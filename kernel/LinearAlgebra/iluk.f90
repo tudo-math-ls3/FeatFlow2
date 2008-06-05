@@ -6,59 +6,31 @@
 !# <purpose>
 !# 
 !# In this module contains routines for preconditioners and solving linear 
-!# systems Ax=b or LUx=b. The available preconditioners are adjusted by a
-!# variable pcmeth. The following options are available:
-!#
-!#		pcmeth = 0  ---> no preconditioner, i.e. m = identity matrix.
-!#	  pcmeth = 1  ---> ILU(c).
-!#		pcmeth = 2  ---> MILU(c).
-!#		pcmeth = 3  ---> ILUT(c).
-!#		pcmeth = 4  ---> SSOR(omega).
-!#		pcmeth = 5  ---> TRID.
-!#		pcmeth = 6  ---> ILU0.
-!#		pcmeth = 7  ---> ECIMGS.
-!# 
+!# systems Ax=b or LUx=b. 
 !#
 !# The following routines can be found here
 !#
 !#  1.) iluk_ilu
 !#      -> Perfoms an (M)ILU-decomposition of a given matrix A
 !#  
-!#  2.) iluk_symbfac2f90
+!#  2.) iluk_symbfac
 !#      -> The F90 version of the old minisplib symbolic factorization
 !#         performs a symbolic factorization on the matrix A, which 
 !#         determines the sparsity pattern of the matrix A ,the number
 !#         of non-zero entries and the desired fill-in
 !#
-!#  3.) iluk_numfac2f90
+!#  3.) iluk_numfac
 !#      -> Performs the actual decomposition of the matrix A with
 !#         the pattern determined by the symbolic factorization and the
 !#         desired fill-in. The result are the matrices L and U which are
 !#         are stored in a kind of modified spare row format, where we get an
 !#         additional pointer to the rows of the matrix U
 !#
-!#  4.)iluk_lusl
-!#      -> Solve Mx = y. preconditioner application for SPLIB.  This routine computes the	 
-!#         action of the preconditioner on a vector; usually this is a lower
-!#         and upper triangular solve, explaining the name.  In particular,	
-!#         mo(lu, jlu) is usually the MSR data structure for L and U combined	dule iluk
-!#         with the integer*4 vector uptr giving the pointers to the start	
-!#         position of the upper triangular part of each row.  However, for	use fsystem
-!#         SSOR preconditioning lu is the scalar relaxation parameter omega	use storage
-!#         and uptr is a vector of pointers to the diagonal entries in the	
-!#         data structure for A (not LU). In this case the names lu and jlurimplicit none
-!#         are somewhat deceptive, but have been kept since ILU, MILU, ILUT,
-!#         and ECIMGS all use the MSR data structure for LU.
-!#  5.)lusolt
+!#  4.)iluk_lusolt
 !#      -> performs a forward and a backward solve for matrices L and U
-!#         stored in combined MSR format, with L unit upper triangular.
-!#         the diagonal entries of U are assumed to be inverted already.
+!#         stored in combined MSR format, with L unit upper triangular
+!#         computed by iluk_ilu or iluk_symbfac / iluk_numfac, respectively.
 !#
-!#
-!#  6.)lussor
-!#      -> performs forward and backward solve for SSOR preconditioner.
-!#  7.)lusol0
-!#      -> performs forward and backward solve for ILU0 preconditioner.
 !#</purpose>
 !##########################################################################
 
@@ -66,24 +38,9 @@ module iluk
 
   use fsystem
   use storage
+  use linearalgebra
   
   implicit none
-  
-!<constants>
-  
-!<constantblock description="Kind values of integer variables">
-  ! from old intdbl.inc
-  ! dummy real(dp) variable
-  real(dp), parameter :: tstdbl = 0.0_dp
-  
-  ! dummy integer parameter
-  integer, parameter :: tstint  = 0
-  
-  ! ratio: double/integer
-  integer, parameter :: intdbl = (kind(tstdbl)/kind(tstint))
-  !</constantblock>
-  
-!</constants>
   
 !<typeblock>
 
@@ -129,27 +86,9 @@ module iluk
 
 !</typeblock>  
   
-!<globals>  
-
-  ! in the old head.inc these variables were defined. Since now we use the minisplip as 
-  ! a F90 module, we have to define these variables here.
-  integer :: ipcprm
-  
-  !
-  real(dp), dimension(20) :: times
-  
-  !
-  character(len=5) :: solver
-  
-  !
-  character(len=4) :: precond
-  
-!</globals>  
-  
-
 contains
 
-!========================================================================
+  ! ***************************************************************************
 
 !<subroutine>
     subroutine iluk_freeDecomp(rMILUdecomp)
@@ -172,265 +111,199 @@ contains
     
     end subroutine ! end iluk_freeDecomp
 
-!========================================================================
+  ! ***************************************************************************
 
 !<subroutine>
-      subroutine iluk_lusl (n, y, x, lu, jlu, uptr, pcmeth, a, colind, &
-                      rwptr ) 
-!<description>
+
+    subroutine iluk_lusolt (n, x, lu, jlu, uptr)
+      
+  !<description>      
+  !  Solve Mx = y.
+  !  Perform a forward then backward solve for a MSR matrix containing
+  !  a unit lower triangular and an upper triangular matrix with inverted
+  !  diagonal, both stored in a single MSR data structure.  The vector of
+  !  pointers uptr() contains the row pointers to the beginning of U in
+  !  each row.
+  !</description>
+
+  !<input>
+      ! Column numbers of the entries in the matrix.
+      integer(I32), dimension(:), intent(in) :: jlu
+      
+      ! Pointer to the entries of U of the LU decomposition
+      integer(I32), dimension(:), intent(in) :: uptr
+      
+      ! Matrix entries.
+      real(DP), dimension(:), intent(in) :: lu
+  !</input>
+
+  !<inputoutput>
+      ! Result vector
+      real(DP), dimension(:), intent(inout) :: x
+  !</inputoutput>
+      
+      ! local variables
+      integer(I32) :: n,i,k
+      real(DP) :: x_i
+
+      if (n .le. 0)  return
+
+!     ------------
+!     Solve Lx = x
+!     ------------
+      do i = 1, n-1
+        x_i =  x(i)
+
+!*$* prefetch_ref=lu(jlu(i+1)),stride=1,kind=rd
+!*$* prefetch_ref=lu(jlu(i+1)+16),stride=1,kind=rd
+!*$* prefetch_ref=jlu(jlu(i+1)+32),stride=1,kind=rd
+
+        do k = jlu(i), uptr(i)-1
+            x_i = x_i - lu(k)* x(jlu(k))
+        end do
+        x(i) = x_i
+      end do
+
+      x_i =  x(n)
+      do k = jlu(n), uptr(n)-1
+        x_i = x_i - lu(k)* x(jlu(k))
+      end do
+      x(n) = x_i
+
+
+!     ------------
+!     Solve Ux = x
+!     ------------
+      do i = n, 1, -1
+        x_i =  x(i)
+
+!*$* prefetch_ref=lu(jlu(i)-1),stride=1,kind=rd
+!*$* prefetch_ref=lu(jlu(i)-17),stride=1,kind=rd
+!*$* prefetch_ref=jlu(jlu(i)-33),stride=1,kind=rd
+
+        do k = jlu(i+1)-1, uptr(i), -1
+            x_i = x_i - lu(k)*x(jlu(k))
+        end do
+        x(i) = lu(i)*x_i
+      end do
+
+    end subroutine
+
+  ! ***************************************************************************
+
 !**********************************************************************
 !                   SPLIB Copyright (C) 1995                         **
 !                     Indiana University                             **
 !**********************************************************************
 
-!-----------------------------------------------------------------------*
-!                     *** LUSL: Solve Mx = y ***			*
-!									*
-!   Preconditioner application for SPLIB.  This routine computes the	*
-!   action of the preconditioner on a vector; usually this is a lower	*
-!   and upper triangular solve, explaining the name.  In particular,	*
-!   (lu, jlu) is usually the MSR data structure for L and U combined	*
-!   with the integer*4 vector uptr giving the pointers to the start	*
-!   position of the upper triangular part of each row.  However, for	*
-!   SSOR preconditioning lu is the scalar relaxation parameter omega	*
-!   and uptr is a vector of pointers to the diagonal entries in the	*
-!   data structure for A (not LU). In this case the names lu and jlur	*
-!   are somewhat deceptive, but have been kept since ILU, MILU, ILUT,	*
-!   and ECIMGS all use the MSR data structure for LU.			*
-!									*
-!   Although x and y can be different, the methods implemented so far	*
-!   allow overwriting, so there is an inefficiency in copying y over	*
-!   to x unnecessarily.							*
-!									*
-!-----------------------------------------------------------------------*
+!<subroutine>
+    subroutine iluk_ilu(n,a,colind,rwptr, ifill,relax,&
+                        ierr, rILUDecomp)
+                      
+!<description>                      
+!  Incomplete LU factorization for s levels of fill-in.	       
+!                                                                      
+!  This routine performs incomplete LU factorization, with s levels
+!  of fill-in.  It is passed the matrix A in CSR format, and a real*8
+!  parameter relax, which will indicate whether or not to perform
+!  MILU factorization.  If the parameter is zero, regular ILU is
+!  performed instead.  A single integer*4 work array is passed in which
+!  to create the LU factors data structures, and for intermediate
+!  storage in the computations.  What is returned are three pointers
+!  to the start locations in the work array, for the combined MSR
+!  data structure containing the LU factors.  These pointers will be
+!  aligned on double word boundaries, provided that the initial word
+!  in the work array is aligned on a double word boundary.	
+!                                                                      
+!  If not enough work space is provided, an error code is returned
+!  and the pointers are not set.  An estimate of the additional	
+!  work space needed is returned in mneed, but this is only a guess.
+!                                                                      
+!     Randall Bramley and Xiaoge Wang				       
+!     Department of Computer Science				       
+!     Indiana University					       
+!     email: bramley@cs.indiana.edu				       
+!     Sun Jan  2 11:09:18 EST 1994				       
+!             
 !
-!  Arguments:
-!  ==========
+!  Warnings:
 !
-!  x       : real*8 vector of length n (output).
-!  y       : real*8 vector of length n (input).
+! 1) A must have nonzero diagonal entries, at least.  This does not assure
+!    completion of the factorization, however.
 !
-!  n       : Order of matrix A, and system Mx = y where M is the
-!            preconditioning matrix.
-!  A       : real*8 array for nonzero entries of matrix A; of
-!            length nnz = rwptr(n+1)-1.
-!  colind  : integer*4 array of column indices for entries in A; of
-!            length nnz = rwptr(n+1)-1.
-!  rwptr   : integer*4 array of pointers to beginning position of rows
-!            in arrays A and colind.  Must be of length n+1.
-!  uptr, 
-!  lu,jlu  : Data structure for the preconditioner M, with different meanings
-!            for different preconditioners.
-!
-!            ILU(s), MILU(s), ILUt, or ECIMGS --->
-!                 (lu,jlu) gives the combined L/U factors for the preconditioner
-!                 in a modified sparse row (MSR) format.  L is unit lower 
-!                 triangular and U is upper triangular.  The diagonal of U is
-!                 stored in lu(1:n) inverted, to replace divisions in the algorithm
-!                 with multiplications.  Each i-th row of the combined L/U matrix in
-!                 the (lu,jlu) data structure contains the i-th row of L (excluding
-!                 the diagonal entry = 1), followed by the i-th row of u.
-!                 uptr is a integer*4 vector of length n containing pointers to the
-!                 start position of each row of U in (lu, jlu).
-!
-!            SSOR(omega)   --->
-!                 lu is the scalar acceleration parameter omega.
-!                 jlu is not used, and uptr is a vector of pointers to the
-!                 diagonal entries in the CSR data structure for A.
-!
-!            TRID(s)   --->
-!                 This implements block diagonal preconditioning, where
-!                 each diagonal block is from the corresponding tridiagonal part
-!                 of the matrix A.  The size of the blocks is given implicitly in
-!                 the integer*4 iskip, stored in jlu(n).  Factors are set up for 
-!                 contiguous blocks of iskip rows and so by using iskip = n the 
-!                 factor can be for the entire matrix's tridiagonal part.
-!                 Using iskip = 1 is an inefficient way of performing diagonal
-!                 preconditioning, while 1 < iskip < n is for a block tridiagonal
-!                 preconditioner.  Gaussian elimination with pivoting is used for 
-!                 factoring each block, so it is necessary to store the pivot
-!                 sequence in jlu(1:n-1).  lu has the four vectors giving the nonzeros
-!                 of the tridiagonal preconditioner.  Vector uptr is not used.
-!
-!            ILU0   --->
-!                 This implements the version of ILU(0) that does not change any
-!                 off-diagonal entries of A, and so only needs to store the n-vector
-!                 of diagonal pivots.  lu(1:n) stores those pivots, and jlu(1:n) 
-!                 contains pointers to the diagonal entry in each row of A.
-!
-!  pcmeth  : preconditioning method to use.
-!		pcmeth = 0  ---> no preconditioner, i.e. m = identity matrix.
-!		pcmeth = 1  ---> ILU(c).
-!		pcmeth = 2  ---> MILU(c).
-!		pcmeth = 3  ---> ILUT(c).
-!		pcmeth = 4  ---> SSOR(omega).
-!		pcmeth = 5  ---> TRID.
-!		pcmeth = 6  ---> ILU0.
-!		pcmeth = 7  ---> ECIMGS.
-!
-!
-!  Routines
-!  ========
-!
-!  lusolt  : performs a forward and a backward solve for matrices L and U
-!            stored in combined MSR format, with L unit upper triangular.
-!            the diagonal entries of U are assumed to be inverted already.
-!  lussor  : Performs forward and backward solve for SSOR preconditioner.
-!  lusol0  : Performs forward and backward solve for ILU0 preconditioner.
-!  tridsl  : Applies the tridiagonal block preconditioner.
-!  dcopy   : BLAS1 routine to copy a vector.
-!-------------------------------------------------------------------------
-!
-!     Randall Bramley
-!     Department of Computer Science
-!     Indiana University, Bloomington
-!     bramley@cs.indiana.edu
-!     Wed Jul 12 10:03:18 EST 1995
-!
-!-------------------------------------------------------------------------
+!======================================================================== 
 
 !</description>
 
-
-!     Declarations of arguments
-!     =========================
-
 !<input>
-      integer :: n, pcmeth
-!</input>
+      ! the dimension of the rectangular matrix
+      integer, intent(in) ::  n
 
-!<inputoutput>
-      real(dp), dimension(:), pointer :: y,x,lu
-      real(dp), dimension(:), pointer :: a
+      ! The fill-in parameter.  Fill-in generated during the
+      ! factorization is kept only if it is caused by a nonzero element
+      ! in the matrix that was created on the s level or less.  Fill
+      ! generated by the original nonzeros are of level 1, those created
+      ! by such entries are level 2, etc.  The original matrix entries
+      ! are defined as being of level 0.  See symbfac.f for details.
+      integer, intent(in) ::  ifill
       
-      integer, dimension(:),pointer :: jlu,uptr
-      integer, dimension(:),pointer :: colind , rwptr
-!</inputoutput>
+      ! Matrix entries of the matrix to be factorised.
+      real(dp), dimension(:), intent(in) :: a 
 
+      ! colind is another csr component and points to the
+      ! column indices of A
+      integer, dimension(:), pointer, intent(IN) :: rwptr, colind
+      
+      ! relaxation parameter.  relax = 0 gives ilu(s), relax = 1
+      ! gives milu(s), and values between give the multiplier to use
+      ! before adding discarded fill to the diagonal.
+      real(dp), intent(IN) :: relax
+      
+!</input>      
+      
+!</output>     
+      ! A return value that describes the result with
+      ! that the routine finished (success, failure, whatever...).
+      !   ierr  = -i --> near zero pivot in step i,
+      !   ierr  = 0  --> all's OK.
+      !   ierr  = 1  --> not enough storage.
+      !   ierr  = 2  --> illegal parameter.
+      integer, intent(out) :: ierr
+      
+      ! A structure that stores the return values of this routine,
+      ! which is an ILU-decomposition in a modified sparse row format(MSR).
+      type(t_MILUdecomp), intent(INOUT) :: rILUDecomp
+!</output>
+      
 !</subroutine>
 
-!     Local variables
-!     ===============
-      integer :: k, length, ierr
+      ! local variables
+      integer :: nzlu
+      integer :: mneed,s
 
+!     ----------------------
+!     current size of arrays
+!     ----------------------
+      integer ::  isize
 
-
-!========================================================================
-!      Beginning of Executable Statements
-!========================================================================
-
-!     ----------------
-!     Copy y over to x
-!     ----------------
-      call dcopy(n, y, 1, x, 1)
-
-!     ------------------------------------------
-!     Unknown pcmeth (should not be encountered)
-!     ------------------------------------------
-      if (pcmeth.lt.0 .or. pcmeth .gt. 7) then
-         write(*,*) 'Unknown method in lusl'
-         write(*,*) 'pcmeth = ', pcmeth
-         stop
-      end if
-
-!     ------------------
-!     No preconditioning
-!     ------------------
-      if (pcmeth.eq.0) then
-         return
-      end if
-
-!     --------------------------
-!     ILU, MILU, ILUT, or ECIMGS
-!     --------------------------
-      if ( ((pcmeth.ge.1) .and. (pcmeth.le.3)) .or. pcmeth .eq. 7) then
-            call lusolt (n, x, lu, jlu, uptr) 
-      end if
-
-!     --------------------
-!     SSOR preconditioning
-!     --------------------
-      if (pcmeth.eq.4) then
-            call lussor(n, x, lu, jlu, a,colind,rwptr ) 
-      end if
-
-!     --------------------
-!     ILU0 preconditioning
-!     --------------------
-      if (pcmeth.eq.6) then
-            call lusol0 (n, x, lu, jlu, a,colind,rwptr ) 
-      end if
-
-      end subroutine
+      ! if the relax input parameter is non-zero, we
+      ! will perform a milu decomposition
+      logical :: milu
       
-  
-!======================================================================
-
-!<subroutine>
-      subroutine iluk_ilu(n,a,colind,rwptr, s,relax,&
-                      ierr,mneed, rILUDecomp)
-                      
-!<description>                      
-!**********************************************************************
-!                   SPLIB Copyright (C) 1995                         **
-!                     Indiana University                             **
-!**********************************************************************
-
-!======================================================================== 
-!                                                                      	*
-!      Incomplete LU factorization for s levels of fill-in.	       	*
-!                                                                      	*
-!======================================================================== 
-!                                                                      	*
-!  This routine performs incomplete LU factorization, with s levels	*
-!  of fill-in.  It is passed the matrix A in CSR format, and a real*8	*
-!  parameter relax, which will indicate whether or not to perform	*
-!  MILU factorization.  If the parameter is zero, regular ILU is	*
-!  performed instead.  A single integer*4 work array is passed in which	*
-!  to create the LU factors data structures, and for intermediate	*
-!  storage in the computations.  What is returned are three pointers	*
-!  to the start locations in the work array, for the combined MSR	*
-!  data structure containing the LU factors.  These pointers will be	*
-!  aligned on double word boundaries, provided that the initial word	*
-!  in the work array is aligned on a double word boundary.		*
-!                                                                      	*
-!  If not enough work space is provided, an error code is returned	*
-!  and the pointers are not set.  An estimate of the additional		*
-!  work space needed is returned in mneed, but this is only a guess.	*
-!                                                                      	*
-!     Randall Bramley and Xiaoge Wang				       	*
-!     Department of Computer Science				       	*
-!     Indiana University					       	*
-!     email: bramley@cs.indiana.edu				       	*
-!     Sun Jan  2 11:09:18 EST 1994				       	*
-!									*
-!======================================================================== 
-!
-! parameters
-!-----------
-!
-! on entry:
-!========== 
-! n       = integer*4. the dimension of the matrix a.
-!
-! a,colind,rwptr = matrix stored in compressed sparse row format.
-!
-! s       = integer*4; the fill-in parameter.  Fill-in generated during the
-!           factorization is kept only if it is caused by a nonzero element
-!           in the matrix that was created on the s level or less.  Fill
-!           generated by the original nonzeros are of level 1, those created
-!           by such entries are level 2, etc.  The original matrix entries
-!           are defined as being of level 0.  See symbfac.f for details.
-!
-! relax   = relaxation parameter.  relax = 0 gives ilu(s), relax = 1
-!           gives milu(s), and values between give the multiplier to use
-!           before adding discarded fill to the diagonal.
-!
-!
-! rILUDecomp :
-!             a structure that stores the return values of this routine,
-!             which is an ILU-decomposition in a modified sparse row format(MSR)
-!
+      ! add integer handles for the temporary arrays
+      integer :: h_rowll, h_lastcol, h_levels, h_colptrs
+      
+      integer, dimension(:), pointer :: ph_colptrs
+      !real(dp), dimension(:), pointer :: p_lu
+      
+      ! pointers to allocated handles
+      ! two arrays of length n with pointers to the rows and last column
+      integer,  dimension(:), pointer :: ph_rowll, ph_lastcol
+      
+      real(dp), dimension(:), pointer :: ph_lu
+      
+      integer,  dimension(:), pointer :: ph_jlu, ph_ilup, ph_levels
+      
 ! intermediate variables:
 !========================
 !
@@ -462,94 +335,19 @@ contains
 !   lastcol     n               integer
 !   levels      nzlu            integer
 !   colptrs     n               integer
-!
-!  Warnings:
-!===========
-!
-! 1) A must have nonzero diagonal entries, at least.  This does not assure
-!    completion of the factorization, however.
-!
-!======================================================================== 
-
-!</description>
-
-      ! n is the dimension of the rectangular matrix
-      ! s is the level of fill-in for ILU
-      integer ::  n, s
-      
-      ! ierr is a return value that describes the result with
-      ! that the routine finished (success, failure, whatever...)
-      integer ::  ierr
-      
-      ! colind is another csr component and points to the
-      ! column indices of A
-!<input>      
-      integer, dimension(:), pointer, intent(IN) :: rwptr, colind
-      real(dp), intent(IN) :: relax
-      real(dp), dimension(:), pointer, intent(IN) :: a 
-
-!</input>      
-      
-!</inputoutput>     
-      type(t_MILUdecomp), intent(INOUT) :: rILUDecomp
-      integer, intent(INOUT) :: mneed
-!</inputoutput>
-      
-!</subroutine>
-
-
-      ! local variables
-      integer :: nzlu
-
-!     ----------------------
-!     current size of arrays
-!     ----------------------
-      integer ::  isize
-
-      ! if the relax input parameter is non-zero, we
-      ! will perform a milu decomposition
-      logical :: milu
-      
-      ! add integer handles for the temporary arrays
-      integer :: h_rowll, h_lastcol, h_levels, h_colptrs
-      
-      integer, dimension(:), pointer :: ph_colptrs
-      !real(dp), dimension(:), pointer :: p_lu
-      
-      ! pointers to allocated handles
-      ! two arrays of length n with pointers to the rows and last column
-      integer,  dimension(:), pointer :: ph_rowll, ph_lastcol
-      
-      real(dp), dimension(:), pointer :: ph_lu
-      
-      integer,  dimension(:), pointer :: ph_jlu, ph_ilup, ph_levels
       
       ierr  =  0
 
 !     ------------------------------------------------
 !     If requested level of fill is negative, set to 0
 !     ------------------------------------------------
-      s = max(s,0)
+      s = max(ifill,0)
 
 !     ----------------------------------------------
 !     If relaxation parameter is zero, method is ILU
 !     ----------------------------------------------
-      milu = (relax .ne. 0.0d0)
+      milu = (relax .ne. 0.0_dp)
 
-!    ----------------------------------------------------------------
-!    Compute pointers into work array.  This version uses two arrays
-!    dependent on the (unknown in advance) size nzlu, jlu(1:nzlu) and
-!    levels(1:nzlu).  To handle this, first the data space for the
-!    work arrays in symbfac is allocated, then half the remainder is
-!    assigned to jlu, the rest to levels.  The partitioning of the 
-!    integer*4 work array is as:
-!
-!        [ilup   jlu      ...      levels    rowll lastcol],
-!        [-n-----nzlu-----...-------nzlu-------n------n---]
-!
-!    The index of the last entry in the work array is maxstr, and
-!    rowll and lastcol start at the far end of the work array.
-!    Note that these are aligned on double word boundaries.
 !    ----------------------------------------------------------------
 
 !     ------------------------------------------------------------------
@@ -588,12 +386,12 @@ contains
       call storage_getbase_int(rILUDecomp%h_jlu, ph_jlu)
       call storage_getbase_int(rILUDecomp%h_ilup, ph_ilup)
       
-      do while(.true.)
+      do
       
         ! call symbolic factorization with the pointers we just created
         ! new function calling style without the work array
         ! here we still need mneed to reallocate if there is not enough memory
-        call iluk_symbfac2f90(n  , colind    ,rwptr     ,s      ,isize ,nzlu ,&
+        call iluk_symbfac(n  , colind    ,rwptr     ,s      ,isize ,nzlu ,&
              ph_jlu   ,ph_ilup, ph_lastcol, ph_levels, ph_rowll, &
              ierr  ,mneed)
 
@@ -610,13 +408,13 @@ contains
           
           ! the pointers are lost after reallocation so get them back
           call storage_getbase_int(h_levels, ph_levels)
-          !
+          
           call storage_getbase_int(rILUDecomp%h_jlu, ph_jlu)
         else
           exit
         end if
         
-      end do ! end do while(true)
+      end do ! end do while
 
       ! here we can throw away unneccessary arrays
       call storage_free(h_levels)
@@ -629,11 +427,14 @@ contains
       call storage_getbase_int( rILUDecomp%h_jlu, ph_jlu)    
 !     -----------------------------------------------------------------
 !     Check to see if enough space is available for the lu factorization.
-!     The partitioning of the integer*4 work array is as:
+!     The partitioning of the work arrays is as:
 !
-!        [ilup   jlu           LU        colptrs],
-!        [-n-----nzlu-----intdbl*nzlu-------n---]
+!     ilup    = integer, dimension(n)
+!     jlu     = integer, dimension(nzlu)
+!     lu      = double precision, dimension(nzlu)
+!     colptrs = integer, dimension(n)
 !
+!     Note: The new implementation does not write
 !     -----------------------------------------------------------------
 
       ! Symbolic factorization is done
@@ -652,7 +453,7 @@ contains
 !     --------------------------------
 !     Perform numerical factorization.
 !     --------------------------------
-      call iluk_numfac2f90(n, colind, rwptr, ph_jlu,ph_ilup, a, &
+      call iluk_numfac(n, colind, rwptr, ph_jlu,ph_ilup, a, &
                    ph_lu,relax, ierr, ph_colptrs, milu)
       
       ! store these parameters to handle the memory mangement
@@ -667,7 +468,7 @@ contains
 !======================================================================== 
 
 !<subroutine>
-      subroutine  iluk_numfac2f90(n, colind,rwptr,  jlu, uptr, a, lu,&
+      subroutine  iluk_numfac(n, colind,rwptr,  jlu, uptr, a, lu,&
                   relax, ierr, colptrs, milu)
 
 !<description>
@@ -960,11 +761,15 @@ contains
 !     Declaration of arguments
 !     ------------------------
       integer :: n
-      integer, dimension(:), pointer :: colind, rwptr, jlu, uptr
-      real(dp), dimension(:), pointer :: a, lu
-      real(dp) :: relax
-      integer, dimension(:), pointer ::  colptrs
-      integer :: ierr, nrw
+      integer, dimension(:), intent(in) :: colind,rwptr, jlu, uptr
+      real(dp), dimension(:), intent(in) :: a
+      real(dp), dimension(:), intent(out) :: lu
+      real(dp), intent(in) :: relax
+      integer, dimension(:), intent(out) ::  colptrs
+      integer, intent(inout) :: ierr
+      
+      ! local variables
+      integer :: nrw
       
 !     ---------------
 !     Functions used
@@ -1001,14 +806,14 @@ contains
 !     ------------------
 !     Proceed row by row
 !     ------------------
-      do 200 k = 1, n
+      do k = 1, n
 
 !        --------------------------------------------------------------
 !        Set up colptrs with indices in lu of allowed nonzeros of row k
 !        --------------------------------------------------------------
          do indj = jlu(k), jlu(k+1)-1
             colptrs(jlu(indj)) = indj
-            lu(indj) = 0.0d0
+            lu(indj) = 0.0_dp
          end do
 
 !        ---------------------------------------------------------
@@ -1021,7 +826,7 @@ contains
 !        can be removed if it is known that the sparsity pattern of A
 !        is contained in that of LU, which is the case for (M)ILU(s).
 !        ----------------------------------------------------------------
-         rwnrm = 0.0d0
+         rwnrm = 0.0_dp
          nrw = 0
          do indja = rwptr(k), rwptr(k+1)-1
             ijaj = colind(indja)
@@ -1045,7 +850,7 @@ contains
 !            U(k,k:n) = A(k,k:n) - U(1:k-1,k:n)*L(k,1:k-1)
 !        -------------------------------------------------------------------
 
-         do 100 indj = jlu(k), uptr(k)-1
+         do indj = jlu(k), uptr(k)-1
 
 
 !           -----------------------------------------------------------
@@ -1086,7 +891,7 @@ contains
               end do
             end if
 
- 100     continue
+         end do ! indj
 
 
 !        ----------------------------------------------------------
@@ -1104,9 +909,9 @@ contains
 !            ierr = -k
 !            return
          end if
-         lu(k) = 1.0d0/lu(k)
+         lu(k) = 1.0_dp/lu(k)
 
- 200  continue
+      end do ! k
 
       ierr  = 0
       return
@@ -1187,254 +992,106 @@ contains
                               else
                                     icn   =  5
       end if
-      do 40 ii = 1, icn
-            ih = iinc(icn + 1 - ii)
-            do 30  j = ih+1, num
-                  i = j-ih
-                  key = q(j)
-                  do 10 jj = 1, j-ih, ih
-                        if (key .ge. q(i)) then
-                              go to 20
-                        else
-                              q(i + ih) = q(i)
-                              i = i - ih
-                        end if
- 10               continue
- 20               continue
-                  q(i + ih) = key
- 30         continue
- 40   continue
+      do ii = 1, icn
+        ih = iinc(icn + 1 - ii)
+        do j = ih+1, num
+          i = j-ih
+          key = q(j)
+          do jj = 1, j-ih, ih
+            if (key .ge. q(i)) then
+                  exit
+            else
+                  q(i + ih) = q(i)
+                  i = i - ih
+            end if
+          end do
+          q(i + ih) = key
+        end do
+      end do
  
       end subroutine
       
       
 !======================================================================== 
 
-!<subroutine>
-      subroutine iluk_symbfac2f90(n     ,colind,rwptr  ,levfill,nzmax  ,nzlu, &
-                        ijlu  ,uptr   ,lastcol,levels ,rowll  , &
-                        ierr  ,mneed)
-!<description>
 !**********************************************************************
 !                   SPLIB Copyright (C) 1995                         **
 !                     Indiana University                             **
-!
-!
 !**********************************************************************
 
-!======================================================================== 
-!======================================================================== 
-!                                                                      	*
-!  Symbolic factorization of a matrix in compressed sparse row format, 	*
-!    with resulting factors stored in a single MSR data structure.     	*
-!                                                                      	*
-!  This routine uses the CSR data structure of A in two integer*4 vectors	*
-!    colind, rwptr to set up the data structure for the ILU(levfill) 	*
-!    factorization of A in the integer*4 vectors ijlu and uptr.  Both L	*
-!    and U are stored in the same structure, and uptr(i) is the pointer	*
-!    to the beginning of the i-th row of U in ijlu.			*
-!                                                                      	*
-!  The algorithm was originally part of pcgpack, and has been		*
-!    modified and adapted for SPLIB.  Most of the changes have been	*
-!    documentation and explanation of what is going on.			*
-!                                                                      	*
-!======================================================================== 
-!                                                                      	*
-!    Method Used                                                       	*
-!    ===========                                                      	*
-!                                                                      	*
-!  The implementation assumes that the diagonal entries are		*
-!  nonzero, and remain nonzero throughout the elimination		*
-!  process.  The algorithm proceeds row by row.  When computing		*
-!  the sparsity pattern of the i-th row, the effect of row		*
-!  operations from previous rows is considered.  Only those		*
-!  preceding rows j for which (i,j) is nonzero need be considered,	*
-!  since otherwise we would not have formed a linear combination	*
-!  of rows i and j.							*
-!                                                                      	*
-!  The method used has some variations possible.  The definition	*
-!  of ILU(s) is not well specified enough to get a factorization	*
-!  that is uniquely defined, even in the sparsity pattern that		*
-!  results.  For s = 0 or 1, there is not much variation, but for	*
-!  higher levels of fill the problem is as follows:  Suppose		*
-!  during the decomposition while computing the nonzero pattern		*
-!  for row i the following principal submatrix is obtained:		*
-!       _______________________						*
-!       |          |           |					*
-!       |          |           |					*
-!       |  j,j     |    j,k    |					*
-!       |          |           |					*
-!       |__________|___________|					*
-!       |          |           |					*
-!       |          |           |					*
-!       |  i,j     |    i,k    |					*
-!       |          |           |					*
-!       |__________|___________|					*
-!  									*
-!  Furthermore, suppose that entry (i,j) resulted from an earlier	*
-!  fill-in and has level s1, and (j,k) resulted from an earlier		*
-!  fill-in and has level s2:						*
-!       _______________________						*
-!       |          |           |					*
-!       |          |           |					*
-!       | level 0  | level s2  |					*
-!       |          |           |					*
-!       |__________|___________|					*
-!       |          |           |					*
-!       |          |           |					*
-!       | level s1 |           |					*
-!       |          |           |					*
-!       |__________|___________|					*
-!  									*
-!  When using A(j,j) to annihilate A(i,j), fill-in will be incurred	*
-!  in A(i,k).  How should its level be defined?  It would not be	*
-!  operated on if A(i,j) or A(j,m) had not been filled in.  The 	*
-!  version used here is to define its level as s1 + s2 + 1.  However,	*
-!  other reasonable choices would have been min(s1,s2) or max(s1,s2).	*
-!  Using the sum gives a more conservative strategy in terms of the	*
-!  growth of the number of nonzeros as s increases.			*
-!  									*
-!  levels(n+2:nzlu    ) stores the levels from previous rows,		*
-!  that is, the s2's above.  levels(1:n) stores the fill-levels		*
-!  of the current row (row i), which are the s1's above.		*
-!  levels(n+1) is not used, so levels is conformant with MSR format.	*
-!  									*
-!  Vectors used:							*
-!  =============							*
-!  									*
-!  lastcol(n):								*
-!  	The integer*4 lastcol(k) is the row index of the last row		*
-!  	to have a nonzero in column k, including the current		*
-!  	row, and fill-in up to this point.  So for the matrix		*
-!  									*
-!             |--------------------------|				*
-!             | 11   12           15     |				*
-!             | 21   22                26|				*
-!             |      32  33   34         |				*
-!             | 41       43   44         |				*
-!             |      52       54  55   56|				*
-!             |      62                66|				*
-!             ---------------------------				*
-!  									*
-!             after step 1, lastcol() = [1  0  0  0  1  0]		*
-!             after step 2, lastcol() = [2  2  0  0  2  2]		*
-!             after step 3, lastcol() = [2  3  3  3  2  3]		*
-!             after step 4, lastcol() = [4  3  4  4  4  3]		*
-!             after step 5, lastcol() = [4  5  4  5  5  5]		*
-!             after step 6, lastcol() = [4  6  4  5  5  6]		*
-!									*  
-!          Note that on step 2, lastcol(5) = 2 because there is a	*
-!          fillin position (2,5) in the matrix.  lastcol() is used	*
-!   	to determine if a nonzero occurs in column j because		*
-!   	it is a nonzero in the original matrix, or was a fill.		*
-!									*  
-!  rowll(n):								*
-!  	The integer*4 vector rowll is used to keep a linked list of	*
-!  	the nonzeros in the current row, allowing fill-in to be		*
-!   	introduced sensibly.  rowll is initialized with the		*
-!  	original nonzeros of the current row, and then sorted		*
-!  	using a shell sort.  A pointer called head         		*
-!  	(what ingenuity) is  initialized.  Note that at any		*
-!  	point rowll may contain garbage left over from previous		*
-!  	rows, which the linked list structure skips over.		*
-!  	For row 4 of the matrix above, first rowll is set to		*
-!   	rowll() = [3  1  2  5  -  -], where - indicates any integer*4.	*
-!   	Then the vector is sorted, which yields				*
-!   	rowll() = [1  2  3  5  -  -].  The vector is then expanded	*
-!  	to linked list form by setting head = 1  and         		*
-!   	rowll() = [2  3  5  -  7  -], where 7 indicates termination.	*
-!									*  
-!  ijlu(nzlu):								*
-!  	The returned nonzero structure for the LU factors.		*
-!  	This is built up row by row in MSR format, with both L		*
-!  	and U stored in the data structure.  Another vector, uptr(n),	*
-!  	is used to give pointers to the beginning of the upper		*
-!  	triangular part of the LU factors in ijlu.			*
-!									*  
-!  levels(n+2:nzlu):							*
-!  	This vector stores the fill level for each entry from		*
-!  	all the previous rows, used to compute if the current entry	*
-!  	will exceed the allowed levels of fill.  The value in		*
-!  	levels(m) is added to the level of fill for the element in	*
-!   	the current row that is being reduced, to figure if 		*
-!  	a column entry is to be accepted as fill, or rejected.		*
-!  	See the method explanation above.				*
-!									*  
-!  levels(1:n):								*
-!  	This vector stores the fill level number for the current	*
-!  	row's entries.  If they were created as fill elements		*
-!  	themselves, this number is added to the corresponding		*
-!  	entry in levels(n+2:nzlu) to see if a particular column		*
-!       entry will							*
-!  	be created as new fill or not.  NOTE: in practice, the		*
-!  	value in levels(1:n) is one larger than the "fill" level of	*
-!  	the corresponding row entry, except for the diagonal		*
-!  	entry.  That is why the accept/reject test in the code		*
-!  	is "if (levels(j) + levels(m) .le. levfill + 1)".		*
-!									*  
-!======================================================================== 
-!									*
-!     31 December 1993							*
-!     Randall Bramley							*
-!     Department of Computer Science					*
-!     Indiana University						*
-!     email: bramley@cs.indiana.edu					*
-!     Wed Jul 12 15:50:08 EST 1995					*
-!									*
-!======================================================================== 
-!======================================================================== 
-!
-! on entry:
-!========== 
-!  n       = The order of the matrix A.
-!  ija     = integer*4 array. Matrix A stored in modified sparse row format.
-!  levfill = integer*4. Level of fill-in allowed.
-!  nzmax   = integer*4. The maximum number of nonzero entries in the
-!           approximate factorization of a.  This is the amount of storage
-!           allocated for ijlu.
-!
-! on return:
-!=========== 
-!
-! nzlu   = The actual number of entries in the approximate factors, plus one.
-! ijlu   = integer*4 array of length nzlu containing pointers to 
-!           delimit rows and specify column number for stored 
-!           elements of the approximate factors of a.  the l 
-!           and u factors are stored as one matrix.
-! uptr   = integer*4 array of length n containing the pointers to        
-!
-! ierr is an error flag:
-!        ierr  = -i --> near zero pivot in step i
-!        ierr  = 0  --> all's OK
-!        ierr  = 1  --> not enough storage; check mneed.
-!        ierr  = 2  --> illegal parameter
-!
-! mneed   = contains the actual number of elements in ldu, or the amount
-!		of additional storage needed for ldu
-!
-! work arrays:
-!=============
-! lastcol    = integer*4 array of length n containing last update of the
-!              corresponding column.
-! levels     = integer*4 array of length n containing the level of
-!              fill-in in current row in its first n entries, and
-!              level of fill of previous rows of U in remaining part.
-! rowll      = integer*4 array of length n containing pointers to implement a
-!              linked list for the fill-in elements.
-!
-!
-! external functions:
-!====================
-! ifix, float, min0, iluk_srtr
-!
-!======================================================================== 
-
+!<subroutine>
+  subroutine iluk_symbfac(n     ,colind,rwptr  ,levfill,nzmax  ,nzlu, &
+                        ijlu  ,uptr   ,lastcol,levels ,rowll  , &
+                        ierr  ,mneed)
+  !<description>
+  !  Symbolic factorization of a matrix in compressed sparse row format, 
+  !    with resulting factors stored in a single MSR data structure.     
+  !                                                                      
+  !  This routine uses the CSR data structure of A in two integer*4 vectors
+  !    colind, rwptr to set up the data structure for the ILU(levfill) 
+  !    factorization of A in the integer*4 vectors ijlu and uptr.  Both L
+  !    and U are stored in the same structure, and uptr(i) is the pointer
+  !    to the beginning of the i-th row of U in ijlu.		
+  !                                                                      
+  !  The algorithm was originally part of pcgpack, and has been	
+  !    modified and adapted for SPLIB.  Most of the changes have been
+  !    documentation and explanation of what is going on.		
 !</description>
 
-      integer :: n, levfill,nzmax,nzlu
-      integer, dimension(:), pointer :: colind,rwptr,ijlu,uptr
-      integer, dimension(:), pointer :: rowll, lastcol,levels
-      integer ::  ierr,   mneed
+  !<input>
+      ! The order of the matrix A.
+      integer(I32), intent(in) :: n
+      
+      ! Column pattern of the matrix to be factorised, in CSR format.
+      integer, dimension(:), intent(in) :: colind
+      
+      ! Row pattern of the matrix to be factorised, in CSR format.
+      integer, dimension(:), intent(in) :: rwptr
+
+      ! Level of fill-in allowed.
+      integer(I32), intent(in) :: levfill
+      
+      ! The maximum number of nonzero entries in the
+      ! approximate factorization of a.  This is the amount of storage
+      ! allocated for ijlu.
+      integer(I32), intent(in) :: nzmax
+      
+    !</input>
+      
+    !<output>
+      ! The actual number of entries in the approximate factors, plus one.
+      integer(I32), intent(out) :: nzlu
+
+      ! MSR structure arrays for the factorised matrix.
+      integer(I32), dimension(:), intent(out) :: ijlu,uptr
+      
+      ! ierr is an error flag:
+      !        ierr  = -i --> near zero pivot in step i.
+      !        ierr  = 0  --> all's OK.
+      !        ierr  = 1  --> not enough storage; check mneed.
+      !        ierr  = 2  --> illegal parameter.
+      integer, intent(out) ::  ierr
+      
+      ! Contains the actual number of elements in ldu, or the amount
+      ! of additional storage needed for ldu
+      integer(I32), intent(out) ::  mneed
+    !</output>
+    
+    !<inputoutput>
+      ! Temporary array. Array of length n containing pointers to implement a
+      ! linked list for the fill-in elements.
+      integer, dimension(:), intent(inout) :: rowll
+      
+      ! Temporary array. Array of length n containing last update of the
+      ! corresponding column.
+      integer, dimension(:), intent(inout) :: lastcol
+      
+      ! Temporary array. Array of length n containing the level of
+      ! fill-in in current row in its first n entries, and
+      ! level of fill of previous rows of U in remaining part.
+      integer, dimension(:), intent(inout) :: levels
+    !</inputoutput>
+      
 !</subroutine>
 
       ! local variables      
@@ -1442,355 +1099,493 @@ contains
       
       integer :: head,prev,lm,actlev,lowct,k1,k2,levp1,lmk,nzi,rowct
 
-!======================================================================== 
-!       Beginning of Executable Statements
-!======================================================================== 
+  !    Method Used                                                       
+  !    ===========                                                      
+  !                                                                      
+  !  The implementation assumes that the diagonal entries are	
+  !  nonzero, and remain nonzero throughout the elimination	
+  !  process.  The algorithm proceeds row by row.  When computing	
+  !  the sparsity pattern of the i-th row, the effect of row	
+  !  operations from previous rows is considered.  Only those	
+  !  preceding rows j for which (i,j) is nonzero need be considered,
+  !  since otherwise we would not have formed a linear combination
+  !  of rows i and j.						
+  !                                                                      
+  !  The method used has some variations possible.  The definition
+  !  of ILU(s) is not well specified enough to get a factorization
+  !  that is uniquely defined, even in the sparsity pattern that	
+  !  results.  For s = 0 or 1, there is not much variation, but for
+  !  higher levels of fill the problem is as follows:  Suppose	
+  !  during the decomposition while computing the nonzero pattern	
+  !  for row i the following principal submatrix is obtained:	
+  !       _______________________					
+  !       |          |           |				
+  !       |          |           |				
+  !       |  j,j     |    j,k    |				
+  !       |          |           |				
+  !       |__________|___________|				
+  !       |          |           |				
+  !       |          |           |				
+  !       |  i,j     |    i,k    |				
+  !       |          |           |				
+  !       |__________|___________|				
+  !  								
+  !  Furthermore, suppose that entry (i,j) resulted from an earlier
+  !  fill-in and has level s1, and (j,k) resulted from an earlier	
+  !  fill-in and has level s2:					
+  !       _______________________					
+  !       |          |           |				
+  !       |          |           |				
+  !       | level 0  | level s2  |				
+  !       |          |           |				
+  !       |__________|___________|				
+  !       |          |           |				
+  !       |          |           |				
+  !       | level s1 |           |				
+  !       |          |           |				
+  !       |__________|___________|				
+  !  								
+  !  When using A(j,j) to annihilate A(i,j), fill-in will be incurred
+  !  in A(i,k).  How should its level be defined?  It would not be
+  !  operated on if A(i,j) or A(j,m) had not been filled in.  The 
+  !  version used here is to define its level as s1 + s2 + 1.  However,
+  !  other reasonable choices would have been min(s1,s2) or max(s1,s2).
+  !  Using the sum gives a more conservative strategy in terms of the
+  !  growth of the number of nonzeros as s increases.		
+  !  								
+  !  levels(n+2:nzlu    ) stores the levels from previous rows,	
+  !  that is, the s2's above.  levels(1:n) stores the fill-levels	
+  !  of the current row (row i), which are the s1's above.	
+  !  levels(n+1) is not used, so levels is conformant with MSR format.
+  !  								
+  !  Vectors used:						
+  !  =============						
+  !  								
+  !  lastcol(n):							
+  !  	The integer*4 lastcol(k) is the row index of the last row	
+  !  	to have a nonzero in column k, including the current	
+  !  	row, and fill-in up to this point.  So for the matrix	
+  !  								
+  !             |--------------------------|			
+  !             | 11   12           15     |			
+  !             | 21   22                26|			
+  !             |      32  33   34         |			
+  !             | 41       43   44         |			
+  !             |      52       54  55   56|			
+  !             |      62                66|			
+  !             ---------------------------			
+  !  								
+  !             after step 1, lastcol() = [1  0  0  0  1  0]	
+  !             after step 2, lastcol() = [2  2  0  0  2  2]	
+  !             after step 3, lastcol() = [2  3  3  3  2  3]	
+  !             after step 4, lastcol() = [4  3  4  4  4  3]	
+  !             after step 5, lastcol() = [4  5  4  5  5  5]	
+  !             after step 6, lastcol() = [4  6  4  5  5  6]	
+  !								  
+  !          Note that on step 2, lastcol(5) = 2 because there is a
+  !          fillin position (2,5) in the matrix.  lastcol() is used
+  !   	to determine if a nonzero occurs in column j because	
+  !   	it is a nonzero in the original matrix, or was a fill.	
+  !								  
+  !  rowll(n):							
+  !  	The integer*4 vector rowll is used to keep a linked list of
+  !  	the nonzeros in the current row, allowing fill-in to be	
+  !   	introduced sensibly.  rowll is initialized with the	
+  !  	original nonzeros of the current row, and then sorted	
+  !  	using a shell sort.  A pointer called head         	
+  !  	(what ingenuity) is  initialized.  Note that at any	
+  !  	point rowll may contain garbage left over from previous	
+  !  	rows, which the linked list structure skips over.	
+  !  	For row 4 of the matrix above, first rowll is set to	
+  !   	rowll() = [3  1  2  5  -  -], where - indicates any integer*4.
+  !   	Then the vector is sorted, which yields			
+  !   	rowll() = [1  2  3  5  -  -].  The vector is then expanded
+  !  	to linked list form by setting head = 1  and         	
+  !   	rowll() = [2  3  5  -  7  -], where 7 indicates termination.
+  !								  
+  !  ijlu(nzlu):							
+  !  	The returned nonzero structure for the LU factors.	
+  !  	This is built up row by row in MSR format, with both L	
+  !  	and U stored in the data structure.  Another vector, uptr(n),
+  !  	is used to give pointers to the beginning of the upper	
+  !  	triangular part of the LU factors in ijlu.		
+  !								  
+  !  levels(n+2:nzlu):						
+  !  	This vector stores the fill level for each entry from	
+  !  	all the previous rows, used to compute if the current entry
+  !  	will exceed the allowed levels of fill.  The value in	
+  !  	levels(m) is added to the level of fill for the element in
+  !   	the current row that is being reduced, to figure if 	
+  !  	a column entry is to be accepted as fill, or rejected.	
+  !  	See the method explanation above.			
+  !								  
+  !  levels(1:n):							
+  !  	This vector stores the fill level number for the current
+  !  	row's entries.  If they were created as fill elements	
+  !  	themselves, this number is added to the corresponding	
+  !  	entry in levels(n+2:nzlu) to see if a particular column	
+  !       entry will						
+  !  	be created as new fill or not.  NOTE: in practice, the	
+  !  	value in levels(1:n) is one larger than the "fill" level of
+  !  	the corresponding row entry, except for the diagonal	
+  !  	entry.  That is why the accept/reject test in the code	
+  !  	is "if (levels(j) + levels(m) .le. levfill + 1)".	
+  !								  
+  !======================================================================== 
+  !								
+  !     31 December 1993						
+  !     Randall Bramley						
+  !     Department of Computer Science				
+  !     Indiana University					
+  !     email: bramley@cs.indiana.edu				
+  !     Wed Jul 12 15:50:08 EST 1995				
+  !								
+  !======================================================================== 
+
+  !======================================================================== 
+  !       Beginning of Executable Statements
+  !======================================================================== 
 
 
-!     --------------------------------------------------------------
-!     Because the first row of the factor contains no strictly lower
-!     triangular parts (parts of L), uptr(1) = ijlu(1) = n+2:
-!     --------------------------------------------------------------
-     ijlu(1)  =  n+2
-     uptr(1)  =  n+2
+    ! --------------------------------------------------------------
+    ! Because the first row of the factor contains no strictly lower
+    ! triangular parts (parts of L), uptr(1) = ijlu(1) = n+2:
+    ! --------------------------------------------------------------
+    ijlu(1)  =  n+2
+    uptr(1)  =  n+2
 
-!     --------------------------------------------------------
-!     The storage for the nonzeros of LU must be at least n+1, 
-!     for a diagonal matrix:
-!     --------------------------------------------------------
-     nzlu     =  n+1
+    ! --------------------------------------------------------
+    ! The storage for the nonzeros of LU must be at least n+1, 
+    ! for a diagonal matrix:
+    ! --------------------------------------------------------
+    nzlu     =  n+1
 
-!     --------------------------------------------------------------------
-!     Number of allowed levels plus 1; used for the test of accept/reject.
-!     See the notes about the methodology above.
-!     --------------------------------------------------------------------
-     levp1    =  levfill + 1
+    ! --------------------------------------------------------------------
+    ! Number of allowed levels plus 1; used for the test of accept/reject.
+    ! See the notes about the methodology above.
+    ! --------------------------------------------------------------------
+    levp1    =  levfill + 1
 
-!     -------------------------------------------------------------
-!     Initially, for all columns there were no nonzeros in the rows
-!     above, because there are no rows above the first one.
-!     -------------------------------------------------------------
-!     do i = 1,n
-!       lastcol(i) = 0
-!     end do
+    ! -------------------------------------------------------------
+    ! Initially, for all columns there were no nonzeros in the rows
+    ! above, because there are no rows above the first one.
+    ! -------------------------------------------------------------
+    ! do i = 1,n
+      ! lastcol(i) = 0
+    ! end do
 
-!     -------------------
-!     Proceed row by row:
-!     -------------------
+    ! -------------------
+    ! Proceed row by row:
+    ! -------------------
 
-     do 100 i = 1,n
+     do i = 1,n
 
-!       ----------------------------------------------------------
-!       Because the matrix diagonal entry is nonzero, the level of
-!       fill for that diagonal entry is zero:
-!       ----------------------------------------------------------
-       levels(i) = 0
+      ! ----------------------------------------------------------
+      ! Because the matrix diagonal entry is nonzero, the level of
+      ! fill for that diagonal entry is zero:
+      ! ----------------------------------------------------------
+      levels(i) = 0
 
-!       ----------------------------------------------------------
-!       ibegin and iend are the beginning of rows i and i+1, resp.
-!       ----------------------------------------------------------
-       ibegin    =  rwptr(i)
-       iend    =  rwptr(i+1)
+      ! ----------------------------------------------------------
+      ! ibegin and iend are the beginning of rows i and i+1, resp.
+      ! ----------------------------------------------------------
+      ibegin    =  rwptr(i)
+      iend    =  rwptr(i+1)
 
-!       -------------------------------------------------------------
-!       Number of offdiagonal nonzeros in the original matrix's row i
-!       -------------------------------------------------------------
-     	nzi   =  iend - ibegin
+      ! -------------------------------------------------------------
+      ! Number of offdiagonal nonzeros in the original matrix's row i
+      ! -------------------------------------------------------------
+      nzi   =  iend - ibegin
 
-!       --------------------------------------------------------
-!       If only the diagonal entry in row i is nonzero, skip the
-!       fancy stuff; nothing need be done:
-!       --------------------------------------------------------
-     	if (nzi .gt. 1) then
+      ! --------------------------------------------------------
+      ! If only the diagonal entry in row i is nonzero, skip the
+      ! fancy stuff; nothing need be done:
+      ! --------------------------------------------------------
+      if (nzi .gt. 1) then
 
-!           ----------------------------------------------------------
-!           Decrement iend, so that it can be used as the ending index
-!           in icolind of row i:
-!           ----------------------------------------------------------
-           iend          =  iend - 1
+        ! ----------------------------------------------------------
+        ! Decrement iend, so that it can be used as the ending index
+        ! in icolind of row i:
+        ! ----------------------------------------------------------
+        iend          =  iend - 1
 
-!           ---------------------------------------------------------
-!           rowct keeps count of the number of nondiagonal entries in
-!           the current row:
-!           ---------------------------------------------------------
-           rowct          =  0
+        ! ---------------------------------------------------------
+        ! rowct keeps count of the number of nondiagonal entries in
+        ! the current row:
+        ! ---------------------------------------------------------
+        rowct          =  0
 
-!           ------------------------------------------------------------
-!           For nonzeros in the current row from the original matrix A,
-!           set lastcol to be the current row number, and the levels of
-!           the entry to be 1.  Note that this is really the true level
-!           of the element, plus 1.  At the same time, load up the work
-!           array rowll with the column numbers for the original entries
-!           from row i:
-!           ------------------------------------------------------------
-            do j = ibegin, iend
-               icolindj           =  colind(j)
-               lastcol(icolindj)  =  i
-               if (icolindj .ne. i) then
-                  levels(icolindj)   =  1
-                  rowct          =  rowct + 1
-                  rowll(rowct)   =  icolindj
-               end if
-            end do
+        ! ------------------------------------------------------------
+        ! For nonzeros in the current row from the original matrix A,
+        ! set lastcol to be the current row number, and the levels of
+        ! the entry to be 1.  Note that this is really the true level
+        ! of the element, plus 1.  At the same time, load up the work
+        ! array rowll with the column numbers for the original entries
+        ! from row i:
+        ! ------------------------------------------------------------
+        do j = ibegin, iend
+          icolindj           =  colind(j)
+          lastcol(icolindj)  =  i
+          if (icolindj .ne. i) then
+            levels(icolindj)   =  1
+            rowct          =  rowct + 1
+            rowll(rowct)   =  icolindj
+          end if
+        end do
 
-!           ---------------------------------------------------------
-!           Sort the entries in rowll, so that the row has its column
-!           entries in increasing order.
-!           ---------------------------------------------------------
-            call iluk_srtr(nzi-1,rowll)
+        ! ---------------------------------------------------------
+        ! Sort the entries in rowll, so that the row has its column
+        ! entries in increasing order.
+        ! ---------------------------------------------------------
+        call iluk_srtr(nzi-1,rowll)
 
-!           ---------------------------------------------------------
-!           Now set up rowll as a linked list containing the original
-!           nonzero column numbers, as described in the methods section:
-!           ---------------------------------------------------------
-            head  =  rowll(1)
-            k1    =  n+1
-            do j = nzi-1, 1, -1
-               k2        =  rowll(j)
-               rowll(k2) =  k1
-               k1        = k2
-            end do
+        ! ---------------------------------------------------------
+        ! Now set up rowll as a linked list containing the original
+        ! nonzero column numbers, as described in the methods section:
+        ! ---------------------------------------------------------
+        head  =  rowll(1)
+        k1    =  n+1
+        do j = nzi-1, 1, -1
+          k2        =  rowll(j)
+          rowll(k2) =  k1
+          k1        = k2
+        end do
 
-!           ------------------------------------------------------------
-!           Increment count of nonzeros in the LU factors by the number
-!           of nonzeros in the original matrix's row i.  Further
-!           incrementing will be necessary if any fill-in actually occurs
-!           ------------------------------------------------------------
-            nzlu  =  nzlu + nzi - 1
+        ! ------------------------------------------------------------
+        ! Increment count of nonzeros in the LU factors by the number
+        ! of nonzeros in the original matrix's row i.  Further
+        ! incrementing will be necessary if any fill-in actually occurs
+        ! ------------------------------------------------------------
+        nzlu  =  nzlu + nzi - 1
 
-!           ------------------------------------------------------------
-!           The integer*4 j will be used as a pointer to track through the
-!           linked list rowll:
-!           ------------------------------------------------------------
-            j  =  head
-!
-!           ------------------------------------------------------------
-!           The integer*4 lowct is used to keep count of the number of
-!           nonzeros in the current row's strictly lower triangular part,
-!           for setting uptr pointers to indicate where in ijlu the upperc
-!           triangular part starts. 
-!           ------------------------------------------------------------
-            lowct =  0
+        ! ------------------------------------------------------------
+        ! The integer*4 j will be used as a pointer to track through the
+        ! linked list rowll:
+        ! ------------------------------------------------------------
+        j  =  head
 
-!           ------------------------------------------------------------
-!           Fill-in could only have resulted from rows preceding row i,
-!           so we only need check those rows with index j < i.
-!           Furthermore, if the current row has a zero in column j,
-!           there is no need to check the preceding rows; there clearly
-!           could not be any fill-in from those rows to this entry.
-!           ------------------------------------------------------------
-            do 80 while (j .lt. i)
+        ! ------------------------------------------------------------
+        ! The integer*4 lowct is used to keep count of the number of
+        ! nonzeros in the current row's strictly lower triangular part,
+        ! for setting uptr pointers to indicate where in ijlu the upperc
+        ! triangular part starts. 
+        ! ------------------------------------------------------------
+        lowct =  0
 
-!c              ------------------------------------------------------------
-!c              Increment lower triangular part count, since in this case
-!c              (j<i) we got another entry in L:
-!c              ------------------------------------------------------------
-               lowct = lowct  + 1
+        ! ------------------------------------------------------------
+        ! Fill-in could only have resulted from rows preceding row i,
+        ! so we only need check those rows with index j < i.
+        ! Furthermore, if the current row has a zero in column j,
+        ! there is no need to check the preceding rows; there clearly
+        ! could not be any fill-in from those rows to this entry.
+        ! ------------------------------------------------------------
+        do while (j .lt. i)
 
-!              ---------------------------------------------------------
-!              If the fill level is zero, there is no way to get fill in
-!              occuring.  
-!              ---------------------------------------------------------
-               if (levfill .ne. 0) then
+        !    ------------------------------------------------------------
+        !    Increment lower triangular part count, since in this case
+        !    (j<i) we got another entry in L:
+        !    ------------------------------------------------------------
+             lowct = lowct  + 1
 
-!                 -----------------------------------------------------
-!                 Ujbeg is beginning index of strictly upper triangular
-!                 part of U's j-th row, and Ujend is the ending index
-!                 of it, in ijlu().
-!                 -----------------------------------------------------
-                  Ujbeg = uptr(j)
-                  Ujend = ijlu(j+1) - 1
+        !    ---------------------------------------------------------
+        !    If the fill level is zero, there is no way to get fill in
+        !    occuring.  
+        !    ---------------------------------------------------------
+             if (levfill .ne. 0) then
 
-!                 -----------------------------------------------------
-!                 Need to set pointer to previous entry before working
-!                 segment of rowll, because if fill occurs that will be
-!                 a moving segment.
-!                 -----------------------------------------------------
-                  prev  =  j
+        !       -----------------------------------------------------
+        !       Ujbeg is beginning index of strictly upper triangular
+        !       part of U's j-th row, and Ujend is the ending index
+        !       of it, in ijlu().
+        !       -----------------------------------------------------
+                Ujbeg = uptr(j)
+                Ujend = ijlu(j+1) - 1
 
-!                 -----------------------------------------------------
-!                 lm is the next nonzero pointer in linked list rowll:
-!                 -----------------------------------------------------
-                  lm    =  rowll(j)
+        !       -----------------------------------------------------
+        !       Need to set pointer to previous entry before working
+        !       segment of rowll, because if fill occurs that will be
+        !       a moving segment.
+        !       -----------------------------------------------------
+                prev  =  j
 
-!                 -------------------------------------------------------
-!                 lmk is the fill level in this row, caused by
-!                 eliminating column entry j.  That is, level s1 from the
-!                 methodology explanation above.
-!                 -------------------------------------------------------
-                  lmk   =  levels(j)
+        !       -----------------------------------------------------
+        !       lm is the next nonzero pointer in linked list rowll:
+        !       -----------------------------------------------------
+                lm    =  rowll(j)
 
-!                 -------------------------------------------------------
-!                 Now proceed through the j-th row of U, because in the
-!                 elimination we add a multiple of it to row i to zero
-!                 out entry (i,j).  If a column entry in row j of U is
-!                 zero, there is no need to worry about fill, because it
-!                 cannot cause a fill in the corresponding entry of row i
-!                 -------------------------------------------------------
-                  do 60  m = Ujbeg, Ujend
+        !       -------------------------------------------------------
+        !       lmk is the fill level in this row, caused by
+        !       eliminating column entry j.  That is, level s1 from the
+        !       methodology explanation above.
+        !       -------------------------------------------------------
+                lmk   =  levels(j)
 
-!                    ----------------------------------------------------
-!                    ijlum is the column number of the current nonzero in
-!                    row j of U:
-!                    ----------------------------------------------------
-                     ijlum =  ijlu(m)
-!
-!                    ---------------------------------------------------
-!                    actlev is the actual level (plus 1) of column entry
-!                    j in row i, from summing the level contributions
-!                    s1 and s2 as explained in the methods section.
-!                    Note that the next line could reasonably be
-!                    replaced by, e.g., actlev = max(lmk, levels(m)),
-!                    but this would cause greater fill-in:
-!                    ---------------------------------------------------
-                     actlev = lmk + levels(m)
+        !       -------------------------------------------------------
+        !       Now proceed through the j-th row of U, because in the
+        !       elimination we add a multiple of it to row i to zero
+        !       out entry (i,j).  If a column entry in row j of U is
+        !       zero, there is no need to worry about fill, because it
+        !       cannot cause a fill in the corresponding entry of row i
+        !       -------------------------------------------------------
+                do m = Ujbeg, Ujend
 
-!                    ---------------------------------------------------
-!                    If lastcol of the current column entry in U is not
-!                    equal to the current row number i, then the current
-!                    row has a zero in column j, and the earlier row j
-!                    in U has a nonzero, so possible fill can occur.
-!                    ---------------------------------------------------
-                     if (lastcol(ijlum) .ne. i) then
+        !          ----------------------------------------------------
+        !          ijlum is the column number of the current nonzero in
+        !          row j of U:
+        !          ----------------------------------------------------
+                   ijlum =  ijlu(m)
 
-!                    --------------------------------------------------
-!                    If actlev < levfill + 1, then the new entry has an
-!                    acceptable fill level and needs to be added to the
-!                    data structure.
-!                    --------------------------------------------------
-                        if (actlev .le. levp1) then
+        !          ---------------------------------------------------
+        !          actlev is the actual level (plus 1) of column entry
+        !          j in row i, from summing the level contributions
+        !          s1 and s2 as explained in the methods section.
+        !          Note that the next line could reasonably be
+        !          replaced by, e.g., actlev = max(lmk, levels(m)),
+        !          but this would cause greater fill-in:
+        !          ---------------------------------------------------
+                   actlev = lmk + levels(m)
 
-!                          -------------------------------------------
-!                          Since the column entry ijlum in the current
-!                          row i is to be filled, we need to update
-!                          lastcol for that column number.  Also, the
-!                          level number of the current entry needs to be
-!                          set to actlev.  Note that when we finish 
-!                          processing this row, the n-vector levels(1:n)
-!                          will be copied over to the corresponding 
-!                          trailing part of levels, so that it can be
-!                          used in subsequent rows:
-!                          -------------------------------------------
+        !          ---------------------------------------------------
+        !          If lastcol of the current column entry in U is not
+        !          equal to the current row number i, then the current
+        !          row has a zero in column j, and the earlier row j
+        !          in U has a nonzero, so possible fill can occur.
+        !          ---------------------------------------------------
+                   if (lastcol(ijlum) .ne. i) then
 
-                          lastcol(ijlum) = i
-                          levels(ijlum) = actlev
+        !          --------------------------------------------------
+        !          If actlev < levfill + 1, then the new entry has an
+        !          acceptable fill level and needs to be added to the
+        !          data structure.
+        !          --------------------------------------------------
+                      if (actlev .le. levp1) then
 
-!                          -------------------------------------------
-!                          Now find location in the linked list rowll
-!                          where the fillin entry should be placed.
-!                          Chase through the linked list until the next
-!                          nonzero column is to the right of the fill
-!                          column number.
-!                          -------------------------------------------
-                           do 50 while (lm .le. ijlum)
-                              prev = lm
-                              lm   = rowll(lm)
- 50                        continue
+        !                -------------------------------------------
+        !                Since the column entry ijlum in the current
+        !                row i is to be filled, we need to update
+        !                lastcol for that column number.  Also, the
+        !                level number of the current entry needs to be
+        !                set to actlev.  Note that when we finish 
+        !                processing this row, the n-vector levels(1:n)
+        !                will be copied over to the corresponding 
+        !                trailing part of levels, so that it can be
+        !                used in subsequent rows:
+        !                -------------------------------------------
 
-!                          -------------------------------------------
-!                          Insert new entry into the linked list for
-!                          row i, and increase the nonzero count for LU
-!                          -------------------------------------------
-                           rowll(prev)  = ijlum
-                           rowll(ijlum) = lm
-                           prev       = ijlum
-                           nzlu  =  nzlu  + 1
-                        endif
+                        lastcol(ijlum) = i
+                        levels(ijlum) = actlev
 
-!                    -------------------------------------------------
-!                    Else clause is for when lastcol(ijlum) = i.  In
-!                    this case, the current column has a nonzero, but
-!                    it resulted from an earlier fill-in or from an
-!                    original matrix entry.  In this case, need to
-!                    update the level number for this column to be the
-!                    smaller of the two possible fill contributors,
-!                    the current fill number or the computed one from
-!                    updating this entry from a previous row.
-!                    -------------------------------------------------
-                     else
-                        levels(ijlum) = min0(levels(ijlum),actlev)
-                     endif
+        !                -------------------------------------------
+        !                Now find location in the linked list rowll
+        !                where the fillin entry should be placed.
+        !                Chase through the linked list until the next
+        !                nonzero column is to the right of the fill
+        !                column number.
+        !                -------------------------------------------
+                         do while (lm .le. ijlum)
+                            prev = lm
+                            lm   = rowll(lm)
+                         end do
 
-!                  -------------------------------------------------
-!                  Now go and pick up the next column entry from row
-!                  j of U:
-!                  -------------------------------------------------
- 60                continue
+        !                -------------------------------------------
+        !                Insert new entry into the linked list for
+        !                row i, and increase the nonzero count for LU
+        !                -------------------------------------------
+                         rowll(prev)  = ijlum
+                         rowll(ijlum) = lm
+                         prev       = ijlum
+                         nzlu  =  nzlu  + 1
+                      endif
 
-!              -------------------------------------------
-!              End if clause for levfill not equal to zero
-!              -------------------------------------------
-               endif
+        !          -------------------------------------------------
+        !          Else clause is for when lastcol(ijlum) = i.  In
+        !          this case, the current column has a nonzero, but
+        !          it resulted from an earlier fill-in or from an
+        !          original matrix entry.  In this case, need to
+        !          update the level number for this column to be the
+        !          smaller of the two possible fill contributors,
+        !          the current fill number or the computed one from
+        !          updating this entry from a previous row.
+        !          -------------------------------------------------
+                   else
+                      levels(ijlum) = min0(levels(ijlum),actlev)
+                   endif
 
-!              ------------------------------------------------------
-!              Pick up next nonzero column index from the linked
-!              list, and continue processing the i-th row's nonzeros.
-!              This ends the first while loop (j < i).
-!              ------------------------------------------------------
-               j = rowll(j)
+        !        -------------------------------------------------
+        !        Now go and pick up the next column entry from row
+        !        j of U:
+        !        -------------------------------------------------
+                 end do
 
- 80         continue
+        !    -------------------------------------------
+        !    End if clause for levfill not equal to zero
+        !    -------------------------------------------
+             endif
 
-!           ---------------------------------------------------------
-!           Check to see if we have exceeded the allowed memory
-!           storage before storing the results of computing row i's
-!           sparsity pattern into the ijlu and uptr data structures.
-!           ---------------------------------------------------------
-            if (nzlu .gt. nzmax) then
-               mneed =  0.5 * idint((dble(n-i)/dble(2*i))*3*nzlu)
-               ierr  = 1
-               return
-            endif
+        !    ------------------------------------------------------
+        !    Pick up next nonzero column index from the linked
+        !    list, and continue processing the i-th row's nonzeros.
+        !    This ends the first while loop (j < i).
+        !    ------------------------------------------------------
+             j = rowll(j)
 
-!           ---------------------------------------------------------
-!           Storage is adequate, so update ijlu data structure.
-!           Row i ends at nzlu + 1:
-!           ---------------------------------------------------------
-            ijlu(i+1)   =  nzlu + 1
+        end do
 
-!           ---------------------------------------------------------
-!           ... and the upper triangular part of LU begins at
-!           lowct entries to right of where row i begins.
-!           ---------------------------------------------------------
-            uptr(i)     =  ijlu(i)  + lowct
+        ! ---------------------------------------------------------
+        ! Check to see if we have exceeded the allowed memory
+        ! storage before storing the results of computing row i's
+        ! sparsity pattern into the ijlu and uptr data structures.
+        ! ---------------------------------------------------------
+        if (nzlu .gt. nzmax) then
+           mneed =  0.5 * idint((dble(n-i)/dble(2*i))*3*nzlu)
+           ierr  = 1
+           return
+        endif
 
-!           -----------------------------------------------------
-!           Now chase through linked list for row i, recording
-!           information into ijlu.  At same time, put level data
-!           into the levels array for use on later rows:
-!           -----------------------------------------------------
-            j  =  head
-            k1 =  ijlu(i)
-            do k  =  k1, nzlu
-               ijlu(k)    =  j
-               levels(k)  =  levels(j)
-               j          =  rowll(j)
-            end do
+        ! ---------------------------------------------------------
+        ! Storage is adequate, so update ijlu data structure.
+        ! Row i ends at nzlu + 1:
+        ! ---------------------------------------------------------
+        ijlu(i+1)   =  nzlu + 1
 
-         else
+        ! ---------------------------------------------------------
+        ! ... and the upper triangular part of LU begins at
+        ! lowct entries to right of where row i begins.
+        ! ---------------------------------------------------------
+        uptr(i)     =  ijlu(i)  + lowct
 
-!           ---------------------------------------------------------
-!           This else clause ends the (nzi > 1) if.  If nzi = 1, then
-!           the update of ijlu and uptr is trivial:
-!           ---------------------------------------------------------
-            ijlu(i+1)   =  nzlu + 1
-            uptr(i)     =  ijlu(i)
+        ! -----------------------------------------------------
+        ! Now chase through linked list for row i, recording
+        ! information into ijlu.  At same time, put level data
+        ! into the levels array for use on later rows:
+        ! -----------------------------------------------------
+        j  =  head
+        k1 =  ijlu(i)
+        do k  =  k1, nzlu
+           ijlu(k)    =  j
+           levels(k)  =  levels(j)
+           j          =  rowll(j)
+        end do
 
-         endif
+      else
 
-!        ----------------------------------------------
-!        And you thought we would never get through....
-!        ----------------------------------------------
+!       ---------------------------------------------------------
+!       This else clause ends the (nzi > 1) if.  If nzi = 1, then
+!       the update of ijlu and uptr is trivial:
+!       ---------------------------------------------------------
+        ijlu(i+1)   =  nzlu + 1
+        uptr(i)     =  ijlu(i)
 
- 100  continue
+      endif
 
-      ierr = 0
+!     ----------------------------------------------
+!     And you thought we would never get through....
+!     ----------------------------------------------
+
+    end do
+
+    ierr = 0
       
-      end subroutine
+  end subroutine
 
-
-!======================================================================
-      
-      
-      
 end module
