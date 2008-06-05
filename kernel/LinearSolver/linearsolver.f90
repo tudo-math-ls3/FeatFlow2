@@ -6519,28 +6519,6 @@ CONTAINS
     INTEGER(PREC_MATIDX) :: lu,jlu,ilup
     INTEGER(I32), DIMENSION(:), POINTER :: p_jlu,p_ilup
 
-    ! Declare SPLIB-routine as interface to make sure, procedure interfaces
-    ! are checked by the compiler
-    INTERFACE  
-      SUBROUTINE lusolt (n, x, lu, jlu, uptr)
-        USE fsystem
-
-        ! Integer precision for ILU solver
-        INTEGER, PARAMETER :: LINSOL_PREC_ILUINT       = I32
-
-        ! Double precision precision for ILU solver
-        INTEGER, PARAMETER :: LINSOL_PREC_ILUDP        = DP
-
-        INTEGER(LINSOL_PREC_ILUINT) jlu(*),uptr(*),n
-        REAL(LINSOL_PREC_ILUDP) x(n), lu(*)
-        ! Note that we changed the interface here in contrast to the original
-        ! LUSOLT routine - to make it possible to pass an integer array
-        ! as double precision array. Bad practise, but SPLIB is set up 
-        ! this way :(
-        !INTEGER(LINSOL_PREC_ILUINT) 
-      END SUBROUTINE
-    END INTERFACE
-    
     IF (rd%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'(M)ILU(s) only supports double precision vectors!'
       CALL sys_halt()

@@ -74,7 +74,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_copyVectorDble (Dx,Dy)
+  SUBROUTINE lalg_copyVectorDble (Dx,Dy,n)
   
 !<description>
   ! Copies a double precision vector dx: Dy = Dx
@@ -85,6 +85,8 @@ CONTAINS
   ! Source vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<output>
@@ -96,7 +98,11 @@ CONTAINS
   
 !</subroutine>
 
-  CALL DCOPY(SIZE(Dx),Dx,1,Dy,1)
+  IF (.NOT. PRESENT(n)) THEN
+    CALL DCOPY(SIZE(Dx),Dx,1,Dy,1)
+  ELSE
+    CALL DCOPY(n,Dx,1,Dy,1)
+  END IF
   
   END SUBROUTINE
   
@@ -104,7 +110,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_copyVectorSngl (Fx,Fy)
+  SUBROUTINE lalg_copyVectorSngl (Fx,Fy,n)
   
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -115,6 +121,9 @@ CONTAINS
   ! Source vector
   REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<output>
@@ -126,7 +135,11 @@ CONTAINS
   
 !</subroutine>
 
-  CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
+  IF (.NOT. PRESENT(n)) THEN
+    CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
+  ELSE
+    CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
+  END IF
   
   END SUBROUTINE
   
@@ -134,7 +147,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_copyVectorSnglDbl (Fx,Dy)
+  SUBROUTINE lalg_copyVectorSnglDbl (Fx,Dy,n)
   
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -145,6 +158,9 @@ CONTAINS
   ! Source vector
   REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<output>
@@ -157,13 +173,27 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i=1,SIZE(Fx)
-    Dy(i) = REAL(Fx(i),DP)
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,SIZE(Fx)
+      Dy(i) = REAL(Fx(i),DP)
+    END DO
+  !%OMP  end parallel do
+  
+  ELSE
+
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,n
+      Dy(i) = REAL(Fx(i),DP)
+    END DO
+  !%OMP  end parallel do
+  
+  END IF
 
   END SUBROUTINE
 
@@ -171,7 +201,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_copyVectorDblSngl (Dx,Fy)
+  SUBROUTINE lalg_copyVectorDblSngl (Dx,Fy,n)
   
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -182,6 +212,9 @@ CONTAINS
   ! Source vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<output>
@@ -194,13 +227,27 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i=1,SIZE(Dx)
-    Fy(i) = REAL(Dx(i),SP)
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,SIZE(Dx)
+      Fy(i) = REAL(Dx(i),SP)
+    END DO
+  !%OMP  end parallel do
+
+  ELSE
+  
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,n
+      Fy(i) = REAL(Dx(i),SP)
+    END DO
+  !%OMP  end parallel do
+
+  END IF  
 
   END SUBROUTINE
 
@@ -208,7 +255,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_copyVectorInt (Ix,Iy)
+  SUBROUTINE lalg_copyVectorInt (Ix,Iy,n)
   
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
@@ -219,6 +266,9 @@ CONTAINS
   ! Source vector
   INTEGER(I32), DIMENSION(:), INTENT(IN) :: Ix
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<output>
@@ -232,14 +282,29 @@ CONTAINS
 
   INTEGER(I32) :: i
   
-  ! Does not exist in BLAS!
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i=1,SIZE(Ix)
-    Iy(i) = Ix(i)
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  
+    ! Does not exist in BLAS!
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,SIZE(Ix)
+      Iy(i) = Ix(i)
+    END DO
+  !%OMP  end parallel do
+
+  ELSE
+  
+    ! Does not exist in BLAS!
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,n
+      Iy(i) = Ix(i)
+    END DO
+  !%OMP  end parallel do
+
+  END IF
   
   END SUBROUTINE
 
@@ -426,7 +491,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_scaleVectorDble (Dx,dc)
+  SUBROUTINE lalg_scaleVectorDble (Dx,dc,n)
   
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
@@ -444,11 +509,18 @@ CONTAINS
   ! Multiplication factor
   REAL(DP), INTENT(IN) :: dc
 
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
   
 !</subroutine>
 
-  CALL DSCAL(SIZE(Dx),dc,Dx,1)
+  IF (.NOT. PRESENT(n)) THEN
+    CALL DSCAL(SIZE(Dx),dc,Dx,1)
+  ELSE
+    CALL DSCAL(n,dc,Dx,1)
+  END IF
   
   END SUBROUTINE
   
@@ -456,7 +528,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_scaleVectorSngl (Fx,sc)
+  SUBROUTINE lalg_scaleVectorSngl (Fx,sc,n)
   
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -474,11 +546,18 @@ CONTAINS
   ! Multiplication factor
   REAL(SP), INTENT(IN) :: sc
 
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
   
 !</subroutine>
 
-  CALL SSCAL(SIZE(Fx),sc,Fx,1)
+  IF (.NOT. PRESENT(n)) THEN
+    CALL SSCAL(SIZE(Fx),sc,Fx,1)
+  ELSE
+    CALL SSCAL(n,sc,Fx,1)
+  END IF
   
   END SUBROUTINE
   
@@ -486,7 +565,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_scaleVectorInt (Ix,ic)
+  SUBROUTINE lalg_scaleVectorInt (Ix,ic,n)
   
 !<description>
   ! Scales a integer vector: Ix = c * Ix
@@ -504,20 +583,34 @@ CONTAINS
   ! Multiplication factor
   INTEGER(I32), INTENT(IN) :: ic
 
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
   
 !</subroutine>
 
   INTEGER(I32) :: i
   
-  ! Does not exist in BLAS
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i=1,SIZE(Ix)
-    Ix(i) = ic*Ix(i)
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+    ! Does not exist in BLAS
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,SIZE(Ix)
+      Ix(i) = ic*Ix(i)
+    END DO
+  !%OMP  end parallel do
+  ELSE
+    ! Does not exist in BLAS
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i=1,n
+      Ix(i) = ic*Ix(i)
+    END DO
+  !%OMP  end parallel do
+  END IF
 
   END SUBROUTINE
 
@@ -626,11 +719,16 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_clearVectorDble (Dx)
+  SUBROUTINE lalg_clearVectorDble (Dx,n)
   
 !<description>
   ! Clears a double precision vector: Dx = 0
 !</description>
+
+!<input>
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+!</input>
 
 !<output>
   ! Destination vector to be cleared
@@ -650,13 +748,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Dx)
-    Dx(i) = 0.0_DP
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Dx)
+      Dx(i) = 0.0_DP
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,n
+      Dx(i) = 0.0_DP
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
   
@@ -664,17 +772,20 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_clearVectorSngl (Fx)
+  SUBROUTINE lalg_clearVectorSngl (Fx,n)
   
 !<description>
   ! Clears a single precision vector: Fx = 0
 !</description>
 
+!<input>
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+!</input>
+
 !<output>
-  
   ! Destination vector to be cleared
   REAL(SP), DIMENSION(:), INTENT(OUT) :: Fx
-  
 !</output>
   
 !</subroutine>
@@ -690,13 +801,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Fx)
-    Fx(i) = 0.0_SP
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Fx)
+      Fx(i) = 0.0_SP
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,n
+      Fx(i) = 0.0_SP
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
   
@@ -704,17 +825,20 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_clearVectorInt (Ix)
+  SUBROUTINE lalg_clearVectorInt (Ix,n)
   
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
+!<input>
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+!</input>
+
 !<output>
-  
   ! Destination vector to be cleared
   INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ix
-  
 !</output>
   
 !</subroutine>
@@ -730,13 +854,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Ix)
-    Ix(i) = 0
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Ix)
+      Ix(i) = 0
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Ix)
+      Ix(i) = 0
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
 
@@ -868,7 +1002,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_setVectorDble (Dx,dvalue)
+  SUBROUTINE lalg_setVectorDble (Dx,dvalue,n)
   
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
@@ -877,6 +1011,9 @@ CONTAINS
 !<input>
   ! The value, the vector should be set to.
   REAL(DP), INTENT(IN) :: dvalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<output>
@@ -897,13 +1034,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Dx)
-    Dx(i) = dvalue
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Dx)
+      Dx(i) = dvalue
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Dx)
+      Dx(i) = dvalue
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
   
@@ -911,7 +1058,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_setVectorSngl (Fx,fvalue)
+  SUBROUTINE lalg_setVectorSngl (Fx,fvalue,n)
   
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
@@ -920,6 +1067,9 @@ CONTAINS
 !<input>
   ! The value, the vector should be set to.
   REAL(SP), INTENT(IN) :: fvalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<output>
@@ -940,13 +1090,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Fx)
-    Fx(i) = fvalue
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Fx)
+      Fx(i) = fvalue
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,n
+      Fx(i) = fvalue
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
   
@@ -954,7 +1114,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_setVectorInt (Ix,ivalue)
+  SUBROUTINE lalg_setVectorInt (Ix,ivalue,n)
   
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
@@ -963,6 +1123,9 @@ CONTAINS
 !<input>
   ! The value, the vector should be set to.
   INTEGER(I32), INTENT(IN) :: ivalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<output>
@@ -983,13 +1146,23 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-  DO i = 1,SIZE(Ix)
-    Ix(i) = ivalue
-  END DO
-!%OMP  end parallel do
+  IF (.NOT. PRESENT(n)) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,SIZE(Ix)
+      Ix(i) = ivalue
+    END DO
+  !%OMP  end parallel do
+  ELSE
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    DO i = 1,n
+      Ix(i) = ivalue
+    END DO
+  !%OMP  end parallel do
+  END IF
   
   END SUBROUTINE
 
@@ -1132,7 +1305,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorLinearCombDble (Dx,Dy,dcx,dcy)
+  SUBROUTINE lalg_vectorLinearCombDble (Dx,Dy,dcx,dcy,n)
   
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
@@ -1149,6 +1322,9 @@ CONTAINS
   ! Scaling factor for Dy
   REAL(DP), INTENT(IN)               :: dcy
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
 !</input>
 
 !<inputoutput>
@@ -1163,16 +1339,33 @@ CONTAINS
   ! local variables
   REAL(DP) :: c
   
-  IF (dcy .EQ. 0.0_DP) THEN
-    CALL DCOPY(SIZE(Dx),Dx,1,Dy,1)
-    IF (dcx .NE. 1.0_DP) CALL DSCAL(SIZE(Dx),dcx,Dy,1)
-  ELSE IF (dcy .EQ. 1.0_DP) THEN
-    CALL DAXPY(SIZE(Dx),dcx,Dx,1,Dy,1)
+  IF (.NOT. PRESENT(n)) THEN
+  
+    IF (dcy .EQ. 0.0_DP) THEN
+      CALL DCOPY(SIZE(Dx),Dx,1,Dy,1)
+      IF (dcx .NE. 1.0_DP) CALL DSCAL(SIZE(Dx),dcx,Dy,1)
+    ELSE IF (dcy .EQ. 1.0_DP) THEN
+      CALL DAXPY(SIZE(Dx),dcx,Dx,1,Dy,1)
+    ELSE
+      c=dcx/dcy
+      CALL DAXPY(SIZE(Dx),c,Dx,1,Dy,1)
+      CALL DSCAL(SIZE(Dx),dcy,Dy,1)
+    ENDIF
+    
   ELSE
-    c=dcx/dcy
-    CALL DAXPY(SIZE(Dx),c,Dx,1,Dy,1)
-    CALL DSCAL(SIZE(Dx),dcy,Dy,1)
-  ENDIF
+  
+    IF (dcy .EQ. 0.0_DP) THEN
+      CALL DCOPY(n,Dx,1,Dy,1)
+      IF (dcx .NE. 1.0_DP) CALL DSCAL(SIZE(Dx),dcx,Dy,1)
+    ELSE IF (dcy .EQ. 1.0_DP) THEN
+      CALL DAXPY(n,dcx,Dx,1,Dy,1)
+    ELSE
+      c=dcx/dcy
+      CALL DAXPY(n,c,Dx,1,Dy,1)
+      CALL DSCAL(n,dcy,Dy,1)
+    ENDIF
+    
+  END IF
   
   END SUBROUTINE
   
@@ -1180,7 +1373,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorLinearCombSngl (Fx,Fy,scx,scy)
+  SUBROUTINE lalg_vectorLinearCombSngl (Fx,Fy,scx,scy,n)
   
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
@@ -1196,6 +1389,9 @@ CONTAINS
 
   ! Scaling factor for Dy
   REAL(SP), INTENT(IN)               :: scy
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
   
 !</input>
 
@@ -1211,16 +1407,33 @@ CONTAINS
   ! local variables
   REAL(SP) :: c
   
-  IF (scy .EQ. 0.0_SP) THEN
-    CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
-    IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Fx),scx,Fy,1)
-  ELSE IF (scy .EQ. 1.0_DP) THEN
-    CALL SAXPY(SIZE(Fx),scx,Fx,1,Fy,1)
+  IF (.NOT. PRESENT(n)) THEN
+
+    IF (scy .EQ. 0.0_SP) THEN
+      CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
+      IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Fx),scx,Fy,1)
+    ELSE IF (scy .EQ. 1.0_DP) THEN
+      CALL SAXPY(SIZE(Fx),scx,Fx,1,Fy,1)
+    ELSE
+      c=scx/scy
+      CALL SAXPY(SIZE(Fx),c,Fx,1,Fy,1)
+      CALL SSCAL(SIZE(Fx),scy,Fy,1)
+    ENDIF
+    
   ELSE
-    c=scx/scy
-    CALL SAXPY(SIZE(Fx),c,Fx,1,Fy,1)
-    CALL SSCAL(SIZE(Fx),scy,Fy,1)
-  ENDIF
+  
+    IF (scy .EQ. 0.0_SP) THEN
+      CALL SCOPY(n,Fx,1,Fy,1)
+      IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Fx),scx,Fy,1)
+    ELSE IF (scy .EQ. 1.0_DP) THEN
+      CALL SAXPY(n,scx,Fx,1,Fy,1)
+    ELSE
+      c=scx/scy
+      CALL SAXPY(n,c,Fx,1,Fy,1)
+      CALL SSCAL(n,scy,Fy,1)
+    ENDIF
+
+  END IF  
   
   END SUBROUTINE
 
@@ -1228,7 +1441,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorLinearCombSnglDble (Fx,Dy,scx,dcy)
+  SUBROUTINE lalg_vectorLinearCombSnglDble (Fx,Dy,scx,dcy,n)
   
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
@@ -1245,6 +1458,9 @@ CONTAINS
   ! Scaling factor for Dy
   REAL(DP), INTENT(IN)               :: dcy
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<inputoutput>
@@ -1260,42 +1476,85 @@ CONTAINS
   INTEGER(I32) :: i
   REAL(DP) :: c
   
-  IF (dcy .EQ. 0.0_DP) THEN
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-    DO i=1,SIZE(Fx)
-      Dy(i) = Fx(i)
-    END DO
-!%OMP  end parallel do
-    IF (scx .NE. 1.0_SP) THEN
-!%OMP  parallel do &
-!%OMP& default(shared) & 
-!%OMP& private(i)
+  IF (.NOT. PRESENT(n)) THEN
+  
+    IF (dcy .EQ. 0.0_DP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
       DO i=1,SIZE(Fx)
-        Dy(i) = scx*Fx(i)
+        Dy(i) = Fx(i)
       END DO
-!%OMP  end parallel do
-    END IF
-  ELSE IF (dcy .EQ. 1.0_DP) THEN
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-    DO i=1,SIZE(Fx)
-      Dy(i) = Dy(i) + scx*Fx(i)
-    END DO
-!%OMP  end parallel do
+  !%OMP  end parallel do
+      IF (scx .NE. 1.0_SP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) & 
+  !%OMP& private(i)
+        DO i=1,SIZE(Fx)
+          Dy(i) = scx*Fx(i)
+        END DO
+  !%OMP  end parallel do
+      END IF
+    ELSE IF (dcy .EQ. 1.0_DP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+      DO i=1,SIZE(Fx)
+        Dy(i) = Dy(i) + scx*Fx(i)
+      END DO
+  !%OMP  end parallel do
+    ELSE
+      c=scx/dcy
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+      DO i=1,SIZE(Fx)
+        Dy(i) = Dy(i) + c*Fx(i)
+      END DO
+  !%OMP  end parallel do
+      CALL DSCAL(SIZE(Dy),dcy,Dy,1)
+    ENDIF
+    
   ELSE
-    c=scx/dcy
-!%OMP  parallel do &
-!%OMP& default(shared) &
-!%OMP& private(i)
-    DO i=1,SIZE(Fx)
-      Dy(i) = Dy(i) + c*Fx(i)
-    END DO
-!%OMP  end parallel do
-    CALL DSCAL(SIZE(Dy),dcy,Dy,1)
-  ENDIF
+  
+    IF (dcy .EQ. 0.0_DP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+      DO i=1,n
+        Dy(i) = Fx(i)
+      END DO
+  !%OMP  end parallel do
+      IF (scx .NE. 1.0_SP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) & 
+  !%OMP& private(i)
+        DO i=1,n
+          Dy(i) = scx*Fx(i)
+        END DO
+  !%OMP  end parallel do
+      END IF
+    ELSE IF (dcy .EQ. 1.0_DP) THEN
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+      DO i=1,n
+        Dy(i) = Dy(i) + scx*Fx(i)
+      END DO
+  !%OMP  end parallel do
+    ELSE
+      c=scx/dcy
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+      DO i=1,n
+        Dy(i) = Dy(i) + c*Fx(i)
+      END DO
+  !%OMP  end parallel do
+      CALL DSCAL(n,dcy,Dy,1)
+    ENDIF
+    
+  END IF
   
   END SUBROUTINE
 
@@ -1482,7 +1741,7 @@ CONTAINS
 
 !<function>
 
-  REAL(DP) FUNCTION lalg_scalarProductDble (Dx,Dy) RESULT (res)
+  REAL(DP) FUNCTION lalg_scalarProductDble (Dx,Dy,n) RESULT (res)
   
 !<description>
   ! Calculates the scalar product of two double precision vectors: 
@@ -1497,6 +1756,9 @@ CONTAINS
   ! Second source vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dy
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
 !</input>
 
 !<result>
@@ -1509,11 +1771,19 @@ CONTAINS
   !INTEGER(I32) :: i
   REAL(DP) :: DDOT
 
-  res=DDOT(SIZE(Dx),Dx,1,Dy,1)
+  IF (.NOT. PRESENT(n)) THEN
+    res=DDOT(SIZE(Dx),Dx,1,Dy,1)
 !!$  res = Dx(1)*Dy(1)
 !!$  DO i=2,SIZE(Dx)
 !!$    res = res + Dx(i)*Dy(i)
 !!$  END DO
+  ELSE
+    res=DDOT(n,Dx,1,Dy,1)
+!!$  res = Dx(1)*Dy(1)
+!!$  DO i=2,n
+!!$    res = res + Dx(i)*Dy(i)
+!!$  END DO
+  END IF
   
   END FUNCTION
 
@@ -1521,7 +1791,7 @@ CONTAINS
 
 !<function>
 
-  REAL(SP) FUNCTION lalg_scalarProductSngl (Fx,Fy) RESULT (res)
+  REAL(SP) FUNCTION lalg_scalarProductSngl (Fx,Fy,n) RESULT (res)
   
 !<description>
   ! Calculates the scalar product of two single precision vectors: 
@@ -1535,6 +1805,9 @@ CONTAINS
   
   ! Second source vector
   REAL(SP), DIMENSION(:), INTENT(IN) :: Fy
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
   
 !</input>
 
@@ -1548,11 +1821,19 @@ CONTAINS
   !INTEGER(I32) :: i
   REAL(SP) :: SDOT
 
-  res=SDOT(SIZE(Fx),Fx,1,Fy,1)
-!!$  res = Fx(1)*Fy(1)
-!!$  DO i=2,SIZE(Fx)
-!!$    res = res + Fx(i)*Fy(i)
-!!$  END DO
+  IF (.NOT. PRESENT(n)) THEN
+    res=SDOT(SIZE(Fx),Fx,1,Fy,1)
+  !!$  res = Fx(1)*Fy(1)
+  !!$  DO i=2,SIZE(Fx)
+  !!$    res = res + Fx(i)*Fy(i)
+  !!$  END DO
+  ELSE
+    res=SDOT(SIZE(Fx),Fx,1,Fy,1)
+  !!$  res = Fx(1)*Fy(1)
+  !!$  DO i=2,SIZE(Fx)
+  !!$    res = res + Fx(i)*Fy(i)
+  !!$  END DO
+  END IF
   
   END FUNCTION
 
@@ -1560,7 +1841,7 @@ CONTAINS
 
 !<function>
 
-  REAL(SP) FUNCTION lalg_scalarProductInt (Ix,Iy) RESULT (res)
+  REAL(SP) FUNCTION lalg_scalarProductInt (Ix,Iy,n) RESULT (res)
   
 !<description>
   ! Calculates the scalar product of two single precision vectors: 
@@ -1575,6 +1856,9 @@ CONTAINS
   ! Second source vector
   INTEGER(I32), DIMENSION(:), INTENT(IN) :: Iy
   
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
 !</input>
 
 !<result>
@@ -1586,10 +1870,17 @@ CONTAINS
   ! local variables
   INTEGER(I32) :: i
   
-  res = Ix(1)*Iy(1)
-  DO i=2,SIZE(Ix)
-    res = res + Ix(i)*Iy(i)
-  END DO
+  IF (.NOT. PRESENT(n)) THEN
+    res = Ix(1)*Iy(1)
+    DO i=2,SIZE(Ix)
+      res = res + Ix(i)*Iy(i)
+    END DO
+  ELSE
+    res = Ix(1)*Iy(1)
+    DO i=2,n
+      res = res + Ix(i)*Iy(i)
+    END DO
+  END IF
   
   END FUNCTION
 
@@ -1714,7 +2005,7 @@ CONTAINS
 
 !<subroutine>
 
-  REAL(DP) FUNCTION lalg_normDble (Dx,cnorm,iposMax) RESULT(resnorm)
+  REAL(DP) FUNCTION lalg_normDble (Dx,cnorm,iposMax,n) RESULT(resnorm)
   
 !<description>
   ! Calculates the norm of a double precision vector. cnorm identifies the 
@@ -1727,6 +2018,10 @@ CONTAINS
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   INTEGER, INTENT(IN) :: cnorm
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
 !</input>
 
 !<output>
@@ -1744,21 +2039,25 @@ CONTAINS
 !</subroutine>
 
   INTEGER(I32) :: i,j
+  INTEGER :: isize
+  
+  isize = SIZE(Dx)
+  IF (PRESENT(n)) isize = n
 
   ! Choose the norm to calculate
   SELECT CASE (cnorm)
   CASE (LINALG_NORMSUM)
     ! L1-norm: sum all entries
     resnorm = Dx(1)
-    DO i=2,SIZE(Dx)
+    DO i=2,isize
       resnorm = resnorm + Dx(i)
     END DO
 
   CASE (LINALG_NORMEUCLID)
     ! Euclidian norm = scalar product (vector,vector)
-    resnorm = lalg_scalarProductDble(Dx,Dx)
+    resnorm = lalg_scalarProductDble(Dx,Dx,isize)
 !!$    resnorm = Dx(1)*Dx(1)
-!!$    DO i=2,SIZE(Dx)
+!!$    DO i=2,isize
 !!$      resnorm = resnorm + Dx(i)*Dx(i)
 !!$    END DO
     resnorm = SQRT(resnorm)
@@ -1767,26 +2066,26 @@ CONTAINS
     ! L1-norm: sum all entries, divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
     resnorm = Dx(1)
-    DO i=2,SIZE(Dx)
+    DO i=2,isize
       resnorm = resnorm + Dx(i)
     END DO
-    resnorm = resnorm / REAL(SIZE(Dx),DP)
+    resnorm = resnorm / REAL(isize,DP)
 
   CASE (LINALG_NORML2)
     ! l_2-norm - like euclidian norm, but divide by vector length.
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = lalg_scalarProductDble(Dx,Dx)
+    resnorm = lalg_scalarProductDble(Dx,Dx,isize)
 !!$    resnorm = Dx(1)*Dx(1)
-!!$    DO i=2,SIZE(Dx)
+!!$    DO i=2,isize
 !!$      resnorm = resnorm + Dx(i)*Dx(i)
 !!$    END DO
-    resnorm = SQRT(resnorm / REAL(SIZE(Dx),DP))
+    resnorm = SQRT(resnorm / REAL(isize,DP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.
     resnorm = ABS(Dx(1))
     j=1
-    DO i=2,SIZE(Dx)
+    DO i=2,isize
       IF (ABS(Dx(i)) .GT. resnorm) THEN
         j = i
         resnorm = ABS(Dx(i))
@@ -1803,7 +2102,7 @@ CONTAINS
 
 !<subroutine>
 
-  REAL(SP) FUNCTION lalg_normSngl (Fx,cnorm,iposMax) RESULT(resnorm)
+  REAL(SP) FUNCTION lalg_normSngl (Fx,cnorm,iposMax,n) RESULT(resnorm)
   
 !<description>
   ! Calculates the norm of a single precision vector. cnorm identifies the 
@@ -1816,6 +2115,9 @@ CONTAINS
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   INTEGER, INTENT(IN) :: cnorm
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<output>
@@ -1833,13 +2135,17 @@ CONTAINS
 !</subroutine>
 
   INTEGER(I32) :: i,j
+  INTEGER :: isize
+  
+  isize = SIZE(Fx)
+  IF (PRESENT(n)) isize = n
 
   ! Choose the norm to calculate
   SELECT CASE (cnorm)
   CASE (LINALG_NORMSUM)
     ! L1-norm: sum absolute value of all entries
     resnorm = Fx(1)
-    DO i=2,SIZE(Fx)
+    DO i=2,isize
       resnorm = resnorm + ABS(Fx(i))
     END DO
 
@@ -1847,7 +2153,7 @@ CONTAINS
     ! Euclidian norm = scalar product (vector,vector)
     resnorm = lalg_scalarProductSngl(Fx,Fx)
 !!$    resnorm = Fx(1)*Fx(1)
-!!$    DO i=2,SIZE(Fx)
+!!$    DO i=2,isize
 !!$      resnorm = resnorm + Fx(i)*Fx(i)
 !!$    END DO
     resnorm = SQRT(resnorm)
@@ -1856,26 +2162,26 @@ CONTAINS
     ! L1-norm: sum sum absolute value of all entries, divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
     resnorm = Fx(1)
-    DO i=2,SIZE(Fx)
+    DO i=2,isize
       resnorm = resnorm + ABS(Fx(i))
     END DO
-    resnorm = resnorm / REAL(SIZE(Fx),SP)
+    resnorm = resnorm / REAL(isize,SP)
 
   CASE (LINALG_NORML2)
     ! l_2-norm - like euclidian norm, but divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
     resnorm = lalg_scalarProductSNGL(Fx,Fx)
 !!$    resnorm = Fx(1)*Fx(1)
-!!$    DO i=2,SIZE(Fx)
+!!$    DO i=2,isize
 !!$      resnorm = resnorm + Fx(i)*Fx(i)
 !!$    END DO
-    resnorm = SQRT(resnorm / REAL(SIZE(Fx),SP))
+    resnorm = SQRT(resnorm / REAL(isize,SP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.
     resnorm = ABS(Fx(1))
     j=1
-    DO i=2,SIZE(Fx)
+    DO i=2,isize
       IF (ABS(Fx(i)) .GT. resnorm) THEN
         j = i
         resnorm = ABS(Fx(i))
@@ -2039,7 +2345,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorAddScalarDble (Dx,dvalue)
+  SUBROUTINE lalg_vectorAddScalarDble (Dx,dvalue,n)
   
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Id.
@@ -2048,6 +2354,9 @@ CONTAINS
 !<input>
   ! The value to add to every entry.
   REAL(DP) :: dvalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<inputoutput>
@@ -2060,10 +2369,17 @@ CONTAINS
     REAL(DP) :: dval
     INTEGER(I32) :: i
     
-    dval = dvalue
-    DO i=1,SIZE(Dx)
-      Dx(i) = Dx(i) + dval
-    END DO
+    IF (.NOT. PRESENT(n)) THEN
+      dval = dvalue
+      DO i=1,SIZE(Dx)
+        Dx(i) = Dx(i) + dval
+      END DO
+    ELSE
+      dval = dvalue
+      DO i=1,n
+        Dx(i) = Dx(i) + dval
+      END DO
+    END IF
     
   END SUBROUTINE
   
@@ -2071,7 +2387,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorAddScalarSngl (Fx,fvalue)
+  SUBROUTINE lalg_vectorAddScalarSngl (Fx,fvalue,n)
   
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
@@ -2080,6 +2396,9 @@ CONTAINS
 !<input>
   ! The value to add to every entry.
   REAL(SP) :: fvalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<inputoutput>
@@ -2092,10 +2411,17 @@ CONTAINS
     REAL(SP) :: fval
     INTEGER(I32) :: i
     
-    fval = fvalue
-    DO i=1,SIZE(Fx)
-      Fx(i) = Fx(i) + fval
-    END DO
+    IF (.NOT. PRESENT(n)) THEN
+      fval = fvalue
+      DO i=1,SIZE(Fx)
+        Fx(i) = Fx(i) + fval
+      END DO
+    ELSE
+      fval = fvalue
+      DO i=1,n
+        Fx(i) = Fx(i) + fval
+      END DO
+    END IF
     
   END SUBROUTINE
   
@@ -2103,7 +2429,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorAddScalarInt (Ix,ivalue)
+  SUBROUTINE lalg_vectorAddScalarInt (Ix,ivalue,n)
   
 !<description>
   ! This routine adds the value ivalue to each entry of the vector Ix.
@@ -2112,6 +2438,9 @@ CONTAINS
 !<input>
   ! The value to add to every entry.
   INTEGER(I32) :: ivalue
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
 !</input>
 
 !<inputoutput>
@@ -2124,10 +2453,17 @@ CONTAINS
     INTEGER(I32) :: ival
     INTEGER(I32) :: i
     
-    ival = ivalue
-    DO i=1,SIZE(Ix)
-      Ix(i) = Ix(i) + ival
-    END DO
+    IF (.NOT. PRESENT(n)) THEN
+      ival = ivalue
+      DO i=1,SIZE(Ix)
+        Ix(i) = Ix(i) + ival
+      END DO
+    ELSE
+      ival = ivalue
+      DO i=1,n
+        Ix(i) = Ix(i) + ival
+      END DO
+    END IF
     
   END SUBROUTINE
 
