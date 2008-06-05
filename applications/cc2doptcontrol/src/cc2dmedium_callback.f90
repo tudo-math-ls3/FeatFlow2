@@ -861,6 +861,9 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DpointsAct
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsAct
     
+    TYPE(t_evalElementSet) :: revalElementSet
+    INTEGER :: cevaluationTag
+    
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     INTEGER(I32), DIMENSION(1,1) :: ItwistIndex
@@ -920,33 +923,33 @@ CONTAINS
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
         !END IF
         Dvalues(:,:) = Dpoints(1,:,:)
-      CASE (1:2)
-        ! Target flow is specified by a block vector.
-        !
-        ! Fetch the block vector from the collection
-        p_rvector => collct_getvalue_vec (rcollection,'TARGETFLOW')
-        
-        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
-          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetX')
-          CALL sys_halt()
-        END IF
-        
-        ! Element type
-        ieltype = &
-            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
-            itrialElement
-        
-        ! DEBUG!!!
-        CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-        
-        ! Evaluate at the given points
-        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(1),rdomainIntSubset%p_Dcoords,&
-            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
-            ieltype, IdofsTest, npointsPerElement,  nelements, &
-            Dpoints, DER_FUNC, Dvalues, ItwistIndex)
-        
-      CASE (3:4)
+!      CASE (1:2)
+!        ! Target flow is specified by a block vector.
+!        !
+!        ! Fetch the block vector from the collection
+!        p_rvector => collct_getvalue_vec (rcollection,'TARGETFLOW')
+!        
+!        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
+!          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
+!              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetX')
+!          CALL sys_halt()
+!        END IF
+!        
+!        ! Element type
+!        ieltype = &
+!            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+!            itrialElement
+!        
+!        ! DEBUG!!!
+!        CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
+!        
+!        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(1),rdomainIntSubset%p_Dcoords,&
+!            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
+!            ieltype, IdofsTest, npointsPerElement,  nelements, &
+!            Dpoints, DER_FUNC, Dvalues, ItwistIndex)
+!        
+!      CASE (3:4)
+      CASE(1:4)
         ! Target flow is specified by a block vector.
         !
         ! Fetch the block vector from the collection
@@ -1134,30 +1137,32 @@ CONTAINS
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
         !END IF
         Dvalues(:,:) = (-Dpoints(2,:,:))
-      CASE (1:2)
-        ! Target flow is specified by a block vector.
-        !
-        ! Fetch the block vector from the collection
-        p_rvector => collct_getvalue_vec (rcollection,'TARGETFLOW')
         
-        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
-          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetY')
-          CALL sys_halt()              
-        END IF
-        
-        ! Element type
-        ieltype = &
-            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
-            itrialElement
-        
-        ! Evaluate at the given points
-        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(2),rdomainIntSubset%p_Dcoords,&
-            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
-                  ieltype, IdofsTest, npointsPerElement,  nelements, &
-                  Dpoints, DER_FUNC, Dvalues, ItwistIndex)
-        
-      CASE (3:4)
+!      CASE (1:2)
+!        ! Target flow is specified by a block vector.
+!        !
+!        ! Fetch the block vector from the collection
+!        p_rvector => collct_getvalue_vec (rcollection,'TARGETFLOW')
+!        
+!        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
+!          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
+!              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetY')
+!          CALL sys_halt()              
+!        END IF
+!        
+!        ! Element type
+!        ieltype = &
+!            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+!            itrialElement
+!        
+!        ! Evaluate at the given points
+!        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(2),rdomainIntSubset%p_Dcoords,&
+!            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
+!                  ieltype, IdofsTest, npointsPerElement,  nelements, &
+!                  Dpoints, DER_FUNC, Dvalues, ItwistIndex)
+!        
+!      CASE (3:4)
+      CASE (1:4)
         ! Target flow is specified by a block vector.
         !
         ! Fetch the block vector from the collection
