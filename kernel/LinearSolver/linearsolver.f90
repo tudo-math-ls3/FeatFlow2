@@ -420,6 +420,7 @@ MODULE linearsolver
   USE vanca
   USE globalsystem
   USE genoutput
+  USE iluk
   
   USE matrixio
   
@@ -948,6 +949,8 @@ MODULE linearsolver
   
 ! *****************************************************************************
 
+
+
 !<typeblock>
   
   ! This structure realises the subnode for the scalar ILU(0) solver in
@@ -1203,18 +1206,10 @@ MODULE linearsolver
     ! Scaling factor of the matrix; usually = 1.0
     REAL(DP) :: dscaleFactor
 
-    ! Handle to array [1..*] of integer.
-    ! Workspace containing the decomposed matrix.
-    INTEGER :: h_Idata = ST_NOHANDLE
-
-    ! Parameter 1 returned by SPLIB for factorised matrix
-    INTEGER :: lu
-    
-    ! Parameter 2 returned by SPLIB for factorised matrix
-    INTEGER :: jlu
-    
-    ! Parameter 3 returned by SPLIB for factorised matrix
-    INTEGER :: ilup
+    ! A structure to store the (M)ILU-decomposition
+    ! the decomposition is stored in a modified sparse
+    ! row format (MSR)
+    TYPE(t_MILUdecomp) :: rMILUdecomp
 
   END TYPE
   
@@ -6310,41 +6305,15 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER(I32) :: isubgroup,mneed,ierr,maxstr
+  INTEGER(I32) :: isubgroup,ierr,maxstr
   TYPE(t_matrixBlock), POINTER :: p_rmatrix
   TYPE(t_matrixScalar), POINTER :: p_rmatrixSc
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld, p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
-  INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork,p_Iwork2
-  INTEGER :: h_Iwork,h_Iwork2
-  INTEGER(I32), DIMENSION(1) :: IworkTemp
   INTEGER(I32) :: ifill
   REAL(DP) :: drelax
   
-  ! Declare our ILUS-routine from SPLIB as interface to be sure, parameter
-  ! interfaces are checked by the compiler.
-  INTERFACE
-    SUBROUTINE ilus(n,a,colind,rwptr,&
-                  s,relax,&
-                  lu,jlu,ilup,&
-                  iwork,maxstr,&
-                  ierr,mneed)
-      USE fsystem
-      
-      ! Integer precision for ILU solver
-      INTEGER, PARAMETER :: LINSOL_PREC_ILUINT       = I32
-
-      ! Double precision precision for ILU solver
-      INTEGER, PARAMETER :: LINSOL_PREC_ILUDP        = DP
-      
-      INTEGER(LINSOL_PREC_ILUINT)   n, iwork(*), s,  ierr, rwptr(*), colind(*)
-      REAL(LINSOL_PREC_ILUDP) a(*), relax
-      INTEGER(LINSOL_PREC_ILUINT)  mneed, maxstr, nzlu, remain
-      LOGICAL milu
-      INTEGER(LINSOL_PREC_ILUINT) lu, jlu, ilup
-    END SUBROUTINE
-  END INTERFACE
+  TYPE(t_MILUdecomp), POINTER :: rMILUDecomp
   
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
@@ -6359,6 +6328,8 @@ CONTAINS
       PRINT *,'Error: No matrix associated!'
       CALL sys_halt()
     END IF
+    
+    rMILUDecomp => rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp
     
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
@@ -6391,8 +6362,6 @@ CONTAINS
     CALL lsyssc_getbase_Kcol (p_rmatrixSc,p_Kcol)
     CALL lsyssc_getbase_double (p_rmatrixSc,p_DA)
 
-    ! Calculate a memory guess for how much memory the matrix needs.
-    NULLIFY(p_Iwork)
     maxstr = 0
 
     ! Now calculate the decomposition. Probably allocate more memory if it's
@@ -6403,66 +6372,35 @@ CONTAINS
     ifill = rsolverNode%p_rsubnodeMILUs1x1%ifill
     drelax = rsolverNode%p_rsubnodeMILUs1x1%drelax
     
-    ! Pass IworkTemp in the first call, not p_Iwork - as p_Iwork points
-    ! to NULL. This would be a pill that makes some compilers die ^^.
-    CALL ilus(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld,&
+    CALL iluk_ilu(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld, &
               ifill,drelax,&
-              lu,jlu,ilup,&
-              IworkTemp,maxstr,&
-              ierr,mneed)
+              ierr,&
+              rMILUDecomp)
               
-    maxstr = MAX(mneed,3*p_rmatrixSc%NA+(3+4*ifill)*p_rmatrixSc%NEQ)+10000
-    !maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)+10000
-    DO
-      ! Allocate the memory
-      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', INT(maxstr,I32), &
-                          ST_INT, h_Iwork, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int(h_Iwork,p_Iwork)
+   
+    ! Error?
+    SELECT CASE (ierr)
+    CASE (:-1)
+      PRINT *,'Warning: (M)ILU(s) decomposition singular!'
+    CASE (0)
+      ! everything ok
+    CASE DEFAULT
+      ierror = LINSOL_ERR_INITERROR
+      RETURN
+    END SELECT
     
-      ! Calculate the (M)ILUs matrix using SPLIB.
-      CALL ilus(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld,&
-                ifill,drelax,&
-                lu,jlu,ilup,&
-                p_Iwork,maxstr,&
-                ierr,mneed)
-
-      ! Error?
-      SELECT CASE (ierr)
-      CASE (:-1)
-        PRINT *,'Warning: (M)ILU(s) decomposition singular!'
-        EXIT
-      CASE (0)
-        EXIT   ! all ok
-      CASE (1)
-        ! Reallocate memory, we need more
-        maxstr = maxstr + MAX(mneed,p_rmatrixSc%NEQ)
-      CASE DEFAULT
-        ierror = LINSOL_ERR_INITERROR
-        RETURN
-      END SELECT
-      
-      ! Try again...
-      CALL storage_free(h_Iwork)
-    
-    END DO
-    
-    IF (h_Iwork .NE. ST_NOHANDLE) THEN
+    ! now here we can reallocate the jlu array in our structure
+    IF (rMILUDecomp%h_jlu .NE. ST_NOHANDLE) THEN
       ! If less than the half of the memory ILU wanted to have is used,
       ! we reallocate the memory. It does not make sense to have that much
       ! waste!
-      IF (mneed .LT. MAXSTR/2) THEN
-        CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', INT(mneed,I32), &
-                            ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_int(h_Iwork2,p_Iwork2)
-        CALL lalg_copyVectorInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
-        CALL storage_free (h_Iwork)
-        h_Iwork = h_Iwork2
+      
+      ! nzlu is the number of bytes needed for the jlu array
+      ! reallocate if it uses more than twice the amount, ILU wanted      
+      IF (rMILUDecomp%nzlu .LT. rMILUDecomp%isize/2) THEN
+        call storage_realloc('linsol_initDataMILUs1x1', rMILUDecomp%nzlu, &
+             rMILUDecomp%h_jlu, ST_NEWBLOCK_ZERO, .true.)
       END IF
-      ! Save the handle and the matrix parameters to the MILU structure
-      rsolverNode%p_rsubnodeMILUs1x1%h_Idata = h_Iwork
-      rsolverNode%p_rsubnodeMILUs1x1%lu = lu
-      rsolverNode%p_rsubnodeMILUs1x1%jlu = jlu
-      rsolverNode%p_rsubnodeMILUs1x1%ilup = ilup
       
       ! Save 1/scaling factor of the matrix -- to support scaled matrices
       ! when preconditioning.
@@ -6510,8 +6448,9 @@ CONTAINS
     IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
     
     ! Release the ILU matrix.
-    IF (rsolverNode%p_rsubnodeMILUs1x1%h_Idata .NE. ST_NOHANDLE) THEN
-      CALL storage_free (rsolverNode%p_rsubnodeMILUs1x1%h_Idata)
+    ! 
+    IF(rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_lu .ne. ST_NOHANDLE) THEN
+      call iluk_freeDecomp(rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp)
     END IF
   
   END SUBROUTINE
@@ -6576,10 +6515,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Dd
+    REAL(DP), DIMENSION(:), POINTER :: p_Dd, p_lu
     INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork,p_lu,p_jlu,p_ilup
-    INTEGER :: h_Iwork
+    INTEGER(I32), DIMENSION(:), POINTER :: p_jlu,p_ilup
 
     ! Declare SPLIB-routine as interface to make sure, procedure interfaces
     ! are checked by the compiler
@@ -6594,12 +6532,12 @@ CONTAINS
         INTEGER, PARAMETER :: LINSOL_PREC_ILUDP        = DP
 
         INTEGER(LINSOL_PREC_ILUINT) jlu(*),uptr(*),n
-        REAL(LINSOL_PREC_ILUDP) x(n)
+        REAL(LINSOL_PREC_ILUDP) x(n), lu(*)
         ! Note that we changed the interface here in contrast to the original
         ! LUSOLT routine - to make it possible to pass an integer array
         ! as double precision array. Bad practise, but SPLIB is set up 
         ! this way :(
-        INTEGER(LINSOL_PREC_ILUINT) lu(*)
+        !INTEGER(LINSOL_PREC_ILUINT) 
       END SUBROUTINE
     END INTERFACE
     
@@ -6612,11 +6550,10 @@ CONTAINS
     CALL lsysbl_getbase_double (rd,p_Dd)
     
     ! Get MILUs information from the parameter block
-    h_Iwork = rsolverNode%p_rsubnodeMILUs1x1%h_Idata 
-    lu = rsolverNode%p_rsubnodeMILUs1x1%lu 
-    jlu = rsolverNode%p_rsubnodeMILUs1x1%jlu 
-    ilup = rsolverNode%p_rsubnodeMILUs1x1%ilup 
-    CALL storage_getbase_int (h_Iwork,p_Iwork)
+    
+    lu = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_lu 
+    jlu = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_jlu 
+    ilup = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_ilup
     
     ! When the scaling factor is not = 1, scale the vector before
     ! preconditioning. This emulates: d = (cA)^-1 d = A^-1 (x/c)!
@@ -6630,11 +6567,12 @@ CONTAINS
 
     ! Without the following pointers, the INTEL compiler would create temporary
     ! arrays which may lead to a SEGFAULT because of a full stack!
-    p_lu   => p_Iwork(lu:)
-    p_jlu  => p_Iwork(jlu:)
-    p_ilup => p_Iwork(ilup:)
 
-    CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd,p_lu,p_jlu,p_ilup)
+    call storage_getbase_int(jlu, p_jlu)
+    call storage_getbase_int(ilup, p_ilup)
+    call storage_getbase_double(lu, p_lu)
+
+    CALL iluk_lusolt (INT(SIZE(p_Dd),I32),p_Dd,p_lu,p_jlu,p_ilup)
                  
   END SUBROUTINE
   
