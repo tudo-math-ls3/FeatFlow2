@@ -179,7 +179,7 @@ MODULE matrixio
       CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       CALL matio_writeMatrix79_Dble (p_Da, p_Kcol, p_Kld, &
-                                      rmatrix%NEQ, rmatrix%NEQ, sarray, &
+                                      rmatrix%NEQ, rmatrix%NCOLS, sarray, &
                                       bnoZero, ifile, sfile, sformat)
     CASE DEFAULT
       CALL output_line ('Unsupported matrix precision!', &
