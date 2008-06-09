@@ -300,15 +300,15 @@ CONTAINS
     SELECT CASE(iregion)
     CASE (1,6)
       ! X-Y-Profile
-      dvalue = 4.0_DP*dx*(1.0_DP-dx)*dy*(1.0_DP-dy)
+      dvalue = 16.0_DP*dx*(1.0_DP-dx)*dy*(1.0_DP-dy)
     
     CASE (2,4)
       ! X-Z-Profile
-      dvalue = 4.0_DP*dx*(1.0_DP-dx)*dz*(1.0_DP-dz)
+      dvalue = 16.0_DP*dx*(1.0_DP-dx)*dz*(1.0_DP-dz)
     
     CASE (3,5)
       ! Y-Z-Profile
-      dvalue = 4.0_DP*dy*(1.0_DP-dy)*dz*(1.0_DP-dz)
+      dvalue = 16.0_DP*dy*(1.0_DP-dy)*dz*(1.0_DP-dz)
       
     CASE DEFAULT
       ! Invalid region

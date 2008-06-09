@@ -432,15 +432,15 @@ CONTAINS
     SELECT CASE(iregion)
     CASE (1,6)
       ! X-Y-Profile
-      dvalue = 4.0_DP*x*(1.0_DP-x)*y*(1.0_DP-y)
+      dvalue = 16.0_DP*x*(1.0_DP-x)*y*(1.0_DP-y)
     
     CASE (2,4)
       ! X-Z-Profile
-      dvalue = 4.0_DP*x*(1.0_DP-x)*z*(1.0_DP-z)
+      dvalue = 16.0_DP*x*(1.0_DP-x)*z*(1.0_DP-z)
     
     CASE (3,5)
       ! Y-Z-Profile
-      dvalue = 4.0_DP*y*(1.0_DP-y)*z*(1.0_DP-z)
+      dvalue = 16.0_DP*y*(1.0_DP-y)*z*(1.0_DP-z)
     
     CASE (7)
       ! Z-Profile on the boundary of the cylinder
