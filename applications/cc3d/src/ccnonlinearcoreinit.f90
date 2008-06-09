@@ -260,10 +260,10 @@ CONTAINS
     
     ! Get the minimum/maximum damping parameter from the parameter list, save
     ! them to the nonlinear iteration structure (which is now initialised).
-    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC3D-NONLINEAR', &
                                  'domegaMin', rnonlinearIteration%domegaMin, 0.0_DP)
                               
-    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC3D-NONLINEAR', &
                                  'domegaMax', rnonlinearIteration%domegaMax, 2.0_DP)
     
     ! Save pointers to the RHS and solution vector
