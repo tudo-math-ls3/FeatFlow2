@@ -86,7 +86,7 @@ CPPFLAGS   = -vec-report0
 LDFLAGS   = -lsvml
 BLASLIB   = 
 LAPACKLIB = 
-GENERIC   = 1
+GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),athlon64)
@@ -117,7 +117,7 @@ CPPFLAGS   =
 LDFLAGS   = -lpgftnrtl -lm
 BLASLIB   = 
 LAPACKLIB = 
-GENERIC   = 1
+GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),opteron)
@@ -138,17 +138,17 @@ FC=pathf90
 OPTFLAGS  = -Ofast
 FCFLAGS   = -pipe
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   = 
 LAPACKLIB = 
-GENERIC   = 1
+GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),opteron)
 FCFLAGS   += -march=opteron
 CCFLAGS   += -march=opteron
-CPPFLAGS   += -march=opteron
-GENERIC   = 1
+CPPFLAGS  += -march=opteron
+GENERIC   = 0 
 endif
 endif
 
@@ -165,7 +165,7 @@ OPTFLAGS  = -fast -O5
 OPTFLAGSFDEBUG = -w1 -xcheck=%all -xcommonchk=yes
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
-CPPFLAGS   =
+CPPFLAGS  =
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -183,7 +183,7 @@ FC=gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -march=opteron -pipe
-CPPFLAGS   = -march=opteron -pipe
+CPPFLAGS  = -march=opteron -pipe
 LDFLAGS   = -Wl
 BLASLIB   = 
 LAPACKLIB = 
@@ -198,7 +198,7 @@ FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium  -module $(MODDIR)
 CCFLAGS   = -mcmodel=medium 
-CPPFLAGS   = -mcmodel=medium 
+CPPFLAGS  = -mcmodel=medium 
 LDFLAGS   = -i-dynamic
 BLASLIB   = 
 LAPACKLIB = 
@@ -214,7 +214,7 @@ FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIR)
 CCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 
-CPPFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 
+CPPFLAGS  = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -228,7 +228,7 @@ FC=g95
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)
 CCFLAGS   = -mcmodel=medium -m64
-CPPFLAGS   = -mcmodel=medium -m64
+CPPFLAGS  = -mcmodel=medium -m64
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -246,7 +246,7 @@ OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations -fprefetch-loop-array
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CPPFLAGS  = -pipe
 BLASLIB   =
 LAPACKLIB =
 GENERIC   = 0 
@@ -256,7 +256,7 @@ ifeq ($(FFCPU),core2)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=nocona
 CCFLAGS   += -march=nocona
-CPPFLAGS   += -march=nocona
+CPPFLAGS  += -march=nocona
 endif
 endif
 
@@ -279,7 +279,7 @@ CPPFLAGS   = -vec-report0
 LDFLAGS   = -lsvml
 BLASLIB   =
 LAPACKLIB =
-GENERIC   = 1
+GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),core2)
@@ -304,11 +304,11 @@ OPTFLAGSCPPDEBUG = -traceback
 OPTFLAGSFDEBUG = -warn all -check all -traceback
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
-CPPFLAGS   = -vec-report0
+CPPFLAGS  = -vec-report0
 LDFLAGS   = -lsvml
 BLASLIB   =
 LAPACKLIB =
-GENERIC   = 1
+GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),core2)
