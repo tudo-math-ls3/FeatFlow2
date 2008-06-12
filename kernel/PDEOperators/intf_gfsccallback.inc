@@ -9,7 +9,7 @@ INTERFACE
 
 !<subroutine>
 
-SUBROUTINE fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+PURE SUBROUTINE fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the matrix coefficients $k_{ij}$ and $k_{ji}$
