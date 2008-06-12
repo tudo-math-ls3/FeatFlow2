@@ -252,7 +252,7 @@ contains
 
       ! colind is another csr component and points to the
       ! column indices of A
-      integer, dimension(:), pointer, intent(IN) :: rwptr, colind
+      integer, dimension(:), intent(IN) :: rwptr, colind
       
       ! relaxation parameter.  relax = 0 gives ilu(s), relax = 1
       ! gives milu(s), and values between give the multiplier to use
