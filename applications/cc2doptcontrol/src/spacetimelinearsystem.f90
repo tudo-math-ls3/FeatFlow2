@@ -850,24 +850,24 @@ CONTAINS
         ! -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
         
         rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha2 = 1.0_DP
+        rmatrixComponents%dalpha2 = 1.0_DP/dtstep
         !(1.0_DP-dsmooth) + dsmooth ! * 1.0_DP/dtstep
         ! No 'time coupling' here; because of the terminal condition,
         ! the mass matrix resembles not the time dependence!
         
         rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dsmooth * dtheta * dtstep
+        rmatrixComponents%dtheta2 = dsmooth * dtheta
         
         IF (.NOT. bconvectionExplicit) THEN
 
           rmatrixComponents%dgamma1 = &
               dtheta * REAL(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
-              - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+              - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) 
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
-                dsmooth * dtheta * REAL(1-rproblem%iequation,DP) * dtstep
+                dsmooth * dtheta * REAL(1-rproblem%iequation,DP) 
                 
         ELSE
         
@@ -880,7 +880,7 @@ CONTAINS
         END IF        
 
         rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = dsmooth * dtstep
+        rmatrixComponents%deta2 = dsmooth
         
         rmatrixComponents%dtau1 = 1.0_DP
         rmatrixComponents%dtau2 = dsmooth
@@ -888,7 +888,7 @@ CONTAINS
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC
+            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC / dtstep
             
         IF (.NOT. bconvectionExplicit) THEN
         
@@ -899,9 +899,9 @@ CONTAINS
             rmatrixComponents%dr22 = 0.0_DP
           ELSE
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
-                ( dequationType) * dtheta * dtstep
+                ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
-                (-dequationType) * dtheta * dtstep
+                (-dequationType) * dtheta 
           END IF
 
         ELSE
