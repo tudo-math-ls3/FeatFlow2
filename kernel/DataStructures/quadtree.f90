@@ -242,11 +242,7 @@ MODULE quadtree
     MODULE PROCEDURE qtree_copyFromQuadtree_handle
     MODULE PROCEDURE qtree_copyFromQuadtree_array
   END INTERFACE
-  
-  INTERFACE qtree_insertIntoQuadtree
-    MODULE PROCEDURE qtree_insertIntoQuadtree
-  END INTERFACE
- 
+   
   INTERFACE qtree_deleteFromQuadtree
     MODULE PROCEDURE qtree_deleteFromQuadtree
     MODULE PROCEDURE qtree_deleteFromQtreeByNumber
@@ -258,7 +254,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE qtree_createQuadtree(rquadtree,nnvt,nnnode,xmin,ymin,xmax,ymax,dfactor)
+  SUBROUTINE qtree_createQuadtree(rquadtree, nnvt, nnnode,&
+                                  xmin, ymin, xmax, ymax, dfactor)
   
 !<description>
     ! This subroutine creates a new quadtree.
@@ -301,23 +298,23 @@ CONTAINS
     
     ! Allocate memory and associate pointers
     Isize = (/2,nnvt/)
-    CALL storage_new('qtree_createQuadtree','p_Ddata',&
-        Isize,ST_DOUBLE,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO)
+    CALL storage_new('qtree_createQuadtree', 'p_Ddata',&
+                     Isize, ST_DOUBLE, rquadtree%h_Ddata, ST_NEWBLOCK_ZERO)
     Isize = (/4,nnnode/)
-    CALL storage_new('qtree_createQuadtree','p_Dbbox',&
-        Isize,ST_DOUBLE,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO)
+    CALL storage_new('qtree_createQuadtree', 'p_Dbbox',&
+                     Isize, ST_DOUBLE, rquadtree%h_Dbbox, ST_NEWBLOCK_ZERO)
     Isize = (/7,nnnode/)
-    CALL storage_new('qtree_createQuadtree','p_Knode',&
-        Isize,ST_INT,rquadtree%h_Knode,ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
-    CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
-    CALL storage_getbase_int2D(rquadtree%h_Knode,   rquadtree%p_Knode)
+    CALL storage_new('qtree_createQuadtree', 'p_Knode',&
+                     Isize, ST_INT, rquadtree%h_Knode, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata, rquadtree%p_Ddata)
+    CALL storage_getbase_double2D(rquadtree%h_Dbbox, rquadtree%p_Dbbox)
+    CALL storage_getbase_int2D(rquadtree%h_Knode,    rquadtree%p_Knode)
 
     ! Initialize first quad
-    rquadtree%nnode=1
-    rquadtree%p_Knode(QTREE_STATUS,1)=QTREE_EMPTY
-    rquadtree%p_Knode(QTREE_PARENT,1)=QTREE_EMPTY
-    rquadtree%p_Knode(QTREE_FREE,1)=1
+    rquadtree%nnode = 1
+    rquadtree%p_Knode(QTREE_STATUS,1) = QTREE_EMPTY
+    rquadtree%p_Knode(QTREE_PARENT,1) = QTREE_EMPTY
+    rquadtree%p_Knode(QTREE_FREE,1)   = 1
     
     ! Set co-ordinates of the bounding box
     rquadtree%p_Dbbox(QTREE_XMIN,1) = xmin
@@ -343,24 +340,24 @@ CONTAINS
 !</subroutine>
     
     ! Free memory
-    IF (rquadtree%h_Ddata /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Ddata)
-    IF (rquadtree%h_Dbbox /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Dbbox)
-    IF (rquadtree%h_Knode /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Knode)
-    NULLIFY(rquadtree%p_Knode,rquadtree%p_Dbbox,rquadtree%p_Ddata)
+    IF (rquadtree%h_Ddata .NE. ST_NOHANDLE) CALL storage_free(rquadtree%h_Ddata)
+    IF (rquadtree%h_Dbbox .NE. ST_NOHANDLE) CALL storage_free(rquadtree%h_Dbbox)
+    IF (rquadtree%h_Knode .NE. ST_NOHANDLE) CALL storage_free(rquadtree%h_Knode)
+    NULLIFY(rquadtree%p_Knode, rquadtree%p_Dbbox, rquadtree%p_Ddata)
 
     ! Reset values
-    rquadtree%NNNODE = 0
-    rquadtree%NNVT   = 0
-    rquadtree%NNODE  = 0
-    rquadtree%NVT    = 0
-    rquadtree%NRESIZE= 0
+    rquadtree%NNNODE  = 0
+    rquadtree%NNVT    = 0
+    rquadtree%NNODE   = 0
+    rquadtree%NVT     = 0
+    rquadtree%NRESIZE = 0
   END SUBROUTINE qtree_releaseQuadtree
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE qtree_copyFromQuadtree_handle(rquadtree,h_Ddata)
+  SUBROUTINE qtree_copyFromQuadtree_handle(rquadtree, h_Ddata)
 
 !<description>
     ! This subroutine copies the content of the quadtree to a handle.
@@ -385,31 +382,31 @@ CONTAINS
     INTEGER(PREC_QTREEIDX), DIMENSION(2) :: Isize
     
     ! Check if handle is associated
-    IF (h_Ddata == ST_NOHANDLE) THEN
-      Isize = (/2,rquadtree%NVT/)
-      CALL storage_new('qtree_copyFromQuadtree_handle','p_Ddata',&
-          Isize,ST_DOUBLE,h_Ddata,ST_NEWBLOCK_NOINIT)
+    IF (h_Ddata .EQ. ST_NOHANDLE) THEN
+      Isize = (/2, rquadtree%NVT/)
+      CALL storage_new('qtree_copyFromQuadtree_handle', 'p_Ddata',&
+                       Isize, ST_DOUBLE, h_Ddata, ST_NEWBLOCK_NOINIT)
     ELSE
-      CALL storage_getsize(h_Ddata,Isize)
+      CALL storage_getsize(h_Ddata, Isize)
       IF (Isize(2) < rquadtree%NVT) THEN
         CALL storage_realloc('qtree_copyFromQuadtree_handle',&
-            rquadtree%NVT,h_Ddata,ST_NEWBLOCK_NOINIT,.FALSE.)
+                             rquadtree%NVT, h_Ddata, ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
     
     ! Set pointers
-    CALL storage_getbase_double2D(h_Ddata,p_Ddata)
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,p_DdataTmp)
+    CALL storage_getbase_double2D(h_Ddata, p_Ddata)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata, p_DdataTmp)
 
     ! Copy data
-    CALL DCOPY(2*rquadtree%NVT,p_DdataTmp,1,p_Ddata,1)
+    CALL DCOPY(2*rquadtree%NVT, p_DdataTmp, 1, p_Ddata, 1)
   END SUBROUTINE qtree_copyFromQuadtree_handle
 
   !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE qtree_copyFromQuadtree_array(rquadtree,p_Ddata)
+  SUBROUTINE qtree_copyFromQuadtree_array(rquadtree, p_Ddata)
 
 !<description>
     ! This subroutine copies the content of the quadtree to an array.
@@ -433,17 +430,17 @@ CONTAINS
 
     ! Check size of array
     Isize = SHAPE(p_Ddata)
-    IF (Isize(1) /= 2 .OR. Isize(2) < rquadtree%NVT) THEN
+    IF (Isize(1) .NE. 2 .OR. Isize(2) < rquadtree%NVT) THEN
       CALL output_line('Array too small!',&
           OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyFromQuadtree_array')
       CALL sys_halt()
     END IF
 
     ! Set pointers
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,p_DdataTmp)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata, p_DdataTmp)
 
     ! Copy data
-    CALL DCOPY(2*rquadtree%NVT,p_DdataTmp,1,p_Ddata,1)
+    CALL DCOPY(2*rquadtree%NVT, p_DdataTmp, 1, p_Ddata, 1)
     
   END SUBROUTINE qtree_copyFromQuadtree_array
 
@@ -451,7 +448,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE qtree_copyToQuadtree_handle(h_Ddata,rquadtree)
+  SUBROUTINE qtree_copyToQuadtree_handle(h_Ddata, rquadtree)
 
 !<description>
     ! This subroutine copies the content of a handle to the quadtree.
@@ -473,16 +470,17 @@ CONTAINS
     INTEGER(PREC_QTREEIDX) :: ivt,jvt,inode,ipos
     
     ! Set pointer and check its shape
-    CALL storage_getbase_double2D(h_Ddata,p_Ddata)
-    IF (SIZE(p_Ddata,1) /= 2) THEN
+    CALL storage_getbase_double2D(h_Ddata, p_Ddata)
+    IF (SIZE(p_Ddata,1) .NE. 2) THEN
       CALL output_line('First dimension of array must be 2!',&
           OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
       CALL sys_halt()
     END IF
     
-    DO ivt=1,SIZE(p_Ddata,2)
-      IF (qtree_searchInQuadtree(rquadtree,p_Ddata(:,ivt),inode,ipos,jvt) == QTREE_NOT_FOUND)&
-          CALL qtree_insertIntoQuadtree(rquadtree,ivt,p_Ddata(:,ivt),inode)
+    DO ivt = 1, SIZE(p_Ddata, 2)
+      IF (qtree_searchInQuadtree(rquadtree, p_Ddata(:,ivt),&
+                                 inode, ipos, jvt) .EQ. QTREE_NOT_FOUND)&
+          CALL qtree_insertIntoQuadtree(rquadtree, ivt, p_Ddata(:,ivt), inode)
     END DO
   END SUBROUTINE qtree_copyToQuadtree_handle
 
@@ -490,7 +488,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE qtree_copyToQuadtree_array(p_Ddata,rquadtree)
+  SUBROUTINE qtree_copyToQuadtree_array(p_Ddata, rquadtree)
 
 !<description>
     ! This subroutine copies the content of an array to the quadtree.
@@ -510,15 +508,16 @@ CONTAINS
     ! local variables
     INTEGER(PREC_QTREEIDX) :: ivt,jvt,inode,ipos
     
-    IF (SIZE(p_Ddata,1) /= 2) THEN
+    IF (SIZE(p_Ddata,1) .NE. 2) THEN
       CALL output_line('First dimension of array must be 2!',&
           OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
       CALL sys_halt()
     END IF
 
-    DO ivt=1,SIZE(p_Ddata,2)
-      IF (qtree_searchInQuadtree(rquadtree,p_Ddata(:,ivt),inode,ipos,jvt) == QTREE_NOT_FOUND)&
-          CALL qtree_insertIntoQuadtree(rquadtree,ivt,p_Ddata(:,ivt),inode)
+    DO ivt = 1, SIZE(p_Ddata, 2)
+      IF (qtree_searchInQuadtree(rquadtree, p_Ddata(:,ivt),&
+                                 inode, ipos, jvt) .EQ. QTREE_NOT_FOUND)&
+          CALL qtree_insertIntoQuadtree(rquadtree, ivt, p_Ddata(:,ivt), inode)
     END DO
   END SUBROUTINE qtree_copyToQuadtree_array
 
@@ -526,7 +525,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE qtree_insertIntoQuadtree(rquadtree,ivt,Ddata,inode)
+  SUBROUTINE qtree_insertIntoQuadtree(rquadtree, ivt, Ddata, inode)
 
 !<description>
     ! This subroutine inserts a new coordinate item to the quadtree
@@ -548,15 +547,20 @@ CONTAINS
     TYPE(t_quadtree), INTENT(INOUT) :: rquadtree
 !</inputoutput>
 !</subroutine>
+
+    ! local variables
+    INTEGER(PREC_QTREEIDX) :: isize
     
     ! Check if there is enough space left in the nodal component of the quadtree
-    IF (rquadtree%NVT == rquadtree%NNVT)&
-        CALL resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
+    IF (rquadtree%NVT .EQ. rquadtree%NNVT) THEN
+      isize = MAX(rquadtree%NNVT+1, CEILING(rquadtree%dfactor*rquadtree%NNVT))
+      CALL resizeNVT(rquadtree, isize)
+    END IF
     
     ! Update values and add new entry recursively
     rquadtree%NVT            = rquadtree%NVT+1
     rquadtree%p_Ddata(:,ivt) = Ddata
-    CALL insert(ivt,inode)
+    CALL insert(ivt, inode)
     
   CONTAINS  
     
@@ -565,13 +569,15 @@ CONTAINS
     
     RECURSIVE SUBROUTINE insert(ivt,inode)
       INTEGER(PREC_QTREEIDX), INTENT(IN) :: ivt,inode
-      REAL(DP) :: xmin,ymin,xmax,ymax,xmid,ymid
-      INTEGER(PREC_QTREEIDX) :: i,jnode,nnode,knode
-      
-      IF (rquadtree%p_Knode(QTREE_STATUS,inode) == QTREE_MAX) THEN
+      REAL(DP)                           :: xmin,ymin,xmax,ymax,xmid,ymid
+      INTEGER(PREC_QTREEIDX)             :: i,jnode,nnode,knode,isize
+            
+      IF (rquadtree%p_Knode(QTREE_STATUS,inode) .EQ. QTREE_MAX) THEN
         
-        IF (rquadtree%nnode+QTREE_MAX > rquadtree%nnnode)&
-            CALL resizeNNODE(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNNODE))
+        IF (rquadtree%nnode+QTREE_MAX > rquadtree%nnnode) THEN
+          isize = MAX(rquadtree%nnode+QTREE_MAX, CEILING(rquadtree%dfactor*rquadtree%NNNODE))
+          CALL resizeNNODE(rquadtree, isize)
+        END IF
         
         ! Quad is full and needs to be refined into four new quads
         xmin = rquadtree%p_Dbbox(QTREE_XMIN,inode)
@@ -589,47 +595,48 @@ CONTAINS
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NW) = QTREE_NW
-        rquadtree%p_Dbbox(:,nnode+QTREE_NW)       = (/xmin,ymid,xmid,ymax/)
+        rquadtree%p_Dbbox(:,nnode+QTREE_NW)            = (/xmin,ymid,xmid,ymax/)
         
         ! SW-quad
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SW) = QTREE_SW
-        rquadtree%p_Dbbox(:,nnode+QTREE_SW)       = (/xmin,ymin,xmid,ymid/)
+        rquadtree%p_Dbbox(:,nnode+QTREE_SW)            = (/xmin,ymin,xmid,ymid/)
         
         ! SE-quad
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SE) = QTREE_SE
-        rquadtree%p_Dbbox(:,nnode+QTREE_SE)       = (/xmid,ymin,xmax,ymid/)
+        rquadtree%p_Dbbox(:,nnode+QTREE_SE)            = (/xmid,ymin,xmax,ymid/)
         
         ! NE-quad
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NE) = QTREE_NE
-        rquadtree%p_Dbbox(:,nnode+QTREE_NE)       = (/xmid,ymid,xmax,ymax/)
+        rquadtree%p_Dbbox(:,nnode+QTREE_NE)            = (/xmid,ymid,xmax,ymax/)
         
         ! Add the four values from INODE to the four new quads 
         ! NNODE+1:NNODE+4 recursively
         DO i=1,QTREE_MAX
           knode = rquadtree%p_Knode(i,inode)
-          jnode=nnode+qtree_getDirection(rquadtree,rquadtree%p_Ddata(:,knode),inode)
-          CALL insert(rquadtree%p_Knode(i,inode),jnode)
+          jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Ddata(:,knode), inode)
+          CALL insert(rquadtree%p_Knode(i, inode), jnode)
         END DO
         
         ! Mark the current quad as subdivided and set pointers to its four children 
         rquadtree%p_Knode(QTREE_STATUS,inode) = QTREE_SUBDIV
-        rquadtree%p_Knode(1:4,inode)     = (/nnode+QTREE_NW,nnode+QTREE_SW,nnode+QTREE_SE,nnode+QTREE_NE/)
+        rquadtree%p_Knode(1:4,inode)          = (/nnode+QTREE_NW, nnode+QTREE_SW,&
+                                                  nnode+QTREE_SE, nnode+QTREE_NE/)
         
         ! Add the new entry to the next position recursively
-        jnode = nnode+qtree_getDirection(rquadtree,rquadtree%p_Ddata(:,ivt),inode)
-        CALL insert(ivt,jnode)
+        jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Ddata(:,ivt), inode)
+        CALL insert(ivt, jnode)
         
       ELSE
         
         ! Quad is not full, so new items can be stored
-        rquadtree%p_Knode(QTREE_STATUS,inode) = rquadtree%p_Knode(QTREE_STATUS,inode)+1
-        rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS,inode),inode) = ivt
+        rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, inode)+1
+        rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS, inode), inode) = ivt
       END IF
     END SUBROUTINE insert
   END SUBROUTINE qtree_insertIntoQuadtree
@@ -638,7 +645,7 @@ CONTAINS
   
 !<function>
   
-  FUNCTION qtree_deleteFromQuadtree(rquadtree,Ddata,ivt) RESULT(f)
+  FUNCTION qtree_deleteFromQuadtree(rquadtree, Ddata, ivt) RESULT(f)
 
 !<description>
     ! This function deletes an item from the quadtree
@@ -670,25 +677,25 @@ CONTAINS
     REAL(DP), DIMENSION(2) :: DdataTmp
     
     ! Search for the given coordinates
-    f=qtree_searchInQuadtree(rquadtree,Ddata,inode,ipos,ivt)
+    f = qtree_searchInQuadtree(rquadtree, Ddata, inode, ipos, ivt)
     
     ! What can we do from the searching
     IF (f .EQ. QTREE_FOUND) THEN
       
       ! Remove item IVT from node INODE
-      DO jpos=ipos+1,rquadtree%p_Knode(QTREE_STATUS,inode)
-        rquadtree%p_Knode(jpos-1,inode) = rquadtree%p_Knode(jpos,inode)
+      DO jpos = ipos+1, rquadtree%p_Knode(QTREE_STATUS, inode)
+        rquadtree%p_Knode(jpos-1, inode) = rquadtree%p_Knode(jpos, inode)
       END DO
-      rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS,inode),inode) = 0
-      rquadtree%p_Knode(QTREE_STATUS,inode) = rquadtree%p_Knode(QTREE_STATUS,inode)-1
+      rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS, inode), inode) = 0
+      rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, inode)-1
       
       ! If IVT is not last item move last item to position IVT
       IF (ivt .NE. rquadtree%NVT) THEN
         DdataTmp(1:2) = rquadtree%p_Ddata(1:2,rquadtree%NVT)
-        IF (qtree_searchInQuadtree(rquadtree,DdataTmp(:),inode,ipos,jvt)&
-            .EQ. QTREE_FOUND) THEN
-          rquadtree%p_Ddata(:,ivt)      = rquadtree%p_Ddata(:,rquadtree%NVT)
-          rquadtree%p_Knode(ipos,inode) = ivt
+        IF (qtree_searchInQuadtree(rquadtree, DdataTmp(:),&
+                                   inode, ipos, jvt) .EQ. QTREE_FOUND) THEN
+          rquadtree%p_Ddata(:, ivt)      = rquadtree%p_Ddata(:, rquadtree%NVT)
+          rquadtree%p_Knode(ipos, inode) = ivt
         END IF
 
         ! Set number of removed vertex
@@ -704,7 +711,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION qtree_deleteFromQtreeByNumber(rquadtree,ivt,ivtReplace) RESULT(f)
+  FUNCTION qtree_deleteFromQtreeByNumber(rquadtree, ivt, ivtReplace) RESULT(f)
 
 !<description>
     ! This function deletes vertex with number IVT from the quadtree
@@ -737,7 +744,7 @@ CONTAINS
     IF (ivt .LE. rquadtree%NVT) THEN
       ! Get coordinates and invoke deletion routine
       Ddata = rquadtree%p_Ddata(:,ivt)
-      f=qtree_deleteFromQuadtree(rquadtree,Ddata,ivtReplace)
+      f     = qtree_deleteFromQuadtree(rquadtree, Ddata, ivtReplace)
     ELSE
       CALL output_line('Invalid vertex number!',&
           OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQtreeByNumber')
@@ -749,7 +756,7 @@ CONTAINS
 
 !<function>
   
-  FUNCTION qtree_searchInQuadtree(rquadtree,Ddata,inode,ipos,ivt) RESULT(f)
+  FUNCTION qtree_searchInQuadtree(rquadtree, Ddata, inode, ipos, ivt) RESULT(f)
 
 !<description>
     ! This subroutine searches for given coordinates in the quadtree
@@ -781,31 +788,34 @@ CONTAINS
 !</function>
     
     ! Initialize
-    inode=1; ipos=1; ivt=1; f=search(inode,ipos,ivt)
+    inode = 1
+    ipos  = 1 
+    ivt   = 1
+    f     = search(inode, ipos, ivt)
     
   CONTAINS
     
     !**************************************************************
     ! Here, the recursive searching routine follows
 
-    RECURSIVE FUNCTION search(inode,ipos,ivt) RESULT(f)
+    RECURSIVE FUNCTION search(inode, ipos, ivt) RESULT(f)
       INTEGER(PREC_QTREEIDX), INTENT(INOUT) :: inode,ipos,ivt
       INTEGER :: f
       
-      f=QTREE_NOT_FOUND
-      IF (rquadtree%p_Knode(QTREE_STATUS,inode) == QTREE_SUBDIV) THEN
+      f = QTREE_NOT_FOUND
+      IF (rquadtree%p_Knode(QTREE_STATUS, inode) .EQ. QTREE_SUBDIV) THEN
         
         ! Quad is subdivided. Compute child INODE which to look recursively.
-        inode = rquadtree%p_Knode(qtree_getDirection(rquadtree,Ddata,inode),inode)
-        f=search(inode,ipos,ivt)
+        inode = rquadtree%p_Knode(qtree_getDirection(rquadtree, Ddata, inode), inode)
+        f     = search(inode, ipos, ivt)
         
       ELSE
         
         ! Quad is not subdivided. Search for (x,y) in current quad
-        DO ipos=1,rquadtree%p_Knode(QTREE_STATUS,inode)
-          ivt = rquadtree%p_Knode(ipos,inode)
-          IF (MAXVAL(ABS(rquadtree%p_Ddata(:,ivt)-Ddata)) <= SYS_EPSREAL) THEN
-            f=QTREE_FOUND; RETURN
+        DO ipos = 1, rquadtree%p_Knode(QTREE_STATUS, inode)
+          ivt = rquadtree%p_Knode(ipos, inode)
+          IF (MAXVAL(ABS(rquadtree%p_Ddata(:, ivt)-Ddata)) .LE. SYS_EPSREAL) THEN
+            f = QTREE_FOUND; RETURN
           END IF
         END DO
         
@@ -817,7 +827,7 @@ CONTAINS
   
 !<function>
   
-  PURE FUNCTION qtree_getDirection(rquadtree,Ddata,inode) RESULT(d)
+  PURE FUNCTION qtree_getDirection(rquadtree, Ddata, inode) RESULT(d)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Ddata
@@ -844,20 +854,22 @@ CONTAINS
     REAL(DP) :: xmid,ymid
 
     ! Compute midpoint of current quad
-    xmid=(rquadtree%p_Dbbox(QTREE_XMIN,inode)+rquadtree%p_Dbbox(QTREE_XMAX,inode))/2._DP
-    ymid=(rquadtree%p_Dbbox(QTREE_YMIN,inode)+rquadtree%p_Dbbox(QTREE_YMAX,inode))/2._DP
+    xmid = (rquadtree%p_Dbbox(QTREE_XMIN, inode)+&
+            rquadtree%p_Dbbox(QTREE_XMAX, inode))/2._DP
+    ymid = (rquadtree%p_Dbbox(QTREE_YMIN, inode)+&
+            rquadtree%p_Dbbox(QTREE_YMAX, inode))/2._DP
     
     IF (Ddata(1) > xmid) THEN
       IF (Ddata(2) > ymid) THEN
-        d=QTREE_NE; RETURN
+        d = QTREE_NE; RETURN
       ELSE
-        d=QTREE_SE; RETURN
+        d = QTREE_SE; RETURN
       END IF
     ELSE
       IF (Ddata(2) > ymid) THEN
-        d=QTREE_NW; RETURN
+        d = QTREE_NW; RETURN
       ELSE
-        d=QTREE_SW; RETURN
+        d = QTREE_SW; RETURN
       END IF
     END IF
   END FUNCTION qtree_getDirection
@@ -866,7 +878,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE qtree_printQuadtree(rquadtree,cfilename)
+  SUBROUTINE qtree_printQuadtree(rquadtree, cfilename)
 
 !<description>
     ! This subroutine writes the content of the quadtree to a file
@@ -887,12 +899,12 @@ CONTAINS
     INTEGER :: iunit
     
     iunit=sys_getFreeUnit()
-    OPEN(UNIT=iunit,FILE=TRIM(ADJUSTL(cfilename)))
-    xmin = rquadtree%p_Dbbox(QTREE_XMIN,1)
-    ymin = rquadtree%p_Dbbox(QTREE_YMIN,1)
-    xmax = rquadtree%p_Dbbox(QTREE_XMAX,1)
-    ymax = rquadtree%p_Dbbox(QTREE_YMAX,1)
-    CALL print(xmin,ymin,xmax,ymax,1)
+    OPEN(UNIT=iunit, FILE=TRIM(ADJUSTL(cfilename)))
+    xmin = rquadtree%p_Dbbox(QTREE_XMIN, 1)
+    ymin = rquadtree%p_Dbbox(QTREE_YMIN, 1)
+    xmax = rquadtree%p_Dbbox(QTREE_XMAX, 1)
+    ymax = rquadtree%p_Dbbox(QTREE_YMAX, 1)
+    CALL print(xmin, ymin, xmax, ymax, 1)
     CLOSE(UNIT=iunit)
     
   CONTAINS
@@ -900,7 +912,7 @@ CONTAINS
     !**************************************************************
     ! Here, the recursive print routine follows
     
-    RECURSIVE SUBROUTINE print(xmin,ymin,xmax,ymax,inode)
+    RECURSIVE SUBROUTINE print(xmin, ymin, xmax, ymax, inode)
       REAL(DP), INTENT(IN) :: xmin,ymin,xmax,ymax
       INTEGER(PREC_QTREEIDX), INTENT(IN) :: inode
       REAL(DP) :: xmid,ymid
@@ -909,21 +921,21 @@ CONTAINS
       WRITE(UNIT=iunit,FMT=*) 'rect'
       WRITE(UNIT=iunit,FMT=10) xmin,ymin,xmax,ymax
       
-      IF (rquadtree%p_Knode(QTREE_STATUS,inode) == QTREE_SUBDIV) THEN
+      IF (rquadtree%p_Knode(QTREE_STATUS,inode) .EQ. QTREE_SUBDIV) THEN
         
         xmid=(xmin+xmax)/2._DP
         ymid=(ymin+ymax)/2._DP
         
-        CALL print(xmin,ymid,xmid,ymax,rquadtree%p_Knode(QTREE_NW,inode))
-        CALL print(xmin,ymin,xmid,ymid,rquadtree%p_Knode(QTREE_SW,inode))
-        CALL print(xmid,ymin,xmax,ymid,rquadtree%p_Knode(QTREE_SE,inode))
-        CALL print(xmid,ymid,xmax,ymax,rquadtree%p_Knode(QTREE_NE,inode))
+        CALL print(xmin, ymid, xmid, ymax, rquadtree%p_Knode(QTREE_NW, inode))
+        CALL print(xmin, ymin, xmid, ymid, rquadtree%p_Knode(QTREE_SW, inode))
+        CALL print(xmid, ymin, xmax, ymid, rquadtree%p_Knode(QTREE_SE, inode))
+        CALL print(xmid, ymid, xmax, ymax, rquadtree%p_Knode(QTREE_NE, inode))
         
-      ELSEIF (rquadtree%p_Knode(QTREE_STATUS,inode) > QTREE_EMPTY) THEN
+      ELSEIF (rquadtree%p_Knode(QTREE_STATUS, inode) > QTREE_EMPTY) THEN
         
-        DO i=1,rquadtree%p_Knode(QTREE_STATUS,inode)
-          WRITE(UNIT=iunit,FMT=*) 'node'
-          WRITE(UNIT=iunit,FMT=20) rquadtree%p_Ddata(:,rquadtree%p_Knode(i,inode))
+        DO i = 1, rquadtree%p_Knode(QTREE_STATUS, inode)
+          WRITE(UNIT=iunit, FMT=*) 'node'
+          WRITE(UNIT=iunit, FMT=20) rquadtree%p_Ddata(:, rquadtree%p_Knode(i, inode))
         END DO
         
       END IF
@@ -989,14 +1001,14 @@ CONTAINS
 !</result>
 !</function>
 
-    nvt=rquadtree%NVT
+    nvt = rquadtree%NVT
   END FUNCTION qtree_getSize
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION qtree_getBoundingBox(rquadtree,inode) RESULT(bbox)
+  FUNCTION qtree_getBoundingBox(rquadtree, inode) RESULT(bbox)
     
 !<description>
     ! This function returns the bounding box of the specified quad.
@@ -1025,9 +1037,9 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'qtree_getBoundingBox')
         CALL sys_halt()
       END IF
-      bbox=rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX,inode)
+      bbox = rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX, inode)
     ELSE
-      bbox=rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX,1)
+      bbox = rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX, 1)
     END IF
   END FUNCTION qtree_getBoundingBox
 
@@ -1035,7 +1047,7 @@ CONTAINS
 
 !<function>
 
-  ELEMENTAL FUNCTION qtree_getX(rquadtree,ivt) RESULT(x)
+  ELEMENTAL FUNCTION qtree_getX(rquadtree, ivt) RESULT(x)
 
 !<description>
     ! This function returns the X-value at the given position.
@@ -1054,14 +1066,14 @@ CONTAINS
 !</result>
 !</function>
 
-    x=rquadtree%p_Ddata(1,ivt)
+    x = rquadtree%p_Ddata(1, ivt)
   END FUNCTION qtree_getX
 
   !************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION qtree_getY(rquadtree,ivt) RESULT(y)
+  ELEMENTAL FUNCTION qtree_getY(rquadtree, ivt) RESULT(y)
 
 !<description>
     ! This function returns the Y-value at the given position.
@@ -1080,14 +1092,14 @@ CONTAINS
 !</result>
 !</function>
 
-    y=rquadtree%p_Ddata(2,ivt)
+    y = rquadtree%p_Ddata(2, ivt)
   END FUNCTION qtree_getY
 
   !************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE qtree_duplicateQuadtree(rquadtree,rquadtreeBackup)
+  SUBROUTINE qtree_duplicateQuadtree(rquadtree, rquadtreeBackup)
 
 !<description>
     ! This subroutine makes a copy of a quadtree in memory.
@@ -1120,21 +1132,21 @@ CONTAINS
 
     ! Copy storage blocks
     IF (rquadtree%h_Ddata .NE. ST_NOHANDLE) THEN
-      CALL storage_copy(rquadtree%h_Ddata,rquadtreeBackup%h_Ddata)
+      CALL storage_copy(rquadtree%h_Ddata, rquadtreeBackup%h_Ddata)
       CALL storage_getbase_double2D(rquadtreeBackup%h_Ddata,&
-          rquadtreeBackup%p_Ddata)
+                                    rquadtreeBackup%p_Ddata)
     END IF
 
     IF (rquadtree%h_Dbbox .NE. ST_NOHANDLE) THEN
-      CALL storage_copy(rquadtree%h_Dbbox,rquadtreeBackup%h_Dbbox)
+      CALL storage_copy(rquadtree%h_Dbbox, rquadtreeBackup%h_Dbbox)
       CALL storage_getbase_double2D(rquadtreeBackup%h_Dbbox,&
-          rquadtreeBackup%p_Dbbox)
+                                    rquadtreeBackup%p_Dbbox)
     END IF
 
     IF (rquadtree%h_Knode .NE. ST_NOHANDLE) THEN
-      CALL storage_copy(rquadtree%h_Knode,rquadtreeBackup%h_Knode)
+      CALL storage_copy(rquadtree%h_Knode, rquadtreeBackup%h_Knode)
       CALL storage_getbase_int2D(rquadtreeBackup%h_Knode,&
-          rquadtreeBackup%p_Knode)
+                                 rquadtreeBackup%p_Knode)
     END IF
   END SUBROUTINE qtree_duplicateQuadtree
 
@@ -1142,7 +1154,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE qtree_restoreQuadtree(rquadtreeBackup,rquadtree)
+  SUBROUTINE qtree_restoreQuadtree(rquadtreeBackup, rquadtree)
 
 !<description>
     ! This subroutine restores a quadtree from a previous backup.
@@ -1163,14 +1175,14 @@ CONTAINS
     CALL qtree_releaseQuadtree(rquadtree)
 
     ! Duplicate the backup
-    CALL qtree_duplicateQuadtree(rquadtreeBackup,rquadtree)
+    CALL qtree_duplicateQuadtree(rquadtreeBackup, rquadtree)
   END SUBROUTINE qtree_restoreQuadtree
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE resizeNVT(rquadtree,nnvt)
+  SUBROUTINE resizeNVT(rquadtree, nnvt)
 
 !<description>
     ! This subroutine reallocates memory for an existing quadtree
@@ -1187,19 +1199,19 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    CALL storage_realloc('resizeNVT',&
-        nnvt,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
+    CALL storage_realloc('resizeNVT', nnvt, rquadtree%h_Ddata,&
+                         ST_NEWBLOCK_ZERO, .TRUE.)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata, rquadtree%p_Ddata)
     
-    rquadtree%NNVT   = nnvt
-    rquadtree%NRESIZE=rquadtree%NRESIZE+1
+    rquadtree%NNVT    = nnvt
+    rquadtree%NRESIZE = rquadtree%NRESIZE+1
   END SUBROUTINE resizeNVT
 
   !************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE resizeNNODE(rquadtree,nnnode)
+  SUBROUTINE resizeNNODE(rquadtree, nnnode)
 
 !<description>
     ! This subroutine reallocates memory for an existing quadtree
@@ -1216,14 +1228,14 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    CALL storage_realloc('resizeNNODE',&
-        nnnode,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_realloc('resizeNNODE',&
-        nnnode,rquadtree%h_Knode,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
-    CALL storage_getbase_int2D(rquadtree%h_Knode,   rquadtree%p_Knode)
+    CALL storage_realloc('resizeNNODE', nnnode, rquadtree%h_Dbbox,&
+                         ST_NEWBLOCK_ZERO, .TRUE.)
+    CALL storage_realloc('resizeNNODE', nnnode, rquadtree%h_Knode,&
+                         ST_NEWBLOCK_ZERO, .TRUE.)
+    CALL storage_getbase_double2D(rquadtree%h_Dbbox, rquadtree%p_Dbbox)
+    CALL storage_getbase_int2D(rquadtree%h_Knode,    rquadtree%p_Knode)
     
-    rquadtree%NNNODE = nnnode
-    rquadtree%NRESIZE=rquadtree%NRESIZE+1
+    rquadtree%NNNODE  = nnnode
+    rquadtree%NRESIZE = rquadtree%NRESIZE+1
   END SUBROUTINE resizeNNODE
 END MODULE quadtree
