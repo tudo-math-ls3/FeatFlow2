@@ -335,7 +335,7 @@ CONTAINS
 
 !<function>
 
-  PURE FUNCTION hadapt_getNVE(rhadapt,iel) RESULT(nve)
+  PURE FUNCTION hadapt_getNVE(rhadapt, iel) RESULT(nve)
 
 !<description>
     ! This function returns the number of vertices present in the given element
@@ -373,7 +373,7 @@ CONTAINS
         ! the current triangulatin. If the last entry of the
         ! vertices-at-element list is nonzero then TRIA_NVEQUAD2D vertices
         ! are present in the current element. Otherwise return TRIA_NVETRI2D.
-        IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D,iel) .EQ. 0) THEN
+        IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D, iel) .EQ. 0) THEN
           nve = TRIA_NVETRI2D
         ELSE
           nve = TRIA_NVEQUAD2D
