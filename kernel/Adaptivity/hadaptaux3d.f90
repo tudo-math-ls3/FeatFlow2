@@ -19,10 +19,10 @@
 
 MODULE hadaptaux3d
 
+  USE collection
   USE fsystem
   USE hadaptaux
   USE hadaptaux2d
-  USE collection
 
   IMPLICIT NONE
 
