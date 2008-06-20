@@ -1019,6 +1019,10 @@ CONTAINS
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
         
+        ! Normalise to 0..1 using the length of the parameter region.
+        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
+        
         Rval(1) = dx
         Rval(2) = dy
         ! Rval(3) = .
@@ -1048,6 +1052,10 @@ CONTAINS
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
     
+        ! Normalise to 0..1 using the length of the parameter region.
+        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
+        
         evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
       END SELECT
     
