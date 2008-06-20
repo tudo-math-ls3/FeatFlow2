@@ -832,6 +832,10 @@ CONTAINS
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
+        
+        ! Normalise to 0..1 using the length of the parameter region.
+        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
     
         evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
       END SELECT
