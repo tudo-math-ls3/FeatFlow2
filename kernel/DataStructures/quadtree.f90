@@ -32,28 +32,31 @@
 !# 8.) qtree_searchInQuadtree
 !#     -> Search data in quadtree
 !#
-!# 9.) qtree_printQuadtree
+!# 9.) qtree_getDirection
+!#     -> Get direction for the next node
+!#
+!# 10.) qtree_printQuadtree
 !#      -> Write quadtree to file
 !#
-!# 10.) qtree_infoQuadtree
+!# 11.) qtree_infoQuadtree
 !#      -> Output info about quadtree
 !#
-!# 11.) qtree_getsize
+!# 12.) qtree_getsize
 !#      -> Return number of vertices in quadtree
 !#
-!# 12.) qtree_getBoundingBox
+!# 13.) qtree_getBoundingBox
 !#      -> Return the outer bounding box
 !#
-!# 13.) qtree_getX
+!# 14.) qtree_getX
 !#      -> Return the X-value at a given position
 !#
-!# 14.) qtree_getY
+!# 15.) qtree_getY
 !#      -> Return the Y-value at a given position
 !#
-!# 15.) qtree_duplicateQuadtree
+!# 16.) qtree_duplicateQuadtree
 !#      -> Create a duplicate / backup of a quadtree
 !#
-!# 16.) qtree_restoreQuadtree
+!# 17.) qtree_restoreQuadtree
 !#      -> Restore a quadtree from a previous backup
 !#
 !# For the internal use the following routines are available:
@@ -82,6 +85,7 @@ MODULE quadtree
   PUBLIC :: qtree_insertIntoQuadtree
   PUBLIC :: qtree_deleteFromQuadtree
   PUBLIC :: qtree_searchInQuadtree
+  PUBLIC :: qtree_getDirection
   PUBLIC :: qtree_printQuadtree
   PUBLIC :: qtree_infoQuadtree
   PUBLIC :: qtree_getsize
@@ -617,15 +621,15 @@ CONTAINS
         
         ! Add the four values from INODE to the four new quads 
         ! NNODE+1:NNODE+4 recursively
-        DO i=1,QTREE_MAX
-          knode = rquadtree%p_Knode(i,inode)
+        DO i = 1, QTREE_MAX
+          knode = rquadtree%p_Knode(i, inode)
           jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Ddata(:,knode), inode)
-          CALL insert(rquadtree%p_Knode(i, inode), jnode)
+          CALL insert(knode, jnode)
         END DO
         
         ! Mark the current quad as subdivided and set pointers to its four children 
         rquadtree%p_Knode(QTREE_STATUS,inode) = QTREE_SUBDIV
-        rquadtree%p_Knode(1:4,inode)          = (/nnode+QTREE_NW, nnode+QTREE_SW,&
+        rquadtree%p_Knode(1:QTREE_MAX,inode)  = (/nnode+QTREE_NW, nnode+QTREE_SW,&
                                                   nnode+QTREE_SE, nnode+QTREE_NE/)
         
         ! Add the new entry to the next position recursively
@@ -854,10 +858,10 @@ CONTAINS
     REAL(DP) :: xmid,ymid
 
     ! Compute midpoint of current quad
-    xmid = (rquadtree%p_Dbbox(QTREE_XMIN, inode)+&
-            rquadtree%p_Dbbox(QTREE_XMAX, inode))/2._DP
-    ymid = (rquadtree%p_Dbbox(QTREE_YMIN, inode)+&
-            rquadtree%p_Dbbox(QTREE_YMAX, inode))/2._DP
+    xmid = 0.5*(rquadtree%p_Dbbox(QTREE_XMIN, inode)+&
+                rquadtree%p_Dbbox(QTREE_XMAX, inode))
+    ymid = 0.5*(rquadtree%p_Dbbox(QTREE_YMIN, inode)+&
+                rquadtree%p_Dbbox(QTREE_YMAX, inode))
     
     IF (Ddata(1) > xmid) THEN
       IF (Ddata(2) > ymid) THEN
@@ -898,7 +902,7 @@ CONTAINS
     REAL(DP) :: xmin,xmax,ymin,ymax
     INTEGER :: iunit
     
-    iunit=sys_getFreeUnit()
+    iunit = sys_getFreeUnit()
     OPEN(UNIT=iunit, FILE=TRIM(ADJUSTL(cfilename)))
     xmin = rquadtree%p_Dbbox(QTREE_XMIN, 1)
     ymin = rquadtree%p_Dbbox(QTREE_YMIN, 1)
@@ -919,12 +923,12 @@ CONTAINS
       INTEGER(PREC_QTREEIDX) :: i
 
       WRITE(UNIT=iunit,FMT=*) 'rect'
-      WRITE(UNIT=iunit,FMT=10) xmin,ymin,xmax,ymax
+      WRITE(UNIT=iunit,FMT=10) xmin, ymin, xmax, ymax
       
       IF (rquadtree%p_Knode(QTREE_STATUS,inode) .EQ. QTREE_SUBDIV) THEN
         
-        xmid=(xmin+xmax)/2._DP
-        ymid=(ymin+ymax)/2._DP
+        xmid = (xmin+xmax)/2._DP
+        ymid = (ymin+ymax)/2._DP
         
         CALL print(xmin, ymid, xmid, ymax, rquadtree%p_Knode(QTREE_NW, inode))
         CALL print(xmin, ymin, xmid, ymid, rquadtree%p_Knode(QTREE_SW, inode))
