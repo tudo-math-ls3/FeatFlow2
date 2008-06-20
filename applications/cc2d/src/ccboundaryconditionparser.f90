@@ -793,7 +793,7 @@ CONTAINS
                                 rboundaryRegion%iboundCompIdx, &
                                 dpar, dx, dy)
         
-        ! Get the local parameter value 0 <= d <= 1.
+        ! Get the local parameter value 0 <= d <= 1 in the boundary region.
         ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
         ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
         ! although 0 <= dminpar <= max.par 
@@ -803,6 +803,10 @@ CONTAINS
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
+
+        ! Normalise to 0..1 using the length of the parameter region.
+        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
         
         Rval(1) = dx
         Rval(2) = dy
