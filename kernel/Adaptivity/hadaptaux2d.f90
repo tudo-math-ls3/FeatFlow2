@@ -6347,7 +6347,7 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
       END SELECT
-    END DO
+    END DO phase1
 
     ! Phase 2: Prevent the recoarsening algorithm from generating blue elements.
     ! The above loop "locked" all vertices, which should not be removed either
