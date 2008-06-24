@@ -621,7 +621,8 @@ CONTAINS
     
     ! First of all, get a mesh region that describes the cube's boundary.
     CALL mshreg_createFromNodalProp(rmeshRegion, &
-                                    rdiscretisation%p_rtriangulation)
+                                    rdiscretisation%p_rtriangulation, &
+                                    MSHREG_IDX_ALL)
 
     ! We want to prescribe Dirichlet on the cube's boundary, except for
     ! the face where the X-coordinate is 1. So the next thing we need
