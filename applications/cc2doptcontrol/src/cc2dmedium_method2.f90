@@ -97,7 +97,7 @@ CONTAINS
     CALL parlst_init (rparlist)
 
     ! Read parameters that configure the output
-    CALL parlst_readfromfile (rparlist, './data/output.dat')
+    CALL parlst_readfromfile (rparlist, TRIM(DIR_DATA)//'/output.dat')
     
     ! Now the real initialisation of the output including log file stuff!
     CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
@@ -112,6 +112,50 @@ CONTAINS
     CALL parlst_done (rparlist)
     
     END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE cc2dmedium2_evalParameters ()
+  
+!<description>
+  ! Evaluates command line parameters.
+  ! In the current implementation, command line parameters are passed as
+  ! text file. This routine searches in the main directory for a file
+  ! "cmdline.dat". If this file is found, it's opened and evaluated.
+  ! Every line may contain a command line parameter in the form of
+  ! a DAT file (name=value pairs).
+  !
+  ! Supported command line parameters:
+  !   "datdirectory = [Directory, where DAT files can be found]"
+!</description>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_parlist) :: rparamList
+    LOGICAL :: bexists
+    CHARACTER(SYS_STRLEN) :: sdata
+
+    ! Figure out if the file exists.
+    INQUIRE(file='./cmdline.dat', exist=bexists)
+    
+    IF (bexists) THEN
+      ! Read the file
+      CALL parlst_init (rparamList)
+      CALL parlst_readfromfile (rparamList, './cmdline.dat')
+      
+      ! Evaluate parameters
+      CALL parlst_getvalue_string_direct ( &
+          rparamList, '','datdirectory', sdata, DIR_DATA)
+      READ(sdata,*) DIR_DATA
+
+      CALL parlst_done (rparamList)
+      
+    END IF
+  
+  END SUBROUTINE
 
   ! ***************************************************************************
 
@@ -134,13 +178,13 @@ CONTAINS
 
     ! Each 'readfromfile' command adds the parameter of the specified file 
     ! to the parameter list.
-    CALL parlst_readfromfile (rparamList, './data/discretisation.dat')
-    CALL parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
-    ! CALL parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (rparamList, './data/output.dat')
-    CALL parlst_readfromfile (rparamList, './data/paramtriang.dat')
-    CALL parlst_readfromfile (rparamList, './data/bdconditions.dat')
-    CALL parlst_readfromfile (rparamList, './data/timediscr.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/discretisation.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//linsol_cc2d.dat')
+    ! CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//nonlinsol_cc2d.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//output.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//paramtriang.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//bdconditions.dat')
+    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//timediscr.dat')
   
   END SUBROUTINE
 

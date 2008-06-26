@@ -331,6 +331,13 @@ MODULE cc2dmediumm2basic
 
 !</types>
 
+!<globals>
+
+  ! Directory containing the data files.
+  CHARACTER(LEN=SYS_STRLEN), SAVE :: DIR_DATA = "./data";
+
+!</globals>
+
 !******************************************************************************
 ! Documentation
 !******************************************************************************

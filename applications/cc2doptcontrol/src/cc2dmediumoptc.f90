@@ -42,6 +42,9 @@ PROGRAM cc2dmediumoptc
   ! Initialise system-wide settings:
   CALL system_init()
   
+  ! Get command line parameters.
+  CALL cc2dmedium2_evalParameters()
+  
   ! Read the name of the message and error log file.
   CALL cc2dmedium2_getLogFiles (slogfile,serrorfile)
   

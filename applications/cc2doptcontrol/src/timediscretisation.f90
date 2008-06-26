@@ -125,7 +125,7 @@ CONTAINS
     rtimediscr%dtimeInit = dstart
     rtimediscr%dtimeMax = dend
     rtimediscr%nintervals = nintervals
-    rtimediscr%dtstep = 1.0_DP/REAL(nintervals,DP)
+    rtimediscr%dtstep = (dend-dstart)/REAL(nintervals,DP)
     rtimediscr%dtheta = dtheta
 
   END SUBROUTINE
@@ -162,7 +162,7 @@ CONTAINS
     rtimediscr%dtimeInit = dstart
     rtimediscr%dtimeMax = dend
     rtimediscr%nintervals = nintervals
-    rtimediscr%dtstep = 1.0_DP/REAL(nintervals,DP)
+    rtimediscr%dtstep = (dend-dstart)/REAL(nintervals,DP)
 
   END SUBROUTINE
   
