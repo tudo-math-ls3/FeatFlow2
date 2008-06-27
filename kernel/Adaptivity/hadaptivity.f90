@@ -2707,6 +2707,7 @@ CONTAINS
 !</subroutine>
     
     ! local parameters
+    INTEGER,  DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_VERTEXIDX) :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER :: iunit,nve
@@ -2715,10 +2716,13 @@ CONTAINS
     ! Check if dynamic data structures generated
     IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA) THEN
       CALL output_line('Dynamic data structures are not generated',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridSVG')
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
       CALL sys_halt()
     END IF
     
+    ! Set pointers
+    CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+
     ! Increment the sample number
     iout=iout+1
 
@@ -2728,16 +2732,37 @@ CONTAINS
     WRITE(UNIT=iunit,FMT='(A)') 'gmvinput ascii'
 
     ! Write vertices to output file
-    WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
-    DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-      WRITE(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D, ivt)
-    END DO
-    DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-      WRITE(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D, ivt)
-    END DO
-    DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-      WRITE(UNIT=iunit,FMT=10) 0._DP
-    END DO
+    SELECT CASE(rhadapt%ndim)
+    CASE (NDIM2D)
+      WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        WRITE(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D, ivt)
+      END DO
+      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        WRITE(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D, ivt)
+      END DO
+      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        WRITE(UNIT=iunit,FMT=10) 0._DP
+      END DO
+
+    CASE (NDIM3D)
+      WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        WRITE(UNIT=iunit,FMT=10) otree_getX(rhadapt%rVertexCoordinates3D, ivt)
+      END DO
+      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        WRITE(UNIT=iunit,FMT=10) otree_getY(rhadapt%rVertexCoordinates3D, ivt)
+      END DO
+      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        WRITE(UNIT=iunit,FMT=10) otree_getZ(rhadapt%rVertexCoordinates3D, ivt)
+      END DO
+
+    CASE DEFAULT
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
+      CALL sys_halt()
+    END SELECT
+      
 
     ! Write cells to output file
     WRITE(UNIT=iunit,FMT=*) 'cells ', rhadapt%NEL
@@ -2767,15 +2792,24 @@ CONTAINS
       WRITE(UNIT=iunit,FMT=10) 0._DP
     END DO
 
-    ! Write variable
+    ! Write variable for vertex age
     WRITE(UNIT=iunit,FMT=*) 'variable'
     WRITE(UNIT=iunit,FMT=*) 'vert_age 1'
 
-    DO ivt = 1, SIZE(rhadapt%p_IvertexAge, 1)
+    DO ivt = 1, MIN(rhadapt%NVT, SIZE(rhadapt%p_IvertexAge, 1))
       WRITE(UNIT=iunit,FMT=40) rhadapt%p_IvertexAge(ivt)
     END DO
-    DO ivt = SIZE(rhadapt%p_IvertexAge, 1)+1,rhadapt%NVT
-      WRITE(UNIT=iunit,FMT=40) -99999
+    DO ivt = MIN(rhadapt%NVT, SIZE(rhadapt%p_IvertexAge, 1))+1, rhadapt%NVT
+      WRITE(UNIT=iunit,FMT=40) -99
+    END DO
+
+    ! Write variable for element marker
+    WRITE(UNIT=iunit,FMT=*) 'elem_mark 0'
+    DO iel = 1, MIN(rhadapt%NEL, SIZE(p_Imarker, 1))
+      WRITE(UNIT=iunit,FMT=40) p_Imarker(iel)
+    END DO
+    DO iel = MIN(rhadapt%NEL, SIZE(p_Imarker, 1))+1, rhadapt%NEL
+      WRITE(UNIT=iunit,FMT=40) -99
     END DO
 
     WRITE(UNIT=iunit,FMT=*) 'endvars'
@@ -3344,16 +3378,15 @@ CONTAINS
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     
+
     ! Perform hierarchical red-green recoarsening
-    DO iel = SIZE(p_Imarker,1), 1, -1
+    element: DO iel = SIZE(p_Imarker,1), 1, -1
 
       SELECT CASE(p_Imarker(iel))
       CASE(MARK_CRS_GENERIC:)
 
-        ! Do nothing for elements ...
-        ! - that should be kept 'as is'
-        ! - that are only marked for generic recoarsening
-        ! - that are marked for refinement.
+        ! Do nothing for elements that should be kept 'as is'
+        ! and those which are marked for refinement.
         
       CASE(MARK_CRS_2TRIA1TRIA)
         CALL coarsen_2Tria1Tria(rhadapt,iel,&
@@ -3411,14 +3444,16 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
         CALL sys_halt()
       END SELECT
-    END DO
+
+    END DO element
+
 
     ! Loop over all vertices 1...NVT0 present in the triangulation before
     ! refinement and check if they are free for vertex removal.
-    DO ivt = rhadapt%NVT0, 1, -1
+    vertex: DO ivt = rhadapt%NVT0, 1, -1
       
       ! If the vertex is locked, then skip this vertex
-      IF (rhadapt%p_IvertexAge(ivt) .LE. 0) CYCLE
+      IF (rhadapt%p_IvertexAge(ivt) .LE. 0) CYCLE vertex
       
       ! Remove vertex physically. Note that this vertex is no longer associated
       ! to any element. All associations have been removed in the above element
@@ -3473,7 +3508,7 @@ CONTAINS
         CALL fcb_hadaptCallback(rcollection, HADAPT_OPR_REMOVEVERTEX,&
                                 Ivertices, Ielements)
       END IF
-    END DO
+    END DO vertex
         
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
