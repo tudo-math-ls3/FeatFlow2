@@ -250,6 +250,9 @@ CONTAINS
     CALL cc_initOutput (p_rproblem)
     OU_LINE_LENGTH = 132
     
+    ! Print the parameters 
+    CALL parlst_info (p_rproblem%rparamList)
+    
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     CALL cc_initParameters (p_rproblem)
