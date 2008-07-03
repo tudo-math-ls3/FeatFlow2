@@ -95,6 +95,9 @@
 !# 12.) parlst_getStringRepresentation
 !#      -> Creates a string representation of the parameter list.
 !#
+!# 13.) parlst_info 
+!#      -> Print the parameter list to the terminal
+!#
 !# </purpose>
 !##############################################################################
 
