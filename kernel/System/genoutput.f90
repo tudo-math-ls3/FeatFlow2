@@ -593,7 +593,7 @@ CONTAINS
     ! Get the file and terminal output channel
     iotChannel = OU_TERMINAL
     IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
-        (coClass .EQ. OU_CLASS_WARNING)) iofChannel = OU_ERROR
+        (coClass .EQ. OU_CLASS_WARNING)) iotChannel = OU_ERROR
 
     iofChannel = OU_LOG
     IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
