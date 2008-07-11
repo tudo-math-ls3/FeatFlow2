@@ -2796,13 +2796,13 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
 
 
-    ! "Lock" all vertices connected to the four triangles
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
+!!$    ! "Lock" all vertices connected to the four triangles
+!!$    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
+!!$    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
+!!$    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
+!!$    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
+!!$    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
+!!$    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
     
 
     ! Optionally, invoke callback routine
@@ -2967,16 +2967,16 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
 
 
-    ! "Lock" all vertices connected to the four quadrilaterals
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+!!$    ! "Lock" all vertices connected to the four quadrilaterals
+!!$    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
+!!$    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
+!!$    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
+!!$    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
+!!$    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
+!!$    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
+!!$    rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
+!!$    rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
+!!$    rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
 
 
     ! Optionally, invoke callback routine
@@ -3140,22 +3140,21 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel3,   ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
 
-
     ! Finally, adjust numbers of triangles/quadrilaterals
     rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-3
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+3
 
 
-    ! "Lock" all vertices connected to the four quadrilaterals
-    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
+!!$    ! "Lock" all vertices connected to the four quadrilaterals
+!!$    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+!!$    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+!!$    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+!!$    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+!!$    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+!!$    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
+!!$    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
+!!$    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
+!!$    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
     
 
     ! Optionally, invoke callback routine
@@ -3323,16 +3322,16 @@ CONTAINS
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+4
 
 
-    ! "Lock" all vertices of the four quadrilaterals
-    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
+!!$    ! "Lock" all vertices of the four quadrilaterals
+!!$    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+!!$    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+!!$    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+!!$    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+!!$    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+!!$    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
+!!$    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
+!!$    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
+!!$    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
 
 
     ! Optionally, invoke callback routine
@@ -7098,7 +7097,7 @@ CONTAINS
     ! Set pointers
     CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     CALL lsyssc_getbase_double(rindicator, p_Dindicator)
-    
+
     
     ! All nodes of the initial triangulation have age-0, and hence, 
     ! they will never be deleted by the re-coarsening procedure.
@@ -7133,7 +7132,7 @@ CONTAINS
       SELECT CASE(p_Imarker(iel))
         
       CASE(MARK_REF_QUAD4QUAD,&
-           MARK_REF_TRIA4TRIA)
+          MARK_REF_TRIA4TRIA)
 
         ! The current element is marked for red refinement.
         ! Thus, we have to "lock" all vertices connected to it.
@@ -7174,9 +7173,8 @@ CONTAINS
             
           END IF
         END DO
-
         
-      CASE DEFAULT
+      CASE(:MARK_ASIS_QUAD)
 
         ! The current element is not marked for red refinement, and hence,
         ! it is a potential candidate for the re-coarsening algorithm.
@@ -7266,6 +7264,19 @@ CONTAINS
 
         END IF   ! lock element due to accuracy reasons?
 
+        
+      CASE DEFAULT
+
+        ! The current element is marked for green refinement, and hence,
+        ! only the corner nodes have to be locked. The rest is done elsewhere.
+        
+        DO ive = 1, hadapt_getNVE(rhadapt, iel)
+          
+          ! "Lock" vertex at corner
+          ivt = rhadapt%p_IverticesAtElement(ive, iel)
+          rhadapt%p_IvertexAge(ivt) = -ABS(rhadapt%p_IvertexAge(ivt))
+        END DO
+        
       END SELECT
     END DO phase1
 
@@ -7945,7 +7956,7 @@ CONTAINS
                 
                 ! Mark element for re-coarsening, whereby the green
                 ! outer triangle to the left is preserved.
-                p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_RIGHT !LEFT
+                p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_LEFT ! RIGHT
                 
                 ! Keep its neighbour along first edge 'as is'
                 kel = rhadapt%p_IneighboursAtElement(1, jel)
@@ -7966,7 +7977,7 @@ CONTAINS
                 
                 ! Mark element for re-coarsening, whereby the green 
                 ! outer triangle to the right is preserved.
-                p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_LEFT !RIGHT
+                p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_RIGHT ! LEFT
                 
                 ! Keep its neighbour along first edge 'as is'
                 kel = rhadapt%p_IneighboursAtElement(1, jel)
@@ -8002,29 +8013,60 @@ CONTAINS
             CALL sys_halt()
           END SELECT
           
+
+        CASE (STATE_QUAD_HALF1,STATE_QUAD_HALF2)
+          ! This is one of two quadrilaterals which result from a
+          ! 1-quad : 2-quad refinement. If both common vertices are
+          ! locked, then the green quadrilaterals are kept 'as is'. If
+          ! only one common vertex is locked, the two quadrilaterals
+          ! can be coarsened into three triangles reducing the number
+          ! of vertices by one. If both common vertices can be
+          ! deleted, then both quadrilaterals are removed and the
+          ! original macro element is restored.
+
+          ! Get the number of the neighboring green element
+          jel = rhadapt%p_IneighboursAtElement(2,iel)
+          
+          ! Check if the first common vertex of is locked
+          IF (rhadapt%p_IvertexAge(IverticesAtElement(2)) .LE. 0) THEN
+
+            ! Check if the second common vertex is also locked
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
+              ! Keep both elements 'as is'
+              p_Imarker(iel)=MARK_ASIS
+              p_Imarker(jel)=MARK_ASIS
+            ELSE
+              ! Mark element IEL for re-coarsening into three triangles, 
+              ! whereby the second vertex of element IEL is preserved
+              p_Imarker(iel)=MARK_CRS_2QUAD3TRIA
+              p_Imarker(jel)=MARK_ASIS
+            END IF
+
+          ELSE
+
+            ! Check if the second common vertex is locked
+            IF (rhadapt%p_IvertexAge(IverticesAtElement(3)) .LE. 0) THEN
+              ! Mark element JEL for re-coarsening into three triangles,
+              ! whereby the second vertex of element JEL is preserved
+              p_Imarker(iel)=MARK_ASIS
+              p_Imarker(jel)=MARK_CRS_2QUAD3TRIA
+            ELSE
+              ! Mark element IEL for re-coarsening into the macro element
+              p_Imarker(iel)=MARK_CRS_2QUAD1QUAD
+              p_Imarker(jel)=MARK_ASIS
+            END IF
+          END IF
+          
           
         CASE DEFAULT
           CALL output_line('Invalid element state!',&
               OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
-          print *, istate
           CALL sys_halt()
         END SELECT
 
       END SELECT
     END DO phase3
    
-!!$    print *, "Vertex age after phase 3"
-!!$    DO ivt = 1, rhadapt%NVT
-!!$      WRITE(*, FMT='(I5,2X,I5)') ivt, rhadapt%p_IvertexAge(ivt)
-!!$    END DO
-!!$    PAUSE
-!!$
-!!$    print *, "Element marker after phase 3"
-!!$    DO iel = 1, rhadapt%NEL
-!!$      WRITE(*, FMT='(I5,2X,I5)') iel, p_Imarker(iel)
-!!$    END DO
-!!$    PAUSE
-
     ! Set specifier to "marked for coarsening"
     rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_MARKEDCOARSEN)
 
@@ -10368,15 +10410,16 @@ CONTAINS
         END IF
       END DO
       
-      ! If ISTATE=0, then there must be one youngest vertex which is returned
-      ! but with negative sign. In this case the state of the triangle cannot be
-      ! uniquely determined.
+      ! If ISTATE=0, then there must be one youngest vertex. Its local number
+      ! is returned but with negative sign. In this case the state of the
+      ! triangle cannot be uniquely determined and additional checks are required.
+      !
       ! Otherwise, either all nodes have the same age (1110 : inner red triangle)
       ! or exactly two nodes have the same age. In the latter case, we must check
       ! if the opposite vertex is the youngest one in the triple of nodes.
       SELECT CASE(istate)
       CASE(STATE_TRIA_ROOT)
-        istate = -ibset(istate, ipos)
+        istate = -ibset(0, ipos)
 
       CASE(STATE_TRIA_OUTERINNER1)
         IF (ipos .EQ. 3) istate = -ibset(0, ipos)

@@ -1863,13 +1863,19 @@ CONTAINS
       CASE (NDIM2D)
         ! Mark elements for refinement based on indicator function
         CALL mark_refinement2D(rhadapt, rindicator)
+
+!!$        CALL hadapt_writeGridGMV(rhadapt,"gmv/grid")
         
         ! Mark additional elements to restore conformity
-        CALL redgreen_mark_refinement2D(rhadapt, rcollection, fcb_hadaptCallback)
+        CALL redgreen_markBETA_refinement2D(rhadapt, rcollection, fcb_hadaptCallback)
+
+!!$        CALL hadapt_writeGridGMV(rhadapt,"gmv/grid")
         
         ! Mark element for recoarsening based on indicator function
-        CALL redgreen_mark_coarsening2D(rhadapt, rindicator)
+        CALL redgreen_markBETA_coarsening2D(rhadapt, rindicator)
         
+!!$        CALL hadapt_writeGridGMV(rhadapt,"gmv/grid")
+
       CASE DEFAULT
         CALL output_line('Unsupported spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
@@ -1917,6 +1923,8 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
 
+!!$      CALL hadapt_writeGridGMV(rhadapt,"gmv/grid")
+
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
 
@@ -1924,6 +1932,8 @@ CONTAINS
       CALL storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
                            rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .TRUE.)
             
+!!$      CALL hadapt_writeGridGMV(rhadapt,"gmv/grid")
+
     CASE DEFAULT
       CALL output_line('Unsupported refinement strategy!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
