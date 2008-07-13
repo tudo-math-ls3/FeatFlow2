@@ -136,7 +136,7 @@ MODULE ucd
   ! No output format
   INTEGER, PARAMETER :: UCD_FORMAT_NONE = 0
   
-  ! GMV file format
+  ! GMV file format (ASCII)
   INTEGER, PARAMETER :: UCD_FORMAT_GMV  = 1
   
   ! AVS/Express file format (ASCII)
@@ -144,6 +144,9 @@ MODULE ucd
   
   ! Visualization Toolkit (VTK) file format (ASCII)
   INTEGER, PARAMETER :: UCD_FORMAT_VTK  = 3
+
+  ! GMV file format (binary)
+  INTEGER, PARAMETER :: UCD_FORMAT_BGMV = 4
   
 !</constantblock>
 
@@ -772,6 +775,68 @@ CONTAINS
     END IF
   
   END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  SUBROUTINE ucd_startBGMV (rexport,cflags,rtriangulation,sfilename)
+ 
+!<description>
+  ! Initialises the UCD output to a file sfilename. A UCD export structure
+  ! rexport is created that specifies that file. This structure must be
+  ! passed to all UCD output routines.
+!</description>
+ 
+!<input>
+  ! Filename of the GMV file
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  
+  ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
+  INTEGER(I32), INTENT(IN) :: cflags
+  
+  ! Specification of the underlying triangulation. A pointer to this
+  ! object is saved until the otput is finished.
+  TYPE(t_triangulation), INTENT(IN), TARGET :: rtriangulation
+!</input>
+  
+!<output>
+  ! An UCD export structure which collects information about the output.
+  ! Must be passed to all export subroutines.
+  TYPE(t_ucdExport), INTENT(OUT) :: rexport
+!</output>
+ 
+!</subroutine>
+
+    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! values automatically. We only have to initialise minor things.
+    
+    rexport%coutputFormat = UCD_FORMAT_BGMV
+    rexport%cflags = cflags
+    rexport%sfilename = sfilename
+    rexport%p_rtriangulation => rtriangulation
+    
+    ! How many vertices do we have in the trangulation that have to be 
+    ! filled with values?
+    rexport%nvertices = rtriangulation%NVT
+    rexport%ncells = rtriangulation%NEL
+    
+    IF ((IAND(cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NMT
+    END IF
+
+    IF ((IAND(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NEL
+      IF (rtriangulation%NDIM .EQ. NDIM2D) THEN
+        rexport%ncells = rtriangulation%NEL*4
+      ELSE
+        rexport%ncells = rtriangulation%NEL*8
+      END IF
+    END IF
+  
+  END SUBROUTINE
   
 !************************************************************************
 
@@ -1300,6 +1365,13 @@ CONTAINS
 
 !</subroutine>
 
+    ! Check for special binary file output
+    SELECT CASE(rexport%coutputFormat)
+    CASE (UCD_FORMAT_BGMV)
+      CALL ucd_writeBGMV (rexport)
+      RETURN
+    END SELECT
+
     ! If there is a new filename, open the output file.
     IF (rexport%sfilename .NE. '') THEN
       CALL io_openFileForWriting(rexport%sfilename, rexport%iunit, SYS_REPLACE)
@@ -1616,13 +1688,23 @@ CONTAINS
               SELECT CASE (i-1)
               
               CASE (4)
-                ! Pyramid
+                ! Tetrahedron
                 WRITE(mfile,'(A)') 'ptet4 4'
                 WRITE(mfile,'(4I8)') p_IverticesAtElement(1:4,iel)
                 
+              CASE (5)
+                ! Pyramid
+                WRITE(mfile,'(A)') 'ppyrmd5 5'
+                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:5,iel)
+
+              CASE (6)
+                ! Prism
+                WRITE(mfile,'(A)') 'pprism6 6'
+                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:6,iel)
+
               CASE (8)
                 ! Hexahedron
-                WRITE(mfile,'(A)')'hex 8'
+                WRITE(mfile,'(A)')'phex8 8'
                 WRITE(mfile,'(8I8)') p_IverticesAtElement(1:8,iel)
                 
               CASE DEFAULT
@@ -2148,6 +2230,1042 @@ CONTAINS
       
       WRITE(mfile,'(A)') 'endgmv'
       
+    END SUBROUTINE
+
+    !****************************************************************
+    
+    SUBROUTINE ucd_writeBGMV (rexport)
+
+    ! Specific output routine for GMV output. Writes the whole
+    ! structure to the output channel that was opened in the ucd_startBGMV
+    ! subroutine before.
+    
+    ! The export structure with all information
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+    ! local variables
+    INTEGER :: i,j,k,icoor
+    INTEGER(PREC_VERTEXIDX) :: ivt,ivt1,ivt2,nnodes,nvt,nverts,matnum
+    INTEGER(PREC_EDGEIDX) :: imt
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords,p_Ddata2D
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge 
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+
+    INTEGER :: nod2ids(2), nod3ids(3), nod4ids(4), nod5ids(5), nod6ids(6), nod8ids(8)
+    REAL, DIMENSION(:), ALLOCATABLE :: X,Y,Z,VAR
+    REAL dx, dy,dz
+
+    ! Open file for binary output
+    CALL fgmvwrite_openfile(rexport%sfilename)
+    
+    CALL storage_getbase_double2d (rexport%p_Rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+    CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    
+    !----------------------------------------------------
+    ! Simulation time
+    IF (rexport%dsimulationTime .NE. SYS_INFINITY) THEN
+      CALL fgmvwrite_probtime(REAL(rexport%dsimulationTime))
+    END IF
+
+    !----------------------------------------------------
+    ! Write the triangulation.
+    !
+    ! GMV output allows to specify an alternative source file for
+    ! triangulation related data. Figure out if some of the data
+    ! has to be taken from such an alternative file. If yes, we
+    ! write the filename into the GMV file. If no, we write the
+    ! triangulation data to the GMV.
+    !
+    ! Point coordinates:
+    
+    IF (rexport%saltFilePoints .NE. "") THEN
+      
+      ! Write only a reference to the alternative source file
+      ! to the GMV. Saves disc space!
+      
+      CALL fgmvwrite_nodes_fromfile(TRIM(rexport%saltFilePoints), INT(rexport%nvertices))
+      
+    ELSE
+
+      ! Allocate temporal memory
+      ALLOCATE(X(rexport%nvertices), Y(rexport%nvertices), Z(rexport%nvertices))
+      
+      SELECT CASE(rexport%p_Rtriangulation%ndim)
+      
+      CASE(NDIM1D)
+        DO ivt=1,rexport%p_Rtriangulation%NVT
+          X(ivt) =  p_DvertexCoords(1,ivt)
+        END DO
+
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of edge midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO imt=1,rexport%p_Rtriangulation%NMT
+            ivt1 = p_IverticesAtEdge(1,imt)
+            ivt2 = p_IverticesAtEdge(2,imt)
+            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
+                                 p_DvertexCoords(1,ivt2))
+          END DO
+          
+        END IF
+
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of element midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO iel=1,rexport%p_Rtriangulation%NEL
+            
+            dx = 0.0
+            
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              ivt = p_IverticesAtElement(i,iel)
+              IF (ivt .NE. 0) THEN
+                dx = dx + p_DvertexCoords(1,ivt)
+              ELSE
+                ! We have only (i-1) vertices in that element; 
+                ! happens e.g. in triangles that are mixed into a quad mesh.
+                ! We stop here.
+                EXIT
+              END IF
+            END DO
+            
+            ! If all vertices of the element are touched, there is i=NVE+1.
+            ! Divide by the number of vertices to get the coordinate of the 
+            ! midpoint of the element.
+            dx = dx / REAL(i-1)
+            
+            X(nvt+iel) = dx
+          END DO
+          
+        END IF
+
+
+      CASE(NDIM2D)
+        DO ivt=1,rexport%p_Rtriangulation%NVT
+          X(ivt) =  p_DvertexCoords(1,ivt)
+          Y(ivt) =  p_DvertexCoords(2,ivt)
+        END DO
+
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of edge midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO imt=1,rexport%p_Rtriangulation%NMT
+            ivt1 = p_IverticesAtEdge(1,imt)
+            ivt2 = p_IverticesAtEdge(2,imt)
+            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
+                                 p_DvertexCoords(1,ivt2))
+            Y(nvt+imt) = 0.5_DP*(p_DvertexCoords(2,ivt1) + &
+                                 p_DvertexCoords(2,ivt2))
+          END DO
+          
+        END IF
+        
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of element midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO iel=1,rexport%p_Rtriangulation%NEL
+            
+            dx = 0.0
+            dy = 0.0
+            
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              ivt = p_IverticesAtElement(i,iel)
+              IF (ivt .NE. 0) THEN
+                dx = dx + p_DvertexCoords(1,ivt)
+                dy = dy + p_DvertexCoords(2,ivt)
+              ELSE
+                ! We have only (i-1) vertices in that element; 
+                ! happens e.g. in triangles that are mixed into a quad mesh.
+                ! We stop here.
+                EXIT
+              END IF
+            END DO
+            
+            ! If all vertices of the element are touched, there is i=NVE+1.
+            ! Divide by the number of vertices to get the coordinate of the 
+            ! midpoint of the element.
+            dx = dx / REAL(i-1)
+            dy = dy / REAL(i-1)
+            
+            X(nvt+iel) = dx
+            Y(nvt+iel) = dy
+          END DO
+          
+        END IF
+
+
+      CASE(NDIM3D)
+        DO ivt=1,rexport%p_Rtriangulation%NVT
+          X(ivt) =  p_DvertexCoords(1,ivt)
+          Y(ivt) =  p_DvertexCoords(2,ivt)
+          Z(ivt) =  p_DvertexCoords(3,ivt)
+        END DO
+
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of edge midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO imt=1,rexport%p_Rtriangulation%NMT
+            ivt1 = p_IverticesAtEdge(1,imt)
+            ivt2 = p_IverticesAtEdge(2,imt)
+            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
+                                 p_DvertexCoords(1,ivt2))
+            Y(nvt+imt) = 0.5_DP*(p_DvertexCoords(2,ivt1) + &
+                                 p_DvertexCoords(2,ivt2))
+            Z(nvt+imt) = 0.5_DP*(p_DvertexCoords(3,ivt1) + &
+                                 p_DvertexCoords(3,ivt2))
+          END DO
+
+        END IF
+
+        nvt = rexport%p_Rtriangulation%NVT
+
+        ! Write coordinates of element midpoints?
+        IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+            (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+          
+          CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
+              p_IverticesAtEdge)
+          
+          ! We construct them by hand.
+          ! In a later implementation, one could take the coordinates
+          ! of h_DfreecornerCoordinates...
+          DO iel=1,rexport%p_Rtriangulation%NEL
+            
+            dx = 0.0
+            dy = 0.0
+            dz = 0.0
+            
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              ivt = p_IverticesAtElement(i,iel)
+              IF (ivt .NE. 0) THEN
+                dx = dx + p_DvertexCoords(1,ivt)
+                dy = dy + p_DvertexCoords(2,ivt)
+                dz = dz + p_DvertexCoords(3,ivt)
+              ELSE
+                ! We have only (i-1) vertices in that element; 
+                ! happens e.g. in triangles that are mixed into a quad mesh.
+                ! We stop here.
+                EXIT
+              END IF
+            END DO
+            
+            ! If all vertices of the element are touched, there is i=NVE+1.
+            ! Divide by the number of vertices to get the coordinate of the 
+            ! midpoint of the element.
+            dx = dx / REAL(i-1)
+            dy = dy / REAL(i-1)
+            dz = dz / REAL(i-1)
+            
+            X(nvt+iel) = dx
+            Y(nvt+iel) = dy
+            Z(nvt+iel) = dz
+          END DO
+          
+        END IF
+        
+      END SELECT
+      
+      ! Write nodes to file
+      CALL fgmvwrite_node_data(INT(rexport%nvertices), X, Y, Z)
+      
+      ! Deallocate temporal memory
+      DEALLOCATE(X, Y, Z)
+
+    END IF
+
+    
+    ! Mesh connectivity / Cells:
+    
+    IF (rexport%saltFileCells .NE. "") THEN
+      
+      ! Write only a reference to the alternative source file
+      ! to the GMV. Saves disc space!
+      
+      CALL fgmvwrite_cells_fromfile(TRIM(rexport%saltFileCells), INT(rexport%ncells))
+      
+    ELSE
+
+      ! Write the connectivity to the mesh - i.e. the cells.
+      CALL fgmvwrite_cell_header(INT(rexport%ncells))
+      
+      IF (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .EQ. 0) THEN
+        
+        SELECT CASE (rexport%p_rtriangulation%ndim)
+          
+        CASE (NDIM1D)
+          
+          ! Standard mesh.
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D
+              nod2ids(1) = p_IverticesAtElement(1,iel)
+              nod2ids(2) = p_IverticesAtElement(2,iel)
+              CALL fgmvwrite_cell_type('line 2',2,nod2ids)
+              
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+            END SELECT
+            
+          END DO
+          
+        CASE (NDIM2D)
+          
+          ! Standard mesh.
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+              
+            CASE (3)
+              ! Triangle
+              nod3ids(1) = p_IverticesAtElement(1,iel)
+              nod3ids(2) = p_IverticesAtElement(2,iel)
+              nod3ids(3) = p_IverticesAtElement(3,iel)
+              CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
+              
+            CASE (4)
+              ! Quad
+              nod4ids(1) = p_IverticesAtElement(1,iel)
+              nod4ids(2) = p_IverticesAtElement(2,iel)
+              nod4ids(3) = p_IverticesAtElement(3,iel)
+              nod4ids(4) = p_IverticesAtElement(4,iel)
+              CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
+              
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+            END SELECT
+            
+          END DO
+          
+        CASE (NDIM3D)
+          
+          ! Standard mesh.
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+              
+            CASE (4)
+              ! Tetrahedron
+              nod4ids(1) = p_IverticesAtElement(1,iel)
+              nod4ids(2) = p_IverticesAtElement(2,iel)
+              nod4ids(3) = p_IverticesAtElement(3,iel)
+              nod4ids(4) = p_IverticesAtElement(4,iel)
+              CALL fgmvwrite_cell_type('ptet4 4',4,nod4ids)
+
+            CASE (5)
+              ! Pyramid
+              nod5ids(1) = p_IverticesAtElement(1,iel)
+              nod5ids(2) = p_IverticesAtElement(2,iel)
+              nod5ids(3) = p_IverticesAtElement(3,iel)
+              nod5ids(4) = p_IverticesAtElement(4,iel)
+              nod5ids(5) = p_IverticesAtElement(5,iel)
+              CALL fgmvwrite_cell_type('ppyrmd5 5',5,nod5ids)
+              
+            CASE(6)
+              ! Prism
+              nod6ids(1) = p_IverticesAtElement(1,iel)
+              nod6ids(2) = p_IverticesAtElement(2,iel)
+              nod6ids(3) = p_IverticesAtElement(3,iel)
+              nod6ids(4) = p_IverticesAtElement(4,iel)
+              nod6ids(5) = p_IverticesAtElement(5,iel)
+              nod6ids(6) = p_IverticesAtElement(6,iel)
+              CALL fgmvwrite_cell_type('pprism6 6',6,nod6ids)
+
+            CASE (8)
+              ! Hexahedron
+              nod8ids(1) = p_IverticesAtElement(1,iel)
+              nod8ids(2) = p_IverticesAtElement(2,iel)
+              nod8ids(3) = p_IverticesAtElement(3,iel)
+              nod8ids(4) = p_IverticesAtElement(4,iel)
+              nod8ids(5) = p_IverticesAtElement(5,iel)
+              nod8ids(6) = p_IverticesAtElement(6,iel)
+              nod8ids(7) = p_IverticesAtElement(7,iel)
+              nod8ids(8) = p_IverticesAtElement(8,iel)
+              CALL fgmvwrite_cell_type('phex8 8',8,nod8ids)
+              
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+            END SELECT
+            
+          END DO
+          
+        END SELECT
+        
+      ELSE
+
+        ! 1x refined mesh
+        
+        ! The edge numbers give the numbers of the edge midpoints and thus
+        ! the numbers of the new vertices on the once refined mesh.
+        CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IedgesAtElement,&
+            p_IedgesAtElement)
+        
+        SELECT CASE (rexport%p_rtriangulation%ndim)
+          
+        CASE (NDIM1D)
+          
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D.
+              !
+              ! The coarse grid element is
+              !
+              !   1 -----IEL----- 2
+              !
+              ! The once refined element is
+              !
+              !   1 -- IEL -- 1* -- NEL+IEL -- 2
+              !
+              ! Write the connectivity of element IEL
+              nod2ids(1) = p_IverticesAtElement(1,iel)
+              nod2ids(2) = p_IedgesAtElement(1,iel)
+              CALL fgmvwrite_cell_type('line 2',2,nod2ids)
+
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')             
+            END SELECT
+            
+          END DO
+          
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+            CASE (2)
+              ! Line in 1D.
+              !
+              ! Element "NEL+1"
+              nod2ids(1) = p_IverticesAtElement(1,iel)
+              nod2ids(2) = p_IedgesAtElement(1,iel)
+              CALL fgmvwrite_cell_type('line 2',2,nod2ids)
+
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')   
+            END SELECT
+            
+          END DO
+          
+        CASE (NDIM2D)
+          
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+              
+            CASE (3)
+              ! Triangle.
+              !
+              ! Let a coarse grid triangle be locally numbered as:
+              !
+              !   2 
+              !   |  \
+              !   |    \
+              !   | IEL  \
+              !   |        \
+              !   3----------1
+              ! 
+              ! Then the refinement process assigns the following numbers:
+              !
+              !   2_
+              !   |  \_
+              !   | NEL \_
+              !   | +1     \_
+              !   2*-------- 1* 
+              !   | \_  IEL=1|  \_
+              !   |NEL \_    | NEL \_
+              !   |+3     \_ | +2     \_
+              !   3----------3*---------1
+              !
+              ! So write the edge(-midpoint) numbers as corner numbers
+              ! of the "main" element
+              
+              nod3ids(1) = p_IedgesAtElement(1,iel)
+              nod3ids(2) = p_IedgesAtElement(2,iel)
+              nod3ids(3) = p_IedgesAtElement(3,iel)
+              CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
+              
+            CASE (4)
+              ! Quad
+              !
+              ! Let a coarse grid quad be locally numbered as
+              !
+              !  4-------3
+              !  |       |
+              !  |  IEL  |
+              !  |       |
+              !  1-------2
+              !
+              ! Then the refinement process assigns the following numbers:
+              !
+              !  4-----7-----3
+              !  |NEL+3|NEL+2|
+              !  |     |     |
+              !  8-----9-----6
+              !  |IEL=1|NEL+1|
+              !  |     |     |
+              !  1-----5-----2
+              !
+              ! So construct the corners of the 'smaller' elements from the
+              ! corners of the coarse grid element, the numbers of the
+              ! edge(-midpoint)s of the element and the number of the midpoint
+              ! of the element -- which is defined as the element number itself.
+
+              nod4ids(1) = p_IverticesAtElement(1,iel)
+              nod4ids(2) = p_IedgesAtElement(1,iel)
+              nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
+              nod4ids(4) = p_IedgesAtElement(4,iel)
+              CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
+
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+            END SELECT
+            
+          END DO
+          
+          DO iel = 1,rexport%p_rtriangulation%NEL
+            
+            ! Count the number of vertices on that element
+            DO i=1,UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(i,iel) .EQ. 0) EXIT
+            END DO
+            
+            ! We have i-1 vertices on that element -- so what is it?
+            SELECT CASE (i-1)
+              
+            CASE (3)
+              ! Triangle.
+              
+              ! Element "NEL+1"
+              nod3ids(1) = p_IverticesAtElement(2,iel)
+              nod3ids(2) = p_IedgesAtElement(2,iel)
+              nod3ids(3) = p_IedgesAtElement(1,iel)
+              CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
+              
+              ! Element "NEL+2"
+              nod3ids(1) = p_IverticesAtElement(1,iel)
+              nod3ids(2) = p_IedgesAtElement(1,iel)
+              nod3ids(3) = p_IedgesAtElement(3,iel)
+              CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
+              
+              ! Element "NEL+3"
+              nod3ids(1) = p_IverticesAtElement(3,iel)
+              nod3ids(2) = p_IedgesAtElement(3,iel)
+              nod3ids(3) = p_IedgesAtElement(2,iel)
+              CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
+              
+            CASE (4)
+              ! Quad
+              !
+              ! Element "NEL+1"
+              nod4ids(1) = p_IverticesAtElement(2,iel)
+              nod4ids(2) = p_IedgesAtElement(2,iel)
+              nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
+              nod4ids(4) = p_IedgesAtElement(1,iel)
+              CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
+              
+              ! Element "NEL+2"
+              nod4ids(1) = p_IverticesAtElement(3,iel)
+              nod4ids(2) = p_IedgesAtElement(3,iel)
+              nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
+              nod4ids(4) = p_IedgesAtElement(2,iel)
+              CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
+              
+              ! Element "NEL+3"
+              nod4ids(1) = p_IverticesAtElement(4,iel)
+              nod4ids(2) = p_IedgesAtElement(4,iel)
+              nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
+              nod4ids(4) = p_IedgesAtElement(3,iel)
+              CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
+
+            CASE DEFAULT
+              CALL output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+            END SELECT
+            
+          END DO
+          
+        CASE (NDIM3D)
+          
+          CALL output_line ('GMV export for 1x refined mesh in 3D'//&
+              ' not implemented!', OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+          CALL sys_halt()
+          
+        END SELECT
+        
+      END IF
+      
+    END IF
+
+
+    !----------------------------------------------------
+    ! Write material names -- if specified
+    !
+    ! Cell material
+    IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+      ! GMV only supports <= 1000 materials!
+      CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),0)
+      DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
+        ! GMV supports only <= 8 characters and does not allow spaces
+        ! in the material name. We replace all invalid spaces by "_".
+        CALL fgmvwrite_material_name(&
+            sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'))
+      END DO
+      
+      IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
+        ! Write a list of material id's. For every cell, we specify its
+        ! material by the material number.
+        CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
+        DO i=1,SIZE(p_Idata)
+          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 0)
+        END DO
+      END IF
+    END IF
+
+    ! Vertex materials; coincide with cell materials if not specified.
+    IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
+      ! GMV only supports <= 1000 materials!
+      CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%SvertexMaterials))),1)
+      DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
+        ! GMV supports only <= 8 characters and does not allow spaces
+        ! in the material name. We replace all invalid spaces by "_".
+        CALL fgmvwrite_material_name(&
+            sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_'))
+      END DO
+      
+      IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+        ! Write a list of material id's. For every vertex, we specify its
+        ! material by the material number.
+        CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+        DO i=1,SIZE(p_Idata)
+          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
+        END DO
+      END IF
+    ELSE
+      IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+        ! GMV only supports <= 1000 materials!
+        CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),1)
+        DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
+          ! GMV supports only <= 8 characters and does not allow spaces
+          ! in the material name. We replace all invalid spaces by "_".
+          CALL fgmvwrite_material_name(&
+              sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'), 1)
+        END DO
+      END IF
+      
+      IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+        ! Write a list of material id's. For every vertex, we specify its
+        ! material by the material number.
+        CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+        DO i=1,SIZE(p_Idata)
+          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
+        END DO
+      END IF
+    END IF
+    
+    
+    IF (rexport%nvariables .GT. 0) THEN
+      !----------------------------------------------------
+      ! Write a velocity field -- if there is one
+      !
+      ! To write the velocity field, we have to look it up in the
+      ! set of variables.
+      ! Search for the X-velocity and write it out.
+      ! If there is no X-velocity, there is no velocity at all.
+      ! There may be a velocity field given in vertices or in cells,
+      ! so we have to search twice!
+      !
+      
+      ! Look for cell based velocity.
+      DO i=1,rexport%nvariables
+        IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
+            (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT)) THEN
+          
+          CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+
+          ! Allocate temporal memory
+          ALLOCATE(X(rexport%ncells), Y(rexport%ncells), Z(rexport%ncells))
+          
+          ! Don't be confused! ivt=number of cell, as we are in the 
+          ! 'cell-oriented' case here!!!
+          DO ivt=1,rexport%ncells
+            X(ivt) = p_Ddata(ivt)
+          END DO
+          
+          ! Find the Y-velocity
+          DO j=1,rexport%nvariables
+            IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
+                (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
+              
+              ! Found it. Write it out.
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              DO ivt=1,rexport%ncells
+                Y(ivt) = p_Ddata(ivt)
+              END DO
+              
+              EXIT
+            END IF
+          END DO
+          IF (j .GT. rexport%nvariables) THEN
+            ! Not found. Write out 0's instead.
+            DO ivt=1,rexport%ncells
+              Y(ivt) = 0.0
+            END DO
+          END IF
+          
+          ! Find the Z-velocity
+          DO j=1,rexport%nvariables
+            IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
+                (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
+              
+              ! Found it. Write it out.
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              DO ivt=1,rexport%ncells
+                Z(ivt) = p_Ddata(ivt)
+              END DO
+              
+              EXIT
+            END IF
+          END DO
+          IF (j .GT. rexport%nvariables) THEN
+            ! Not found. Write out 0's instead.
+            DO ivt=1,rexport%ncells
+              Z(ivt) = 0.0
+            END DO
+          END IF
+          
+          ! Write cellbased velocities
+          CALL fgmvwrite_velocity_data(0,X,Y,Z)
+
+          ! Deallocate temporal memory
+          DEALLOCATE(X,Y,Z)
+
+        END IF
+      END DO
+      
+      ! Look for vertex based velocity.
+      DO i=1,rexport%nvariables
+        IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
+            (rexport%p_IvariableBase(i) .EQ. UCD_BASE_VERTEX)) THEN
+          
+          CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+
+          ! Allocate temporal memory
+          ALLOCATE(X(rexport%nvertices), Y(rexport%nvertices), Z(rexport%nvertices))
+
+          DO ivt=1,rexport%nvertices
+            X(ivt) = p_Ddata(ivt)
+          END DO
+          
+          ! Find the Y-velocity
+          DO j=1,rexport%nvariables
+            IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
+                (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX)) THEN
+              
+              ! Found it. Write it out.
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              DO ivt=1,rexport%nvertices
+                Y(ivt) = p_Ddata(ivt)
+              END DO
+              
+              EXIT
+            END IF
+          END DO
+          IF (j .GT. rexport%nvariables) THEN
+            ! Not found. Write out 0's instead.
+            DO ivt=1,rexport%nvertices
+              Y(ivt) = 0.0
+            END DO
+          END IF
+          
+          ! Find the Z-velocity
+          DO j=1,rexport%nvariables
+            IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
+                (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX)) THEN
+              
+              ! Found it. Write it out.
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              DO ivt=1,rexport%nvertices
+                Z(ivt) = p_Ddata(ivt)
+              END DO
+              
+              EXIT
+            END IF
+          END DO
+          IF (j .GT. rexport%nvariables) THEN
+            ! Not found. Write out 0's instead.
+            DO ivt=1,rexport%nvertices
+              Z(ivt) = 0.0
+            END DO
+          END IF
+          
+          ! Write cellbased velocities
+          CALL fgmvwrite_velocity_data(1,X,Y,Z)
+
+          ! Deallocate temporal memory
+          DEALLOCATE(X,Y,Z)
+
+        END IF
+      END DO
+      
+      !----------------------------------------------------
+      ! Write all variables which are not velocities
+      DO i=1,rexport%nvariables
+        IF (IAND(rexport%p_IvariableSpec(i), &
+            UCD_VAR_XVELOCITY+UCD_VAR_YVELOCITY+UCD_VAR_ZVELOCITY) .EQ. 0) THEN
+          
+          CALL fgmvwrite_variable_header()
+          
+          IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
+            ! Cell based variable
+            CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+
+            ! Allocate temporal memory
+            ALLOCATE(VAR(rexport%ncells))
+            DO ivt=1,rexport%ncells
+              VAR(ivt) = p_Ddata(ivt)
+            END DO
+            
+            CALL fgmvwrite_variable_name_data(0, TRIM(rexport%p_SvariableNames(i)), VAR)
+
+            ! Deallocate temporal memory
+            DEALLOCATE(VAR)
+
+          ELSE
+            ! Vertex based variable
+            CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+            
+            ! Allocate temporal memory
+            ALLOCATE(VAR(rexport%nvertices))
+            DO ivt=1,rexport%nvertices
+              VAR(ivt) = p_Ddata(ivt)
+            END DO
+
+            CALL fgmvwrite_variable_name_data(1, TRIM(rexport%p_SvariableNames(i)), VAR)
+
+            ! Deallocate temporal memory
+            DEALLOCATE(VAR)
+          END IF
+          
+          CALL fgmvwrite_variable_endvars()
+         
+        END IF
+        
+      END DO ! i
+      
+    END IF
+
+
+    !----------------------------------------------------
+    ! Write polygon data
+    IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
+      
+      ! At least one polygon
+      CALL fgmvwrite_polygons_header()
+      
+      ! Materials
+      CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
+      
+      ! Write all polygons.
+      DO i=1,rexport%npolygons
+        
+        ! Coordinates        
+        CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
+        
+        ! Allocate temporal memory
+        ALLOCATE(X(UBOUND(p_Ddata2D,2)), Y(UBOUND(p_Ddata2D,2)), Z(UBOUND(p_Ddata2D,2)))
+        
+        ! Either we have 2D or 3D coordinates. 
+        SELECT CASE(UBOUND(p_Ddata2D,1))
+
+        CASE (NDIM2D)
+          DO j=1,UBOUND(p_Ddata2D,2)
+            X(j) = p_Ddata2D(1,j)
+            Y(j) = p_Ddata2D(2,j)
+            Z(j) = 0.0
+          END DO
+
+        CASE (NDIM3D)
+          DO j=1,UBOUND(p_Ddata2D,2)
+            X(j) = p_Ddata2D(1,j)
+            Y(j) = p_Ddata2D(2,j)
+            Z(j) = p_Ddata2D(3,j)
+          END DO
+
+        CASE DEFAULT
+          CALL output_line ('Invalid spatial dimensions for polygon output!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+        END SELECT
+        
+        nverts = UBOUND(p_Ddata2D,2)
+        matnum = p_Idata(i)
+        
+        CALL fgmvwrite_polygons_data(nverts, matnum, X, Y, Z)
+        
+        ! Deallocate temporal memory
+        DEALLOCATE(X,Y,Z)
+
+      END DO
+      
+      CALL fgmvwrite_polygons_endpoly()
+      
+    END IF
+
+    !----------------------------------------------------
+    ! Write tracer coordinates and data
+    IF (rexport%ntracers .NE. 0) THEN
+            
+      CALL storage_getbase_double2d(rexport%htracers,p_Ddata2D)
+      
+      ! Allocate temporal memory
+      ALLOCATE(X(rexport%ntracers), Y(rexport%ntracers), Z(rexport%ntracers))
+
+      SELECT CASE(UBOUND(p_Ddata,1))
+
+      CASE(NDIM1D)
+        DO j=1,rexport%ntracers
+          X(j) = p_Ddata2D(j,1)
+          Y(j) = 0.0
+          Z(j) = 0.0
+        END DO
+
+      CASE(NDIM2D)
+        DO j=1,rexport%ntracers
+          X(j) = p_Ddata2D(j,1)
+          Y(j) = p_Ddata2D(j,2)
+          Z(j) = 0.0
+        END DO
+
+      CASE(NDIM3D)
+        DO j=1,rexport%ntracers
+          X(j) = p_Ddata2D(j,1)
+          Y(j) = p_Ddata2D(j,2)
+          Z(j) = p_Ddata2D(j,3)
+        END DO
+      END SELECT
+      
+      CALL fgmvwrite_tracers_header(INT(rexport%ntracers), X, Y, Z)
+      
+      ! Deallocate temporal memory
+      DEALLOCATE(X,Y,Z)
+
+!!$      
+!!$      
+!!$      ! Write tracer variables if specified
+!!$      DO i=1,rexport%ntracerVariables
+!!$        WRITE (mfile,'(A32)') rexport%StracerVariable(i)
+!!$        
+!!$        CALL storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
+!!$        DO j=1,rexport%ntracers
+!!$          WRITE (mfile,rexport%sdataFormat) p_Ddata(j)
+!!$        END DO
+!!$      END DO
+
+
+      CALL fgmvwrite_tracers_endtrace()
+      
+    END IF
+
+    !----------------------------------------------------
+    ! Finally close the GMV file, finish
+    
+    CALL fgmvwrite_closefile()
+    
     END SUBROUTINE
 
     !****************************************************************
