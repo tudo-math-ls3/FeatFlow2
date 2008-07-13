@@ -224,6 +224,12 @@ MODULE ucd
   ! Cell information is specified in a different source file.
   INTEGER(I32), PARAMETER :: UCD_ASRC_CELLS               = 2**1
 
+  ! Material information is specified in a different source file.
+  INTEGER(I32), PARAMETER :: UCD_ASRC_MATERIALS           = 2**2
+
+  ! Polygons are specified in a difference source file.
+  INTEGER(I32), PARAMETER :: UCD_ASRC_POLYGONS            = 2**3
+
 !</constantblock>
 
 !<constantblock description="Cell type constants for VTK exporter">
@@ -352,6 +358,14 @@ MODULE ucd
     ! Filename of file containing cell structure. 
     ! ""=no alternative source file.
     CHARACTER(LEN=SYS_STRLEN) :: saltFileCells = ""
+
+    ! Filename of file containing material structure. 
+    ! ""=no alternative source file.
+    CHARACTER(LEN=SYS_STRLEN) :: saltFileMaterials = ""
+
+    ! Filename of file containing polygons.
+    ! ""=no alternative source file.
+    CHARACTER(LEN=SYS_STRLEN) :: saltFilePolygons = ""
     
     ! A pointer to the underlying triangulation
     TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
@@ -1104,6 +1118,16 @@ CONTAINS
     ! Cell structure
     IF (IAND(caltFlags,UCD_ASRC_CELLS) .NE. 0) THEN
       rexport%saltFileCells = sfilename
+    END IF
+
+    ! Material structure
+    IF (IAND(caltFlags,UCD_ASRC_MATERIALS) .NE. 0) THEN
+      rexport%saltFileMaterials = sfilename
+    END IF
+
+    ! Polygons
+    IF (IAND(caltFlags,UCD_ASRC_POLYGONS) .NE. 0) THEN
+      rexport%saltFilePolygons = sfilename
     END IF
     
     ! The output routine must take care, that rexport%saltFileXXXX is
@@ -1926,65 +1950,76 @@ CONTAINS
       !----------------------------------------------------
       ! Write material names -- if specified
       !
-      ! Cell material
-      IF (ASSOCIATED(rexport%ScellMaterials)) THEN
-        ! GMV only supports <= 1000 materials!
-        WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
-        DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
-          ! GMV supports only <= 8 characters and does not allow spaces
-          ! in the material name. We replace all invalid spaces by "_".
-          WRITE(mfile,'(A8)') &
-              sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_')
-        END DO
 
-        IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
-          ! Write a list of material id's. For every cell, we specify its
-          ! material by the material number.
-          CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
-          DO i=1,SIZE(p_Idata)
-            WRITE(mfile,'(I4)') p_Idata(i)
-          END DO
-        END IF
-      END IF
+      IF (rexport%saltFileMaterials .NE. "") THEN
 
-      ! Vertex materials; coincide with cell materials if not specified.
-      IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
-        ! GMV only supports <= 1000 materials!
-        WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
-        DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
-          ! GMV supports only <= 8 characters and does not allow spaces
-          ! in the material name. We replace all invalid spaces by "_".
-          WRITE(mfile,'(A8)') &
-              sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_')
-        END DO
+        ! Write only a reference to the alternative source file
+        ! to the GMV. Saves disc space!
         
-        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
-          ! Write a list of material id's. For every vertex, we specify its
-          ! material by the material number.
-          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
-          DO i=1,SIZE(p_Idata)
-            WRITE(mfile,'(I4)') p_Idata(i)
-          END DO
-        END IF
+        WRITE(mfile,'(A)')'material fromfile "'//TRIM(rexport%saltFileMaterials)//'"'
+        
       ELSE
+
+        ! Cell material
         IF (ASSOCIATED(rexport%ScellMaterials)) THEN
           ! GMV only supports <= 1000 materials!
-          WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
+          WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
           DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             WRITE(mfile,'(A8)') &
                 sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_')
           END DO
+          
+          IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
+            ! Write a list of material id's. For every cell, we specify its
+            ! material by the material number.
+            CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
+            DO i=1,SIZE(p_Idata)
+              WRITE(mfile,'(I4)') p_Idata(i)
+            END DO
+          END IF
         END IF
-
-        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
-          ! Write a list of material id's. For every vertex, we specify its
-          ! material by the material number.
-          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
-          DO i=1,SIZE(p_Idata)
-            WRITE(mfile,'(I4)') p_Idata(i)
+        
+        ! Vertex materials; coincide with cell materials if not specified.
+        IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
+          ! GMV only supports <= 1000 materials!
+          WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
+          DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
+            ! GMV supports only <= 8 characters and does not allow spaces
+            ! in the material name. We replace all invalid spaces by "_".
+            WRITE(mfile,'(A8)') &
+                sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_')
           END DO
+          
+          IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+            ! Write a list of material id's. For every vertex, we specify its
+            ! material by the material number.
+            CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+            DO i=1,SIZE(p_Idata)
+              WRITE(mfile,'(I4)') p_Idata(i)
+            END DO
+          END IF
+        ELSE
+          IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+            ! GMV only supports <= 1000 materials!
+            WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
+            DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
+              ! GMV supports only <= 8 characters and does not allow spaces
+              ! in the material name. We replace all invalid spaces by "_".
+              WRITE(mfile,'(A8)') &
+                  sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_')
+            END DO
+          END IF
+          
+          IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+            ! Write a list of material id's. For every vertex, we specify its
+            ! material by the material number.
+            CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+            DO i=1,SIZE(p_Idata)
+              WRITE(mfile,'(I4)') p_Idata(i)
+            END DO
+          END IF
         END IF
       END IF
       
@@ -2003,10 +2038,10 @@ CONTAINS
         DO i=1,rexport%nvariables
           IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
               (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT)) THEN
-              
+            
             ! Found it. Write it out.
             WRITE (mfile,'(A)') 'velocity 0'
-
+            
             CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
             
             ! Don't be confused! ivt=number of cell, as we are in the 
@@ -2019,7 +2054,7 @@ CONTAINS
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
                   (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
-                  
+                
                 ! Found it. Write it out.
                 CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
                 DO ivt=1,rexport%ncells
@@ -2029,51 +2064,51 @@ CONTAINS
                 EXIT
               END IF
             END DO
-            IF (j .GT. rexport%nvariables) THEN
-              ! Not found. Write out 0's instead.
-              DO ivt=1,rexport%ncells
-                WRITE (MFILE,rexport%sdataFormat) 0.0_DP
-              END DO
-            END IF
-            
-            ! Find the Z-velocity
-            DO j=1,rexport%nvariables
-              IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
-                  (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
-                  
-                ! Found it. Write it out.
-                CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              IF (j .GT. rexport%nvariables) THEN
+                ! Not found. Write out 0's instead.
                 DO ivt=1,rexport%ncells
-                  WRITE (MFILE,rexport%sdataFormat) p_Ddata(ivt)
+                  WRITE (MFILE,rexport%sdataFormat) 0.0_DP
                 END DO
-                
-                EXIT
               END IF
-            END DO
-            IF (j .GT. rexport%nvariables) THEN
-              ! Not found. Write out 0's instead.
-              DO ivt=1,rexport%ncells
-                WRITE (MFILE,rexport%sdataFormat) 0.0_DP
-              END DO
-            END IF
-            
-          END IF
-        END DO
-        
-        ! Look for vertex based velocity.
-        DO i=1,rexport%nvariables
-          IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
-              (rexport%p_IvariableBase(i) .EQ. UCD_BASE_VERTEX)) THEN
               
-            ! Found it. Write it out.
-            WRITE (mfile,'(A)') 'velocity 1'
-            
-            CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-            DO ivt=1,rexport%nvertices
-              WRITE (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-            END DO
-            
-            ! Find the Y-velocity
+              ! Find the Z-velocity
+              DO j=1,rexport%nvariables
+                IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
+                    (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
+                  
+                  ! Found it. Write it out.
+                  CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+                  DO ivt=1,rexport%ncells
+                    WRITE (MFILE,rexport%sdataFormat) p_Ddata(ivt)
+                  END DO
+                  
+                  EXIT
+                END IF
+              END DO
+              IF (j .GT. rexport%nvariables) THEN
+                ! Not found. Write out 0's instead.
+                DO ivt=1,rexport%ncells
+                  WRITE (MFILE,rexport%sdataFormat) 0.0_DP
+                END DO
+              END IF
+              
+            END IF
+          END DO
+          
+          ! Look for vertex based velocity.
+          DO i=1,rexport%nvariables
+            IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
+                (rexport%p_IvariableBase(i) .EQ. UCD_BASE_VERTEX)) THEN
+              
+              ! Found it. Write it out.
+              WRITE (mfile,'(A)') 'velocity 1'
+              
+              CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+              DO ivt=1,rexport%nvertices
+                WRITE (MFILE,rexport%sdataFormat) p_Ddata(ivt)
+              END DO
+              
+              ! Find the Y-velocity
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
                   (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX)) THEN
@@ -2151,45 +2186,57 @@ CONTAINS
 
       !----------------------------------------------------
       ! Write polygon data
-      IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
+
+      IF (rexport%saltFilePolygons .NE. "") THEN
       
-        ! At least one polygon
-        WRITE (MFILE,'(A)') 'polygons'
-
-        ! Materials
-        CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
-
-        ! Write all polygons.
-        DO i=1,rexport%npolygons
+        ! Write only a reference to the alternative source file
+        ! to the GMV. Saves disc space!
         
-          ! Coordinates        
-          CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
+        WRITE(mfile,'(A)')'polygons fromfile "'//TRIM(rexport%saltFilePolygons)//'"'
+      
+      ELSE
+        
+        IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
           
-          ! Write material, #points
-          WRITE (MFILE,'(2I10)') p_Idata(i),UBOUND(p_Ddata2D,2)
-              
-          ! Either we have 2D or 3D coordinates. 
-          ! Write coordinates of the points forming the line segments 
-          ! of the polygon
-          ! First all X-, then all Y- and at the end all Z-coordinates -- or 0.0.
-          DO k=1,NDIM3D
-            IF (UBOUND(p_Ddata2D,1) .GE. k) THEN
-              DO j=1,UBOUND(p_Ddata2D,2)
-                WRITE (MFILE,'(E15.7)') p_Ddata2D(k,j)
-              END DO
-            ELSE
-              DO j=1,UBOUND(p_Ddata2D,2)
-                WRITE (MFILE,'(E15.7)') 0.0_DP
-              END DO
-            END IF
+          ! At least one polygon
+          WRITE (MFILE,'(A)') 'polygons'
+          
+          ! Materials
+          CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
+          
+          ! Write all polygons.
+          DO i=1,rexport%npolygons
+            
+            ! Coordinates        
+            CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
+            
+            ! Write material, #points
+            WRITE (MFILE,'(2I10)') p_Idata(i),UBOUND(p_Ddata2D,2)
+            
+            ! Either we have 2D or 3D coordinates. 
+            ! Write coordinates of the points forming the line segments 
+            ! of the polygon
+            ! First all X-, then all Y- and at the end all Z-coordinates -- or 0.0.
+            DO k=1,NDIM3D
+              IF (UBOUND(p_Ddata2D,1) .GE. k) THEN
+                DO j=1,UBOUND(p_Ddata2D,2)
+                  WRITE (MFILE,'(E15.7)') p_Ddata2D(k,j)
+                END DO
+              ELSE
+                DO j=1,UBOUND(p_Ddata2D,2)
+                  WRITE (MFILE,'(E15.7)') 0.0_DP
+                END DO
+              END IF
+            END DO
+            
           END DO
           
-        END DO
-        
-        WRITE (mfile,'(A)') 'endpoly'
-      
+          WRITE (mfile,'(A)') 'endpoly'
+          
+        END IF
+
       END IF
-      
+
       !----------------------------------------------------
       ! Write tracer coordinates and data
       IF (rexport%ntracers .NE. 0) THEN
@@ -2263,14 +2310,14 @@ CONTAINS
     CALL fgmvwrite_openfile(rexport%sfilename)
     
     CALL storage_getbase_double2d (rexport%p_Rtriangulation%h_DvertexCoords,&
-        p_DvertexCoords)
+                                   p_DvertexCoords)
     CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
+                                p_IverticesAtElement)
     
     !----------------------------------------------------
     ! Simulation time
     IF (rexport%dsimulationTime .NE. SYS_INFINITY) THEN
-      CALL fgmvwrite_probtime(REAL(rexport%dsimulationTime))
+      CALL fgmvwrite_probtime(rexport%dsimulationTime)
     END IF
 
     !----------------------------------------------------
@@ -2300,9 +2347,12 @@ CONTAINS
       
       CASE(NDIM1D)
         DO ivt=1,rexport%p_Rtriangulation%NVT
-          X(ivt) =  p_DvertexCoords(1,ivt)
+          X(ivt) =  REAL(p_DvertexCoords(1,ivt))
+          Y(ivt) = 0.0E0
+          Z(ivt) = 0.0E0
         END DO
 
+        ! Store number of vertives already processed
         nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of edge midpoints?
@@ -2311,7 +2361,7 @@ CONTAINS
             (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
           
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
-              p_IverticesAtEdge)
+                                      p_IverticesAtEdge)
           
           ! We construct them by hand.
           ! In a later implementation, one could take the coordinates
@@ -2319,13 +2369,15 @@ CONTAINS
           DO imt=1,rexport%p_Rtriangulation%NMT
             ivt1 = p_IverticesAtEdge(1,imt)
             ivt2 = p_IverticesAtEdge(2,imt)
-            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
-                                 p_DvertexCoords(1,ivt2))
+            X(nvt+imt) = 0.5*(REAL(p_DvertexCoords(1,ivt1)) + &
+                              REAL(p_DvertexCoords(1,ivt2)))
+            Y(nvt+imt) = 0.0E0
+            Z(nvt+imt) = 0.0E0
           END DO
           
+          ! Store number of vertives already processed
+          nvt = rexport%p_Rtriangulation%NVT + rexport%p_Rtriangulation%NMT
         END IF
-
-        nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of element midpoints?
         IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
@@ -2339,12 +2391,12 @@ CONTAINS
           ! of h_DfreecornerCoordinates...
           DO iel=1,rexport%p_Rtriangulation%NEL
             
-            dx = 0.0
+            dx = 0.0E0
             
             DO i=1,UBOUND(p_IverticesAtElement,1)
               ivt = p_IverticesAtElement(i,iel)
               IF (ivt .NE. 0) THEN
-                dx = dx + p_DvertexCoords(1,ivt)
+                dx = dx + REAL(p_DvertexCoords(1,ivt))
               ELSE
                 ! We have only (i-1) vertices in that element; 
                 ! happens e.g. in triangles that are mixed into a quad mesh.
@@ -2359,6 +2411,8 @@ CONTAINS
             dx = dx / REAL(i-1)
             
             X(nvt+iel) = dx
+            Y(nvt+iel) = 0.0E0
+            Z(nvt+iel) = 0.0E0
           END DO
           
         END IF
@@ -2366,10 +2420,12 @@ CONTAINS
 
       CASE(NDIM2D)
         DO ivt=1,rexport%p_Rtriangulation%NVT
-          X(ivt) =  p_DvertexCoords(1,ivt)
-          Y(ivt) =  p_DvertexCoords(2,ivt)
+          X(ivt) =  REAL(p_DvertexCoords(1,ivt))
+          Y(ivt) =  REAL(p_DvertexCoords(2,ivt))
+          Z(ivt) = 0.0E0
         END DO
 
+        ! Store number of vertives already processed
         nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of edge midpoints?
@@ -2378,7 +2434,7 @@ CONTAINS
             (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
           
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
-              p_IverticesAtEdge)
+                                      p_IverticesAtEdge)
           
           ! We construct them by hand.
           ! In a later implementation, one could take the coordinates
@@ -2386,36 +2442,37 @@ CONTAINS
           DO imt=1,rexport%p_Rtriangulation%NMT
             ivt1 = p_IverticesAtEdge(1,imt)
             ivt2 = p_IverticesAtEdge(2,imt)
-            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
-                                 p_DvertexCoords(1,ivt2))
-            Y(nvt+imt) = 0.5_DP*(p_DvertexCoords(2,ivt1) + &
-                                 p_DvertexCoords(2,ivt2))
+            X(nvt+imt) = 0.5*(REAL(p_DvertexCoords(1,ivt1)) + &
+                              REAL(p_DvertexCoords(1,ivt2)))
+            Y(nvt+imt) = 0.5*(REAL(p_DvertexCoords(2,ivt1)) + &
+                              REAL(p_DvertexCoords(2,ivt2)))
+            Z(nvt+imt) = 0.0E0
           END DO
           
+          ! Store number of vertives already processed
+          nvt = rexport%p_Rtriangulation%NVT + rexport%p_Rtriangulation%NMT
         END IF
-        
-        nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of element midpoints?
         IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
             (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
           
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
-              p_IverticesAtEdge)
+                                      p_IverticesAtEdge)
           
           ! We construct them by hand.
           ! In a later implementation, one could take the coordinates
           ! of h_DfreecornerCoordinates...
           DO iel=1,rexport%p_Rtriangulation%NEL
             
-            dx = 0.0
-            dy = 0.0
+            dx = 0.0E0
+            dy = 0.0E0
             
             DO i=1,UBOUND(p_IverticesAtElement,1)
               ivt = p_IverticesAtElement(i,iel)
               IF (ivt .NE. 0) THEN
-                dx = dx + p_DvertexCoords(1,ivt)
-                dy = dy + p_DvertexCoords(2,ivt)
+                dx = dx + REAL(p_DvertexCoords(1,ivt))
+                dy = dy + REAL(p_DvertexCoords(2,ivt))
               ELSE
                 ! We have only (i-1) vertices in that element; 
                 ! happens e.g. in triangles that are mixed into a quad mesh.
@@ -2432,6 +2489,7 @@ CONTAINS
             
             X(nvt+iel) = dx
             Y(nvt+iel) = dy
+            Z(nvt+iel) = 0.0E0
           END DO
           
         END IF
@@ -2439,11 +2497,12 @@ CONTAINS
 
       CASE(NDIM3D)
         DO ivt=1,rexport%p_Rtriangulation%NVT
-          X(ivt) =  p_DvertexCoords(1,ivt)
-          Y(ivt) =  p_DvertexCoords(2,ivt)
-          Z(ivt) =  p_DvertexCoords(3,ivt)
+          X(ivt) =  REAL(p_DvertexCoords(1,ivt))
+          Y(ivt) =  REAL(p_DvertexCoords(2,ivt))
+          Z(ivt) =  REAL(p_DvertexCoords(3,ivt))
         END DO
 
+        ! Store number of vertives already processed
         nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of edge midpoints?
@@ -2452,7 +2511,7 @@ CONTAINS
             (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
           
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
-              p_IverticesAtEdge)
+                                      p_IverticesAtEdge)
           
           ! We construct them by hand.
           ! In a later implementation, one could take the coordinates
@@ -2460,40 +2519,40 @@ CONTAINS
           DO imt=1,rexport%p_Rtriangulation%NMT
             ivt1 = p_IverticesAtEdge(1,imt)
             ivt2 = p_IverticesAtEdge(2,imt)
-            X(nvt+imt) = 0.5_DP*(p_DvertexCoords(1,ivt1) + &
-                                 p_DvertexCoords(1,ivt2))
-            Y(nvt+imt) = 0.5_DP*(p_DvertexCoords(2,ivt1) + &
-                                 p_DvertexCoords(2,ivt2))
-            Z(nvt+imt) = 0.5_DP*(p_DvertexCoords(3,ivt1) + &
-                                 p_DvertexCoords(3,ivt2))
+            X(nvt+imt) = 0.5*(REAL(p_DvertexCoords(1,ivt1)) + &
+                              REAL(p_DvertexCoords(1,ivt2)))
+            Y(nvt+imt) = 0.5*(REAL(p_DvertexCoords(2,ivt1)) + &
+                              REAL(p_DvertexCoords(2,ivt2)))
+            Z(nvt+imt) = 0.5*(REAL(p_DvertexCoords(3,ivt1)) + &
+                              REAL(p_DvertexCoords(3,ivt2)))
           END DO
 
+          ! Store number of vertives already processed
+          nvt = rexport%p_Rtriangulation%NVT + rexport%p_Rtriangulation%NMT
         END IF
-
-        nvt = rexport%p_Rtriangulation%NVT
 
         ! Write coordinates of element midpoints?
         IF ((IAND(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
             (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
           
           CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtEdge,&
-              p_IverticesAtEdge)
+                                      p_IverticesAtEdge)
           
           ! We construct them by hand.
           ! In a later implementation, one could take the coordinates
           ! of h_DfreecornerCoordinates...
           DO iel=1,rexport%p_Rtriangulation%NEL
             
-            dx = 0.0
-            dy = 0.0
-            dz = 0.0
+            dx = 0.0E0
+            dy = 0.0E0
+            dz = 0.0E0
             
             DO i=1,UBOUND(p_IverticesAtElement,1)
               ivt = p_IverticesAtElement(i,iel)
               IF (ivt .NE. 0) THEN
-                dx = dx + p_DvertexCoords(1,ivt)
-                dy = dy + p_DvertexCoords(2,ivt)
-                dz = dz + p_DvertexCoords(3,ivt)
+                dx = dx + REAL(p_DvertexCoords(1,ivt))
+                dy = dy + REAL(p_DvertexCoords(2,ivt))
+                dz = dz + REAL(p_DvertexCoords(3,ivt))
               ELSE
                 ! We have only (i-1) vertices in that element; 
                 ! happens e.g. in triangles that are mixed into a quad mesh.
@@ -2519,7 +2578,7 @@ CONTAINS
       END SELECT
       
       ! Write nodes to file
-      CALL fgmvwrite_node_data(INT(rexport%nvertices), X, Y, Z)
+      CALL fgmvwrite_node_data(rexport%nvertices, X, Y, Z)
       
       ! Deallocate temporal memory
       DEALLOCATE(X, Y, Z)
@@ -2559,8 +2618,8 @@ CONTAINS
             SELECT CASE (i-1)
             CASE (2)
               ! Line in 1D
-              nod2ids(1) = p_IverticesAtElement(1,iel)
-              nod2ids(2) = p_IverticesAtElement(2,iel)
+              nod2ids(1) = INT(p_IverticesAtElement(1,iel))
+              nod2ids(2) = INT(p_IverticesAtElement(2,iel))
               CALL fgmvwrite_cell_type('line 2',2,nod2ids)
               
             CASE DEFAULT
@@ -2896,65 +2955,76 @@ CONTAINS
     !----------------------------------------------------
     ! Write material names -- if specified
     !
-    ! Cell material
-    IF (ASSOCIATED(rexport%ScellMaterials)) THEN
-      ! GMV only supports <= 1000 materials!
-      CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),0)
-      DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
-        ! GMV supports only <= 8 characters and does not allow spaces
-        ! in the material name. We replace all invalid spaces by "_".
-        CALL fgmvwrite_material_name(&
-            sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'))
-      END DO
-      
-      IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
-        ! Write a list of material id's. For every cell, we specify its
-        ! material by the material number.
-        CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
-        DO i=1,SIZE(p_Idata)
-          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 0)
-        END DO
-      END IF
-    END IF
 
-    ! Vertex materials; coincide with cell materials if not specified.
-    IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
-      ! GMV only supports <= 1000 materials!
-      CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%SvertexMaterials))),1)
-      DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
-        ! GMV supports only <= 8 characters and does not allow spaces
-        ! in the material name. We replace all invalid spaces by "_".
-        CALL fgmvwrite_material_name(&
-            sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_'))
-      END DO
+    IF (rexport%saltFileMaterials .NE. "") THEN
       
-      IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
-        ! Write a list of material id's. For every vertex, we specify its
-        ! material by the material number.
-        CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
-        DO i=1,SIZE(p_Idata)
-          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
-        END DO
-      END IF
+      ! Write only a reference to the alternative source file
+      ! to the GMV. Saves disc space!
+
+      CALL fgmvwrite_material_fromfile(TRIM(rexport%saltFileMaterials))
+      
     ELSE
+      
+      ! Cell material
       IF (ASSOCIATED(rexport%ScellMaterials)) THEN
         ! GMV only supports <= 1000 materials!
-        CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),1)
+        CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),0)
         DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
           ! GMV supports only <= 8 characters and does not allow spaces
           ! in the material name. We replace all invalid spaces by "_".
           CALL fgmvwrite_material_name(&
-              sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'), 1)
+              sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'))
         END DO
+        
+        IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every cell, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            CALL fgmvwrite_material_ids(INT(p_Idata(i)), 0)
+          END DO
+        END IF
       END IF
       
-      IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
-        ! Write a list of material id's. For every vertex, we specify its
-        ! material by the material number.
-        CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
-        DO i=1,SIZE(p_Idata)
-          CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
+      ! Vertex materials; coincide with cell materials if not specified.
+      IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
+        ! GMV only supports <= 1000 materials!
+        CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%SvertexMaterials))),1)
+        DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
+          ! GMV supports only <= 8 characters and does not allow spaces
+          ! in the material name. We replace all invalid spaces by "_".
+          CALL fgmvwrite_material_name(&
+              sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_'))
         END DO
+        
+        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every vertex, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
+          END DO
+        END IF
+      ELSE
+        IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+          ! GMV only supports <= 1000 materials!
+          CALL fgmvwrite_material_header(MIN(1000,INT(SIZE(rexport%ScellMaterials))),1)
+          DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
+            ! GMV supports only <= 8 characters and does not allow spaces
+            ! in the material name. We replace all invalid spaces by "_".
+            CALL fgmvwrite_material_name(&
+                sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'), 1)
+          END DO
+        END IF
+        
+        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every vertex, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            CALL fgmvwrite_material_ids(INT(p_Idata(i)), 1)
+          END DO
+        END IF
       END IF
     END IF
     
@@ -3004,7 +3074,7 @@ CONTAINS
           IF (j .GT. rexport%nvariables) THEN
             ! Not found. Write out 0's instead.
             DO ivt=1,rexport%ncells
-              Y(ivt) = 0.0
+              Y(ivt) = 0.0E0
             END DO
           END IF
           
@@ -3025,7 +3095,7 @@ CONTAINS
           IF (j .GT. rexport%nvariables) THEN
             ! Not found. Write out 0's instead.
             DO ivt=1,rexport%ncells
-              Z(ivt) = 0.0
+              Z(ivt) = 0.0E0
             END DO
           END IF
           
@@ -3069,7 +3139,7 @@ CONTAINS
           IF (j .GT. rexport%nvariables) THEN
             ! Not found. Write out 0's instead.
             DO ivt=1,rexport%nvertices
-              Y(ivt) = 0.0
+              Y(ivt) = 0.0E0
             END DO
           END IF
           
@@ -3090,7 +3160,7 @@ CONTAINS
           IF (j .GT. rexport%nvariables) THEN
             ! Not found. Write out 0's instead.
             DO ivt=1,rexport%nvertices
-              Z(ivt) = 0.0
+              Z(ivt) = 0.0E0
             END DO
           END IF
           
@@ -3153,57 +3223,68 @@ CONTAINS
 
     !----------------------------------------------------
     ! Write polygon data
-    IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
-      
-      ! At least one polygon
-      CALL fgmvwrite_polygons_header()
-      
-      ! Materials
-      CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
-      
-      ! Write all polygons.
-      DO i=1,rexport%npolygons
-        
-        ! Coordinates        
-        CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
-        
-        ! Allocate temporal memory
-        ALLOCATE(X(UBOUND(p_Ddata2D,2)), Y(UBOUND(p_Ddata2D,2)), Z(UBOUND(p_Ddata2D,2)))
-        
-        ! Either we have 2D or 3D coordinates. 
-        SELECT CASE(UBOUND(p_Ddata2D,1))
 
-        CASE (NDIM2D)
-          DO j=1,UBOUND(p_Ddata2D,2)
-            X(j) = p_Ddata2D(1,j)
-            Y(j) = p_Ddata2D(2,j)
-            Z(j) = 0.0
-          END DO
-
-        CASE (NDIM3D)
-          DO j=1,UBOUND(p_Ddata2D,2)
-            X(j) = p_Ddata2D(1,j)
-            Y(j) = p_Ddata2D(2,j)
-            Z(j) = p_Ddata2D(3,j)
-          END DO
-
-        CASE DEFAULT
-          CALL output_line ('Invalid spatial dimensions for polygon output!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
-        END SELECT
-        
-        nverts = UBOUND(p_Ddata2D,2)
-        matnum = p_Idata(i)
-        
-        CALL fgmvwrite_polygons_data(nverts, matnum, X, Y, Z)
-        
-        ! Deallocate temporal memory
-        DEALLOCATE(X,Y,Z)
-
-      END DO
+    IF (rexport%saltFilePolygons .NE. "") THEN
       
-      CALL fgmvwrite_polygons_endpoly()
+      ! Write only a reference to the alternative source file
+      ! to the GMV. Saves disc space!
       
+      CALL fgmvwrite_polygons_fromfile(TRIM(rexport%saltFilePolygons))
+      
+    ELSE
+      
+      IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
+        
+        ! At least one polygon
+        CALL fgmvwrite_polygons_header()
+        
+        ! Materials
+        CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
+        
+        ! Write all polygons.
+        DO i=1,rexport%npolygons
+          
+          ! Coordinates        
+          CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
+          
+          ! Allocate temporal memory
+          ALLOCATE(X(UBOUND(p_Ddata2D,2)), Y(UBOUND(p_Ddata2D,2)), Z(UBOUND(p_Ddata2D,2)))
+          
+          ! Either we have 2D or 3D coordinates. 
+          SELECT CASE(UBOUND(p_Ddata2D,1))
+            
+          CASE (NDIM2D)
+            DO j=1,UBOUND(p_Ddata2D,2)
+              X(j) = REAL(p_Ddata2D(1,j))
+              Y(j) = REAL(p_Ddata2D(2,j))
+              Z(j) = 0.0E0
+            END DO
+            
+          CASE (NDIM3D)
+            DO j=1,UBOUND(p_Ddata2D,2)
+              X(j) = REAL(p_Ddata2D(1,j))
+              Y(j) = REAL(p_Ddata2D(2,j))
+              Z(j) = REAL(p_Ddata2D(3,j))
+            END DO
+            
+          CASE DEFAULT
+            CALL output_line ('Invalid spatial dimensions for polygon output!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
+          END SELECT
+          
+          nverts = UBOUND(p_Ddata2D,2)
+          matnum = p_Idata(i)
+          
+          CALL fgmvwrite_polygons_data(nverts, matnum, X, Y, Z)
+          
+          ! Deallocate temporal memory
+          DEALLOCATE(X,Y,Z)
+          
+        END DO
+        
+        CALL fgmvwrite_polygons_endpoly()
+        
+      END IF
     END IF
 
     !----------------------------------------------------
@@ -3219,23 +3300,23 @@ CONTAINS
 
       CASE(NDIM1D)
         DO j=1,rexport%ntracers
-          X(j) = p_Ddata2D(j,1)
-          Y(j) = 0.0
-          Z(j) = 0.0
+          X(j) = REAL(p_Ddata2D(j,1))
+          Y(j) = 0.0E0
+          Z(j) = 0.0E0
         END DO
 
       CASE(NDIM2D)
         DO j=1,rexport%ntracers
-          X(j) = p_Ddata2D(j,1)
-          Y(j) = p_Ddata2D(j,2)
-          Z(j) = 0.0
+          X(j) = REAL(p_Ddata2D(j,1))
+          Y(j) = REAL(p_Ddata2D(j,2))
+          Z(j) = 0.0E0
         END DO
 
       CASE(NDIM3D)
         DO j=1,rexport%ntracers
-          X(j) = p_Ddata2D(j,1)
-          Y(j) = p_Ddata2D(j,2)
-          Z(j) = p_Ddata2D(j,3)
+          X(j) = REAL(p_Ddata2D(j,1))
+          Y(j) = REAL(p_Ddata2D(j,2))
+          Z(j) = REAL(p_Ddata2D(j,3))
         END DO
       END SELECT
       
