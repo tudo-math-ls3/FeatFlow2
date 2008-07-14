@@ -473,6 +473,9 @@ MODULE linearsolver
   
   ! Multigrid iteration
   INTEGER, PARAMETER :: LINSOL_ALG_MULTIGRID2    = 13
+  
+  ! EMS iteration
+  INTEGER, PARAMETER :: LINSOL_ALG_EMS           = 17
 
   ! ILU(0) iteration (scalar system)
   INTEGER, PARAMETER :: LINSOL_ALG_ILU01x1       = 50
@@ -942,6 +945,9 @@ MODULE linearsolver
     
     ! Pointer to a structure for the GMRES(m) solver; NULL() if not set
     TYPE (t_linsolSubnodeGMRES), POINTER          :: p_rsubnodeGMRES       => NULL()
+        
+    ! Pointer to a structure for the EMS solver; NULL() if not set
+    TYPE (t_linsolSubnodeEMS), POINTER            :: p_rsubnodeEMS         => NULL()
 
   END TYPE
   
@@ -1008,6 +1014,25 @@ MODULE linearsolver
     ! The filter chain must be configured for being applied to defect vectors.
     TYPE(t_filterChain), DIMENSION(:), POINTER      :: p_RfilterChain => NULL()
   
+  END TYPE
+  
+!</typeblock>
+
+  
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the EMS solver.
+  ! The entry p_rpreconditioner points either to NULL() or to another
+  ! t_linsolNode structure for the solver that realises the 
+  ! preconditioning.
+  
+  TYPE t_linsolSubnodeEMS
+  
+    ! Temporary vector to use during the solution process
+    TYPE(t_vectorBlock) :: rtempVector
+
   END TYPE
   
 !</typeblock>
@@ -1791,6 +1816,10 @@ CONTAINS
     ! Ask Multigrid and its subsolvers if the matrices are ok.
     CALL linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
 
+  CASE (LINSOL_ALG_EMS)
+    ! Ask EMS if the matrices are ok.
+    CALL linsol_matCompatEMS (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+
   CASE DEFAULT
     ! Nothing special. Let's assume that the matrices are ok.
     ccompatible = LINSOL_COMP_OK
@@ -1915,6 +1944,8 @@ CONTAINS
       CALL linsol_initStructureMultigrid (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID2)
       CALL linsol_initStructureMultigrid2 (rsolverNode,ierror,isubgroup)
+    CASE (LINSOL_ALG_EMS)
+      CALL linsol_initStructureEMS (rsolverNode,ierror,isubgroup)
     END SELECT
   
   END SUBROUTINE
@@ -2225,6 +2256,8 @@ CONTAINS
       CALL linsol_doneStructureMultigrid (rsolverNode,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID2)
       CALL linsol_doneStructureMultigrid2 (rsolverNode,isubgroup)
+    CASE (LINSOL_ALG_EMS)
+      CALL linsol_doneStructureEMS (rsolverNode,isubgroup)
     END SELECT
 
   END SUBROUTINE
@@ -2290,6 +2323,8 @@ CONTAINS
       CALL linsol_doneMultigrid (p_rsolverNode)
     CASE (LINSOL_ALG_MULTIGRID2)
       CALL linsol_doneMultigrid2 (p_rsolverNode)
+    CASE (LINSOL_ALG_EMS)
+      CALL linsol_doneEMS (p_rsolverNode)
     CASE DEFAULT
     END SELECT
     
@@ -2608,6 +2643,8 @@ CONTAINS
       CALL linsol_precMultigrid2 (rsolverNode,rd)
     CASE (LINSOL_ALG_JINWEITAM)
       CALL linsol_precJinWeiTam (rsolverNode,rd)
+    CASE (LINSOL_ALG_EMS)
+      CALL linsol_precEMS (rsolverNode,rd)
     END SELECT
 
   END SUBROUTINE
@@ -3562,6 +3599,338 @@ CONTAINS
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     END IF  
+  
+  END SUBROUTINE
+
+  
+! *****************************************************************************
+! Routines for the EMS iteration
+! *****************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initEMS (p_rsolverNode)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the EMS iteration.
+!</description>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+!</output>
+
+!</subroutine>
+  
+    ! Create a default solver structure
+    CALL linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_EMS
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
+                                LINSOL_ABIL_DIRECT
+    
+    ! Allocate a subnode for our solver.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    ALLOCATE(p_rsolverNode%p_rsubnodeEMS)
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneEMS (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the EMS solver 
+  ! from the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of EMS which is to be cleaned up.
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! Release memory if still associated
+    !CALL linsol_doneDataEMS (rsolverNode, rsolverNode%isolverSubgroup)
+    CALL linsol_doneStructureEMS (rsolverNode, rsolverNode%isolverSubgroup)
+    
+    ! Release the subnode structure
+    DEALLOCATE(rsolverNode%p_rsubnodeEMS)
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_matCompatEMS (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  TYPE(t_linsolNode), INTENT(IN)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  TYPE(t_matrixBlock), DIMENSION(:), INTENT(IN)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
+    
+  END SUBROUTINE
+  
+! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initStructureEMS (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Solver preparation. Perform symbolic factorisation (not of the defect
+  ! correcion solver, but of subsolvers). Allocate temporary memory.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the EMS solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: isubgroup
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! Cancel here, if we don't belong to the subgroup to be initialised
+    IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+    
+    ! Intialisation. In our case: allocate temporary vector for our data
+    ! by using the associated matrix as template.
+    CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+          rsolverNode%p_rsubnodeEMS%rtempVector,.FALSE.,&
+          rsolverNode%cdefaultDataType)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneStructureEMS (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the EMS solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! Cancel here, if we don't belong to the subgroup to be initialised
+    IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+    ! Ok, we are the one to be released. We have a temp-vector to be released!
+    IF (rsolverNode%p_rsubnodeEMS%rtempVector%NEQ .NE. 0) THEN
+      CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeEMS%rtempVector)
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precEMS (rsolverNode,rd)
+  
+!<description>
+  ! Applies the Defect Correction preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! Damping parameter
+  REAL(DP) :: domega, dalpha, dbeta
+
+  ! The system matrix
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  
+  ! A pointer to our temporary vector
+  TYPE(t_vectorBlock), POINTER :: p_rt
+  
+  ! The local subnode
+  TYPE(t_linsolSubnodeEMS), POINTER :: p_rsubnode
+  
+  INTEGER :: i, n
+
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeEMS
+    p_rmatrix => rsolverNode%rsystemMatrix
+
+    ! Check the parameters
+    IF ((rd%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .EQ. 0) .OR. &
+        (p_rmatrix%NEQ .NE. rd%NEQ) ) THEN
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+    
+    ! Get our temporary vector
+    p_rt => p_rsubnode%rtempVector
+    
+!    IF (p_rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_SADDLEPOINT) THEN
+!    
+!      n = p_rmatrix%ndiagBlocks
+!      
+!      CALL lsyssc_clearVector(p_rt%RvectorBlock(n))
+!    
+!      ! Go through all diagonal blocks
+!      DO i = 1, p_rmatrix%ndiagBlocks-1
+!        ! t_i := B_i * d_n
+!        CALL lsyssc_scalarMatVec(p_rmatrix%RmatrixBlock(i,n),&
+!          rd%RvectorBlock(n), p_rt%RvectorBlock(i), 1.0_DP, 0.0_DP)
+!        
+!        ! t_n := t_n - D_i * t_i
+!        CALL lsyssc_scalarMatVec(p_rmatrix%RmatrixBlock(n,i),&
+!          p_rt%RvectorBlock(i), p_rt%RvectorBlock(n), -1.0_DP, 1.0_DP)
+!          
+!        ! t_i := A_i * d_i
+!        CALL lsyssc_scalarMatVec(p_rmatrix%RmatrixBlock(i,i),&
+!          rd%RvectorBlock(i), p_rt%RvectorBlock(i), 1.0_DP, 0.0_DP)
+!        !CALL lsyssc_clearVector(p_rt%RvectorBlock(i))
+!          
+!      END DO
+!      
+!      !CALL lsysbl_blockMatVec(p_rmatrix, rd, p_rt, 1.0_DP, 1.0_DP)
+!
+!    ELSE
+    
+      ! Calculate t := A*d
+      CALL lsysbl_blockMatVec(p_rmatrix, rd, p_rt, 1.0_DP, 0.0_DP)
+    
+!    END IF
+      
+    ! Calculate alpha := < d, t >
+    dalpha = lsysbl_scalarProduct(rd, p_rt)
+      
+    ! Calculate beta := < t, t >
+    dbeta = lsysbl_scalarProduct(p_rt, p_rt)
+    
+    ! Check if alpha and beta are valid
+    IF (dalpha .EQ. 0.0_DP) THEN
+      CALL output_line('EMS: < d, A*d > = 0 !!!')
+      rsolverNode%iresult = 1
+    END IF
+    IF (dbeta .EQ. 0.0_DP) THEN
+      CALL output_line('EMS: < A*d, A*d > = 0 !!!')
+      rsolverNode%iresult = 1
+    END IF
+    
+    ! Okay, calculate omega := alpha / beta
+    domega = dalpha / dbeta
+    
+    ! And scale defect by omega
+    CALL lsysbl_scaleVector(rd, domega)
+    
+    ! That's it
   
   END SUBROUTINE
   
@@ -11623,7 +11992,9 @@ CONTAINS
             LINSOL_VANCA_2DNAVSTDIRECT,&
             LINSOL_VANCA_2DFNAVSTDIRECT,&
             LINSOL_VANCA_2DFNAVSTOCDIRECT,&
-            LINSOL_VANCA_2DFNAVSTOCDIAGDIR)
+            LINSOL_VANCA_2DFNAVSTOCDIAGDIR,&
+            LINSOL_VANCA_3DNAVSTDIRECT,&
+            LINSOL_VANCA_3DFNAVSTDIRECT)
         ! Yes, this solver can be applied to a given solution/rhs vector directly.
         ! Call it nmaxIterations times to perform the smoothing.
         DO i=1,rsolverNode%nmaxIterations

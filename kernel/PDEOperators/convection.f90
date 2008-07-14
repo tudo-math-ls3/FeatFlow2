@@ -167,6 +167,14 @@ MODULE convection
     ! A value of 0.0 deactivates the Newton matrix.
     REAL(DP) :: dnewton = 0.0_DP
     
+    ! Calculation of local H.
+    ! In 3D, there are 2 different methods to calculate the local H which
+    ! is needed for the assembly of the convective part.
+    ! =0: Use the cube-root of the volume of the hexahedron as local H
+    ! =1: Use the length of the way that a particle travels through
+    !     the hexahedron in direction of the flow
+    INTEGER :: clocalH = 1
+    
     ! Whether to use the ALE method for computing the convective operator.
     LOGICAL :: bALE = .FALSE.
     
@@ -217,7 +225,8 @@ MODULE convection
 !</types>
 
   PRIVATE :: getLocalMeshWidthQuad,getLocalDeltaQuad,intersectLines2D
-  PRIVATE :: getLocalMeshWidthHexa,getLocalDeltaHexa
+  PRIVATE :: getLocalMeshWidthHexa,getHexaVolume
+  PRIVATE :: getLocalDeltaHexaVol, getLocalDeltaHexaRay
 
 CONTAINS
 
@@ -5831,8 +5840,8 @@ CONTAINS
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
-                    rconfig%ddelta,rconfig%bALE,p_DsolX,p_DsolY,p_DsolZ,&
-                    p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
+                    rconfig%ddelta,rconfig%clocalH,rconfig%bALE,p_DsolX,p_DsolY,&
+                    p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
                     
     ELSE
     
@@ -5840,7 +5849,8 @@ CONTAINS
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
-                    rconfig%ddelta,rconfig%bALE,DmeshVelocity=DmeshVelocity)
+                    rconfig%ddelta,rconfig%clocalH,rconfig%bALE,&
+                    DmeshVelocity=DmeshVelocity)
 
     END IF
 
@@ -5852,7 +5862,7 @@ CONTAINS
   SUBROUTINE conv_strdiff3dALE_double ( &
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                   dweight1,dweight2,rmatrix,cdef, &
-                  dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
+                  dupsam,dnu,dalpha,dbeta,dtheta,ddelta,clocalH,bALE, &
                   Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -5976,6 +5986,9 @@ CONTAINS
   
   ! Weighting factor for the nonlinear term
   REAL(DP), INTENT(IN) :: ddelta
+  
+  ! How to calculate local H?
+  INTEGER, INTENT(IN) :: clocalH
       
   ! Whether or not to use the ALE method
   LOGICAL, INTENT(IN) :: bALE
@@ -6127,7 +6140,7 @@ CONTAINS
     indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indofALE = elem_igetNDofLoc(EL_Q1_3D)
     
     ! Number of local DOF's
     NVE = elem_igetNVE(p_relementDistribution%itrialElement)
@@ -6320,13 +6333,24 @@ CONTAINS
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
       IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        DO IEL=1,IELmax-IELset+1
-          CALL getLocalDeltaHexa (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                      dweight1,dweight2,INT(IEL+IELset-1,PREC_ELEMENTIDX),&
-                      DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
-                      p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
-          DlocalDelta(IEL) = DlocalDelta(IEL)
-        END DO ! IEL
+        ! How do we calculate the local H?
+        IF (clocalH .EQ. 1) THEN
+          ! Use length of the way a particle travels
+          DO IEL=1,IELmax-IELset+1
+            CALL getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+                        dweight1,dweight2,INT(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
+                        p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
+          END DO ! IEL
+        ELSE
+          ! Use volume of the cell
+          DO IEL=1,IELmax-IELset+1
+            CALL getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+                        dweight1,dweight2,INT(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
+                        p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
+          END DO ! IEL
+        END IF
       END IF
                                    
       ! For the assembly of the global matrix, we use a "local"
@@ -6697,17 +6721,17 @@ CONTAINS
 
             DO JDOFE=1,indof
               
-              IF (IDOFE.EQ.JDOFE) THEN
+              !IF (IDOFE.EQ.JDOFE) THEN
               
                 ! Short version of the evaluation of the matrix
                 ! contribution - see below for a more detailed
                 ! description what is added together here!
               
-                AH = ddelta*HSUMI*(DlocalDelta(IEL)*HSUMI+HBASI1) &
-                    + dny*(HBASI2**2+HBASI3**2+HBASI4**2) &
-                    + dalpha*HBASI1**2
+              !  AH = ddelta*HSUMI*(DlocalDelta(IEL)*HSUMI+HBASI1) &
+              !      + dny*(HBASI2**2+HBASI3**2+HBASI4**2) &
+              !      + dalpha*HBASI1**2
     
-              ELSE
+              !ELSE
               
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -6737,7 +6761,7 @@ CONTAINS
                 ! But as v is already incorporated into DVelocity,
                 ! we don't have to worry about that.
 
-                HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc+HBASI4*du3loc
+                HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc+HBASJ4*du3loc
     
                 ! Finally calculate the contribution to the system
                 ! matrix. Depending on the configuration of DNU,
@@ -6768,10 +6792,10 @@ CONTAINS
                 ! if their coefficient is <> 0.
                 
                 AH = ddelta*HSUMJ*(DlocalDelta(IEL)*HSUMI+HBASI1) &
-                    + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3+HBASI4*HBASI4) &
+                    + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3+HBASI4*HBASJ4) &
                     + dalpha*HBASI1*HBASJ1
     
-              ENDIF ! (IDOFE.EQ.JDOFE)
+              !ENDIF ! (IDOFE.EQ.JDOFE)
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
@@ -7163,7 +7187,7 @@ CONTAINS
               p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2, &
               dprimWeight, dsecWeight, rmatrix,cdef, rconfig%dupsam, &
               rconfig%dnu, rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
-              rconfig%ddelta, rconfig%dnewton, rconfig%bALE, &
+              rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE, &
               p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
                     
     ELSE
@@ -7172,7 +7196,7 @@ CONTAINS
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight, rmatrix, cdef, rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
-                    rconfig%ddelta, rconfig%dnewton, rconfig%bALE,&
+                    rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE,&
                     DmeshVelocity=DmeshVelocity)
 
     END IF
@@ -7191,7 +7215,7 @@ CONTAINS
   SUBROUTINE conv_strdiff3dALEblk_double (&
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,dweight1,dweight2,&
                   rmatrix,cdef,dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
-                  bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity)
+                  clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   !  
@@ -7323,6 +7347,9 @@ CONTAINS
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
   REAL(DP), INTENT(IN) :: dnewton
+  
+  ! How to calculate the local H?
+  INTEGER, INTENT(IN) :: clocalH
       
   ! Whether or not to use the ALE method
   LOGICAL, INTENT(IN) :: bALE
@@ -7764,12 +7791,21 @@ CONTAINS
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
       IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        DO IEL=1,IELmax-IELset+1
-          CALL getLocalDeltaHexa (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                      dweight1,dweight2, INT(IEL+IELset-1,PREC_ELEMENTIDX),&
-                      DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
-                      p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
-        END DO ! IEL
+        IF (clocalH .EQ. 1) THEN
+          DO IEL=1,IELmax-IELset+1
+            CALL getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+                        dweight1,dweight2, INT(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
+                        p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
+          END DO ! IEL
+        ELSE
+          DO IEL=1,IELmax-IELset+1
+            CALL getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+                        dweight1,dweight2, INT(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
+                        p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
+          END DO ! IEL
+        ENDIF
       END IF
                                    
       ! For the assembly of the global matrix, we use a "local"
@@ -8821,7 +8857,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE getLocalDeltaHexa (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
+  PURE SUBROUTINE getLocalDeltaHexaRay (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
            A1L,A2L,IEL,duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 !<description>
   ! This routine calculates a local ddelta=DELTA_T for a hexahedral finite
@@ -8929,7 +8965,7 @@ CONTAINS
       ! u_T defines the "slope" of the velocity through
       ! the element T. At next, calculate the local mesh width
       ! dlocalH = h = h_T on our element T=IEL:
-      CALL getLocalMeshWidthHexa (dlocalH,Du,IEL,Kvert,Dcorvg)
+      CALL getLocalMeshWidthHexa (dlocalH,Du,dunorm,IEL,Kvert,Dcorvg)
 
       ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
 
@@ -8961,8 +8997,127 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE getLocalMeshWidthHexa (dlocalH,Du,iel,IverticesAtElement,&
-                                         DvertexCoords)
+  PURE SUBROUTINE getLocalDeltaHexaVol (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
+           A1L,A2L,IEL,duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
+!<description>
+  ! This routine calculates a local ddelta=DELTA_T for a hexahedral finite
+  ! element T=IEL. This can be used by the streamline diffusion stabilisation
+  ! technique as a multiplier of the (local) bilinear form.
+  !
+  ! The effective velocity that is used for calculating the ddelta
+  ! is combined by a weighted mean of the two velocity fields U1,U2
+  ! by:
+  !                   Ux = A1*U1Lx + A2*U2Lx
+  ! The coefficients A1,A2 allow the caller to take influence on which
+  ! velocity field to weight more.
+!</description>
+
+!<input>
+  ! Main velocity field.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: U1L1,U1L2,U1L3
+  
+  ! Secondary velocity field. 
+  REAL(DP), DIMENSION(:), INTENT(IN) :: U2L1,U2L2,U2L3
+  
+  ! weighting factor for U1L1/U1L2
+  REAL(DP), INTENT(IN) :: A1L
+  
+  ! weighting factor for U2L1/U2L2
+  REAL(DP), INTENT(IN) :: A2L
+  
+  ! Reciprocal of the maximum norm of velocity in the domain:
+  ! 1/duMaxR = 1/||u||_Omega
+  REAL(DP), INTENT(IN) :: duMaxR
+  
+  ! Reciprocal value 1/NU of coefficient NU in front of the
+  ! Laplacian term of the Navier-Stokes equation
+  !   NU * Laplace(u) + u*grad(u) + ...
+  REAL(DP), INTENT(IN) :: NUREC
+  
+  ! user defined parameter for configuring the streamline diffusion.
+  ! < 0: Simple calculation of ddelta, using 
+  !      ddelta = |UPSAM| * h_T.
+  ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
+  !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
+  REAL(DP), INTENT(IN) :: UPSAM
+  
+  ! Element where the ddelta should be calculated
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: IEL
+  
+  ! Number of degrees of freedom on element IEL
+  INTEGER, INTENT(IN) :: IDFL
+  
+  ! Array with global degrees of freedom, corresponding to
+  ! local degrees of freedom 1..IDFL on element IEL.
+  INTEGER(PREC_DOFIDX), DIMENSION(:), INTENT(IN) :: KDFG
+  
+  ! The IverticesAtElement array from the triangulation
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: Kvert
+  
+  ! The DvertexCoords array from the triangulation
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcorvg
+!</input>
+
+!<output>
+  ! The local delta for this quadrilateral
+  REAL(DP), INTENT(OUT) :: ddelta
+
+!</output>
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: dlocalH,dunorm,RELOC
+  REAL(DP), DIMENSION(3) :: Du
+  INTEGER(PREC_DOFIDX) :: idof
+
+    ! Calculate the local mesh width dlocalH = h = h_T on our element T=IEL:
+    CALL getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
+
+    ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+    IF (UPSAM.LT.0.0_DP) THEN
+
+      ! For UPSAM<0, we use simple calculation of ddelta:        
+      ddelta = ABS(UPSAM)*dlocalH
+      
+    ELSE
+    
+      ! Loop through the local degrees of freedom on element IEL.
+      ! Sum up the velocities on these DOF's. This will result
+      ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
+      ! through element IEL.
+
+      ! For elements whose DOF's represent directly the velocity, U1/U2 
+      ! represent the mean velocity
+      ! along an egde/on the midpoint of each edge, so U1/U2 is
+      ! clearly an approximation to the velocity in element T.
+      Du = 0.0_DP
+      DO idof=1, IDFL
+        Du(1) = Du(1) + (A1L*U1L1(KDFG(idof)) + A2L*U2L1(KDFG(idof)))
+        Du(2) = Du(2) + (A1L*U1L2(KDFG(idof)) + A2L*U2L2(KDFG(idof)))
+        Du(3) = Du(3) + (A1L*U1L3(KDFG(idof)) + A2L*U2L3(KDFG(idof)))
+      END DO
+
+      ! Calculate the norm of that local velocity:
+      dunorm = SQRT(Du(1)**2 + Du(2)**2 + Du(3)**2) / DBLE(IDFL)
+
+      ! For UPSAM >= 0, we use standard Samarskji-like calculation
+      ! of ddelta. At first calculate the local Reynolds number
+      ! RELOC = Re_T = ||u||_T * h_T / NU
+      RELOC = dunorm*dlocalH*NUREC
+      
+      ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+      ddelta = UPSAM * dlocalH*duMaxR * 2.0_DP*(RELOC/(1.0_DP+RELOC))
+      
+    ENDIF ! (UPSAM.LT.0.0)
+      
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE getLocalMeshWidthHexa (dlocalH,Du,dunorm,iel,&
+                                         IverticesAtElement,DvertexCoords)
 
 !<description>  
   ! Determine the local mesh width for a hexahedral element iel of a 
@@ -8972,6 +9127,9 @@ CONTAINS
 !<input>
   ! mean velocity u_T through element T=iel
   REAL(DP), DIMENSION(3), INTENT(IN)                  :: Du
+  
+  ! norm ||u||_T = mean velocity through element T=JEL
+  REAL(DP), INTENT(IN)                                :: dunorm
 
   ! Element where the local h should be calculated
   INTEGER(PREC_ELEMENTIDX), INTENT(IN)                :: iel
@@ -9009,7 +9167,7 @@ CONTAINS
   ! 2. two vectors approximating the tangential space of the face midpoint
   ! 3. the outer normal vector of the tangential space
   !
-  ! Image that this is a face of our "real" hexahedron:
+  ! Imagine that this is a face of our "real" hexahedron:
   !
   !                        4------c------3
   !                        |      ^      |
@@ -9073,7 +9231,39 @@ CONTAINS
       dt = 1.0_DP / SQRT(Dnormal(1,i)**2 + Dnormal(2,i)**2 + Dnormal(3,i)**2)
       Dnormal(:,i) = Dnormal(:,i) * dt
     END DO
+
+    ! Now we have a little problem:
+    ! Since the refinement algorithm for hexahedron cells produces cells
+    ! which are flipped, it may (and will) happen that the normal vectors
+    ! we have calculated are inner normal vectors instead of outer ones.
+    ! So we need to check whether the hexahedron is flipped.
+    ! We check this by calculating the scalar product of the vector
+    ! between the first and fifth vertice and the normal vector of
+    ! the span of the vector from the first to the second vertice
+    ! and the vector from the first to the fourth vertice.
+    ! In other words: We check whether the right-hand- or left-hand-rule
+    ! applies to the first vertice of our hexahedron.
+    ! If dt is negative, then we need to change the sign of the normal
+    ! vectors.
+    dt = (Dv(1,5)-Dv(1,1))*((Dv(2,2)-Dv(2,1))*(Dv(3,4)-Dv(3,1)) &
+                           -(Dv(3,2)-Dv(3,1))*(Dv(2,4)-Dv(2,1)))&
+       + (Dv(2,5)-Dv(2,1))*((Dv(3,2)-Dv(3,1))*(Dv(1,4)-Dv(1,1)) &
+                           -(Dv(1,2)-Dv(1,1))*(Dv(3,4)-Dv(3,1)))&
+       + (Dv(3,5)-Dv(3,1))*((Dv(1,2)-Dv(1,1))*(Dv(2,4)-Dv(2,1)) &
+                           -(Dv(2,2)-Dv(2,1))*(Dv(1,4)-Dv(1,1)))
     
+    IF (dt .LT. 0.0_DP) THEN
+      ! Basically, we could simply write...
+      !Dnormal(:,:) = -Dnormal(:,:)
+      ! ...but the ifort compiler prints a "non-standard extension"
+      ! warning, so we'll do it the old way to keep ifort quiet:
+      DO i = 1, 6
+        Dnormal(1,i) = -Dnormal(1,i)
+        Dnormal(2,i) = -Dnormal(2,i)
+        Dnormal(3,i) = -Dnormal(3,i)
+      END DO
+    END IF
+
     ! Now we have calculated all the vectors we need - we have the face
     ! midpoints, normal vectors and a ray vector.
     ! The next step is to choose a "source face", i.e. the face at whose
@@ -9128,7 +9318,7 @@ CONTAINS
     DO i = 1, 6
     
       ! If this is the "source face" then skip it
-      IF (i .EQ. isrc) CONTINUE
+      IF (i .EQ. isrc) CYCLE
       
       ! Now compute the scalar product of the ray and the outer normal
       ! of this face.
@@ -9139,7 +9329,7 @@ CONTAINS
       ! skip this face.
       ! Note: As we need to divide by dt later, we will check it against
       !       machine exactness instead of 0.
-      IF (dt .LE. SYS_EPSREAL) CONTINUE
+      IF (dt .LE. SYS_EPSREAL) CYCLE
       
       ! Now calculate the scalar product of the face normal and the vector
       ! between the face midpoint and the "source face" midpoint:
@@ -9150,7 +9340,7 @@ CONTAINS
       ! Now divide ds by -dt to get the ray scaling factor
       ds = -ds / dt
       
-      ! In our case ds is always > 0.
+      ! Now ds is always positive
       dalpha = MIN(dalpha,ds)
     
     END DO
@@ -9161,6 +9351,82 @@ CONTAINS
     ELSE
       dlocalH = 0.0_DP
     END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE getHexaVolume (dlocalH,iel,IverticesAtElement,DvertexCoords)
+
+!<description>  
+  ! Calculates the volume of a hexahedron.
+!</description>
+
+!<input>
+  ! Element where the local h should be calculated
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN)                :: iel
+  
+  ! The IverticesAtElement array from the triangulation
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  
+  ! The DvertexCoords array from the triangulation
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoords
+!</input>
+
+!<output>
+  ! The local mesh width for the hexahedron
+  REAL(DP), INTENT(OUT) :: dlocalH
+!</output>
+
+  ! local variables
+  REAL(DP), DIMENSION(3,8) :: Dv
+  
+    ! Get the coordinates of our eight corner vertices
+    Dv(1:3,1) = DvertexCoords(1:3,IverticesAtElement(1,iel))
+    Dv(1:3,2) = DvertexCoords(1:3,IverticesAtElement(2,iel))
+    Dv(1:3,3) = DvertexCoords(1:3,IverticesAtElement(3,iel))
+    Dv(1:3,4) = DvertexCoords(1:3,IverticesAtElement(4,iel))
+    Dv(1:3,5) = DvertexCoords(1:3,IverticesAtElement(5,iel))
+    Dv(1:3,6) = DvertexCoords(1:3,IverticesAtElement(6,iel))
+    Dv(1:3,7) = DvertexCoords(1:3,IverticesAtElement(7,iel))
+    Dv(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
+    
+    ! Reset the volume
+    dlocalH = &
+            DABS((Dv(1,4)-Dv(1,1))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,8))&
+                 +(Dv(2,4)-Dv(2,1))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,8))&
+                 +(Dv(3,4)-Dv(3,1))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,8))&
+                 -(Dv(1,4)-Dv(1,8))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,1))&
+                 -(Dv(2,4)-Dv(2,8))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,1))&
+                 -(Dv(3,4)-Dv(3,8))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,1)))+&
+            DABS((Dv(1,2)-Dv(1,3))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,6))&
+                 +(Dv(2,2)-Dv(2,3))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,6))&
+                 +(Dv(3,2)-Dv(3,3))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,6))&
+                 -(Dv(1,2)-Dv(1,6))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,3))&
+                 -(Dv(2,2)-Dv(2,6))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,3))&
+                 -(Dv(3,2)-Dv(3,6))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,3)))+&
+            DABS((Dv(1,5)-Dv(1,8))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,1))&
+                 +(Dv(2,5)-Dv(2,8))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,1))&
+                 +(Dv(3,5)-Dv(3,8))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,1))&
+                 -(Dv(1,5)-Dv(1,1))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,8))&
+                 -(Dv(2,5)-Dv(2,1))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,8))&
+                 -(Dv(3,5)-Dv(3,1))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,8)))+&
+            DABS((Dv(1,7)-Dv(1,6))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,3))&
+                 +(Dv(2,7)-Dv(2,6))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,3))&
+                 +(Dv(3,7)-Dv(3,6))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,3))&
+                 -(Dv(1,7)-Dv(1,3))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,6))&
+                 -(Dv(2,7)-Dv(2,3))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,6))&
+                 -(Dv(3,7)-Dv(3,3))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,6)))+&
+            DABS((Dv(1,1)-Dv(1,3))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,6))&
+                 +(Dv(2,1)-Dv(2,3))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,6))&
+                 +(Dv(3,1)-Dv(3,3))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,6))&
+                 -(Dv(1,1)-Dv(1,6))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,3))&
+                 -(Dv(2,1)-Dv(2,6))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,3))&
+                 -(Dv(3,1)-Dv(3,6))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,3)))
+    
+    dlocalH = (dlocalH / 6.0_DP)**(1.0_DP/3.0_DP)
 
   END SUBROUTINE
 
