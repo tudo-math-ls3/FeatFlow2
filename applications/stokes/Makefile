@@ -14,7 +14,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
 SRC =  stokes2d_callback.f90 stokes2d_method0_simple.f90 stokes2d_method1_mg.f90 \
        stokes2d_method2_sv.f90 stokes2d_method2_gv.f90 dom3d_cube.f90 \
        stokes3d_callback.f90 stokes3d_method0_simple.f90 stokes3d_method1_mg.f90 \
-       stokes.f90
+       dom3d_c3d0.f90 navst3d_method1_mg.f90 stokes.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk

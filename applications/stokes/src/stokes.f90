@@ -36,6 +36,8 @@ PROGRAM stokes
   USE stokes3d_method0_simple
   USE stokes3d_method1_mg
   
+  USE navst3d_method1_mg
+  
   IMPLICIT NONE
   
   ! The very first thing in every application: 
@@ -85,6 +87,12 @@ PROGRAM stokes
   CALL output_line('Calculating 3D Stokes-Problem 1 - multigrid')
   CALL output_line('-------------------------------------------')
   CALL stokes3d_1_mg
+
+  ! Call the problem to solve. 3d navier-stokes 1:
+  !CALL output_lbrk()
+  !CALL output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
+  !CALL output_line('--------------------------------------------------')
+  !CALL navst3d_1_mg
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
