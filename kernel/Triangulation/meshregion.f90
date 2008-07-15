@@ -906,6 +906,7 @@ MODULE meshregion
   INTEGER(I32), DIMENSION(:), ALLOCATABLE :: Imap
   INTEGER, DIMENSION(:), POINTER :: p_IedgeIdx, p_IvertIdx
   INTEGER, DIMENSION(:,:), POINTER :: p_IvertsAtEdge
+  INTEGER, DIMENSION(1) :: IallowedProp
   INTEGER(I32) :: copMask
   INTEGER :: i, iedge
   TYPE(t_triangulation), POINTER :: p_rtria
@@ -913,6 +914,13 @@ MODULE meshregion
     ! Decide what operator to use
     copMask = MSHREG_MASK_KICK
     IF (PRESENT(coperatorMask)) copMask = coperatorMask
+    
+    ! If we use the AND-operator, the allowed property is 2, otherwise 1
+    IF (copMask .EQ. MSHREG_MASK_AND) THEN
+      IallowedProp(1) = 2
+    ELSE
+      IallowedProp(1) = 1
+    END IF
     
     ! Do we have any edges at all?
     IF ((rmeshRegion%NMT .LE. 0) .OR. (rmeshRegion%h_IedgeIdx .EQ. &
@@ -977,17 +985,21 @@ MODULE meshregion
       
       SELECT CASE(copMask)
       CASE (MSHREG_MASK_OR)
-        ! Go through all vertices and apply an OR-operator.
+        ! Go through all vertices and set the map entry to 1
         DO i=1, rmeshRegion%NVT
           Imap(p_IvertIdx(i)) = 1
         END DO
       
       CASE (MSHREG_MASK_AND)
-        ! Go through all vertices and apply an AND-operator.
+        ! Go through all vertices and add 1 to the map entry
         DO i=1, rmeshRegion%NVT
-          Imap(p_IvertIdx(i)) = IAND(Imap(p_IvertIdx(i)),1)
+          Imap(p_IvertIdx(i)) = Imap(p_IvertIdx(i)) + 1
         END DO
         
+        ! Now all vertices that have already been in the mesh region
+        ! and which are adjacent to an edge in the mesh region have
+        ! a value of 2 in the map.
+
       END SELECT
       
       ! Now let's destroy the old vertex index array
@@ -1008,7 +1020,7 @@ MODULE meshregion
     
     ! Now we have the vertex index map, so create an index array from this.
     CALL mshreg_aux_calcIdxArray1(Imap, 0, p_rtria%NVT, &
-       rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0)
+        rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0, IallowedProp)
        
     ! And release the vertex map
     DEALLOCATE(Imap)
@@ -1060,6 +1072,7 @@ MODULE meshregion
   INTEGER(I32), DIMENSION(:), ALLOCATABLE :: Imap
   INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx, p_IvertIdx
   INTEGER, DIMENSION(:,:), POINTER :: p_IvertsAtFace
+  INTEGER, DIMENSION(1) :: IallowedProp
   INTEGER(I32) :: copMask
   INTEGER :: i, j, iface
   TYPE(t_triangulation), POINTER :: p_rtria
@@ -1067,6 +1080,13 @@ MODULE meshregion
     ! Decide what operator to use
     copMask = MSHREG_MASK_KICK
     IF (PRESENT(coperatorMask)) copMask = coperatorMask
+
+    ! If we use the AND-operator, the allowed property is 2, otherwise 1
+    IF (copMask .EQ. MSHREG_MASK_AND) THEN
+      IallowedProp(1) = 2
+    ELSE
+      IallowedProp(1) = 1
+    END IF
     
     ! Do we have any faces at all?
     IF ((rmeshRegion%NAT .LE. 0) .OR. (rmeshRegion%h_IfaceIdx .EQ. &
@@ -1137,16 +1157,20 @@ MODULE meshregion
       
       SELECT CASE(copMask)
       CASE (MSHREG_MASK_OR)
-        ! Go through all vertices and apply an OR-operator.
+        ! Go through all vertices and set the map entry to 1
         DO i=1, rmeshRegion%NVT
           Imap(p_IvertIdx(i)) = 1
         END DO
       
       CASE (MSHREG_MASK_AND)
-        ! Go through all vertices and apply an AND-operator.
+        ! Go through all vertices and add 1 to the map entry
         DO i=1, rmeshRegion%NVT
-          Imap(p_IvertIdx(i)) = IAND(Imap(p_IvertIdx(i)),1)
+          Imap(p_IvertIdx(i)) = Imap(p_IvertIdx(i)) + 1
         END DO
+        
+        ! Now all vertices that have already been in the mesh region
+        ! and which are adjacent to a face in the mesh region have
+        ! a value of 2 in the map.
         
       END SELECT
       
@@ -1168,7 +1192,7 @@ MODULE meshregion
     
     ! Now we have the vertex index map, so create an index array from this.
     CALL mshreg_aux_calcIdxArray1(Imap, 0, p_rtria%NVT, &
-                         rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0)
+        rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0, IallowedProp)
     
     ! And release the vertex map
     DEALLOCATE(Imap)
@@ -1220,6 +1244,7 @@ MODULE meshregion
   INTEGER(I32), DIMENSION(:), ALLOCATABLE :: Imap
   INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx, p_IedgeIdx
   INTEGER, DIMENSION(:,:), POINTER :: p_IedgesAtFace
+  INTEGER, DIMENSION(1) :: IallowedProp
   INTEGER(I32) :: copMask
   INTEGER :: i, j, iface
   TYPE(t_triangulation), POINTER :: p_rtria
@@ -1227,6 +1252,13 @@ MODULE meshregion
     ! Decide what operator to use
     copMask = MSHREG_MASK_KICK
     IF (PRESENT(coperatorMask)) copMask = coperatorMask
+
+    ! If we use the AND-operator, the allowed property is 2, otherwise 1
+    IF (copMask .EQ. MSHREG_MASK_AND) THEN
+      IallowedProp(1) = 2
+    ELSE
+      IallowedProp(1) = 1
+    END IF
     
     ! Do we have any faces at all?
     IF ((rmeshRegion%NAT .LE. 0) .OR. (rmeshRegion%h_IfaceIdx .EQ. &
@@ -1296,16 +1328,20 @@ MODULE meshregion
       
       SELECT CASE(copMask)
       CASE (MSHREG_MASK_OR)
-        ! Go through all edges and apply an OR-operator.
+        ! Go through all edges and set the map entry to 1
         DO i=1, rmeshRegion%NMT
           Imap(p_IedgeIdx(i)) = 1
         END DO
       
       CASE (MSHREG_MASK_AND)
-        ! Go through all edges and apply an AND-operator.
+        ! Go through all edges and add 1 to the map entry
         DO i=1, rmeshRegion%NMT
-          Imap(p_IedgeIdx(i)) = IAND(Imap(p_IedgeIdx(i)),1)
+          Imap(p_IedgeIdx(i)) = Imap(p_IedgeIdx(i)) + 1
         END DO
+
+        ! Now all edges that have already been in the mesh region
+        ! and which are adjacent to a face in the mesh region have
+        ! a value of 2 in the map.
         
       END SELECT
       
@@ -1324,7 +1360,7 @@ MODULE meshregion
     
     ! Now we have the edge index map, so create an index array from this.
     CALL mshreg_aux_calcIdxArray1(Imap, 0, p_rtria%NMT, &
-                            rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, 0)
+        rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, 0, IallowedProp)
     
     ! And release the edge map
     DEALLOCATE(Imap)
