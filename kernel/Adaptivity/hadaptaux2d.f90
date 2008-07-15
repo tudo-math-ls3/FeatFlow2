@@ -7087,7 +7087,7 @@ CONTAINS
       SELECT CASE(p_Imarker(iel))
         
       CASE(MARK_REF_QUAD4QUAD,&
-          MARK_REF_TRIA4TRIA)
+           MARK_REF_TRIA4TRIA)
 
         ! The current element is marked for red refinement.
         ! Thus, we have to "lock" all vertices connected to it.
@@ -7194,8 +7194,10 @@ CONTAINS
         
       CASE DEFAULT
 
-        ! The current element is marked for green refinement, and hence,
-        ! only the corner nodes have to be locked. The rest is done elsewhere.
+        ! The current element is marked for some sort of green
+        ! refinement, and hence, only the corner nodes have to be
+        ! locked. Note that the rest is done elsewhere in this
+        ! subroutine.
         
         DO ive = 1, hadapt_getNVE(rhadapt, iel)
           
@@ -8002,17 +8004,40 @@ CONTAINS
     ! Here, the real working routines follow.
 
     !**************************************************************
-    ! For a given element IEL, check if it should be locked
+    ! For a given element IEL, check if all corners vertices need
+    ! to be locked. In particular, this is the case if the element
+    ! is a red one or belongs to the initial triangulation and, in
+    ! addition, the element marker reuqires to keep this element.
 
     FUNCTION lockElement(iel) RESULT (blockElement)
 
       INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+      INTEGER                              :: istate
       LOGICAL                              :: blockElement
       
+      ! Check if element marker is available for this element
       blockElement = (iel .LE. SIZE(p_Dindicator, 1))
       
-      IF (blockElement) blockElement =&
-          (p_Dindicator(iel) .GE. rhadapt%dcoarseningTolerance)
+      IF (blockElement) THEN
+        
+        ! Get element state
+        istate = redgreen_getState2D(rhadapt, iel)
+        
+        SELECT CASE(istate)
+
+        CASE (STATE_TRIA_ROOT,&
+              STATE_TRIA_REDINNER,&
+              STATE_QUAD_ROOT,&
+              STATE_QUAD_RED4)
+
+          ! Element is a red element and/or belongs to the initial triangulation
+          blockElement = (p_Dindicator(iel) .GE. rhadapt%dcoarseningTolerance)
+
+        CASE DEFAULT
+          blockElement = .FALSE.
+          
+        END SELECT
+      END IF
     END FUNCTION lockElement
 
   END SUBROUTINE redgreen_mark_coarsening2D
