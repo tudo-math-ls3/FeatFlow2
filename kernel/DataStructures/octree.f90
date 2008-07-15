@@ -1062,7 +1062,7 @@ CONTAINS
     WRITE(*,*)
     CALL output_line('Current data memory usage: '//&
         TRIM(sys_sdL(100*roctree%NVT/REAL(roctree%NNVT,DP),2))//'%')
-    CALL output_line('Current ndoe memory usage: '//&
+    CALL output_line('Current node memory usage: '//&
         TRIM(sys_sdL(100*roctree%NNODE/REAL(roctree%NNNODE,DP),2))//'%')
   END SUBROUTINE otree_infoOctree
 

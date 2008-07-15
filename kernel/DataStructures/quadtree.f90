@@ -980,7 +980,7 @@ CONTAINS
     WRITE(*,*)
     CALL output_line('Current data memory usage: '//&
         TRIM(sys_sdL(100*rquadtree%NVT/REAL(rquadtree%NNVT,DP),2))//'%')
-    CALL output_line('Current ndoe memory usage: '//&
+    CALL output_line('Current node memory usage: '//&
         TRIM(sys_sdL(100*rquadtree%NNODE/REAL(rquadtree%NNNODE,DP),2))//'%')
   END SUBROUTINE qtree_infoQuadtree
 
