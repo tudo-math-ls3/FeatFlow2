@@ -148,6 +148,9 @@ CONTAINS
     
     CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'DUPSAM',rproblem%rstabilisation%dupsam,0.0_DP)
+    
+    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'ILOCALH',rproblem%rstabilisation%clocalH,0)
 
     ! Now set up discrezisation structures on all levels:
 

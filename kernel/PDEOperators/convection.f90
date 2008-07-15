@@ -8682,20 +8682,37 @@ CONTAINS
         IF (dnewton .EQ. 0.0_DP) THEN
         
           ! Include the local matrices into the global system matrix,
-          ! subblock A11 and (if different from A11) also into A22.
+          ! subblock A11 and (if different from A11) also into A22 and A33.
           !§OMP CRITICAL
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
                 p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * Dentry(JDOFE,IDOFE,IEL)
-                p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
-                    dtheta * Dentry(JDOFE,IDOFE,IEL)
-                p_Da33(Kentry(JDOFE,IDOFE,IEL)) = p_Da33(Kentry(JDOFE,IDOFE,IEL)) + &
-                    dtheta * Dentry(JDOFE,IDOFE,IEL)
               END DO
             END DO
           END DO
+          IF (.NOT. ASSOCIATED(p_Da22,p_Da11)) THEN
+            DO IEL=1,IELmax-IELset+1
+              DO IDOFE=1,indof
+                DO JDOFE=1,indof
+                  p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
+                      dtheta * Dentry(JDOFE,IDOFE,IEL)
+                END DO
+              END DO
+            END DO
+          END IF
+          IF ((.NOT. ASSOCIATED(p_Da33,p_Da11)) .AND. &
+              (.NOT. ASSOCIATED(p_Da33,p_Da22))) THEN
+            DO IEL=1,IELmax-IELset+1
+              DO IDOFE=1,indof
+                DO JDOFE=1,indof
+                  p_Da33(Kentry(JDOFE,IDOFE,IEL)) = p_Da33(Kentry(JDOFE,IDOFE,IEL)) + &
+                      dtheta * Dentry(JDOFE,IDOFE,IEL)
+                END DO
+              END DO
+            END DO
+          END IF
           !§OMP END CRITICAL
 
         ELSE

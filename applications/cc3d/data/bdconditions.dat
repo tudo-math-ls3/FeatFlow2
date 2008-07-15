@@ -43,7 +43,7 @@ bdExpressions(5) =
   'Umax'           0    0.3
   'Dirichlet0'     0    0.0
   'Dirichlet1'     0    1.0
-  'ParProfile'     2    0.3
+  'ParProfile'     2    0.45
   
 
 ##############

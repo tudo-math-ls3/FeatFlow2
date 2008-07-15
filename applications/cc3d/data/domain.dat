@@ -25,6 +25,6 @@
 iDomain = 2
 
 # Filename of the coarse grid mesh of the domain.
-# sMesh = './pre/CUBE.tri'
+#sMesh = './pre/CUBE.tri'
 sMesh = './pre/C3D0.tri'
 # sMesh = './pre/C3D1.tri'

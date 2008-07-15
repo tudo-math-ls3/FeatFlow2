@@ -142,6 +142,9 @@ MODULE ccbasic
     ! Standard values: Streamline diffusion: 1.0, Upwind: 0.1
     REAL(DP) :: dupsam = 1.0_DP
     
+    ! Calculation of local H for streamline diffusion
+    INTEGER :: clocalH = 0
+    
   END TYPE
 
 !</typeblock>

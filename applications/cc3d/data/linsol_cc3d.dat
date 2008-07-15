@@ -55,7 +55,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =3: BiCGStab with diagonal VANCA preconditioning
 # =4: BiCGStab with full VANCA preconditioning
 
-icoarseGridSolverType = 0
+icoarseGridSolverType = 1
 
 # Name of the section in this file which configures the coarse grid solver.
 
@@ -75,12 +75,12 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 5
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2
+depsRel            = 1E-3
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -126,7 +126,7 @@ icycle             = 0
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
 
-ccorrectionTypeAlpha = 1
+ccorrectionTypeAlpha = 0
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -148,11 +148,11 @@ dalphaMax          = 10.0
 
 # Number of pre- and postsmoothing steps
 
-nsmoothingSteps    = 16
+nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.9
+domega             = 1.0
 
 # Output level of the solver
 # = 2:extended output
@@ -176,18 +176,18 @@ nminIterations     = 1
 
 # Maximum number of steps
 
-nmaxIterations     = 1000
+nmaxIterations     = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2
+depsRel            = 1E-5
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-2
+depsAbs            = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.

@@ -472,7 +472,7 @@ CONTAINS
     ! handled fully implicitely. There is no part of the pressure on the RHS
     ! of the time step scheme and so the factor in front of the pressure
     ! is always the length of the current (sub)step!
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(4),&
         rtimestepping%dtstep)
     
     ! Update the preconditioner for the case, something changed (e.g.
@@ -489,7 +489,7 @@ CONTAINS
         rvector,rtempVectorRhs,rtempVector)             
 
     ! scale the pressure back, then we have again the correct solution vector.
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(4),&
         1.0_DP/rtimestepping%dtstep)
 
     ! rvector is the solution vector u^{n+1}.    

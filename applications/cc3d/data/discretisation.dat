@@ -106,6 +106,13 @@ iUpwind            = 0
 # Standard values: Streamline diffusion=1.0, Upwind=0.1,
 
 dUpsam             = 1.0 0.1
+#dUpsam              = 0.0 0.0
+
+# Calculation of local H for Streamline Diffusion
+# 0= set local H to (vol(T))^1/3
+# 1= set local H to the length of the way a particle travels through
+#    a cell
+iLocalH = 0
 
 # ------------------------------------------------------------------------
 

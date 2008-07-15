@@ -561,6 +561,7 @@ CONTAINS
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%p_rdiscretisation => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
       rnonlinearCCMatrix%p_rmatrixStokes => &
@@ -742,6 +743,7 @@ CONTAINS
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%iadaptiveMatrices = &
           rnonlinearIteration%rprecSpecials%iadaptiveMatrices
       rnonlinearCCMatrix%dadmatthreshold = &
@@ -1209,6 +1211,7 @@ CONTAINS
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+          rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
           rnonlinearCCMatrix%iadaptiveMatrices = &
               rnonlinearIteration%rprecSpecials%iadaptiveMatrices
           rnonlinearCCMatrix%dadmatthreshold = &
