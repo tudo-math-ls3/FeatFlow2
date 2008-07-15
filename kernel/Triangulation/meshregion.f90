@@ -31,6 +31,11 @@
 !#  6.) mshreg_recalcEdgesFromFaces
 !#      -> Recalculates the edge index array of the mesh region from the
 !#         face index array of the mesh region.
+!#
+!#  7.) mshreg_calcBoundaryNormals2D
+!#      -> Calculates the inner normal vectors for the boundary edges of a 
+!#         2D mesh region.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -40,6 +45,7 @@ MODULE meshregion
   USE storage
   USE triangulation
   USE collection
+  USE geometryaux
 
   IMPLICIT NONE
 
@@ -1369,4 +1375,230 @@ MODULE meshregion
     
   END SUBROUTINE
 
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mshreg_calcBoundaryNormals2D(rmeshRegion,Dnormals)
+
+!<description>
+  ! Calculates the inner normal vectors for the edges of a 2D mesh
+  ! region, i.e. the normal vectors which point "into the domain".
+  ! It is silently assumed that all edges of the mesh region lie on
+  ! the boundary of the mesh.
+!</description>
+
+!<input>
+  ! The mesh region for whose edges the normals are to be calcuated.
+  TYPE(t_meshRegion), INTENT(IN)        :: rmeshRegion
+!</input>
+
+!<output>
+  ! An array that recieves the normal vectors of the edges.
+  ! Dimension: Dnormals(NDIM2D,rmeshRegion%NMT)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dnormals
+!</output>
+
+!</subroutine>
+
+  ! Some local variables
+  TYPE(t_triangulation), POINTER :: p_rtria
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
+  INTEGER, DIMENSION(:), POINTER :: p_IedgeIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IvertAtEdge
+  REAL(DP) :: dx, dy, dt
+  INTEGER :: imt, iedge
+  
+  
+    ! Get a pointer to the triangulation
+    p_rtria => rmeshRegion%p_rtriangulation
+    
+    ! Is this a 2D triangulation?
+    IF (p_rtria%ndim .NE. 2) THEN
+      PRINT *, 'ERROR: mshreg_calcBoundaryNormals2D'
+      PRINT *, 'Triangulation must be 2D'
+      CALL sys_halt()
+    END IF
+    
+    ! Don't we have any edges here?
+    IF (rmeshRegion%NMT .LE. 0) RETURN
+    
+    ! In 2D the task of calculating the normal vectors is quite easy,
+    ! if we exploit some knowledge about the algorithm which calculates
+    ! the edges in a 2D mesh.
+    ! As we know that all edges on the boundary are oriented in mathematically
+    ! positive direction, the only thing that we have to do is rotate the
+    ! edge vector by 90° counter-clock-wise (and normalise, of course)
+    ! to get the inner normal vector of a boundary edge...
+        
+    ! Get a pointer to the vertices-at-edge array
+    CALL storage_getbase_int2D(p_rtria%h_IverticesAtEdge, p_IvertAtEdge)
+    
+    ! Get the vertice coordinate array
+    CALL storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dcoords)
+    
+    ! And get the edge index array of the mesh region
+    CALL storage_getbase_int(rmeshRegion%h_IedgeIdx, p_IedgeIdx)
+    
+    ! Now loop through all edges in the mesh region
+    DO imt = 1, rmeshRegion%NMT
+      
+      ! Get the index of the edge
+      iedge = p_IedgeIdx(imt)
+      
+      ! Calculate edge
+      dx = p_Dcoords(1,p_IvertAtEdge(2,iedge)) &
+         - p_Dcoords(1,p_IvertAtEdge(1,iedge))
+      dy = p_Dcoords(2,p_IvertAtEdge(2,iedge)) &
+         - p_Dcoords(2,p_IvertAtEdge(1,iedge))
+      
+      ! Calculate length of edge
+      dt = 1.0_DP / SQRT(dx**2 + dy**2)
+
+      ! Calculate normal
+      Dnormals(1,imt) = -dy * dt
+      Dnormals(2,imt) =  dx * dt
+      
+    END DO
+    
+    ! That's it
+  
+  END SUBROUTINE
+  
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mshreg_calcBoundaryNormals3D(rmeshRegion,Dnormals)
+
+!<description>
+  ! Calculates the inner normal vectors for the faces of a 3D mesh
+  ! region, i.e. the normal vectors which point "into the domain".
+  ! It is silently assumed that all faces of the mesh region lie on
+  ! the boundary of the mesh.
+!</description>
+
+!<input>
+  ! The mesh region for whose edges the normals are to be calcuated.
+  TYPE(t_meshRegion), INTENT(IN)        :: rmeshRegion
+!</input>
+
+!<output>
+  ! An array that recieves the normal vectors of the faces.
+  ! Dimension: Dnormals(NDIM3D,rmeshRegion%NAT)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dnormals
+!</output>
+
+!</subroutine>
+
+  ! Some local variables
+  TYPE(t_triangulation), POINTER :: p_rtria
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
+  INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IvertAtElem,&
+    p_IfaceAtElem, p_IelemAtFace
+  REAL(DP), DIMENSION(3) :: Du,Dv,Dn
+  REAL(DP), DIMENSION(3,8) :: Dcorners
+  REAL(DP) :: dt
+  INTEGER :: iat,ivt,iel,ifae,iface
+  
+  
+    ! Get a pointer to the triangulation
+    p_rtria => rmeshRegion%p_rtriangulation
+    
+    ! Is this a 3D triangulation?
+    IF (p_rtria%ndim .NE. 3) THEN
+      PRINT *, 'ERROR: mshreg_calcBoundaryNormals3D'
+      PRINT *, 'Triangulation must be 3D'
+      CALL sys_halt()
+    END IF
+    
+    ! Don't we have any faces here?
+    IF (rmeshRegion%NAT .LE. 0) RETURN
+    
+    ! Get a pointer to the faces-at-element array
+    CALL storage_getbase_int2D(p_rtria%h_IfacesAtElement, p_IfaceAtElem)
+
+    ! Get a pointer to the elements-at-face array
+    CALL storage_getbase_int2D(p_rtria%h_IelementsAtFace, p_IelemAtface)
+       
+    ! Get a pointer to the vertices-at-element array
+    CALL storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertAtElem)
+    
+    ! Get the vertice coordinate array
+    CALL storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dcoords)
+    
+    ! And get the edge index array of the mesh region
+    CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+    
+    ! Now loop through all face in the mesh region
+    DO iat = 1, rmeshRegion%NAT
+      
+      ! Get the index of the face
+      iface = p_IfaceIdx(iat)
+      
+      ! Get the index of the element that is adjacent to that face
+      iel = p_IelemAtFace(1,iface)
+      
+      ! Now go through all faces of the element and search for this one
+      DO ifae = 1, 6
+        IF (p_IfaceAtElem(ifae,iel) .EQ. iface) EXIT
+      END DO
+      
+      ! Get the eight corner vertices of the hexahedron
+      DO ivt = 1, 8
+        Dcorners(1:3,ivt) = p_Dcoords(1:3,p_IvertAtElem(ivt,iel))
+      END DO
+      
+      ! Calculate the normal of the face
+      SELECT CASE(ifae)
+      CASE (1)
+        ! (1->3) x (4->2)
+        Du(:) = Dcorners(:,3) - Dcorners(:,1)
+        Dv(:) = Dcorners(:,2) - Dcorners(:,4)
+      CASE (2)
+        ! (1->6) x (2->5)
+        Du(:) = Dcorners(:,6) - Dcorners(:,1)
+        Dv(:) = Dcorners(:,5) - Dcorners(:,2)
+      CASE (3)
+        ! (2->7) x (6->3)
+        Du(:) = Dcorners(:,7) - Dcorners(:,2)
+        Dv(:) = Dcorners(:,3) - Dcorners(:,6)
+      CASE (4)
+        ! (3->8) x (4->7)
+        Du(:) = Dcorners(:,8) - Dcorners(:,3)
+        Dv(:) = Dcorners(:,7) - Dcorners(:,4)
+      CASE (5)
+        ! (4->5) x (1->8)
+        Du(:) = Dcorners(:,5) - Dcorners(:,4)
+        Dv(:) = Dcorners(:,8) - Dcorners(:,1)
+      CASE (6)
+        ! (5->7) x (6->8)
+        Du(:) = Dcorners(:,7) - Dcorners(:,5)
+        Dv(:) = Dcorners(:,8) - Dcorners(:,6)
+      END SELECT
+      
+      ! Calculate normal by 3D cross product
+      Dn(1) = Du(2)*Dv(3) - Du(3)*Dv(2)
+      Dn(2) = Du(3)*Dv(1) - Du(1)*Dv(3)
+      Dn(3) = Du(1)*Dv(2) - Du(2)*Dv(1)
+      
+      ! Normalise it
+      dt = 1.0_DP / SQRT(Dn(1)**2 + Dn(2)**2 + Dn(3)**2)
+      Dn = dt * Dn
+      
+      ! Store the normal
+      IF (gaux_isFlipped_hexa3D(Dcorners)) THEN
+        Dnormals(:,iat) = Dn(:)
+      ELSE
+        Dnormals(:,iat) = -Dn(:)
+      END IF
+      
+    END DO
+    
+    ! That's it
+  
+  END SUBROUTINE
+  
 END MODULE

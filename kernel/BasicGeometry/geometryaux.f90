@@ -39,6 +39,9 @@
 !# 10.) gaux_getBarycentricCoords_tri2D
 !#      -> Calculates the barycentric coordinates of a point relative
 !#         to a specified triangle in 2D
+!#
+!# 11.) gaux_isFlipped_hexa3D
+!#      -> Checks whether a hexahedron is flipped or not.
 !# </purpose>
 !##############################################################################
 
@@ -293,10 +296,10 @@ CONTAINS
     Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,4)
     
     ! Return the absolute volume
-    gaux_getVolume_tetra3D = 0.1666666666666667_DP * (&
+    gaux_getVolume_tetra3D = ABS(&
         Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
         Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
-        Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
+        Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3))) / 6.0_DP
         
   END FUNCTION gaux_getVolume_tetra3D
 
@@ -304,7 +307,7 @@ CONTAINS
 
 !<function>
 
-  PURE REAL(DP) FUNCTION gaux_getVolume_hexa3D (Dpoints)
+  PURE REAL(DP) FUNCTION gaux_getVolume_hexa3D (Dv)
 
 !<description>
   ! This function calculates the volume of a 3D hexahedron. The
@@ -313,10 +316,10 @@ CONTAINS
 
 !<input>
   ! The coordinates of the eight corners of the hexahedron.
-  ! Dpoints(1,.) = x-coordinates,
-  ! Dpoints(2,.) = y-coordinates,
-  ! Dpoints(3,.) = z-coordinates
-  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dpoints
+  ! Dv(1,.) = x-coordinates,
+  ! Dv(2,.) = y-coordinates,
+  ! Dv(3,.) = z-coordinates
+  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dv
 !</input>
 
 !<result>
@@ -324,34 +327,39 @@ CONTAINS
 !</result>
 !</function>
 
-    ! A temporary array for the edge lengths
-    REAL(DP), DIMENSION(3,3) :: Dv
-    REAL(DP) :: dvol
-    
-    ! The method that is used here to calculate the volume of a 3D hexahedron
-    ! is based on the paper "Efficient Computation of Volume of Hexahedral Cells"
-    ! by Jeffrey Grandy.
-    
-    Dv(1:3,1) = Dpoints(1:3,7) - Dpoints(1:3,1)
-    Dv(1:3,2) = Dpoints(1:3,2) - Dpoints(1:3,1)
-    Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,6)
-    dvol = (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
-            Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
-            Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
-    Dv(1:3,2) = Dpoints(1:3,5) - Dpoints(1:3,1)
-    Dv(1:3,3) = Dpoints(1:3,6) - Dpoints(1:3,8)
-    dvol = dvol + (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
-                   Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
-                   Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
-    Dv(1:3,2) = Dpoints(1:3,4) - Dpoints(1:3,1)
-    Dv(1:3,3) = Dpoints(1:3,8) - Dpoints(1:3,3)
-    dvol = dvol + (Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
-                   Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
-                   Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3)))
-
     ! Return the absolute volume
-    gaux_getVolume_hexa3D = 0.1666666666666667_DP * dvol
-        
+    gaux_getVolume_hexa3D = (1.0_DP / 6.0_DP) * (&
+        ABS((Dv(1,4)-Dv(1,1))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,8))&
+           +(Dv(2,4)-Dv(2,1))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,8))&
+           +(Dv(3,4)-Dv(3,1))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,8))&
+           -(Dv(1,4)-Dv(1,8))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,1))&
+           -(Dv(2,4)-Dv(2,8))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,1))&
+           -(Dv(3,4)-Dv(3,8))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,1)))+&
+        ABS((Dv(1,2)-Dv(1,3))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,6))&
+           +(Dv(2,2)-Dv(2,3))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,6))&
+           +(Dv(3,2)-Dv(3,3))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,6))&
+           -(Dv(1,2)-Dv(1,6))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,3))&
+           -(Dv(2,2)-Dv(2,6))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,3))&
+           -(Dv(3,2)-Dv(3,6))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,3)))+&
+        ABS((Dv(1,5)-Dv(1,8))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,1))&
+           +(Dv(2,5)-Dv(2,8))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,1))&
+           +(Dv(3,5)-Dv(3,8))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,1))&
+           -(Dv(1,5)-Dv(1,1))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,8))&
+           -(Dv(2,5)-Dv(2,1))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,8))&
+           -(Dv(3,5)-Dv(3,1))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,8)))+&
+        ABS((Dv(1,7)-Dv(1,6))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,3))&
+           +(Dv(2,7)-Dv(2,6))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,3))&
+           +(Dv(3,7)-Dv(3,6))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,3))&
+           -(Dv(1,7)-Dv(1,3))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,6))&
+           -(Dv(2,7)-Dv(2,3))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,6))&
+           -(Dv(3,7)-Dv(3,3))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,6)))+&
+        ABS((Dv(1,1)-Dv(1,3))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,6))&
+           +(Dv(2,1)-Dv(2,3))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,6))&
+           +(Dv(3,1)-Dv(3,3))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,6))&
+           -(Dv(1,1)-Dv(1,6))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,3))&
+           -(Dv(2,1)-Dv(2,6))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,3))&
+           -(Dv(3,1)-Dv(3,6))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,3))))
+             
   END FUNCTION gaux_getVolume_hexa3D
     
 !************************************************************************
@@ -694,5 +702,54 @@ CONTAINS
               (dxi3 .GE. 0.0_DP) .AND. (dxi3 .LE. 1.0_DP) 
 
   END SUBROUTINE
+
+
+!************************************************************************
+
+!<function>
+
+  PURE LOGICAL FUNCTION gaux_isFlipped_hexa3D (Dpoints)
+
+!<description>
+  ! This function checks whether a 3D hexahedron is flipped.
+!</description>
+
+!<input>
+  ! The coordinates of the eight corners of the hexahedron.
+  ! Dpoints(1,.) = x-coordinates,
+  ! Dpoints(2,.) = y-coordinates,
+  ! Dpoints(3,.) = z-coordinates
+  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dpoints
+!</input>
+
+!<result>
+  ! .TRUE. if the hexahedron is flipped, otherwise .FALSE.
+!</result>
+!</function>
+
+    ! Three vectors connecting two opposite faces of the hexahedron,
+    ! and a normal vector
+    REAL(DP), DIMENSION(3) :: Du,Dv,Dw,Dn
+    REAL(DP) :: dt
+    
+    Du(:) = 0.25_DP * (Dpoints(:,5)+Dpoints(:,6)+Dpoints(:,7)+Dpoints(:,8)&
+                      -Dpoints(:,1)-Dpoints(:,2)-Dpoints(:,3)-Dpoints(:,4))
+    Dv(:) = 0.25_DP * (Dpoints(:,3)+Dpoints(:,4)+Dpoints(:,7)+Dpoints(:,8)&
+                      -Dpoints(:,1)-Dpoints(:,2)-Dpoints(:,5)-Dpoints(:,6))
+    Dw(:) = 0.25_DP * (Dpoints(:,1)+Dpoints(:,4)+Dpoints(:,5)+Dpoints(:,8)&
+                      -Dpoints(:,2)-Dpoints(:,3)-Dpoints(:,6)-Dpoints(:,7))
+    
+    ! Calculate normal n := u x v with 3d cross product
+    Dn(1) = Du(2)*Dv(3) - Du(3)*Dv(2)
+    Dn(2) = Du(3)*Dv(1) - Du(1)*Dv(3)
+    Dn(3) = Du(1)*Dv(2) - Du(2)*Dv(1)
+    
+    ! Calculate scalar product t := < n, w >
+    dt = Dn(1)*Dw(1) + Dn(2)*Dw(2) + Dn(3)*Dw(3)
+    
+    ! Now if dt < 0, then the hexahedron is flipped
+    gaux_isFlipped_hexa3D = (dt .LT. 0.0_DP)
+
+  END FUNCTION gaux_isFlipped_hexa3D
 
 END MODULE

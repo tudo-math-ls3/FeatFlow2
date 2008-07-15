@@ -51,6 +51,7 @@ MODULE convection
   USE domainintegration
   USE bilinearformevaluation
   USE statistics
+  USE geometryaux
   
   IMPLICIT NONE
 
@@ -9089,7 +9090,8 @@ CONTAINS
 
     ! Calculate the local mesh width dlocalH = h = h_T on our element T=IEL:
     CALL getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
-
+    dlocalH = dlocalH**(1.0_DP / 3.0_DP)
+   
     ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
     IF (UPSAM.LT.0.0_DP) THEN
 
@@ -9254,32 +9256,7 @@ CONTAINS
     ! which are flipped, it may (and will) happen that the normal vectors
     ! we have calculated are inner normal vectors instead of outer ones.
     ! So we need to check whether the hexahedron is flipped.
-    ! We check this by calculating the scalar product of the vector
-    ! between the first and fifth vertice and the normal vector of
-    ! the span of the vector from the first to the second vertice
-    ! and the vector from the first to the fourth vertice.
-    ! In other words: We check whether the right-hand- or left-hand-rule
-    ! applies to the first vertice of our hexahedron.
-    ! If dt is negative, then we need to change the sign of the normal
-    ! vectors.
-    dt = (Dv(1,5)-Dv(1,1))*((Dv(2,2)-Dv(2,1))*(Dv(3,4)-Dv(3,1)) &
-                           -(Dv(3,2)-Dv(3,1))*(Dv(2,4)-Dv(2,1)))&
-       + (Dv(2,5)-Dv(2,1))*((Dv(3,2)-Dv(3,1))*(Dv(1,4)-Dv(1,1)) &
-                           -(Dv(1,2)-Dv(1,1))*(Dv(3,4)-Dv(3,1)))&
-       + (Dv(3,5)-Dv(3,1))*((Dv(1,2)-Dv(1,1))*(Dv(2,4)-Dv(2,1)) &
-                           -(Dv(2,2)-Dv(2,1))*(Dv(1,4)-Dv(1,1)))
-    
-    IF (dt .LT. 0.0_DP) THEN
-      ! Basically, we could simply write...
-      !Dnormal(:,:) = -Dnormal(:,:)
-      ! ...but the ifort compiler prints a "non-standard extension"
-      ! warning, so we'll do it the old way to keep ifort quiet:
-      DO i = 1, 6
-        Dnormal(1,i) = -Dnormal(1,i)
-        Dnormal(2,i) = -Dnormal(2,i)
-        Dnormal(3,i) = -Dnormal(3,i)
-      END DO
-    END IF
+    IF (gaux_isFlipped_hexa3D(Dv)) Dnormal = -Dnormal
 
     ! Now we have calculated all the vectors we need - we have the face
     ! midpoints, normal vectors and a ray vector.
@@ -9411,39 +9388,7 @@ CONTAINS
     Dv(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
     
     ! Reset the volume
-    dlocalH = &
-            DABS((Dv(1,4)-Dv(1,1))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,8))&
-                 +(Dv(2,4)-Dv(2,1))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,8))&
-                 +(Dv(3,4)-Dv(3,1))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,8))&
-                 -(Dv(1,4)-Dv(1,8))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,1))&
-                 -(Dv(2,4)-Dv(2,8))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,1))&
-                 -(Dv(3,4)-Dv(3,8))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,1)))+&
-            DABS((Dv(1,2)-Dv(1,3))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,6))&
-                 +(Dv(2,2)-Dv(2,3))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,6))&
-                 +(Dv(3,2)-Dv(3,3))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,6))&
-                 -(Dv(1,2)-Dv(1,6))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,3))&
-                 -(Dv(2,2)-Dv(2,6))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,3))&
-                 -(Dv(3,2)-Dv(3,6))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,3)))+&
-            DABS((Dv(1,5)-Dv(1,8))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,1))&
-                 +(Dv(2,5)-Dv(2,8))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,1))&
-                 +(Dv(3,5)-Dv(3,8))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,1))&
-                 -(Dv(1,5)-Dv(1,1))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,8))&
-                 -(Dv(2,5)-Dv(2,1))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,8))&
-                 -(Dv(3,5)-Dv(3,1))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,8)))+&
-            DABS((Dv(1,7)-Dv(1,6))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,3))&
-                 +(Dv(2,7)-Dv(2,6))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,3))&
-                 +(Dv(3,7)-Dv(3,6))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,3))&
-                 -(Dv(1,7)-Dv(1,3))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,6))&
-                 -(Dv(2,7)-Dv(2,3))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,6))&
-                 -(Dv(3,7)-Dv(3,3))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,6)))+&
-            DABS((Dv(1,1)-Dv(1,3))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,6))&
-                 +(Dv(2,1)-Dv(2,3))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,6))&
-                 +(Dv(3,1)-Dv(3,3))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,6))&
-                 -(Dv(1,1)-Dv(1,6))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,3))&
-                 -(Dv(2,1)-Dv(2,6))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,3))&
-                 -(Dv(3,1)-Dv(3,6))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,3)))
-    
-    dlocalH = (dlocalH / 6.0_DP)**(1.0_DP/3.0_DP)
+    dlocalH = gaux_getVolume_hexa3D(Dv)
 
   END SUBROUTINE
 
