@@ -111,6 +111,10 @@ CC=pgcc
 CPP=pgcc
 FC=pgf95
 OPTFLAGS  = -fastsse -O4
+OPTFLAGSDEBUG = -g 
+OPTFLAGSCDEBUG = -traceback
+OPTFLAGSCPPDEBUG = -traceback
+OPTFLAGSFDEBUG = -C -Mchkptr -Mchkstk -traceback -Minfo=all -Minform=inform
 FCFLAGS   = -module $(MODDIR)
 CCFLAGS   = 
 CPPFLAGS   = 
@@ -120,10 +124,17 @@ LAPACKLIB =
 GENERIC   = 0 
 
 # Try to find more sophisticated compiler settings
-ifeq ($(FFCPU),opteron)
-OPTFLAGS  += -tp k8-64 -Mipa -mcmodel=medium -Mlarge_arrays
+ifeq ($(FFCPU),barcelona)
+OPTFLAGS  += -tp=barcelona-64 -Mipa -mcmodel=medium -Mlarge_arrays
 GENERIC   = 0
 endif
+
+ifeq ($(FFCPU),opteron)
+OPTFLAGS  += -tp=k8-64 -Mipa -mcmodel=medium -Mlarge_arrays
+GENERIC   = 0
+endif
+
+
 endif
 
 
