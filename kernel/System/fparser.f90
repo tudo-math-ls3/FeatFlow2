@@ -1548,8 +1548,13 @@ CONTAINS
         ! Functions
         !------------------------------------------------------------
       CASE (cAbs)
-        Stack(:,StackPtr)=ABS(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=ABS(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         
+
       CASE (cAcos)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1563,6 +1568,7 @@ CONTAINS
         END DO
 !$omp end parallel do
 
+
       CASE (cAsin)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1575,13 +1581,24 @@ CONTAINS
           END IF
         END DO
 !$omp end parallel do
+
         
       CASE (cAtan)
-        Stack(:,StackPtr)=ATAN(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=ATAN(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cAtan2)
-        Stack(:,StackPtr-1)=ATAN2(Stack(:,StackPtr -1),Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=ATAN2(Stack(iBlock,StackPtr -1),Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
         
       CASE (cAcosh)
 !$omp parallel do default(shared) private(iBlock,daux)
@@ -1596,11 +1613,22 @@ CONTAINS
         END DO
 !$omp end parallel do
         
+
       CASE (cAnint)
-        Stack(:,StackPtr)=ANINT(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=ANINT(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cAint)
-        Stack(:,StackPtr)=AINT(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=AINT(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cAsinh)
 !$omp parallel do default(shared) private(iBlock,daux)
@@ -1614,6 +1642,7 @@ CONTAINS
           END IF
         END DO
 !$omp end parallel do
+
 
       CASE (cAtanh)
 !$omp parallel do default(shared) private(iBlock,daux)
@@ -1631,15 +1660,31 @@ CONTAINS
           END IF
         END DO
 !$omp end parallel do
+
         
       CASE (cCeil)
-        Stack(:,StackPtr)=CEILING(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=CEILING(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cCos)
-        Stack(:,StackPtr)=COS(Stack(:,StackPtr)) 
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=COS(Stack(iBlock,StackPtr)) 
+        END DO
+!$omp end parallel do
         
+
       CASE (cCosh)
-        Stack(:,StackPtr)=COSH(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=COSH(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cCot)
 !$omp parallel do default(shared) private(iBlock,daux)
@@ -1654,6 +1699,7 @@ CONTAINS
         END DO
 !$omp end parallel do
 
+
       CASE (cCsc)
 !$omp parallel do default(shared) private(iBlock,daux)
         DO iBlock=1,BlockSize
@@ -1667,11 +1713,22 @@ CONTAINS
         END DO
 !$omp end parallel do
 
+
       CASE (cExp)
-        Stack(:,StackPtr)=EXP(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=EXP(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cFloor)
-        Stack(:,StackPtr)=FLOOR(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=FLOOR(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
 
       CASE (cIf)
         ! IF-THEN-ELSE cannot be vectorized which should be noted during
@@ -1680,6 +1737,7 @@ CONTAINS
         PRINT *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
         CALL sys_halt()
         
+
       CASE (cLog)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1691,6 +1749,7 @@ CONTAINS
           END IF
         END DO
 !$omp end parallel do
+
 
       CASE (cLog10)
 !$omp parallel do default(shared) private(iBlock)
@@ -1704,14 +1763,25 @@ CONTAINS
         END DO
 !$omp end parallel do
 
+
       CASE (cMax)
-        Stack(:,StackPtr-1)=MAX(Stack(:,StackPtr-1),Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=MAX(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
         
+
       CASE (cMin)
-        Stack(:,StackPtr-1)=MIN(Stack(:,StackPtr-1),Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=MIN(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
         
+
       CASE (cSec)
 !$omp parallel do default(shared) private(iBlock,daux)
         DO iBlock=1,BlockSize
@@ -1724,13 +1794,24 @@ CONTAINS
           END IF
         END DO
 !$omp end parallel do
+
         
       CASE (cSin)
-        Stack(:,StackPtr)=SIN(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=SIN(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
         
       CASE(cSinh)
-        Stack(:,StackPtr)=SINH(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=SINH(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
       
+
       CASE(cSqrt)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1743,42 +1824,79 @@ CONTAINS
         END DO
 !$omp end parallel do
 
+
       CASE (cTan)
-        Stack(:,StackPtr)=TAN(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=TAN(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
         
       CASE (cTanh)
-        Stack(:,StackPtr)=TANH(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=TANH(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         
+
         !------------------------------------------------------------
         ! Misc
         !------------------------------------------------------------
       CASE (cImmed)
         StackPtr=StackPtr+1
-        Stack(:,StackPtr)=Comp%Immed(DataPtr)
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=Comp%Immed(DataPtr)
+        END DO
+!$omp end parallel do
         DataPtr=DataPtr+1
+
 
       CASE (cJump)
         DataPtr=Comp%ByteCode(InstPtr+2)
         InstPtr=Comp%ByteCode(InstPtr+1)
 
+
         !------------------------------------------------------------
         ! Operators
         !------------------------------------------------------------
       CASE (cNeg)
-        Stack(:,StackPtr)=-Stack(:,StackPtr)
-        
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=-Stack(iBlock,StackPtr)
+        END DO
+!$omp end parallel do
+
+
       CASE (cAdd)
-        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)+Stack(:,StackPtr)
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)+Stack(iBlock,StackPtr)
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
         
+
       CASE (cSub)
-        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)-Stack(:,StackPtr)
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)-Stack(iBlock,StackPtr)
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
 
+
       CASE (cMul)
-        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)*Stack(:,StackPtr)
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)*Stack(iBlock,StackPtr)
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
         
+
       CASE (cDiv)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1792,6 +1910,7 @@ CONTAINS
 !$omp end parallel do
         StackPtr=StackPtr-1
         
+
       CASE (cMod)
 !$omp parallel do default(shared) private(iBlock)
         DO iBlock=1,BlockSize
@@ -1805,75 +1924,152 @@ CONTAINS
 !$omp end parallel do
         StackPtr=StackPtr-1
 
+
       CASE (cPow)
-        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)**Stack(:,StackPtr)
+!$omp parallel do default(shared) private(iBlock)
+        DO  iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)**Stack(iBlock,StackPtr)
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
         
       CASE (cEqual)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) == Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) == Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
 
       CASE (cNEqual)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) /= Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) /= Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
 
       CASE (cLess)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) < Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) < Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
 
       CASE (cLessOrEq)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) <= Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) <= Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
         
       CASE (cGreater)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) > Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) > Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
         
       CASE (cGreaterOrEq)
-        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) >= Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) >= Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
         
       CASE (cAnd)
-        Stack(:,StackPtr-1)=LogcToDble(DbleToLogc(Stack(:,StackPtr-1)) .AND. &
-            DbleToLogc(Stack(:,StackPtr)) )
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .AND. &
+                DbleToLogc(Stack(iBlock,StackPtr)) )
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
+
 
       CASE (cOr)
-        Stack(:,StackPtr-1)=LogcToDble(DbleToLogc(Stack(:,StackPtr-1)) .OR. &
-            DbleToLogc(Stack(:,StackPtr)) )
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .OR. &
+                DbleToLogc(Stack(iBlock,StackPtr)) )
+        END DO
+!$omp end parallel do
         StackPtr=StackPtr-1
 
+
       CASE (cNot)
-        Stack(:,StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(:,StackPtr)) )
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(iBlock,StackPtr)) )
+        END DO
+!$omp end parallel do
+
         
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
       CASE (cDeg)
-        Stack(:,StackPtr)=RadToDeg(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=RadToDeg(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
+
         
       CASE (cRad)
-        Stack(:,StackPtr)=DegToRad(Stack(:,StackPtr))
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=DegToRad(Stack(iBlock,StackPtr))
+        END DO
+!$omp end parallel do
         
+
       CASE DEFAULT
         StackPtr  = StackPtr+1
         iVariable = Comp%ByteCode(InstPtr)-VarBegin+1
 
         ! Do we have to process one of the scalar variables of one of the block variables
         IF (iVariable >= istartValScalar) THEN
-          Stack(:,StackPtr)=ValScalar(iVariable-istartValScalar+1)
+!$omp parallel do default(shared) private(iBlock)
+          DO iBlock=1,BlockSize
+             Stack(iBlock,StackPtr)=ValScalar(iVariable-istartValScalar+1)
+          END DO
+!$omp end parallel do
         ELSE
           IF (iDim == 1) THEN
-            Stack(:,StackPtr)=ValBlock(:,iVariable)
+!$omp parallel do default(shared) private(iBlock)
+            DO iBlock=1,BlockSize
+               Stack(iBlock,StackPtr)=ValBlock(iBlock,iVariable)
+            END DO
+!$omp end parallel do
           ELSE
-            Stack(:,StackPtr)=ValBlock(iVariable,:)
+!$omp parallel do default(shared) private(iBlock)
+            DO iBlock=1,BlockSize
+               Stack(iBlock,StackPtr)=ValBlock(iVariable,iBlock)
+            END DO
+!$omp end parallel do
           END IF
         END IF
       END SELECT
     END DO
     
     EvalErrType = 0
-    Res = Stack(:,StackPtr)
+!$omp parallel do default(shared) private(iBlock)
+    DO iBlock=1,BlockSize
+       Res(iBlock) = Stack(iBlock,StackPtr)
+    END DO
+!$omp end parallel do
   END SUBROUTINE evalFunctionBlock
   
   ! *****************************************************************************
