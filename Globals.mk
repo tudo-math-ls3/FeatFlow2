@@ -246,7 +246,7 @@ include $(FEATFLOW)/Globals.x86_64
 endif
 
 ifeq ($(call match,$(FFARCH),(ia64|hp*)),yes)
-include $(FEATFLOW)/Globals.x86_64
+include $(FEATFLOW)/Globals.ia64
 endif
 
 ifeq ($(call match,$(FFARCH),sun),yes)
