@@ -87,9 +87,9 @@ MODULE statistics
   
   INTEGER, PARAMETER :: STAT_MAXPERFCOUNTERS = 100
   
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_DYNAMIC = 100
+  INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_DYN = 100
   
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MULTIDIM_DYNAMIC = 200
+  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MULTIDIM_DYN = 200
   
   INTEGER, PARAMETER :: STAT_SCARCPERFCOUNTERS = 2
   
@@ -113,7 +113,7 @@ MODULE statistics
   INTEGER, PARAMETER :: STAT_MV_BAND_Q1_2D = 12
   
   INTEGER, PARAMETER :: STAT_MVONLY_BAND_Q1_2D=13
-  INTEGER, PARAMETER :: STAT_MV_BAND_GENERIC_SINGLEBAND_2D=14
+  INTEGER, PARAMETER :: STAT_MV_BAND_GENERIC_SBAND_2D=14
   INTEGER, PARAMETER :: STAT_PRECJAC_Q1_2D=15
   INTEGER, PARAMETER :: STAT_PRECGS_BAND_Q1_2D=16
   INTEGER, PARAMETER :: STAT_PRECTRIDI_BAND_Q1_2D=17
@@ -128,7 +128,7 @@ MODULE statistics
   INTEGER, PARAMETER :: STAT_RESTRICT_Q2L_2D=26    
   INTEGER, PARAMETER :: STAT_NONTRIVIALFLOP=16
   INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_COMPLETE=1
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MULTIDIM_COMPLETE=2
+  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MDIM_COMPLETE=2
 
 !</constantblock>
   
@@ -593,7 +593,7 @@ MODULE statistics
   ! If the ID represents a static perfcounter, it is cleared only if it is not currently 
   ! counting any operations. Otherwise, an error message is displayed.
   ! If the given ID represents a dynamic performance counter 
-  ! (STAT_PERFCOUNTER_SCARC_DYNAMIC  or STAT_PERFCOUNTER_MULTIDIM_DYNAMIC), 
+  ! (STAT_PERFCOUNTER_SCARC_DYN  or STAT_PERFCOUNTER_MULTIDIM_DYN), 
   ! the innermost counter (counting from calls to stat_enable()) is cleared if it is not 
   ! currently counting any operations. Otherwise, an error message is displayed.
   !</description>
@@ -612,9 +612,9 @@ MODULE statistics
     integer :: iarray,icurrent
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
@@ -777,9 +777,9 @@ MODULE statistics
 
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
@@ -837,9 +837,9 @@ MODULE statistics
 
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
@@ -1029,7 +1029,7 @@ MODULE statistics
         nstores = cprec*n
       endif
 
-    case(STAT_MV_BAND_GENERIC_SINGLEBAND_2D)
+    case(STAT_MV_BAND_GENERIC_SBAND_2D)
       ! multiplication of a single matrix band with a vector,
       ! y=y+alpha*band*x 
       ! corresponding routine somewhere in matrix.f90
@@ -1198,9 +1198,9 @@ MODULE statistics
 
     ! TODO: ifdef this with DISABLE_MULTIDIM
     if (btest(stat_RperfCounters(STAT_STATICPERFCOUNTERS)%Ibits, & 
-              STAT_PERFCOUNTER_MULTIDIM_COMPLETE)) then
+              STAT_PERFCOUNTER_MDIM_COMPLETE)) then
       rpcPointer => stat_RperfCounters(STAT_STATICPERFCOUNTERS) &
-                      %Rpc(STAT_PERFCOUNTER_MULTIDIM_COMPLETE)
+                      %Rpc(STAT_PERFCOUNTER_MDIM_COMPLETE)
       rpcPointer%nflops  = rpcPointer%nflops  + nflops
       rpcPointer%nloads  = rpcPointer%nloads  + nloads
       rpcPointer%nstores = rpcPointer%nstores + nstores
@@ -1274,9 +1274,9 @@ MODULE statistics
     integer :: iarray
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
@@ -1343,9 +1343,9 @@ MODULE statistics
     integer :: iarray
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
@@ -1386,9 +1386,9 @@ MODULE statistics
     integer :: iarray
 
     ! figure out which array to work on
-    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYNAMIC) then
+    if (cperfCounterID .eq. STAT_PERFCOUNTER_SCARC_DYN) then
       iarray = STAT_SCARCPERFCOUNTERS
-    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYNAMIC) then
+    else if (cperfCounterID .eq. STAT_PERFCOUNTER_MULTIDIM_DYN) then
       iarray = STAT_MULTIDIMPERFCOUNTERS
     else 
       iarray = STAT_STATICPERFCOUNTERS  
