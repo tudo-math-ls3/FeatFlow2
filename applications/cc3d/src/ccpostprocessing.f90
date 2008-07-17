@@ -344,39 +344,46 @@ CONTAINS
 
 !</subroutine>
     
-    ! local variables
+    ! Forces on the object
+    REAL(DP), DIMENSION(NDIM3D) :: Dforces
+    REAL(DP) :: df1,df2
+    TYPE(t_meshRegion) :: rregion
+    INTEGER, DIMENSION(1) :: Iregion = (/ 7 /)
     
-    CALL output_line('Body forces not available in 3D')
-    
-!    ! Forces on the object
-!    REAL(DP), DIMENSION(NDIM3D) :: Dforces
-!    REAL(DP) :: df1,df2
-!    TYPE(t_boundaryRegion) :: rregion
-!    
-!    ! If we have a uniform discretisation, calculate the body forces on the
-!    ! 2nd boundary component - if it exists.
-!    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-!         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-!        (boundary_igetNBoundComp(rproblem%rboundary) .GE. 2)) THEN
-!
-!      ! Calculate drag-/lift coefficients on the 2nd boundary component.
-!      ! This is for the benchmark channel!
-!      CALL boundary_createRegion (rproblem%rboundary, &
-!          2, 0, rregion)
-!      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-!      df1 = 1.0_DP/1000.0_DP
-!      df2 = 0.1_DP * 0.2_DP**2
-!      CALL ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,df1,df2)
-!
-!      CALL output_lbrk()
-!      CALL output_line ('Body forces')
-!      CALL output_line ('-----------')
-!      CALL output_line ('Body forces real bd., bdc/horiz/vert')
-!      CALL output_line (' 2 / ' &
-!          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
-!          //TRIM(sys_sdEP(Dforces(2),15,6)) )
-!      
-!    ENDIF
+    ! If we have a uniform discretisation, calculate the body forces on the
+    ! 2nd boundary component - if it exists.
+    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+         ccomplexity .EQ. SPDISC_UNIFORM)) THEN
+         
+      ! Calculate a mesh region for the seventh boundary component
+      CALL ccdc_calcBoundaryMeshRegion(rproblem,rregion,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation, Iregion)
+      
+      ! Is the mesh region empty?
+      IF (rregion%NAT .LE. 0) THEN
+        CALL mshreg_done(rregion)
+        RETURN
+      END IF
+
+      ! Calculate drag-/lift coefficients on the 2nd boundary component.
+      ! This is for the benchmark channel!
+      df1 = 1.0_DP/1000.0_DP
+      df2 = 0.041_DP * 0.2_DP**2
+      CALL ppns3D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1X1,df1,df2)
+
+      CALL output_lbrk()
+      CALL output_line ('Body forces')
+      CALL output_line ('-----------')
+      CALL output_line ('Body forces real bd., bdc/horiz/vert')
+      CALL output_line (' 2 / ' &
+          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //TRIM(sys_sdEP(Dforces(2),15,6)) // ' / '&
+          //TRIM(sys_sdEP(Dforces(3),15,6)) )
+      
+      ! Destroy the mesh region
+      CALL mshreg_done(rregion)
+      
+    ENDIF
     
   END SUBROUTINE
 

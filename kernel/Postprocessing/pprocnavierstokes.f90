@@ -13,7 +13,10 @@
 !#     -> Calculate the body forces acting on a boundary component
 !#        of a given parametrisation.
 !#
-!# 2.) ppns2D_streamfct_uniform
+!# 2.) ppns3D_bdforces_uniform
+!#     -> Calculate the body forces acting on a boundary mesh region.
+!#
+!# 3.) ppns2D_streamfct_uniform
 !#     -> Calculate the streamfunction of a 2D velocity field.
 !# </purpose>
 !#########################################################################
@@ -28,6 +31,7 @@ MODULE pprocnavierstokes
   USE linearsystemscalar
   USE linearsystemblock
   USE spatialdiscretisation
+  USE meshregion
 
   IMPLICIT NONE
 
@@ -474,6 +478,497 @@ CONTAINS
     
     ! Deallocate memory, finish.
     DEALLOCATE(DCoords)
+  
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ppns3D_bdforces_uniform (rvector,rregion,Dforces,ccub,df1,df2)
+
+!<description>
+  ! Calculates the drag-/lift-forces acting on a part of the real
+  ! boundary for a vector rvector with the solution of the 3D
+  ! (Navier-)Stokes equation. It's assumed that
+  !   rvector%rvectorBlock(1) = X-velocity,
+  !   rvector%rvectorBlock(2) = Y-velocity,
+  !   rvector%rvectorBlock(3) = Z-velocity,
+  !   rvector%rvectorBlock(4) = pressure.
+  !
+  ! rregion specifies a boundary region where to calculate
+  ! the force integral. Dforces(1:3) receives the forces in the
+  ! X-, Y- and Z-direction.
+  !
+  ! The body forces are defined as the integrals
+  !
+  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
+  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
+  !    Dforces(3) = 2/df2 * int_s [df1 dut/dn n_z + p n_z] ds 
+  !
+  ! where df1 and df2 allow to weight different integral parts
+  !
+  ! Usually in benchmark-like geometries there is:
+  !
+  !   $$ df1 = RHO*NU = (density of the fluid)*viscosity$$
+  !   $$ df2 = RHO*DIST*UMEAN**2
+  !          = (density of the fluid)*(length of the obstacle facing the flow)
+  !           *(mean velocity of the fluid)^2 $$
+  !
+  ! which influences this routine to calculate the drag-/lift coefficients
+  ! instead of the forces. The actual forces are calculated by
+  ! setting df1=1.0 and df2=2.0, which is the standard setting when
+  ! neglecting df1 and df2.
+  !
+  ! Double precision version for all Finite Elements without 
+  ! curved boundaries.
+!</description>
+
+!<input>
+  ! The FE solution vector.
+  TYPE(t_vectorBlock), INTENT(IN)     :: rvector
+  
+  ! Mesh region where to calculate the boundary forces.
+  TYPE(t_meshRegion), INTENT(IN)      :: rregion
+  
+  ! 2D Cubature formula identifier to use for the quad integration.
+  ! One of the CUB_xxxx constants in the cubature.f90.
+  INTEGER, INTENT(IN)                 :: ccub
+
+  ! OPTIONAL: 1st weighting factor for the integral.
+  ! If neglected, df1=1.0 is assumed.
+  REAL(DP), INTENT(IN), OPTIONAL      :: df1
+
+  ! OPTIONAL: 2nd weighting factor for the integral.
+  ! If neglected, df2=2.0 is assumed.
+  REAL(DP), INTENT(IN), OPTIONAL      :: df2
+  
+!</input>
+
+!<output>
+  ! Array receiving the forces acting on the boundary specified by rregion.
+  ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dforces
+!</output>
+
+!</subroutine>
+
+  ! Spatial discretisation structure of velocity and pressure
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrU, p_rdiscrP
+
+  ! Element type identifier for U and P
+  INTEGER(I32) :: ielemU, ielemP
+  
+  ! Number of local DOF's in U and P
+  INTEGER :: idoflocU, idoflocP
+  
+  ! Triangulation
+  TYPE (t_triangulation), POINTER :: p_rtria
+  
+  ! An accepting the DOF's of an element.
+  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS), TARGET :: IdofsU, IdofsP
+  
+  ! Coordinates of the vertices
+  REAL(DP), DIMENSION(NDIM3D,8) :: Dcoords
+  
+  ! Coordinates of the normal vectors
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dnormal
+
+  ! Coordinates of the cubature points on reference and real element
+  REAL(DP), DIMENSION(NDIM3D,CUB_MAXCUBP_2D) :: DpointsRef,DpointsReal
+  
+  ! Coordinate system for U and P element
+  INTEGER :: ctrafoU, ctrafoP
+  
+  ! U/P element parametric or nonparametric
+  LOGICAL :: bnonparU,bnonparP
+  
+  ! Arrays for saving Jacobian determinants and matrices
+  REAL(DP), DIMENSION(CUB_MAXCUBP_2D) :: Ddetj
+  REAL(DP), DIMENSION(CUB_MAXCUBP_2D) :: Ddetj_face
+  REAL(DP), DIMENSION(EL_NJACENTRIES3D,CUB_MAXCUBP_2D) :: Djac
+
+  ! Array to tell the element which derivatives to calculate.
+  LOGICAL, DIMENSION(EL_MAXNDER) :: BderU, BderP
+  
+  ! Value of basis functions
+  REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,CUB_MAXCUBP_2D) :: DbasU, DbasP
+  
+  ! Pointer to vector data of solution vector
+  REAL(DP), DIMENSION(:), POINTER :: p_DdataUX,p_DdataUY,p_DdataUZ,p_DdataP
+
+  ! Cubature point coordinates on the reference element.
+  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi2D, Dxi3D
+
+  ! For every cubature point on the reference element,
+  ! the corresponding cubature weight
+  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  
+  ! number/index of cubature points on the reference element
+  INTEGER :: ncubp,icubp
+
+  ! Edges, vertices and elements on the boundary
+  INTEGER(PREC_FACEIDX), DIMENSION(:), POINTER     :: p_IfaceIdx
+  INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER   :: p_IfaceAtElem
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElem
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelemAtFace
+  REAL(DP), DIMENSION(:,:), POINTER                :: p_Dvertex
+
+  ! other local variables
+  INTEGER :: iat, iface,ilocalface,idfl,i,NVT,NMT
+  INTEGER(PREC_DOFIDX) :: neqU,neqP
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  REAL(DP) :: dpf1,dpf2,dpres,du1,du2,du3,dweight,dv
+  REAL(DP), DIMENSION(3) :: DintU, DintP
+  INTEGER(I32), DIMENSION(:), POINTER :: p_ItwistIndex
+
+    ! Get the vector data
+    neqU = rvector%RvectorBlock(1)%NEQ
+    neqP = rvector%RvectorBlock(4)%NEQ
+    
+    IF (rvector%cdataType .NE. ST_DOUBLE) THEN
+      PRINT *,'ppns3D_bdforces: Unsupported vector precision.'
+      CALL sys_halt()
+    END IF
+
+    ! We support only uniform discretisation structures.
+    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
+      PRINT *,'ppns3D_bdforces: No discretisation structure!'
+      CALL sys_halt()
+    END IF
+
+    IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+      PRINT *,'ppns3D_bdforces_uniform: Discretisation too complex!'
+      CALL sys_halt()
+    END IF
+    
+    ! Get pointers to the subvectors from the block vector
+    CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
+    CALL lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
+    CALL lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataUZ)
+    CALL lsyssc_getbase_double (rvector%RvectorBlock(4),p_DdataP)
+    
+    IF ((rvector%RvectorBlock(1)%isortStrategy > 0) .OR. &
+        (rvector%RvectorBlock(2)%isortStrategy > 0) .OR. &
+        (rvector%RvectorBlock(3)%isortStrategy > 0) .OR. &
+        (rvector%RvectorBlock(4)%isortStrategy > 0)) THEN
+      PRINT *,'ppns3D_bdforces_uniform: Resorted vectors not supported!'
+      CALL sys_halt()
+    END IF
+    
+    ! Get pointers to the spatial discretisation structures of the
+    ! veloctiy and pressure
+    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscretisation
+    p_rdiscrP => rvector%RvectorBlock(4)%p_rspatialDiscretisation
+    
+    ! What is the actual element that is used for the discretisation?
+    
+    ielemU = p_rdiscrU%RelementDistribution(1)%itrialElement
+    ielemP = p_rdiscrP%RelementDistribution(1)%itrialElement
+    
+    ! So far so good, we have checked that the assumptions for the integration
+    ! are fulfilled. Now we can start the actual integration.
+    !
+    ! At first initialise a 2D cubature formula for the boundary integration.
+    CALL cub_getCubPoints (ccub,ncubp,Dxi2D,Domega)
+    
+    ! In Dxi2D we have the 2D coordinates of the cubature points.
+    ! These have to be mapped to the 3D element which is under condideration
+    ! during the integration -- later.
+    !
+    ! Before, we need some additional information about the triangulation
+    ! and about our element!
+    !
+    ! Number of local DOF's:
+    idoflocU = elem_igetNDofLoc(ielemU)
+    idoflocP = elem_igetNDofLoc(ielemP)
+    
+    ! The triangulation - it's the same for U and P
+    p_rtria => p_rdiscrU%p_rtriangulation
+    
+    ! Get a pointer to the elements-at-face array
+    CALL storage_getbase_int2D(p_rtria%h_IelementsAtFace, p_IelemAtFace)
+       
+    ! Get a pointer to the faces-at-element array
+    CALL storage_getbase_int2D(p_rtria%h_IfacesAtElement, p_IfaceAtElem)
+
+    ! Get a pointer to the vertices-at-element array
+    CALL storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertAtElem)
+    
+    ! Get the vertice coordinate array
+    CALL storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dvertex)
+    
+    ! And get the face index array of the mesh region
+    CALL storage_getbase_int(rregion%h_IfaceIdx, p_IfaceIdx)
+    
+    NVT = p_rtria%NVT
+    NMT = p_rtria%NMT
+                                   
+    ! Does the element need twist indices?
+    NULLIFY(p_ItwistIndex)
+    IF (p_rtria%h_ItwistIndexEdges .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int (p_rtria%h_ItwistIndexFaces,p_ItwistIndex)
+    END IF
+
+    ! Is one of the elements nonparametric
+    bnonparU = elem_isnonparametric(ielemU) 
+    bnonparP = elem_isnonparametric(ielemP)
+
+    ! Coordinate systems of U and P element
+    ctrafoU = elem_igetTrafoType(ielemU)
+    ctrafoP = elem_igetTrafoType(ielemP)
+    
+    ! Derivatives to calculate when evaluating the U and P-element, respectively.
+    BderU = .FALSE.
+    BderU(DER_DERIV3D_X) = .TRUE.
+    BderU(DER_DERIV3D_Y) = .TRUE.
+    BderU(DER_DERIV3D_Z) = .TRUE.
+    
+    BderP = .FALSE.
+    BderP(DER_FUNC3D) = .TRUE.
+    
+    ! Prepare the weighting coefficients
+    dpf1 = 1.0_DP
+    dpf2 = 2.0_DP
+    IF (PRESENT(df1)) dpf1 = df1
+    IF (PRESENT(df2)) dpf2 = df2
+
+    ! We assemble the integral contributions separately
+    DintU = 0.0_DP
+    DintP = 0.0_DP
+    
+    ! Calculate the normal vectors on the faces
+    ALLOCATE(Dnormal(3, rregion%NAT))
+    CALL mshreg_calcBoundaryNormals3D(rregion, Dnormal)
+    
+    ! Loop through all faces along the boundary
+    DO iat = 1, rregion%NAT
+    
+      ! Get the index fo the face
+      iface = p_IfaceIdx(iat)
+      
+      ! Current element
+      iel = p_IelemAtFace(1,iface)
+      
+      ! Get the coordinates of the corner vertices on the current element
+      DO i=1, 8
+        Dcoords (:,i) = p_Dvertex(:, p_IvertAtElem (i,iel))
+      END DO
+
+      ! Get the local index of the face on that element
+      DO ilocalface = 1, 6
+        IF(p_IfaceAtElem(ilocalface,iel) .EQ. iface+NVT+NMT) EXIT
+      END DO
+      
+      ! We have to transfer the coordinates of the cubature points from
+      ! 2D to 3D depending on this localface.
+      CALL trafo_mapCubPts2Dto3DRefHexa(ilocalface, ncubp, Dxi2D, Dxi3D)
+      
+      ! And calculate the determinants for the mapping
+      CALL ppns3D_det(Dcoords,ilocalface,Dxi2D,ncubp,Ddetj_face)
+
+      ! Now, in Dxi3D we have all the cubature points on the 3D reference
+      ! element along the face!
+      ! Map the coordinates in a proper 3D array
+      DpointsRef (1:NDIM3D,1:ncubp) = TRANSPOSE(Dxi3D(1:ncubp,1:NDIM3D))
+              
+      ! For the integration, we need the global DOF's on our element
+      ! for U and P:
+      CALL dof_locGlobMapping(p_rdiscrU, iel, .FALSE., IdofsU)
+      CALL dof_locGlobMapping(p_rdiscrP, iel, .FALSE., IdofsP)
+      
+      ! Calculate the transformation for all points on the current element.
+      ! If we have only parametric elements, we don't have to calculate
+      ! the real coordinates of the points.
+      IF (bnonparU .OR. bnonparP) THEN
+        CALL trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
+                                   DpointsRef,Djac,Ddetj,DpointsReal)
+      ELSE
+        CALL trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
+                                   DpointsRef,Djac,Ddetj)
+      END IF
+      
+      ! Evaluate the U- and P-element in all our cubature points
+      IF (bnonparU) THEN
+        CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                BderU, DbasU, ncubp, DpointsReal,p_ItwistIndex(iel))
+      ELSE
+        CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                BderU, DbasU, ncubp, DpointsRef,p_ItwistIndex(iel))
+      END IF
+
+      IF (bnonparP) THEN
+        CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                BderP, DbasP, ncubp, DpointsReal,p_ItwistIndex(iel))
+      ELSE
+        CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                BderP, DbasP, ncubp, DpointsRef,p_ItwistIndex(iel))
+      END IF
+      
+      ! Loop over the cubature points on the current element
+      ! to assemble the integral
+      DO icubp = 1,ncubp
+      
+        ! Calculate the OMEGA for the integration by multiplication
+        ! of the integration coefficient by the Jacobian of the
+        ! mapping.
+        dweight = Domega(icubp)*Ddetj_face(icubp)
+        
+        ! Loop through the DOF's on our element and calculate
+        ! U as well as P.
+        du1 = 0.0_DP
+        du2 = 0.0_DP
+        du3 = 0.0_DP
+        DO idfl=1,idoflocU
+        
+           dv = DbasU(idfl,DER_DERIV3D_X,icubp)*Dnormal(1,iat)&
+              + DbasU(idfl,DER_DERIV3D_Y,icubp)*Dnormal(2,iat)&
+              + DbasU(idfl,DER_DERIV3D_Z,icubp)*Dnormal(3,iat)
+              
+           du1 = du1 + p_DdataUX(IdofsU(idfl)) * dv
+           du2 = du2 + p_DdataUY(IdofsU(idfl)) * dv
+           du3 = du3 + p_DdataUZ(IdofsU(idfl)) * dv
+               
+        END DO
+
+        dpres = 0.0_DP
+        DO idfl=1,idoflocP
+          dpres = dpres + p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC3D,icubp)
+        END DO
+        
+        ! Sum this up to the two integral contributions for the pressure and
+        ! velocity.
+        DintU(1) = DintU(1) + dweight * du1
+        DintU(2) = DintU(2) + dweight * du2
+        DintU(3) = DintU(3) + dweight * du3
+        DintP(1) = DintP(1) - dweight * dpres * Dnormal(1,iat)
+        DintP(2) = DintP(2) - dweight * dpres * Dnormal(2,iat)
+        DintP(3) = DintP(3) - dweight * dpres * Dnormal(3,iat)
+      
+      END DO ! icubp
+          
+    END DO ! iat
+    
+    ! DintU and DintP give now the contributions to the force integral:
+    !
+    ! DragCoeff = 2/dfp2 * (dpf1*DintU(1) + DintP(1))
+    ! LiftCoeff = 2/dfp2 * (dpf1*DintU(2) + DintP(2))
+    Dforces = 0.0_DP
+    Dforces(:) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
+    
+    ! Deallocate memory, finish.
+    DEALLOCATE(Dnormal)
+    
+    ! That's it
+    
+    CONTAINS
+    
+!<subroutine>
+
+    PURE SUBROUTINE ppns3D_det(Dcoords,iface,Dcub,ncubp,Ddetj)
+
+!<describtion>
+  ! This routine calculates the "determinant" of a bilinear quadrilateral
+  ! transformation from the 2D reference quadrilateral onto a hexahedron
+  ! face in 3D.
+!</describtion>
+    
+!<input>
+    ! The coordinates of the eight corner vertices of the hexahedron
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+    
+    ! The index of the face onto which the points are mapped
+    INTEGER, INTENT(IN) :: iface
+    
+    ! The 2D coordinates of the points that are to be mapped
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcub
+    
+    ! The number of points which are to be mapped
+    INTEGER, INTENT(IN) :: ncubp
+!</input>
+
+!<output>
+    ! The jacobian determinants of the mapping
+    REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddetj
+!</output>
+
+!</subroutine>
+    
+    ! Local variables
+    REAL(DP), DIMENSION(3,4) :: Dv
+    REAL(DP), DIMENSION(3,3) :: Dt
+    REAL(DP), DIMENSION(3) :: Dx,Dy,Dn
+    INTEGER :: i,j
+    
+      ! Onto which face do we map the points?
+      ! Note: The orientation of the vertices corresponds to the mapping
+      ! routine trafo_mapCubPts2Dto3DRefHexa defined in transformation.f90.
+      SELECT CASE(iface)
+      CASE (1)
+        Dv(:,1) = Dcoords(:,1)
+        Dv(:,2) = Dcoords(:,2)
+        Dv(:,3) = Dcoords(:,3)
+        Dv(:,4) = Dcoords(:,4)
+      CASE (2)
+        Dv(:,1) = Dcoords(:,1)
+        Dv(:,2) = Dcoords(:,2)
+        Dv(:,3) = Dcoords(:,6)
+        Dv(:,4) = Dcoords(:,5)
+      CASE (3)
+        Dv(:,1) = Dcoords(:,2)
+        Dv(:,2) = Dcoords(:,3)
+        Dv(:,3) = Dcoords(:,7)
+        Dv(:,4) = Dcoords(:,6)
+      CASE (4)
+        Dv(:,1) = Dcoords(:,3)
+        Dv(:,2) = Dcoords(:,4)
+        Dv(:,3) = Dcoords(:,8)
+        Dv(:,4) = Dcoords(:,7)
+      CASE (5)
+        Dv(:,1) = Dcoords(:,4)
+        Dv(:,2) = Dcoords(:,1)
+        Dv(:,3) = Dcoords(:,5)
+        Dv(:,4) = Dcoords(:,8)
+      CASE (6)
+        Dv(:,1) = Dcoords(:,5)
+        Dv(:,2) = Dcoords(:,6)
+        Dv(:,3) = Dcoords(:,7)
+        Dv(:,4) = Dcoords(:,8)
+      END SELECT
+      
+      ! We have a bilinear mapping T: R^2 -> R^3, so the jacobian matrix
+      ! of T is a 3x2 matrix. To get a useful replacement for the determinant
+      ! we set the determinant to ||(dT/dx) X (dT/dy)||_2, where 'X' denotes
+      ! the 3D cross-product.
+      
+      ! Calculate transformation coefficients for the jacobian matrix
+      DO i = 1,3
+        Dt(i,1) = 0.25_DP * (-Dv(i,1) + Dv(i,2) + Dv(i,3) - Dv(i,4))
+        Dt(i,2) = 0.25_DP * (-Dv(i,1) - Dv(i,2) + Dv(i,3) + Dv(i,4))
+        Dt(i,3) = 0.25_DP * ( Dv(i,1) - Dv(i,2) + Dv(i,3) - Dv(i,4))
+      END DO
+      
+      ! And calculate the determinants
+      DO i = 1, ncubp
+      
+        DO j = 1, 3
+          ! Dx := dT / dx
+          Dx(j) = Dt(j,1) + Dt(j,3)*Dcub(i,1)
+          ! Dy := dT / dy
+          Dy(j) = Dt(j,2) + Dt(j,3)*Dcub(i,2)
+        END DO
+        
+        ! Dn := Dx x Dy
+        Dn(1) = Dx(2)*Dy(3) - Dx(3)*Dy(2)
+        Dn(2) = Dx(3)*Dy(1) - Dx(1)*Dy(3)
+        Dn(3) = Dx(1)*Dy(2) - Dx(2)*Dy(1)
+        
+        ! detj := ||Dn||_2
+        Ddetj(i) = SQRT(Dn(1)**2 + Dn(2)**2 + Dn(3)**2)
+        
+      END DO
+    
+    END SUBROUTINE
   
   END SUBROUTINE
 

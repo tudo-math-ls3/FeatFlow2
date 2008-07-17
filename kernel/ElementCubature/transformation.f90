@@ -83,6 +83,10 @@
 !#         element.
 !#         Supports triangular and quadrilateral mapping.
 !#
+!# 20.) trafo_mapCubPts2Dto3DRefHexa
+!#      -> Maps a set of 2D cubature point coordinates on the reference 
+!#         quadrilateral to a face of the 3D reference hexahedron.
+!#
 !#  FAQ - Some explainations
 !# --------------------------
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -2407,6 +2411,94 @@ CONTAINS
                       OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')  
   END SELECT    
 
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPts2Dto3DRefHexa(iface, ncubp, Dxi2D, Dxi3D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points in 2D
+  ! (given by Dxi2D(1..ncubp,1..2)) to a face on the reference hexahedron
+  ! in 3D. iface specifies the face where to map the cubature points to.
+!</description>
+
+!<input>
+  ! Number of the local face of the element where to map the points to.
+  INTEGER, INTENT(IN) :: iface
+
+  ! number of cubature points
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 2D reference quadrilateral [-1,1]x[-1,1]
+  ! Dxi2D(1..ncubp,1)= X-coordinates,
+  ! Dxi2D(1..ncubp,2)= Y-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dxi2D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the face in 3D.
+  ! Dxi3D(1..ncubp,1)= X-coordinates,
+  ! Dxi3D(1..ncubp,2)= Y-coordinates,
+  ! Dxi3D(1..ncubp,3)= Z-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi3D
+!</output>
+
+!</subroutine>    
+
+    ! local variables
+    INTEGER :: i
+
+    ! We have to transfer
+    ! the coordinates of the cubature points from 2D to 3D depending
+    ! on this face.
+    SELECT CASE(iface)
+    CASE (1)
+      ! Bottom face => Z = -1
+      DO i=1, ncubp
+        Dxi3D(i,1) = Dxi2D(i,1)
+        Dxi3D(i,2) = Dxi2D(i,2)
+        Dxi3D(i,3) = -1.0_DP
+      END DO
+    CASE (2)
+      ! Front face => Y = -1
+      DO i=1, ncubp
+        Dxi3D(i,1) = Dxi2D(i,1)
+        Dxi3D(i,2) = -1.0_DP
+        Dxi3D(i,3) = Dxi2D(i,2)
+      END DO
+    CASE (3)
+      ! Right face => X = 1
+      DO i=1, ncubp
+        Dxi3D(i,1) = 1.0_DP
+        Dxi3D(i,2) = Dxi2D(i,1)
+        Dxi3D(i,3) = Dxi2D(i,2)
+      END DO
+    CASE (4)
+      ! Back face => Y = 1
+      DO i=1, ncubp
+        Dxi3D(i,1) = -Dxi2D(i,1)
+        Dxi3D(i,2) = 1.0_DP
+        Dxi3D(i,3) = Dxi2D(i,2)
+      END DO
+    CASE (5)
+      ! Left face => X = -1
+      DO i=1, ncubp
+        Dxi3D(i,1) = -1.0_DP
+        Dxi3D(i,2) = -Dxi2D(i,1)
+        Dxi3D(i,3) = Dxi2D(i,2)
+      END DO
+    CASE (6)
+      ! Top face => Z = 1
+      DO i=1, ncubp
+        Dxi3D(i,1) = Dxi2D(i,1)
+        Dxi3D(i,2) = Dxi2D(i,2)
+        Dxi3D(i,3) = 1.0_DP
+      END DO
+    END SELECT
+  
   END SUBROUTINE
 
   !************************************************************************

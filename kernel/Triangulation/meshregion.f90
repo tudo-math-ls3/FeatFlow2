@@ -1382,8 +1382,8 @@ MODULE meshregion
   SUBROUTINE mshreg_calcBoundaryNormals2D(rmeshRegion,Dnormals)
 
 !<description>
-  ! Calculates the inner normal vectors for the edges of a 2D mesh
-  ! region, i.e. the normal vectors which point "into the domain".
+  ! Calculates the outer normal vectors for the edges of a 2D mesh
+  ! region, i.e. the normal vectors which point "out of the domain".
   ! It is silently assumed that all edges of the mesh region lie on
   ! the boundary of the mesh.
 !</description>
@@ -1473,8 +1473,8 @@ MODULE meshregion
   SUBROUTINE mshreg_calcBoundaryNormals3D(rmeshRegion,Dnormals)
 
 !<description>
-  ! Calculates the inner normal vectors for the faces of a 3D mesh
-  ! region, i.e. the normal vectors which point "into the domain".
+  ! Calculates the outer normal vectors for the faces of a 3D mesh
+  ! region, i.e. the normal vectors which point "out of the domain".
   ! It is silently assumed that all faces of the mesh region lie on
   ! the boundary of the mesh.
 !</description>
@@ -1501,7 +1501,7 @@ MODULE meshregion
   REAL(DP), DIMENSION(3) :: Du,Dv,Dn
   REAL(DP), DIMENSION(3,8) :: Dcorners
   REAL(DP) :: dt
-  INTEGER :: iat,ivt,iel,ifae,iface
+  INTEGER :: iat,ivt,iel,ifae,iface,NVT,NMT
   
   
     ! Get a pointer to the triangulation
@@ -1532,6 +1532,9 @@ MODULE meshregion
     ! And get the edge index array of the mesh region
     CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
     
+    NVT = p_rtria%NVT
+    NMT = p_rtria%NMT
+    
     ! Now loop through all face in the mesh region
     DO iat = 1, rmeshRegion%NAT
       
@@ -1543,7 +1546,7 @@ MODULE meshregion
       
       ! Now go through all faces of the element and search for this one
       DO ifae = 1, 6
-        IF (p_IfaceAtElem(ifae,iel) .EQ. iface) EXIT
+        IF (p_IfaceAtElem(ifae,iel) .EQ. iface+NVT+NMT) EXIT
       END DO
       
       ! Get the eight corner vertices of the hexahedron
@@ -1551,7 +1554,7 @@ MODULE meshregion
         Dcorners(1:3,ivt) = p_Dcoords(1:3,p_IvertAtElem(ivt,iel))
       END DO
       
-      ! Calculate the normal of the face
+      ! Calculate the tangentials of the face
       SELECT CASE(ifae)
       CASE (1)
         ! (1->3) x (4->2)
@@ -1583,11 +1586,9 @@ MODULE meshregion
       Dn(1) = Du(2)*Dv(3) - Du(3)*Dv(2)
       Dn(2) = Du(3)*Dv(1) - Du(1)*Dv(3)
       Dn(3) = Du(1)*Dv(2) - Du(2)*Dv(1)
-      
-      ! Normalise it
       dt = 1.0_DP / SQRT(Dn(1)**2 + Dn(2)**2 + Dn(3)**2)
       Dn = dt * Dn
-      
+
       ! Store the normal
       IF (gaux_isFlipped_hexa3D(Dcorners)) THEN
         Dnormals(:,iat) = Dn(:)
