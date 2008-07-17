@@ -105,6 +105,7 @@
 		<Filter Name="LinearSolver">
 		<File RelativePath="..\..\..\kernel\LinearSolver\coarsegridcorrection.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\filtersupport.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSolver\iluk.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanca.f90"/></Filter>
