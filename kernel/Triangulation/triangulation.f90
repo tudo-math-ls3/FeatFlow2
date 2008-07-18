@@ -12421,7 +12421,7 @@ CONTAINS
         ! From this point on, we use the variable ifreeelement to save
         ! which elements we already processed.
         do while (ifreeelement .le. rtriangulation%NEL)
-          if (IelementGroup(ifreeelement) .eq. 0) exit
+          if (IelementGroup(ifreeelement) .le. 0) exit
           ifreeelement = ifreeelement + 1
         end do
         

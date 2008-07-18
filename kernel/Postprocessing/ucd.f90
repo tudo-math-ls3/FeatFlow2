@@ -1961,9 +1961,10 @@ CONTAINS
       ELSE
 
         ! Cell material
-        IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+        IF (ASSOCIATED(rexport%ScellMaterials) .and. &
+            (rexport%hIcellMaterial .NE. ST_NOHANDLE)) THEN
           ! GMV only supports <= 1000 materials!
-          WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
+          WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
           DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
@@ -1982,9 +1983,10 @@ CONTAINS
         END IF
         
         ! Vertex materials; coincide with cell materials if not specified.
-        IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
+        IF (ASSOCIATED(rexport%SvertexMaterials) .and. &
+            (rexport%hIvertexMaterial .NE. ST_NOHANDLE)) THEN
           ! GMV only supports <= 1000 materials!
-          WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
+          WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
           DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
@@ -2001,9 +2003,10 @@ CONTAINS
             END DO
           END IF
         ELSE
-          IF (ASSOCIATED(rexport%ScellMaterials)) THEN
+          IF (ASSOCIATED(rexport%ScellMaterials) .and. &
+              (rexport%hIvertexMaterial .NE. ST_NOHANDLE)) THEN
             ! GMV only supports <= 1000 materials!
-            WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
+            WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
             DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
               ! GMV supports only <= 8 characters and does not allow spaces
               ! in the material name. We replace all invalid spaces by "_".
