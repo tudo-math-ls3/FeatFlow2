@@ -88,6 +88,10 @@
 !# 20.) tria_attachCells
 !#      -> Attaches a set of cells to an existing triangulation
 !#
+!# 21.) tria_cellGroupGreedy
+!#      -> Combines the cells of a mesh into simply connected sets of 
+!#         similar size by a greedy algorithm
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -12311,5 +12315,355 @@ CONTAINS
     END SUBROUTINE
 
   END SUBROUTINE
+
+! ***************************************************************************************
+
+  subroutine tria_cellGroupGreedy (rtriangulation, ngroups, Icells, IcellIndex)
+  
+!<description>
+  ! Divides all cells from a given triangulation structure into ngroups cell groups
+  ! with all cells in a group being simply connected.
+  !
+  ! Uses a simple greedy algorithm to partition the cells into groups of similar
+  ! size.
+!</description>
+  
+!<input>
+  ! Triangulation structure defining the cells to be decomposed into groups
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! Number of groups, the cells should be divided into.
+  integer, intent(in) :: ngroups
+!</input>
+
+!<output>
+  ! Array with cell numbers, sorted for the groups. DIMENSION(1:NEL)
+  integer(PREC_ELEMENTIDX), dimension(:), intent(out)  :: Icells
+  
+  ! Array with indices for the groups. IcellIndex(i) defines the starting position
+  ! of group i in Icells. DIMENSION(1:ngroups+1)
+  integer(I32), dimension(:), intent(out) :: IcellIndex
+!</output>
+
+    ! local variables
+    integer :: igroup, ibdelement, ifreeelement, iel, ineigh, nfreeelements, ive
+    integer :: ngroupsact,ngroupsmax,i
+    integer(PREC_ELEMENTIDX) :: ielneigh
+    
+    !  Triangulation arrays
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
+    
+    ! Identifier for the group for each element
+    integer, dimension(:), allocatable :: IelementGroup
+    
+    ! Element queue that saves non-processed element
+    integer, dimension(:), allocatable :: IelementQueue
+    integer :: iqptrRead, iqptrWrite
+    
+    ! Number of elements in a group
+    integer(I32), dimension(:), allocatable :: InelPerGroup,IgroupInc,IgroupMap
+    
+    ! Allocate memory and get some pointers.
+    call storage_getbase_int2d(&
+        rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+    call storage_getbase_int2d(&
+        rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    
+    allocate(IelementQueue(MAX(rtriangulation%NEL,SIZE(IcellIndex))))
+    allocate(IelementGroup(rtriangulation%NEL))
+    ! At the beginning, no element is assigned to a group.
+    IelementGroup(:) = 0
+    IcellIndex(:) = 0
+    
+    ibdElement = 1
+    ifreeelement = 1
+    nfreeelements = rtriangulation%NEL
+    
+    ! Loop through the queues we have to form
+    !do igroup = 1,ngroups
+    
+    ! Loop as long as we have free elements
+    igroup = 0
+    do while (nfreeelements .gt. 0)
+    
+      ! New group
+      igroup = igroup + 1
+    
+      ! Initialise the queue of non-processed elements
+      iqptrRead = 1
+      iqptrWrite = 1
+    
+      ! Put the first non-processed element into the queue.
+      ! We try to find this on the boundary as long as we have elements
+      ! there. If all boundary elements are processed and there are still
+      ! groups left, we try to find new start elements in the inner.
+      do while (ibdElement .le. SIZE(p_IelementsAtBoundary))
+        if (IelementGroup(p_IelementsAtBoundary(ibdElement)) .eq. 0) exit
+        ibdElement = ibdElement + 1
+      end do
+      
+      if (ibdElement .le. SIZE(p_IelementsAtBoundary)) then
+        ! Ok, a boundary element will be our next start element
+        IelementQueue(iqptrWrite) = p_IelementsAtBoundary(ibdElement)
+        iqptrWrite = iqptrWrite + 1
+      else
+        ! No element found. Try to find another free element in the domain
+        ! From this point on, we use the variable ifreeelement to save
+        ! which elements we already processed.
+        do while (ifreeelement .le. rtriangulation%NEL)
+          if (IelementGroup(ifreeelement) .eq. 0) exit
+          ifreeelement = ifreeelement + 1
+        end do
+        
+        if (ifreeelement .le. rtriangulation%NEL) then
+          IelementQueue(iqptrWrite) = ifreeelement
+          iqptrWrite = iqptrWrite + 1
+        else
+          ! No free elements anymore; may happen if there are more
+          ! groups than elements. Ok, then we can stop assigning groups here.
+          exit
+        end if
+      end if
+  
+      ! Ok, we should now have at least one element in the queue.
+      ! Mark that element as belonging to us and save its neighbours to the
+      ! queue, so we can continue with marking these.
+      !
+      ! In IcellIndex(2:), we count how many elements we assigned to each group.
+      ! The index is shifted by one to allow easier assignment later in the 
+      ! collection phase.
+      do
+      
+        ! Cancel if we have enough elements.
+        ! The groups 1..ngroups can have at most nel/ngroups elements.
+        if (igroup .le. ngroups) then
+          if (IcellIndex(1+igroup) .ge. (rtriangulation%NEL+ngroups-1)/ngroups) exit
+  
+          ! We'll get a new element in this group now...
+          IcellIndex(1+igroup) = IcellIndex(1+igroup) + 1
+          nfreeelements = nfreeelements - 1
+        end if
+      
+        ! Get the element and put it to our current group
+        iel = IelementQueue(iqptrRead)
+        iqptrRead = iqptrRead + 1
+        
+        ! Assign a new group 
+        IelementGroup (iel) = igroup
+        
+        ! Remember this group as the last one we found elements in.
+        ngroupsmax = igroup
+        
+        ! Get all neighbours of the element (which are not assigned to
+        ! a group) and put them to our queue.
+        
+        ! The following piece of code would produce some kind of 'diagonal'
+        ! partitioning, where the partitions have diagonal form.
+        
+!        do ineigh = 1,UBOUND(p_IneighboursAtElement,1)
+!          if (p_IneighboursAtElement(ineigh,iel) .ne. 0) then
+!            ! Check if the element is already assigned.
+!            if ((IelementGroup(p_IneighboursAtElement(ineigh,iel)) .gt. -igroup) .and. &
+!                (IelementGroup(p_IneighboursAtElement(ineigh,iel)) .le. 0)) then
+!              IelementQueue(iqptrWrite) = p_IneighboursAtElement(ineigh,iel)
+!              iqptrWrite = iqptrWrite + 1
+!              
+!              ! Mark the element as to be processed in the current group.
+!              ! We assign the negative group ID to the element.
+!              ! The above IF statement ensures that the element is only once
+!              ! processed in this group and then firstly processed again in
+!              ! the next group.
+!              IelementGroup(p_IneighboursAtElement(ineigh,iel)) = -igroup
+!            end if
+!          end if
+!        end do
+
+        ! The following piece of code would produce some kind of 'quadratic'
+        ! partitioning, i.e. where the partitions have quadratic shape.
+
+        ! Loop through all vertices on the element
+        do ive = 1,UBOUND(p_IverticesAtElement,1)
+          ! Cancel if this is a triangle in a quad mesh (or similar in 3D
+          if (p_IverticesAtElement(ive,iel) .eq. 0) exit
+          
+          ! Loop through all neighbour elements adjacent to that vertex
+          do ineigh = p_IelementsAtVertexIdx(p_IverticesAtElement(ive,iel)), &
+                      p_IelementsAtVertexIdx(p_IverticesAtElement(ive,iel)+1)-1
+                      
+            ! Get the neighbour elements adjacent to that vertex.
+            !
+            ! Check if the element is already assigned.
+            if ((IelementGroup(p_IelementsAtVertex(ineigh)) .gt. -igroup) .and. &
+                (IelementGroup(p_IelementsAtVertex(ineigh)) .le. 0)) then
+              IelementQueue(iqptrWrite) = p_IelementsAtVertex(ineigh)
+              iqptrWrite = iqptrWrite + 1
+              
+              ! Mark the element as to be processed in the current group.
+              ! We assign the negative group ID to the element.
+              ! The above IF statement ensures that the element is only once
+              ! processed in this group and then firstly processed again in
+              ! the next group.
+              IelementGroup(p_IelementsAtVertex(ineigh)) = -igroup
+            end if
+                      
+          end do
+          
+        end do
+        
+        ! Proceed with the next element in the queue -- if we have any.
+        if (iqptrRead .ge. iqptrWrite) exit
+      end do
+      
+      ! The loop is left 
+      ! a) if there are too many elements in the group or
+      ! b) if no more elements are found.
+      ! Continue to form a new group
+      
+    end do
+    
+    ! At this point, all elements are assigned to groups, although we may have more
+    ! groups than we are allowed to have. More precisely, the number of groups
+    ! we have is...
+    ngroupsact = ngroupsmax
+    
+    if (ngroupsact .gt. ngroups) then
+    
+      ! Now we have a small adventure: more groups than we are allowed to have!
+      !
+      ! Note that all of these groups are not connected! So we have to reduce the
+      ! number of groups by combining them. For that purpose, we at first search
+      ! for 'small' groups and combine them with larger groups.
+      !
+      ! Loop through the groups and figure out how many elements each group has
+      ! and which group is connected to which one.
+      
+      allocate(InelPerGroup(ngroupsact), IgroupInc(ngroupsact), IgroupMap(ngroupsact))
+      IgroupInc(:) = 0
+      InelPerGroup(:) = 0
+      
+      ! IgroupMap defines a group mapping for the later correction of group ID's.
+      do i=1,ngroupsact
+        IgroupMap(i) = i
+      end do
+      
+      do iel=1,rtriangulation%NEL
+      
+        InelPerGroup(IelementGroup(iel)) = InelPerGroup(IelementGroup(iel)) + 1
+        
+        ! Try to find neigbouring element groups with as few elements
+        ! as possible.
+        !
+        ! Analyse the (edge/face-) neighbours of the element to find
+        ! a neighbour group.
+        do ineigh = 1,UBOUND(p_IneighboursAtElement,1)
+        
+          if (p_IneighboursAtElement(ineigh,iel) .ne. 0) then
+          
+            ielneigh = p_IneighboursAtElement(ineigh,iel)
+            if (IelementGroup(ielneigh) .lt. IelementGroup(iel)) then
+            
+              ! Neighbour group with a smaller number. (Probably no group associated
+              ! up to now.) Does that group have less elements than the 
+              ! previous neighbour?
+              if (IgroupInc(IelementGroup(iel)) .eq. 0) then
+                IgroupInc(IelementGroup(iel)) = IelementGroup(ielneigh)
+              else
+                if (InelPerGroup(IelementGroup(ielneigh)) .lt. &
+                    InelPerGroup(IgroupInc(IelementGroup(iel)))) then
+                  IgroupInc(IelementGroup(iel)) = IelementGroup(ielneigh)
+                end if
+              end if
+              
+            end if
+          end if
+          
+        end do
+        
+      end do
+      
+      ! Now we know how many elements are in each group and (roughly)
+      ! which group is connected to which one. Search for the element
+      ! group with the smallest number of elements and combine it
+      ! with the incident group until we have only ngroups groups.
+      do while (ngroupsact .gt. ngroups)
+      
+        igroup = 1
+        do i=2,ngroupsact
+          if (InelPerGroup(i) .lt. InelPerGroup(igroup)) igroup = i
+        end do
+        
+        ! Combine group igroup with group IgroupInc(igroup)
+        InelPerGroup(IgroupInc(igroup)) = InelPerGroup(IgroupInc(igroup)) + InelPerGroup(igroup)
+        
+        ! Remember how this group is mapped...
+        IgroupMap(igroup) = IgroupInc(igroup)
+        
+        ! Don't forget to correct incidental groups!
+        do i=1,ngroupsact
+          if (IgroupInc(i) .eq. igroup) &
+            IgroupInc(i) = IgroupInc(igroup)
+        end do
+        
+        ! Remove the group from InelPerGroup by setting it to a high value
+        InelPerGroup(igroup) = rtriangulation%NEL+1
+        
+        ! Number of groups reduced.
+        ngroupsact = ngroupsact - 1
+      
+      end do
+      
+      ! Ok, now the number of groups are ok, but the group ID's in IelementGroup not!
+      ! We have to compress them...
+      ! Build in IcellIndex (2:) the number of elements per group.
+      igroup = 0
+      do i = 1,ngroupsmax
+        if (InelPerGroup(i) .ne. rtriangulation%NEL+1) then
+          igroup = igroup + 1
+          IcellIndex(1+igroup) = InelPerGroup(i)
+          
+          ! Update the group map array for those groups that still have elements.
+          IgroupMap(i) = igroup
+        end if
+      end do
+      
+      ! Now a final loop through the elements to correct the group ID's.
+      do iel=1,rtriangulation%NEL
+        IelementGroup(iel) = IgroupMap(IelementGroup(iel))
+      end do
+      
+      deallocate(InelPerGroup,IgroupInc,IgroupMap)
+      
+    end if
+
+    ! Now calculate the start positions of all groups.
+    IcellIndex(1) = 1
+    do igroup = 2,ngroups+1
+      IcellIndex(igroup) = IcellIndex(igroup) + IcellIndex(igroup-1)
+    end do
+  
+    ! Abuse the IelementQueue array as group pointer, it's large enough.
+    call lalg_copyVectorInt(IcellIndex,IelementQueue)
+  
+    ! Loop through the elements and collect them.
+    do iel = 1,rtriangulation%NEL
+      Icells(IelementQueue(IelementGroup(iel))) = iel
+      IelementQueue(IelementGroup(iel)) = IelementQueue(IelementGroup(iel)) + 1
+    end do
+    
+    ! Deallocate memory, finish.
+    deallocate(IelementQueue)
+    deallocate(IelementGroup)
+  
+  end subroutine
 
 END MODULE
