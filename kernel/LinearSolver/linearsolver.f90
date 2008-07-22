@@ -813,7 +813,7 @@ MODULE linearsolver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Type of stopping criterion to use. One of the
-    ! LINSOL_CALL sys_halt()_xxxx constants.
+    ! LINSOL_STOP_xxxx constants.
     INTEGER                    :: istoppingCriterion = LINSOL_STOP_STANDARD
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
