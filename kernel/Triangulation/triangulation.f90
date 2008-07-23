@@ -2659,7 +2659,7 @@ CONTAINS
   ! only basic information, see below). 
   !
   ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .prm 
+  ! from the file. The parameter sfilename gives the name of the .tri 
   ! file to read.
   !
   ! This reads only the very basic information that is needed to create
@@ -7381,7 +7381,7 @@ CONTAINS
   ! only basic information, see below). 
   !
   ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .prm 
+  ! from the file. The parameter sfilename gives the name of the .tri 
   ! file to read.
   !
   ! This reads only the very basic information that is needed to create
@@ -12318,7 +12318,7 @@ CONTAINS
 
 ! ***************************************************************************************
 
-  subroutine tria_cellGroupGreedy (rtriangulation, ngroups, Icells, IcellIndex)
+  subroutine tria_cellGroupGreedy (rtriangulation, ngroups, Icells, IcellIndex, IelementGroup)
   
 !<description>
   ! Divides all cells from a given triangulation structure into ngroups cell groups
@@ -12337,12 +12337,16 @@ CONTAINS
 !</input>
 
 !<output>
-  ! Array with cell numbers, sorted for the groups. DIMENSION(1:NEL)
+  ! Array with cell numbers, sorted for the groups. DIMENSION(NEL)
   integer(PREC_ELEMENTIDX), dimension(:), intent(out)  :: Icells
   
   ! Array with indices for the groups. IcellIndex(i) defines the starting position
   ! of group i in Icells. DIMENSION(1:ngroups+1)
   integer(I32), dimension(:), intent(out) :: IcellIndex
+  
+  ! Array of DIMENSION(NEL). For every element, the corresponding entry receives
+  ! the ID of the group, that element belongs to.
+  integer, dimension(:), allocatable :: IelementGroup
 !</output>
 
     ! local variables
@@ -12356,9 +12360,6 @@ CONTAINS
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
-    
-    ! Identifier for the group for each element
-    integer, dimension(:), allocatable :: IelementGroup
     
     ! Element queue that saves non-processed element
     integer, dimension(:), allocatable :: IelementQueue
@@ -12380,7 +12381,6 @@ CONTAINS
         rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
     
     allocate(IelementQueue(MAX(rtriangulation%NEL,SIZE(IcellIndex))))
-    allocate(IelementGroup(rtriangulation%NEL))
     ! At the beginning, no element is assigned to a group.
     IelementGroup(:) = 0
     IcellIndex(:) = 0
@@ -12662,7 +12662,6 @@ CONTAINS
     
     ! Deallocate memory, finish.
     deallocate(IelementQueue)
-    deallocate(IelementGroup)
   
   end subroutine
 
