@@ -87,6 +87,21 @@
 !#      -> Maps a set of 2D cubature point coordinates on the reference 
 !#         quadrilateral to a face of the 3D reference hexahedron.
 !#
+!# 21.) trafo_mapCubPtsRef2LvlEdge1D
+!#      -> Maps a set of 1D cubature points coordinate on the reference
+!#         fine mesh edge to a coarse mesh edge according to the 2-level-
+!#         ordering refinement algorithm.
+!#
+!# 22.) trafo_mapCubPtsRef2LvlQuad2D
+!#      -> Maps a set of 2D cubature points coordinate on the reference
+!#         fine mesh quadrilateral to a coarse mesh quadrilateral according
+!#         to the 2-level-ordering refinement algorithm.
+!#
+!# 23.) trafo_mapCubPtsRef2LvlHexa3D
+!#      -> Maps a set of 3D cubature points coordinate on the reference
+!#         fine mesh hexahedron to a coarse mesh hexahedron according to
+!#         the 2-level-ordering refinement algorithm.
+!#
 !#  FAQ - Some explainations
 !# --------------------------
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -3197,6 +3212,215 @@ CONTAINS
     
     END SELECT ! Dimension
   
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+  ! The following routines (trafo_mapCubPtsRef2LvlXXXX) perform a
+  ! '2-level-mapping' of cubature points on reference cells which is needed
+  ! by the 2-Level-Mass matrix assembly in multileveloperators.f90.
+  ! The 2-Level-Mass assembly needs to integrate over two FE basis functions,
+  ! which, however, are defined on two different meshes: a coarse mesh
+  ! and its 2-level-ordering-based refined mesh.
+  ! We now need to specify a set of cubature points on both the coarse and
+  ! fine mesh, such that the transformed 'real' points are equal. This means
+  ! that if we have a set of cubature points given for the fine mesh, we need
+  ! to transform these reference coordinates to reference coordinates on the
+  ! coarse mesh.
+  !
+  ! Consider the following 1D example:
+  !
+  ! Let's assume that we have a set of 3 cubature points (a,b,c) on the
+  ! 1D reference interval [-1,1]:
+  !
+  !   |----a----b----c----|
+  !  -1                   1
+  !
+  ! Now during integration the trafo will be called to transform these 3
+  ! points to 'real' coordinates on a fine mesh edge (X_i,X_i+1):
+  !
+  !    |------a------b------c------|
+  !   X_i                        X_i+1
+  !
+  ! Now since this edge is on the fine mesh, it must have been refined from
+  ! a coarse mesh edge (Y_i,Y_i+1):
+  !
+  !   Y_i                                                    Y_i+1
+  !    |-------------------------------------------------------|
+  !
+  !                  2-Level-Ordering Refinement =>
+  !
+  !    |---------------------------|---------------------------|
+  !   X_i                        X_i+1                       X_i+2
+  !
+  !                               OR
+  !
+  !    |---------------------------|---------------------------|
+  !  X_i-1                        X_i                        X_i+1
+  !
+  ! (Note: It does not matter whether the edge (Y_i,Y_i+1) was refined into
+  !  (X_i,X_i+1,X_i+2) or (X_i-1,X_i,X_i+1), so we'll assume the first case)
+  !
+  ! Now we need to map the cubature points which lie on the fine mesh edges
+  ! (X_i,X_i+1) and (X_i+1,X_i+2) onto the coarse mesh edge (Y_i,Y_i+1):
+  !
+  !    |------r------s------t-------------u------v------w------|
+  !   Y_i     ^      ^      ^             ^      ^      ^    Y_i+1
+  !           |      |      |             |      |      |
+  !    |------a------b------c------|------a------b------c------|
+  !   X_i                        X_i+1                       X_i+2
+  !
+  ! Afterwards we need to transform the 6 cubature points from the coarse
+  ! mesh edge (Y_i,Y_i+1) to the reference interval [-1,1] as most of
+  ! the FE basis functions need reference coordinates for evaluation:
+  !
+  !   |--r--s--t-----u--v--w--|
+  !  -1                       1
+  !
+  ! But since we know (or better: we silently assume) that the mesh was
+  ! refined using the 2-level-ordering algorithm, we can skip the whole
+  ! transformations and directly map the points on the reference interval:
+  !
+  !   |----a----b----c----|  =>   |--r--s--t-----u--v--w--|
+  !  -1                   1      -1                       1
+  !
+  ! And this is exactly what the trafo_mapCubPtsRef2LvlXXXX routines do.
+  !
+  ! The same thing holds for quadrilaterals in 2D and hexahedra in 3D.
+  
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPtsRef2LvlEdge1D(ncubp, Dfine, Dcoarse)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points of a fine mesh
+  ! edge onto the coarse mesh edge.
+!</description>
+
+!<input>
+  ! Number of cubature points for the edge
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference fine mesh edge [-1,1]
+  ! Dfine(1,1..ncubp)= X-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dfine
+!</input>
+  
+!<output>
+  ! Cubature point coordinates on 1D reference coarse mesh edge [-1,1]
+  ! Dcoarse(1,1..2*ncubp)= X-coordinates,
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoarse
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  REAL(DP) :: dx
+  
+    DO i = 1, ncubp
+      dx = 0.5_DP * (Dfine(1,i) - 1.0_DP)
+      Dcoarse(1,      i) = dx
+      Dcoarse(1,ncubp+i) = dx + 1.0_DP
+    END DO
+
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPtsRef2LvlQuad2D(ncubp, Dfine, Dcoarse)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points of a fine mesh
+  ! quadrilateral onto the coarse mesh quadrilateral.
+!</description>
+
+!<input>
+  ! Number of cubature points for the quadrilateral
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 2D reference fine mesh quad [-1,1]x[-1,1]
+  ! Dfine(1,1..ncubp)= X-coordinates,
+  ! Dfine(2,1..ncubp)= Y-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dfine
+!</input>
+  
+!<output>
+  ! Cubature point coordinates on 2D reference coarse mesh quad [-1,1]x[-1,1]
+  ! Dcoarse(1,1..4*ncubp)= X-coordinates,
+  ! Dcoarse(2,1..4*ncubp)= Y-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoarse
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  REAL(DP) :: dx,dy
+  
+    DO i = 1, ncubp
+      dx = 0.5_DP * (Dfine(1,i) - 1.0_DP)
+      dy = 0.5_DP * (Dfine(2,i) - 1.0_DP)
+      Dcoarse(1:2,        i) = (/ dx,  dy/)
+      Dcoarse(1:2,  ncubp+i) = (/-dy,  dx/)
+      Dcoarse(1:2,2*ncubp+i) = (/-dx, -dy/)
+      Dcoarse(1:2,3*ncubp+i) = (/ dy, -dx/)
+    END DO
+
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPtsRef2LvlHexa3D(ncubp, Dfine, Dcoarse)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points of a fine mesh
+  ! hexahedron onto the coarse mesh hexahedron.
+!</description>
+
+!<input>
+  ! Number of cubature points for the hexahedron
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 3D reference fine mesh hexahedron [-1,1]^3
+  ! Dfine(1,1..ncubp)= X-coordinates,
+  ! Dfine(2,1..ncubp)= Y-coordinates,
+  ! Dfine(3,1..ncubp)= Z-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dfine
+!</input>
+  
+!<output>
+  ! Cubature point coordinates on 3D reference coarse mesh hexahedron [-1,1]^3
+  ! Dcoarse(1,1..8*ncubp)= X-coordinates,
+  ! Dcoarse(2,1..8*ncubp)= Y-coordinates,
+  ! Dcoarse(3,1..8*ncubp)= Z-coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoarse
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  REAL(DP) :: dx,dy,dz
+  
+    DO i = 1, ncubp
+      dx = 0.5_DP * (Dfine(1,i) - 1.0_DP)
+      dy = 0.5_DP * (Dfine(2,i) - 1.0_DP)
+      dz = 0.5_DP * (Dfine(2,i) - 1.0_DP)
+      Dcoarse(1:3,        i) = (/ dx,  dy,  dz/)
+      Dcoarse(1:3,  ncubp+i) = (/-dy,  dx,  dz/)
+      Dcoarse(1:3,2*ncubp+i) = (/-dx, -dy,  dz/)
+      Dcoarse(1:3,3*ncubp+i) = (/ dy, -dx,  dz/)
+      Dcoarse(1:3,4*ncubp+i) = (/ dx,  dy, -dz/)
+      Dcoarse(1:3,5*ncubp+i) = (/-dy,  dx, -dz/)
+      Dcoarse(1:3,6*ncubp+i) = (/-dx, -dy, -dz/)
+      Dcoarse(1:3,7*ncubp+i) = (/ dy, -dx, -dz/)
+    END DO
+
   END SUBROUTINE
 
 END MODULE 

@@ -35,6 +35,7 @@ PROGRAM poisson
   USE poisson2d_method1_em30
   USE poisson2d_method1_fbc
   USE poisson2d_method1_hadapt
+  USE poisson2d_method1_l2prj
   USE poisson2d_method2
   USE poisson2d_method2_collect
   USE poisson2d_method2_cmsort
@@ -99,6 +100,12 @@ PROGRAM poisson
   CALL output_line ('Calculating Poisson-2D-Problem with method 1 - hadapt')
   CALL output_line ('-----------------------------------------------------')
   CALL poisson2d_1_hadapt
+  
+  ! Call the problem to solve. Poisson 2D method 1 - L2-projection:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - L2-projection')
+  CALL output_line ('------------------------------------------------------------')
+  CALL poisson2d_1_l2prj
 
   ! Call the problem to solve. Poisson 2D method 2:
   CALL output_lbrk ()

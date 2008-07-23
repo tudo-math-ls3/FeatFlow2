@@ -42,6 +42,10 @@
 !# 6.) mlprj_performInterpolation
 !#     -> Interpolated a solution from a fine grid to a coarse grid
 !#        (L2-projection in the primal space)
+!#
+!# 7.) mlprj_setL2ProjMatrices
+!#     -> Sets the matrices for an scalar projection structure which are
+!#        needed for L2-projection.
 !# 
 !# </purpose>
 !##############################################################################
@@ -57,6 +61,19 @@ MODULE multilevelprojection
   USE element
   
   IMPLICIT NONE
+
+!<constants>
+
+!<constantblock description="Projection Types">
+  ! Hard-coded projection operators
+  INTEGER(I32), PARAMETER :: MLP_PROJ_TYPE_HARDCODED = 0
+  
+  ! L2-projection operators
+  INTEGER(I32), PARAMETER :: MLP_PROJ_TYPE_L2 = 1
+
+!</constantblock>
+
+!</constants>
 
 !<types>
   
@@ -77,6 +94,10 @@ MODULE multilevelprojection
   ! the structure for level '0.5' is missing!
   
   TYPE t_interlevelProjectionScalar
+  
+    ! Specifies the projection type of this projection structure.
+    ! One of the MLP_PROJ_TYPE_XXXX constants defined above.
+    INTEGER(I32)                :: iprojType = MLP_PROJ_TYPE_HARDCODED
   
     ! Element type that should be assumed for the prolongation. Must fit
     ! to the element type of the discretisation concerning the DOF's:
@@ -208,6 +229,30 @@ MODULE multilevelprojection
     ! 1=linear interpolation of a once refined mesh
     ! 2=quadratic interpolation
     INTEGER                     :: iinterpolationOrder = -1
+    
+    ! -------------------------------------------------------------------------
+    ! L2-Projection Structures
+    ! -------------------------------------------------------------------------
+    ! Mass matrix of the fine mesh spatial discretisation.
+    TYPE(t_matrixScalar)        :: rmatrixMass
+    
+    ! Lumped Mass matrix of the fine mesh spatial discretisation.
+    TYPE(t_matrixScalar)        :: rlumpedMass
+    
+    ! 2-Level-Mass matrix and its virtually transpose
+    TYPE(t_matrixScalar)        :: rmatrix2LvlMass
+    TYPE(t_matrixScalar)        :: rmatrix2LvlMassT
+    
+    ! Two temporary vectors
+    TYPE(t_vectorScalar)        :: rvectorTmp
+    TYPE(t_vectorScalar)        :: rvectorDef
+    
+    ! Number of iterations
+    INTEGER                     :: imaxL2Iterations = 30
+    
+    ! Relative and absolute tolerance
+    REAL(DP)                    :: depsRelL2 = 1E-5_DP
+    REAL(DP)                    :: depsAbsL2 = 1E-10_DP
     
   END TYPE
   
@@ -462,10 +507,37 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
+  INTEGER :: i,j
+  TYPE(t_interlevelProjectionScalar), POINTER :: p_rprj
 
     ! Release allocated memory
-    IF (ASSOCIATED(rprojection%RscalarProjection)) &
+    IF (ASSOCIATED(rprojection%RscalarProjection)) THEN
+      
+      ! Go through all scalar projections
+      DO i = 1, UBOUND(rprojection%RscalarProjection,1)
+        DO j = 1, UBOUND(rprojection%RscalarProjection,2)
+          
+          p_rprj => rprojection%RscalarProjection(i,j)
+        
+          ! Release all matrices and vectors for L2-projection
+          CALL lsyssc_releaseMatrix(p_rprj%rmatrixMass)
+          CALL lsyssc_releaseMatrix(p_rprj%rlumpedMass)
+          CALL lsyssc_releaseMatrix(p_rprj%rmatrix2LvlMass)
+          CALL lsyssc_releaseMatrix(p_rprj%rmatrix2LvlMassT)
+          IF(p_rprj%rvectorTmp%NEQ .NE. 0) THEN
+            CALL lsyssc_releaseVector(p_rprj%rvectorTmp)
+          END IF
+          IF(p_rprj%rvectorDef%NEQ .NE. 0) THEN
+            CALL lsyssc_releaseVector(p_rprj%rvectorDef)
+          END IF
+        
+        END DO ! j
+      END DO ! i
+      
+      ! Deallocate the scalar projection array
       DEALLOCATE(rprojection%RscalarProjection)
+      
+    END IF
 
   END SUBROUTINE
   
@@ -905,6 +977,20 @@ CONTAINS
     DO i=1,rcoarseVector%nblocks
     
       IF (rcoarseVector%RvectorBlock(i)%NEQ .GT. 0) THEN
+      
+        ! Do we use L2-Projection here?
+        IF (rprojection%RscalarProjection(1,i)%iprojType .EQ. &
+            MLP_PROJ_TYPE_L2) THEN
+          
+          ! Call scalar L2-prolongation
+          CALL mlprj_prolScalarL2(rprojection%RscalarProjection(1,i), &
+            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i))
+        
+          ! Continue with next block
+          CYCLE
+          
+        END IF
+      
         p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscretisation
         p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscretisation
         
@@ -930,7 +1016,7 @@ CONTAINS
         ! the actual projection structure for our situation.
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
-        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,1), &
+        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
               p_rdiscrCoarse%RelementDistribution(1), &
               p_rdiscrFine%RelementDistribution(1), &
               ractProjection)
@@ -1333,6 +1419,21 @@ CONTAINS
     DO i=1,rcoarseVector%nblocks
     
       IF (rcoarseVector%RvectorBlock(i)%NEQ .GT. 0) THEN
+
+        ! Do we use L2-Projection here?
+        IF (rprojection%RscalarProjection(1,i)%iprojType .EQ. &
+            MLP_PROJ_TYPE_L2) THEN
+          
+          ! Call scalar L2-restriction
+          CALL mlprj_restScalarL2(rprojection%RscalarProjection(1,i), &
+            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i))
+        
+          ! Continue with next block
+          CYCLE
+          
+        END IF
+      
+
         p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscretisation
         p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscretisation
         
@@ -1358,7 +1459,7 @@ CONTAINS
         ! the actual projection structure for our situation.
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
-        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,1), &
+        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
               p_rdiscrCoarse%RelementDistribution(1), &
               p_rdiscrFine%RelementDistribution(1), &
               ractProjection)
@@ -1792,7 +1893,7 @@ CONTAINS
         ! the actual projection structure for our situation.
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
-        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,1), &
+        CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
               p_rdiscrCoarse%RelementDistribution(1), &
               p_rdiscrFine%RelementDistribution(1), &
               ractProjection)
@@ -8356,5 +8457,265 @@ CONTAINS
 !    ! That's it
 !
 !  END SUBROUTINE
+
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_initL2Proj (rprojection,r2Lvlmass,rmass,rlumpedMass,&
+                               rvecTemp1,rvecTemp2)
+
+!<description>
+  ! Sets the matrices and vectors which are needed for L2-projection.
+!</description>
+  
+!<input>
+  ! The 2-Level-Mass matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: r2LvlMass
+
+  ! The mass matrix of the fine grid
+  TYPE(t_matrixScalar), INTENT(IN) :: rmass
+
+  ! OPTIONAL: The lumped mass matrix of the fine grid. If not given, the
+  ! lumped mass matrix is created from rmassFine.
+  TYPE(t_matrixScalar), OPTIONAL, INTENT(IN) :: rlumpedMass
+
+  ! OPTIONAL: Two temporary vectors that match the structure of the fine
+  ! mesh mass matrix. The vectors must not share the same data array.
+  TYPE(t_vectorScalar), OPTIONAL, INTENT(IN) :: rvecTemp1
+  TYPE(t_vectorScalar), OPTIONAL, INTENT(IN) :: rvecTemp2
+!</input>
+
+!<inputoutput>
+  ! The scalar projection structure for which the matrices are to be set.
+  TYPE(t_interlevelProjectionScalar), INTENT(INOUT) :: rprojection 
+!</inputout>
+
+!</subroutine>
+
+     ! This is an L2-projection
+     rprojection%iprojType = MLP_PROJ_TYPE_L2
+
+     ! Create shared copies of the mass matrices
+     CALL lsyssc_duplicateMatrix(r2LvlMass, rprojection%rmatrix2LvlMass, &
+                                 LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+     CALL lsyssc_duplicateMatrix(rmass, rprojection%rmatrixMass, &
+                                 LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+     
+     ! Transpose the 2-Level-Mass matrix
+     CALL lsyssc_transposeMatrix(r2LvlMass, rprojection%rmatrix2LvlMassT,&
+                                 LSYSSC_TR_VIRTUAL)
+     
+     ! Do we have the lumped fine grid mass matrix?
+     IF (PRESENT(rlumpedMass)) THEN
+
+       ! Create a shared copy of it then.
+       CALL lsyssc_duplicateMatrix(rlumpedMass, rprojection%rlumpedMass, &
+                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+
+     ELSE
+     
+       ! Copy mass matrix
+       CALL lsyssc_duplicateMatrix(rmass, rprojection%rlumpedMass, &
+                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+     
+       ! And lump it
+       CALL lsyssc_lumpMatrixScalar(rprojection%rlumpedMass,LSYSSC_LUMP_DIAG)
+     
+     END IF
+     
+     ! Do we have the temporary vectors?
+     IF (PRESENT(rvecTemp1)) THEN
+       ! Create a shared copy of it
+       CALL lsyssc_duplicateVector(rvecTemp1,rprojection%rvectorTmp,&
+                                   LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+     ELSE
+       ! Create a vector based on the matrix
+       CALL lsyssc_createVecIndMat(rmass, rprojection%rvectorTmp)
+     END IF
+     IF (PRESENT(rvecTemp2)) THEN
+       ! Create a shared copy of it
+       CALL lsyssc_duplicateVector(rvecTemp2,rprojection%rvectorDef,&
+                                   LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+     ELSE
+       ! Create a vector based on the matrix
+       CALL lsyssc_createVecIndMat(rmass, rprojection%rvectorDef)
+     END IF
+     
+     ! That's it
+     
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_prolScalarL2 (rprojection, rcoarseVector, rfineVector)
+  
+!<description>
+  ! Performs an L2-prolongation of a solution vector on the coarse grid
+  ! to a solution vector of the fine grid.
+!</description>
+  
+!<input>
+  ! The t_interlevelProjectionScalar structure that configures the grid transfer
+  TYPE(t_interlevelProjectionScalar), INTENT(IN) :: rprojection 
+
+  ! Coarse grid vector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rcoarseVector
+!</input>
+
+!<output>
+  ! Fine grid vector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rfineVector
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: i
+  REAL(DP) :: ddefInit, ddef
+  TYPE(t_vectorScalar) :: rtmp, rdef
+  LOGICAL :: bcheckDef
+  
+    ! Get temporary vectors
+    rtmp = rprojection%rvectorTmp
+    rdef = rprojection%rvectorDef
+  
+    ! Do we check the defect?
+    bcheckDef = ((rprojection%depsRelL2 .GT. 0.0_DP) .AND. &
+                 (rprojection%depsAbsL2 .GT. 0.0_DP))
+
+    ! Clear fine grid vector
+    CALL lsyssc_clearVector(rfineVector)
+    
+    ! Multiply coarse grid vector with 2-Level-Mass
+    CALL lsyssc_scalarMatVec(rprojection%rmatrix2LvlMass, rcoarseVector,&
+                             rtmp, 1.0_DP, 0.0_DP)
+    
+    ! Calculate initial defect
+    CALL lsyssc_copyVector(rtmp, rdef)
+    IF (bcheckDef) THEN
+      ddefInit = lsyssc_vectorNorm(rdef, LINALG_NORML2)
+      IF (ddefInit .LE. rprojection%depsAbsL2) RETURN
+      IF (ddefInit .LE. SYS_EPSREAL) ddefInit = 1.0_DP
+    END IF
+    
+    ! Start the defect correction
+    DO i = 1, rprojection%imaxL2Iterations
+    
+      ! Multiply by the inverse of the lumped mass matrix:
+      ! d := M_l^-1 d
+      CALL lsyssc_invertedDiagMatVec (rprojection%rlumpedMass,&
+                                      rdef,1.0_DP,rdef)
+
+      ! Add to the main vector:  x = x + omega*d
+      CALL lsyssc_vectorLinearComb (rdef,rfineVector,1.0_DP,1.0_DP)
+      
+      ! Set up the defect: d := b-Mx
+      CALL lsyssc_copyVector (rtmp,rdef)
+      CALL lsyssc_scalarMatVec (rprojection%rmatrixMass, rfineVector,&
+                                rdef, -1.0_DP, 1.0_DP)
+      
+      IF (bcheckDef) THEN
+        ddef = lsyssc_vectorNorm(rdef, LINALG_NORML2)
+        
+        ! Are we finished?
+        IF ((ddef .LE. rprojection%depsAbsL2) .AND. (ddef/ddefInit .LE.&
+            rprojection%depsRelL2)) EXIT
+      
+      END IF
+
+    END DO
+    
+    ! That's it
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restScalarL2 (rprojection,rcoarseVector,rfineVector)
+  
+!<description>
+  ! Performs an L2-restriction of a defect vector on the fine grid
+  ! to a defect vector of the coarse grid.
+!</description>
+  
+!<input>
+  ! The t_interlevelProjectionScalar structure that configures the grid transfer
+  TYPE(t_interlevelProjectionScalar), INTENT(IN) :: rprojection 
+
+  ! Fine grid vector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rfineVector
+!</input>
+
+!<output>
+  ! Coarse grid vector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rcoarseVector
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: i
+  REAL(DP) :: ddefInit, ddef
+  TYPE(t_vectorScalar) :: rtmp, rdef
+  LOGICAL :: bcheckDef
+  
+    ! Get temporary vectors
+    rtmp = rprojection%rvectorTmp
+    rdef = rprojection%rvectorDef
+    
+    ! Do we check the defect?
+    bcheckDef = ((rprojection%depsRelL2 .GT. 0.0_DP) .AND. &
+                 (rprojection%depsAbsL2 .GT. 0.0_DP))
+  
+    ! Clear temporary vector
+    CALL lsyssc_clearVector(rtmp)
+        
+    ! Calculate initial defect
+    CALL lsyssc_copyVector(rfineVector, rdef)
+    
+    IF (bcheckDef) THEN
+      ddefInit = lsyssc_vectorNorm(rdef, LINALG_NORML2)
+      IF (ddefInit .LE. rprojection%depsAbsL2) RETURN
+      IF (ddefInit .LE. SYS_EPSREAL) ddefInit = 1.0_DP
+    END IF
+    
+    ! Start the defect correction
+    DO i = 1, rprojection%imaxL2Iterations
+    
+      ! Multiply by the inverse of the lumped mass matrix:
+      ! d := M_l^-1 d
+      CALL lsyssc_invertedDiagMatVec (rprojection%rlumpedMass,&
+                                      rdef,1.0_DP,rdef)
+
+      ! Add to the main vector:  x = x + omega*d
+      CALL lsyssc_vectorLinearComb (rdef,rtmp,1.0_DP,1.0_DP)
+      
+      ! Set up the defect: d := b-Mx
+      CALL lsyssc_copyVector (rfineVector,rdef)
+      CALL lsyssc_scalarMatVec (rprojection%rmatrixMass, rtmp,&
+                                rdef, -1.0_DP, 1.0_DP)
+      
+      IF (bcheckDef) THEN
+        ddef = lsyssc_vectorNorm(rdef, LINALG_NORML2)
+        
+        ! Are we finished?
+        IF ((ddef .LE. rprojection%depsAbsL2) .AND. (ddef/ddefInit .LE.&
+            rprojection%depsRelL2)) EXIT
+            
+      END IF
+
+    END DO
+
+    ! Multiply temporary vector with transposed 2-Level-Mass
+    CALL lsyssc_scalarMatVec(rprojection%rmatrix2LvlMassT, rtmp,&
+                             rcoarseVector, 1.0_DP, 0.0_DP)
+    
+    ! That's it
+
+  END SUBROUTINE
 
 END MODULE
