@@ -12346,7 +12346,7 @@ CONTAINS
   
   ! Array of DIMENSION(NEL). For every element, the corresponding entry receives
   ! the ID of the group, that element belongs to.
-  integer, dimension(:), intent(out) :: IelementGroup
+  integer(I32), dimension(:), intent(out) :: IelementGroup
 !</output>
 
     ! local variables
