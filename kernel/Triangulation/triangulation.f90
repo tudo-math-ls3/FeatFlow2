@@ -6770,7 +6770,7 @@ CONTAINS
   INTEGER(PREC_VERTEXIDX), INTENT(IN) :: inode
 
   ! The triangulation structure where to search the boundary node.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
 !</input>
 
 !<output>
@@ -11358,7 +11358,7 @@ CONTAINS
 !<input>
   ! Source triangulation; provides the 'parent' domain. A subdomain will
   ! be extracted from this.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
   
   ! A list of elements in rtriangulation that form the subdomain.
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
@@ -12578,7 +12578,7 @@ CONTAINS
               if (IgroupInc(IelementGroup(iel)) .eq. 0) then
                 IgroupInc(IelementGroup(iel)) = IelementGroup(ielneigh)
               else
-                if (InelPerGroup(IelementGroup(ielneigh)) .lt. &
+                  if (InelPerGroup(IelementGroup(ielneigh)) .lt. &
                     InelPerGroup(IgroupInc(IelementGroup(iel)))) then
                   IgroupInc(IelementGroup(iel)) = IelementGroup(ielneigh)
                 end if
