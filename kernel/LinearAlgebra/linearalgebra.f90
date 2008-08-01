@@ -31,13 +31,16 @@
 !# 7.) lalg_normXXX
 !#     -> Calculate a specific norm of a vector
 !#
-!# 8.) lalg_vectorSortXXX
+!# 8.) lalg_errorNormXXX
+!#     -> Calculate a specific norm from the difference of two vectors
+!#
+!# 9.) lalg_vectorSortXXX
 !#     -> Resort the entries of a vector according to a given permutation
 !#
-!# 9.) lalg_vectorAddScalar
-!#     -> Adds a scalar to each entry of a vector
+!# 10.) lalg_vectorAddScalar
+!#      -> Adds a scalar to each entry of a vector
 !#
-!# 10.) lalg_vectorCompMultXXX
+!# 11.) lalg_vectorCompMultXXX
 !#      -> Multiply two vectors componentwise
 !# </purpose>
 !##############################################################################
@@ -2193,6 +2196,219 @@ CONTAINS
     IF (PRESENT(iposMax)) iposMax = j
   CASE DEFAULT
     resnorm = -1.0_SP ! Unknown norm.
+  END SELECT
+    
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  REAL(DP) FUNCTION lalg_errorNormDble (Dx,Dy,cnorm,iposMax,n,Dw) RESULT(resnorm)
+  
+!<description>
+  ! Calculates the norm of two double precision vectors, !!Dx-Dy!!
+  ! cnorm identifies the type of norm to calculate.
+  ! The optional parameter Dw can be used to specify a weighting
+  ! vector, e.g., the lumped mass matrix, by which each component
+  ! is scaled before computing the sum of contributions.
+!</description>
+
+!<input>
+  ! Vectors to calculate the norm of their difference
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dx,Dy
+  
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  INTEGER, INTENT(IN) :: cnorm
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
+  ! OPTIONAL: Weighting vector
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Dw
+!</input>
+
+!<output>
+  ! OPTIONAL: If the MAX norm is to calculate, this returns the
+  ! position of the largest element. If another norm is to be
+  ! calculated, the result is undefined.
+  INTEGER(I32), INTENT(OUT), OPTIONAL :: iposMax
+!</output>
+
+!<result>
+  ! The norm of the given array.
+  ! < 0 >1, if an error occurred (unknown norm).
+!</result>
+  
+!</subroutine>
+
+  REAL(DP) :: dtemp
+  INTEGER(I32) :: i,j
+  INTEGER :: isize
+  
+  isize = SIZE(Dx)
+  IF (PRESENT(n)) isize = n
+
+  ! Choose the norm to calculate
+  SELECT CASE (cnorm)
+  CASE (LINALG_NORMSUM)
+    ! L1-norm: sum all entries
+    IF (PRESENT(Dw)) THEN
+      resnorm = Dw(1)*ABS(Dx(1)-Dy(1))
+      DO i=2,isize
+        resnorm = resnorm + Dw(i)*ABS(Dx(i)-Dy(i))
+      END DO
+    ELSE
+      resnorm = ABS(Dx(1)-Dy(1))
+      DO i=2,isize
+        resnorm = resnorm + ABS(Dx(i)-Dy(i))
+      END DO
+    END IF
+
+  CASE (LINALG_NORMEUCLID)
+    ! Euclidian norm = scalar product (vector,vector)
+    IF (PRESENT(Dw)) THEN
+      resnorm = Dw(1)*(Dx(1)-Dy(1))*(Dx(1)-Dy(1))
+      DO i=2,isize
+        resnorm = resnorm + Dw(i)*(Dx(i)-Dy(i))*(Dx(i)-Dy(i))
+      END DO
+    ELSE
+      resnorm = (Dx(1)-Dy(1))*(Dx(1)-Dy(1))
+      DO i=2,isize
+        resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
+      END DO
+    END IF
+    resnorm = SQRT(resnorm)
+
+  CASE (LINALG_NORML1)
+    ! L1-norm: sum all entries, divide by sqrt(vector length).
+    ! So, scale such that the vektor (1111...) to has norm = 1.
+    resnorm = ABS(Dx(1)-Dy(1))
+    DO i=2,isize
+      resnorm = resnorm + ABS(Dx(i)-Dy(i))
+    END DO
+    resnorm = resnorm / REAL(isize,DP)
+
+  CASE (LINALG_NORML2)
+    ! l_2-norm - like euclidian norm, but divide by vector length.
+    ! So, scale such that the vektor (1111...) to has norm = 1.
+    resnorm = (Dx(1)-Dy(1))*(Dx(1)-Dy(1))
+    DO i=2,isize
+      resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
+    END DO
+    resnorm = SQRT(resnorm / REAL(isize,DP))
+    
+  CASE (LINALG_NORMMAX)
+    ! MAX-norm. Find the absolute largest entry.
+    resnorm = ABS(Dx(1)-Dy(1))
+    j=1
+    DO i=2,isize
+      dtemp = ABS(Dx(i)-Dy(i))
+      IF (dtemp .GT. resnorm) THEN
+        j = i
+        resnorm = dtemp
+      END IF
+    END DO
+    IF (PRESENT(iposMax)) iposMax = j
+  CASE DEFAULT
+    resnorm = -1.0_DP ! Unknown norm.
+  END SELECT
+    
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  REAL(SP) FUNCTION lalg_errorNormSngl (Fx,Fy,cnorm,iposMax,n) RESULT(resnorm)
+  
+!<description>
+  ! Calculates the norm of two double precision vectors, !!Fx-Fy!!
+  ! cnorm identifies the type of norm to calculate.
+!</description>
+
+!<input>
+  ! Vectors to calculate the norm of their difference
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx,Fy
+  
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  INTEGER, INTENT(IN) :: cnorm
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+
+!</input>
+
+!<output>
+  ! OPTIONAL: If the MAX norm is to calculate, this returns the
+  ! position of the largest element. If another norm is to be
+  ! calculated, the result is undefined.
+  INTEGER(I32), INTENT(OUT), OPTIONAL :: iposMax
+!</output>
+
+!<result>
+  ! The norm of the given array.
+  ! < 0 >1, if an error occurred (unknown norm).
+!</result>
+  
+!</subroutine>
+
+  REAL(SP) :: stemp
+  INTEGER(I32) :: i,j
+  INTEGER :: isize
+  
+  isize = SIZE(Fx)
+  IF (PRESENT(n)) isize = n
+
+  ! Choose the norm to calculate
+  SELECT CASE (cnorm)
+  CASE (LINALG_NORMSUM)
+    ! L1-norm: sum all entries
+    resnorm = ABS(Fx(1)-Fy(1))
+    DO i=2,isize
+      resnorm = resnorm + ABS(Fx(i)-Fy(i))
+    END DO
+
+  CASE (LINALG_NORMEUCLID)
+    ! Euclidian norm = scalar product (vector,vector)
+    resnorm = (Fx(1)-Fy(1))*(Fx(1)-Fy(1))
+    DO i=2,isize
+      resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
+    END DO
+    resnorm = SQRT(resnorm)
+
+  CASE (LINALG_NORML1)
+    ! L1-norm: sum all entries, divide by sqrt(vector length).
+    ! So, scale such that the vector (1111...) to has norm = 1.
+    resnorm = ABS(Fx(1)-Fy(1))
+    DO i=2,isize
+      resnorm = resnorm + ABS(Fx(i)-Fy(i))
+    END DO
+    resnorm = resnorm / REAL(isize,SP)
+
+  CASE (LINALG_NORML2)
+    ! l_2-norm - like euclidian norm, but divide by vector length.
+    ! So, scale such that the vektor (1111...) to has norm = 1.
+    resnorm = (Fx(1)-Fy(1))*(Fx(1)-Fy(1))
+    DO i=2,isize
+      resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
+    END DO
+    resnorm = SQRT(resnorm / REAL(isize,SP))
+    
+  CASE (LINALG_NORMMAX)
+    ! MAX-norm. Find the absolute largest entry.
+    resnorm = ABS(Fx(1)-Fy(1))
+    j=1
+    DO i=2,isize
+      stemp = ABS(Fx(i)-Fy(i))
+      IF (stemp .GT. resnorm) THEN
+        j = i
+        resnorm = stemp
+      END IF
+    END DO
+    IF (PRESENT(iposMax)) iposMax = j
+  CASE DEFAULT
+    resnorm = -1.0_DP ! Unknown norm.
   END SELECT
     
   END FUNCTION
