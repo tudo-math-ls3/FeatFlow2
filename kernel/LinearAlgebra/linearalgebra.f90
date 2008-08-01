@@ -36,6 +36,9 @@
 !#
 !# 9.) lalg_vectorAddScalar
 !#     -> Adds a scalar to each entry of a vector
+!#
+!# 10.) lalg_vectorCompMultXXX
+!#      -> Multiply two vectors componentwise
 !# </purpose>
 !##############################################################################
 
@@ -2048,9 +2051,9 @@ CONTAINS
   SELECT CASE (cnorm)
   CASE (LINALG_NORMSUM)
     ! L1-norm: sum all entries
-    resnorm = Dx(1)
+    resnorm = ABS(Dx(1))
     DO i=2,isize
-      resnorm = resnorm + Dx(i)
+      resnorm = resnorm + ABS(Dx(i))
     END DO
 
   CASE (LINALG_NORMEUCLID)
@@ -2065,9 +2068,9 @@ CONTAINS
   CASE (LINALG_NORML1)
     ! L1-norm: sum all entries, divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = Dx(1)
+    resnorm = ABS(Dx(1))
     DO i=2,isize
-      resnorm = resnorm + Dx(i)
+      resnorm = resnorm + ABS(Dx(i))
     END DO
     resnorm = resnorm / REAL(isize,DP)
 
@@ -2568,5 +2571,241 @@ CONTAINS
     END DO
     
   END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCompMultDble (Dx,Dy,dc,n)
   
+!<description>
+  ! Performs componentwise multiplication: Dy = dc * Dx * Dy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
+  
+  ! Scaling factor
+  REAL(DP), INTENT(IN)               :: dc
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
+!</input>
+ 
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER(I32) :: i
+
+  IF (.NOT. PRESENT(n)) THEN
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, SIZE(Dy,1)
+      Dy(i) = dc*Dx(i)*Dy(i)
+    END DO
+!%OMP  end parallel do
+
+  ELSE
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, n
+      Dy(i) = dc*Dx(i)*Dy(i)
+    END DO
+!%OMP  end parallel do
+
+  END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCompMultSnlg (Fx,Fy,sc,n)
+  
+!<description>
+  ! Performs componentwise multiplication: Fy = sc * Fx * Fy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
+  
+  ! Scaling factor
+  REAL(SP), INTENT(IN)               :: sc
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
+!</input>
+ 
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER(I32) :: i
+
+  IF (.NOT. PRESENT(n)) THEN
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, SIZE(Fy,1)
+      Fy(i) = sc*Fx(i)*Fy(i)
+    END DO
+!%OMP  end parallel do
+
+  ELSE
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, n
+      Fy(i) = sc*Fx(i)*Fy(i)
+    END DO
+!%OMP  end parallel do
+
+  END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCompMultInt (Ix,Iy,ic,n)
+  
+!<description>
+  ! Performs componentwise multiplication: Iy = ic * Ix * Iy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: Ix
+  
+  ! Scaling factor
+  INTEGER(I32), INTENT(IN)               :: ic
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
+!</input>
+ 
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Iy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER(I32) :: i
+
+  IF (.NOT. PRESENT(n)) THEN
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, SIZE(Iy,1)
+      Iy(i) = ic*Ix(i)*Iy(i)
+    END DO
+!%OMP  end parallel do
+
+  ELSE
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, n
+      Iy(i) = ic*Ix(i)*Iy(i)
+    END DO
+!%OMP  end parallel do
+
+  END IF
+
+  END SUBROUTINE
+
+! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCompMultDbleSngl (Fx,Dy,dc,n)
+  
+!<description>
+  ! Performs componentwise multiplication: Dy = dc * Fx * Dy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
+  
+  ! Scaling factor
+  REAL(DP), INTENT(IN)               :: dc
+
+  ! OPTIONAL: Size of the vector
+  INTEGER, INTENT(IN), OPTIONAL :: n
+  
+!</input>
+ 
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER(I32) :: i
+
+  IF (.NOT. PRESENT(n)) THEN
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, SIZE(Dy,1)
+      Dy(i) = dc*Fx(i)*Dy(i)
+    END DO
+!%OMP  end parallel do
+
+  ELSE
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
+    DO i = 1, n
+      Dy(i) = dc*Fx(i)*Dy(i)
+    END DO
+!%OMP  end parallel do
+
+  END IF
+
+  END SUBROUTINE
+ 
 END MODULE
