@@ -83,6 +83,7 @@
 !#
 !#  9.) parlst_getvalue_string
 !#      parlst_getvalue_int
+!#      parlst_getvalue_single
 !#      parlst_getvalue_double
 !#      -> Get the string/int/real value of a parameter from the parameter list
 !#
@@ -257,6 +258,12 @@ MODULE paramlist
     MODULE PROCEDURE parlst_getvalue_int_fetch
     MODULE PROCEDURE parlst_getvalue_int_indir
     MODULE PROCEDURE parlst_getvalue_int_direct
+  END INTERFACE
+
+  INTERFACE parlst_getvalue_single
+    MODULE PROCEDURE parlst_getvalue_single_fetch
+    MODULE PROCEDURE parlst_getvalue_single_indir
+    MODULE PROCEDURE parlst_getvalue_single_direct
   END INTERFACE
 
   INTERFACE parlst_getvalue_double
@@ -925,7 +932,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   CHARACTER(LEN=*), INTENT(OUT) :: svalue
   
 !</output>
@@ -1107,7 +1114,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   CHARACTER(LEN=*), INTENT(OUT) :: svalue
   
 !</output>
@@ -1144,6 +1151,160 @@ CONTAINS
   ! ***************************************************************************
   
 !<subroutine>
+  SUBROUTINE parlst_getvalue_single_indir (rsection, sparameter, fvalue, fdefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+  REAL(SP), INTENT(IN), OPTIONAL :: fdefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parameter
+  REAL(SP), INTENT(OUT) :: fvalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(fdefault)) THEN
+    WRITE (sdefault,'(E17.10E2)') fdefault
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  END IF
+
+  READ(svalue,'(E17.10E2)') fvalue  
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE parlst_getvalue_single_fetch (rsection, iparameter, fvalue, bexists)
+
+!<description>
+  
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The number of the parameter.
+  INTEGER, INTENT(IN) :: iparameter
+
+!</input>
+  
+!<output>
+
+  ! The value of the parameter
+  REAL(SP), INTENT(OUT) :: fvalue
+  
+  ! Optional: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  
+  svalue = '0.0E0'
+  CALL parlst_getvalue_string_fetch (rsection, &
+                                     iparameter, svalue, bexists)
+  READ(svalue,'(E17.10E2)') fvalue
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE parlst_getvalue_single_direct (rparlist, ssectionName, &
+                                            sparameter, fvalue, fdefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, ddefault is returned.
+  ! If ddefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+  
+  ! The section name - '' identifies the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+  REAL(SP), INTENT(IN), OPTIONAL :: fdefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parameter
+  REAL(SP), INTENT(OUT) :: fvalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(fdefault)) THEN
+    WRITE (sdefault,'(E17.10E2)') fdefault
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue)
+  END IF
+  
+  READ(svalue,'(E17.10E2)') fvalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
   SUBROUTINE parlst_getvalue_double_indir (rsection, sparameter, dvalue, ddefault)
 !<description>
   
@@ -1168,7 +1329,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   REAL(DP), INTENT(OUT) :: dvalue
   
 !</output>
@@ -1180,13 +1341,13 @@ CONTAINS
   
   ! Call the string routine, perform a conversion afterwards.
   IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,*) ddefault
+    WRITE (sdefault,'(E27.19E4)') ddefault
     CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
   ELSE
     CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
   END IF
-  
-  READ(svalue,*) dvalue
+
+  READ(svalue,'(E27.19E4)') dvalue  
 
   END SUBROUTINE
   
@@ -1220,7 +1381,7 @@ CONTAINS
 !<output>
 
   ! The value of the parameter
-  INTEGER, INTENT(OUT) :: dvalue
+  REAL(DP), INTENT(OUT) :: dvalue
   
   ! Optional: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
@@ -1236,7 +1397,7 @@ CONTAINS
   svalue = '0.0E0'
   CALL parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
-  READ(svalue,*) dvalue
+  READ(svalue,'(E27.19E4)') dvalue
 
   END SUBROUTINE
   
@@ -1271,7 +1432,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   REAL(DP), INTENT(OUT) :: dvalue
   
 !</output>
@@ -1283,7 +1444,7 @@ CONTAINS
   
   ! Call the string routine, perform a conversion afterwards.
   IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,*) ddefault
+    WRITE (sdefault,'(E27.19E4)') ddefault
     CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue, sdefault)
   ELSE
@@ -1291,7 +1452,7 @@ CONTAINS
                                         sparameter, svalue)
   END IF
   
-  READ(svalue,*) dvalue
+  READ(svalue,'(E27.19E4)') dvalue
 
   END SUBROUTINE
 
@@ -1322,7 +1483,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   INTEGER, INTENT(OUT) :: ivalue
   
 !</output>
@@ -1423,7 +1584,7 @@ CONTAINS
   
 !<output>
 
-  ! The value of the parametzer
+  ! The value of the parameter
   INTEGER, INTENT(OUT) :: ivalue
   
 !</output>
