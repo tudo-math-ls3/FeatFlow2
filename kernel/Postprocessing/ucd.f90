@@ -3016,7 +3016,7 @@ CONTAINS
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             CALL fgmvwrite_material_name(&
-                sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'), 1)
+                sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_'))
           END DO
         END IF
         
