@@ -1251,7 +1251,7 @@ CONTAINS
 
 !************************************************************************
 
-!<function>
+!<subroutine>
   subroutine sys_flush(iunit)
 
     !<description>
@@ -1267,7 +1267,7 @@ CONTAINS
     INTEGER :: iunit
 
     !</input>
-!</function>
+!</subroutine>
 
 !#ifdef HAS_FLUSH
 !    call flush(iunit)
@@ -1275,6 +1275,128 @@ CONTAINS
 
   end subroutine sys_flush
 
+!************************************************************************
+
+!<function>
+
+  FUNCTION sys_str2Double(svalue,sformat) RESULT(dvalue)
+
+    !<description>
+    ! This routine converts a given string that provides a valid
+    ! IEEE 745 representation of a real number into a double value.
+    !</description>
+
+    !<input>
+
+    ! string containing the real number
+    CHARACTER(LEN=*), INTENT(IN) :: svalue
+
+    ! format description to use for conversion
+    CHARACTER(LEN=*), INTENT(IN) :: sformat
+
+    !</input>
+
+    !<result>
+
+    ! double precision value
+    REAL(DP) :: dvalue
+
+    !</result>
+!</function>
+    
+    ! local variables
+    CHARACTER(LEN=LEN(svalue)+3) :: svalueTemp
+    LOGICAL :: bhasDot
+    INTEGER :: ipos
+
+    ! Check if string contains a 'dot'
+    IF (SCAN(svalue,'.') .NE. 0) THEN
+
+      ! Read original string
+      READ(svalue,sformat) dvalue
+    ELSE
+      ! Check if string is given in scientific notation
+      ipos = SCAN(svalue,'dDeE')
+
+      IF (ipos .EQ. 0) THEN
+        ! Append '.E0' to convert string into scientific notation
+        svalueTemp = TRIM(svalue)//'.E0'
+       
+      ELSEIF (ipos .EQ. 1) THEN
+        ! Prepend '1.' to convert string into scientific notation
+        svalueTemp = '1.'//ADJUSTL(svalue)
+      ELSE
+        ! Insert '.' to convert string into scientific notation
+        svalueTemp = svalue(1:ipos-1)//'.'//svalue(ipos:)
+      END IF
+
+      ! Read modified string
+      READ(svalueTemp,sformat) dvalue
+    END IF
+    
+  END FUNCTION sys_str2Double
+
+!************************************************************************
+
+!<function>
+
+  FUNCTION sys_str2Single(svalue,sformat) RESULT(fvalue)
+
+    !<description>
+    ! This routine converts a given string that provides a valid
+    ! IEEE 745 representation of a real number into a single value.
+    !</description>
+
+    !<input>
+
+    ! string containing the real number
+    CHARACTER(LEN=*), INTENT(IN) :: svalue
+
+    ! format description to use for conversion
+    CHARACTER(LEN=*), INTENT(IN) :: sformat
+
+    !</input>
+
+    !<result>
+
+    ! single precision value
+    REAL(SP) :: fvalue
+
+    !</result>
+!</function>
+    
+    ! local variables
+    CHARACTER(LEN=LEN(svalue)+3) :: svalueTemp
+    LOGICAL :: bhasDot
+    INTEGER :: ipos
+
+    ! Check if string contains a 'dot'
+    IF (SCAN(svalue,'.') .NE. 0) THEN
+
+      ! Read original string
+      READ(svalue,sformat) fvalue
+    ELSE
+      ! Check if string is given in scientific notation
+      ipos = SCAN(svalue,'dDeE')
+
+      IF (ipos .EQ. 0) THEN
+        ! Append '.E0' to convert string into scientific notation
+        svalueTemp = TRIM(svalue)//'.E0'
+       
+      ELSEIF (ipos .EQ. 1) THEN
+        ! Prepend '1.' to convert string into scientific notation
+        svalueTemp = '1.'//ADJUSTL(svalue)
+      ELSE
+        ! Insert '.' to convert string into scientific notation
+        svalueTemp = svalue(1:ipos-1)//'.'//svalue(ipos:)
+      END IF
+
+      ! Read modified string
+      READ(svalueTemp,sformat) fvalue
+    END IF
+    
+  END FUNCTION sys_str2Single
+  
 
 !************************************************************************
 ! Main conversion routines:
