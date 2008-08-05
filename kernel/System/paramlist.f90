@@ -1193,8 +1193,8 @@ CONTAINS
     CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
   END IF
 
-  READ(svalue,'(E17.10E2)') fvalue  
-
+  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1243,8 +1243,9 @@ CONTAINS
   svalue = '0.0E0'
   CALL parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
-  READ(svalue,'(E17.10E2)') fvalue
-
+  
+  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1298,8 +1299,8 @@ CONTAINS
                                         sparameter, svalue)
   END IF
   
-  READ(svalue,'(E17.10E2)') fvalue
-
+  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1341,14 +1342,14 @@ CONTAINS
   
   ! Call the string routine, perform a conversion afterwards.
   IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,'(E27.19E4)') ddefault
+    WRITE (sdefault,'(E27.19E3)') ddefault
     CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
   ELSE
     CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
   END IF
 
-  READ(svalue,'(E27.19E4)') dvalue  
-
+  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1397,8 +1398,9 @@ CONTAINS
   svalue = '0.0E0'
   CALL parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
-  READ(svalue,'(E27.19E4)') dvalue
-
+  
+  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1444,7 +1446,7 @@ CONTAINS
   
   ! Call the string routine, perform a conversion afterwards.
   IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,'(E27.19E4)') ddefault
+    WRITE (sdefault,'(E27.19E3)') ddefault
     CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue, sdefault)
   ELSE
@@ -1452,8 +1454,8 @@ CONTAINS
                                         sparameter, svalue)
   END IF
   
-  READ(svalue,'(E27.19E4)') dvalue
-
+  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  
   END SUBROUTINE
 
   ! ***************************************************************************
