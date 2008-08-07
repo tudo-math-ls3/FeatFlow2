@@ -621,7 +621,7 @@ CONTAINS
 
     IF (ndays .LE. INT(dtotaltime/86400._DP)) THEN
       dtotaltime = dtime
-      WRITE(*,FMT='(A)') 'Simulation ran '//TRIM(sys_sdEL(dtime, 2))//' seconds'
+      WRITE(*,FMT='(A)') 'Simulation ran '//TRIM(sys_sdEL(dtime, 8))//' seconds'
     ELSE
       dtotaltime = REAL(ndays*86400+nsecs, DP)
       WRITE(*,FMT='(A)') 'Simulation ran '//TRIM(sys_siL(ndays, 15))//' days and '//&
@@ -674,9 +674,9 @@ CONTAINS
 
       WRITE(*,FMT='(A,T35,A,T60,A)')&
           TRIM(ADJUSTL(rclock(iclock)%sname)),&
-          TRIM(sys_sdEL(dtime, 2))//' ('//&
+          TRIM(sys_sdEL(dtime, 8))//' ('//&
           TRIM(sys_sdL(100._DP/dtotaltime*dtime, 2))//')',&
-          TRIM(sys_sdEL(dtimeself, 2))//' ('//&
+          TRIM(sys_sdEL(dtimeself, 8))//' ('//&
           TRIM(sys_sdL(100._DP/dtotaltime*dtimeself,2))//')'
     END DO
 
