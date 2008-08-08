@@ -378,7 +378,8 @@
 !#   subdomain. This last boundary component is a 'blind' boundary 
 !#   component: The arrays (like IboundaryCpIdx) contain information 
 !#   about one boundary component which is not counted in NBCT. This last 
-!#   boundary component can even be empty!
+!#   boundary component can even be empty! The variable NblindBCT is <> 0
+!#   if there may be elements in a blind boundary component in a mesh.
 !#
 !#   In 2D, when edges or faces are generated for a subdomain, these may have
 !#   a nodal property indicating them to be located on this blind boundary
@@ -685,6 +686,13 @@ MODULE triangulation
     ! Number of boundary components
     INTEGER             :: NBCT = 0
     
+    ! Number of 'blind' boundary components. 'Blind' boundary components
+    ! belong to the boundary of subdomains but don't count to the real boundary.
+    ! In arrays like IverticesAtBoundary, IedgesAtBoundary etc., blind 
+    ! boundary components are always attached to the information about the
+    ! real boundary.
+    INTEGER             :: NblindBCT = 0
+    
     ! Number of vertices on the boundary.
     ! For 2D domains, this coincides with the number of edges on 
     ! the boundary: Every vertex on the boundary has an edge following
@@ -820,10 +828,11 @@ MODULE triangulation
     
     ! Nodal property array. 
     ! Handle to 
-    !       p_InodalProperty=array [1..NVT+NMT] of integer.
-    ! p_InodalProperty(i) defines for each vertex i=(1..NVT) 
-    ! and each edge i=(NVT+1..NVT+NMT) its function inside of the
-    ! geometry. Generally said, the range of the p_InodalProperty-array 
+    !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
+    ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
+    ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
+    ! its function inside of the geometry.
+    ! Generally said, the range of the p_InodalProperty-array 
     ! characterizes the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
@@ -902,7 +911,7 @@ MODULE triangulation
     ! undefined.
     INTEGER        :: h_IcoarseGridElement = ST_NOHANDLE
     
-    ! Boundary component index vector of length NBCT+1 for 
+    ! Boundary component index vector of length NBCT+NblindBCT+1 for 
     ! p_IverticesAtBoundary / p_IedgesAtBoundary / ... arrays.
     ! For standard meshes, this is a handle to 
     !      p_IboundaryCpIdx = array [1..NBCT+1] of integer.
@@ -1172,7 +1181,8 @@ MODULE triangulation
     
     ! here we can store the edges adjacent
     ! to a vertex, to access this array
-    ! use the IedgesAtVertexIdx array
+    ! use the IedgesAtVertexIdx array.
+    ! Edge numbers in this array are in the range 1..NMT!
     INTEGER        :: h_IedgesAtVertex = ST_NOHANDLE
     
     ! Handle to the twist index array for edges.
@@ -1860,6 +1870,7 @@ CONTAINS
       rbackupTriangulation%NEL                    = rtriangulation%NEL 
       rbackupTriangulation%NAT                    = rtriangulation%NAT
       rbackupTriangulation%NBCT                   = rtriangulation%NBCT
+      rbackupTriangulation%NblindBCT              = rtriangulation%NblindBCT
       rbackupTriangulation%NVBD                   = rtriangulation%NVBD
       rbackupTriangulation%NMBD                   = rtriangulation%NMBD
       rbackupTriangulation%NNVE                   = rtriangulation%NNVE
@@ -2483,6 +2494,7 @@ CONTAINS
     rtriangulation%NMT = 0
     rtriangulation%NEL = 0
     rtriangulation%NBCT = 0
+    rtriangulation%NblindBCT = 0
     rtriangulation%NVBD = 0
     rtriangulation%NMBD = 0
     rtriangulation%nverticesPerEdge = 0
@@ -4885,7 +4897,7 @@ CONTAINS
     nnve = rtriangulation%NNVE
 
     ! Loop through all boundary components
-    DO ibct = 1,rtriangulation%NBCT
+    DO ibct = 1,rtriangulation%NBCT+rtriangulation%NblindBCT
     
       ! On each boundary component, loop through all vertices
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
@@ -5028,7 +5040,7 @@ CONTAINS
 
     ! Loop through all boundary components
     !$OMP PARALLEL DO PRIVATE(ivbd,ivt,iel,ive)
-    DO ibct = 1,rtriangulation%NBCT
+    DO ibct = 1,rtriangulation%NBCT+rtriangulation%NblindBCT
     
       ! On each boundary component, loop through all elements
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
@@ -5963,7 +5975,7 @@ CONTAINS
       CALL storage_getbase_int(rdestTriangulation%h_InodalProperty, &
                                p_InodalPropDest)
       
-      ! Copy the nodal property of the coarse mesg
+      ! Copy the nodal property of the coarse mesh
       DO ivt=1, rsourceTriangulation%NVT
         p_InodalPropDest(ivt) = p_InodalPropSource(ivt)
       END DO
@@ -5974,6 +5986,7 @@ CONTAINS
           rdestTriangulation%h_IverticesAtBoundary)
       
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT
+      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT
       CALL storage_copy (rsourceTriangulation%h_IboundaryCpIdx,&
           rdestTriangulation%h_IboundaryCpIdx)
     
@@ -6487,6 +6500,7 @@ CONTAINS
       ! The number of boundary vertices is doubled.
       rdestTriangulation%NVBD = 2*rsourceTriangulation%NVBD
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
+      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT 
           
       ! Create new arrays in the fine grid for the vertices and indices.
       CALL storage_new ('tria_refineBdry2lv2D', &
@@ -7128,14 +7142,14 @@ CONTAINS
           IF (PRESENT(ilevel)) THEN
             CALL output_line(&
               'Lv. dim.       NVT        NMT        NEL    NBCT' &
-            //'    NVBD     #trias      #quads')
+            //'    NblindBCT  NVBD     #trias      #quads')
             CALL output_line(&
               '------------------------------------------------' &
             //'-------------------------------')
           ELSE
             CALL output_line(&
               'dim.       NVT        NMT        NEL    NBCT' &
-            //'    NVBD     #trias      #quads')
+            //'    NblindBCT  NVBD     #trias      #quads')
             CALL output_line(&
               '--------------------------------------------' &
             //'-------------------------------')
@@ -7153,6 +7167,7 @@ CONTAINS
         //TRIM(sys_si(rtriangulation%NMT,11)) &
         //TRIM(sys_si(rtriangulation%NEL,11)) &
         //TRIM(sys_si(rtriangulation%NBCT,8)) &
+        //TRIM(sys_si(rtriangulation%NblindBCT,11)) &
         //TRIM(sys_si(rtriangulation%NVBD,8)) &
         //TRIM(sys_si(rtriangulation%InelOfType(TRIA_NVETRI2D),11)) &
         //TRIM(sys_si(rtriangulation%InelOfType(TRIA_NVEQUAD2D),11)) )
@@ -10044,6 +10059,7 @@ CONTAINS
       NVBD = rdestTriangulation%NVBD
                                                 
       rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
+      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT 
           
       ! Create new arrays in the fine grid for the vertices and indices.
       CALL storage_new ('tria_refineBdry2lv2D', &
@@ -10093,7 +10109,7 @@ CONTAINS
       ! allocate memory
       IF(rdestTriangulation%h_IboundaryCpIdx == ST_NOHANDLE) THEN
         CALL storage_new ('tria_genFacesAtBoundary', 'IboundaryCpIdx', &
-            int(rdestTriangulation%NBCT+1,I32), ST_INT, &
+            int(rdestTriangulation%NBCT+rdestTriangulation%NblindBCT+1,I32), ST_INT, &
             rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
       END IF      
                 
@@ -10123,7 +10139,7 @@ CONTAINS
     END DO
  
     ! now create the actual index array
-    DO ibct = 2, rdestTriangulation%NBCT+1
+    DO ibct = 2, rdestTriangulation%NBCT+rdestTriangulation%NblindBCT+1
         p_IboundaryCpIdxDest(ibct) = p_IboundaryCpIdxDest(ibct)+p_IboundaryCpIdxDest(ibct-1)
     END DO      
   
@@ -10216,7 +10232,7 @@ CONTAINS
     ! allocate memory
     IF(rtriangulation%h_IboundaryCpFacesIdx == ST_NOHANDLE) THEN
       CALL storage_new ('tria_genFacesAtBoundary', 'IboundaryCpFacesIdx', &
-          int(rtriangulation%NBCT+1,I32), ST_INT, &
+          int(rtriangulation%NBCT+rtriangulation%NblindBCT+1,I32), ST_INT, &
           rtriangulation%h_IboundaryCpFacesIdx, ST_NEWBLOCK_NOINIT)
     END IF      
 
@@ -10230,7 +10246,7 @@ CONTAINS
     ! the first index is one
     p_IboundaryCpFacesIdx(1)=1
     ! the remaining indices are initialized with zeros
-    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+1)=0
+    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+rtriangulation%NblindBCT+1)=0
     
     ! loop over all faces
     ! to count the number of faces on the boundary 
@@ -10275,20 +10291,20 @@ CONTAINS
     END DO ! end iface
     
     ! add up the entries to compute the actual index array
-    DO ive=2,rtriangulation%NBCT+1
+    DO ive=2,rtriangulation%NBCT+rtriangulation%NblindBCT+1
       p_IboundaryCpFacesIdx(ive) = &
         p_IboundaryCpFacesIdx(ive) + p_IboundaryCpFacesIdx(ive-1)
     END DO ! end ive
     
     ! number of faces on the boundary
-    NFBD = p_IboundaryCpFacesIdx(rtriangulation%NBCT+1) - 1
+    NFBD = p_IboundaryCpFacesIdx(rtriangulation%NBCT+rtriangulation%NblindBCT+1) - 1
 
     ! assign the number of faces on the boundary
     rtriangulation%NABD = NFBD
     
     ! shift the indices... we do the old trick
-    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+1) = &
-    p_IboundaryCpFacesIdx(1:rtriangulation%NBCT)
+    p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+rtriangulation%NblindBCT+1) = &
+    p_IboundaryCpFacesIdx(1:rtriangulation%NBCT+rtriangulation%NblindBCT)
 
     ! allocate memory for the p_IfacesAtBoundary array
     IF(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) THEN
@@ -10420,7 +10436,7 @@ CONTAINS
     ! allocate memory
     IF(rtriangulation%h_IboundaryCpEdgesIdx == ST_NOHANDLE) THEN
       CALL storage_new ('tria_genEdgesAtBoundary3d', 'IboundaryCpEdgesIdx', &
-          int(rtriangulation%NBCT+1,I32), ST_INT, &
+          int(rtriangulation%NBCT+rtriangulation%NblindBCT+1,I32), ST_INT, &
           rtriangulation%h_IboundaryCpEdgesIdx, ST_NEWBLOCK_NOINIT)
     END IF      
 
@@ -10458,7 +10474,7 @@ CONTAINS
     ! the first index is one
     p_IboundaryCpEdgesIdx(1)=1
     ! the remaining indices are initialized with zeros
-    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+1)=0
+    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+rtriangulation%NblindBCT+1)=0
     
     ! iface1 points to the position in the
     ! facesAtBoundary array
@@ -10477,7 +10493,7 @@ CONTAINS
       inotFound = 0
       ! check for this face in every boundary component
       ! until we have found it
-      DO ibct=1,rtriangulation%NBCT
+      DO ibct=1,rtriangulation%NBCT+rtriangulation%NblindBCT
         ! check if face iface a boundary face
         ibdyFace = p_IbdyComponents(ibct)
         ! if we are at or beyond the end of that bdy component
@@ -10498,7 +10514,7 @@ CONTAINS
       END DO ! end do ibct
       
       ! if not found
-      IF(inotFound == rtriangulation%NBCT) THEN
+      IF(inotFound == rtriangulation%NBCT+rtriangulation%NblindBCT) THEN
         p_Iaux(iface) = 0
       END IF
     
@@ -10548,14 +10564,14 @@ CONTAINS
     eIndex = 0
     
     ! add up the entries to compute the actual index array
-    DO ive=2,rtriangulation%NBCT+1
+    DO ive=2,rtriangulation%NBCT+rtriangulation%NblindBCT+1
     p_IboundaryCpEdgesIdx(ive) = &
     p_IboundaryCpEdgesIdx(ive) + p_IboundaryCpEdgesIdx(ive-1)
     END DO ! end ive
     
     ! shift the indices...
-    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+1) = &
-    p_IboundaryCpEdgesIdx(1:rtriangulation%NBCT)
+    p_IboundaryCpEdgesIdx(2:rtriangulation%NBCT+rtriangulation%NblindBCT+1) = &
+    p_IboundaryCpEdgesIdx(1:rtriangulation%NBCT+rtriangulation%NblindBCT)
     
     ! check all edges
     DO ive=1,rtriangulation%NMT
@@ -11408,6 +11424,9 @@ CONTAINS
     ! edges from inside of the domain rtriangulation that got boundary in rtriaDest.
     ! This is not counted in NBCT!
     rtriaDest%NBCT = rtriangulation%NBCT
+    
+    ! And we assume that this gives now a 'blind' boundary component.
+    rtriaDest%NblindBCT = 1
 
     ! Allocate memory for IverticesAtElement
     ! build the old KVERT...
@@ -11931,6 +11950,7 @@ CONTAINS
     rtriaDest%NNVE = MAX(rtriangulation%NNVE,UBOUND(p_IverticesAtElementNew,1))
     rtriaDest%NNEE = rtriangulation%NNEE
     rtriaDest%NBCT = rtriangulation%NBCT
+    rtriaDest%NblindBCT = rtriangulation%NblindBCT
     rtriaDest%NEL = rtriangulation%NEL + rcellSet%NEL
 
     ! Allocate memory for IverticesAtElement.
