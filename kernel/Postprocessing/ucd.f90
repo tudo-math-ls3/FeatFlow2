@@ -1464,43 +1464,6 @@ CONTAINS
       !----------------------------------------------------
       ! Write the GMV header
       WRITE(mfile,'(A)') 'gmvinput ascii'
-
-      !----------------------------------------------------
-      ! Simulation time
-      IF (rexport%dsimulationTime .NE. SYS_INFINITY) THEN
-        WRITE(mfile,'(A)',ADVANCE='NO')     'probtime '
-        WRITE(mfile,rexport%ssimTimeFormat) rexport%dsimulationTime
-      END IF
-
-      !----------------------------------------------------
-      ! Write all comments
-      IF (rexport%ncommentBufSize .GT. 0) THEN
-        WRITE(mfile,'(A)') 'comments'
-        
-        i = 1
-        ! Find the end of the first line
-        DO j=i,rexport%ncommentBufSize
-          IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
-        END DO
-        
-        ! Write out all lines, one after the other
-        DO WHILE (j .LE. rexport%ncommentBufSize)
-          ! Write the line (character i..j-1), continue with the next
-          DO k=i,j-1
-            WRITE(mfile,'(A)',ADVANCE='NO') rexport%p_Scomments(k)
-          END DO
-          WRITE(mfile,'(A)')
-          
-          ! Continue after the NEWLINE character, find the next NEWLINE.
-          i = j+1
-          DO j=i,rexport%ncommentBufSize
-            IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
-          END DO
-        
-        END DO
-        
-        WRITE(mfile,'(A)') 'endcomm'
-      END IF
       
       !----------------------------------------------------
       ! Write the triangulation.
@@ -1522,7 +1485,7 @@ CONTAINS
       
       ELSE
 
-        WRITE(mfile,'(A,I10)') 'nodes ',rexport%nvertices
+        WRITE(mfile,'(A,1X,I10)') 'nodes',rexport%nvertices
         
         ! Loop through the X/Y/Z coordinates
         
@@ -1638,7 +1601,7 @@ CONTAINS
       
         ! Write the connectivity to the mesh - i.e. the cells.
 
-        WRITE(MFILE,'(A,I10)') 'cells ',rexport%ncells
+        WRITE(MFILE,'(A,1X,I10)') 'cells',rexport%ncells
         
         IF (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .EQ. 0) THEN
         
@@ -1659,7 +1622,7 @@ CONTAINS
               CASE (2)
                 ! Line in 1D
                 WRITE(mfile,'(A)') 'line 2'
-                WRITE(mfile,'(3I8)') p_IverticesAtElement(1:2,iel)
+                WRITE(mfile,'(2I8)') p_IverticesAtElement(1:2,iel)
               
               CASE DEFAULT
                 CALL output_line ('Invalid element!',&
@@ -1719,12 +1682,12 @@ CONTAINS
               CASE (5)
                 ! Pyramid
                 WRITE(mfile,'(A)') 'ppyrmd5 5'
-                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:5,iel)
+                WRITE(mfile,'(5I8)') p_IverticesAtElement(1:5,iel)
 
               CASE (6)
                 ! Prism
                 WRITE(mfile,'(A)') 'pprism6 6'
-                WRITE(mfile,'(4I8)') p_IverticesAtElement(1:6,iel)
+                WRITE(mfile,'(6I8)') p_IverticesAtElement(1:6,iel)
 
               CASE (8)
                 ! Hexahedron
@@ -1775,7 +1738,7 @@ CONTAINS
                 !
                 ! Write the connectivity of element IEL
                 WRITE(mfile,'(A)') 'line 2'
-                WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
+                WRITE(mfile,'(2I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
 
               END SELECT
               
@@ -1964,7 +1927,7 @@ CONTAINS
         IF (ASSOCIATED(rexport%ScellMaterials) .and. &
             (rexport%hIcellMaterial .NE. ST_NOHANDLE)) THEN
           ! GMV only supports <= 1000 materials!
-          WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
+          WRITE(mfile,'(A,1X,I10,I10)') 'material',MIN(1000,SIZE(rexport%ScellMaterials)),0
           DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
@@ -1986,7 +1949,7 @@ CONTAINS
         IF (ASSOCIATED(rexport%SvertexMaterials) .and. &
             (rexport%hIvertexMaterial .NE. ST_NOHANDLE)) THEN
           ! GMV only supports <= 1000 materials!
-          WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
+          WRITE(mfile,'(A,1X,I10,I10)') 'material',MIN(1000,SIZE(rexport%SvertexMaterials)),1
           DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
@@ -2006,7 +1969,7 @@ CONTAINS
           IF (ASSOCIATED(rexport%ScellMaterials) .and. &
               (rexport%hIvertexMaterial .NE. ST_NOHANDLE)) THEN
             ! GMV only supports <= 1000 materials!
-            WRITE(mfile,'(A,I10,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
+            WRITE(mfile,'(A,1X,I10,I10)') 'material',MIN(1000,SIZE(rexport%ScellMaterials)),1
             DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
               ! GMV supports only <= 8 characters and does not allow spaces
               ! in the material name. We replace all invalid spaces by "_".
@@ -2166,12 +2129,12 @@ CONTAINS
             
             IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
               ! Cell based variable
-              WRITE (MFILE,'(A,I5)') TRIM(rexport%p_SvariableNames(i)),0
+              WRITE (MFILE,'(A,1X,I5)') TRIM(rexport%p_SvariableNames(i)),0
               CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
               ivt1 = rexport%ncells
             ELSE
               ! Vertex based variable
-              WRITE (MFILE,'(A,I5)') TRIM(rexport%p_SvariableNames(i)),1
+              WRITE (MFILE,'(A,1X,I5)') TRIM(rexport%p_SvariableNames(i)),1
               CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
               ivt1 = rexport%nvertices
             END IF
@@ -2243,7 +2206,7 @@ CONTAINS
       !----------------------------------------------------
       ! Write tracer coordinates and data
       IF (rexport%ntracers .NE. 0) THEN
-        WRITE(mfile,'(A,I10)') 'tracers ',rexport%ntracers
+        WRITE(mfile,'(A,1X,I10)') 'tracers',rexport%ntracers
         
         CALL storage_getbase_double2d(rexport%htracers,p_Ddata2D)
         
@@ -2275,6 +2238,48 @@ CONTAINS
         
       END IF
 
+      !----------------------------------------------------
+      ! Simulation time
+      IF (rexport%dsimulationTime .NE. SYS_INFINITY) THEN
+        WRITE(mfile,'(A)',ADVANCE='NO')     'probtime '
+        WRITE(mfile,rexport%ssimTimeFormat) rexport%dsimulationTime
+      END IF
+
+      !----------------------------------------------------
+      ! Write all comments
+      IF (rexport%ncommentBufSize .GT. 0) THEN
+        WRITE(mfile,'(A)') 'comments'
+        
+        i = 1
+        ! Find the end of the first line
+        DO j=i,rexport%ncommentBufSize
+          IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
+        END DO
+        
+        ! Write out all lines, one after the other
+        DO WHILE (j .LE. rexport%ncommentBufSize)
+          ! Write the line (character i..j-1), continue with the next
+          DO k=i,j-1
+            WRITE(mfile,'(A)',ADVANCE='NO') rexport%p_Scomments(k)
+          END DO
+          WRITE(mfile,'(A)')
+          
+          ! Continue after the NEWLINE character, find the next NEWLINE.
+          i = j+1
+          DO j=i,rexport%ncommentBufSize
+            IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
+          END DO
+        
+        END DO
+        
+        WRITE(mfile,'(A)') 'endcomm'
+      END IF
+
+      !----------------------------------------------------
+      ! Write information about generating code
+      WRITE(mfile,'(A)') 'codename Featflow'
+      WRITE(mfile,'(A)') 'codever  2.0'
+      
       !----------------------------------------------------
       ! Finally write the GMV footer, finish
       
@@ -5206,14 +5211,15 @@ CONTAINS
       ! Get the key word from the line
       CALL sys_tolower (sline)
       READ(sline,*) skey
-      
-      IF (skey .EQ. 'probtime') THEN
+
+      SELECT CASE(TRIM(ADJUSTL(skey)))
+      CASE ('probtime')
         
         !----------------------------------------------------
         ! Read the simulation time
         READ(sline,*) sdummy,rexport%dsimulationTime
         
-      ELSE IF (skey .EQ. 'comments') THEN
+      CASE ('comments')
       
         !----------------------------------------------------
         ! Read comments
@@ -5222,14 +5228,14 @@ CONTAINS
           CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
           CALL sys_tolower (sline)
           READ(sline,'(A)') skey
-          biscomment = (skey .NE. 'endcomm')
+          biscomment = (TRIM(ADJUSTL(skey)) .NE. 'endcomm')
           IF (biscomment) THEN
             ! Add each comment line to our comment variable in rexport
             CALL ucd_addCommentLine (rexport,sline)
           END IF
         END DO
         
-      ELSE IF (skey .EQ. 'nodes') THEN
+      CASE ('nodes')
         
         !----------------------------------------------------
         ! Read triangulation (or ignore it if alread given in rtriangulation)
@@ -5239,42 +5245,42 @@ CONTAINS
         rexport%nvertices = rtriangulation%NVT
         rexport%ncells = rtriangulation%NEL
         
-      ELSE IF (skey .EQ. 'material') THEN
+      CASE ('material')
       
         !----------------------------------------------------
         ! Read materials
         CALL read_materials (mfile,sline,rexport)
         
-      ELSE IF (skey .EQ. 'velocity') THEN
+      CASE ('velocity')
 
         !----------------------------------------------------
         ! Read velocity data
         CALL read_velocity (mfile,sline,rexport)
         
-      ELSE IF (skey .EQ. 'variable') THEN
+      CASE ('variable')
       
         !----------------------------------------------------
         ! Read general variable data
         CALL read_variables (mfile,sline,rexport)
         
-      ELSE IF (skey .EQ. 'polygons') THEN
+      CASE ('polygons')
       
         !----------------------------------------------------
         ! Read polygon data
         CALL read_polygondata (mfile,sline,rexport)
         
-      ELSE IF (skey .EQ. 'tracers') THEN
+      CASE ('tracers')
       
         !----------------------------------------------------
         ! Read tracer data
         CALL read_tracerdata (mfile,sline,rexport)
         
-      ELSE IF (skey .EQ. 'endgmv') THEN
+      CASE ('endgmv')
         
         ! GMV finish
         ios = 1
         
-      END IF
+      END SELECT
     END DO
     
     ! Close the file, finish.
@@ -5428,6 +5434,7 @@ CONTAINS
     TYPE(t_ucdExport), INTENT(INOUT) :: rexport
     
       ! Local variables
+      INTEGER(I32) :: iel,ivt
       INTEGER :: ilinelen,ios,itype,imaterial
       LOGICAL :: bfinish
       CHARACTER(LEN=SYS_STRLEN) :: skey,sline,sname
@@ -5448,17 +5455,21 @@ CONTAINS
         
         ! Read variable name, type
         READ (sline,*) sname,itype
-        
+
         SELECT CASE (itype)
         CASE (0) 
           ! Cell based data. Read and remember
-          READ(mfile,*) Dcell
+          DO iel = 1, rexport%p_rtriangulation%NEL
+            READ(mfile,FMT=rexport%sdataFormat) Dcell(iel)
+          END DO
           
           CALL ucd_addVariableElementBased (rexport,sname,UCD_VAR_STANDARD,Dcell)
               
         CASE (1)
           ! Node/Vertex based data.
-          READ(mfile,*) Dnode
+          DO ivt = 1, rexport%p_rtriangulation%NVT
+            READ(mfile,FMT=rexport%sdataFormat) Dnode(ivt)
+          END DO
           
           CALL ucd_addVariableVertexBased (rexport,sname,UCD_VAR_STANDARD,Dnode)
           
@@ -5711,7 +5722,7 @@ CONTAINS
       
       ! Quit if this is just this line that contains triangulation info
       IF ((rtriangulation%ndim .NE. 0) .AND. (skey .EQ. 'fromfile')) RETURN
-      
+
       ! Get the number of vertices
       READ(scommand,*) skey,n
       
@@ -5813,6 +5824,8 @@ CONTAINS
         READ(mfile,*) IverticesAtElement(1:nve,i)
       END DO
       
+      rtriangulation%NNVE = nmaxnve
+      
       ! All elements read in. Create the actual IverticesAtElement.
 
       Isize = (/nmaxnve,INT(rtriangulation%NEL,I32)/)
@@ -5830,7 +5843,7 @@ CONTAINS
       
       ! We don't need IverticesAtElement anymore...
       DEALLOCATE(IverticesAtElement)
-      
+
       SELECT CASE (rtriangulation%ndim)
       CASE (NDIM2D)
         ! Create some standard mesh information
