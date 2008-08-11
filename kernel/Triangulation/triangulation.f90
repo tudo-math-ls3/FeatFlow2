@@ -95,7 +95,6 @@
 !# 22.) tria_initMacroNodalProperty
 !#      -> Attaches a macro nodal property array to an extended raw mesh.
 !#
-!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -206,6 +205,9 @@
 !# 36.) tria_propMacroNodalProperty2lv
 !#      -> Propagates a macro nodal property array from a coarse mesh
 !#         to a fine mesh
+!#
+!# 23.) tria_initExtendedRawMesh
+!#      -> Create an extended raw mesh from a pure raw mesh.
 !#
 !#  FAQ - Some explainations
 !# --------------------------
