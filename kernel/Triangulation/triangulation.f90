@@ -1302,7 +1302,7 @@ CONTAINS
 
   SUBROUTINE tria_wrp_tria2Structure (TRIA, rtriangulation)
   
-  USE afcutil
+!!$  USE afcutil
   
 !<description>
   ! Wrapper routine. Accepts an 'old' triangulation structure array of CC2D
