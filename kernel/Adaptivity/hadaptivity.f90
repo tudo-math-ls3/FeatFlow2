@@ -409,7 +409,8 @@ CONTAINS
   SUBROUTINE hadapt_generateRawMesh(rhadapt, rtriangulation)
 
 !<description>
-    ! This subroutine generates a raw mesh from the adaptivity structure
+    ! This subroutine generates an (extended) raw mesh from the 
+    ! adaptivity structure.
 !</description>
 
 !<inputoutput>
@@ -461,6 +462,11 @@ CONTAINS
                             rtriangulation%h_IverticesAtBoundary,&
                             rtriangulation%h_DvertexParameterValue,&
                             rtriangulation%NVBD, rtriangulation%NBCT)
+                            
+    ! Generate extended raw mesh information for edge (and face)
+    ! numbering.
+    call tria_initExtendedRawMesh (rtriangulation)
+    
   END SUBROUTINE hadapt_generateRawMesh
   
   ! ***************************************************************************
