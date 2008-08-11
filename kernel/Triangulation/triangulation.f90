@@ -206,7 +206,7 @@
 !#      -> Propagates a macro nodal property array from a coarse mesh
 !#         to a fine mesh
 !#
-!# 23.) tria_initExtendedRawMesh
+!# 37.) tria_initExtendedRawMesh
 !#      -> Create an extended raw mesh from a pure raw mesh.
 !#
 !#  FAQ - Some explainations
