@@ -804,12 +804,21 @@ MODULE triangulation
     
     ! Neighbour Elements Adjacent to an Element.
     ! Handle to 
-    !       p_RneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
+    !       p_IneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements
     ! in mathematically positive sense, meeting the element in an edge.
     ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent 
     ! to IEL along the edges (p_RedgesOnElement(IEL)\%Iedges(.)-NVT).
     ! This is the old KADJ array.
+    !
+    ! Note:  For meshes with hanging vertices, this array is slightly
+    ! modified. For 'big' elements this array contains the element
+    ! numbers of the 'first' adjacent element via an edge/face.
+    ! Note: To access all elements adjacent to an element via a
+    ! hanging vertex, calculate the vertex number of the hanging
+    ! vertex via InodalProperty and access all adjacent elements.
+    ! For small 'hanging' elements, this array contains as usual
+    ! the number of the 'big' adjacent element(s).
     INTEGER        :: h_IneighboursAtElement = ST_NOHANDLE
     
     ! Elements Adjacent to an Edge. Only 2D.
@@ -838,10 +847,34 @@ MODULE triangulation
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
     !           boundary. KNPR(.) defines the number of the boundary
     !           component.
-    ! < 0,
-    ! >= -NEL: The vertex/edge is an invalid node to element -KNPR(.)
-    !          (-> hanging node, not implemented for now)
-    ! This is the old KNPR-array, slightly modified for edges!
+    ! This is the old KNPR-array, slightly modified for edges and
+    ! hanging nodes.
+    !
+    ! In case there are hanging nodes in the mesh, this array
+    ! has a special meaning for all hanging vertices and all edges
+    ! containing hanging vertices.  Values < 0 indicate hanging
+    ! vertices at an edge. 
+    ! Let iedgeC (NVT+1..NVT+NMT) be the number of
+    ! a a 'full' edge containing the hanging vertex jvertex. 
+    ! Let iedge be one of the sub-edges inside of edge iedgeC.
+    ! Then there is:
+    !   p_InodalProperty(jvertex) = -iedgeC
+    !   p_InodalProperty(iedge)   = -iedgeC
+    !   p_InodalProperty(iedgeC)  = -jvertex
+    ! Let kfaceC (NVT+NMT+1..NVT+NMT+NAT) be the number of a 'full' face
+    ! containing the hanging vertex jvertex. 
+    ! Let kface be the number of a one of the subfaces inside
+    ! the face kfaceC. Let iedge be the number of one of the sub-edges
+    ! inside face kfaceC.
+    ! Then there is:
+    !   p_InodalProperty(jvertex) = -kfaceC
+    !   p_InodalProperty(kface)   = -kfaceC
+    !   p_InodalProperty(iedge)   = -kfaceC
+    !   p_InodalProperty(kfaceC)  = -jvertex
+    ! A hanging vertex is either the midpoint of a face or of an edge,
+    ! therefore this assignment is unique due to the range of the number.
+    ! 'Hanging edges' (only appear in 3D) without a hanging vertex
+    ! in the center of an edge/face are not supported.
     INTEGER         :: h_InodalProperty = ST_NOHANDLE
     
     ! 2D triangulation: Array with area of each element.
@@ -869,6 +902,12 @@ MODULE triangulation
     ! p_IelementsAtVertex ( p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1 )
     ! contains the number of the adjacent element in a vertex.
     ! This replaces the old KVEL array.
+    !
+    ! Note: For hanging vertices, this array contains only those
+    ! elements which are 'corner adjacent' to a vertex (i.e. the 'smaller' elements).
+    ! The 'big' elements adjacent to the edge which the hanging vertex
+    ! is a midpoint of are not part of the vertex neighbourhood
+    ! in this array.
     INTEGER        :: h_IelementsAtVertex = ST_NOHANDLE
     
     ! This array defines a patch index and is created during the
@@ -2913,7 +2952,7 @@ CONTAINS
     !$OMP PARALLEL DO REDUCTION(+:ivbd)
     DO ivt=1,rtriangulation%NVT
       !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
-      IF (p_InodalProperty(ivt) .NE. 0) ivbd = ivbd+1
+      IF (p_InodalProperty(ivt) .GT. 0) ivbd = ivbd+1
     END DO
     !$OMP END PARALLEL DO
     rtriangulation%NVBD = ivbd
@@ -2948,7 +2987,7 @@ CONTAINS
     ! In this first step, we save the number of vertices on each 
     ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
     DO ivt=1,rtriangulation%NVT
-      IF (p_InodalProperty(ivt) .NE. 0) THEN
+      IF (p_InodalProperty(ivt) .GT. 0) THEN
         ibct = p_InodalProperty(ivt)
         
         ! Increase the number of vertices in that boundary component by 1.
@@ -3014,7 +3053,7 @@ CONTAINS
       ! Check all vertices to find out, which vertices are on the boundary.
       !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ibct = p_InodalProperty(ivt)
           
           ! Create a new point on that boundary component 
@@ -3047,7 +3086,7 @@ CONTAINS
       ! Check all vertices to find out, which vertices are on the boundary.
       !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ! id of the boundary component
           ibct = p_InodalProperty(ivt)
           
@@ -11758,7 +11797,7 @@ CONTAINS
       !$OMP PARALLEL DO REDUCTION(+:ivbd)
       DO ivt=1,rtriangulation%NVT
         !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
-        IF (p_InodalProperty(ivt) .NE. 0) ivbd = ivbd+1
+        IF (p_InodalProperty(ivt) .GT. 0) ivbd = ivbd+1
       END DO
       !$OMP END PARALLEL DO
       rtriangulation%NVBD = ivbd
@@ -11796,7 +11835,7 @@ CONTAINS
       ! In this first step, we save the number of vertices on each 
       ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ibct = p_InodalProperty(ivt)
           
           ! Increase the number of vertices in that boundary component by 1.
@@ -11851,7 +11890,7 @@ CONTAINS
       ! Check all vertices to find out, which vertices are on the boundary.
       !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ! id of the boundary component
           ibct = p_InodalProperty(ivt)
           
@@ -12220,7 +12259,7 @@ CONTAINS
       !$OMP PARALLEL DO REDUCTION(+:ivbd)
       DO ivt=1,rtriangulation%NVT
         !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
-        IF (p_InodalProperty(ivt) .NE. 0) ivbd = ivbd+1
+        IF (p_InodalProperty(ivt) .GT. 0) ivbd = ivbd+1
       END DO
       !$OMP END PARALLEL DO
       rtriangulation%NVBD = ivbd
@@ -12258,7 +12297,7 @@ CONTAINS
       ! In this first step, we save the number of vertices on each 
       ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ibct = p_InodalProperty(ivt)
           
           ! Increase the number of vertices in that boundary component by 1.
@@ -12313,7 +12352,7 @@ CONTAINS
       ! Check all vertices to find out, which vertices are on the boundary.
       !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
       DO ivt=1,rtriangulation%NVT
-        IF (p_InodalProperty(ivt) .NE. 0) THEN
+        IF (p_InodalProperty(ivt) .GT. 0) THEN
           ! id of the boundary component
           ibct = p_InodalProperty(ivt)
           
@@ -12683,6 +12722,621 @@ CONTAINS
     ! Deallocate memory, finish.
     deallocate(IelementQueue)
   
+  end subroutine
+
+! ***************************************************************************************
+
+!<subroutine>
+
+  subroutine tria_hangingNodeRefinement (rtriaSource,Ielements,rtriaDest)
+  
+!<description>
+  ! Performs a local hanging-node refinement of the elements Ielements in the 
+  ! triangulation rtriaSource.
+  !
+  ! Note: The implementation is still rudimentary. Currently, there are
+  ! only 2D quad meshes allowed. 'Iterative' refinement (i.e. the refinement
+  ! of elements which are not marked to be refined, due to a too high refinement
+  ! level are not supported!
+  ! Furthermore It's only possible to refine elements with hanging vertices
+  ! if the subelements hanging on a hanging vertex are not refined
+  ! at the same time.
+!</description>
+  
+!<input>
+  ! Source mesh to be refines.
+  type(t_triangulation), intent(in) :: rtriaSource
+  
+  ! List of elements to be refined.
+  integer(PREC_ELEMENTIDX), dimension(:), intent(in) :: Ielements
+  
+  ! OPTIONAL: Boundary structure that defines the domain.
+  ! If not specified, information about boundary vertices (e.g. 
+  ! parameter values of edge midpoints in 2D) are not initialised.
+  !TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+!</input>
+
+!<output>
+  ! Refined mesh. Will be a standard mesh.
+  type(t_triangulation), intent(out) :: rtriaDest
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i,nnve
+    integer(PREC_VERTEXIDX) :: ivt,ivt1,ivt2,ive,nvtnew,ive2
+    integer(PREC_ELEMENTIDX) :: iel,nelnew,nelsum,ieldest,nquads
+    integer(PREC_EDGEIDX) :: imt,imtdest,nmtsum,imt2,iedge1,iedge2,iedge3,iedge4
+    integer(PREC_ELEMENTIDX) :: iel1,iel2,iel3
+    integer(PREC_EDGEIDX), dimension(:), allocatable :: Iedges
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IelementsSorted
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IelementRef
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IelementLocalId
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IedgeHang
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IedgeLocalId
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdge
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdgeDest
+    integer(i32), dimension(2) :: Isize
+    integer(i32), dimension(:,:), pointer :: p_IverticesAtElementSrc
+    integer(i32), dimension(:,:), pointer :: p_IneighboursAtElementSrc
+    integer(i32), dimension(:,:), pointer :: p_IneighboursAtElementDest
+    integer(i32), dimension(:,:), pointer :: p_IedgesAtElementSrc
+    integer(i32), dimension(:,:), pointer :: p_IedgesAtElementDest
+    integer(i32), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer(i32), dimension(:,:), pointer :: p_IverticesAtElementDest
+    real(dp), dimension(:,:), pointer :: p_DvertexCoordsSrc,p_DvertexCoordsDest
+    integer(i32), dimension(:), pointer :: p_InodalPropertySrc,p_InodalPropertyDst
+    integer(i32), dimension(:), pointer :: p_IelementsAtVertex,p_IelementsAtVertexIdx
+    
+    nnve = rtriaSource%NNVE
+    IF (nnve .ne. TRIA_NVEQUAD2D) THEN
+    
+      CALL output_line (&
+          '2-level refinement supports only quad meshes!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_refineMesh2lv2D')
+      CALL sys_halt()
+      
+    END IF
+
+    ! At the beginning, mark the elements to be refined
+    allocate(IelementRef(rtriaSource%NEL))
+    IelementRef(:) = 0
+    do iel = 1,size(Ielements)
+      IelementRef(Ielements(iel)) = 1
+    end do
+    
+    call storage_getbase_int2d(rtriaSource%h_IelementsAtEdge,p_IelementsAtEdge)
+
+    call storage_getbase_int2D(&
+        rtriaSource%h_IedgesAtElement,p_IedgesAtElementSrc)
+
+    call storage_getbase_int2D(&
+        rtriaSource%h_IverticesAtEdge,p_IverticesAtEdge)
+
+    call storage_getbase_int2D(&
+        rtriaSource%h_IneighboursAtElement,p_IneighboursAtElementSrc)
+    
+    call storage_getbase_int(&
+        rtriaSource%h_InodalProperty,p_InodalPropertySrc)
+
+    ! Loop through all elements and mark the edges to be refined.
+    allocate(IedgeHang(rtriaSource%NMT))
+    IedgeHang(:) = 0
+    do iel = 1,size(Ielements)
+      do ive=1,ubound(p_IedgesAtElementSrc,1)
+        if (p_IedgesAtElementSrc(ive,Ielements(iel)) .ne. 0) then
+          imt = p_IedgesAtElementSrc(ive,Ielements(iel)) - rtriaSource%NVT
+
+          ! Increase IedgeHang. Inner vertices get a 2 (as they are touched twice
+          ! or when they have already a hanging vertex), 
+          ! edges with hanging nodes get a 1.
+          IedgeHang(imt) = IedgeHang(imt) + 1
+          if (p_IneighboursAtElementSrc(ive,Ielements(iel)) .le. 0) then
+            ! For boundary edges on refined elements, we manually increase
+            ! IedgeHang to 2 as these don't produce hanging nodes!
+            IedgeHang(imt) = 2
+          end if
+          
+          if (p_InodalPropertySrc(imt+rtriaSource%NVT) .lt. 0) then
+            ! Mark edges with already hanging vertices with a 3;
+            ! these edges must not produce new vertices.
+            IedgeHang(imt) = 3
+          end if
+        end if
+      end do
+    end do
+    
+    ! We generate a 2-level-ordering like refinement. In our case that
+    ! means:
+    ! - Vertex numbers in the old (coarse) mesh get vertex numbers
+    !   in the refined mesh
+    ! - Refined edges procude new vertices which are attached to the
+    !   coarse grid vertices
+    ! - Refined elements produce new vertices which are attached to !
+    !   this vertex set.
+    ! - Edges that have already hanging vertices don't produce new ones.
+    !
+    ! In a first step, set up an array that assigns each refined
+    ! edge a 'local' number -- so an edge will be the i'th refined edge.
+    ! Not refined edges are dummy values in this array and not used later on.
+    allocate(IedgeLocalId(rtriaSource%NMT))
+    
+    if (IedgeHang(1) .ne. 0) then
+      IedgeLocalId(1) = 1
+    else
+      IedgeLocalId(1) = 0
+    end if
+    
+    do imt = 2,rtriaSource%NMT
+      if ((IedgeHang(imt) .ne. 0) .and. (IedgeHang(imt) .ne. 3)) then
+        IedgeLocalId(imt) = IedgeLocalId(imt-1) + 1
+      else
+        IedgeLocalId(imt) = IedgeLocalId(imt-1)
+      end if
+    end do
+    
+    ! In the same way, assign each element a local id.
+    allocate(IelementLocalId(rtriaSource%NEL))
+    IelementLocalId(1) = IelementRef(1)
+    
+    do iel = 2,rtriaSource%NEL
+      IelementLocalId(iel) = IelementLocalId(iel-1) + IelementRef(iel)
+    end do
+
+    ! Count the number elements we have now.
+    ! Every refined element creates 3 new -- additional to itself.
+    nelsum = size(Ielements)
+    nelnew = nelsum * 3
+    
+    ! Count the number of vertices. Every refined element gives one vertex,
+    ! every refined edge gets one vertex.
+    nmtsum = IedgeLocalId(rtriaSource%NMT)
+    nvtnew = nmtsum + nelsum
+    
+    ! Generate a list of all edges / elements (sorted) to be refined.
+    allocate(Iedges(nmtsum))
+    imtdest = 0
+    do imt = 1,rtriaSource%NMT
+      if ((IedgeHang(imt) .ne. 0)  .and. (IedgeHang(imt) .ne. 3)) then
+        imtdest = imtdest + 1
+        Iedges(imtdest) = imt
+      end if
+    end do
+
+    allocate(IelementsSorted(nelsum))
+    ieldest = 0
+    do iel = 1,rtriaSource%NEL
+      if (IelementRef(iel) .ne. 0) then
+        ieldest = ieldest + 1
+        IelementsSorted(ieldest) = iel
+      end if
+    end do
+    
+    ! Set up basic information
+    rtriaDest%ndim = rtriaSource%ndim
+    rtriaDest%NMT = 0
+    rtriaDest%NNVE = rtriaSource%NNVE
+    rtriaDest%NNEE = rtriaSource%NNEE
+    rtriaDest%NBCT = rtriaSource%NBCT
+    rtriaDest%NblindBCT = rtriaSource%NblindBCT
+    rtriaDest%NEL = rtriaSource%NEL + nelnew
+    rtriaDest%NVT = rtriaSource%NVT + nvtnew
+    
+    ! Vertex numbering:
+    ! 1..rtriaCoarse%NVT : old vertices
+    ! rtriaCoarse%NVT+1 .. rtriaCoarse%NVT + nvtnew : 
+    !                      new vertices from edges
+    ! rtriaCoarse%NVT+nvtnew+1 .. rtriaCoarse%NVT+nvtnew+nelnew :
+    !                      new vertices from elements
+    !    
+    ! To understand the numbering, keep the following pictures in mind:
+    !
+    ! Coarse mesh:
+    !
+    !   4------21--------7-------17-------3
+    !   |                |                |
+    !   |                |                |
+    !   |                |                |
+    !  20       4       18        3       19
+    !   |                |                |
+    !   |                |                |
+    !   |                |                |
+    !   8------12--------9-------15-------6
+    !   |                |                |
+    !   |                |                |
+    !   |                |                |
+    !  13       1       11        2       14
+    !   |                |                |
+    !   |                |                |
+    !   |                |                |
+    !   1------10--------5-------16-------2    
+    !
+    ! Mesh with cell 1+4 refined. Edges / element midpoints are renumbered to a 
+    ! consecutive order: 10,11,12,13,18,... -> E1,E2,... are the vertices 
+    ! that stem from edges, 1,4 -> M1,M2 the vertices stemming from element 
+    ! midpoints.
+    !
+    !   4------E6--------7----------------3
+    !   |       |        |                |
+    !   |   4   |   10   |                |
+    !   |       |        |                |
+    !  E7------M2-------E5        3       | 
+    !   |       |        |                |
+    !   |   8   |   9    |                |
+    !   |       |        |                |
+    !   8------E3--------9----------------6
+    !   |       |        |                |
+    !   |   7   |   6    |                |
+    !   |       |        |                |
+    !  E4------M1-------E2        2       | 
+    !   |       |        |                |
+    !   |   1   |   5    |                |
+    !   |       |        |                |
+    !   1------E1--------5----------------2
+    !
+    ! Mesh with cell 1+4 refined. Fine grid vertices renumbered.
+    !
+    !   4------15--------7----------------3
+    !   |       |        |                |
+    !   |   4   |   10   |                |
+    !   |       |        |                |
+    !  16------18-------14        3       | 
+    !   |       |        |                |
+    !   |   8   |   9    |                |
+    !   |       |        |                |
+    !   8------12--------9----------------6
+    !   |       |        |                |
+    !   |   7   |   6    |                |
+    !   |       |        |                |
+    !  13------17-------11        2       | 
+    !   |       |        |                |
+    !   |   1   |   5    |                |
+    !   |       |        |                |
+    !   1------10--------5----------------2
+    !
+    ! Allocate memory for IverticesAtElement.
+    ! 2d array of size(NVE, NEL)
+    Isize = (/rtriaDest%NNVE,INT(rtriaDest%NEL,I32)/)
+    call storage_new2D ('tria_hangingNodeRefinement', 'KVERT', Isize, ST_INT, &
+        rtriaDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+
+    ! Get the pointer to the IverticesAtElement array
+    call storage_getbase_int2D(&
+        rtriaDest%h_IverticesAtElement,p_IverticesAtElementDest)
+    call storage_getbase_int2D(&
+        rtriaSource%h_IverticesAtElement,p_IverticesAtElementSrc)
+
+    ! Create fine grid elements. Loop through the elements to be refined.
+    do iel = 1,rtriaSource%NEL
+    
+      ! Is that element one to be refined?
+      if (IelementRef(iel) .eq. 0) then
+      
+        ! Transfer 'Coarse grid' vertices
+        do i=1,UBOUND(p_IverticesAtElementSrc,1)
+          p_IverticesAtElementDest(i,iel) = p_IverticesAtElementSrc(i,iel)
+        end do
+      
+      else
+      
+        ! This is a fine grid element...
+      
+        ! Determine number of subelements.
+        iel1 = rtriaSource%NEL+3*(IelementLocalId(iel)-1)+1
+        iel2 = iel1+1
+        iel3 = iel1+2
+        
+        ! In nquads we count the number of the quad +NVT+NMT we process.
+        ! That's the number of the midpoint of that element!
+        nquads = rtriaSource%NVT + nmtsum + IelementLocalId(iel)
+        
+        ! Get the vertex numbers that stem from the four edges of the coarse grid element.
+        ! If this element has already a hanging vertex on an edge,
+        ! the vertex number is taken from the coarse grid.
+
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)) .lt. 0) then
+          iedge1 = -p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel))
+        else        
+          iedge1 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (1,iel)-rtriaSource%NVT)
+        end if
+        
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)) .lt. 0) then
+          iedge2 = -p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel))
+        else        
+          iedge2 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (2,iel)-rtriaSource%NVT)
+        end if
+        
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)) .lt. 0) then
+          iedge3 = -p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel))
+        else        
+          iedge3 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (3,iel)-rtriaSource%NVT)
+        end if
+        
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)) .lt. 0) then
+          iedge4 = -p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel))
+        else        
+          iedge4 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (4,iel)-rtriaSource%NVT)
+        end if
+        
+        
+        ! To convert edges vertex numbers, we have to convert:
+        !  old edge number 
+        !  -> local id of the refined edge
+        !  -> new vertex number (=nvt + local id of the refined edge)
+        
+        ! Step 1: Initialise IverticesOnElement for element IEL
+        p_IverticesAtElementDest(1,iel) = p_IverticesAtElementSrc (1,iel)
+        p_IverticesAtElementDest(2,iel) = iedge1
+        p_IverticesAtElementDest(3,iel) = nquads
+        p_IverticesAtElementDest(4,iel) = iedge4
+        
+        ! Step 2: Initialise IverticesOnElement for element IEL1
+        p_IverticesAtElementDest(1,iel1) = p_IverticesAtElementSrc (2,iel)
+        p_IverticesAtElementDest(2,iel1) = iedge2
+        p_IverticesAtElementDest(3,iel1) = nquads
+        p_IverticesAtElementDest(4,iel1) = iedge1
+      
+        ! Step 3: Initialise IverticesOnElement for element IEL2
+        p_IverticesAtElementDest(1,iel2) = p_IverticesAtElementSrc (3,iel)
+        p_IverticesAtElementDest(2,iel2) = iedge3
+        p_IverticesAtElementDest(3,iel2) = nquads
+        p_IverticesAtElementDest(4,iel2) = iedge2
+
+        ! Step 4: Initialise IverticesOnElement for element IEL3
+        p_IverticesAtElementDest(1,iel3) = p_IverticesAtElementSrc (4,iel)
+        p_IverticesAtElementDest(2,iel3) = iedge4
+        p_IverticesAtElementDest(3,iel3) = nquads
+        p_IverticesAtElementDest(4,iel3) = iedge3
+        
+      end if
+    end do
+        
+    ! Create the coordinate array.
+    Isize = (/rtriaSource%ndim,INT(rtriaDest%NVT,I32)/)
+    call storage_new2D ('tria_generateSubdomain', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriaDest%h_DvertexCoords, ST_NEWBLOCK_ZERO)
+        
+    call storage_getbase_double2D(&
+        rtriaSource%h_DvertexCoords,p_DvertexCoordsSrc)
+    call storage_getbase_double2D(&
+        rtriaDest%h_DvertexCoords,p_DvertexCoordsDest)
+    
+    ! 'Coarse grid' vertices
+    do ivt = 1,rtriaSource%NVT
+      do i=1,UBOUND(p_DvertexCoordsDest,1)
+        p_DvertexCoordsDest(i,ivt) = p_DvertexCoordsSrc(i,ivt)
+      end do
+    end do
+    
+    ! New vertices by edges
+    do imt = 1,nmtsum
+      do i=1,UBOUND(p_DvertexCoordsDest,1)
+        ivt1 = p_IverticesAtEdge(1,Iedges(imt))
+        ivt2 = p_IverticesAtEdge(2,Iedges(imt))
+        p_DvertexCoordsDest(i,rtriaSource%NVT+imt) = &
+            0.5_DP * (p_DvertexCoordsSrc(i,ivt1) + p_DvertexCoordsSrc(i,ivt2))
+      end do
+    end do
+    
+    ! New vertices by elements
+    elementloop: do iel = 1,nelsum
+    
+      p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) = 0.0_DP
+      
+      do i=1,UBOUND(p_IverticesAtElementSrc,1)
+        ivt = p_IverticesAtElementSrc(i,IelementsSorted(iel))
+        if (ivt .ne. 0) then
+          p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) = &
+              p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) + &
+              p_DvertexCoordsSrc(:,ivt)
+        else
+          ! Triangle in a quad mesh e.g.
+          ! Divide to get the mean.
+          p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) = &
+            p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) / real(i,dp)
+          cycle elementloop
+        end if
+      end do
+
+      ! Divide to get the mean. Note that i is nve+1 here, so subtract 1...
+      p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) = &
+        p_DvertexCoordsDest(:,rtriaSource%NVT+nmtsum+iel) / real(i-1,dp)
+      
+    end do elementloop
+    
+    ! Set up the nodal property array.
+    ! The nodal property of old vertices can be copied, that of new
+    ! vertices has to be set up manually
+    call storage_new ('tria_read_tri2D', 'KNPR', &
+        INT(rtriaDest%NVT,I32), ST_INT, &
+        rtriaDest%h_InodalProperty, ST_NEWBLOCK_ZERO)
+
+    call storage_getbase_int(&
+        rtriaDest%h_InodalProperty,p_InodalPropertyDst)
+    
+    call lalg_copyVectorInt(p_InodalPropertySrc,p_InodalPropertyDst,&
+        rtriaSource%NVT)
+    
+    ! Old edges -> New vertices
+    do imt = 1,nmtsum
+      p_InodalPropertyDst(rtriaSource%NVT+imt) = &
+        p_InodalPropertySrc(rtriaSource%NVT+Iedges(imt))
+    end do
+    
+    ! Old elements -> new vertices.
+    ! they are in the domain, so they receive nodal property 0 -- what they 
+    ! already have by initialisation.
+    !
+    ! Generate basic information about boundary vertices.
+    call tria_genRawBoundary2D (rtriaDest)
+    
+    ! Now start to generate a standard mesh.
+    call tria_initStandardMeshFromRaw(rtriaDest)!,rboundary)
+    
+    ! But that's not enough. The KNPR array as well as the IneighboursAtElement
+    ! array are wrong up to now.
+    !
+    ! At first, we correct KNPR. It may be recalculated, so retrieve
+    ! the pointer again.
+    call storage_getbase_int(&
+        rtriaDest%h_InodalProperty,p_InodalPropertyDst)
+
+    call storage_getbase_int(&
+      rtriaDest%h_IelementsAtVertex,p_IelementsAtVertex)
+    call storage_getbase_int(&
+      rtriaDest%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+    call storage_getbase_int2d(&
+      rtriaDest%h_IverticesAtElement,p_IverticesAtElementDest)
+    call storage_getbase_int2d(&
+      rtriaDest%h_IedgesAtElement,p_IedgesAtElementDest)
+
+    ! For the hanging nodes, initialise KNPR appropriately.
+    ! The hanging nodes can be identified by a "2" in the IedgeHang array.
+    !
+    ! We have to search the elements in the source mesh as we don't
+    ! know the edge numbers in the target mesh.
+    do iel = 1,rtriaSource%NEL
+    
+      ! Search the not refined elements for hanging vertices
+      if (IelementRef(iel) .eq. 0) then
+    
+        ! Search the edges for hanging vertices
+        do ive2 = 1,ubound(p_IedgesAtElementSrc,1)
+         
+          imt = p_IedgesAtElementSrc(ive2,iel)-rtriaSource%NVT
+          
+          if (IedgeHang(imt) .eq. 1) then
+          
+            ! Here's a hanging vertex. Get the vertex number.
+            ivt = rtriaSource%NVT + IedgeLocalId(imt)
+            
+            ! Get the two adjacent vertices on the parent edge.
+            ivt1 = p_IverticesAtElementSrc(ive2,iel)
+            ivt2 = p_IverticesAtElementSrc(MOD(ive2,nnve)+1,iel)
+            
+            ! Get the edge number in the destination mesh. As element numbers
+            ! of not refined elements coincide in both mesges, we can simply
+            ! calculate the new edge number from the position in the element.
+            imt2 = p_IedgesAtElementDest (ive2,iel)
+            
+            ! Put it to the nodal property array.
+            p_InodalPropertyDst(imt2) = -ivt
+            
+            ! Mark the vertex as hanging vertex
+            p_InodalPropertyDst(ivt) = -(imt2-rtriaDest%NVT)
+            
+            ! Find the two subedges of the big edge and mark them.
+            ! Note that there are exactly 2 elements adjacent to that
+            ! vertex by construction!
+            iel1 = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt))
+            iel2 = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt)+1)
+            
+            do ive = 1,ubound(p_IverticesAtElementDest,1)
+              if ((p_IverticesAtElementDest(ive,iel1) .eq. ivt) .and. &
+                  (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel1) .eq. ivt1)) then
+                ! The edge 'after' the vertex is the neighbour.
+                imt2 = p_IedgesAtElementDest(ive,iel1)
+                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                exit
+              end if
+              
+              if ((p_IverticesAtElementDest(ive,iel1) .eq. ivt2) .and. &
+                  (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel1) .eq. ivt)) then
+                ! The edge 'before' the vertex is the neighbour.
+                imt2 = p_IedgesAtElementDest(ive,iel1)
+                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                exit
+              end if
+            end do
+            
+            do ive = 1,ubound(p_IverticesAtElementDest,1)
+              if ((p_IverticesAtElementDest(ive,iel2) .eq. ivt) .and. &
+                  (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel2) .eq. ivt1)) then
+                ! The edge 'after' the vertex is the neighbour.
+                imt2 = p_IedgesAtElementDest(ive,iel2)
+                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                exit
+              end if
+              
+              if ((p_IverticesAtElementDest(ive,iel2) .eq. ivt2) .and. &
+                  (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel2) .eq. ivt)) then
+                ! The edge 'before' the vertex is the neighbour.
+                imt2 = p_IedgesAtElementDest(ive,iel2)
+                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                exit
+              end if
+            end do
+            
+          end if      
+        end do
+        
+      end if
+    
+    end do
+    
+    ! The last thing: We have to correct the neighbourhood of the elements
+    ! at hanging vertices. Up to now, the elements sharing an edge with
+    ! a hanging vertex are not connected to a neighbourhood -- this we have 
+    ! to change.
+    call storage_getbase_int2d(&
+      rtriaDest%h_IneighboursAtElement,p_IneighboursAtElementDest)
+      
+    call storage_getbase_int2d(rtriaDest%h_IelementsAtEdge,p_IelementsAtEdgeDest)
+      
+    ! Find the hanging vertices
+    do ivt = 1,rtriaDest%NVT
+      if (p_InodalPropertyDst(ivt) .lt. 0) then
+        ! Get the coarse grid edge the vertex is the midpoint from
+        imt = -p_InodalPropertyDst(ivt)
+        
+        ! Get the coarse grid element. The tria_initStandardMeshFromRaw
+        ! recognised only this one on the edge, so by taking the first element
+        ! adjacent to the edge, we have it.
+        iel = p_IelementsAtEdgeDest(1,imt)
+        
+        ! Find the two subelements attached to the vertex. We can find
+        ! them as they are the only elements adjacent to the vertex.
+        iel1 = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt))
+        iel2 = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt)+1)
+        
+        ! Save the first subelement as neighbour of the coarse grid element
+        do ive = 1,nnve
+          if (p_IedgesAtElementDest(ive,iel)-rtriaDest%NVT .eq. imt) then
+            p_IneighboursAtElementDest(ive,iel) = iel1
+            exit
+          end if
+        end do
+        
+        ! Save the coarse grid element as neighbour of the fine grid elements.
+        ! Note that we have to search for the correct edge.
+        ! For that purpose, search for the vertices. In ivt1/ivt2 we save the two
+        ! endpoints of the edge in the coarse grid; these are adjacent to
+        ! the hanging vertex on the fine grid. Beginning and end of the edge
+        ! can be accessed via the ive calculated above.
+        ivt1 = p_IverticesAtElementDest(ive,iel)
+        ivt2 = p_IverticesAtElementDest(mod(ive,nnve)+1,iel)
+        
+        do ive = 1,nnve
+
+          if (((p_IverticesAtElementDest(ive,iel1) .eq. ivt) .and. &
+               (p_IverticesAtElementDest(mod(ive,nnve)+1,iel1) .eq. ivt1)) .or. &
+              ((p_IverticesAtElementDest(ive,iel1) .eq. ivt2) .and. &
+               (p_IverticesAtElementDest(mod(ive,nnve)+1,iel1) .eq. ivt))) then
+            p_IneighboursAtElementDest(ive,iel1) = iel
+          end if
+
+          if (((p_IverticesAtElementDest(ive,iel2) .eq. ivt) .and. &
+               (p_IverticesAtElementDest(mod(ive,nnve)+1,iel2) .eq. ivt1)) .or. &
+              ((p_IverticesAtElementDest(ive,iel2) .eq. ivt2) .and. &
+               (p_IverticesAtElementDest(mod(ive,nnve)+1,iel2) .eq. ivt))) then
+            p_IneighboursAtElementDest(ive,iel2) = iel
+          end if
+        end do
+        
+      end if
+    end do
+
   end subroutine
 
 END MODULE
