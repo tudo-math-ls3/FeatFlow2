@@ -191,6 +191,11 @@ MODULE afcstabilisation
     !   imass = 1 : consider consistent mass matrix
     INTEGER :: imass                                   = 0
 
+    ! Is set to true, if the stabilisation structure is active,
+    ! i.e. when all internal data structures should be assembled.
+    ! If it is to false, then no internal data structres are assembled.
+    LOGICAL :: bisActive                               = .TRUE.
+
     ! Number of equations of the sparsity pattern
     INTEGER(PREC_VECIDX) :: NEQ                        = 0
 
