@@ -14077,7 +14077,7 @@ CONTAINS
 !<subroutine>
 
   subroutine tria_getSubmeshNeighbourhood (rtriangulation,IsubmeshElements,&
-      cneighbourhood,p_IsubmeshNeighbourhood)
+      cneighbourhood,p_IsubmeshNeighbourhood,p_IneighbourhoodType)
 
 !<description>
   ! Creates a list of all elements which are directly adjacent to a set
@@ -14105,6 +14105,22 @@ CONTAINS
   ! A list of all elements in a cell layer around the given submesh.
   ! This is a pointer and will be allocated in this routine.
   integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IsubmeshNeighbourhood
+  
+  ! OPTIONAL: A list of neighbourhood specifiers. For every element
+  ! in p_IsubmeshNeighbourhood, the corresponding value in this
+  ! array specifies the type of neighbourhood of that element in relation
+  ! to the subset. A value i in this array has the following meaning:
+  ! i=1..NVT: The element is adjacent to the subset by vertex i.
+  ! i=NVT+1..NVT+NMT: The element is adjacent to the subset by edge i-NVT.
+  ! i=NVT+NMT+1..NVT+NMT+NAT: The element is adjacent to the subset by
+  !                           face i-NVT-NMT.
+  ! Elements may be adjacent by different types of neighbourhoods; the
+  ! higher the connectivity of a neighbour element, the higher its
+  ! priority and thus the higher the value i. That means: If an element
+  ! is a face neighbour, i will be the face. If it's not a face neighbour
+  ! but an edge neighbout, i will be the edge number. If it's neighter
+  ! face nor edge but only vertex neighbour, i will be the vertex number.
+  integer(I32), dimension(:), pointer, optional :: p_IneighbourhoodType
 !</output>
 
     ! local variables
@@ -14114,6 +14130,7 @@ CONTAINS
     integer, dimension(:), allocatable :: IelementFlag
     integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
     integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
     
@@ -14122,10 +14139,10 @@ CONTAINS
     allocate(IelementFlag(rtriangulation%NEL))
     call lalg_clearVectorInt(IelementFlag,rtriangulation%NEL)
     
-    ! Mark all elements in the submesh with a 1. This prevents these elements
+    ! Mark all elements in the submesh with a -1. This prevents these elements
     ! from being added to the element list below.
     do iel=1,size(IsubmeshElements)
-      IelementFlag(IsubmeshElements(iel)) = 1
+      IelementFlag(IsubmeshElements(iel)) = -1
     end do
     
     ! Now loop through all elements. This is a dimension dependent loop,
@@ -14133,14 +14150,15 @@ CONTAINS
     select case (rtriangulation%ndim)
     case (NDIM2D)
     
-      ! Find all elements adjacent to the edges and mark them with a 2 --
+      ! Find all elements adjacent to the edges and mark them with a tag --
       ! as long as they are not already marked.
       call storage_getbase_int2d(rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
       call storage_getbase_int2d(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+      call storage_getbase_int2d(rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
       call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
       call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
       
-      ! Find edge-adjacent elements?
+      ! Find edge-adjacent elements elements at first
       if (iand(cneighbourhood,TRI_NEIGH_VERTEXNEIGHBOURS) .ne. 0) then
       
         do iel=1,size(IsubmeshElements)
@@ -14148,7 +14166,8 @@ CONTAINS
           do ive = 1,ubound(p_IneighboursAtElement,1)
             if (p_IneighboursAtElement(ive,IsubmeshElements(iel)) .ne. 0) then
               if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
-                IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = 2
+                IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = &
+                  p_IedgesAtElement(ive,IsubmeshElements(iel)) + rtriangulation%NVT
               end if
             end if
           end do
@@ -14156,7 +14175,7 @@ CONTAINS
         
       end if
       
-      ! Find vertex-adjacent elements?
+      ! Additionally find vertex-adjacent elements
       if (iand(cneighbourhood,TRI_NEIGH_VERTEXNEIGHBOURS) .ne. 0) then
       
         do iel=1,size(IsubmeshElements)
@@ -14165,7 +14184,7 @@ CONTAINS
             ivt = p_IverticesAtElement(ive,IsubmeshElements(iel))
             do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
               if (IelementFlag(p_IelementsAtVertex(ielidx)) .eq. 0) then
-                IelementFlag(p_IelementsAtVertex(ielidx)) = 2
+                IelementFlag(p_IelementsAtVertex(ielidx)) = ivt
               end if
             end do
           end do
@@ -14173,22 +14192,35 @@ CONTAINS
         
       end if
       
-      ! Now count how many elements are marked with a 2, allocate memory for 
+      ! Now count how many elements are marked with a value > 0, allocate memory for 
       ! p_IsubmeshNeighbourhood and collect the elements.
       nel = 0
       do iel = 1,rtriangulation%NEL
-        if (IelementFlag(iel) .eq. 2) nel = nel+1
+        if (IelementFlag(iel) .gt. 0) nel = nel+1
       end do
       
       allocate (p_IsubmeshNeighbourhood(nel))
 
-      nel = 0
-      do iel = 1,rtriangulation%NEL
-        if (IelementFlag(iel) .eq. 2) then
-          nel = nel+1
-          p_IsubmeshNeighbourhood(nel) = iel
-        end if
-      end do
+      if (.not. present(p_IneighbourhoodType)) then
+        nel = 0
+        do iel = 1,rtriangulation%NEL
+          if (IelementFlag(iel) .gt. 0) then
+            nel = nel+1
+            p_IsubmeshNeighbourhood(nel) = iel
+          end if
+        end do
+      else
+        ! Also collect the neighbourhood type.
+        allocate (p_IneighbourhoodType(nel))
+        nel = 0
+        do iel = 1,rtriangulation%NEL
+          if (IelementFlag(iel) .gt. 0) then
+            nel = nel+1
+            p_IsubmeshNeighbourhood(nel) = iel
+            p_IneighbourhoodType(nel) = IelementFlag(iel)
+          end if
+        end do
+      end if
       
       ! Deallocate memory, that's it.
       deallocate(IelementFlag)
