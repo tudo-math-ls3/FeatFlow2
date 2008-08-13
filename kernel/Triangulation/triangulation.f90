@@ -14167,7 +14167,7 @@ CONTAINS
             if (p_IneighboursAtElement(ive,IsubmeshElements(iel)) .ne. 0) then
               if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
                 IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = &
-                  p_IedgesAtElement(ive,IsubmeshElements(iel)) + rtriangulation%NVT
+                  p_IedgesAtElement(ive,IsubmeshElements(iel)) 
               end if
             end if
           end do
