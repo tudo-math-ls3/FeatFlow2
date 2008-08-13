@@ -95,6 +95,9 @@
 !# 22.) tria_initMacroNodalProperty
 !#      -> Attaches a macro nodal property array to an extended raw mesh.
 !#
+!# 23.) tria_getSubmeshNeighbourhood
+!#      -> Calculate a list of cells in the neighbourhood of a cell set
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -208,6 +211,9 @@
 !#
 !# 37.) tria_initExtendedRawMesh
 !#      -> Create an extended raw mesh from a pure raw mesh.
+!#
+!# 38.) tria_genRefTags2lv
+!#      -> Calculate refinement tags according to the uniform 2-level refinement
 !#
 !#  FAQ - Some explainations
 !# --------------------------
