@@ -646,6 +646,24 @@ MODULE triangulation
   
 !</constantblock>
   
+!<constantblock description="Neighbourhood specifiers for tria_getSubmeshNeighbourhood.">
+  
+!</constantblock>
+  
+  ! All elements adjacent by vertices.
+  integer(i32), parameter :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2**0
+  
+  ! All elements adjacent by edges (only 2D and 3D).
+  integer(i32), parameter :: TRI_NEIGH_EDGENEIGHBOURS           = 2**1
+  
+  ! All elements adjacent by faces (only 3D).
+  integer(i32), parameter :: TRI_NEIGH_FACENEIGHBOURS           = 2**2
+  
+  ! All adjacent elements
+  integer(i32), parameter :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &
+                                             TRI_NEIGH_EDGENEIGHBOURS + &
+                                             TRI_NEIGH_FACENEIGHBOURS
+  
 !</constants>
 
 
@@ -14058,8 +14076,8 @@ CONTAINS
 
 !<subroutine>
 
-  subroutine tria_getSubmeshNeighbourhood (&
-      rtriangulation,IsubmeshElements,p_IsubmeshNeighbourhood)
+  subroutine tria_getSubmeshNeighbourhood (rtriangulation,IsubmeshElements,&
+      cneighbourhood,p_IsubmeshNeighbourhood)
 
 !<description>
   ! Creates a list of all elements which are directly adjacent to a set
@@ -14074,6 +14092,13 @@ CONTAINS
   ! A list of all elements from rtriangulation. The neighbourhood of
   ! this cell set is to be determined.
   integer(PREC_ELEMENTIDX), dimension(:), intent(in) :: IsubmeshElements
+  
+  ! A combination of TRIA_NEIGH_xxxx flags that specify the neighbourhood
+  ! to be computed. If TRI_NEIGH_VERTEXNEIGHBOURS is set, all vertex neighbours
+  ! of IsubmeshElements are found, TRI_NEIGH_EDGENEIGHBOURS will find all
+  ! edge adjacent elements and TRI_NEIGH_FACENEIGHBOURS all face
+  ! adjacent elements.
+  integer(I32), intent(IN) :: cneighbourhood
 !</input>
 
 !<output>
@@ -14115,24 +14140,38 @@ CONTAINS
       call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
       call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
       
-      do iel=1,size(IsubmeshElements)
-        ! Loop through all edges and all vertices on this element
-        do ive = 1,ubound(p_IneighboursAtElement,1)
-          if (p_IneighboursAtElement(ive,IsubmeshElements(iel)) .ne. 0) then
-            if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
-              IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = 2
-            end if
-          end if
-
-          ivt = p_IverticesAtElement(ive,IsubmeshElements(iel))
-          do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
-            if (IelementFlag(p_IelementsAtVertex(ielidx)) .eq. 0) then
-              IelementFlag(p_IelementsAtVertex(ielidx)) = 2
+      ! Find edge-adjacent elements?
+      if (iand(cneighbourhood,TRI_NEIGH_VERTEXNEIGHBOURS) .ne. 0) then
+      
+        do iel=1,size(IsubmeshElements)
+          ! Loop through all edges on this element
+          do ive = 1,ubound(p_IneighboursAtElement,1)
+            if (p_IneighboursAtElement(ive,IsubmeshElements(iel)) .ne. 0) then
+              if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
+                IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = 2
+              end if
             end if
           end do
         end do
-
-      end do
+        
+      end if
+      
+      ! Find vertex-adjacent elements?
+      if (iand(cneighbourhood,TRI_NEIGH_VERTEXNEIGHBOURS) .ne. 0) then
+      
+        do iel=1,size(IsubmeshElements)
+          ! Loop through all all vertices on this element
+          do ive = 1,ubound(p_IneighboursAtElement,1)
+            ivt = p_IverticesAtElement(ive,IsubmeshElements(iel))
+            do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
+              if (IelementFlag(p_IelementsAtVertex(ielidx)) .eq. 0) then
+                IelementFlag(p_IelementsAtVertex(ielidx)) = 2
+              end if
+            end do
+          end do
+        end do
+        
+      end if
       
       ! Now count how many elements are marked with a 2, allocate memory for 
       ! p_IsubmeshNeighbourhood and collect the elements.
