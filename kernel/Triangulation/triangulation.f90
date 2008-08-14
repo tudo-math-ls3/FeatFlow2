@@ -2666,6 +2666,7 @@ CONTAINS
     rtriangulation%NNVA = 0
     rtriangulation%NNEE = 0
     rtriangulation%NMT = 0
+    rtriangulation%NAT = 0
     rtriangulation%NEL = 0
     rtriangulation%NBCT = 0
     rtriangulation%NblindBCT = 0
@@ -2677,6 +2678,8 @@ CONTAINS
     rtriangulation%nverticesInAllElements = 0
     rtriangulation%nadditionalVertices = 0
     rtriangulation%InelOfType(:) = 0
+    rtriangulation%NNelAtVertex = 0
+    rtriangulation%NNelAtEdge = 0
 
     ! That's it...
 
