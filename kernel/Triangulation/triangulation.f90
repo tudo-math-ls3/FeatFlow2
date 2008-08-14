@@ -98,6 +98,14 @@
 !# 23.) tria_getSubmeshNeighbourhood
 !#      -> Calculate a list of cells in the neighbourhood of a cell set
 !#
+!# 24.) tria_getElementsAtMacroEdge
+!#      -> Calculate a list of all elements adjacent to a macro edge
+!#         inside of a macro cell.
+!#
+!# 25.) tria_getElementsAtMacroVertex
+!#      -> Calculate a list of all elements adjacent to a vertex
+!#         inside of a macro cell.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -785,7 +793,7 @@ MODULE triangulation
     ! the vertex in mathematical positive sense.
     INTEGER             :: NVBD = 0
     
-    ! the number of faces on the boundary
+    ! The number of faces on the boundary
     INTEGER             :: NABD = 0
     
     ! Number of edges on the boundary; coincides with NVBD
@@ -806,6 +814,13 @@ MODULE triangulation
     ! Maximum number of vertices per face. 3 for 3D tetraheral meshes,
     ! 4 for 3D hexahedral meshes. Unused in 2D.
     INTEGER             :: NNVA = 0
+    
+    ! Maximum number of elements adjacent to a vertex.
+    INTEGER             :: NNelAtVertex = 0
+    
+    ! Maximum number of elements adjacent to an edge. 
+    ! =0 in 1D, =2 in 2D, arbitrary in 3D.
+    INTEGER             :: NNelAtEdge = 0
     
     ! Number of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
@@ -3916,10 +3931,12 @@ CONTAINS
   SUBROUTINE tria_genElementsAtVertex2D(rtriangulation)
 
 !<description>
-  ! This routine generates the array IelementsAtVertex.
+  ! This routine generates NNelAtVertex and the array IelementsAtVertex.
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement.
   ! If necessary, new memory is allocated.
+  !
+  ! This routine works for 1D and 2D meshes.
 !</description>
 
 !<inputoutput>
@@ -3987,8 +4004,14 @@ CONTAINS
     
     ! Set the first element in p_IverticesAtElement to 1. Then, sum up
     ! all the length information to get the index array.
+    ! Simultaneously calculate NNelAtVertex.
     p_IelementsAtVertexIdx(1) = 1
+    rtriangulation%NNelAtVertex = 0
+    
     DO ivt = 2,rtriangulation%nvt+1
+      rtriangulation%NNelAtVertex = &
+          MAX(rtriangulation%NNelAtVertex,p_IelementsAtVertexIdx(ivt))
+          
       p_IelementsAtVertexIdx(ivt) = &
           p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
     END DO
@@ -4352,7 +4375,7 @@ CONTAINS
 
 !<description>
   ! This routine generates information about the elements adjacent to each 
-  ! edge IelementsAtEdge (KMID). 
+  ! edge IelementsAtEdge (KMID) and NNelAtEdge. 
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IneighboursAtElement.
   ! NMT must be set up correctly.
@@ -4425,6 +4448,9 @@ CONTAINS
             ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
+    
+    ! We have at most 2 elements per edge.
+    rtriangulation%NNelAtEdge = 2
     
     CALL storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
     
@@ -8016,7 +8042,7 @@ CONTAINS
     SUBROUTINE tria_genElementsAtVertex3D(rtriangulation)    
     
 !<description>
-  ! This routine generates the array IelementsAtVertex.
+  ! This routine generates NnelAtElements and the array IelementsAtVertex.
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement.
   ! If necessary, new memory is allocated.
@@ -8058,7 +8084,7 @@ CONTAINS
     
     END IF
     
-   ! Get the index array.
+    ! Get the index array.
     CALL storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
         p_IelementsAtVertexIdx)
         
@@ -8093,13 +8119,19 @@ CONTAINS
     
     ! set the first index to 1
     p_IelementsAtVertexIdx(1) = 1
+    rtriangulation%NNelAtVertex = 0
     
-    ! in the next step we sum up the number of elements at two
+    ! In the next step we sum up the number of elements at two
     ! successive vertices to create the index array
     ! thus at the penultimate position of p_IelementsAtVertexIdx
-    ! we find the length of p_IelementsAtVertex
+    ! we find the length of p_IelementsAtVertex.
+    ! Simultaneously calculate NNelAtVertex.
     DO ivt = 2, rtriangulation%nvt+1
-        p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
+      rtriangulation%NNelAtVertex = &
+        MAX(rtriangulation%NNelAtVertex,p_IelementsAtVertexIdx(ivt))
+
+      p_IelementsAtVertexIdx(ivt) = &
+        p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
     END DO
     
     ! set the size
@@ -8931,7 +8963,7 @@ CONTAINS
   
 !<description>
   ! This routine generates information about the elements adjacent to each 
-  ! edge IelementsAtEdge (KMID). 
+  ! edge IelementsAtEdge (KMID) and NNelAtEdge. 
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IneighboursAtElement.
   ! NMT must be set up correctly.
@@ -9021,13 +9053,20 @@ CONTAINS
     
   ! set the first index to 1
   p_IelementsAtEdgeIdx3d(1) = 1
+  rtriangulation%NNelAtEdge = 0
     
-  ! in the next step we sum up the number of elements at two
+  ! In the next step we sum up the number of elements at two
   ! successive edges to create the index array,
   ! thus at the penultimate position of p_IelementsAtEdgeIdx3d
-  ! we find the length of p_IelementsAtEdge3d
+  ! we find the length of p_IelementsAtEdge3d.
+  !
+  ! Simultaneously calculate NNelAtEdge.
   DO iedge = 2, NMT+1
-      p_IelementsAtEdgeIdx3d(iedge) = p_IelementsAtEdgeIdx3d(iedge) + p_IelementsAtEdgeIdx3d(iedge-1)
+    rtriangulation%NNelAtEdge = &
+      MAX(rtriangulation%NNelAtEdge,p_IelementsAtEdgeIdx3d(iedge))
+      
+    p_IelementsAtEdgeIdx3d(iedge) = &
+      p_IelementsAtEdgeIdx3d(iedge) + p_IelementsAtEdgeIdx3d(iedge-1)
   END DO
     
   ! set the size
@@ -14158,6 +14197,9 @@ CONTAINS
       call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
       call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
       
+      ! nel counts the elements in the vincinity of our element list.
+      nel = 0
+      
       ! Find edge-adjacent elements elements at first
       if (iand(cneighbourhood,TRI_NEIGH_VERTEXNEIGHBOURS) .ne. 0) then
       
@@ -14168,6 +14210,7 @@ CONTAINS
               if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
                 IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = &
                   p_IedgesAtElement(ive,IsubmeshElements(iel)) 
+                nel = nel+1
               end if
             end if
           end do
@@ -14185,6 +14228,7 @@ CONTAINS
             do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
               if (IelementFlag(p_IelementsAtVertex(ielidx)) .eq. 0) then
                 IelementFlag(p_IelementsAtVertex(ielidx)) = ivt
+                nel = nel+1
               end if
             end do
           end do
@@ -14192,13 +14236,7 @@ CONTAINS
         
       end if
       
-      ! Now count how many elements are marked with a value > 0, allocate memory for 
-      ! p_IsubmeshNeighbourhood and collect the elements.
-      nel = 0
-      do iel = 1,rtriangulation%NEL
-        if (IelementFlag(iel) .gt. 0) nel = nel+1
-      end do
-      
+      ! Allocate memory for p_IsubmeshNeighbourhood and collect the elements.
       allocate (p_IsubmeshNeighbourhood(nel))
 
       if (.not. present(p_IneighbourhoodType)) then
@@ -14233,4 +14271,193 @@ CONTAINS
 
   end subroutine
 
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tria_getElementsAtMacroEdge (rtriangulation,rmacroMesh,&
+    ielcoarse,imtcoarse,p_Ineighbourhood)
+
+!<description>
+  ! Returns a list of all elements in the mesh rtriangulation that
+  ! stem from element ielcoarse in the macro mesh and are adjacent
+  ! to edge imtcoarse on the macro mesh.
+  ! Note: The macro nodal property array must be present in rtriangulation
+  ! to refer to the macro mesh!
+!</description>
+
+!<input>
+  ! The mesh where to extract information from.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! The mesh defining the macro cells. rtriangulation must have been derived
+  ! from this by refinement.
+  type(t_triangulation), intent(in) :: rmacroMesh
+  
+  ! Number of the element on the coarse mesh which should contain
+  ! all elements on the fine mesh adjacent to imtcoarse.
+  integer(PREC_ELEMENTIDX), intent(in) :: ielcoarse
+  
+  ! Edge number (1..rmacroMesh%NMT) on the coarse mesh where to search for
+  ! adjacent cells on the fine mesh.
+  integer(PREC_EDGEIDX), intent(in) :: imtcoarse
+!</input>
+
+!<output>
+  ! List of all elements adjacent to edge imtcoarse in element 
+  ! ielcoarse on the macro mesh.
+  ! This is a pointer and will be allocated in this routine.
+  integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_Ineighbourhood
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer(PREC_EDGEIDX) :: imt
+    integer(PREC_VERTEXIDX) :: ivt,ielidx,ivtidx,irel
+    integer(PREC_ELEMENTIDX) :: nel,iel
+    integer(I32), dimension(:), allocatable :: IelementTag
+    integer(I32), dimension(:), pointer :: p_ImacroNodalProperty
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IelementsAtEdge
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    
+    ! Primitive implementation. Mark all elements and collect them.
+    !
+    ! Allocate memory for element tags
+    allocate(IelementTag(rtriangulation%NEL))
+    call lalg_clearVectorint(IelementTag,rtriangulation%NEL)
+    
+    ! Get the macro nodal property array of the mesh
+    call storage_getbase_int(rtriangulation%h_ImacroNodalProperty,p_ImacroNodalProperty)
+    call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+    call storage_getbase_int2d(rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    
+    ! Now the dimension-dependent part...
+    select case (rtriangulation%ndim)
+    case (NDIM2D)
+    
+      ! NEL counts the number of found elements
+      nel = 0
+    
+      ! Loop through the edges, find those that coincide with imtcoarse
+      ! on the coarse mesh.
+      irel = rmacroMesh%NVT+rmacroMesh%NMT
+      
+      do imt = 1,rtriangulation%NMT
+      
+        if (p_ImacroNodalProperty(rtriangulation%NVT+imt) .eq. rmacroMesh%NVT+imtcoarse) then
+        
+          ! Process the elements adjacent to the vertices of the edge.
+          ! This will find all elements adjacent to the endpoints
+          ! of the edge which includes the element adjacent to the edge itself.
+          do ivtidx = 1,2
+            ivt = p_IverticesAtEdge(ivtidx,imt)
+            do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
+              if (p_ImacroNodalProperty(irel+ p_IelementsAtVertex(ielidx)) .eq. &
+                  irel+ielcoarse) then
+                if (IelementTag(p_IelementsAtVertex(ielidx)) .eq. 0) then
+                  IelementTag(p_IelementsAtVertex(ielidx)) = 1
+                  nel = nel + 1
+                end if
+              end if            
+            end do
+          end do
+        
+        end if
+      
+      end do
+      
+      ! Now collect the elements on that edge.
+      allocate(p_Ineighbourhood(nel))
+      nel = 0
+      do iel = 1,rtriangulation%NEL
+        if (IelementTag(iel) .ne. 0) then
+          nel = nel + 1
+          p_Ineighbourhood(nel) = iel
+        end if
+      end do
+      
+      deallocate (IelementTag)
+
+    case default
+      call output_line ("tria_getElementsAtMacroEdge: Dimension not implemented!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
+      call sys_halt()
+    end select
+
+  end subroutine
+  
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tria_getElementsAtMacroVertex (rtriangulation,&
+    ielcoarse,ivt,Ineighbourhood,nelements)
+
+!<description>
+  ! Returns a list of all elements in the mesh rtriangulation that
+  ! stem from element ielcoarse in the macro mesh and are adjacent
+  ! to vertex ivt on the fine mesh.
+  ! Note: The macro nodal property array must be present in rtriangulation
+  ! to refer to the macro mesh!
+!</description>
+
+!<input>
+  ! The mesh where to extract information from.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! Number of the element on the coarse mesh which should contain
+  ! all elements on the fine mesh adjacent to imtcoarse.
+  integer(PREC_ELEMENTIDX), intent(in) :: ielcoarse
+  
+  ! Vertex number (1..rtriangulation%NVT) on the fine mesh where to search for
+  ! adjacent cells on the fine mesh.
+  integer(PREC_EDGEIDX), intent(in) :: ivt
+!</input>
+
+!<output>
+  ! List of all elements adjacent to vertex ivtcoarse in element 
+  ! ielcoarse on the macro mesh.
+  ! The buffer must be large enough; a safe size is the maximum number
+  ! of elements adjacent to a vertex (NNelAtVertex).
+  integer(PREC_ELEMENTIDX), dimension(:), intent(out) :: Ineighbourhood
+  
+  ! Number of elements found and written to Ineighbourhood.
+  integer, intent(out) :: nelements
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer(I32) :: irel
+    integer(PREC_VERTEXIDX) :: ielidx
+    integer(I32), dimension(:), pointer :: p_ImacroNodalProperty
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
+    
+    ! Get the macro nodal property array of the mesh
+    call storage_getbase_int(rtriangulation%h_ImacroNodalProperty,p_ImacroNodalProperty)
+    call storage_getbase_int(rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+
+    ! NEL counts the number of found elements
+    nelements = 0
+    
+    irel = rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NAT
+    
+    ! Loop through all elements adjacent to ivt and collect them.
+    do ielidx = p_IelementsAtVertex(ivt),p_IelementsAtVertex(ivt+1)-1
+      if (p_ImacroNodalProperty(irel+p_IelementsAtVertex(ielidx)) .eq. &
+          irel+ielcoarse) then
+        nelements = nelements + 1
+        Ineighbourhood(nelements) = p_IelementsAtVertex(ielidx)
+      end if            
+    end do
+    
+  end subroutine
+  
 END MODULE
