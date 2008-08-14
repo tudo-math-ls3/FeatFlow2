@@ -788,21 +788,42 @@ CONTAINS
                                    DpointsRef,Djac,Ddetj)
       END IF
       
-      ! Evaluate the U- and P-element in all our cubature points
-      IF (bnonparU) THEN
-        CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
-                                BderU, DbasU, ncubp, DpointsReal,p_ItwistIndex(iel))
-      ELSE
-        CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
-                                BderU, DbasU, ncubp, DpointsRef,p_ItwistIndex(iel))
-      END IF
+      IF(ASSOCIATED(p_ItwistIndex)) THEN
+      
+        IF (bnonparU) THEN
+          CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsReal,p_ItwistIndex(iel))
+        ELSE
+          CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsRef,p_ItwistIndex(iel))
+        END IF
 
-      IF (bnonparP) THEN
-        CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
-                                BderP, DbasP, ncubp, DpointsReal,p_ItwistIndex(iel))
+        IF (bnonparP) THEN
+          CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsReal,p_ItwistIndex(iel))
+        ELSE
+          CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsRef,p_ItwistIndex(iel))
+        END IF
+        
       ELSE
-        CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
-                                BderP, DbasP, ncubp, DpointsRef,p_ItwistIndex(iel))
+      
+        IF (bnonparU) THEN
+          CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsReal)
+        ELSE
+          CALL elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsRef)
+        END IF
+
+        IF (bnonparP) THEN
+          CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsReal)
+        ELSE
+          CALL elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsRef)
+        END IF
+      
       END IF
       
       ! Loop over the cubature points on the current element
