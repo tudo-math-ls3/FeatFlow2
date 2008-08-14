@@ -14398,7 +14398,7 @@ CONTAINS
 
 !<subroutine>
 
-  subroutine tria_getElementsAtMacroVertex (rtriangulation,&
+  subroutine tria_getElementsAtMacroVertex (rtriangulation,rmacroMesh,&
     ielcoarse,ivt,Ineighbourhood,nelements)
 
 !<description>
@@ -14413,6 +14413,10 @@ CONTAINS
   ! The mesh where to extract information from.
   type(t_triangulation), intent(in) :: rtriangulation
   
+  ! The mesh defining the macro cells. rtriangulation must have been derived
+  ! from this by refinement.
+  type(t_triangulation), intent(in) :: rmacroMesh
+
   ! Number of the element on the coarse mesh which should contain
   ! all elements on the fine mesh adjacent to imtcoarse.
   integer(PREC_ELEMENTIDX), intent(in) :: ielcoarse
@@ -14436,7 +14440,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    integer(I32) :: irel
+    integer(I32) :: irel,irelcoarse
     integer(PREC_VERTEXIDX) :: ielidx
     integer(I32), dimension(:), pointer :: p_ImacroNodalProperty
     integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
@@ -14451,11 +14455,12 @@ CONTAINS
     nelements = 0
     
     irel = rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NAT
+    irelcoarse = rmacroMesh%NVT+rmacroMesh%NMT+rmacroMesh%NAT
     
     ! Loop through all elements adjacent to ivt and collect them.
-    do ielidx = p_IelementsAtVertex(ivt),p_IelementsAtVertex(ivt+1)-1
+    do ielidx = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
       if (p_ImacroNodalProperty(irel+p_IelementsAtVertex(ielidx)) .eq. &
-          irel+ielcoarse) then
+          irelcoarse+ielcoarse) then
         nelements = nelements + 1
         Ineighbourhood(nelements) = p_IelementsAtVertex(ielidx)
       end if            
