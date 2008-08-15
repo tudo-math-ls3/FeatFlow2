@@ -5,7 +5,7 @@
   
   !<subroutine>
 
-    SUBROUTINE fcoeff_buildMatrixSc_sim (rdiscretisation,rform, &
+    SUBROUTINE fcoeff_buildMatrixSc_sim (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset,&
                   Dcoefficients, rcollection)
@@ -30,9 +30,14 @@
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
     
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     

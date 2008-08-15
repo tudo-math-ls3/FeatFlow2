@@ -94,8 +94,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_createMatrixStructure (rdiscretisation,iformat,rmatrixScalar, &
-                                         cconstrType,imemguess)
+  SUBROUTINE bilf_createMatrixStructure (rdiscretisationTrial,iformat,rmatrixScalar, &
+                                         rdiscretisationTest,cconstrType,imemguess)
   
 !<description>
   ! This routine allows to calculate the structure of a finite-element matrix
@@ -104,8 +104,11 @@ CONTAINS
 
 !<input>
   ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  ! create the matrix. Specifies the discretisation of the trial functions.
+  ! If rdiscretisationTest is not specified, this also specifies
+  ! the discretisation of the test functions, this test and trial
+  ! functions coincide.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisationTrial
   
   ! Format of the matrix structure to be created. One of the LSYSSC_xxxx
   ! constants.
@@ -116,11 +119,14 @@ CONTAINS
   ! BILF_MATC_ELEMENTBASED is used.
   INTEGER, INTENT(IN), OPTIONAL      :: cconstrType
 
+  ! OPTIONAL: The underlying discretisation structure for the test functions.
+  ! If not specified, the trial functions coincide with the test functions.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationTest
+
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
   INTEGER(I32), INTENT(IN), OPTIONAL :: imemGuess
-  
 !</input>
 
 !<output>
@@ -144,8 +150,8 @@ CONTAINS
   IF (PRESENT(cconstrType)) ccType = cconstrType
   
   ! Do we have a not too complex triangulation? Would simplify a lot...
-  IF ( (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .OR. &
-       (rdiscretisation%ccomplexity .EQ. SPDISC_CONFORMAL) ) THEN
+  IF ( (rdiscretisationTrial%ccomplexity .EQ. SPDISC_UNIFORM) .OR. &
+       (rdiscretisationTrial%ccomplexity .EQ. SPDISC_CONFORMAL) ) THEN
   
     ! Which matrix structure do we have to create?
     SELECT CASE (iformat) 
@@ -156,12 +162,14 @@ CONTAINS
       
       CASE (BILF_MATC_ELEMENTBASED)
         ! Call the creation routine for structure 9:
-        CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+        CALL bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+            rdiscretisationTest,imem)
         
       CASE (BILF_MATC_EDGEBASED)
       
-        IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
-          CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
+        IF (rdiscretisationTest%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+          CALL bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+            rdiscretisationTest,imem)
         ELSE
           CALL output_line ('Edge-based matrix constrution only for'//&
                   ' uniform discr., supported.', &
@@ -182,12 +190,14 @@ CONTAINS
       CASE (BILF_MATC_ELEMENTBASED)
       
         ! Call the creation routine for structure 9:
-        CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+        CALL bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+            rdiscretisationTest,imem)
 
       CASE (BILF_MATC_EDGEBASED)
       
-        IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
-          CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
+        IF (rdiscretisationTest%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+          CALL bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+            rdiscretisationTest,imem)
         ELSE
           CALL output_line ('Edge-based matrix constrution only for'//&
                   ' uniform discr., supported.', &
@@ -279,14 +289,15 @@ CONTAINS
     CALL sys_halt()
   END IF
 
-  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+  IF ((.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTest)) .OR. &
+      (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTrial))) THEN
     CALL output_line ('No discretisation associated!', &
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     CALL sys_halt()
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  SELECT CASE (rmatrixScalar%p_rspatialDiscretisation%ccomplexity)
+  SELECT CASE (rmatrixScalar%p_rspatialDiscrTest%ccomplexity)
   CASE (SPDISC_UNIFORM) 
     ! Uniform discretisation; only one type of elements, e.g. P1 or Q1
     SELECT CASE (rmatrixScalar%cdataType)
@@ -392,7 +403,8 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imemGuess)
+  SUBROUTINE bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+      rdiscretisationTest,imemGuess)
   
 !<description>
   ! This routine creates according to a given discretisation the matrix 
@@ -403,11 +415,17 @@ CONTAINS
 !</description>
 
 !<input>
-  
   ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  ! create the matrix. Specifies the discretisation of the test functions.
+  ! If rdiscretisationTrial is not specified, this also specifies
+  ! the discretisation of the trial functions, this test and trial
+  ! functions coincide.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisationTrial
   
+  ! OPTIONAL: The underlying discretisation structure for the trial functions.
+  ! If not specified, the trial functions coincide with the test functions.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationTest
+
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
   INTEGER(I32), INTENT(IN) :: imemGuess
@@ -486,7 +504,8 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
   
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTest
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTrial
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -498,17 +517,26 @@ CONTAINS
   !
   ! At first, initialise the structure-9 matrix:
   
-  rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
+  rmatrixScalar%p_rspatialDiscrTrial => rdiscretisationTrial
+  IF (PRESENT(rdiscretisationTest)) THEN
+    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrixScalar%bidenticalTrialAndTest = .false.
+  ELSE
+    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTrial
+    rmatrixScalar%bidenticalTrialAndTest = .true.
+  END IF
   rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
   
   ! Get the #DOF's of the test space - as #DOF's of the test space is
   ! the number of equations in our matrix. The #DOF's in the trial space
   ! gives the number of columns of our matrix.
-  rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscretisation,.FALSE.)
-  rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscretisation,.TRUE.)
+  rmatrixScalar%NCOLS         = &
+      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
+  rmatrixScalar%NEQ           = &
+      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTest)
   
   ! and get a pointer to the triangulation.
-  p_rtriangulation => rdiscretisation%p_rtriangulation
+  p_rtriangulation => rdiscretisationTrial%p_rtriangulation
   
   ! Get NEQ - we need it for guessing memory...
   NEQ = rmatrixScalar%NEQ
@@ -631,21 +659,24 @@ CONTAINS
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
   
-  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+  DO icurrentElementDistr = 1,rdiscretisationTrial%inumFESpaces
   
     ! Activate the current element distribution
-    p_relementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+    p_relementDistrTest => &
+        rmatrixScalar%p_rspatialDiscrTest%RelementDistr(icurrentElementDistr)
+    p_relementDistrTrial => &
+        rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(icurrentElementDistr)
 
     ! Cancel if this element distribution is empty.
-    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
+    IF (p_relementDistrTest%NEL .EQ. 0) CYCLE
 
     ! Get the number of local DOF's for trial and test functions
-    indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-    indofTest = elem_igetNDofLoc(p_relementDistribution%itestElement)
+    indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
+    indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
     
     ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
+    NVE = elem_igetNVE(p_relementDistrTest%celement)
+    IF (NVE .NE. elem_igetNVE(p_relementDistrTrial%celement)) THEN
       CALL output_line ('Element spaces incompatible!', &
           OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
       CALL sys_halt()
@@ -660,7 +691,7 @@ CONTAINS
     ! indicate whether there are identical trial and test functions
     ! in one block!
     bIdenticalTrialAndTest = &
-      p_relementDistribution%itrialElement .EQ. p_relementDistribution%itestElement
+      p_relementDistrTest%celement .EQ. p_relementDistrTrial%celement
       
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
     ! space IdofTest (if both spaces are identical). 
@@ -674,11 +705,11 @@ CONTAINS
     
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    CALL storage_getbase_int (p_relementDistrTest%h_IelementList, &
                               p_IelementList)
     
     ! Get the number of elements there.
-    NEL = p_relementDistribution%NEL
+    NEL = p_relementDistrTest%NEL
 
     ! Set the pointers/indices to the initial position. During the
     ! search for new DOF's, these might be changed if there's not enough
@@ -726,13 +757,15 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       ! Calculate the DOF's of the test functions:
-      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,IdofsTest)
+      CALL dof_locGlobMapping_mult(&
+          rmatrixScalar%p_rspatialDiscrTest, p_IelementList(IELset:IELmax), &
+          IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       IF (.NOT.bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                    .FALSE.,IdofsTrial)
+        CALL dof_locGlobMapping_mult(&
+            rmatrixScalar%p_rspatialDiscrTrial, p_IelementList(IELset:IELmax), &
+            IdofsTrial)
       END IF
       
       ! Loop through all the elements in the current set
@@ -1112,7 +1145,8 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imemGuess)
+  SUBROUTINE bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+      rdiscretisationTest,imemGuess)
   
 !<description>
   ! This routine creates according to a given discretisation the matrix 
@@ -1125,15 +1159,21 @@ CONTAINS
 !</description>
 
 !<input>
-  
   ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  ! create the matrix. Specifies the discretisation of the trial functions.
+  ! If rdiscretisationTest is not specified, this also specifies
+  ! the discretisation of the test functions, this test and trial
+  ! functions coincide.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisationTrial
+  
+  ! OPTIONAL: The underlying discretisation structure for the test functions.
+  ! If not specified, the trial functions coincide with the test functions.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationTest
   
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
   INTEGER(I32), INTENT(IN) :: imemGuess
-  
+
 !</input>
 
 !<output>
@@ -1205,7 +1245,8 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
   
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTest
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTrial
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -1220,17 +1261,26 @@ CONTAINS
   !
   ! At first, initialise the structure-9 matrix:
   
-  rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
+  rmatrixScalar%p_rspatialDiscrTrial => rdiscretisationTrial
+  IF (PRESENT(rdiscretisationTest)) THEN
+    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrixScalar%bidenticalTrialAndTest = .false.
+  ELSE
+    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrixScalar%bidenticalTrialAndTest = .true.
+  END IF
   rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
   
   ! Get the #DOF's of the test space - as #DOF's of the test space is
   ! the number of equations in our matrix. The #DOF's in the trial space
   ! gives the number of columns of our matrix.
-  rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscretisation,.FALSE.)
-  rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscretisation,.TRUE.)
+  rmatrixScalar%NCOLS         = &
+      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
+  rmatrixScalar%NEQ           = &
+      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTest)
   
   ! and get a pointer to the triangulation.
-  p_rtriangulation => rdiscretisation%p_rtriangulation
+  p_rtriangulation => rdiscretisationTrial%p_rtriangulation
   
   CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,p_Kadj)
   
@@ -1353,15 +1403,16 @@ CONTAINS
   NA = NEQ
   
   ! Activate the one and only element distribution
-  p_relementDistribution => rdiscretisation%RelementDistribution(1)
+  p_relementDistrTest => rmatrixScalar%p_rspatialDiscrTest%RelementDistr(1)
+  p_relementDistrTrial => rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)
 
   ! Get the number of local DOF's for trial and test functions
-  indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-  indofTest = elem_igetNDofLoc(p_relementDistribution%itestElement)
+  indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
+  indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
   
   ! Get the number of corner vertices of the element
-  NVE = elem_igetNVE(p_relementDistribution%itrialElement)
-  IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
+  NVE = elem_igetNVE(p_relementDistrTrial%celement)
+  IF (NVE .NE. elem_igetNVE(p_relementDistrTest%celement)) THEN
     CALL output_line ('Element spaces incompatible!', &
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
     CALL sys_halt()
@@ -1392,7 +1443,7 @@ CONTAINS
   ! indicate whether there are identical trial and test functions
   ! in one block!
   bIdenticalTrialAndTest = &
-    p_relementDistribution%itrialElement .EQ. p_relementDistribution%itestElement
+    p_relementDistrTest%celement .EQ. p_relementDistrTrial%celement
     
   ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
   ! space IdofTest (if both spaces are identical). 
@@ -1406,7 +1457,7 @@ CONTAINS
   
   ! p_IelementList must point to our set of elements in the discretisation
   ! with that combination of trial/test functions
-  CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+  CALL storage_getbase_int (p_relementDistrTest%h_IelementList, &
                             p_IelementList)
   
 
@@ -1489,13 +1540,15 @@ CONTAINS
     ! More exactly, we call dof_locGlobMapping_mult to calculate all the
     ! global DOF's of our nelemBlockCount elements simultaneously.
     ! Calculate the DOF's of the test functions:
-    CALL dof_locGlobMapping_mult(rdiscretisation, IadjElem(1:nelemBlockCount), &
-                                .TRUE.,IdofsTest)
+    CALL dof_locGlobMapping_mult(&
+        rmatrixScalar%p_rspatialDiscrTest, IadjElem(1:nelemBlockCount), &
+        IdofsTest)
                                  
     ! If the DOF's for the test functions are different, calculate them, too.
     IF (.NOT.bIdenticalTrialAndTest) THEN
-      CALL dof_locGlobMapping_mult(rdiscretisation, IadjElem(1:nelemBlockCount), &
-                                  .FALSE.,IdofsTrial)
+      CALL dof_locGlobMapping_mult(&
+          rmatrixScalar%p_rspatialDiscrTrial, IadjElem(1:nelemBlockCount), &
+          IdofsTrial)
     END IF
   
     ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -2129,7 +2182,7 @@ CONTAINS
 !  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
 !  
 !    ! Activate the current element distribution
-!    p_relementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+!    p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
 !  
 !    ! Cancel if this element distribution is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
@@ -2423,7 +2476,7 @@ CONTAINS
 !      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
 !      
 !        CALL trafo_calctrafo_sim (&
-!             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+!             rdiscretisation%RelementDistr(icurrentElementDistr)%ctrafoType,&
 !             IELmax-IELset+1,ncubp,Dcoords,&
 !             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
 !      
@@ -2959,7 +3012,7 @@ CONTAINS
 !  DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
 !  
 !    ! Activate the current element distribution
-!    p_relementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+!    p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
 !  
 !    ! Cancel if this element distribution is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
@@ -3317,7 +3370,7 @@ CONTAINS
 !      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
 !      
 !        CALL trafo_calctrafo_sim (&
-!             p_rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+!             p_rdiscretisation%RelementDistr(icurrentElementDistr)%ctrafoType,&
 !             IELmax-IELset+1,ncubp,p_Dcoords,&
 !             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
 !             p_DcubPtsReal)
@@ -3729,7 +3782,8 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
 
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTest
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTrial
   
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -3745,9 +3799,11 @@ CONTAINS
   TYPE(t_domainIntSubset) :: rintSubset
   
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrTest
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrTrial
   
-  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+  IF ((.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTest)) .or. &
+      (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTrial))) THEN
     CALL output_line ('No discretisation associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     CALL sys_halt()
@@ -3827,16 +3883,18 @@ CONTAINS
   END IF
   
   ! Get the discretisation
-  p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+  p_rdiscrTest => rmatrixScalar%p_rspatialDiscrTest
+  p_rdiscrTrial => rmatrixScalar%p_rspatialDiscrTrial
   
-  IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
+  IF ((.NOT. ASSOCIATED(p_rdiscrTest)) .or. &
+      (.NOT. ASSOCIATED(p_rdiscrTrial))) THEN
     CALL output_line ('No discretisation attached to the matrix!',&
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     CALL sys_halt()
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => p_rdiscretisation%p_rtriangulation
+  p_rtriangulation => p_rdiscrTest%p_rtriangulation
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
@@ -3847,34 +3905,35 @@ CONTAINS
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
 
-  DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+  DO icurrentElementDistr = 1,p_rdiscrTest%inumFESpaces
   
     ! Activate the current element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+    p_relementDistrTest => p_rdiscrTest%RelementDistr(icurrentElementDistr)
+    p_relementDistrTrial => p_rdiscrTrial%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
+    IF (p_relementDistrTest%NEL .EQ. 0) CYCLE
     
     ! Get the number of local DOF's for trial and test functions
-    indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-    indofTest = elem_igetNDofLoc(p_relementDistribution%itestElement)
+    indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
+    indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
     
     ! Get the number of vertices of the element, specifying the transformation
     ! form the reference to the real element.
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
+    NVE = elem_igetNVE(p_relementDistrTest%celement)
+    IF (NVE .NE. elem_igetNVE(p_relementDistrTrial%celement)) THEN
       CALL output_line ('Element spaces incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
       CALL sys_halt()
     END IF
     
-    ! Get from the trial element space the type of coordinate system
+    ! Get from the element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistrTest%celement)
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_relementDistrTest%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -3901,7 +3960,7 @@ CONTAINS
       IA = rform%Idescriptors(1,IALBET)
       IB = rform%Idescriptors(2,IALBET)      
       IF ((IA.LT.0) .OR. &
-          (IA .GT. elem_getMaxDerivative(p_relementDistribution%itrialElement))) THEN
+          (IA .GT. elem_getMaxDerivative(p_relementDistrTrial%celement))) THEN
         CALL output_line ('Specified trial-derivative '//TRIM(sys_siL(IA,10))//&
             ' not available!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
@@ -3909,7 +3968,7 @@ CONTAINS
       END IF
 
       IF ((IB.LT.0) .OR. &
-          (IB .GT. elem_getMaxDerivative(p_relementDistribution%itestElement))) THEN
+          (IB .GT. elem_getMaxDerivative(p_relementDistrTest%celement))) THEN
         CALL output_line ('Specified test-derivative '//TRIM(sys_siL(IA,10))//&
             ' not available!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
@@ -3926,10 +3985,10 @@ CONTAINS
     ! which reduces the speed by 50%!
     
     ALLOCATE(DbasTest(indofTest,&
-             elem_getMaxDerivative(p_relementDistribution%itestElement),&
+             elem_getMaxDerivative(p_relementDistrTest%celement),&
              ncubp,nelementsPerBlock))
     ALLOCATE(DbasTrial(indofTrial,&
-             elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+             elem_getMaxDerivative(p_relementDistrTrial%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -3967,8 +4026,8 @@ CONTAINS
     ! We don't rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
-    bIdenticalTrialAndTest = p_relementDistribution%itrialElement .EQ. &
-                             p_relementDistribution%itestElement
+    bIdenticalTrialAndTest = p_relementDistrTrial%celement .EQ. &
+                             p_relementDistrTest%celement
 
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
     ! space IdofTest (if both spaces are identical). 
@@ -3994,7 +4053,7 @@ CONTAINS
     
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    CALL storage_getbase_int (p_relementDistrTest%h_IelementList, &
                               p_IelementList)
                               
     ! Loop over the elements - blockwise.
@@ -4040,13 +4099,13 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,IdofsTest)
+      CALL dof_locGlobMapping_mult(p_rdiscrTest, p_IelementList(IELset:IELmax), &
+                                   IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       IF (.NOT.bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                    .FALSE.,IdofsTrial)
+        CALL dof_locGlobMapping_mult(p_rdiscrTrial, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
       END IF
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
@@ -4144,9 +4203,9 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistrTrial%celement)
       cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+                      elem_getEvaluationTag(p_relementDistrTest%celement))
                       
       IF (.NOT. rform%ballCoeffConstant) THEN
         ! Evaluate real coordinates if not necessary.
@@ -4174,20 +4233,20 @@ CONTAINS
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
+        CALL fcoeff_buildMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1_I32,ncubp,&
                   rintSubset%revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
       END IF
       
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistrTest%celement, &
           rintSubset%revalElementSet, BderTest, DbasTest)
       
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim2 (p_relementDistribution%itrialElement, &
+        CALL elem_generic_sim2 (p_relementDistrTrial%celement, &
             rintSubset%revalElementSet, BderTrial, DbasTrial)
       END IF
       

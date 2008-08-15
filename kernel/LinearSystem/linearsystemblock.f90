@@ -262,7 +262,7 @@ MODULE linearsystemblock
     ! the discretisation of all the subblocks in the vector.
     ! Points to NULL(), if there is no underlying block discretisation
     ! structure.
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr => NULL()
 
     ! A pointer to discretised boundary conditions for real boundary components.
     ! These boundary conditions allow to couple multiple equations in the 
@@ -321,10 +321,21 @@ MODULE linearsystemblock
     INTEGER(I32) :: imatrixSpec = LSYSBS_MSPEC_GENERAL
     
     ! Pointer to a block discretisation structure that specifies
-    ! the discretisation of all the subblocks in the vector.
+    ! the discretisation of the test functions in the subblocks in the matrix.
     ! Points to NULL(), if there is no underlying block discretisation
     ! structure.
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscrTest => NULL()
+
+    ! Pointer to a block discretisation structure that specifies
+    ! the discretisation of the trial functions in the subblocks in the matrix.
+    ! Points to NULL(), if there is no underlying block discretisation
+    ! structure.
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscrTrial => NULL()
+
+    ! Flag: Trial and Test functions in all element distributions
+    ! are the same. If FALSE, there's at least one element distribution
+    ! with different trial and test functions.
+    LOGICAL                          :: bidenticalTrialAndTest = .TRUE.
 
     ! A pointer to discretised boundary conditions for real boundary 
     ! components. If no boundary conditions are specified, p_rdiscreteBC
@@ -1089,19 +1100,19 @@ CONTAINS
   ! of all the subblocks.
   Isize(1) = 0             ! Initialisation in case ncomponents=0
   DO i=1,rblockDiscretisation%ncomponents
-    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscr(i))
   END DO
   
   ! Create a new vector with that block structure
   CALL lsysbl_createVecBlockDirect (rx, Isize(:), bclear, cdataType)
   
   ! Initialise further data of the block vector
-  rx%p_rblockDiscretisation => rblockDiscretisation
+  rx%p_rblockDiscr => rblockDiscretisation
   
   ! Initialise further data in the subblocks
   DO i=1,rblockDiscretisation%ncomponents
-    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-      rblockDiscretisation%RspatialDiscretisation(i)
+    rx%RvectorBlock(i)%p_rspatialDiscr=> &
+      rblockDiscretisation%RspatialDiscr(i)
   END DO
 
   END SUBROUTINE
@@ -1110,7 +1121,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createMatBlockByDiscr (rblockDiscretisation,rmatrix)
+  SUBROUTINE lsysbl_createMatBlockByDiscr (rblockDiscretisationTrial,rmatrix,&
+      rblockDiscretisationTest)
   
 !<description>
   ! Initialises the matrix block structure rmatrix based on a block 
@@ -1123,8 +1135,15 @@ CONTAINS
   
 !<input>
   ! A block discretisation structure specifying the spatial discretisations
-  ! for all the subblocks in rx.
-  TYPE(t_blockDiscretisation),INTENT(IN), TARGET :: rblockDiscretisation
+  ! for the trial functions in all the subblocks in rmatrix.
+  ! If rblockDiscretisationTest is not specified, this also specifies
+  ! the discretisation of the trial functions, this test and trial
+  ! functions coincide.
+  TYPE(t_blockDiscretisation),INTENT(IN), TARGET :: rblockDiscretisationTrial
+
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for the test functions in all the subblocks in rmatrix.
+  TYPE(t_blockDiscretisation),INTENT(IN), TARGET, OPTIONAL :: rblockDiscretisationTest
 !</input>
 
 !<output>
@@ -1137,13 +1156,13 @@ CONTAINS
 
   INTEGER :: i
   INTEGER(PREC_VECIDX) :: NEQ
-  INTEGER(PREC_VECIDX), DIMENSION(MAX(1,rblockDiscretisation%ncomponents)) :: Isize
+  INTEGER(PREC_VECIDX), DIMENSION(MAX(1,rblockDiscretisationTrial%ncomponents)) :: Isize
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
   Isize(1) = 0             ! Initialisation in case ncomponents=0
-  DO i=1,rblockDiscretisation%ncomponents
-    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
+  DO i=1,rblockDiscretisationTrial%ncomponents
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisationTrial%RspatialDiscr(i))
   END DO
   NEQ = SUM(Isize(:))
   
@@ -1151,12 +1170,19 @@ CONTAINS
   ! values. What is still missing, we now initialise:
   
   ! Initialise a pointer to the block discretisation
-  rmatrix%p_rblockDiscretisation => rblockDiscretisation
+  rmatrix%p_rblockDiscrTrial => rblockDiscretisationTrial
+  if (PRESENT(rblockDiscretisationTest)) THEN
+    rmatrix%p_rblockDiscrTest => rblockDiscretisationTest
+    rmatrix%bidenticalTrialAndTest = .false.
+  else
+    rmatrix%p_rblockDiscrTest => rblockDiscretisationTrial
+    rmatrix%bidenticalTrialAndTest = .true.
+  end if
   
   ! Initialise NEQ/NCOLS by default for a quadrativ matrix
   rmatrix%NEQ = NEQ
   rmatrix%NCOLS = NEQ
-  rmatrix%ndiagBlocks = rblockDiscretisation%ncomponents
+  rmatrix%ndiagBlocks = rblockDiscretisationTrial%ncomponents
   
   ! Check if number of diagonal blocks is nonzeri, otherwise exit
   IF (rmatrix%ndiagblocks <= 0) RETURN
@@ -1215,7 +1241,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear, cdataType)
+  SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear, btransposed,cdataType)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplateMat is an
@@ -1237,6 +1263,13 @@ CONTAINS
   ! Otherwise the content of rx is undefined.
   LOGICAL, INTENT(IN), OPTIONAL   :: bclear
   
+  ! OPTIONAL: If not specified or set to FALSE, the vector will be
+  ! created as 'right' vector of the matrix (so matrix vector multiplication
+  ! (A x) is possible).
+  ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
+  ! vector multiplication (A^T x) is possible.
+  LOGICAL, INTENT(IN), OPTIONAL :: btransposed
+  
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   INTEGER, INTENT(IN),OPTIONAL              :: cdataType
@@ -1249,100 +1282,145 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i,n,j
-  INTEGER :: cdata
-  
-  cdata = ST_DOUBLE
-  IF (PRESENT(cdataType)) cdata = cdataType
-  
-  ! Allocate one large vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
-                      rtemplateMat%NCOLS, &
-                      cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
-  
-  ! Check if number of diagonal bocks is nonzero, otherwise exit
-  IF (rtemplateMat%ndiagBlocks <= 0) RETURN
+    ! local variables
+    INTEGER :: i,n,j,NVAR
+    INTEGER :: cdata
+    LOGICAL :: btrans
+    INTEGER(PREC_VECIDX) :: NEQ, NCOLS
 
-  ! Initialise the sub-blocks. Save a pointer to the starting address of
-  ! each sub-block.
-  ALLOCATE(rx%RvectorBlock(rtemplateMat%ndiagBlocks))
+    cdata = ST_DOUBLE
+    IF (PRESENT(cdataType)) cdata = cdataType
   
-  n=1
-  DO i = 1,rtemplateMat%ndiagBlocks
-    ! Search for the first matrix in column i of the block matrix -
-    ! this will give us information about the vector. Note that the
-    ! diagonal blocks does not necessarily have to exist!
-    DO j=1,rtemplateMat%ndiagBlocks
+    btrans = .FALSE.
+    IF (PRESENT(btransposed)) THEN
+      btrans = btransposed
+    END IF
     
-      ! Check if the matrix is not empty
-      IF (rtemplateMat%RmatrixBlock(j,i)%NCOLS .GT. 0) THEN
-        
-        ! Found a template matrix we can use :-)
-        rx%RvectorBlock(i)%NEQ  = rtemplateMat%RmatrixBlock(j,i)%NCOLS
-        rx%RvectorBlock(i)%NVAR = rtemplateMat%RmatrixBlock(j,i)%NVAR
+    IF (btrans) THEN
+      NEQ = rtemplateMat%NCOLS
+      NCOLS = rtemplateMat%NEQ
+    ELSE
+      NEQ = rtemplateMat%NEQ
+      NCOLS = rtemplateMat%NCOLS
+    END IF
+    
+    rx%NEQ = NCOLS
 
-        ! Take the handle of the complete-solution vector, but set the index of
-        ! the first entry to a value >= 1 - so that it points to the first
-        ! entry in the global solution vector!
-        rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
-        rx%RvectorBlock(i)%iidxFirstEntry = n
-        
-        ! Give the vector the discretisation of the matrix
-        rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-          rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation
+    ! Allocate one large vector holding all data.
+    CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+                        NCOLS, &
+                        cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+    
+    ! Check if number of diagonal bocks is nonzero, otherwise exit
+    IF (rtemplateMat%ndiagBlocks <= 0) RETURN
+
+    ! Initialise the sub-blocks. Save a pointer to the starting address of
+    ! each sub-block.
+    ALLOCATE(rx%RvectorBlock(rtemplateMat%ndiagBlocks))
+    
+    n=1
+    DO i = 1,rtemplateMat%ndiagBlocks
+      ! Search for the first matrix in column i of the block matrix -
+      ! this will give us information about the vector. Note that the
+      ! diagonal blocks does not necessarily have to exist!
+      DO j=1,rtemplateMat%ndiagBlocks
+      
+        IF (btrans) THEN
+          NEQ = rtemplateMat%RmatrixBlock(i,j)%NCOLS
+          NCOLS = rtemplateMat%RmatrixBlock(i,j)%NEQ
+          NVAR = rtemplateMat%RmatrixBlock(i,j)%NVAR
+        ELSE
+          NEQ = rtemplateMat%RmatrixBlock(j,i)%NEQ
+          NCOLS = rtemplateMat%RmatrixBlock(j,i)%NCOLS
+          NVAR = rtemplateMat%RmatrixBlock(j,i)%NVAR
+        END IF
+      
+        ! Check if the matrix is not empty
+        IF (NCOLS .GT. 0) THEN
           
-        ! Give the vector the same sorting strategy as the matrix, so that
-        ! the matrix and vector get compatible. Otherwise, things
-        ! like matrix vector multiplication won't work...
-        rx%RvectorBlock(i)%isortStrategy = &
-          rtemplateMat%RmatrixBlock(j,i)%isortStrategy
-        rx%RvectorBlock(i)%h_IsortPermutation = &
-          rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+          ! Found a template matrix we can use :-)
+          rx%RvectorBlock(i)%NEQ  = NCOLS
+          rx%RvectorBlock(i)%NVAR = NVAR
+
+          ! Take the handle of the complete-solution vector, but set the index of
+          ! the first entry to a value >= 1 - so that it points to the first
+          ! entry in the global solution vector!
+          rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+          rx%RvectorBlock(i)%iidxFirstEntry = n
+          
+          ! Give the vector the discretisation of the matrix
+          IF (.NOT. btrans) THEN
+            rx%RvectorBlock(i)%p_rspatialDiscr => &
+              rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscrTrial
+
+            ! Give the vector the same sorting strategy as the matrix, so that
+            ! the matrix and vector get compatible. Otherwise, things
+            ! like matrix vector multiplication won't work...
+            rx%RvectorBlock(i)%isortStrategy = &
+              rtemplateMat%RmatrixBlock(j,i)%isortStrategy
+            rx%RvectorBlock(i)%h_IsortPermutation = &
+              rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+          ELSE
+            rx%RvectorBlock(i)%p_rspatialDiscr => &
+              rtemplateMat%RmatrixBlock(i,j)%p_rspatialDiscrTest
+
+            ! Give the vector the same sorting strategy as the matrix, so that
+            ! the matrix and vector get compatible. Otherwise, things
+            ! like matrix vector multiplication won't work...
+            rx%RvectorBlock(i)%isortStrategy = &
+              rtemplateMat%RmatrixBlock(i,j)%isortStrategy
+            rx%RvectorBlock(i)%h_IsortPermutation = &
+              rtemplateMat%RmatrixBlock(i,j)%h_IsortPermutation
+              
+            ! DOES THIS WORK?!?!? I don't know =) MK
+          END IF
+            
+          ! Denote in the subvector that the handle belongs to us - not to
+          ! the subvector.
+          rx%RvectorBlock(i)%bisCopy = .TRUE.
+          
+          ! Set the data type
+          rx%RvectorBlock(i)%cdataType = cdata
+          
+          n = n+NCOLS
+          
+          ! Finish this loop, continue with the next column
+          EXIT
+          
+        END IF
         
-        ! Denote in the subvector that the handle belongs to us - not to
-        ! the subvector.
-        rx%RvectorBlock(i)%bisCopy = .TRUE.
-        
-        ! Set the data type
-        rx%RvectorBlock(i)%cdataType = cdata
-        
-        n = n+rtemplateMat%RmatrixBlock(j,i)%NCOLS
-        
-        ! Finish this loop, continue with the next column
-        EXIT
-        
+      END DO
+      
+      IF (j .GT. rtemplateMat%ndiagBlocks) THEN
+        ! Let's hope this situation (an empty equation) never occurs - 
+        ! might produce some errors elsewhere :)
+        rx%RvectorBlock(i)%NEQ  = 0
+        rx%RvectorBlock(i)%NVAR = 1
+        rx%RvectorBlock(i)%iidxFirstEntry = 0
       END IF
       
     END DO
     
-    IF (j .GT. rtemplateMat%ndiagBlocks) THEN
-      ! Let's hope this situation (an empty equation) never occurs - 
-      ! might produce some errors elsewhere :)
-      rx%RvectorBlock(i)%NEQ  = 0
-      rx%RvectorBlock(i)%NVAR = 1
-      rx%RvectorBlock(i)%iidxFirstEntry = 0
-    END IF
-    
-  END DO
-  
-  rx%NEQ = rtemplateMat%NCOLS
-  rx%nblocks = rtemplateMat%ndiagBlocks
-  rx%cdataType = cdata
+    rx%nblocks = rtemplateMat%ndiagBlocks
+    rx%cdataType = cdata
 
-  ! Transfer the boundary conditions and block discretisation pointers
-  ! from the matrix to the vector.
-  rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
-  rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
-  rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
-  
-  ! Warning: don't reformulate the following check into one IF command
-  ! as this might give problems with some compilers!
-  IF (PRESENT(bclear)) THEN
-    IF (bclear) THEN
-      CALL lsysbl_clearVector (rx)
+    ! Transfer the boundary conditions and block discretisation pointers
+    ! from the matrix to the vector.
+    IF (.NOT. btrans) THEN
+      rx%p_rblockDiscr => rtemplateMat%p_rblockDiscrTrial
+    ELSE
+      rx%p_rblockDiscr => rtemplateMat%p_rblockDiscrTest
     END IF
-  END IF
+    rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
+    rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
+    
+    ! Warning: don't reformulate the following check into one IF command
+    ! as this might give problems with some compilers!
+    IF (PRESENT(bclear)) THEN
+      IF (bclear) THEN
+        CALL lsysbl_clearVector (rx)
+      END IF
+    END IF
 
   END SUBROUTINE
   
@@ -1372,21 +1450,21 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
+    ! local variables
+    INTEGER :: i
 
-  ! Simply modify all pointers of all subvectors, that's it.
-  DO i=1,rx%nblocks
-    ! Spatial discretisation
-    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-      rtemplate%RvectorBlock(i)%p_rspatialDiscretisation 
-  END DO
-  
-  ! Transfer the boundary conditions and block discretisation pointers
-  ! from the template to the vector.
-  rx%p_rblockDiscretisation => rtemplate%p_rblockDiscretisation
-  rx%p_rdiscreteBC     => rtemplate%p_rdiscreteBC
-  rx%p_rdiscreteBCfict => rtemplate%p_rdiscreteBCfict
+    ! Simply modify all pointers of all subvectors, that's it.
+    DO i=1,rx%nblocks
+      ! Spatial discretisation
+      rx%RvectorBlock(i)%p_rspatialDiscr => &
+        rtemplate%RvectorBlock(i)%p_rspatialDiscr
+    END DO
+    
+    ! Transfer the boundary conditions and block discretisation pointers
+    ! from the template to the vector.
+    rx%p_rblockDiscr => rtemplate%p_rblockDiscr
+    rx%p_rdiscreteBC     => rtemplate%p_rdiscreteBC
+    rx%p_rdiscreteBCfict => rtemplate%p_rdiscreteBCfict
   
   END SUBROUTINE
   
@@ -1394,7 +1472,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_assignDiscretIndirectMat (rtemplateMat,rx)
+  SUBROUTINE lsysbl_assignDiscretIndirectMat (rtemplateMat,rx,btransposed)
   
 !<description>
   ! Assigns discretisation-related information (spatial discretisation, 
@@ -1411,6 +1489,14 @@ CONTAINS
 !<input>
   ! A template vector structure
   TYPE(t_matrixBlock),INTENT(IN) :: rtemplateMat
+
+  ! OPTIONAL: If not specified or set to FALSE, the vector will be
+  ! created as 'right' vector of the matrix (so matrix vector multiplication
+  ! (A x) is possible).
+  ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
+  ! vector multiplication (A^T x) is possible.
+  LOGICAL, INTENT(IN), OPTIONAL :: btransposed
+  
 !</input>
 
 !<inputoutput>
@@ -1421,36 +1507,70 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i,j
+    ! local variables
+    INTEGER :: i,j
+    INTEGER(PREC_VECIDX) :: NEQ, NCOLS
+    LOGICAL :: btrans
 
-  ! There must be at least some compatibility between the matrix
-  ! and the vector!
-  IF ((rtemplateMat%NEQ .NE. rx%NEQ) .OR. &
-      (rtemplateMat%ndiagBlocks .NE. rx%nblocks)) THEN
-    PRINT *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
-    CALL sys_halt()
-  END IF
+    btrans = .FALSE.
+    IF (PRESENT(btransposed)) THEN
+      btrans = btransposed
+    END IF
+    
+    IF (btrans) THEN
+      NEQ = rtemplateMat%NCOLS
+      NCOLS = rtemplateMat%NEQ
+    ELSE
+      NEQ = rtemplateMat%NEQ
+      NCOLS = rtemplateMat%NCOLS
+    END IF
 
-  ! Simply modify all pointers of all subvectors, that's it.
-  DO i=1,rx%nblocks
-    DO j=1,rx%nblocks
-      ! Search for the first matrix in the 'column' of the block matrix and use
-      ! its properties to initialise
-      IF (rtemplateMat%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
-        ! Spatial discretisation
-        rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-          rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation 
-        EXIT
-      END IF
-    END DO
-  END DO
-  
-  ! Transfer the boundary conditions and block discretisation pointers
-  ! from the matrix to the vector.
-  rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
-  rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
-  rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
+    ! There must be at least some compatibility between the matrix
+    ! and the vector!
+    IF ((NCOLS .NE. rx%NEQ) .OR. &
+        (rtemplateMat%ndiagBlocks .NE. rx%nblocks)) THEN
+      PRINT *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
+      CALL sys_halt()
+    END IF
+
+    ! Simply modify all pointers of all subvectors, that's it.
+    IF (.NOT. btrans) THEN
+      DO i=1,rx%nblocks
+        DO j=1,rx%nblocks
+          ! Search for the first matrix in the 'column' of the block matrix and use
+          ! its properties to initialise
+          IF (rtemplateMat%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+            ! Spatial discretisation
+            rx%RvectorBlock(i)%p_rspatialDiscr => &
+              rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscrTrial
+            EXIT
+          END IF
+        END DO
+      END DO
+    ELSE
+      DO i=1,rx%nblocks
+        DO j=1,rx%nblocks
+          ! Search for the first matrix in the 'column' of the block matrix and use
+          ! its properties to initialise
+          IF (rtemplateMat%RmatrixBlock(i,j)%NCOLS .NE. 0) THEN
+            ! Spatial discretisation
+            rx%RvectorBlock(i)%p_rspatialDiscr => &
+              rtemplateMat%RmatrixBlock(i,j)%p_rspatialDiscrTest
+            EXIT
+          END IF
+        END DO
+      END DO
+    END IF
+    
+    ! Transfer the boundary conditions and block discretisation pointers
+    ! from the matrix to the vector.
+    IF (.not. btrans) then
+      rx%p_rblockDiscr => rtemplateMat%p_rblockDiscrTrial
+    ELSE
+      rx%p_rblockDiscr => rtemplateMat%p_rblockDiscrTrial
+    END IF
+    rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
+    rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
 
   END SUBROUTINE
   
@@ -1497,7 +1617,7 @@ CONTAINS
   rx%nblocks = 0
   rx%iidxFirstEntry = 1
   
-  NULLIFY(rx%p_rblockDiscretisation)
+  NULLIFY(rx%p_rblockDiscr)
   NULLIFY(rx%p_rdiscreteBC)
   NULLIFY(rx%p_rdiscreteBCfict)
   IF (ASSOCIATED(rx%RvectorBlock)) DEALLOCATE(rx%RvectorBlock)
@@ -1540,7 +1660,9 @@ CONTAINS
   rmatrix%NEQ = 0
   rmatrix%ndiagBlocks = 0
   
-  NULLIFY(rmatrix%p_rblockDiscretisation)
+  NULLIFY(rmatrix%p_rblockDiscrTrial)
+  NULLIFY(rmatrix%p_rblockDiscrTest)
+  rmatrix%bidenticalTrialAndTest = .true.
   NULLIFY(rmatrix%p_rdiscreteBC)
   NULLIFY(rmatrix%p_rdiscreteBCfict)
   IF (ASSOCIATED(rmatrix%RmatrixBlock)) DEALLOCATE(rmatrix%RmatrixBlock)
@@ -2355,7 +2477,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE lsysbl_createMatFromScalar (rscalarMat,rmatrix,&
-                                         rblockDiscretisation)
+                                         rblockDiscrTrial,rblockDiscrTest)
   
 !<description>
   ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
@@ -2370,9 +2492,14 @@ CONTAINS
   ! The scalar matrix which should provide the data
   TYPE(t_matrixScalar), INTENT(IN) :: rscalarMat
   
-  ! OPTIONAL: A block discretisation structure.
+  ! OPTIONAL: A block discretisation structure specifying the trial functions.
   ! A pointer to this will be saved to the matrix.
-  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscrTrial
+
+  ! OPTIONAL: A block discretisation structure specifying the test functions.
+  ! A pointer to this will be saved to the matrix.
+  ! If not specified, the trial functions coincide with the test functions.
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscrTest
 !</input>
 
 !<output>
@@ -2399,10 +2526,19 @@ CONTAINS
       
     ! Save a pointer to the discretisation structure if that one
     ! is specified.
-    IF (PRESENT(rblockDiscretisation)) THEN
-      rmatrix%p_rblockDiscretisation => rblockDiscretisation
+    IF (PRESENT(rblockDiscrTrial)) THEN
+      rmatrix%p_rblockDiscrTrial => rblockDiscrTrial
+      IF (PRESENT(rblockDiscrTest)) THEN
+        rmatrix%p_rblockDiscrTest => rblockDiscrTest
+        rmatrix%bidenticalTrialAndTest = .false.
+      ELSE
+        rmatrix%p_rblockDiscrTest => rblockDiscrTrial
+        rmatrix%bidenticalTrialAndTest = .true.
+      END IF
     ELSE
-      NULLIFY(rmatrix%p_rblockDiscretisation)
+      NULLIFY(rmatrix%p_rblockDiscrTest)
+      NULLIFY(rmatrix%p_rblockDiscrTrial)
+      rmatrix%bidenticalTrialAndTest = .true.
     END IF
     
   END SUBROUTINE
@@ -2426,7 +2562,7 @@ CONTAINS
   ! The scalar vector which should provide the data
   TYPE(t_vectorScalar), INTENT(IN) :: rscalarVec
 
-  ! OPTIONAL: A block discretisation structure.
+  ! OPTIONAL: A block discretisation structure specifying the trial functions.
   ! A pointer to this will be saved to the vector.
   TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
   
@@ -2475,9 +2611,9 @@ CONTAINS
     ! Save a pointer to the discretisation structure if that one
     ! is specified.
     IF (PRESENT(rblockDiscretisation)) THEN
-      rvector%p_rblockDiscretisation => rblockDiscretisation
+      rvector%p_rblockDiscr => rblockDiscretisation
     ELSE
-      NULLIFY(rvector%p_rblockDiscretisation)
+      NULLIFY(rvector%p_rblockDiscr)
     END IF
     
   END SUBROUTINE
@@ -2802,12 +2938,12 @@ CONTAINS
 
     DO i=1,rx%nblocks
       ! Modify all pointers of the spatial discretisation in all subvectors.
-      rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-        rdiscretisation%RspatialDiscretisation(i)
+      rx%RvectorBlock(i)%p_rspatialDiscr => &
+        rdiscretisation%RspatialDiscr(i)
         
       ! Recalculate the size of the subvectors
       rx%RvectorBlock(i)%NEQ = &
-        dof_igetNDofGlob(rx%RvectorBlock(i)%p_rspatialDiscretisation)
+        dof_igetNDofGlob(rx%RvectorBlock(i)%p_rspatialDiscr)
       rx%RvectorBlock(i)%iidxFirstEntry = iidx
       
       iidx = iidx + rx%RvectorBlock(i)%NEQ
@@ -2817,7 +2953,7 @@ CONTAINS
     rx%NEQ = iidx-1
     
     ! Set a pointer to the discretisation structure in the vector, finish
-    rx%p_rblockDiscretisation => rdiscretisation
+    rx%p_rblockDiscr => rdiscretisation
   
   END SUBROUTINE
   
@@ -3751,35 +3887,35 @@ CONTAINS
 
     ! Vcetor1 -> Vector
     rvector = rvector1
-    rvector%p_rblockDiscretisation => rvector1%p_rblockDiscretisation
+    rvector%p_rblockDiscr => rvector1%p_rblockDiscr
     rvector%p_rdiscreteBC          => rvector1%p_rdiscreteBC
     rvector%p_rdiscreteBCfict      => rvector1%p_rdiscreteBCfict
     DO iblock=1,rvector%nblocks
       rvector1%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
-      rvector1%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
-          rvector%RvectorBlock(iblock)%p_rspatialDiscretisation
+      rvector1%RvectorBlock(iblock)%p_rspatialDiscr =>&
+          rvector%RvectorBlock(iblock)%p_rspatialDiscr
     END DO
 
     ! Vector2 -> Vector1
     rvector1 = rvector2
-    rvector1%p_rblockDiscretisation => rvector2%p_rblockDiscretisation
+    rvector1%p_rblockDiscr => rvector2%p_rblockDiscr
     rvector1%p_rdiscreteBC          => rvector2%p_rdiscreteBC
     rvector1%p_rdiscreteBCfict      => rvector2%p_rdiscreteBCfict
     DO iblock=1,rvector1%nblocks
       rvector1%RvectorBlock(iblock)=rvector2%RvectorBlock(iblock)
-      rvector1%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
-          rvector2%RvectorBlock(iblock)%p_rspatialDiscretisation
+      rvector1%RvectorBlock(iblock)%p_rspatialDiscr =>&
+          rvector2%RvectorBlock(iblock)%p_rspatialDiscr
     END DO
 
     ! Vector -> Vector2
     rvector2 = rvector
-    rvector2%p_rblockDiscretisation => rvector%p_rblockDiscretisation
+    rvector2%p_rblockDiscr => rvector%p_rblockDiscr
     rvector2%p_rdiscreteBC          => rvector%p_rdiscreteBC
     rvector2%p_rdiscreteBCfict      => rvector%p_rdiscreteBCfict
     DO iblock=1,rvector2%nblocks
       rvector2%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
-      rvector2%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
-          rvector%RvectorBlock(iblock)%p_rspatialDiscretisation
+      rvector2%RvectorBlock(iblock)%p_rspatialDiscr =>&
+          rvector%RvectorBlock(iblock)%p_rspatialDiscr
     END DO
   END SUBROUTINE lsysbl_swapVectors
 
@@ -4688,8 +4824,8 @@ CONTAINS
             rx%RvectorBlock(i)%iidxFirstEntry = n
             
             ! Give the vector the discretisation of the matrix
-            rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-                rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation
+            rx%RvectorBlock(i)%p_rspatialDiscr => &
+                rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscrTrial
             
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
@@ -4724,7 +4860,7 @@ CONTAINS
 
     ! Transfer the boundary conditions and block discretisation pointers
     ! from the matrix to the vector.
-    rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
+    rx%p_rblockDiscr => rtemplateMat%p_rblockDiscrTrial
     rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
     rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
     
@@ -4915,9 +5051,9 @@ CONTAINS
     ! Save a pointer to the discretisation structure if that one
     ! is specified.
     IF (PRESENT(rblockDiscretisation)) THEN
-      rvector%p_rblockDiscretisation => rblockDiscretisation
+      rvector%p_rblockDiscr => rblockDiscretisation
     ELSE
-      NULLIFY(rvector%p_rblockDiscretisation)
+      NULLIFY(rvector%p_rblockDiscr)
     END IF
     
   END SUBROUTINE
@@ -4927,7 +5063,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE lsysbl_convertMatFromScalar (rscalarMat,rmatrix,&
-                                          rblockDiscretisation)
+                                          rblockDiscrTest,rblockDiscrTrial)
   
 !<description>
   ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
@@ -4940,9 +5076,14 @@ CONTAINS
 !</description>
   
 !<input>
-  ! OPTIONAL: A block discretisation structure.
+  ! OPTIONAL: A block discretisation structure specifying the test functions.
   ! A pointer to this will be saved to the matrix.
-  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscrTest
+
+  ! OPTIONAL: A block discretisation structure specifying the trial functions.
+  ! A pointer to this will be saved to the matrix.
+  ! If not specified, the trial functions coincide with the test functions
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscrTrial
 !</input>
 
 !<inputoutput>
@@ -4973,10 +5114,19 @@ CONTAINS
       
     ! Save a pointer to the discretisation structure if that one
     ! is specified.
-    IF (PRESENT(rblockDiscretisation)) THEN
-      rmatrix%p_rblockDiscretisation => rblockDiscretisation
+    IF (PRESENT(rblockDiscrTrial)) THEN
+      rmatrix%p_rblockDiscrTrial => rblockDiscrTrial
+      IF (PRESENT(rblockDiscrTest)) THEN
+        rmatrix%p_rblockDiscrTest => rblockDiscrTest
+        rmatrix%bidenticalTrialAndTest = .false.
+      ELSE
+        rmatrix%p_rblockDiscrTest => rblockDiscrTrial
+        rmatrix%bidenticalTrialAndTest = .true.
+      END IF
     ELSE
-      NULLIFY(rmatrix%p_rblockDiscretisation)
+      NULLIFY(rmatrix%p_rblockDiscrTest)
+      NULLIFY(rmatrix%p_rblockDiscrTrial)
+      rmatrix%bidenticalTrialAndTest = .true.
     END IF
     
   END SUBROUTINE

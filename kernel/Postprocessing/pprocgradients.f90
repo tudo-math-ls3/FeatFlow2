@@ -151,26 +151,26 @@ CONTAINS
     ! Dimension of triangulation must be less or equal than number of subvectors
     ! in the block vector.
     
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr)) THEN
       CALL output_line ('No discretisation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
       CALL sys_halt()
     END IF
     
-    IF ((rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
-        (rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
+    IF ((rvectorScalar%p_rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
+        (rvectorScalar%p_rspatialDiscr%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
       CALL output_line ('Only uniform and conformal discretisations supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
       CALL sys_halt()
     END IF
     
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation%p_rtriangulation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) THEN
       CALL output_line ('No triangulation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
       CALL sys_halt()
     END IF
     
-    IF (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim .GT. &
+    IF (rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim .GT. &
         rvectorGradient%nblocks) THEN
       CALL output_line ('Dimension of destination vector not large enough!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
@@ -178,13 +178,13 @@ CONTAINS
     END IF
     
     ! There must be given discretisation structures in the destination vector.
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr)) THEN
       CALL output_line ('No discretisation attached to the destination vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
       CALL sys_halt()
     END IF
 
-    SELECT CASE (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim)
+    SELECT CASE (rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim)
     CASE (NDIM2D)
       ! Currently, the destination vector must be either pure Q1 or pure P1 or
       ! mixed Q1/P1 -- everything else is currently not supported.
@@ -198,10 +198,10 @@ CONTAINS
       ! We only check the first two subvectors which we overwrite.
       ! Any additional subvectors are ignored!
       DO i=1,MIN(2,rvectorGradient%nblocks)
-        p_rdiscr => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
+        p_rdiscr => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
         DO j=1,p_rdiscr%inumFESpaces
           SELECT CASE (&
-              elem_getPrimaryElement (p_rdiscr%RelementDistribution(j)%itrialElement))
+              elem_getPrimaryElement (p_rdiscr%RelementDistr(j)%celement))
           CASE (EL_Q0)
             bisQ0 = .TRUE.
           CASE (EL_P0)
@@ -362,8 +362,8 @@ CONTAINS
     ! Get the discretisation structures of the source- and destination space.
     ! Note that we assume here that the X- and Y-derivative is discretised
     ! the same way!
-    p_rdiscrSource => rvector%p_rspatialDiscretisation
-    p_rdiscrDest => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(1)
+    p_rdiscrSource => rvector%p_rspatialDiscr
+    p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
     ! Get a pointer to the triangulation - for easier access.
     p_rtriangulation => p_rdiscrSource%p_rtriangulation
@@ -395,19 +395,19 @@ CONTAINS
     DO icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
-      p_relementDistrDest => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
+      p_relementDistrDest => p_rdiscrDest%RelementDistr(icurrentElementDistr)
     
       ! If the element distribution is empty, skip it
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
     
       ! Get the number of local DOF's for trial functions
       ! in the source and destination vector.
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-      indofDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Initialise the cubature formula,
       ! That's a special trick here! The FE space of the destination vector
@@ -422,7 +422,7 @@ CONTAINS
       !
       ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
       ! on each element indofDest!
-      SELECT CASE (elem_getPrimaryElement(p_relementDistrDest%itrialElement))
+      SELECT CASE (elem_getPrimaryElement(p_relementDistrDest%celement))
       CASE (EL_P0)
         CALL cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
       CASE (EL_Q0)
@@ -501,7 +501,7 @@ CONTAINS
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -523,7 +523,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! Get the number of elements in the element distribution.
       NEL = p_relementDistribution%NEL
@@ -548,11 +548,11 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
-                                     .TRUE.,IdofsTrial)
+                                     IdofsTrial)
 
         ! Also calculate the global DOF's in our destination vector(s)
         CALL dof_locGlobMapping_mult(p_rdiscrDest, p_IelementList(IELset:IELmax), &
-                                     .TRUE.,IdofsDest)
+                                     IdofsDest)
 
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
@@ -572,11 +572,11 @@ CONTAINS
         ! Dderivatives(:,:,2).
         
         CALL fevl_evaluate_sim3 (rvector, revalElementSet,&
-                p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV_X,&
+                p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
                 Dderivatives(:,1:IELmax-IELset+1_I32,1))
 
         CALL fevl_evaluate_sim3 (rvector, revalElementSet,&
-                p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV_Y,&
+                p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
                 Dderivatives(:,1:IELmax-IELset+1_I32,2))
 
          ! Sum up the derivative values in the destination vector.
@@ -831,8 +831,8 @@ CONTAINS
        
     ! Get the discretisation structures of the source- and destination space.
     ! Note that we assume here that all derivatives are discretised the same way!
-    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
-    p_rdiscrDest   => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(1)
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscr
+    p_rdiscrDest   => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
     ! Check if we have a non-uniform discretisation structure and if nodal 
     ! patches should be used. This does not make too much sense since it is
@@ -936,17 +936,17 @@ CONTAINS
       DO icurrentElementDistr = 1, p_rdiscrSource%inumFESpaces
         
         ! Activate the current element distribution
-        p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+        p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
         
         ! Cancel if this element distribution is empty.
         IF (p_relementDistribution%NEL .EQ. 0) CYCLE
         
         ! Get the number of local DOF's for trial functions
-        indofTrial    = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+        indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
         indofTrialMax = MAX(indofTrialMax,indofTrial)
         
         ! Get the number of corner vertices of the element
-        NVE    = elem_igetNVE(p_relementDistribution%itrialElement)
+        NVE    = elem_igetNVE(p_relementDistribution%celement)
         NVEmax = MAX (NVEmax,NVE)
         
         ! Get cubature weights and point coordinates on the reference element
@@ -958,13 +958,13 @@ CONTAINS
       DO icurrentElementDistr = 1, p_rdiscrDest%inumFESpaces
         
         ! Activate the current element distribution
-        p_relementDistribution => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+        p_relementDistribution => p_rdiscrDest%RelementDistr(icurrentElementDistr)
 
         ! Cancel if this element distribution is empty.
         IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
         ! Get the number of local DOF's for trial functions
-        indofDest    = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+        indofDest    = elem_igetNDofLoc(p_relementDistribution%celement)
         indofDestMax = MAX(indofDestMax,indofDest)
 
         ! Get cubature weights and point coordinates on the reference element
@@ -1016,13 +1016,13 @@ CONTAINS
     DO icurrentElementDistr = 1, p_rdiscrSource%inumFESpaces
 
       ! Activate the current element distribution
-      p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
       
       ! If the element distribution is empty, skip it
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
 
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
@@ -1256,15 +1256,15 @@ CONTAINS
           ! pointers, dimensions, etc. just once and can work blockwise.
           
           ! Active element distribution
-          p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
-          p_relementDistrDest    => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+          p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
+          p_relementDistrDest    => p_rdiscrDest%RelementDistr(icurrentElementDistr)
           
           ! Get the number of local DOF's for trial functions
-          indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-          indofDest  = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+          indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+          indofDest  = elem_igetNDofLoc(p_relementDistrDest%celement)
           
           ! Get the number of corner vertices of the element
-          NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+          NVE = elem_igetNVE(p_relementDistribution%celement)
           
 
           !---------------------------------------------------------------------
@@ -1276,7 +1276,7 @@ CONTAINS
           
           ! Calculate the global DOF's into IdofsTrial.
           CALL dof_locGlobMapping_mult(p_rdiscrSource, &
-              IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsTrial)
+              IelementsInPatch(1:nelementsPerBlock), IdofsTrial)
           
           ! Initialise the cubature formula for the source element distribution
           ! Get cubature weights and point coordinates on the reference element
@@ -1284,7 +1284,7 @@ CONTAINS
           
           ! Get from the trial element space the type of coordinate system
           ! that is used there:
-          icoordSystem = elem_igetCoordSystem(p_relementDistribution%itrialElement)
+          icoordSystem = elem_igetCoordSystem(p_relementDistribution%celement)
           
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
@@ -1311,7 +1311,7 @@ CONTAINS
           END DO
           
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(p_relementDistribution%itestElement)
+          bnonparTrial = elem_isNonparametric(p_relementDistribution%celement)
           
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -1331,7 +1331,7 @@ CONTAINS
           ! At first, get the coordinates of the corners of all the
           ! elements in the current set of elements.
           CALL trafo_getCoords_sim (&
-              elem_igetTrafoType(p_relementDistribution%itrialElement), &
+              elem_igetTrafoType(p_relementDistribution%celement), &
               p_rtriangulation, IelementsInPatch(1:nelementsPerBlock), p_Dcoords)
           
           ! Depending on the type of transformation, we must now choose
@@ -1356,29 +1356,29 @@ CONTAINS
           SELECT CASE(p_rtriangulation%ndim)
           CASE (NDIM1D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1))
             
           CASE (NDIM2D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2))
             
           CASE (NDIM3D)
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2))
             
             CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                p_relementDistribution%itrialElement, IdofsTrial, ncubp, &
+                p_relementDistribution%celement, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3))
 
           CASE DEFAULT
@@ -1421,7 +1421,7 @@ CONTAINS
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial 
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
-          CALL elem_generic_sim(p_relementDistribution%itrialElement,&
+          CALL elem_generic_sim(p_relementDistribution%celement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
               nelementsPerBlock, p_DcubPtsTrial)
           
@@ -1447,7 +1447,7 @@ CONTAINS
           
           ! Also calculate the global DOF's in our destination vector(s)
           CALL dof_locGlobMapping_mult(p_rdiscrDest, &
-              IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsDest)
+              IelementsInPatch(1:nelementsPerBlock), IdofsDest)
           
           ! Initialise the cubature formula. That's a special trick here!
           ! In particular, we only need the physical coordinates of the
@@ -1461,12 +1461,12 @@ CONTAINS
           ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
           ! on each element indofDest!
           CALL calc_cubatureDest(&
-              elem_getPrimaryElement(p_relementDistrDest%itrialElement), &
+              elem_getPrimaryElement(p_relementDistrDest%celement), &
               nlocalDOFsDest, Dxi, Domega)
           
           ! Get from the trial element space the type of coordinate system
           ! that is used there:
-          icoordSystem = elem_igetCoordSystem(p_relementDistrDest%itrialElement)
+          icoordSystem = elem_igetCoordSystem(p_relementDistrDest%celement)
           
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the destination FE space.
@@ -1493,7 +1493,7 @@ CONTAINS
           END DO
           
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(p_relementDistrDest%itestElement)
+          bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
           
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -1512,7 +1512,7 @@ CONTAINS
           
           ! At first, get the coordinates of the corners of all the
           ! elements in the current set of elements.
-          CALL trafo_getCoords_sim (elem_igetTrafoType(p_relementDistrDest%itrialElement), &
+          CALL trafo_getCoords_sim (elem_igetTrafoType(p_relementDistrDest%celement), &
               p_rtriangulation, IelementsInPatch(1:nelementsPerBlock), p_Dcoords)
           
           ! Depending on the type of transformation, we must now choose
@@ -1546,7 +1546,7 @@ CONTAINS
           END IF
           
           ! Evaluate the basis functions for the cubature points of the destination FE space
-          CALL elem_generic_sim(p_relementDistribution%itrialElement,&
+          CALL elem_generic_sim(p_relementDistribution%celement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
               nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
           
@@ -1738,11 +1738,11 @@ CONTAINS
 
           ! Calculate the global DOF's into IdofsTrial.
           CALL dof_locGlobMapping_mult(p_rdiscrSource, &
-              IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsTrial)
+              IelementsInPatch(1:nelementsPerBlock), IdofsTrial)
           
           ! Also calculate the global DOF's in our destination vector(s)
           CALL dof_locGlobMapping_mult(p_rdiscrDest, &
-              IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsDest)
+              IelementsInPatch(1:nelementsPerBlock), IdofsDest)
 
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
@@ -1816,13 +1816,13 @@ CONTAINS
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
 
                 ! Active the local element distribution of that group.
-                p_relementDistribution => p_rdiscrSource%RelementDistribution(ilocalElementDistr)
+                p_relementDistribution => p_rdiscrSource%RelementDistr(ilocalElementDistr)
 
                 ! Get the number of local DOF's for trial functions
-                indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+                indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
                 ! Get the number of corner vertices of the element
-                NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+                NVE = elem_igetNVE(p_relementDistribution%celement)
 
                 !---------------------------------------------------------------------
                 ! Step 1:  Prepare the source FE space
@@ -1834,10 +1834,10 @@ CONTAINS
 
                 ! Get from the trial element space the type of coordinate system
                 ! that is used in the local element distribution
-                icoordSystem = elem_igetCoordSystem(p_relementDistribution%itrialElement)
+                icoordSystem = elem_igetCoordSystem(p_relementDistribution%celement)
                                 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistribution%itestElement)
+                bnonparTrial = elem_isNonparametric(p_relementDistribution%celement)
                 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -1886,7 +1886,7 @@ CONTAINS
               
               ! At first, get the coordinates of the corners of the element.
               CALL trafo_getCoords_sim(&
-                  elem_igetTrafoType(p_relementDistribution%itrialElement), &
+                  elem_igetTrafoType(p_relementDistribution%celement), &
                   p_rtriangulation, IelementsInPatch(idxsubgroup:idx2), &
                   p_Dcoords(:,:,idxsubgroup:idx2))
 
@@ -1912,7 +1912,7 @@ CONTAINS
               CASE (NDIM1D)
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV1D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
@@ -1921,7 +1921,7 @@ CONTAINS
               CASE (NDIM2D)
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
@@ -1929,7 +1929,7 @@ CONTAINS
 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_Y, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
@@ -1938,7 +1938,7 @@ CONTAINS
               CASE (NDIM3D)
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
@@ -1946,7 +1946,7 @@ CONTAINS
                 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
@@ -1954,7 +1954,7 @@ CONTAINS
                 
                 CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%itrialElement, IdofsTrial(:,idxsubgroup:idx2), &
+                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_Z, &
                     Dcoefficients(:,idxsubgroup:idx2,3))
@@ -1987,24 +1987,24 @@ CONTAINS
           ! element distribution of those elements which make up the center of each 
           ! patch. Hence, this element distribution determine the type of element 
           ! used to construct the constant Jacobian "patch" elements.
-          p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+          p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
 
           ! Initialise the cubature formula for the local element distribution
           ! Get cubature weights and point coordinates on the reference element
           CALL cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
           
           ! Get the number of local DOF's for trial functions
-          indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+          indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
           ! Get the number of corner vertices of the element
-          NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+          NVE = elem_igetNVE(p_relementDistribution%celement)
           
           ! Get from the trial element space the type of coordinate system
           ! that is used there:
-          icoordSystem = elem_igetCoordSystem(p_relementDistribution%itrialElement)
+          icoordSystem = elem_igetCoordSystem(p_relementDistribution%celement)
 
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(p_relementDistribution%itestElement)
+          bnonparTrial = elem_isNonparametric(p_relementDistribution%celement)
           
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2040,7 +2040,7 @@ CONTAINS
           ! Note that we evaluate over the maximum number of cubature points present in
           ! the patch. Although some meaningless values may be generated, it is faster to
           ! evaluate all values simultaneously and filter the required data afterwards.
-          CALL elem_generic_sim(p_relementDistribution%itrialElement,&
+          CALL elem_generic_sim(p_relementDistribution%celement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
               nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2150,10 +2150,10 @@ CONTAINS
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
 
                 ! Active local element distribution
-                p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
+                p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
 
                 ! Get the number of local DOF's for trial functions
-                indofDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+                indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                 ! Initialise arrays with zeros
                 Dxi    = 0
@@ -2171,11 +2171,11 @@ CONTAINS
                 ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
                 ! on each element indofDest!
                 CALL calc_cubatureDest(&
-                    elem_getPrimaryElement(p_relementDistrDest%itrialElement), &
+                    elem_getPrimaryElement(p_relementDistrDest%celement), &
                     nlocalDOFsDest, Dxi, Domega)
                                 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistrDest%itestElement)
+                bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
                 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2212,7 +2212,7 @@ CONTAINS
               
               ! At first, get the coordinates of the corners of the element
               CALL trafo_getCoords_sim (&
-                  elem_igetTrafoType(p_relementDistrDest%itrialElement), &
+                  elem_igetTrafoType(p_relementDistrDest%celement), &
                   p_rtriangulation, IelementsInPatch(idxsubgroup:idx2) , &
                   p_Dcoords(:,:,idxsubgroup:idx2))
               
@@ -2284,13 +2284,13 @@ CONTAINS
               IF (ilocalElementDistr .NE. ilastElementDistr) THEN
 
                 ! Active local element distribution
-                p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
+                p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                 
                 ! Get the number of local DOF's for trial functions which coincides with
-                nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+                nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistrDest%itestElement)
+                bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
                 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2311,7 +2311,7 @@ CONTAINS
                   p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2))
 
               ! Evaluate the basis functions for the cubature points of the destination FE space
-              CALL elem_generic_sim(p_relementDistribution%itrialElement, &
+              CALL elem_generic_sim(p_relementDistribution%celement, &
                   p_Dcoords(:,:,idxsubgroup:idx2), p_Djac(:,:,idxsubgroup:idx2), &
                   p_Ddetj(:,idxsubgroup:idx2), &
                   BderDest, Dpolynomials(:,:,:,idxsubgroup:idx2), &
@@ -2351,13 +2351,13 @@ CONTAINS
                 IF (ilocalElementDistr .NE. ilastElementDistr) THEN
                   
                   ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
+                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
                   ! Get the number of local DOF's for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                   ! Check if one of the trial/test elements is nonparametric
-                  bnonparTrial = elem_isNonparametric(p_relementDistrDest%itestElement)
+                  bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
                   
                   ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                   ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2409,10 +2409,10 @@ CONTAINS
                 IF (ilocalElementDistr .NE. ilastElementDistr) THEN
                   
                   ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
+                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
                   ! Get the number of local DOF's for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
                   
                   ! Save number of last element distribution
                   ilastElementDistr = ilocalElementDistr
@@ -2457,10 +2457,10 @@ CONTAINS
                 IF (ilocalElementDistr .NE. ilastElementDistr) THEN
                   
                   ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistribution(ilocalElementDistr)
+                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
                   ! Get the number of local DOF's for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
                   
                   ! Save number of last element distribution
                   ilastElementDistr = ilocalElementDistr
@@ -3284,26 +3284,26 @@ CONTAINS
     ! Dimension of triangulation must be less or equal than number of subvectors
     ! in the block vector.
     
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr)) THEN
       CALL output_line ('No discretisation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
-    IF ((rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
-        (rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
+    IF ((rvectorScalar%p_rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
+        (rvectorScalar%p_rspatialDiscr%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
       CALL output_line ('Only uniform and conformal discretisations supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation%p_rtriangulation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) THEN
       CALL output_line ('No triangulation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
     END IF
     
-    IF (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim .GT. &
+    IF (rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim .GT. &
         rvectorGradient%nblocks) THEN
       CALL output_line ('Dimension of destination vector not large enough!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
@@ -3311,7 +3311,7 @@ CONTAINS
     END IF
     
     ! There must be given discretisation structures in the destination vector.
-    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscr)) THEN
       CALL output_line ('No discretisation attached to the destination vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       CALL sys_halt()
@@ -3322,9 +3322,9 @@ CONTAINS
     bisP1 = .FALSE.
     bisDifferent = .FALSE.
 
-    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscr
     DO j=1,p_rdiscrSource%inumFESpaces
-      SELECT CASE (elem_getPrimaryElement (p_rdiscrSource%RelementDistribution(j)%itrialElement))
+      SELECT CASE (elem_getPrimaryElement (p_rdiscrSource%RelementDistr(j)%celement))
       CASE (EL_Q1)
         bisQ1 = .TRUE.
       CASE (EL_P1)
@@ -3347,10 +3347,10 @@ CONTAINS
     bisDifferent = .FALSE.
     
     DO i=1,MIN(rvectorGradient%nblocks,&
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim,rvectorGradient%nblocks)
-      p_rdiscrDest => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
+        rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim,rvectorGradient%nblocks)
+      p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
       DO j=1,p_rdiscrDest%inumFESpaces
-        SELECT CASE (elem_getPrimaryElement (p_rdiscrDest%RelementDistribution(j)%itrialElement))
+        SELECT CASE (elem_getPrimaryElement (p_rdiscrDest%RelementDistr(j)%celement))
         CASE (EL_Q1T)
           bisQ1T = .TRUE.
         CASE (EL_P1T)
@@ -3371,8 +3371,8 @@ CONTAINS
     ! Get the discretisation structures of the source- and destination space.
     ! Note that we assume here that the X- and Y-derivative is discretised
     ! the same way!
-    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
-    p_rdiscrDest   => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(1)
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscr
+    p_rdiscrDest   => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
     ! Get a pointer to the triangulation - for easier access.
     p_rtriangulation => p_rdiscrSource%p_rtriangulation
@@ -3450,26 +3450,26 @@ CONTAINS
     DO icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
-      p_relementDistrDest => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
+      p_relementDistrDest => p_rdiscrDest%RelementDistr(icurrentElementDistr)
     
       ! If the element distribution is empty, skip it
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
     
       ! Get the number of local DOF's for trial functions
       ! in the source and destination vector.
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-      indofDest = elem_igetNDofLoc(p_relementDistrDest%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
 
       ! Initialise the cubature formula.
       ! That's a special trick here! The FE space of the destination vector
       ! is either P1 or Q1. We create the gradients in the midpoints of the edges
       ! by taking the limited average of the gradients of the source vector!
 
-      SELECT CASE (elem_getPrimaryElement(p_relementDistrDest%itrialElement))
+      SELECT CASE (elem_getPrimaryElement(p_relementDistrDest%celement))
       CASE (EL_P1T)
         CALL cub_getCubPoints(CUB_G3_T, nlocalDOFsDest, Dxi, Domega)
 
@@ -3493,7 +3493,7 @@ CONTAINS
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      j = elem_igetCoordSystem(p_relementDistribution%itrialElement)
+      j = elem_igetCoordSystem(p_relementDistribution%celement)
       
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
@@ -3528,7 +3528,7 @@ CONTAINS
       ALLOCATE(Dderivatives(nlocalDOFsDest,nelementsPerBlock,2))
 
       ! Check if one of the trial/test elements is nonparametric
-      bnonparTrial  = elem_isNonparametric(p_relementDistribution%itestElement)
+      bnonparTrial  = elem_isNonparametric(p_relementDistribution%celement)
                       
       ! Let p_DcubPtsTest point either to p_DcubPtsReal or
       ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -3561,11 +3561,11 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
-                                     .TRUE.,IdofsTrial)
+                                     IdofsTrial)
 
         ! Also calculate the global DOF's in our destination vector(s)
         CALL dof_locGlobMapping_mult(p_rdiscrDest, p_IelementList(IELset:IELmax), &
-                                     .TRUE.,IdofsDest)
+                                     IdofsDest)
 
         ! We have the coordinates of the cubature points saved in the
         ! coordinate array from above. Unfortunately for nonparametric
@@ -3578,7 +3578,7 @@ CONTAINS
         ! elements in the current set. 
         
         CALL trafo_getCoords_sim (elem_igetTrafoType(&
-            p_relementDistribution%itrialElement),&
+            p_relementDistribution%celement),&
             p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
         
         ! Depending on the type of transformation, we must now choose
@@ -3586,7 +3586,7 @@ CONTAINS
         ! In case we use a nonparametric element, we need the 
         ! coordinates of the points on the real element, too.
         CALL trafo_calctrafo_sim (&
-              p_rdiscrSource%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+              p_rdiscrSource%RelementDistr(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
               p_DcubPtsReal)
@@ -3604,13 +3604,13 @@ CONTAINS
         
         CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%itrialElement, IdofsTrial, &
+              p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
               Dderivatives(:,1:IELmax-IELset+1_I32,1))
 
         CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%itrialElement, IdofsTrial, &
+              p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
               Dderivatives(:,1:IELmax-IELset+1_I32,2))
 

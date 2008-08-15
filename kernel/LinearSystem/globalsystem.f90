@@ -447,7 +447,9 @@ CONTAINS
       ! There's no appropriate discretisation or boundary condition
       ! structure for a global matrix! These only apply to
       ! scalar discretisations.
-      NULLIFY(rdestMatrix%p_rblockDiscretisation)
+      NULLIFY(rdestMatrix%p_rblockDiscrTest)
+      NULLIFY(rdestMatrix%p_rblockDiscrTrial)
+      rdestMatrix%bidenticalTrialAndTest = .true.
       NULLIFY(rdestMatrix%p_rdiscreteBC)
       NULLIFY(rdestMatrix%p_rdiscreteBCfict)
 

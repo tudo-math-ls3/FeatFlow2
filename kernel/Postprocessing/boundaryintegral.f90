@@ -473,7 +473,7 @@ CONTAINS
     TYPE(t_collection) :: rcollection
     
     ! Get the underlying discretisation
-    p_rdiscr => rvectorScalar%p_rspatialDiscretisation
+    p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
@@ -617,7 +617,7 @@ CONTAINS
     TYPE(t_collection) :: rcollection
     
     ! Get the underlying discretisation
-    p_rdiscr => rvectorScalar%p_rspatialDiscretisation
+    p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
@@ -757,15 +757,15 @@ CONTAINS
         ! normal vectors of the edges adjacent to such a point!
         IF (DpointPar(ipoint,iel) .EQ. dminPar) THEN
           ! Start point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscretisation%p_rboundary, ibct, &
+          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,BDR_NORMAL_RIGHT,BDR_PAR_LENGTH)
         ELSE IF (DpointPar(ipoint,iel) .EQ. dmaxPar) THEN
           ! End point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscretisation%p_rboundary, ibct, &
+          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,BDR_NORMAL_LEFT,BDR_PAR_LENGTH)
         ELSE
           ! Inner point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscretisation%p_rboundary, ibct, &
+          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,cparType=BDR_PAR_LENGTH)
         END IF
       

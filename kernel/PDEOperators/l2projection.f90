@@ -166,7 +166,7 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     CALL linf_buildVectorScalar (&
-              rmatrixMass%p_rspatialDiscretisation,rlinform,.TRUE.,&
+              rmatrixMass%p_rspatialDiscrTest,rlinform,.TRUE.,&
               rvectorTemp1,fcoeff_buildVectorSc_sim,rcollection)
               
     ! This is also the initial defect because x=0!

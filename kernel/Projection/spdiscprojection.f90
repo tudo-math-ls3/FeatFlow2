@@ -82,8 +82,8 @@ CONTAINS
     ! - double precision vectors only
     ! - all vectors must be unsorted
     
-    p_rsourceDiscr => rsourceVector%p_rspatialDiscretisation
-    p_rdestDiscr => rdestVector%p_rspatialDiscretisation
+    p_rsourceDiscr => rsourceVector%p_rspatialDiscr
+    p_rdestDiscr => rdestVector%p_rspatialDiscr
     
     IF (.NOT. ASSOCIATED(p_rsourceDiscr)) THEN
       PRINT *,'spdp_projectSolutionScalar: No source discretisation!'
@@ -121,8 +121,8 @@ CONTAINS
     
     ! Ok, now we have a chance that we can convert.
     ! If the spaces are identical, we can simply copy the vector
-    IF (p_rsourceDiscr%RelementDistribution(1)%itrialElement .EQ. &
-        p_rdestDiscr%RelementDistribution(1)%itrialElement) THEN
+    IF (p_rsourceDiscr%RelementDistr(1)%celement .EQ. &
+        p_rdestDiscr%RelementDistr(1)%celement) THEN
         
       ! Ok, that's easy.
       ! Copy the vector data but prevent structural data from being overwritten.
@@ -145,13 +145,13 @@ CONTAINS
     
     ! What is the destination space?
     ! Remark: Currently only 2D / 3D Q1 supported...
-    SELECT CASE (elem_getPrimaryElement(p_rdestDiscr%RelementDistribution(1)%&
-                                        itrialElement))
+    SELECT CASE (elem_getPrimaryElement(p_rdestDiscr%RelementDistr(1)%&
+                                        celement))
     CASE (EL_Q1)
       ! So we should convert the source vector into a Q1 destination vector.
       ! Which element is used in the trial space?
-      SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistribution(1)%&
-                                          itrialElement))
+      SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
+                                          celement))
       CASE (EL_Q0)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
         !
@@ -230,8 +230,8 @@ CONTAINS
     CASE (EL_Q1_3D)
         ! So we should convert the source vector into a 3D Q1 destination vector.
       ! Which element is used in the trial space?
-      SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistribution(1)%&
-                                          itrialElement))
+      SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
+                                          celement))
       CASE (EL_Q0_3D)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
         !
@@ -691,7 +691,7 @@ CONTAINS
 !</subroutine>
 
     ! Check that the source discretisation structure is valid.
-    IF (rsourceVector%p_rspatialDiscretisation%ndimension .NE. NDIM2D) THEN
+    IF (rsourceVector%p_rspatialDiscr%ndimension .NE. NDIM2D) THEN
       CALL output_line ('Only 2D discretisation supported!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
                         'spdp_stdProjectionToP1Q1')  
@@ -707,7 +707,7 @@ CONTAINS
       ! much memory...
       
       CALL spdiscr_deriveDiscr_triquad(&
-          rsourceVector%p_rspatialDiscretisation,&
+          rsourceVector%p_rspatialDiscr,&
           EL_P1,EL_Q1,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
           rdestDiscretisation)
     

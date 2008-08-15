@@ -563,7 +563,7 @@ CONTAINS
     IF (PRESENT(dright)) CALL bcasm_newBCentry(rdiscreteBC, IbcIndex(2))
     
     ! Which component is to be discretised?
-    p_rspatialDiscr => rblockDiscr%RspatialDiscretisation(1)
+    p_rspatialDiscr => rblockDiscr%RspatialDiscr(1)
     p_rtria => p_rspatialDiscr%p_rtriangulation
     
     ! Make sure that there is only one FE space in the discretisation.
@@ -579,10 +579,10 @@ CONTAINS
     END IF
     
     ! Get the element distribution from the spatial discretisation
-    p_relemDist => p_rspatialDiscr%RelementDistribution(1)
+    p_relemDist => p_rspatialDiscr%RelementDistr(1)
     
     ! Get the element type of the trial functions
-    ielemType = elem_getPrimaryElement(p_relemDist%itrialElement)
+    ielemType = elem_getPrimaryElement(p_relemDist%celement)
     
     ! Get the boundary component index array
     CALL storage_getbase_int(p_rtria%h_IboundaryCpIdx, p_IbndCpIdx)
@@ -638,7 +638,7 @@ CONTAINS
         ! P0_1D element
         ! This is the easy case - there's only one DOF per element and this
         ! is the one we are searching for...
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
       
       CASE (EL_P1_1D)
@@ -646,19 +646,19 @@ CONTAINS
         ! In this case the boundary vertice is one of the two DOFs of the
         ! element - for the left boundary vertice it is the first DOF of
         ! the left boundary element, for the right one it is the second.
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
         
       CASE (EL_P2_1D)
         ! P2_1D element
         ! For the left boundary vertice we need to fix the first DOF, for
         ! the right boundary we need the second DOF.
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
       
       CASE (EL_S31_1D)
         ! S31_1L element
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
               
       END SELECT
@@ -713,7 +713,7 @@ CONTAINS
         ! P0_1D element
         ! This is the easy case - there's only one DOF per element and this
         ! is the one we are searching for...
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
       
       CASE (EL_P1_1D)
@@ -721,19 +721,19 @@ CONTAINS
         ! In this case the boundary vertice is one of the two DOFs of the
         ! element - for the left boundary vertice it is the first DOF of
         ! the left boundary element, for the right one it is the second.
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
         
       CASE (EL_P2_1D)
         ! P2_1D element
         ! For the left boundary vertice we need to fix the first DOF, for
         ! the right boundary we need the second DOF.
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
 
       CASE (EL_S31_1D)
         ! S31_1L element
-        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, .FALSE., IDOFs)
+        CALL dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
 
       END SELECT
@@ -1395,7 +1395,7 @@ CONTAINS
     IF (PRESENT(ccomplexity)) casmComplexity = ccomplexity
     
     IF ((iequation .LT. 1) .OR. &
-        (iequation .GT. SIZE(rblockDiscretisation%RspatialDiscretisation))) THEN
+        (iequation .GT. SIZE(rblockDiscretisation%RspatialDiscr))) THEN
       CALL output_line (&
           'Specified equation number is out of range:'//TRIM(sys_siL(iequation,10)), &
           OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConRealBd')
@@ -1403,7 +1403,7 @@ CONTAINS
     END IF
     
     ! Which component is to be discretised?
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(iequation)
+    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(iequation)
 
     ! For easier access:
     p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
@@ -1411,7 +1411,7 @@ CONTAINS
     CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
 
-    p_RelementDistribution => p_rspatialDiscretisation%RelementDistribution
+    p_RelementDistribution => p_rspatialDiscretisation%RelementDistr
     
     ! The parameter value arrays may not be initialised.
     IF (p_rtriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE) THEN
@@ -1437,7 +1437,7 @@ CONTAINS
           p_IelementDistr)
     ELSE
       ! All elements are of the samne type. Get it in advance.
-      ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+      ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
       nve = elem_igetNVE (ieltype)
     END IF
     
@@ -1505,11 +1505,11 @@ CONTAINS
     ! that and have to call dof_locGlobMapping for every element separately.
     IF (p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
-                IelementsAtBoundary(1:icount), .FALSE., Idofs)
+                IelementsAtBoundary(1:icount), Idofs)
     ELSE
       DO ielement = 1,icount
         CALL dof_locGlobMapping(p_rspatialDiscretisation, IelementsAtBoundary(ielement),&
-            .FALSE., Idofs(:,ielement))
+            Idofs(:,ielement))
       END DO
     END IF
                    
@@ -1525,7 +1525,7 @@ CONTAINS
       ! Get the element type in case we don't have a uniform triangulation.
       ! Otherwise, ieltype was set to the trial element type above.
       IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
-        ieltype = p_RelementDistribution(p_IelementDistr(ielement))%itrialElement
+        ieltype = p_RelementDistribution(p_IelementDistr(ielement))%celement
         nve = elem_igetNVE (ieltype)
       END IF
         
@@ -2125,7 +2125,7 @@ CONTAINS
 
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(iequation)
+    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(iequation)
 
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
@@ -2142,7 +2142,7 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
     IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
       PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
       PRINT *,'for Q1 element!'
@@ -2360,7 +2360,7 @@ CONTAINS
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
     p_rspatialDiscretisation => &
-      rblockDiscretisation%RspatialDiscretisation(Iequations(1))
+      rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'Discrete pressure drop boundary conditions currently only supported'
@@ -2368,7 +2368,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
     IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
       PRINT *,'Discrete pressure drop boundary conditions currently only supported'
       PRINT *,'for Q1~ element!'
@@ -2615,7 +2615,7 @@ CONTAINS
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
     p_rspatialDiscretisation => &
-      rblockDiscretisation%RspatialDiscretisation(Iequations(1))  
+      rblockDiscretisation%RspatialDiscr(Iequations(1))  
 
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'Discrete Slip boundary conditions currently only supported'
@@ -2623,7 +2623,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
     IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
       PRINT *,'Discrete Slip boundary conditions currently only supported'
       PRINT *,'for Q1~ element!'
@@ -2855,7 +2855,7 @@ CONTAINS
     ! Get the discretisation structure of the first component.
     ! In this first rough implementation, we only support uniform a uniform 
     ! discretisation, so check that we are able to handle the current situation.
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(Iequations(1))
+    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(Iequations(1))
     
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
@@ -2871,7 +2871,7 @@ CONTAINS
     p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
 
     ! All elements are of the samne type. Get it in advance.
-    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
     
     ! Get a new FBC entry
     CALL bcasm_newFBCentry (rdiscreteFBC,iidx)
@@ -3204,7 +3204,7 @@ CONTAINS
   REAL(DP), PARAMETER :: Q18 = 0.125_DP
 
     ! Get the spatial discretisation and the triangulation
-    p_rspatDisc => rblockDiscretisation%RspatialDiscretisation(iequation)
+    p_rspatDisc => rblockDiscretisation%RspatialDiscr(iequation)
     Icomponents(1) = iequation
     cinfoNeeded = DISCBC_NEEDFUNC
 
@@ -3218,7 +3218,7 @@ CONTAINS
     ELSE
   
       ! Get the one and only element type
-      ielemType = p_rspatDisc%RelementDistribution(1)%itestElement
+      ielemType = p_rspatDisc%RelementDistr(1)%celement
       buniform = .TRUE.
   
     END IF
@@ -3305,7 +3305,7 @@ CONTAINS
     p_rdirichlet%icomponent = iequation
     
     ! Get the total number of global DOFs
-    inumGlobalDofs = dof_igetNDofGlob(p_rspatDisc, .TRUE.)
+    inumGlobalDofs = dof_igetNDofGlob(p_rspatDisc)
     
     ! We have to ensure that one DOF does not get added to the dirichlet BC
     ! array twice. To ensure this, we will create an array called DOF-Bitmap.
@@ -3354,7 +3354,7 @@ CONTAINS
       ! The discretisation is uniform. In this nice case, our initial
       ! guess will be exact.
       SELECT CASE(elem_getPrimaryElement(&
-        p_rspatDisc%RelementDistribution(1)%itestElement))
+        p_rspatDisc%RelementDistr(1)%celement))
       
       ! P0/Q0 elements (and 2D QP1 element)
       CASE (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D)
@@ -3414,12 +3414,12 @@ CONTAINS
         Iwhere(4) = iel
         
         ! Get all global dofs on this element
-        CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+        CALL dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
         
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
         IF (.NOT. buniform) ielemType = &
-          p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+          p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
         
         ! Now we need to find which global DOF the currently processed
         ! vertices belongs to.
@@ -3527,12 +3527,12 @@ CONTAINS
           Iwhere(4) = iel
         
           ! Get all global dofs on this element
-          CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+          CALL dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
           
           ! Now get the element type for this element (if the discretisation
           ! is not uniform)
           IF (.NOT. buniform) ielemType = &
-            p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+            p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
           
           ! Now we need to find which global DOF the currently processed
           ! edge belongs to.
@@ -3644,12 +3644,12 @@ CONTAINS
         Iwhere(4) = iel
       
         ! Get all global dofs on this element
-        CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+        CALL dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
         
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
         IF (.NOT. buniform) ielemType = &
-          p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+          p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
         
         ! Now we need to find which global DOF the currently processed
         ! face belongs to.
@@ -3719,12 +3719,12 @@ CONTAINS
       Iwhere(4) = iel
 
       ! Get all global dofs on this element
-      CALL dof_locGlobMapping(p_rspatDisc, iel, .TRUE., IdofGlob)
+      CALL dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
       
       ! Now get the element type for this element (if the discretisation
       ! is not uniform)
       IF (.NOT. buniform) ielemType = &
-        p_rspatDisc%RelementDistribution(p_IelemDist(iel))%itestElement
+        p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
       
       ! Now we need to find which global DOF the currently processed
       ! element belongs to.

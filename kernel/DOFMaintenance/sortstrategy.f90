@@ -909,7 +909,7 @@ CONTAINS
     
       ! FE-space?
       SELECT CASE (elem_getPrimaryElement(&
-                       rdiscretisation%RelementDistribution(1)%itrialElement))
+                       rdiscretisation%RelementDistr(1)%celement))
       CASE (EL_Q1,EL_P1)
       
         ! $Q_1$-element. Take the vertex coordinates as DOF's and sort for that.
@@ -1143,7 +1143,7 @@ CONTAINS
     
       ! FE-space?
       SELECT CASE (elem_getPrimaryElement(&
-                       rdiscretisation%RelementDistribution(1)%itrialElement))
+                       rdiscretisation%RelementDistr(1)%celement))
       CASE (EL_Q1)
       
         ! Get geometrical data
@@ -1562,7 +1562,7 @@ CONTAINS
         IF (bisUniform) THEN
           ! One element type for all elements
           Rhierarchy(ilev)%ieltype = &
-              Rdiscretisation(ilev)%RelementDistribution(1)%itrialElement
+              Rdiscretisation(ilev)%RelementDistr(1)%celement
         ELSE
           ! A different element type for every element.
           ! Get a pointer to the array that defines the element distribution
@@ -1634,11 +1634,11 @@ CONTAINS
           ELSE
             ! Get the element distribution and from that the element type.
             ieldistr = Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
-            ieltype = Rdiscretisation(ilev)%RelementDistribution(ieldistr)%itrialElement
+            ieltype = Rdiscretisation(ilev)%RelementDistr(ieldistr)%celement
           END IF
           
           ndof = elem_igetNDofLoc(ieltype)
-          CALL dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev), .FALSE., Idofs)
+          CALL dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev),  Idofs)
           
           ! Check the DOF's. All DOF's we don't have yet, we collect into the
           ! permutation.

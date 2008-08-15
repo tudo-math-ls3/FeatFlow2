@@ -96,7 +96,7 @@ CONTAINS
 
   ! A list of spatial discretisation structures for the three equations
   ! that are supported by CC2D: x-velocity, y-velocity, pressure
-  TYPE(t_spatialDiscretisation), DIMENSION(3) :: RspatialDiscretisation
+  TYPE(t_spatialDiscretisation), DIMENSION(3) :: RspatialDiscr
   
 !</input>
   
@@ -151,7 +151,7 @@ CONTAINS
   p_rsolverNode%depsAbs = daccuracyAbs
   
   ! Initialise a standard interlevel projection structure for all levels.
-  CALL mlprj_initProjectionDirect (rprojection,RspatialDiscretisation)
+  CALL mlprj_initProjectionDirect (rprojection,RspatialDiscr)
   
   ! Continue to configure MG by accessing p_rmgSolver.
   ! Loop through the levels.

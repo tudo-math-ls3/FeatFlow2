@@ -134,8 +134,8 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    IF ((rfineMatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-        (rcoarseMatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM)) THEN
+    IF ((rfineMatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
+        (rcoarseMatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
       CALL sys_halt()
     END IF
@@ -158,8 +158,8 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    i1 = rfineMatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    i2 = rcoarseMatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    i1 = rfineMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
+    i2 = rcoarseMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
     IF ((elem_getPrimaryElement(i1) .NE. EL_Q1T) .OR. &
         (elem_getPrimaryElement(i2) .NE. EL_Q1T)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
@@ -169,8 +169,8 @@ CONTAINS
     ! Looks good, so let's start.
     !
     ! Get information about the triangulation on the coarse and fine grid.
-    p_rtriaCoarse => rcoarseMatrix%p_rspatialDiscretisation%p_rtriangulation
-    p_rtriaFine => rfineMatrix%p_rspatialDiscretisation%p_rtriangulation
+    p_rtriaCoarse => rcoarseMatrix%p_rspatialDiscrTest%p_rtriangulation
+    p_rtriaFine => rfineMatrix%p_rspatialDiscrTest%p_rtriangulation
 
     ! Fetch all the information we need from the triangulation and the matrices
     ! for easier access:

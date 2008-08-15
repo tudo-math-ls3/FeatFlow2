@@ -302,7 +302,7 @@ CONTAINS
 !    ! Initialise the vector parameters
 !    rvectorScalar%NEQ            = NEQ
 !    rvectorScalar%iidxFirstEntry = 1
-!    rvectorScalar%p_rspatialDiscretisation => rdiscretisation
+!    rvectorScalar%p_rspatialDiscr => rdiscretisation
 !    rvectorScalar%cdataType      = ST_DOUBLE
 !
 !    ! Clear the entries in the vector - we need to start with zero
@@ -358,7 +358,7 @@ CONTAINS
 !  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
 !  
 !    ! Activate the current element distribution
-!    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+!    p_elementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
 !  
 !    ! Cancel if this element distribution is empty.
 !    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
@@ -485,7 +485,7 @@ CONTAINS
 !      ! Unfortunately, we need the real coordinates of the cubature points
 !      ! anyway for the function - so calculate them all.
 !      CALL trafo_calctrafo_sim (&
-!            rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+!            rdiscretisation%RelementDistr(icurrentElementDistr)%ctrafoType,&
 !            IELmax-IELset+1,ncubp,Dcoords,&
 !            DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
 !    
@@ -795,7 +795,7 @@ CONTAINS
 !    ! Initialise the vector parameters
 !    rvectorScalar%NEQ            = NEQ
 !    rvectorScalar%iidxFirstEntry = 1
-!    rvectorScalar%p_rspatialDiscretisation => rdiscretisation
+!    rvectorScalar%p_rspatialDiscr => rdiscretisation
 !    rvectorScalar%cdataType      = ST_DOUBLE
 !
 !    ! Clear the entries in the vector - we need to start with zero
@@ -848,7 +848,7 @@ CONTAINS
 !  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
 !  
 !    ! Activate the current element distribution
-!    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+!    p_elementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
 !  
 !    ! Cancel if this element distribution is empty.
 !    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
@@ -1207,7 +1207,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA, NVE
+  INTEGER :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
   REAL(DP) :: OM,AUX
   
@@ -1316,7 +1316,7 @@ CONTAINS
     ! Initialise the vector parameters
     rvectorScalar%NEQ            = NEQ
     rvectorScalar%iidxFirstEntry = 1
-    rvectorScalar%p_rspatialDiscretisation => rdiscretisation
+    rvectorScalar%p_rspatialDiscr => rdiscretisation
     rvectorScalar%cdataType      = ST_DOUBLE
 
     ! Clear the entries in the vector - we need to start with zero
@@ -1363,24 +1363,17 @@ CONTAINS
   DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
   
     ! Activate the current element distribution
-    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+    p_elementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
     IF (p_elementDistribution%NEL .EQ. 0) CYCLE
 
     ! Get the number of local DOF's for trial and test functions
-    indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
-    
-    ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
-    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      PRINT *,'linf_buildVectord_conf2: element spaces incompatible!'
-      CALL sys_halt()
-    END IF
+    indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_elementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -1412,7 +1405,7 @@ CONTAINS
     DO IALBET = 1,rform%itermcount
       IA = rform%Idescriptors(IALBET)
       IF ((IA.LT.0) .OR. &
-          (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
+          (IA .GT. elem_getMaxDerivative(p_elementDistribution%celement))) THEN
         PRINT *,'linf_buildVectord_conf2: Specified test-derivative',IA,&
                 ' not available'
         CALL sys_halt()
@@ -1426,7 +1419,7 @@ CONTAINS
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%itestElement),&
+    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -1461,7 +1454,7 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our LINF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,IdofsTest)
+                                  IdofsTest)
                                    
       !CALL ZTIME(DT(4))
       
@@ -1476,9 +1469,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%itrialElement)
-      cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_elementDistribution%itestElement))
+      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%celement)
                       
       ! Evaluate real coordinates; they are needed in the callback function.
       cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
@@ -1512,7 +1503,7 @@ CONTAINS
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_elementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_elementDistribution%celement, &
           rintSubset%revalElementSet, Bder, DbasTest)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------

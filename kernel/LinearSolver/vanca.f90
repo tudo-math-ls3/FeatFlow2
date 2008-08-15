@@ -915,7 +915,7 @@ CONTAINS
       DO j=1,nblocks
         IF (lsysbl_isSubmatrixPresent(rmatrix,j,i)) THEN
           ! Get a/the discretisation structure of the current block/matrix column
-          p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
+          p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           
           IF ((p_rdiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
               (p_rdiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
@@ -958,7 +958,7 @@ CONTAINS
             ! Get the number of local DOF's in the current block.
             ! Note that we restrict to uniform discretisations!
             rvancaGeneral%p_InDofsLocal(i) = elem_igetNDofLoc(p_rdiscretisation% &
-                                                RelementDistribution(1)%itrialElement)
+                                                RelementDistr(1)%celement)
             
             ! Calculate the maximum number of local DOF's
             nmaxLocalDOFs = MAX(nmaxLocalDOFs,rvancaGeneral%p_InDofsLocal(i))
@@ -1075,7 +1075,7 @@ CONTAINS
   
   ! Get the discretisation structure that tells us which elements form
   ! element groups...
-  p_rdiscretisation => rvector%RvectorBlock(1)%p_rspatialDiscretisation
+  p_rdiscretisation => rvector%RvectorBlock(1)%p_rspatialDiscr
   
   ! Loop over the element distributions/groups
   DO ieldistr = 1,p_rdiscretisation%inumFEspaces
@@ -1083,7 +1083,7 @@ CONTAINS
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions.
     CALL storage_getbase_int (p_rdiscretisation% &
-                              RelementDistribution(ieldistr)%h_IelementList, &
+                              RelementDistr(ieldistr)%h_IelementList, &
                               p_IelementList)
       
     ! Loop over the elements - blockwise.
@@ -1103,9 +1103,9 @@ CONTAINS
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our VANCA_NELEMSIM elements simultaneously.
-        CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscretisation,&
+        CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscr,&
                                      p_IelementList(IELset:IELmax), &
-                                     .FALSE.,rvancaGeneral%p_IelementDOFs(:,:,i))
+                                     rvancaGeneral%p_IelementDOFs(:,:,i))
 
         ! If the vector is sorted, push the DOF's through the permutation to get
         ! the actual DOF's.
@@ -1720,7 +1720,7 @@ CONTAINS
         rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
 
     ! Get the block discretisation structure from the matrix.
-    p_rblockDiscr => rmatrix%p_rblockDiscretisation
+    p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
     IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
       CALL output_line ('No discretisation!',&
@@ -1730,9 +1730,9 @@ CONTAINS
     
     ! Get the discretisation structure of U,V and P from the block
     ! discretisation structure.
-    rvanca%rvanca2DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
-    rvanca%rvanca2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
-    rvanca%rvanca2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(3)
+    rvanca%rvanca2DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscr(1)
+    rvanca%rvanca2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
+    rvanca%rvanca2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     
     IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
         rvanca%rvanca2DNavSt%p_rspatialDiscrV%inumFESpaces) THEN
@@ -1822,18 +1822,18 @@ CONTAINS
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
-          rvanca2DNavSt%p_rspatialDiscrU%RelementDistribution(ielementdist)
+          rvanca2DNavSt%p_rspatialDiscrU%RelementDistr(ielementdist)
       p_relementDistrV => &
-          rvanca2DNavSt%p_rspatialDiscrV%RelementDistribution(ielementdist)
+          rvanca2DNavSt%p_rspatialDiscrV%RelementDistr(ielementdist)
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
       IF (rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
         p_relementDistrP => &
-            rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(ielementdist)
+            rvanca2DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
       ELSE
         p_relementDistrP => &
-            rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(1)
+            rvanca2DNavSt%p_rspatialDiscrP%RelementDistr(1)
       END IF
       
       ! Get the list of the elements to process.
@@ -1843,9 +1843,9 @@ CONTAINS
       CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0)) THEN
+      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0)) THEN
         ! Q1~/Q1~/Q0 discretisation
         
         ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
@@ -1909,9 +1909,9 @@ CONTAINS
         END SELECT
         
       ELSE IF &
-        ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q2) .AND.&
-          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q2) .AND.&
-          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_QP1)) THEN
+        ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q2) .AND.&
+          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q2) .AND.&
+          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_QP1)) THEN
         ! Q2/Q2/QP1 discretisation
         
         ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
@@ -2197,9 +2197,9 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -2607,9 +2607,9 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -3411,9 +3411,9 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -4019,12 +4019,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -4479,12 +4479,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -4940,12 +4940,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -5399,12 +5399,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -5854,12 +5854,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -6318,12 +6318,12 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -6840,12 +6840,12 @@ CONTAINS
     END IF
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -7601,7 +7601,7 @@ CONTAINS
         rmatrix%RmatrixBlock(1:6,1:6)%dscaleFactor
 
     ! Get the block discretisation structure from the matrix.
-    p_rblockDiscr => rmatrix%p_rblockDiscretisation
+    p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
     IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
       CALL output_line ('No discretisation!',&
@@ -7613,9 +7613,9 @@ CONTAINS
     ! discretisation structure.
     ! We assume that the discretisation of the dual equations are the same
     ! as for the primal equations!
-    rvanca%rvanca2DNavStOptC%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
-    rvanca%rvanca2DNavStOptC%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
-    rvanca%rvanca2DNavStOptC%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(3)
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscr(1)
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     
     IF (rvanca%rvanca2DNavStOptC%p_rspatialDiscrU%inumFESpaces .NE. &
         rvanca%rvanca2DNavStOptC%p_rspatialDiscrV%inumFESpaces) THEN
@@ -7699,18 +7699,18 @@ CONTAINS
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
-          rvanca2DNavStOptC%p_rspatialDiscrU%RelementDistribution(ielementdist)
+          rvanca2DNavStOptC%p_rspatialDiscrU%RelementDistr(ielementdist)
       p_relementDistrV => &
-          rvanca2DNavStOptC%p_rspatialDiscrV%RelementDistribution(ielementdist)
+          rvanca2DNavStOptC%p_rspatialDiscrV%RelementDistr(ielementdist)
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
       IF (rvanca2DNavStOptC%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
         p_relementDistrP => &
-            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistribution(ielementdist)
+            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistr(ielementdist)
       ELSE
         p_relementDistrP => &
-            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistribution(1)
+            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistr(1)
       END IF
       
       ! Get the list of the elements to process.
@@ -7720,9 +7720,9 @@ CONTAINS
       CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0)) THEN
+      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0)) THEN
         
         ! Q1~/Q1~/Q0 discretisation
         
@@ -7922,9 +7922,9 @@ CONTAINS
     dmult66 = rvanca%Dmultipliers(6,6)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -8488,12 +8488,12 @@ CONTAINS
     END IF
 
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -9356,12 +9356,12 @@ CONTAINS
     END IF
 
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -10831,7 +10831,7 @@ CONTAINS
         rmatrix%RmatrixBlock(1:4,1:4)%dscaleFactor
 
     ! Get the block discretisation structure from the matrix.
-    p_rblockDiscr => rmatrix%p_rblockDiscretisation
+    p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
     IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
       CALL output_line ('No discretisation!',&
@@ -10841,10 +10841,10 @@ CONTAINS
     
     ! Get the discretisation structure of U,V,W and P from the block
     ! discretisation structure.
-    rvanca%rvanca3DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
-    rvanca%rvanca3DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
-    rvanca%rvanca3DNavSt%p_rspatialDiscrW => p_rblockDiscr%RspatialDiscretisation(3)
-    rvanca%rvanca3DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(4)
+    rvanca%rvanca3DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscr(1)
+    rvanca%rvanca3DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
+    rvanca%rvanca3DNavSt%p_rspatialDiscrW => p_rblockDiscr%RspatialDiscr(3)
+    rvanca%rvanca3DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(4)
     
     IF ((rvanca%rvanca3DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
          rvanca%rvanca3DNavSt%p_rspatialDiscrV%inumFESpaces) .OR. &
@@ -10937,20 +10937,20 @@ CONTAINS
     
       ! Get the corresponding element distributions of U, V, W and P.
       p_relementDistrU => &
-          rvanca3DNavSt%p_rspatialDiscrU%RelementDistribution(ielementdist)
+          rvanca3DNavSt%p_rspatialDiscrU%RelementDistr(ielementdist)
       p_relementDistrV => &
-          rvanca3DNavSt%p_rspatialDiscrV%RelementDistribution(ielementdist)
+          rvanca3DNavSt%p_rspatialDiscrV%RelementDistr(ielementdist)
       p_relementDistrW => &
-          rvanca3DNavSt%p_rspatialDiscrW%RelementDistribution(ielementdist)
+          rvanca3DNavSt%p_rspatialDiscrW%RelementDistr(ielementdist)
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
       IF (rvanca3DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
         p_relementDistrP => &
-            rvanca3DNavSt%p_rspatialDiscrP%RelementDistribution(ielementdist)
+            rvanca3DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
       ELSE
         p_relementDistrP => &
-            rvanca3DNavSt%p_rspatialDiscrP%RelementDistribution(1)
+            rvanca3DNavSt%p_rspatialDiscrP%RelementDistr(1)
       END IF
       
       ! Get the list of the elements to process.
@@ -10960,10 +10960,10 @@ CONTAINS
       CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrW%itrialElement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0_3D)) THEN
+      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T_3D) .AND. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T_3D) .AND. &
+          (elem_getPrimaryElement(p_relementDistrW%celement) .EQ. EL_Q1T_3D) .AND. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0_3D)) THEN
         ! Q1~/Q1~/Q1~/Q0 discretisation
         
         ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
@@ -11270,10 +11270,10 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -11563,10 +11563,10 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)
@@ -12273,13 +12273,13 @@ CONTAINS
     p_DD3 => rvanca%p_DD3
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
-    NAT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NAT
-    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
+    NAT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NAT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
     CALL lsysbl_getbase_double (rrhs,p_Drhs)

@@ -189,12 +189,12 @@ CONTAINS
     END IF
 
     ! We support only uniform discretisation structures.
-    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscr)) THEN
       PRINT *,'ppns2D_bdforces: No discretisation structure!'
       CALL sys_halt()
     END IF
 
-    IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rvector%p_rblockDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_bdforces_uniform: Discretisation too complex!'
       CALL sys_halt()
     END IF
@@ -213,13 +213,13 @@ CONTAINS
     
     ! Get pointers to the spatial discretisation structures of the
     ! veloctiy and pressure
-    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscretisation
-    p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscretisation
+    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
+    p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscr
     
     ! What is the actual element that is used for the discretisation?
     
-    ielemU = p_rdiscrU%RelementDistribution(1)%itrialElement
-    ielemP = p_rdiscrP%RelementDistribution(1)%itrialElement
+    ielemU = p_rdiscrU%RelementDistr(1)%celement
+    ielemP = p_rdiscrP%RelementDistr(1)%celement
     
     ! So far so good, we have checked that the assumptions for the integration
     ! are fulfilled. Now we can start the actual integration.
@@ -388,8 +388,8 @@ CONTAINS
         ! For the integration, we need the global DOF's on our element
         ! for U and P:
         
-        CALL dof_locGlobMapping(p_rdiscrU, iel, .FALSE., IdofsU)
-        CALL dof_locGlobMapping(p_rdiscrP, iel, .FALSE., IdofsP)
+        CALL dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
+        CALL dof_locGlobMapping(p_rdiscrP, iel, IdofsP)
         
         ! Get the coordinates of the point on the current element
         Dcoords (1:NDIM2D,1:nlocaledges) = &
@@ -632,12 +632,12 @@ CONTAINS
     END IF
 
     ! We support only uniform discretisation structures.
-    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscr)) THEN
       PRINT *,'ppns3D_bdforces: No discretisation structure!'
       CALL sys_halt()
     END IF
 
-    IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rvector%p_rblockDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns3D_bdforces_uniform: Discretisation too complex!'
       CALL sys_halt()
     END IF
@@ -658,13 +658,13 @@ CONTAINS
     
     ! Get pointers to the spatial discretisation structures of the
     ! veloctiy and pressure
-    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscretisation
-    p_rdiscrP => rvector%RvectorBlock(4)%p_rspatialDiscretisation
+    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
+    p_rdiscrP => rvector%RvectorBlock(4)%p_rspatialDiscr
     
     ! What is the actual element that is used for the discretisation?
     
-    ielemU = p_rdiscrU%RelementDistribution(1)%itrialElement
-    ielemP = p_rdiscrP%RelementDistribution(1)%itrialElement
+    ielemU = p_rdiscrU%RelementDistr(1)%celement
+    ielemP = p_rdiscrP%RelementDistr(1)%celement
     
     ! So far so good, we have checked that the assumptions for the integration
     ! are fulfilled. Now we can start the actual integration.
@@ -774,8 +774,8 @@ CONTAINS
               
       ! For the integration, we need the global DOF's on our element
       ! for U and P:
-      CALL dof_locGlobMapping(p_rdiscrU, iel, .FALSE., IdofsU)
-      CALL dof_locGlobMapping(p_rdiscrP, iel, .FALSE., IdofsP)
+      CALL dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
+      CALL dof_locGlobMapping(p_rdiscrP, iel, IdofsP)
       
       ! Calculate the transformation for all points on the current element.
       ! If we have only parametric elements, we don't have to calculate
@@ -1059,32 +1059,32 @@ CONTAINS
     END IF
 
     ! We support only uniform discretisation structures.
-    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rvector%p_rblockDiscr)) THEN
       PRINT *,'ppns2D_streamfct_uniform: No discretisation structure in rvector!'
       CALL sys_halt()
     END IF
 
-    IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rvector%p_rblockDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_streamfct_uniform: Discretisation of rvector too complex!'
       CALL sys_halt()
     END IF
 
-    IF (.NOT. ASSOCIATED(rdestVector%p_rspatialDiscretisation)) THEN
+    IF (.NOT. ASSOCIATED(rdestVector%p_rspatialDiscr)) THEN
       PRINT *,'ppns2D_streamfct_uniform: No discretisation structure in rdestVector!'
       CALL sys_halt()
     END IF
 
-    IF (rdestVector%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rdestVector%p_rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_streamfct_uniform: Discretisation of rdestVector too complex!'
       CALL sys_halt()
     END IF
 
-    ieltype1 = rvector%p_rblockDiscretisation% &
-        RspatialDiscretisation(1)%RelementDistribution(1)%itrialElement
-    ieltype2 = rvector%p_rblockDiscretisation% &
-        RspatialDiscretisation(2)%RelementDistribution(1)%itrialElement
-    ieltypeDest = rdestVector%p_rspatialDiscretisation% &
-        RelementDistribution(1)%itrialElement
+    ieltype1 = rvector%p_rblockDiscr% &
+        RspatialDiscr(1)%RelementDistr(1)%celement
+    ieltype2 = rvector%p_rblockDiscr% &
+        RspatialDiscr(2)%RelementDistr(1)%celement
+    ieltypeDest = rdestVector%p_rspatialDiscr% &
+        RelementDistr(1)%celement
 
     IF (elem_getPrimaryElement(ieltype1) .NE. EL_Q1T) THEN
       PRINT *,'ppns2D_streamfct_uniform: rvector must be discretised with Q1~!'
@@ -1110,7 +1110,7 @@ CONTAINS
     ! based Q1~ solutions. Gives a slight error, but the final Q1
     ! representation is not exact anyway!
     !
-    p_rtriangulation => rdestVector%p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => rdestVector%p_rspatialDiscr%p_rtriangulation
     IF (.NOT. ASSOCIATED(p_rtriangulation)) THEN
       PRINT *,'ppns2D_bdforces_uniform: Unknown triangulation!'
     END IF

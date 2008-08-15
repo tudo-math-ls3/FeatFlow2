@@ -540,9 +540,9 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel,nel,itrialspace
     
     ! Get the discretisation...
-    IF (.NOT. ASSOCIATED(rx%p_rspatialDiscretisation)) RETURN
+    IF (.NOT. ASSOCIATED(rx%p_rspatialDiscr)) RETURN
 
-    p_rdiscretisation => rx%p_rspatialDiscretisation
+    p_rdiscretisation => rx%p_rspatialDiscr
     
     ! ... and check it. If we have a uniform discretisation with P_0/Q_0,
     ! we have the easy case, that the integral of the function rx is
@@ -553,7 +553,7 @@ CONTAINS
     IF (p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
     
       itrialspace = elem_getPrimaryElement(&
-          p_rdiscretisation%RelementDistribution(1)%itrialElement)
+          p_rdiscretisation%RelementDistr(1)%celement)
   
       SELECT CASE (itrialspace)
       CASE (EL_P0, EL_Q0) 

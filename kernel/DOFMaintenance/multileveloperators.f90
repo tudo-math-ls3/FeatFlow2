@@ -372,8 +372,8 @@ CONTAINS
     ! Get the #DOF's of the test space - as #DOF's of the test space is
     ! the number of equations in our matrix. The #DOF's in the trial space
     ! gives the number of columns of our matrix.
-    rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscrCoarse,.FALSE.)
-    rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscrFine,.FALSE.)
+    rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscrCoarse)
+    rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscrFine)
     
     ! and get a pointer to the triangulation.
     p_rtriaCoarse => rdiscrCoarse%p_rtriangulation
@@ -487,7 +487,7 @@ CONTAINS
     NA = NEQ
     
     ! Activate the current coarse mesh element distribution
-    p_relementDistribution => rdiscrCoarse%RelementDistribution(1)
+    p_relementDistribution => rdiscrCoarse%RelementDistr(1)
 
     ! Cancel if this element distribution is empty.
     IF (p_relementDistribution%NEL .EQ. 0) THEN
@@ -496,8 +496,8 @@ CONTAINS
     END IF
 
     ! Get the number of local DOF's for trial and test functions
-    indofTrial = elem_igetNDofLoc(rdiscrCoarse%RelementDistribution(1)%itrialElement)
-    indofTest = elem_igetNDofLoc(rdiscrFine%RelementDistribution(1)%itrialElement)
+    indofTrial = elem_igetNDofLoc(rdiscrCoarse%RelementDistr(1)%celement)
+    indofTest = elem_igetNDofLoc(rdiscrFine%RelementDistr(1)%celement)
     
     ! Calculate the number of coarse mesh elements we want to process
     ! in one run.
@@ -593,9 +593,9 @@ CONTAINS
       ! Call the DOF-mapping routine for the coarse and fine mesh
       CALL dof_locGlobMapping_mult(rdiscrCoarse, &
           p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
-          .TRUE.,p_IdofsTrial)
+          p_IdofsTrial)
       CALL dof_locGlobMapping_mult(rdiscrFine, p_IelementRef(1:NELF), &
-          .TRUE.,p_IdofsTest)
+          p_IdofsTest)
       
       ! Reset the counter
       NELF = 0
@@ -1014,9 +1014,9 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,k,JDFG, ICUBP, NELC,NELF
-  INTEGER(I32) :: IELC,IELF, IDXC,IDXF, NELREF, IDOFE, JDOFE
+  INTEGER(I32) :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
-  REAL(DP) :: OM, DB,dx,dy,dz
+  REAL(DP) :: OM, DB
   
   ! Array to tell the element which derivatives to calculate
   LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
@@ -1139,12 +1139,12 @@ CONTAINS
     CALL storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
     
     ! Activate the current element distributions
-    p_relemDistCoarse => rdiscretisationCoarse%RelementDistribution(1)
-    p_relemDistFine => rdiscretisationFine%RelementDistribution(1)
+    p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(1)
+    p_relemDistFine => rdiscretisationFine%RelementDistr(1)
   
     ! Get the number of local DOF's for trial and test functions
-    indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%itrialElement)
-    indofFine = elem_igetNDofLoc(p_relemDistFine%itrialElement)
+    indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
+    indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
     ! Calculate the number of coarse mesh elements we want to process
     ! in one run.
@@ -1177,8 +1177,8 @@ CONTAINS
       
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%itrialElement)
-    ctrafoFine = elem_igetTrafoType(p_relemDistFine%itrialElement)
+    ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
+    ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
     
     ! Initialise the cubature formula, get cubature weights and point
     ! coordinates on the reference element of the fine mesh
@@ -1224,10 +1224,10 @@ CONTAINS
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
     ALLOCATE(DbasFine(indofFine,&
-             elem_getMaxDerivative(p_relemDistFine%itrialElement),&
+             elem_getMaxDerivative(p_relemDistFine%celement),&
              ncubp,nelementsFine))
     ALLOCATE(DbasCoarse(indofCoarse,&
-             elem_getMaxDerivative(p_relemDistCoarse%itrialElement), &
+             elem_getMaxDerivative(p_relemDistCoarse%celement), &
              ncubpc,nelementsCoarse))
 
     ! Allocate an array saving the local matrices for all elements
@@ -1293,9 +1293,9 @@ CONTAINS
       ! Call the DOF-mapping routine for the coarse and fine mesh
       CALL dof_locGlobMapping_mult(rdiscretisationCoarse, &
           p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
-          .TRUE.,IdofsCoarse)
+          IdofsCoarse)
       CALL dof_locGlobMapping_mult(rdiscretisationFine, p_IelementRef(1:NELF), &
-          .TRUE.,IdofsFine)
+          IdofsFine)
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
       NELF = 0
@@ -1381,8 +1381,8 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%itrialElement)
-      cevalTagFine = elem_getEvaluationTag(p_relemDistFine%itrialElement)
+      cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
+      cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
                       
       cevalTagCoarse = IOR(cevalTagCoarse,EL_EVLTAG_REFPOINTS)
       cevalTagFine   = IOR(cevalTagFine,EL_EVLTAG_REFPOINTS)
@@ -1401,9 +1401,9 @@ CONTAINS
       p_Ddetj => rintSubsetFine%revalElementSet%p_Ddetj
       
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relemDistCoarse%itrialElement, &
+      CALL elem_generic_sim2 (p_relemDistCoarse%celement, &
           rintSubsetCoarse%revalElementSet, Bder, DbasCoarse)
-      CALL elem_generic_sim2 (p_relemDistFine%itrialElement, &
+      CALL elem_generic_sim2 (p_relemDistFine%celement, &
           rintSubsetFine%revalElementSet, Bder, DbasFine)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------

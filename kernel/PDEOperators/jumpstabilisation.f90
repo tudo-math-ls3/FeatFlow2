@@ -84,7 +84,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
       CALL output_line ('Unsupported discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_calcUEOJumpStabilisation')
       CALL sys_halt()
@@ -151,7 +151,6 @@ CONTAINS
   INTEGER(PREC_EDGEIDX) :: IMT
   INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
   INTEGER(PREC_ELEMENTIDX) :: IEL
-  LOGICAL :: bIdenticalTrialAndTest
   INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
   REAL(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
   
@@ -250,8 +249,8 @@ CONTAINS
     bconstViscosity = .TRUE.
 
     ! Get a pointer to the triangulation and discretisation.
-    p_rtriangulation => rmatrixScalar%p_rspatialDiscretisation%p_rtriangulation
-    p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+    p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
+    p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
     
     ! Get Kvert, Kadj, Kmid, Kmel,...
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
@@ -275,17 +274,19 @@ CONTAINS
     CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
     
     ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
     ! Get the number of local DOF's for trial and test functions
-    indofTrialPerElement = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%itestElement)
+    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofTrialPerElement = indofTestPerElement
     
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! Get the number of corner vertices of the element
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
+    IF (NVE .NE. &
+        elem_igetNVE(rmatrixScalar%p_rspatialDiscrTrial%&
+                     RelementDistr(1)%celement)) THEN
       CALL output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
       CALL sys_halt()
@@ -317,7 +318,7 @@ CONTAINS
       
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP,IELcount))
@@ -347,44 +348,25 @@ CONTAINS
     ! a whole element patch.
     
     ALLOCATE(DbasTest(indofTestPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%itestElement),&
+            elem_getMaxDerivative(p_relementDistribution%celement),&
             ncubp,3))
     ALLOCATE(DbasTrial(indofTrialPerElement*2,&
-            elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+            elem_getMaxDerivative(p_relementDistribution%celement), &
             ncubp,3))
-             
-    ! Test if trial/test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
-    ! indicate whether there are identical trial and test functions
-    ! in one block!
-    bIdenticalTrialAndTest = &
-      p_relementDistribution%itrialElement .EQ. p_relementDistribution%itestElement
-      
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
-    ! space IdofTest (if both spaces are identical). 
-    ! We create a pointer for the trial space and not for the test space to
-    ! prevent pointer-arithmetic in the innerst loop below!
-    ! The same for p_IlocalDofsTrial and the permutation array p_IlocalDofTrialRenum.
-    ! Let p_DbasTrial point either to DbasTrial or DbasTest, depending on
-    ! whether the spaces are identical.
-    IF (bIdenticalTrialAndTest) THEN
-      p_IdofsTrial => IdofsTest
-      p_IlocalDofsTrial => IlocalDofsTest
-      p_IlocalDofTrialRenum => IlocalDofTestRenum
-      p_DbasTrial => DbasTest
-    ELSE
-      p_IdofsTrial => IdofsTrial
-      p_IlocalDofsTrial => IlocalDofsTrial
-      p_IlocalDofTrialRenum => IlocalDofTrialRenum
-      p_DbasTrial => DbasTrial
-    END IF
+          
+    ! Test and trial functions must be the same, so let the pointers for
+    ! the trial function arrays point to the test function arrays.
+    ! (The implementation is a little bit cruel here due to bugfixes
+    ! but should work)
+    p_IdofsTrial => IdofsTest
+    p_IlocalDofsTrial => IlocalDofsTest
+    p_IlocalDofTrialRenum => IlocalDofTestRenum
+    p_DbasTrial => DbasTest
     
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-    cevaluationTag = IOR(cevaluationTag,&
-                    elem_getEvaluationTag(p_relementDistribution%itestElement))
+    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
@@ -449,7 +431,7 @@ CONTAINS
       ! Get the global DOF's of the 1 or two elements
       CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
-                                  .TRUE., IdofsTestTempl)
+                                  IdofsTestTempl)
                                    
       ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
@@ -496,55 +478,55 @@ CONTAINS
         
       END DO skiploop
         
-      ! If the trial functions are different, get those DOF's
-      IF (.NOT. bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementsAtEdge (1:IELcount,IMT), &
-                                    .FALSE., IdofsTrialTempl)
-
-        ! Collect the DOF's uniquely in IdofsTrial.
-        ! The DOF's of the first element are taken as they are.
-        
-        ndofTrial = indofTrialPerElement
-        IdofsTrial(1:ndofTrial) = IdofsTrialTempl(1:ndofTrial,1)
-        
-        ! From the 2nd element on, we have to check which
-        ! DOF's already appear in the first element.
-        
-        skiploop2: DO IDOFE = 1,indofTrialPerElement
-          
-          ! Do we have the DOF? 
-          idof = IdofsTrialTempl(IDOFE,IELcount)
-          DO JDOFE=1,ndofTrial
-            IF (IdofsTrial(JDOFE) .EQ. idof) THEN
-              ! Yes, we have it.
-              ! That means, the local DOF idof has to be mapped to the
-              ! local patch dof...
-              IlocalDofTrialRenum (IDOFE) = JDOFE
-              
-              ! Proceed with the next one.
-              CYCLE skiploop2
-            END IF
-          END DO
-          
-          ! We don't have that DOF! Append it to IdofsTrial.
-          ndofTrial = ndofTrial+1
-          IdofsTrial(ndofTrial) = idof
-          IlocalDofTrialRenum (IDOFE) = ndofTrial
-          
-          ! Save also the number of the local DOF.
-          ! Note that the global DOF's in IdofsTrialTempl(1..indofTrialPerElement)
-          ! belong to the local DOF's 1..indofTrialPerElement -- in that order!
-          IlocalDofsTrial(ndofTrial) = IDOFE
-          
-        END DO skiploop2
-          
-      ELSE
+!      ! If the trial functions are different, get those DOF's
+!      IF (.NOT. bIdenticalTrialAndTest) THEN
+!        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+!                                    p_IelementsAtEdge (1:IELcount,IMT), &
+!                                    IdofsTrialTempl)
+!
+!        ! Collect the DOF's uniquely in IdofsTrial.
+!        ! The DOF's of the first element are taken as they are.
+!        
+!        ndofTrial = indofTrialPerElement
+!        IdofsTrial(1:ndofTrial) = IdofsTrialTempl(1:ndofTrial,1)
+!        
+!        ! From the 2nd element on, we have to check which
+!        ! DOF's already appear in the first element.
+!        
+!        skiploop2: DO IDOFE = 1,indofTrialPerElement
+!          
+!          ! Do we have the DOF? 
+!          idof = IdofsTrialTempl(IDOFE,IELcount)
+!          DO JDOFE=1,ndofTrial
+!            IF (IdofsTrial(JDOFE) .EQ. idof) THEN
+!              ! Yes, we have it.
+!              ! That means, the local DOF idof has to be mapped to the
+!              ! local patch dof...
+!              IlocalDofTrialRenum (IDOFE) = JDOFE
+!              
+!              ! Proceed with the next one.
+!              CYCLE skiploop2
+!            END IF
+!          END DO
+!          
+!          ! We don't have that DOF! Append it to IdofsTrial.
+!          ndofTrial = ndofTrial+1
+!          IdofsTrial(ndofTrial) = idof
+!          IlocalDofTrialRenum (IDOFE) = ndofTrial
+!          
+!          ! Save also the number of the local DOF.
+!          ! Note that the global DOF's in IdofsTrialTempl(1..indofTrialPerElement)
+!          ! belong to the local DOF's 1..indofTrialPerElement -- in that order!
+!          IlocalDofsTrial(ndofTrial) = IDOFE
+!          
+!        END DO skiploop2
+!          
+!      ELSE
        
         ! Number of DOF's in test and trial space the same, as DOF's are the same.
         ndofTrial = ndofTest
         
-      END IF
+!      END IF
       
       ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
       ! calculated) is a ndofsTest*ndofsTrial matrix.
@@ -623,7 +605,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, BderTest, DbasTest)
 
       ! Apply the permutation of the local DOF's on the test functions
@@ -660,19 +642,19 @@ CONTAINS
       DbasTest (IlocalDofTestRenum(1:indofTestPerElement),:,:,3) &
         = DbasTest (1:indofTestPerElement,:,:,2)
       
-      ! Omit the calculation of the trial function values if they
-      ! are identical to the test function values.
-      IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim2 (p_relementDistribution%itrialElement, &
-            rintSubset%revalElementSet, BderTrial, DbasTrial)
-
-        ! Apply the renumbering for the 2nd element, store the result in the
-        ! space of the 3rd element.          
-        DbasTrial (IlocalDofTrialRenum(1:indofTrialPerElement),:,:,3) &
-          = DbasTrial (1:indofTrialPerElement,:,:,2)
-            
-      END IF
-      
+!      ! Omit the calculation of the trial function values if they
+!      ! are identical to the test function values.
+!      IF (.NOT. bidenticalTrialAndTest) THEN
+!        CALL elem_generic_sim2 (p_relementDistribution%itrialElement, &
+!            rintSubset%revalElementSet, BderTrial, DbasTrial)
+!
+!        ! Apply the renumbering for the 2nd element, store the result in the
+!        ! space of the 3rd element.          
+!        DbasTrial (IlocalDofTrialRenum(1:indofTrialPerElement),:,:,3) &
+!          = DbasTrial (1:indofTrialPerElement,:,:,2)
+!            
+!      END IF
+!      
       ! What do we have now? When looking at the example, we have:
       !
       ! ndofTest = 7

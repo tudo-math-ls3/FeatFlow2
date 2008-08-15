@@ -398,8 +398,8 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    IF ((rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
+    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    IF ((rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
         (elem_getPrimaryElement(i) .NE. EL_Q1T)) THEN
       PRINT *,'UPWIND: Unsupported discretisation.'
       CALL sys_halt()
@@ -454,7 +454,7 @@ CONTAINS
       
       CALL conv_upwind2dALE_Q1Tdouble ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
-                    rmatrix,rmatrix%p_rspatialDiscretisation%p_rtriangulation, &
+                    rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
                     rconfig%bALE, &
                     p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
@@ -463,7 +463,7 @@ CONTAINS
     
       CALL conv_upwind2dALE_Q1Tdouble ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
-                    rmatrix,rmatrix%p_rspatialDiscretisation%p_rtriangulation, &
+                    rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
                     rconfig%bALE, DmeshVelocity=DmeshVelocity)
 
@@ -1304,8 +1304,8 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
       CALL sys_halt()
     END IF
@@ -1652,11 +1652,11 @@ CONTAINS
     BderALE(DER_FUNC) = .TRUE.
     
     ! Shortcut to the spatial discretisation
-    p_rdiscretisation => rmatrix%p_rspatialDiscretisation
+    p_rdiscretisation => rmatrix%p_rspatialDiscrTest
     
     ! Get the element distribution. Here, we can find information about
     ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
@@ -1669,13 +1669,13 @@ CONTAINS
     
     ! Get the number of local DOF's for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Number of local DOF's
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -1703,7 +1703,7 @@ CONTAINS
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -1727,7 +1727,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -1841,13 +1841,13 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,Idofs)
+                                  Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
       IF (bALE) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
-                                    .TRUE.,IdofsALE)
+                                    IdofsALE)
       END IF
       
       ! Calculate local DELTA's for streamline diffusion method.
@@ -1962,9 +1962,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-      cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -1983,7 +1981,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -2632,11 +2630,11 @@ CONTAINS
     BderALE(DER_FUNC) = .TRUE.
     
     ! Shortcut to the spatial discretisation
-    p_rdiscretisation => rmatrix%p_rspatialDiscretisation
+    p_rdiscretisation => rmatrix%p_rspatialDiscrTest
     
     ! Get the element distribution. Here, we can find information about
     ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
@@ -2649,13 +2647,13 @@ CONTAINS
     
     ! Get the number of local DOF's for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Number of local DOF's
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -2684,7 +2682,7 @@ CONTAINS
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -2708,7 +2706,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -2822,13 +2820,13 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,Idofs)
+                                  Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
       IF (bALE) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
-                                    .TRUE.,IdofsALE)
+                                    IdofsALE)
       END IF
       
       ! Calculate local DELTA's for streamline diffusion method.
@@ -2943,9 +2941,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-      cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -2964,7 +2960,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -3572,9 +3568,9 @@ CONTAINS
       END IF
     END IF
 
-    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation% &
-                RelementDistribution(1)%itrialElement
-    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation%ccomplexity &
+    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
+                RelementDistr(1)%celement
+    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
       CALL sys_halt()
@@ -3933,11 +3929,11 @@ CONTAINS
     
     ! Shortcut to the spatial discretisation.
     ! We assume the same for all, A11, A12, A21 and A22.
-    p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+    p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest
     
     ! Get the element distribution. Here, we can find information about
     ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
@@ -3950,13 +3946,13 @@ CONTAINS
     
     ! Get the number of local DOF's for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indofALE = elem_igetNDofLoc(EL_Q1)
     
     ! Number of local DOF's
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -4003,7 +3999,7 @@ CONTAINS
    
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -4040,7 +4036,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -4195,13 +4191,13 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,Idofs)
+                                  Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
       IF (bALE) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
-                                    .TRUE.,IdofsALE)
+                                    IdofsALE)
       END IF
       
       ! Calculate local DELTA's for streamline diffusion method.
@@ -4388,9 +4384,8 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-      cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = IOR(cevaluationTag,elem_getEvaluationTag(EL_Q1))
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -4413,7 +4408,7 @@ CONTAINS
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
@@ -5789,8 +5784,8 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
       CALL sys_halt()
     END IF
@@ -6121,11 +6116,11 @@ CONTAINS
     BderALE(DER_FUNC3D) = .TRUE.
     
     ! Shortcut to the spatial discretisation
-    p_rdiscretisation => rmatrix%p_rspatialDiscretisation
+    p_rdiscretisation => rmatrix%p_rspatialDiscrTest
     
     ! Get the element distribution. Here, we can find information about
     ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
@@ -6138,13 +6133,13 @@ CONTAINS
     
     ! Get the number of local DOF's for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1_3D)
     
     ! Number of local DOF's
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -6174,7 +6169,7 @@ CONTAINS
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -6198,7 +6193,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -6314,13 +6309,13 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,Idofs)
+                                  Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
       IF (bALE) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
-                                    .TRUE.,IdofsALE)
+                                    IdofsALE)
       END IF
       
       ! Calculate local DELTA's for streamline diffusion method.
@@ -6445,9 +6440,8 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-      cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = IOR(cevaluationTag,elem_getEvaluationTag(EL_Q1_3D))
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -6466,7 +6460,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -7134,9 +7128,9 @@ CONTAINS
       END IF
     END IF
 
-    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation% &
-                RelementDistribution(1)%itrialElement
-    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation%ccomplexity &
+    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
+                RelementDistr(1)%celement
+    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
       CALL sys_halt()
@@ -7510,11 +7504,11 @@ CONTAINS
     
     ! Shortcut to the spatial discretisation.
     ! We assume the same for all Aij.
-    p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+    p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest
     
     ! Get the element distribution. Here, we can find information about
     ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
@@ -7527,13 +7521,13 @@ CONTAINS
     
     ! Get the number of local DOF's for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
     ! Get the number of local DOF's Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+    indofALE = elem_igetNDofLoc(EL_Q1_3D)
     
     ! Number of local DOF's
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -7578,7 +7572,7 @@ CONTAINS
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -7615,7 +7609,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -7772,13 +7766,13 @@ CONTAINS
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  .TRUE.,Idofs)
+                                  Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
       IF (bALE) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
-                                    .TRUE.,IdofsALE)
+                                    IdofsALE)
       END IF
       
       ! Calculate local DELTA's for streamline diffusion method.
@@ -7900,9 +7894,9 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
       cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistribution%itestElement))
+                      elem_getEvaluationTag(EL_Q1_3D))
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -7925,7 +7919,7 @@ CONTAINS
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
@@ -9463,7 +9457,7 @@ CONTAINS
   INTEGER :: ndofTest,ndofTrial
   
   ! Number of local degees of freedom for trial and test functions
-  INTEGER :: indofTrialPerElement, indofTestPerElement
+  INTEGER :: indofTestPerElement
   
   ! The triangulation structure - to shorten some things...
   TYPE(t_triangulation), POINTER :: p_rtriangulation
@@ -9526,8 +9520,8 @@ CONTAINS
   INTEGER(I32) :: cevaluationTag
   
     ! Get a pointer to the triangulation and discretisation.
-    p_rtriangulation => rmatrixScalar%p_rspatialDiscretisation%p_rtriangulation
-    p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+    p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
+    p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
     
     ! Get Kadj, Kmid, Kmel,...
     CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,&
@@ -9549,20 +9543,13 @@ CONTAINS
     CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
     
     ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
     ! Get the number of local DOF's for trial and test functions
-    indofTrialPerElement = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%itestElement)
+    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
-    
-    ! Get the number of corner vertices of the element
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
-      PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
-      CALL sys_halt()
-    END IF
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference line [-1,1]
@@ -9594,11 +9581,11 @@ CONTAINS
     
     ! Allocate arrays saving the local matrices for all elements
     ! in an element set. We allocate the arrays large enough...
-    ALLOCATE(Kentry(indofTestPerElement*2*indofTrialPerElement*2))
-    ALLOCATE(Dentry(indofTestPerElement*2*indofTrialPerElement*2))
+    ALLOCATE(Kentry(indofTestPerElement*2*indofTestPerElement*2))
+    ALLOCATE(Dentry(indofTestPerElement*2*indofTestPerElement*2))
     
     ! Allocate memory for obtaining DOF's:
-    ALLOCATE(IdofsTrialTempl(indofTrialPerElement,2))
+    ALLOCATE(IdofsTrialTempl(indofTestPerElement,2))
     ALLOCATE(IdofsTestTempl(indofTestPerElement,2))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -9617,37 +9604,21 @@ CONTAINS
     ! a whole element patch.
     
     ALLOCATE(DbasTest(indofTestPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%itestElement),&
+            elem_getMaxDerivative(p_relementDistribution%celement),&
             ncubp,3))
-    ALLOCATE(DbasTrial(indofTrialPerElement*2,&
-            elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(DbasTrial(indofTestPerElement*2,&
+            elem_getMaxDerivative(p_relementDistribution%celement), &
             ncubp,3))
              
-    ! Test if trial/test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
-    ! indicate whether there are identical trial and test functions
-    ! in one block!
-    bIdenticalTrialAndTest = &
-      p_relementDistribution%itrialElement .EQ. p_relementDistribution%itestElement
-      
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
-    ! space IdofTest (if both spaces are identical). 
-    ! We create a pointer for the trial space and not for the test space to
-    ! prevent pointer-arithmetic in the innerst loop below!
-    ! The same for p_IlocalDofsTrial and the permutation array p_IlocalDofTrialRenum.
-    ! Let p_DbasTrial point either to DbasTrial or DbasTest, depending on
-    ! whether the spaces are identical.
-    IF (bIdenticalTrialAndTest) THEN
-      p_IdofsTrial => IdofsTest
-      p_IlocalDofsTrial => IlocalDofsTest
-      p_IlocalDofTrialRenum => IlocalDofTestRenum
-      p_DbasTrial => DbasTest
-    ELSE
-      p_IdofsTrial => IdofsTrial
-      p_IlocalDofsTrial => IlocalDofsTrial
-      p_IlocalDofTrialRenum => IlocalDofTrialRenum
-      p_DbasTrial => DbasTrial
-    END IF
+    ! Both spaces must be identical. Let the pointers for the trial space
+    ! point to the same arrays as the test space.
+    !
+    ! (The implementation is a little bit cruel here because of bugfixes
+    ! but should work)
+    p_IdofsTrial => IdofsTest
+    p_IlocalDofsTrial => IlocalDofsTest
+    p_IlocalDofTrialRenum => IlocalDofTestRenum
+    p_DbasTrial => DbasTest
     
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
     BderTrial = .FALSE.
@@ -9661,9 +9632,7 @@ CONTAINS
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-    cevaluationTag = IOR(cevaluationTag,&
-                    elem_getEvaluationTag(p_relementDistribution%itestElement))
+    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
@@ -9718,7 +9687,7 @@ CONTAINS
       ! Get the global DOF's of the 1 or two elements
       CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
-                                  .TRUE., IdofsTestTempl)
+                                  IdofsTestTempl)
                                    
       ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
@@ -9769,18 +9738,18 @@ CONTAINS
       IF (.NOT. bIdenticalTrialAndTest) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementsAtEdge (1:IELcount,IMT), &
-                                    .FALSE., IdofsTrialTempl)
+                                    IdofsTrialTempl)
 
         ! Collect the DOF's uniquely in IdofsTrial.
         ! The DOF's of the first element are taken as they are.
         
-        ndofTrial = indofTrialPerElement
+        ndofTrial = indofTestPerElement
         IdofsTrial(1:ndofTrial) = IdofsTrialTempl(1:ndofTrial,1)
         
         ! From the 2nd element on, we have to check which
         ! DOF's already appear in the first element.
         
-        skiploop2: DO IDOFE = 1,indofTrialPerElement
+        skiploop2: DO IDOFE = 1,indofTestPerElement
           
           ! Do we have the DOF? 
           idof = IdofsTrialTempl(IDOFE,IELcount)
@@ -9891,7 +9860,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, BderTest, DbasTest)
 
       ! Apply the permutation of the local DOF's on the test functions
@@ -9932,13 +9901,13 @@ CONTAINS
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
       
-        CALL elem_generic_sim2 (p_relementDistribution%itrialElement, &
+        CALL elem_generic_sim2 (p_relementDistribution%celement, &
             rintSubset%revalElementSet, BderTrial, DbasTrial)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          
-        DbasTrial (IlocalDofTrialRenum(1:indofTrialPerElement),:,:,3) &
-          = DbasTrial (1:indofTrialPerElement,:,:,2)
+        DbasTrial (IlocalDofTrialRenum(1:indofTestPerElement),:,:,3) &
+          = DbasTrial (1:indofTestPerElement,:,:,2)
             
       END IF
       
@@ -10196,7 +10165,7 @@ CONTAINS
       CALL sys_halt()
     END IF
 
-    IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'EOS: Unsupported discretisation.'
       CALL sys_halt()
     END IF
@@ -10423,8 +10392,8 @@ CONTAINS
   INTEGER(I32) :: cevaluationTag
   
     ! Get a pointer to the triangulation and discretisation.
-    p_rtriangulation => rmatrixScalar%p_rspatialDiscretisation%p_rtriangulation
-    p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+    p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
+    p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
     
     ! Get Kvert, Kadj, Kmid, Kmel,...
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
@@ -10448,17 +10417,16 @@ CONTAINS
     CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
     
     ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistribution(1)
+    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
     ! Get the number of local DOF's for trial and test functions
-    indofTrialPerElement = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%itestElement)
+    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+    NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! Get the number of corner vertices of the element
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
+    IF (NVE .NE. elem_igetNVE(p_relementDistribution%celement)) THEN
       PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
       CALL sys_halt()
     END IF
@@ -10489,7 +10457,7 @@ CONTAINS
       
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP,IELcount))
@@ -10519,37 +10487,20 @@ CONTAINS
     ! a whole element patch.
     
     ALLOCATE(DbasTest(indofTestPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%itestElement),&
+            elem_getMaxDerivative(p_relementDistribution%celement),&
             ncubp,3))
-    ALLOCATE(DbasTrial(indofTrialPerElement*2,&
-            elem_getMaxDerivative(p_relementDistribution%itrialElement), &
+    ALLOCATE(DbasTrial(indofTestPerElement*2,&
+            elem_getMaxDerivative(p_relementDistribution%celement), &
             ncubp,3))
              
-    ! Test if trial/test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
-    ! indicate whether there are identical trial and test functions
-    ! in one block!
-    bIdenticalTrialAndTest = &
-      p_relementDistribution%itrialElement .EQ. p_relementDistribution%itestElement
-      
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
-    ! space IdofTest (if both spaces are identical). 
-    ! We create a pointer for the trial space and not for the test space to
-    ! prevent pointer-arithmetic in the innerst loop below!
-    ! The same for p_IlocalDofsTrial and the permutation array p_IlocalDofTrialRenum.
-    ! Let p_DbasTrial point either to DbasTrial or DbasTest, depending on
-    ! whether the spaces are identical.
-    IF (bIdenticalTrialAndTest) THEN
-      p_IdofsTrial => IdofsTest
-      p_IlocalDofsTrial => IlocalDofsTest
-      p_IlocalDofTrialRenum => IlocalDofTestRenum
-      p_DbasTrial => DbasTest
-    ELSE
-      p_IdofsTrial => IdofsTrial
-      p_IlocalDofsTrial => IlocalDofsTrial
-      p_IlocalDofTrialRenum => IlocalDofTrialRenum
-      p_DbasTrial => DbasTrial
-    END IF
+    ! Test and trial functions must be the same, so let the pointers for
+    ! the trial function arrays point to the test function arrays.
+    ! (The implementation is a little bit cruel here due to bugfixes
+    ! but should work)
+    p_IdofsTrial => IdofsTest
+    p_IlocalDofsTrial => IlocalDofsTest
+    p_IlocalDofTrialRenum => IlocalDofTestRenum
+    p_DbasTrial => DbasTest
     
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
     BderTrial = .FALSE.
@@ -10563,9 +10514,7 @@ CONTAINS
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
-    cevaluationTag = IOR(cevaluationTag,&
-                    elem_getEvaluationTag(p_relementDistribution%itestElement))
+    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
@@ -10620,7 +10569,7 @@ CONTAINS
       ! Get the global DOF's of the 1 or two elements
       CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
-                                  .TRUE., IdofsTestTempl)
+                                  IdofsTestTempl)
                                    
       ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
@@ -10671,7 +10620,7 @@ CONTAINS
       IF (.NOT. bIdenticalTrialAndTest) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementsAtEdge (1:IELcount,IMT), &
-                                    .FALSE., IdofsTrialTempl)
+                                    IdofsTrialTempl)
 
         ! Collect the DOF's uniquely in IdofsTrial.
         ! The DOF's of the first element are taken as they are.
@@ -10793,7 +10742,7 @@ CONTAINS
       p_Ddetj => rintSubset%revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_relementDistribution%celement, &
           rintSubset%revalElementSet, BderTest, DbasTest)
       
       ! Apply the permutation of the local DOF's on the test functions
@@ -10833,7 +10782,7 @@ CONTAINS
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim2 (p_relementDistribution%itrialElement, &
+        CALL elem_generic_sim2 (p_relementDistribution%celement, &
             rintSubset%revalElementSet, BderTrial, DbasTrial)
 
         ! Apply the renumbering for the 2nd element, store the result in the

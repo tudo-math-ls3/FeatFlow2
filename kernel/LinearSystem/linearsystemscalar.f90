@@ -522,7 +522,7 @@ MODULE linearsystemscalar
     
     ! A pointer to the spatial discretisation or NULL(), if the vector is
     ! just an array, not belonging to any discretisation.
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscretisation => NULL()
+    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscr => NULL()
     
   END TYPE
   
@@ -646,8 +646,16 @@ MODULE linearsystemscalar
     ! tags which depend on the application.
     REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
     
-    ! A pointer to the spatial discretisation
-    TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()
+    ! A pointer to the spatial discretisation for the trial functions.
+    TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscrTrial => NULL()
+    
+    ! A pointer to the spatial discretisation for the test functions.
+    TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscrTest => NULL()
+
+    ! Flag: Trial and Test functions in all element distributions
+    ! are the same. If FALSE, there's at least one element distribution
+    ! with different trial and test functions.
+    LOGICAL                          :: bidenticalTrialAndTest = .TRUE.
     
   END TYPE
   
@@ -1714,7 +1722,7 @@ CONTAINS
   CALL lsyssc_createVector (rx, NEQ, bcl, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
-  rx%p_rspatialDiscretisation => rdiscretisation
+  rx%p_rspatialDiscr => rdiscretisation
   
   END SUBROUTINE
 
@@ -1786,7 +1794,7 @@ CONTAINS
   CALL lsyssc_createVector (rx, NEQ, NVAR, bcl, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
-  rx%p_rspatialDiscretisation => rdiscretisation
+  rx%p_rspatialDiscr => rdiscretisation
   
   END SUBROUTINE
 
@@ -1794,7 +1802,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_createVecIndMat (rtemplateMat,rx,bclear,cdataType)
+  SUBROUTINE lsyssc_createVecIndMat (rtemplateMat,rx,bclear,btransposed,cdataType)
 
 !<description>
     ! Initializes the scalar vector structure rx. rtemplateMat is an 
@@ -1815,6 +1823,13 @@ CONTAINS
     ! Otherwise the content of rx is undefined.
     LOGICAL, INTENT(IN), OPTIONAL   :: bclear
     
+    ! OPTIONAL: If not specified or set to FALSE, the vector will be
+    ! created as 'right' vector of the matrix (so matrix vector multiplication
+    ! (A x) is possible).
+    ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
+    ! vector multiplication (A^T x) is possible.
+    LOGICAL, INTENT(IN), OPTIONAL :: btransposed
+    
     ! OPTIONAL: Data type identifier for the entries in the vector. 
     ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
     INTEGER, INTENT(IN),OPTIONAL              :: cdataType
@@ -1829,22 +1844,38 @@ CONTAINS
 
     ! local variables
     INTEGER :: cdata
+    INTEGER(PREC_VECIDX) :: NEQ, NCOLS
 
     cdata = ST_DOUBLE
     IF (PRESENT(cdataType)) cdata = cdataType
     
+    ! Transfer discretization pointers from the matrix to the vector
+    rx%p_rspatialDiscr => rtemplateMat%p_rspatialDiscrTrial
+
+    NEQ = rtemplateMat%NEQ
+    NCOLS = rtemplateMat%NCOLS
+    IF (PRESENT(btransposed)) THEN
+      IF (btransposed) THEN
+        NEQ = rtemplateMat%NCOLS
+        NCOLS = rtemplateMat%NEQ
+
+        ! Transfer discretization pointers from the matrix to the vector
+        rx%p_rspatialDiscr => rtemplateMat%p_rspatialDiscrTest
+      END IF
+    END IF
+    
     ! Allocate memory for vector
     CALL storage_new1D ('lsyssc_createVecIndMat', 'Vector', &
-        rtemplateMat%NCOLS*rtemplateMat%NVAR, &
+        NCOLS*rtemplateMat%NVAR, &
         cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
 
     ! Set structure
-    rx%NEQ       = rtemplateMat%NCOLS
+    rx%NEQ       = NCOLS
     rx%NVAR      = rtemplateMat%NVAR
     rx%cdataType = cdata
 
     ! Transfer discretization pointers from the matrix to the vector
-    rx%p_rspatialDiscretisation => rtemplateMat%p_rspatialDiscretisation
+    rx%p_rspatialDiscr => rtemplateMat%p_rspatialDiscrTrial
 
     ! Transfer sorting strategy from the matrix to the vector
     rx%isortStrategy      = rtemplateMat%isortStrategy
@@ -5035,7 +5066,9 @@ CONTAINS
       rdestMatrix%imatrixSpec = IOR(iflag,iflag2)
 
       ! Transfer discretisation-related information,
-      rdestMatrix%p_rspatialDiscretisation => rsourceMatrix%p_rspatialDiscretisation
+      rdestMatrix%p_rspatialDiscrTest => rsourceMatrix%p_rspatialDiscrTest
+      rdestMatrix%p_rspatialDiscrTrial => rsourceMatrix%p_rspatialDiscrTrial
+      rdestMatrix%bidenticalTrialAndTest = rsourceMatrix%bidenticalTrialAndTest
 
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
@@ -5092,7 +5125,9 @@ CONTAINS
       rdestMatrix%imatrixSpec = IOR(iflag,iflag2)
       
       ! Transfer discretisation-related information,
-      rdestMatrix%p_rspatialDiscretisation => rsourceMatrix%p_rspatialDiscretisation
+      rdestMatrix%p_rspatialDiscrTrial => rsourceMatrix%p_rspatialDiscrTrial
+      rdestMatrix%p_rspatialDiscrTest => rsourceMatrix%p_rspatialDiscrTest
+      rdestMatrix%bidenticalTrialAndTest = rsourceMatrix%bidenticalTrialAndTest
 
     END SUBROUTINE
 
@@ -5473,7 +5508,7 @@ CONTAINS
   rvector%bisCopy = .FALSE.
   rvector%isortStrategy = 0
   rvector%h_IsortPermutation = ST_NOHANDLE
-  rvector%p_rspatialDiscretisation => NULL()
+  rvector%p_rspatialDiscr => NULL()
    
   END SUBROUTINE
   
@@ -10858,6 +10893,10 @@ CONTAINS
       ntemp = rtransposedMatrix%NEQ
       rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
       rtransposedMatrix%NCOLS = ntemp
+      
+      ! Switch the discretisation structures
+      rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
+      rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
    
       ! That's it.
       RETURN
@@ -10874,9 +10913,12 @@ CONTAINS
         IEOR(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
       
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
-      ntemp = rtransposedMatrix%NEQ
-      rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
-      rtransposedMatrix%NCOLS = ntemp
+      rtransposedMatrix%NEQ = rmatrix%NCOLS
+      rtransposedMatrix%NCOLS = rmatrix%NEQ
+   
+      ! Switch the discretisation structures
+      rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
+      rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
    
       ! That's it.
       RETURN
@@ -11034,6 +11076,14 @@ CONTAINS
         CALL sys_halt()
       END SELECT
       
+      ! Exchange NEQ and NCOLS as these always describe the actual matrix.
+      rtransposedMatrix%NEQ = rmatrix%NCOLS
+      rtransposedMatrix%NCOLS = rmatrix%NEQ
+      
+      ! Switch the discretisation structures
+      rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
+      rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
+   
     CASE (LSYSSC_TR_ALL)
       ! Transpose the full matrix - structure+content
       SELECT CASE (rmatrix%cmatrixFormat)
@@ -11163,15 +11213,18 @@ CONTAINS
         CALL sys_halt()
       END SELECT
       
+      ! Exchange NEQ and NCOLS as these always describe the actual matrix.
+      rtransposedMatrix%NEQ = rmatrix%NCOLS
+      rtransposedMatrix%NCOLS = rmatrix%NEQ
+      
+      ! Switch the discretisation structures
+      rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
+      rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
+      
     CASE DEFAULT ! = LSYSSC_TR_ALL 
     
     END SELECT
   
-    ! Exchange NEQ and NCOLS as these always describe the actual matrix.
-    ntemp = rtransposedMatrix%NEQ
-    rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
-    rtransposedMatrix%NCOLS = ntemp
-    
     ! That's it.
   
   END SUBROUTINE
@@ -17423,13 +17476,13 @@ CONTAINS
     TYPE(t_vectorScalar) :: rvector
 
     rvector  = rvector1
-    rvector%p_rspatialDiscretisation => rvector1%p_rspatialDiscretisation
+    rvector%p_rspatialDiscr => rvector1%p_rspatialDiscr
     
     rvector1 = rvector2
-    rvector1%p_rspatialDiscretisation => rvector2%p_rspatialDiscretisation
+    rvector1%p_rspatialDiscr => rvector2%p_rspatialDiscr
     
     rvector2 = rvector
-    rvector2%p_rspatialDiscretisation => rvector%p_rspatialDiscretisation
+    rvector2%p_rspatialDiscr => rvector%p_rspatialDiscr
   END SUBROUTINE lsyssc_swapVectors
 
   ! ***************************************************************************

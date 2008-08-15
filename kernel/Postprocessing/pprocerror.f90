@@ -174,7 +174,7 @@ CONTAINS
       p_rdiscretisation => rdiscretisation
       CALL lsyssc_checkDiscretisation (rvectorScalar,p_rdiscretisation)
     ELSE
-      p_rdiscretisation => rvectorScalar%p_rspatialdiscretisation
+      p_rdiscretisation => rvectorScalar%p_rspatialdiscr
     END IF
     
     IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
@@ -379,16 +379,16 @@ CONTAINS
     DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
@@ -396,7 +396,7 @@ CONTAINS
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -417,7 +417,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
@@ -450,7 +450,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
         rintSubset%ielementDistribution = icurrentElementDistr
@@ -496,7 +496,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC1D,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
                   
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -551,7 +551,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC1D,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -607,7 +607,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,3)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV1D_X,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
@@ -805,16 +805,16 @@ CONTAINS
     DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
@@ -822,7 +822,7 @@ CONTAINS
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -843,7 +843,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
@@ -876,7 +876,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
         rintSubset%ielementDistribution = icurrentElementDistr
@@ -922,7 +922,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -977,7 +977,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -1036,11 +1036,11 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,3..4)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV_X,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,3))
 
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV_Y,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
@@ -1240,16 +1240,16 @@ CONTAINS
     DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
@@ -1257,7 +1257,7 @@ CONTAINS
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -1278,7 +1278,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       IF (PRESENT(ffunctionReference)) THEN
         ! Evaluate real coordinates if not necessary.
@@ -1311,7 +1311,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
         rintSubset%ielementDistribution = icurrentElementDistr
@@ -1357,7 +1357,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC3D,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -1412,7 +1412,7 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,2)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC3D,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -1481,15 +1481,15 @@ CONTAINS
           ! Save the result to Dcoefficients(:,:,4..6)
           
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV3D_X,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV3D_Y,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,5))
 
           CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_DERIV3D_Z,&
+                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,6))
 
           ! Subtraction of Dcoefficients(:,:,1..3) from Dcoefficients(:,:,4..6) gives
@@ -1628,7 +1628,7 @@ CONTAINS
       p_rdiscretisation => rdiscretisation
       CALL lsyssc_checkDiscretisation (rvectorScalar,p_rdiscretisation)
     ELSE
-      p_rdiscretisation => rvectorScalar%p_rspatialdiscretisation
+      p_rdiscretisation => rvectorScalar%p_rspatialdiscr
     END IF
     
     IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
@@ -1761,7 +1761,7 @@ CONTAINS
 
     ! Get some pointers and arrays for quicker access
     p_rtriangulation => rdiscretisation%p_rtriangulation
-    p_RelementDistribution => rdiscretisation%RelementDistribution
+    p_RelementDistribution => rdiscretisation%RelementDistr
     
     CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
@@ -1852,19 +1852,19 @@ CONTAINS
       ! All elements have the same type. Get the type of the
       ! corresponding coordinate system and transform the coordinates.
       icoordSystem = elem_igetCoordSystem(&
-        rdiscretisation%RelementDistribution(1)%itrialElement)
+        rdiscretisation%RelementDistr(1)%celement)
       DO iel = 1,NEL
         CALL trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
             ncubp, Dxi1D, Dxi2D(:,:,iel))
       END DO
     ELSE
       ! The type of the coordinate system may change with every element.
-      ! So we may have to switch... ItrialElements in the discretisation
+      ! So we may have to switch... celements in the discretisation
       ! structure informs us about the element type.
       CALL storage_getbase_int (rdiscretisation%h_IelementDistr,&
           p_IelementDistr)
       DO iel = 1,NEL
-        ieltype = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%itrialElement
+        ieltype = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%celement
         icoordSystem = elem_igetCoordSystem(ieltype)
         CALL trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
             ncubp, Dxi1D, Dxi2D(:,:,iel))
@@ -1891,7 +1891,7 @@ CONTAINS
       IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
         ! All elements with the same transformation
         ctrafoType = elem_igetTrafoType(&
-            rdiscretisation%RelementDistribution(1)%itrialElement)
+            rdiscretisation%RelementDistr(1)%celement)
         DO iel = 1,NEL
 
           ! Get the points forming the element
@@ -1923,7 +1923,7 @@ CONTAINS
           ! Transform the cubature points
           DO ipoint = 1,ncubp
             ieltype = p_RelementDistribution(&
-                p_IelementDistr(Ielements(iel)))%itrialElement
+                p_IelementDistr(Ielements(iel)))%celement
             ctrafoType = elem_igetTrafoType(ieltype)
             CALL trafo_calcRealCoords (ctrafoType,Dcoord,&
                 DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
@@ -2190,16 +2190,16 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rDiscr,rDiscrRef
 
     ! Create block discretisations with one component
-    IF (ASSOCIATED(rvector%p_rspatialDiscretisation)) THEN
-      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialDiscretisation, rDiscr)
+    IF (ASSOCIATED(rvector%p_rspatialdiscr)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialdiscr, rDiscr)
     ELSE
       CALL output_line('Vector does not provide a spatial discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL2ErrorEstimate')
       CALL sys_halt()
     END IF
 
-    IF (ASSOCIATED(rvectorRef%p_rspatialDiscretisation)) THEN
-      CALL spdiscr_createBlockDiscrInd(rvectorRef%p_rspatialDiscretisation, rDiscrRef)
+    IF (ASSOCIATED(rvectorRef%p_rspatialdiscr)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvectorRef%p_rspatialdiscr, rDiscrRef)
     ELSE
       CALL output_line('Reference vector does not provide a spatial discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarL2ErrorEstimate')
@@ -2340,7 +2340,7 @@ CONTAINS
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial,IdofsTrialRef
     
     ! Get the correct discretisation structure for the solution vector
-    p_rdiscretisation => rvector%p_rblockDiscretisation%RspatialDiscretisation(1)
+    p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     DO iblock=2,rvector%nblocks
       CALL lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
     END DO
@@ -2351,7 +2351,7 @@ CONTAINS
       p_rdiscretisationRef => rdiscretisationRef
       CALL lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(1),p_rdiscretisationRef)
     ELSE
-      p_rdiscretisationRef => rvectorRef%p_rblockDiscretisation%RspatialDiscretisation(1)
+      p_rdiscretisationRef => rvectorRef%p_rblockDiscr%RspatialDiscr(1)
     END IF
     DO iblock=2,rvectorRef%nblocks
       CALL lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(iblock),p_rdiscretisationRef)
@@ -2417,8 +2417,8 @@ CONTAINS
     DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution    => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
-      p_relementDistributionRef => p_rdiscretisationRef%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution    => p_rdiscretisation%RelementDistr(icurrentElementDistr)
+      p_relementDistributionRef => p_rdiscretisationRef%RelementDistr(icurrentElementDistr)
 
       ! Check if element distrbutions have different number of elements
       IF (p_relementDistribution%NEL .NE. &
@@ -2432,11 +2432,11 @@ CONTAINS
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial    = elem_igetNDofLoc(p_relementDistribution%itrialElement)
-      indofTrialRef = elem_igetNDofLoc(p_relementDistributionRef%itrialElement)
+      indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTrialRef = elem_igetNDofLoc(p_relementDistributionRef%celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
      
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
@@ -2444,7 +2444,7 @@ CONTAINS
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistributionRef%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistributionRef%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -2466,9 +2466,9 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
       cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistributionRef%itrialElement))
+                      elem_getEvaluationTag(p_relementDistributionRef%celement))
 
       ! Make sure that we have determinants.
       cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
@@ -2496,9 +2496,9 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
         CALL dof_locGlobMapping_mult(p_rdiscretisationRef, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrialRef)
+                                     IdofsTrialRef)
                                      
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
@@ -2527,12 +2527,12 @@ CONTAINS
             
             ! solution vector
             CALL fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                    p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                     Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
 
             ! solution reference vector
             CALL fevl_evaluate_sim3 (rvectorRef%RvectorBlock(iblock), revalElementSet,&
-                    p_relementDistributionRef%itrialElement, IdofsTrialRef, DER_FUNC,&
+                    p_relementDistributionRef%celement, IdofsTrialRef, DER_FUNC,&
                     Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
 
           END DO
@@ -2596,12 +2596,12 @@ CONTAINS
             
             ! solution vector
             CALL fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                    p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                     Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
 
             ! solution reference vector
             CALL fevl_evaluate_sim3 (rvectorRef%RvectorBlock(iblock), revalElementSet,&
-                    p_relementDistributionRef%itrialElement, IdofsTrialRef, DER_FUNC,&
+                    p_relementDistributionRef%celement, IdofsTrialRef, DER_FUNC,&
                     Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
 
           END DO
@@ -2723,8 +2723,8 @@ CONTAINS
     TYPE(t_blockDiscretisation) :: rDiscr
 
     ! Create block discretisations with one component
-    IF (ASSOCIATED(rvector%p_rspatialDiscretisation)) THEN
-      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialDiscretisation, rDiscr)
+    IF (ASSOCIATED(rvector%p_rspatialdiscr)) THEN
+      CALL spdiscr_createBlockDiscrInd(rvector%p_rspatialdiscr, rDiscr)
     ELSE
       CALL output_line('Vector does not provide a spatial discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarStandardDeviation')
@@ -2858,7 +2858,7 @@ CONTAINS
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
     
     ! Get the correct discretisation structure for the solution vector
-    p_rdiscretisation => rvector%p_rblockDiscretisation%RspatialDiscretisation(1)
+    p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     DO iblock=2,rvector%nblocks
       CALL lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
     END DO
@@ -2900,16 +2900,16 @@ CONTAINS
     DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
 
       ! Cancel if this element distribution is empty.
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
      
       ! Initialise the cubature formula.
       ! Get cubature weights and point coordinates on the reference element
@@ -2918,7 +2918,7 @@ CONTAINS
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -2939,7 +2939,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
       ! Make sure that we have determinants.
       cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
@@ -2968,7 +2968,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
 
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
@@ -2992,7 +2992,7 @@ CONTAINS
           
           ! solution vector
           CALL fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
                   
         END DO
@@ -3058,7 +3058,7 @@ CONTAINS
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Make sure that we have determinants.
     cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
@@ -3069,16 +3069,16 @@ CONTAINS
     DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution    => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+      p_relementDistribution    => p_rdiscretisation%RelementDistr(icurrentElementDistr)
 
       ! Cancel if this element distribution is empty.
       IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 
       ! Get the number of local DOF's for trial functions
-      indofTrial    = elem_igetNDofLoc(p_relementDistribution%itrialElement)
+      indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_relementDistribution%celement)
      
       ! Initialise the cubature formula.
       ! Get cubature weights and point coordinates on the reference element
@@ -3087,7 +3087,7 @@ CONTAINS
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%itrialElement)
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -3108,7 +3108,7 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
       ! Make sure that we have determinants.
       cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
@@ -3137,7 +3137,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+                                     IdofsTrial)
 
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
@@ -3161,7 +3161,7 @@ CONTAINS
           
           ! solution vector
           CALL fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                  p_relementDistribution%itrialElement, IdofsTrial, DER_FUNC,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
                   
         END DO

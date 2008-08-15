@@ -147,14 +147,14 @@ CONTAINS
 
     ! Ok, slow but general.
     
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
     
     ! For uniform discretisations, we get the element type in advance...
-    IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       
       ! Element type
-      ieltype = rvectorScalar%p_rspatialDiscretisation%&
-          RelementDistribution(1)%itrialElement
+      ieltype = rvectorScalar%p_rspatialDiscr%&
+          RelementDistr(1)%celement
 
       ! Get the number of local DOF's for trial and test functions
       indof = elem_igetNDofLoc(ieltype)
@@ -171,7 +171,7 @@ CONTAINS
       NULLIFY(p_IelementDistr)
     ELSE
       CALL storage_getbase_int (&
-          rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,p_IelementDistr)
+          rvectorScalar%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
     END IF
     
     ! Get the data vector
@@ -214,12 +214,12 @@ CONTAINS
         ! to search for the element. Use raytracing search to find the element
         ! containing the point.
         CALL tsrch_getElem_raytrace2D (&
-          Dpoints(:,ipoint),rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
+          Dpoints(:,ipoint),rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel)
 
         ! Ok, not found... Brute force search
         IF (iel .EQ. 0) THEN
           CALL tsrch_getElem_BruteForce (Dpoints(:,ipoint), &
-            rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
+            rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel)
         END IF
         
         IF (iel .EQ. 0) THEN
@@ -229,7 +229,7 @@ CONTAINS
           
             ! Yes. Find the closest element!
             CALL tsrch_getNearestElem_BruteForce (Dpoints(:,ipoint), &
-              rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
+              rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel)
               
             ! The evaluation routine then evaluates the FE function
             ! outside of the element...
@@ -255,7 +255,7 @@ CONTAINS
     
       ! Get the type of the element iel
       IF (ASSOCIATED(p_IelementDistr)) THEN
-        ieltype = p_RelementDistribution(p_IelementDistr(iel))%itrialElement
+        ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
 
         ! Get the number of local DOF's for trial and test functions
         indof = elem_igetNDofLoc(ieltype)
@@ -271,12 +271,12 @@ CONTAINS
       END IF
         
       ! Calculate the global DOF's on that element into IdofsTest.
-      CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscretisation, &
-          iel,.FALSE.,Idofs)
+      CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscr, &
+          iel,Idofs)
      
       ! Get the element shape information
       CALL elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
-          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, iel, ctrafoType)
+          rvectorScalar%p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
           
       ! Calculate the transformation of the point to the reference element
       CALL trafo_calcRefCoords (ctrafoType,revalElement%Dcoords,&
@@ -285,7 +285,7 @@ CONTAINS
       ! Now calculate everything else what is necessary for the element    
       CALL elprep_prepareForEvaluation (revalElement, &
           IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
-          rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, iel, &
+          rvectorScalar%p_rspatialDiscr%p_rtriangulation, iel, &
           ctrafoType, DparPoint, Dpoints(:,ipoint))
 
       ! Call the element to calculate the values of the basis functions
@@ -409,19 +409,19 @@ CONTAINS
       npoints = UBOUND(Dpoints,2)
     END IF
     
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
     
     ! For uniform discretisations, we get the element type in advance...
-    IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       
       ! Element type
-      ieltype = p_RelementDistribution(1)%itrialElement
+      ieltype = p_RelementDistribution(1)%celement
 
     ELSE
-      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
 
-      ieltype = p_RelementDistribution(p_IelementDistr(ielement))%itrialElement
+      ieltype = p_RelementDistribution(p_IelementDistr(ielement))%celement
     END IF
 
     ! Get the number of local DOF's for trial and test functions
@@ -453,12 +453,12 @@ CONTAINS
     Bder(iderType) = .TRUE.
     
     ! Calculate the global DOF's on that element into IdofsTest.
-    CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscretisation, &
-        ielement,.FALSE.,Idofs)
+    CALL dof_locGlobMapping (rvectorScalar%p_rspatialDiscr, &
+        ielement,Idofs)
         
     ! Get the element shape information
     CALL elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
-        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, ctrafoType)
+        rvectorScalar%p_rspatialDiscr%p_rtriangulation, ielement, ctrafoType)
   
     ! We loop over all points
     DO ipoint = 1,npoints
@@ -475,12 +475,12 @@ CONTAINS
       IF (PRESENT(Dpoints)) THEN
         CALL elprep_prepareForEvaluation (revalElement, &
             IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
-            rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, &
+            rvectorScalar%p_rspatialDiscr%p_rtriangulation, ielement, &
             ctrafoType, DparPoint, Dpoints(:,ipoint))
       ELSE
         CALL elprep_prepareForEvaluation (revalElement, &
             IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
-            rvectorScalar%p_rspatialDiscretisation%p_rtriangulation, ielement, &
+            rvectorScalar%p_rspatialDiscr%p_rtriangulation, ielement, &
             ctrafoType, DparPoint)
       END IF
 
@@ -753,19 +753,19 @@ CONTAINS
 !    
 !    ! Get triangulation information
 !    CALL storage_getbase_double2d (&
-!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_DvertexCoords,&
+!        rvectorScalar%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
 !        p_DvertexCoords)
 !    CALL storage_getbase_int2d (&
-!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
+!        rvectorScalar%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
 !        p_IverticesAtElement)
 !    
-!    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+!    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
 !
 !    ! For uniform discretisations, we get the element type in advance...
-!    IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+!    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
 !      
 !      ! Element type
-!      ieltype = p_RelementDistribution(1)%itrialElement
+!      ieltype = p_RelementDistribution(1)%celement
 !
 !      ! Get the number of local DOF's for trial and test functions
 !      indof = elem_igetNDofLoc(ieltype)
@@ -781,7 +781,7 @@ CONTAINS
 !      
 !      NULLIFY(p_IelementDistr)
 !    ELSE
-!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
 !          p_IelementDistr)
 !    END IF
 !    
@@ -805,7 +805,7 @@ CONTAINS
 !    IF (ASSOCIATED(p_IelementDistr)) THEN
 !      ! As all elements have the same type, we get the element
 !      ! characteristics by checking the first element.
-!      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%itrialElement
+!      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 !
 !      ! Get the number of local DOF's for trial and test functions
 !      indof = elem_igetNDofLoc(ieltype)
@@ -823,7 +823,7 @@ CONTAINS
 !      
 !    ! Calculate the global DOF's on that element into IdofsTest.
 !    ALLOCATE(Idofs(indof,SIZE(Ielements)))
-!    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscretisation, &
+!    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
 !        Ielements, .FALSE.,Idofs)
 !        
 !    ! Get the coordinates forming the elements
@@ -865,7 +865,7 @@ CONTAINS
 !    ALLOCATE(ItwistIndex(MAX(1,ntwistSize),SIZE(Ielements)))
 !    IF (ntwistSize .NE. 0) THEN
 !      CALL trafo_calcTwistIndices(&
-!        rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,Ielements,ItwistIndex)
+!        rvectorScalar%p_rspatialDiscr%p_rtriangulation,Ielements,ItwistIndex)
 !    END IF
 !
 !    ! Calculate the values of the basis functions in the given points.
@@ -1017,15 +1017,15 @@ CONTAINS
     ! Ok, slow but general.
     
     ! Get triangulation information
-    p_rtriangulation => rvectorScalar%p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
     
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
 
     ! For uniform discretisations, we get the element type in advance...
-    IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       
       ! Element type
-      ieltype = p_RelementDistribution(1)%itrialElement
+      ieltype = p_RelementDistribution(1)%celement
 
       ! Get the number of local DOF's for trial and test functions
       indof = elem_igetNDofLoc(ieltype)
@@ -1041,7 +1041,7 @@ CONTAINS
       
       NULLIFY(p_IelementDistr)
     ELSE
-      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
     END IF
     
@@ -1065,7 +1065,7 @@ CONTAINS
     IF (ASSOCIATED(p_IelementDistr)) THEN
       ! As all elements have the same type, we get the element
       ! characteristics by checking the first element.
-      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%itrialElement
+      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 
       ! Get the number of local DOF's for trial and test functions
       indof = elem_igetNDofLoc(ieltype)
@@ -1083,8 +1083,8 @@ CONTAINS
       
     ! Calculate the global DOF's on that element into IdofsTest.
     ALLOCATE(Idofs(indof,SIZE(Ielements)))
-    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscretisation, &
-        Ielements, .FALSE.,Idofs)
+    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
+        Ielements, Idofs)
         
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give

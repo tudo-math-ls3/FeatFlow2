@@ -3081,11 +3081,11 @@ CONTAINS
     ! 'solution' vector.
     
     CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          rsolverNode%p_rsubnodeDefCorr%rtempVector,.FALSE.,&
+          rsolverNode%p_rsubnodeDefCorr%rtempVector,.FALSE.,.FALSE.,&
           rsolverNode%cdefaultDataType)
 
     CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          rsolverNode%p_rsubnodeDefCorr%rtempVector2,.FALSE.,&
+          rsolverNode%p_rsubnodeDefCorr%rtempVector2,.FALSE.,.FALSE.,&
           rsolverNode%cdefaultDataType)
   
   END SUBROUTINE
@@ -3763,7 +3763,7 @@ CONTAINS
     ! Intialisation. In our case: allocate temporary vector for our data
     ! by using the associated matrix as template.
     CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          rsolverNode%p_rsubnodeEMS%rtempVector,.FALSE.,&
+          rsolverNode%p_rsubnodeEMS%rtempVector,.FALSE.,.FALSE.,&
           rsolverNode%cdefaultDataType)
 
   END SUBROUTINE
@@ -5573,7 +5573,7 @@ CONTAINS
 
   ! Allocate a temporary vector
   CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-        rsolverNode%p_rsubnodeVANCA%rtempVector,.FALSE.,&
+        rsolverNode%p_rsubnodeVANCA%rtempVector,.FALSE.,.FALSE.,&
         rsolverNode%cdefaultDataType)
         
   END SUBROUTINE
@@ -6113,7 +6113,7 @@ CONTAINS
   
   ! Allocate a temporary vector
   CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-        rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.FALSE.,&
+        rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.FALSE.,.FALSE.,&
         rsolverNode%cdefaultDataType)
     
   END SUBROUTINE
@@ -7184,7 +7184,8 @@ CONTAINS
     p_rsubnode => rsolverNode%p_rsubnodeCG
     DO i=1,4
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          p_rsubnode%RtempVectors(i),.FALSE.,rsolverNode%cdefaultDataType)
+          p_rsubnode%RtempVectors(i),.FALSE.,.FALSE.,&
+          rsolverNode%cdefaultDataType)
     END DO
   
   END SUBROUTINE
@@ -8115,14 +8116,14 @@ CONTAINS
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     DO i=1,6
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          p_rsubnode%RtempVectors(i),.FALSE.,rsolverNode%cdefaultDataType)
+          p_rsubnode%RtempVectors(i),.FALSE.,.FALSE.,rsolverNode%cdefaultDataType)
     END DO
     
     ! If we want to use right-preconditioning, we need one more
     ! temporary vector.
     IF (p_rsubnode%cprecondType .EQ. LINSOL_BICGSTAB_RIGHT_PRECOND) THEN
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          p_rsubnode%rprecondTemp,.FALSE.,rsolverNode%cdefaultDataType)
+          p_rsubnode%rprecondTemp,.FALSE.,.FALSE.,rsolverNode%cdefaultDataType)
     END IF      
   
   END SUBROUTINE
@@ -9599,16 +9600,16 @@ CONTAINS
     ! Create them
     DO i=1, idim+1
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          p_rsubnode%p_rv(i),.FALSE.,rsolverNode%cdefaultDataType)
+          p_rsubnode%p_rv(i),.FALSE.,.FALSE.,rsolverNode%cdefaultDataType)
     END DO
     DO i=1, idim
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          p_rsubnode%p_rz(i),.FALSE.,rsolverNode%cdefaultDataType)
+          p_rsubnode%p_rz(i),.FALSE.,.FALSE.,rsolverNode%cdefaultDataType)
     END DO
     
     ! Create an iteration vector x
     CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-        p_rsubnode%rx,.FALSE.,rsolverNode%cdefaultDataType)
+        p_rsubnode%rx,.FALSE.,.FALSE.,rsolverNode%cdefaultDataType)
     
     ! Okay, that's all!
       
@@ -11437,7 +11438,7 @@ CONTAINS
       ! the vector which comes as parameter
       ! to the multigrid  preconditioner is used.
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rsolutionVector,.FALSE.,&
+            p_rcurrentLevel%rsolutionVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rsolutionVector
     END IF
@@ -11446,10 +11447,10 @@ CONTAINS
     ! by the solution vector.
     IF (ASSOCIATED(p_rcurrentLevel%p_rprevLevel)) THEN
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rrhsVector,.FALSE.,&
+            p_rcurrentLevel%rrhsVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rtempVector,.FALSE.,&
+            p_rcurrentLevel%rtempVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rtempVector
     END IF
@@ -13397,7 +13398,7 @@ CONTAINS
       ! the vector which comes as parameter
       ! to the multigrid  preconditioner is used.
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rsolutionVector,.FALSE.,&
+            p_rcurrentLevel%rsolutionVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rsolutionVector
     END IF
@@ -13406,10 +13407,10 @@ CONTAINS
     ! by the solution vector.
     IF (ilevel .GT. 1) THEN
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rrhsVector,.FALSE.,&
+            p_rcurrentLevel%rrhsVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
-            p_rcurrentLevel%rtempVector,.FALSE.,&
+            p_rcurrentLevel%rtempVector,.FALSE.,.FALSE.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rtempVector
     END IF

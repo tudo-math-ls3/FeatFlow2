@@ -291,7 +291,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE mlprj_initProjectionDirect (rprojection,RspatialDiscretisation)
+  SUBROUTINE mlprj_initProjectionDirect (rprojection,RspatialDiscr)
   
 !<description>
   ! This subroutine initialises an t_interlevelProjectionBlock with default
@@ -308,12 +308,12 @@ CONTAINS
   ! An array of discretisation structures. Each discretisation structure
   ! corresponds to one scalar equation. The projection structure will be
   ! prepared to according to this discretisation list.
-  TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: RspatialDiscretisation
+  TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: RspatialDiscr
 !</input>
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
-  ! about the projection of all the equations described by RspatialDiscretisation.
+  ! about the projection of all the equations described by RspatialDiscr.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
 !</output>
   
@@ -322,10 +322,10 @@ CONTAINS
     INTEGER :: nFEspaces,nequations,i
     
     ! Get the max. number of FE-spaces and the number of equations
-    nequations = SIZE(RspatialDiscretisation)
+    nequations = SIZE(RspatialDiscr)
     nFEspaces = 0
     DO i=1,nequations
-      nFEspaces = MAX(nFEspaces,RspatialDiscretisation(i)%inumFESpaces)
+      nFEspaces = MAX(nFEspaces,RspatialDiscr(i)%inumFESpaces)
     END DO
 
     ! Allocate spatial discretisation structures for all the subblocks
@@ -359,7 +359,7 @@ CONTAINS
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
-  ! about the projection of all the equations described by RspatialDiscretisation.
+  ! about the projection of all the equations described by RspatialDiscr.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
 !</output>
   
@@ -372,7 +372,7 @@ CONTAINS
 
     ! Call the standard initialisation routine
     CALL mlprj_initProjectionDirect (rprojection,&
-         rdiscretisation%RspatialDiscretisation)
+         rdiscretisation%RspatialDiscr)
 
   END SUBROUTINE
   
@@ -404,7 +404,7 @@ CONTAINS
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
-  ! about the projection of all the equations described by RspatialDiscretisation.
+  ! about the projection of all the equations described by RspatialDiscr.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
 !</output>
   
@@ -421,7 +421,7 @@ CONTAINS
 
     ! Set up an array of discretisation structures for all the equations
     DO i=1,rvector%nblocks
-      Rdiscr(i) = rvector%RvectorBlock(i)%p_rspatialDiscretisation
+      Rdiscr(i) = rvector%RvectorBlock(i)%p_rspatialDiscr
     END DO
 
     ! Call the standard initialisation routine
@@ -457,7 +457,7 @@ CONTAINS
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
-  ! about the projection of all the equations described by RspatialDiscretisation.
+  ! about the projection of all the equations described by RspatialDiscr.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
 !</output>
   
@@ -479,7 +479,7 @@ CONTAINS
       DO j=1,rmatrix%ndiagBlocks
         IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
           Rdiscr(i) = &
-            rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
+            rmatrix%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           EXIT
         END IF
       END DO
@@ -581,10 +581,10 @@ CONTAINS
 !</subroutine>
 
   ! Check to see if the two discretisation structures fit together
-  IF (releDistrCoarse%itrialElement .NE. releDistrFine%itrialElement) THEN
+  IF (releDistrCoarse%celement .NE. releDistrFine%celement) THEN
     PRINT *,'Element distribution on the coarse and fine grid incompatible!'
-    PRINT *,'Coarse grid: ',releDistrCoarse%itrialElement,&
-            ' Fine grid: ',releDistrFine%itrialElement
+    PRINT *,'Coarse grid: ',releDistrCoarse%celement,&
+            ' Fine grid: ',releDistrFine%celement
     CALL sys_halt()
   END IF
 
@@ -593,41 +593,41 @@ CONTAINS
   
   ! Is any element type to be replaced according to a discretisation?
   IF (ractProjection%ielementTypeProlongation .EQ. EL_UNDEFINED) THEN
-    ractProjection%ielementTypeProlongation = releDistrCoarse%itrialElement
+    ractProjection%ielementTypeProlongation = releDistrCoarse%celement
   END IF
 
   IF (ractProjection%ielementTypeRestriction .EQ. EL_UNDEFINED) THEN
-    ractProjection%ielementTypeRestriction = releDistrCoarse%itrialElement
+    ractProjection%ielementTypeRestriction = releDistrCoarse%celement
   END IF
 
   IF (ractProjection%ielementTypeInterpolation .EQ. EL_UNDEFINED) THEN
-    ractProjection%ielementTypeInterpolation = releDistrCoarse%itrialElement
+    ractProjection%ielementTypeInterpolation = releDistrCoarse%celement
   END IF
 
   ! Check to see if the discretisation structures fit to the projection structure
-  IF (ractProjection%ielementTypeProlongation .NE. releDistrCoarse%itrialElement) THEN
+  IF (ractProjection%ielementTypeProlongation .NE. releDistrCoarse%celement) THEN
     ! Here, we can insert some additional code so that E030 is compatible eith EM30
     ! and so on...
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
-    PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
+    PRINT *,'Grid: ',releDistrCoarse%celement,&
             ' Prolongation: ',ractProjection%ielementTypeProlongation
     CALL sys_halt()
   END IF
 
-  IF (ractProjection%ielementTypeRestriction .NE. releDistrCoarse%itrialElement) THEN
+  IF (ractProjection%ielementTypeRestriction .NE. releDistrCoarse%celement) THEN
     ! Here, we can insert some additional code so that E030 is compatible eith EM30
     ! and so on...
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
-    PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
+    PRINT *,'Grid: ',releDistrCoarse%celement,&
             ' Restriction: ',ractProjection%ielementTypeRestriction
     CALL sys_halt()
   END IF
 
-  IF (ractProjection%ielementTypeInterpolation .NE. releDistrCoarse%itrialElement) THEN
+  IF (ractProjection%ielementTypeInterpolation .NE. releDistrCoarse%celement) THEN
     ! Here, we can insert some additional code so that E030 is compatible eith EM30
     ! and so on...
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
-    PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
+    PRINT *,'Grid: ',releDistrCoarse%celement,&
             ' Interpolation: ',ractProjection%ielementTypeInterpolation
     CALL sys_halt()
   END IF
@@ -792,12 +792,12 @@ CONTAINS
     ! Set up an array of discretisation structures for all the equations
     DO i=1,rvectorCoarse%nblocks
       RdiscrCoarse(i) = &
-        rvectorCoarse%RvectorBlock(i)%p_rspatialDiscretisation
+        rvectorCoarse%RvectorBlock(i)%p_rspatialDiscr
     END DO
 
     DO i=1,rvectorFine%nblocks
       RdiscrFine(i) = &
-        rvectorFine%RvectorBlock(i)%p_rspatialDiscretisation
+        rvectorFine%RvectorBlock(i)%p_rspatialDiscr
     END DO
       
     ! Call the standard getTempMemory routine
@@ -858,13 +858,13 @@ CONTAINS
       DO j=1,rmatrixCoarse%ndiagBlocks
         IF (lsysbl_isSubmatrixPresent(rmatrixCoarse,j,i)) THEN
           IF (.NOT. &
-              ASSOCIATED(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
+              ASSOCIATED(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
             PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in coarse &
                   &matrix at ',i,',',j
             CALL sys_halt()
           END IF
           RdiscrCoarse(i) = &
-            rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation
+            rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           EXIT
         END IF
       END DO
@@ -874,13 +874,13 @@ CONTAINS
       DO j=1,rmatrixFine%ndiagBlocks
         IF (lsysbl_isSubmatrixPresent(rmatrixFine,j,i)) THEN
           IF (.NOT. &
-              ASSOCIATED(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
+              ASSOCIATED(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) THEN
             PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in fine matrix&
                   & at ',i,',',j
             CALL sys_halt()
           END IF
           RdiscrFine(i) = &
-            rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation
+            rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial
         END IF
       END DO
     END DO
@@ -991,8 +991,8 @@ CONTAINS
           
         END IF
       
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscretisation
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscretisation
+        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
         
         ! We need a discretisation:
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
@@ -1017,8 +1017,8 @@ CONTAINS
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
         CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistribution(1), &
-              p_rdiscrFine%RelementDistribution(1), &
+              p_rdiscrCoarse%RelementDistr(1), &
+              p_rdiscrFine%RelementDistr(1), &
               ractProjection)
       
         ! Depending on the element type of the trial functions in the
@@ -1434,8 +1434,8 @@ CONTAINS
         END IF
       
 
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscretisation
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscretisation
+        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
         
         ! We need a discretisation:
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
@@ -1460,8 +1460,8 @@ CONTAINS
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
         CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistribution(1), &
-              p_rdiscrFine%RelementDistribution(1), &
+              p_rdiscrCoarse%RelementDistr(1), &
+              p_rdiscrFine%RelementDistr(1), &
               ractProjection)
       
         ! Depending on the element type of the trial functions in the
@@ -1868,8 +1868,8 @@ CONTAINS
     DO i=1,rcoarseVector%nblocks
     
       IF (rcoarseVector%RvectorBlock(i)%NEQ .GT. 0) THEN
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscretisation
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscretisation
+        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
         
         ! We need a discretisation:
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
@@ -1894,8 +1894,8 @@ CONTAINS
         ! Remember, in a uniform grid we only have one projection structure
         ! and one element distribution!
         CALL mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistribution(1), &
-              p_rdiscrFine%RelementDistribution(1), &
+              p_rdiscrCoarse%RelementDistr(1), &
+              p_rdiscrFine%RelementDistr(1), &
               ractProjection)
       
         ! Depending on the element type of the trial functions in the

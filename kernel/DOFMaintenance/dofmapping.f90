@@ -59,7 +59,7 @@ CONTAINS
 
 !<function>  
 
-  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlob(rdiscretisation,btestSpace)
+  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlob(rdiscretisation)
 
 !<description>
   ! This function returns for a given discretisation the number of global
@@ -69,15 +69,6 @@ CONTAINS
 !<input>    
   ! The discretisation structure that specifies the (scalar) discretisation.
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
-
-  ! OPTIONAL: Use test space.
-  ! Normally, dof_igetNDofGlob returns the number of DOF's in the trial
-  ! space of the discretisation. If btestSpace is present and set to TRUE,
-  ! dof_igetNDofGlob will determine the number of DOF's in the test space
-  ! of the discretisation instead of the trial space.
-  ! This is used e.g. to determine the number of rows in a system matrix,
-  ! while btestSpace=false returns the number of columns.
-  LOGICAL, OPTIONAL, INTENT(IN)             :: btestSpace
 !</input>
 
 !<result>
@@ -94,21 +85,13 @@ CONTAINS
   SELECT CASE(rdiscretisation%ndimension)
   CASE (NDIM1D)
   
-      ieltyp = rdiscretisation%RelementDistribution(1)%itrialElement
-      IF (PRESENT (btestSpace)) THEN
-        IF (btestSpace) ieltyp = rdiscretisation%RelementDistribution(1)%itestElement
-      END IF
-
+      ieltyp = rdiscretisation%RelementDistr(1)%celement
       dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, ieltyp)
 
   CASE (NDIM2D)
     IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
 
-      ieltyp = rdiscretisation%RelementDistribution(1)%itrialElement
-      IF (PRESENT (btestSpace)) THEN
-        IF (btestSpace) ieltyp = rdiscretisation%RelementDistribution(1)%itestElement
-      END IF
-
+      ieltyp = rdiscretisation%RelementDistr(1)%celement
       ! Uniform discretisation - fall back to the old FEAT mapping
       dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, ieltyp)
 
@@ -117,15 +100,8 @@ CONTAINS
       ! Conformal discretisation. That's a little bit tricky!
       ! At first, we support only the case where two element types are mixed.
       IF (rdiscretisation%inumFESpaces .EQ. 2) THEN
-        IelTypes(1) = rdiscretisation%RelementDistribution(1)%itrialElement
-        IelTypes(2) = rdiscretisation%RelementDistribution(2)%itrialElement
-
-        IF (PRESENT (btestSpace)) THEN
-          IF (btestSpace) THEN
-            IelTypes(1) = rdiscretisation%RelementDistribution(1)%itestElement
-            IelTypes(2) = rdiscretisation%RelementDistribution(2)%itestElement
-          END IF
-        END IF
+        IelTypes(1) = rdiscretisation%RelementDistr(1)%celement
+        IelTypes(2) = rdiscretisation%RelementDistr(2)%celement
 
         dof_igetNDofGlob = NDFG_conformal2D_2el (&
             rdiscretisation%p_rtriangulation, IelTypes(1:2))
@@ -138,10 +114,7 @@ CONTAINS
     ! Currently, only uniform discretisations are supported.
     IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
 
-      ieltyp = rdiscretisation%RelementDistribution(1)%itrialElement
-      IF (PRESENT (btestSpace)) THEN
-        IF (btestSpace) ieltyp = rdiscretisation%RelementDistribution(1)%itestElement
-      END IF
+      ieltyp = rdiscretisation%RelementDistr(1)%celement
 
       ! Uniform discretisation - fall back to the old FEAT mapping
       dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, ieltyp)
@@ -340,7 +313,7 @@ CONTAINS
 
 !<function>  
 
-  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlobBlock(rdiscretisation,btestSpace)
+  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlobBlock(rdiscretisation)
 
 !<description>
   ! This function returns for a given block discretisation the number of global
@@ -350,13 +323,6 @@ CONTAINS
 !<input>    
   ! The discretisation structure that specifies the (block) discretisation.
   TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
-
-  ! OPTIONAL: Use test space.
-  ! Normally, dof_igetNDofGlobBlock returns the number of DOF's in the trial
-  ! space of the discretisation. If btestSpace is present and set to TRUE,
-  ! dof_igetNDofGlob will determine the number of DOF's in the test space
-  ! of the discretisation instead of the trial space.
-  LOGICAL, OPTIONAL, INTENT(IN)             :: btestSpace
 !</input>
 
 !<result>
@@ -372,7 +338,7 @@ CONTAINS
     icount = 0
     DO i=1,rdiscretisation%ncomponents
       icount = icount + &
-          dof_igetNDofGlob(rdiscretisation%RspatialDiscretisation(i),btestSpace)
+          dof_igetNDofGlob(rdiscretisation%RspatialDiscr(i))
     END DO
     
     dof_igetNDofGlobBlock = icount
@@ -383,7 +349,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE dof_locGlobMapping(rdiscretisation, ielIdx, btestFct, IdofGlob)
+  SUBROUTINE dof_locGlobMapping(rdiscretisation, ielIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -404,10 +370,6 @@ CONTAINS
   ! Element index, where the mapping should be computed.
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielIdx
 
-  ! If =false, the DOF's of the trial functions are computed. If =true,
-  ! the DOF's of the test functions are computed.
-  LOGICAL, INTENT(IN) :: btestFct
-
 !</input>
     
 !<output>
@@ -426,7 +388,7 @@ CONTAINS
     ! Wrapper to dof_locGlobMapping_mult - better use this directly!
     ielIdx_array(1) = ielidx
     IdofGlob_array(:,1) = IdofGlob(:)
-    CALL dof_locGlobMapping_mult (rdiscretisation, ielIdx_array, btestFct, &
+    CALL dof_locGlobMapping_mult (rdiscretisation, ielIdx_array,  &
                                   IdofGlob_array)
     IdofGlob = IdofGlob_array(:,1)
 
@@ -435,7 +397,7 @@ CONTAINS
   ! ***************************************************************************
 !<subroutine>
 
-  SUBROUTINE dof_locGlobMapping_mult(rdiscretisation, IelIdx, btestFct, IdofGlob)
+  SUBROUTINE dof_locGlobMapping_mult(rdiscretisation, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -460,10 +422,6 @@ CONTAINS
   ! Element indices, where the mapping should be computed.
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
   
-  ! If =false, the DOF's of the trial functions are computed. If =true,
-  ! the DOF's of the test functions are computed.
-  LOGICAL, INTENT(IN) :: btestFct
-
 !</input>
     
 !<output>
@@ -492,11 +450,7 @@ CONTAINS
       ! structure (if necessary) to prevent another call using pointers...
       ! The number of global DOF's depends on the element type...
       
-      IF (btestFct) THEN
-        ieltype = rdiscretisation%RelementDistribution(1)%itestElement
-      ELSE
-        ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
-      END IF
+      ieltype = rdiscretisation%RelementDistr(1)%celement
       
       SELECT CASE (elem_getPrimaryElement(ieltype))
       CASE (EL_P0_1D)
@@ -531,11 +485,7 @@ CONTAINS
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF's depends on the element type...
         
-        IF (btestFct) THEN
-          ieltype = rdiscretisation%RelementDistribution(1)%itestElement
-        ELSE
-          ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
-        END IF
+        ieltype = rdiscretisation%RelementDistr(1)%celement
         
         SELECT CASE (elem_getPrimaryElement(ieltype))
         CASE (EL_P0, EL_Q0)
@@ -605,13 +555,8 @@ CONTAINS
         ! At first, we support only the case where two element types are mixed.
         IF (rdiscretisation%inumFESpaces .EQ. 2) THEN
 
-          IF (btestFct) THEN
-            IelTypes(1) = rdiscretisation%RelementDistribution(1)%itestElement
-            IelTypes(2) = rdiscretisation%RelementDistribution(2)%itestElement
-          ELSE
-            IelTypes(1) = rdiscretisation%RelementDistribution(1)%itrialElement
-            IelTypes(2) = rdiscretisation%RelementDistribution(2)%itrialElement
-          END IF
+          IelTypes(1) = rdiscretisation%RelementDistr(1)%celement
+          IelTypes(2) = rdiscretisation%RelementDistr(2)%celement
 
           ! Get the primary element type(s)
           IelTypes = elem_getPrimaryElement(IelTypes)
@@ -680,11 +625,7 @@ CONTAINS
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF's depends on the element type...
-        IF (btestFct) THEN
-          ieltype = rdiscretisation%RelementDistribution(1)%itestElement
-        ELSE
-          ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
-        END IF
+        ieltype = rdiscretisation%RelementDistr(1)%celement
         
         SELECT CASE (elem_getPrimaryElement(ieltype))
         CASE (EL_P0_3D, EL_Q0_3D)
@@ -1763,10 +1704,8 @@ CONTAINS
     CASE DEFAULT
       CALL output_line ('undefined')
     END SELECT
-    CALL output_line ('#DOFs(trial space):           '&
-        //TRIM(sys_siL(dof_igetNDofGlob(rspatialDiscr,.FALSE.),16)))
-    CALL output_line ('#DOFs(test space):            '&
-        //TRIM(sys_siL(dof_igetNDofGlob(rspatialDiscr,.TRUE.),16)))
+    CALL output_line ('#DOFs:                        '&
+        //TRIM(sys_siL(dof_igetNDofGlob(rspatialDiscr),16)))
     CALL output_line ('#finite element spaces:       '&
         //TRIM(sys_siL(rspatialDiscr%inumFESpaces,10)))
         
@@ -1777,15 +1716,13 @@ CONTAINS
     ! Loop through all element distributions
     DO i=1,rspatialDiscr%inumFESpaces
     
-      p_relementDistr => rspatialDiscr%RelementDistribution(i)
+      p_relementDistr => rspatialDiscr%RelementDistr(i)
       
       CALL output_line ( ' ' &
         // sys_siL(i,8) &
         // sys_siL(p_relementDistr%NEL,16) &
-        // sys_siL(elem_igetNVE(p_relementDistr%itrialElement),6) &
-        // sys_siL(IAND(elem_getPrimaryElement(p_relementDistr%itrialElement),&
-                        NOT(EL_DIMENSION)),16) &
-        // sys_siL(IAND(elem_getPrimaryElement(p_relementDistr%itestElement),&
+        // sys_siL(elem_igetNVE(p_relementDistr%celement),6) &
+        // sys_siL(IAND(elem_getPrimaryElement(p_relementDistr%celement),&
                    NOT(EL_DIMENSION)),16) )
       
     END DO
@@ -1833,10 +1770,8 @@ CONTAINS
     CASE DEFAULT
       CALL output_line ('undefined')
     END SELECT
-    CALL output_line ('#DOFs(trial space):           '&
-        //TRIM(sys_siL(dof_igetNDofGlobBlock(rblockDiscr,.FALSE.),16)))
-    CALL output_line ('#DOFs(test space):            '&
-        //TRIM(sys_siL(dof_igetNDofGlobBlock(rblockDiscr,.TRUE.),16)))
+    CALL output_line ('#DOFs:                        '&
+        //TRIM(sys_siL(dof_igetNDofGlobBlock(rblockDiscr),16)))
 
     CALL output_line ('Number of components:         '&
         //TRIM(sys_siL(rblockDiscr%ncomponents,10)))
@@ -1845,7 +1780,7 @@ CONTAINS
       DO i=1,rblockDiscr%ncomponents
         CALL output_lbrk ()
         CALL output_line ('Solution component:           '//TRIM(sys_siL(i,10)))
-        CALL dof_infoDiscr(rblockDiscr%RspatialDiscretisation(i))
+        CALL dof_infoDiscr(rblockDiscr%RspatialDiscr(i))
       END DO
     END IF
 

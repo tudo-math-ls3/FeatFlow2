@@ -129,13 +129,14 @@ CONTAINS
     CALL sys_halt()
   END IF
 
-  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+  IF ((.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTest)) .or. &
+      (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTrial))) THEN
     PRINT *,'trilf_buildMatrixScalar: No discretisation associated!'
     CALL sys_halt()
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  SELECT CASE (rmatrixScalar%p_rspatialDiscretisation%ccomplexity)
+  SELECT CASE (rmatrixScalar%p_rspatialDiscrTest%ccomplexity)
   CASE (SPDISC_UNIFORM) 
     ! Uniform discretisation; only one type of elements, e.g. P1 or Q1
     SELECT CASE (rmatrixScalar%cdataType)
@@ -333,8 +334,9 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
   
   ! Current element distribution for discretisation and function $u$.
-  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
-  TYPE(t_elementDistribution), POINTER :: p_elementDistributionFunc
+  TYPE(t_elementDistribution), POINTER :: p_elementDistrTrial
+  TYPE(t_elementDistribution), POINTER :: p_elementDistrTest
+  TYPE(t_elementDistribution), POINTER :: p_elementDistrFunc
   
   ! Number of elements in the current element distribution
   INTEGER(PREC_ELEMENTIDX) :: NEL
@@ -356,10 +358,11 @@ CONTAINS
   TYPE(t_domainIntSubset) :: rintSubset
   
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationFunc
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrTest,p_rdiscrTrial
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrFunc
   
-  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+  IF ((.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTest)) .or. &
+      (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscrTrial))) THEN
     PRINT *,'trilf_buildMatrix9d_conf2: No discretisation associated!'
     CALL sys_halt()
   END IF
@@ -439,26 +442,34 @@ CONTAINS
   END IF
   
   ! Get the discretisation(s)
-  p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
-  p_rdiscretisationFunc => rvector%p_rspatialDiscretisation
+  p_rdiscrTest => rmatrixScalar%p_rspatialDiscrTest
+  p_rdiscrTrial => rmatrixScalar%p_rspatialDiscrTrial
+  p_rdiscrFunc => rvector%p_rspatialDiscr
   
-  IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
+  IF (.NOT. ASSOCIATED(p_rdiscrTest)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
     CALL sys_halt()
   END IF
   
-  IF (.NOT. ASSOCIATED(p_rdiscretisationFunc)) THEN
+  IF (.NOT. ASSOCIATED(p_rdiscrTrial)) THEN
+    PRINT *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
+    CALL sys_halt()
+  END IF
+  
+  IF (.NOT. ASSOCIATED(p_rdiscrFunc)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the vector!'
     CALL sys_halt()
   END IF
   
-  IF (p_rdiscretisation%inumFESpaces .NE. p_rdiscretisationFunc%inumFESpaces) THEN
+  IF ((p_rdiscrTest%inumFESpaces .NE. p_rdiscrFunc%inumFESpaces) .or. &
+      (p_rdiscrTrial%inumFESpaces .NE. p_rdiscrFunc%inumFESpaces) .or. &
+      (p_rdiscrTrial%inumFESpaces .NE. p_rdiscrTest%inumFESpaces)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: Discretisations not compatible!'
     CALL sys_halt()
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => p_rdiscretisation%p_rtriangulation
+  p_rtriangulation => p_rdiscrTest%p_rtriangulation
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
@@ -469,44 +480,47 @@ CONTAINS
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
 
-  DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+  DO icurrentElementDistr = 1,p_rdiscrTest%inumFESpaces
   
     ! Activate the current element distribution(s)
-    p_elementDistribution => &
-      p_rdiscretisation%RelementDistribution(icurrentElementDistr)
+    p_elementDistrTest => &
+      p_rdiscrTest%RelementDistr(icurrentElementDistr)
 
-    p_elementDistributionFunc => &
-      p_rdiscretisationFunc%RelementDistribution(icurrentElementDistr)
+    p_elementDistrTrial => &
+      p_rdiscrTrial%RelementDistr(icurrentElementDistr)
+
+    p_elementDistrFunc => &
+      p_rdiscrFunc%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+    IF (p_elementDistrTest%NEL .EQ. 0) CYCLE
 
     ! Get the number of local DOF's for trial and test functions
-    indofFunc = elem_igetNDofLoc(p_elementDistributionFunc%itrialElement)
-    indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
-    indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
+    indofFunc = elem_igetNDofLoc(p_elementDistrFunc%celement)
+    indofTrial = elem_igetNDofLoc(p_elementDistrTrial%celement)
+    indofTest = elem_igetNDofLoc(p_elementDistrTest%celement)
     
     ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
-    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
+    NVE = elem_igetNVE(p_elementDistrTrial%celement)
+    IF (NVE .NE. elem_igetNVE(p_elementDistrTest%celement)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
       CALL sys_halt()
     END IF
-    IF (NVE .NE. elem_igetNVE(p_elementDistributionFunc%itrialElement)) THEN
+    IF (NVE .NE. elem_igetNVE(p_elementDistrFunc%celement)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
       CALL sys_halt()
     END IF
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_elementDistribution%itrialElement)
+    ctrafoType = elem_igetTrafoType(p_elementDistrTest%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
     ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_elementDistrTest%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
     DO i=1,ncubp
@@ -535,21 +549,21 @@ CONTAINS
       IB = rform%Idescriptors(3,IALBET)      
 
       IF ((ifunc.LT.0) .OR. &
-          (ifunc .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
+          (ifunc .GT. elem_getMaxDerivative(p_elementDistrFunc%celement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified function-derivative',ifunc,&
                 ' not available'
         CALL sys_halt()
       END IF
       
       IF ((IA.LE.0) .OR. &
-          (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
+          (IA .GT. elem_getMaxDerivative(p_elementDistrTrial%celement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
                 ' not available'
         CALL sys_halt()
       END IF
 
       IF ((IB.LE.0) .OR. &
-          (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
+          (IB .GT. elem_getMaxDerivative(p_elementDistrTest%celement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
                 ' not available'
         CALL sys_halt()
@@ -567,12 +581,12 @@ CONTAINS
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
     
-    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%itestElement),&
+    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistrTest%celement),&
              ncubp,nelementsPerBlock))
-    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_elementDistribution%itrialElement), &
+    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_elementDistrTrial%celement), &
              ncubp,nelementsPerBlock))
     ALLOCATE(DbasFunc(indofTrial,&
-             elem_getMaxDerivative(p_elementDistributionFunc%itrialElement), &
+             elem_getMaxDerivative(p_elementDistrFunc%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
@@ -599,8 +613,8 @@ CONTAINS
     ! We don't rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
-    bIdenticalTrialAndTest = p_elementDistribution%itrialElement .EQ. &
-                             p_elementDistribution%itestElement
+    bIdenticalTrialAndTest = p_elementDistrTrial%celement .EQ. &
+                             p_elementDistrTest%celement
                              
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
     ! space IdofTest (if both spaces are identical). 
@@ -626,10 +640,10 @@ CONTAINS
     
     ! Test whether the u trial functions are identical to the trial functions
     ! of the discretisation.
-    bIdenticalFuncAndTest = p_elementDistribution%itestElement .EQ. &
-                            p_elementDistributionFunc%itrialElement
-    bIdenticalFuncAndTrial = p_elementDistribution%itrialElement .EQ. &
-                             p_elementDistributionFunc%itrialElement
+    bIdenticalFuncAndTest = p_elementDistrTest%celement .EQ. &
+                            p_elementDistrFunc%celement
+    bIdenticalFuncAndTrial = p_elementDistrTrial%celement .EQ. &
+                             p_elementDistrFunc%celement
                              
     ! If yes, we can use the data calculated for the trial functions.
     IF (bIdenticalFuncAndTest) THEN
@@ -651,14 +665,14 @@ CONTAINS
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+    CALL storage_getbase_int (p_elementDistrTest%h_IelementList, &
                               p_IelementList)
                          
     ! Get the data array from the vector
     CALL lsyssc_getbase_double(rvector,p_Ddata)
                               
     ! Get the number of elements there.
-    NEL = p_elementDistribution%NEL
+    NEL = p_elementDistrTest%NEL
 
     ! Loop over the elements - blockwise.
     !
@@ -703,20 +717,20 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                   .TRUE.,IdofsTest)
+      CALL dof_locGlobMapping_mult(p_rdiscrTest, p_IelementList(IELset:IELmax), &
+                                   IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       IF (.NOT.bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsTrial)
+        CALL dof_locGlobMapping_mult(p_rdiscrTrial, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
       END IF
 
       ! If the DOF's for the coefficient function values are different, 
       ! calculate them, too.
       IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisationFunc, p_IelementList(IELset:IELmax), &
-                                     .FALSE.,IdofsFunc)
+        CALL dof_locGlobMapping_mult(p_rdiscrFunc, p_IelementList(IELset:IELmax), &
+                                     IdofsFunc)
       END IF
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
@@ -814,9 +828,11 @@ CONTAINS
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%itrialElement)
+      cevaluationTag = elem_getEvaluationTag(p_elementDistrTrial%celement)
       cevaluationTag = IOR(cevaluationTag,&
-                      elem_getEvaluationTag(p_elementDistribution%itestElement))
+                      elem_getEvaluationTag(p_elementDistrTest%celement))
+      cevaluationTag = IOR(cevaluationTag,&
+                      elem_getEvaluationTag(p_elementDistrFunc%celement))
                       
       IF (.NOT. rform%ballCoeffConstant) THEN
         ! Evaluate real coordinates if not necessary.
@@ -845,27 +861,27 @@ CONTAINS
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        CALL fcoeff_buildTrilMatrixSc_sim (p_rdiscretisation,rform, &
+        CALL fcoeff_buildTrilMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1_I32,ncubp,&
                   rintSubset%revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
       END IF
       
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_elementDistribution%itestElement, &
+      CALL elem_generic_sim2 (p_elementDistrTest%celement, &
           rintSubset%revalElementSet, BderTest, DbasTest)
       
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim2 (p_elementDistribution%itrialElement, &
+        CALL elem_generic_sim2 (p_elementDistrTrial%celement, &
             rintSubset%revalElementSet, BderTrial, DbasTrial)
       END IF
       
       ! Omit the calculation of the coefficient function values if they
       ! are identical to the trial function values.
       IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
-        CALL elem_generic_sim2 (p_elementDistributionFunc%itrialElement, &
+        CALL elem_generic_sim2 (p_elementDistrFunc%celement, &
             rintSubset%revalElementSet, BderFunc, DbasFunc)
       END IF
       

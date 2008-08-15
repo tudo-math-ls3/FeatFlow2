@@ -18,63 +18,58 @@
 !#     -> Initialise a scalar discretisation structure. One element type for
 !#        all geometric elements, for test and trial functions.
 !#
-!# 3.) spdiscr_initDiscr_combined
-!#     -> Initialise a scalar discretisation structure. One element type for
-!#        all geometric elements in the trial space, another element type
-!#        for all geometric elements in the test space
-!#
-!# 4.) spdiscr_initDiscr_triquad
+!# 3.) spdiscr_initDiscr_triquad
 !#     -> Initialise a scalar discretisation structure for a mixed
 !#        triangle/quad discretisation.
 !#
-!# 5.) spdiscr_deriveBlockDiscr
+!# 4.) spdiscr_deriveBlockDiscr
 !#     -> Creates a block discretisation structure as a subset of
 !#        another block discretisation structure
 !#
-!# 6.) spdiscr_deriveSimpleDiscrSc
+!# 5.) spdiscr_deriveSimpleDiscrSc
 !#     -> Based on an existing discretisation structure, derive a new
 !#        discretisation structure with different trial elements
 !#
-!# 7.) spdiscr_deriveDiscr_triquad
+!# 6.) spdiscr_deriveDiscr_triquad
 !#     -> Based on an existing discretisation structure, derive a new
 !#        discretisation structure for a mixed triangular/quad mesh.
 !#
-!# 8.) spdiscr_releaseDiscr
+!# 7.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
 !#
-!# 9.) spdiscr_createBlockDiscrInd
+!# 8.) spdiscr_createBlockDiscrInd
 !#     -> Creates a block discretisation with one component from an
 !#        existing scalar discretisation.
 !#
-!# 10.) spdiscr_releaseBlockDiscr
-!#      -> Releases a block discretisation structure from memory
+!# 9.) spdiscr_releaseBlockDiscr
+!#     -> Releases a block discretisation structure from memory
 !#
-!# 11.) spdiscr_checkCubature
+!# 10.) spdiscr_checkCubature
 !#      -> Checks if a cubature formula is compatible to an element
 !#         distribution.
 !#
-!# 12.) spdiscr_duplicateDiscrSc
+!# 11.) spdiscr_duplicateDiscrSc
 !#      -> Copies a spatial discretisation structure to another
 !# 
-!# 13.) spdiscr_duplicateBlockDiscr
+!# 12.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
 !#
-!# 14.) spdiscr_getLumpCubature
+!# 13.) spdiscr_getLumpCubature
 !#      -> Try to get a cubature formula for an element type that leads to
 !#         diagonal lumping when setting up a mass matrix with that element
 !# 
-!# 15.) spdiscr_getStdCubature
+!# 14.) spdiscr_getStdCubature
 !#      -> Try to get the typical cubature formula for an element
 !#
-!# 16.) spdiscr_infoBlockDiscr
+!# 15.) spdiscr_infoBlockDiscr
 !#      -> Outputs information about the block discretisation
 !#         (mostly for debugging)
 !#
-!# 17.) spdiscr_infoDiscr
+!# 16.) spdiscr_infoDiscr
 !#      -> Outputs information about the spatial discretisation
 !#         (mostly for debugging)
 !#
-!# 18.) spdiscr_infoElementDistr
+!# 17.) spdiscr_infoElementDistr
 !#      -> Outputs information about the element distribution
 !#         (mostly for debugging)
 !# </purpose>
@@ -135,16 +130,15 @@ MODULE spatialdiscretisation
   
   TYPE t_elementDistribution
   
-    ! Element identifier for trial functions to use in this element list
-    ! during the evaluation of bilinear forms (matrix generation).
-    INTEGER(I32) :: itrialElement        = EL_UNDEFINED
-    
-    ! Element identifier for test functions to use in this element list
-    ! during the evaluation of linear and bilinear forms.
-    INTEGER(I32) :: itestElement         = EL_UNDEFINED
+    ! Element identifier for Finite Element functions to use in this 
+    ! element list.
+    INTEGER(I32) :: celement        = EL_UNDEFINED
     
     ! Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of bilinear forms (matrix generation).
+    ! Note: When evaluating bilinear forms, the ccubTypeBilForm
+    ! constant of the test space decides about the cubature formula
+    ! to be used!
     INTEGER :: ccubTypeBilForm      = 0
     
     ! Cubature formula to use for the discretisation of this element pair
@@ -211,17 +205,12 @@ MODULE spatialdiscretisation
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
     
-    ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there's at least one element distribution
-    ! with different trial and test functions.
-    LOGICAL                          :: bidenticalTrialAndTest = .TRUE.
-    
     ! Handle to the element distribution identifier list.
     ! For every geometric element i, IelementDistr(i) specifies the
     ! number of the element distribution that contains that element.
     ! That way one can easily access information; e.g. retrieving the
     ! element type would be possible as follows:
-    !   RelementDistribution(IelementDistr(i))%itrialElement
+    !   RelementDistr(IelementDistr(i))%itrialElement
     ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
     ! handle is ST_NOHANDLE as all elements are in the
     ! element distribution 1.
@@ -249,7 +238,7 @@ MODULE spatialdiscretisation
     
     ! List of element distribution structures for every element type
     ! that is used in the discretisation.
-    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: RelementDistribution => NULL()
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: RelementDistr => NULL()
     
   END TYPE
   
@@ -276,14 +265,14 @@ MODULE spatialdiscretisation
 
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants.
     ! SPDISC_UNIFORM = all elements in each discretisation
-    !   substructure RspatialDiscretisation(:) are the same.
+    !   substructure RspatialDiscr(:) are the same.
     ! SPDISC_CONFORMAL = Elements of different FE spaces are mixed,
     !   but the DOF's 'fit together'. Each discretisation substructure 
-    !   RspatialDiscretisation(:) has exactly the same number of element
+    !   RspatialDiscr(:) has exactly the same number of element
     !   distributions, and each element distribution 
-    !     RspatialDiscretisation(1)%Relementistributions(i), 
-    !     RspatialDiscretisation(2)%Relementistributions(i),
-    !     RspatialDiscretisation(3)%Relementistributions(i),...
+    !     RspatialDiscr(1)%Relementistributions(i), 
+    !     RspatialDiscr(2)%Relementistributions(i),
+    !     RspatialDiscr(3)%Relementistributions(i),...
     !   describe exactly the same set of elements (Same size, same type,
     !   same order in the element lists,...).
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
@@ -300,7 +289,7 @@ MODULE spatialdiscretisation
     ! A list of up to ncomponents scalar spatial discretisation structures.
     ! Each structure corresponds to one solution component and defines
     ! trial-/test-functions, complexity of the discretisation etc.
-    TYPE(t_spatialDiscretisation), DIMENSION(:), POINTER :: RspatialDiscretisation => NULL()
+    TYPE(t_spatialDiscretisation), DIMENSION(:), POINTER :: RspatialDiscr => NULL()
     
   END TYPE
   
@@ -602,7 +591,7 @@ CONTAINS
   !
   ! The routine performs only basic initialisation. The caller must
   ! separately initialise the the specific scalar discretisation structures 
-  ! of each solution component (as collected in the RspatialDiscretisation
+  ! of each solution component (as collected in the RspatialDiscr
   ! array of the rblockDiscr structure).
   
 !</description>
@@ -640,7 +629,7 @@ CONTAINS
   END IF
 
   rblockDiscr%ncomponents            = ncomponents
-  ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
+  ALLOCATE(rblockDiscr%RspatialDiscr(ncomponents))
 
   ! That's it.  
   
@@ -661,7 +650,7 @@ CONTAINS
   !
   ! The routine performs only basic initialisation. The caller must
   ! separately initialise the the specific scalar discretisation structures 
-  ! of each solution component (as collected in the RspatialDiscretisation
+  ! of each solution component (as collected in the RspatialDiscr
   ! array of the rblockDiscr structure).
   
 !</description>
@@ -699,7 +688,7 @@ CONTAINS
   END IF
 
   rblockDiscr%ncomponents            = ncomponents
-  ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
+  ALLOCATE(rblockDiscr%RspatialDiscr(ncomponents))
 
   ! That's it.  
   
@@ -744,7 +733,7 @@ CONTAINS
     ! Put a copy of the spatial discretisation to first component
     ! of the the block discretisation. Share the data.
     CALL spdiscr_duplicateDiscrSc (rspatialDiscr,&
-        rblockDiscr%RspatialDiscretisation(1),.TRUE.)
+        rblockDiscr%RspatialDiscr(1),.TRUE.)
   
   END SUBROUTINE  
 
@@ -832,10 +821,10 @@ CONTAINS
     ! structures. We set bshare=.TRUE. here, so the information is shared
     ! between the source and destination structure; the dynamic information 
     ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
-    ALLOCATE(rdestDiscr%RspatialDiscretisation(ncount))
+    ALLOCATE(rdestDiscr%RspatialDiscr(ncount))
     DO i=1,ncount
-      CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscretisation(ifirst+i-1), &
-          rdestDiscr%RspatialDiscretisation(i), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscr(ifirst+i-1), &
+          rdestDiscr%RspatialDiscr(i), .TRUE.)
     END DO
       
     END SUBROUTINE  
@@ -879,14 +868,14 @@ CONTAINS
   
   ! Release substructures?
   IF (brelsub) THEN
-    IF (ASSOCIATED(rblockDiscr%RspatialDiscretisation)) THEN
+    IF (ASSOCIATED(rblockDiscr%RspatialDiscr)) THEN
       DO i=1,rblockDiscr%ncomponents
-        CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscretisation(i))
+        CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
       END DO
     END IF
   END IF
-  IF (ASSOCIATED(rblockDiscr%RspatialDiscretisation)) &
-    DEALLOCATE(rblockDiscr%RspatialDiscretisation)
+  IF (ASSOCIATED(rblockDiscr%RspatialDiscr)) &
+    DEALLOCATE(rblockDiscr%RspatialDiscr)
   rblockDiscr%ncomponents = 0
 
   ! Structure not initialised anymore
@@ -972,17 +961,13 @@ CONTAINS
 !  END DO
   rspatialDiscr%h_IelementDistr = ST_NOHANDLE
   
-  ! All test elements are ieltyp.
-  rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 1
-  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
-  p_relementDistr => rspatialDiscr%RelementDistribution(1)
+  ALLOCATE(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
+  p_relementDistr => rspatialDiscr%RelementDistr(1)
   
-  ! Initialise test and trial space for that block
-  p_relementDistr%itrialElement = ieltyp
-  p_relementDistr%itestElement = ieltyp
+  ! Initialise FE space for that block
+  p_relementDistr%celement = ieltyp
   p_relementDistr%ccubTypeBilForm = ccub
   p_relementDistr%ccubTypeLinForm = ccub
   p_relementDistr%ccubTypeEval = ccub
@@ -1143,25 +1128,19 @@ CONTAINS
     END DO
   END IF
   
-  ! Trial and test element coincide.
-  ! Use the same handle for trial and test functions to save memory!
-  rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 2
-  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
-  p_relementDistrTria => rspatialDiscr%RelementDistribution(1)
-  p_relementDistrQuad => rspatialDiscr%RelementDistribution(2)
+  ALLOCATE(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
+  p_relementDistrTria => rspatialDiscr%RelementDistr(1)
+  p_relementDistrQuad => rspatialDiscr%RelementDistr(2)
   
   ! Initialise test and trial space for that block
-  p_relementDistrTria%itrialElement = ieltypTri
-  p_relementDistrTria%itestElement = ieltypTri
+  p_relementDistrTria%celement = ieltypTri
   p_relementDistrTria%ccubTypeBilForm = ccubTri
   p_relementDistrTria%ccubTypeLinForm = ccubTri
   p_relementDistrTria%ccubTypeEval = ccubTri
 
-  p_relementDistrQuad%itrialElement = ieltypQuad
-  p_relementDistrQuad%itestElement = ieltypQuad
+  p_relementDistrQuad%celement = ieltypQuad
   p_relementDistrQuad%ccubTypeBilForm = ccubQuad
   p_relementDistrQuad%ccubTypeLinForm = ccubQuad
   p_relementDistrQuad%ccubTypeEval = ccubQuad
@@ -1308,6 +1287,13 @@ CONTAINS
     CALL sys_halt()
   END IF
   
+  IF (elem_igetDimension(rsourceDiscr%RelementDistr(1)%celement) .ne. &
+      elem_igetDimension(ieltyp)) THEN
+    CALL output_line ('Element dimension different!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
+    CALL sys_halt()
+  END IF
+  
   ! Release old information if present
   CALL spdiscr_releaseDiscr(rdestDiscr)
   
@@ -1320,27 +1306,20 @@ CONTAINS
   rdestDiscr = rsourceDiscr
   
   ! Allocate a new element distribution and copy content from source
-  ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
-  rdestDiscr%RelementDistribution(1:rdestDiscr%inumFESpaces) = &
-      rsourceDiscr%RelementDistribution(1:rsourceDiscr%inumFESpaces)
+  ALLOCATE(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+  rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
+      rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
 
   ! Change the element type of all trial functions to ieltyp
-  rdestDiscr%RelementDistribution(1)%itrialElement = ieltyp
-  
-  IF (rdestDiscr%bidenticalTrialAndTest) THEN
-    rdestDiscr%RelementDistribution(1)%itestElement = ieltyp
-  END IF
-  rdestDiscr%bidenticalTrialAndTest = &
-    rdestDiscr%RelementDistribution(1)%itrialElement .EQ. &
-    rdestDiscr%RelementDistribution(1)%itestElement
+  rdestDiscr%RelementDistr(1)%celement = ieltyp
   
   ! Init the cubature rule
-  rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccub
-  rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccub
-  rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccub
+  rdestDiscr%RelementDistr(1)%ccubTypeBilForm = ccub
+  rdestDiscr%RelementDistr(1)%ccubTypeLinForm = ccub
+  rdestDiscr%RelementDistr(1)%ccubTypeEval = ccub
   
   ! Get the typical transformation used with the element
-  rdestDiscr%RelementDistribution(1)%ctrafoType = elem_igetTrafoType(ieltyp)
+  rdestDiscr%RelementDistr(1)%ctrafoType = elem_igetTrafoType(ieltyp)
   
   ! Mark the new discretisation structure as 'copy', to prevent
   ! the dynamic information to be released.
@@ -1449,44 +1428,40 @@ CONTAINS
     rdestDiscr = rsourceDiscr
     
     ! Allocate a new element distribution
-    ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
-    rdestDiscr%RelementDistribution(1:rdestDiscr%inumFESpaces) = &
-        rsourceDiscr%RelementDistribution(1:rsourceDiscr%inumFESpaces)
+    ALLOCATE(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+    rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
+        rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
 
     ! Loop through the element distributions...
     DO idistr = 1,rdestDiscr%inumFESpaces
-      ! We support only identical trial and test functions here.
-      rdestDiscr%bidenticalTrialAndTest = .TRUE.
     
       ! Check the element there. If it's a triangular element,
       ! change the element type to ielTypTri. If it's a quad
       ! element, change the element type to ielTypQuad.
-      nve = elem_igetNVE(rsourceDiscr%RelementDistribution(idistr)%itrialElement)
+      nve = elem_igetNVE(rsourceDiscr%RelementDistr(idistr)%celement)
       SELECT CASE (nve)
       CASE (TRIA_NVETRI2D)
-        rdestDiscr%RelementDistribution(idistr)%itrialElement = ieltypTri
-        rdestDiscr%RelementDistribution(idistr)%itestElement = ieltypTri
+        rdestDiscr%RelementDistr(idistr)%celement = ieltypTri
 
         ! Init the cubature rule
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeBilForm = ccubTri
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeLinForm = ccubTri
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeEval = ccubTri
+        rdestDiscr%RelementDistr(idistr)%ccubTypeBilForm = ccubTri
+        rdestDiscr%RelementDistr(idistr)%ccubTypeLinForm = ccubTri
+        rdestDiscr%RelementDistr(idistr)%ccubTypeEval = ccubTri
 
         ! Get the typical transformation used with the element
-        rdestDiscr%RelementDistribution(idistr)%ctrafoType = &
+        rdestDiscr%RelementDistr(idistr)%ctrafoType = &
             elem_igetTrafoType(ieltypTri)
         
       CASE (TRIA_NVEQUAD2D)
-        rdestDiscr%RelementDistribution(idistr)%itrialElement = ieltypQuad
-        rdestDiscr%RelementDistribution(idistr)%itestElement = ieltypQuad
+        rdestDiscr%RelementDistr(idistr)%celement = ieltypQuad
 
         ! Init the cubature rule
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeBilForm = ccubQuad
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeLinForm = ccubQuad
-        rdestDiscr%RelementDistribution(idistr)%ccubTypeEval = ccubQuad
+        rdestDiscr%RelementDistr(idistr)%ccubTypeBilForm = ccubQuad
+        rdestDiscr%RelementDistr(idistr)%ccubTypeLinForm = ccubQuad
+        rdestDiscr%RelementDistr(idistr)%ccubTypeEval = ccubQuad
 
         ! Get the typical transformation used with the element
-        rdestDiscr%RelementDistribution(idistr)%ctrafoType = &
+        rdestDiscr%RelementDistr(idistr)%ctrafoType = &
             elem_igetTrafoType(ieltypQuad)
       END SELECT
       
@@ -1500,128 +1475,6 @@ CONTAINS
   
   END SUBROUTINE  
   
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE spdiscr_initDiscr_combined (rspatialDiscr, &
-                               ieltypTrial, ieltypTest, ccubType,&
-                               rtriangulation, rboundary)
-  
-!<description>
-  ! This routine initialises a discretisation structure for a uniform
-  ! discretisation with one element in the trial space and a probably
-  ! different element in the test space.
-  !
-  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
-  ! the existing structure is recreated/updated.
-!</description>
-
-!<input>
-  ! The element type identifier that is to be used for all elements
-  ! in the trial space.
-  INTEGER(I32), INTENT(IN)                       :: ieltypTrial
-  
-  ! The element type identifier that is to be used for all elements
-  ! in the test space.
-  INTEGER(I32), INTENT(IN)                       :: ieltypTest
-
-  ! Cubature formula CUB_xxxx to use for calculating integrals
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
-  ! automatically determine cubature formula.
-  INTEGER, INTENT(IN)                            :: ccubType
-  
-  ! The triangulation structure underlying to the discretisation.
-  TYPE(t_triangulation), INTENT(IN), TARGET      :: rtriangulation
-  
-  ! OPTIONAL: The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET, OPTIONAL :: rboundary
-!</input>
-  
-!<output>
-  ! The discretisation structure to be initialised.
-  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
-!</output>
-  
-!</subroutine>
-
-  ! local variables
-  INTEGER :: i,ctrafoTest
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
-  TYPE(t_elementDistribution), POINTER :: p_relementDistr
-  INTEGER :: ccub
-
-  ! Automatically determine cubature formula if necessary  
-  ccub = ccubType
-  IF (ccub .EQ. SPDISC_CUB_AUTOMATIC) &
-      ccub = spdiscr_getStdCubature(ieltypTrial)
-  
-  ! Do we have a structure?
-  IF (rspatialDiscr%ndimension .NE. 0) THEN
-    ! Release the old structure.
-    CALL spdiscr_releaseDiscr(rspatialDiscr)
-  END IF
-
-  ! Initialise the variables of the structure for the simple discretisation
-  rspatialDiscr%ndimension             = rtriangulation%ndim
-  rspatialDiscr%p_rtriangulation       => rtriangulation
-  IF (PRESENT(rboundary)) THEN
-    rspatialDiscr%p_rboundary          => rboundary
-  ELSE
-    NULLIFY(rspatialDiscr%p_rboundary)
-  END IF
-  rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
-  
-  rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
-  
-  ! Initialise the first element distribution
-  rspatialDiscr%inumFESpaces = 1
-  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
-  p_relementDistr => rspatialDiscr%RelementDistribution(1)
-  
-  ! Initialise test and trial space for that block
-  p_relementDistr%itrialElement = ieltypTrial
-  p_relementDistr%itestElement = ieltypTest
-  p_relementDistr%ccubTypeBilForm = ccub
-  p_relementDistr%ccubTypeLinForm = ccub
-  p_relementDistr%ccubTypeEval = ccub
-  
-  ! Get the typical transformation used with the element
-  p_relementDistr%ctrafoType = elem_igetTrafoType(ieltypTrial)
-  ctrafoTest = elem_igetTrafoType(ieltypTrial)
-  
-  IF (p_relementDistr%ctrafoType .NE. ctrafoTest) THEN
-    CALL output_line ('Elements incompatible due to different', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_initDiscr_combined')  
-    CALL output_line ('transformation between reference and real element!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_initDiscr_combined')  
-    CALL sys_halt()
-  END IF
-  
-  ! Check the cubature formula against the element distribution.
-  ! This stops the program if this is not fulfilled.
-  CALL spdiscr_checkCubature(ccub,ieltypTrial)
-  CALL spdiscr_checkCubature(ccub,ieltypTest)
-
-  ! Save the number of elements in that element list.
-  p_relementDistr%NEL = rtriangulation%NEL
-
-  ! Initialise an 'identity' array containing the numbers of all elements.
-  ! This list defines the sequence how elements are processed, e.g. in the
-  ! assembly of matrices/vectors.
-  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_IelementList', &
-        rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
-        ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (p_relementDistr%h_IelementList,p_Iarray)
-  DO i=1,rtriangulation%NEL
-    p_Iarray(i) = i
-  END DO
-  
-  ! This is a complete new structure, everything 'belongs' to this.
-  rspatialDiscr%bisCopy = .FALSE.
-
-  END SUBROUTINE  
-
   ! ***************************************************************************
   
 !<subroutine>
@@ -1661,7 +1514,7 @@ CONTAINS
   ! Loop through all element distributions
   DO i=1,rspatialDiscr%inumFESpaces
   
-    p_relementDistr => rspatialDiscr%RelementDistribution(i)
+    p_relementDistr => rspatialDiscr%RelementDistr(i)
     
     ! If the element distribution is empty, skip it
     IF (p_relementDistr%NEL .NE. 0) THEN
@@ -1679,8 +1532,7 @@ CONTAINS
       
     END IF
     
-    p_relementDistr%itrialElement = EL_UNDEFINED
-    p_relementDistr%itestElement  = EL_UNDEFINED
+    p_relementDistr%celement = EL_UNDEFINED
     
   END DO
   
@@ -1692,8 +1544,8 @@ CONTAINS
   END IF
   
   ! No FE-spaces in here anymore...
-  IF (ASSOCIATED(rspatialDiscr%RelementDistribution)) &
-    DEALLOCATE(rspatialDiscr%RelementDistribution)
+  IF (ASSOCIATED(rspatialDiscr%RelementDistr)) &
+    DEALLOCATE(rspatialDiscr%RelementDistr)
   rspatialDiscr%inumFESpaces = 0
   
   ! Structure not initialised anymore
@@ -1753,8 +1605,8 @@ CONTAINS
       rdestDiscr = rsourceDiscr
       
       ! Duplicate the element distribution structure
-      ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
-      rdestDiscr%RelementDistribution = rsourceDiscr%RelementDistribution
+      ALLOCATE(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+      rdestDiscr%RelementDistr = rsourceDiscr%RelementDistr
     
       ! Mark the new discretisation structure as 'copy', to prevent
       ! the dynamic information to be released.
@@ -1837,8 +1689,8 @@ CONTAINS
     ! If bshare = false, we have to create copies.
     IF (.NOT. bshr) THEN
       DO i=1,rsourceDiscr%ncomponents
-        CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscretisation(i), &
-            rdestDiscr%RspatialDiscretisation(i), .FALSE.)
+        CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscr(i), &
+            rdestDiscr%RspatialDiscr(i), .FALSE.)
       END DO
     END IF
 
@@ -1870,9 +1722,9 @@ CONTAINS
     CALL output_line ('ccomplexity: '//TRIM(sys_siL(rdiscr%ccomplexity,1)))
     CALL output_line ('ncomponents: '//TRIM(sys_siL(rdiscr%ncomponents,3)))
 
-    IF (ASSOCIATED(rdiscr%RspatialDiscretisation)) THEN
+    IF (ASSOCIATED(rdiscr%RspatialDiscr)) THEN
       DO icomponent=1,rdiscr%ncomponents
-        CALL spdiscr_infoDiscr(rdiscr%RspatialDiscretisation(icomponent))
+        CALL spdiscr_infoDiscr(rdiscr%RspatialDiscr(icomponent))
       END DO
     END IF
 
@@ -1906,8 +1758,6 @@ CONTAINS
          //TRIM(sys_sl(rspatialDiscr%bisCopy)))
      CALL output_line ('ccomplexity:            '&
          //TRIM(sys_siL(rspatialDiscr%ccomplexity,1)))
-     CALL output_line ('bidenticalTrialAndTest: '&
-         //TRIM(sys_sl(rspatialDiscr%bidenticalTrialAndTest)))
      CALL output_line ('inumFESpaces:           '&
          //TRIM(sys_siL(rspatialDiscr%inumFESpaces,15)))
      CALL output_line ('h_IelementDistr:        '&
@@ -1915,9 +1765,9 @@ CONTAINS
      CALL output_line ('h_IelementCounter:      '&
          //TRIM(sys_siL(rspatialDiscr%h_IelementCounter,15)))
 
-     IF (ASSOCIATED(rspatialDiscr%RelementDistribution)) THEN
+     IF (ASSOCIATED(rspatialDiscr%RelementDistr)) THEN
        DO inumFESpace=1,rspatialDiscr%inumFESpaces
-         CALL spdisc_infoElementDistr(rspatialDiscr%RelementDistribution(inumFESpace))
+         CALL spdisc_infoElementDistr(rspatialDiscr%RelementDistr(inumFESpace))
        END DO
      END IF
 
@@ -1942,8 +1792,7 @@ CONTAINS
      CALL output_lbrk()
      CALL output_line ('ElementDistribution:')
      CALL output_line ('--------------------')
-     CALL output_line ('itrialElement:   '//TRIM(sys_siL(relementDistr%itrialElement,15)))
-     CALL output_line ('iteastElement:   '//TRIM(sys_siL(relementDistr%itestElement,15)))
+     CALL output_line ('ielement:        '//TRIM(sys_siL(relementDistr%celement,15)))
      CALL output_line ('ccubTypeBilForm: '//TRIM(sys_siL(relementDistr%ccubTypeBilForm,15)))
      CALL output_line ('ccubTypeLinForm: '//TRIM(sys_siL(relementDistr%ccubTypeLinForm,15)))
      CALL output_line ('ccubTypeEval:    '//TRIM(sys_siL(relementDistr%ccubTypeEval,15)))
