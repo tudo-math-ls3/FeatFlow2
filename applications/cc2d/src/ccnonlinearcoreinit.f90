@@ -736,9 +736,9 @@ CONTAINS
         imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rnonlinearIteration%rpreconditioner%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
-              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks),&
+              rdiscretisation%RspatialDiscr(1:rrhs%nblocks),&
             rproblem%RlevelInfo(i)% &
-              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks)))
+              rdiscretisation%RspatialDiscr(1:rrhs%nblocks)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear
@@ -890,7 +890,6 @@ CONTAINS
         END IF
         
         ! On the current level, set up a global preconditioner matrix.
-
         p_rmatrixPreconditioner => &
             rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner
       

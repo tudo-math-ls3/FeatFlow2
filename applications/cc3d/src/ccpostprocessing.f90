@@ -352,7 +352,7 @@ CONTAINS
     
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF ((rsolution%p_rblockDiscr%RspatialDiscr(1)% &
          ccomplexity .EQ. SPDISC_UNIFORM)) THEN
          
       ! Calculate a mesh region for the seventh boundary component
@@ -415,16 +415,16 @@ CONTAINS
     TYPE(t_matrixScalar) :: rBmatrix
     TYPE(t_vectorScalar), TARGET :: rtempVector
     
-    IF (rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF (rsolution%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .EQ. SPDISC_UNIFORM) THEN
         
-      ieltype = rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
+      ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
+                RelementDistr(1)%celement
                 
       IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T_3D) THEN
       
         ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rsolution%RvectorBlock(4)%p_rspatialDiscretisation,&
+        CALL lsyssc_createVecByDiscr (rsolution%RvectorBlock(4)%p_rspatialDiscr,&
             rtempVector,.TRUE.)
 
         ! Calculate divergence = B1^T u1 + B2^T u2 + B3^T u3
@@ -565,22 +565,22 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_Q1_3D, CUB_G2_3D, &
-                 rprjDiscretisation%RspatialDiscretisation(1))
+                 rprjDiscretisation%RspatialDiscr(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1_3D, CUB_G2_3D, &
-                 rprjDiscretisation%RspatialDiscretisation(2))
+                 rprjDiscretisation%RspatialDiscr(2))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(3), &
+                 rvector%p_rblockDiscr%RspatialDiscr(3), &
                  EL_Q1_3D, CUB_G2_3D, &
-                 rprjDiscretisation%RspatialDiscretisation(3))
+                 rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -696,11 +696,11 @@ CONTAINS
         p_Ddata(1:p_rtriangulation%NEL))
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-!    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+!    IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
 !        ccomplexity .EQ. SPDISC_UNIFORM) THEN
 !        
-!      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-!                RelementDistribution(1)%itrialElement
+!      ieltype = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
+!                RelementDistr(1)%itrialElement
 !                
 !      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T_3D) THEN
 !          
@@ -920,19 +920,19 @@ CONTAINS
 
     ! Piecewise constant space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q0_3D, CUB_G1_3D, &
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q1_3D, CUB_G2_3D, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
 !    CALL spdiscr_deriveSimpleDiscrSc (&
-!                 p_rdiscr%RspatialDiscretisation(1), &
+!                 p_rdiscr%RspatialDiscr(1), &
 !                 EL_Q2, CUB_G3X3, &
 !                 rpostprocessing%rdiscrQuadratic)
   

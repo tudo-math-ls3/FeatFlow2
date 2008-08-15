@@ -158,14 +158,14 @@ CONTAINS
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_EM30,CUB_G2X2,rtriangulation, rboundary)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
+    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrix)
 
     ! And now to the entries of the matrix. For assembling of the entries,
@@ -203,7 +203,7 @@ CONTAINS
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                  rlinform,.TRUE.,rrhs,coeff_RHS_2D)
 
     ! The linear solver only works for block matrices/vectors - but above,
@@ -344,10 +344,10 @@ CONTAINS
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
     ! previous discretisation structure:
-    CALL spdiscr_duplicateBlockDiscr(rvectorBlock%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr(rvectorBlock%p_rblockDiscr,rprjDiscretisation)
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvectorBlock%p_rblockDiscretisation%RspatialDiscretisation(1), &
-                 EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(1))
+                 rvectorBlock%p_rblockDiscr%RspatialDiscr(1), &
+                 EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(1))
 
     ! Step 2: Setup a new solution vector based on this discretisation,
     ! allocate memory.

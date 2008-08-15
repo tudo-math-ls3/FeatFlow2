@@ -98,17 +98,17 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr(p_rvector%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr(p_rvector%p_rblockDiscr,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 p_rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(1))
+                 rprjDiscretisation%RspatialDiscr(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 p_rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(2))
+                 rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -134,7 +134,7 @@ CONTAINS
     !
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+      p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 

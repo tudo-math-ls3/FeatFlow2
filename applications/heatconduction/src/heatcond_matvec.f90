@@ -190,7 +190,7 @@ CONTAINS
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixStatic%RmatrixBlock(1,1))
     
       ! Update the structural information of the block matrix, as we manually
@@ -367,7 +367,7 @@ CONTAINS
     ! so the callback routine has access to everything what is
     ! in the collection.
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               rrhs%RvectorBlock(1),coeff_RHS,&
               rproblem%rcollection)
     

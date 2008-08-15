@@ -166,7 +166,7 @@ CONTAINS
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:
       CALL spdiscr_initDiscr_simple ( &
-                  p_rdiscretisation%RspatialDiscretisation(1), &
+                  p_rdiscretisation%RspatialDiscr(1), &
                   EL_E011,CUB_G2X2, &
                   p_rtriangulation, p_rboundary)
 

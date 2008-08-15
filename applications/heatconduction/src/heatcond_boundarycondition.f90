@@ -104,7 +104,7 @@ CONTAINS
       
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
+      p_rdiscretisation => p_rmatrix%p_rblockDiscrTrial
       
       ! For implementing boundary conditions, we use a 'filter technique with
       ! discretised boundary conditions'. This means, we first have to calculate

@@ -346,7 +346,7 @@ CONTAINS
 
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+      rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 

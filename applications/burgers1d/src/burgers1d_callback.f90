@@ -54,7 +54,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_burgers (rdiscretisation,rform, &
+  SUBROUTINE coeff_burgers (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -79,9 +79,14 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
     
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
@@ -156,7 +161,7 @@ CONTAINS
     ! element (depending on whether we use a conforming space or not).
     
     ieldistr = rdomainIntSubset%ielementDistribution
-    ieltyp = rdiscretisation%RelementDistribution(ieldistr)%itrialElement
+    ieltyp = rdiscretisationTrial%RelementDistr(ieldistr)%celement
     
     CALL fevl_evaluate_sim (p_rsolution%RvectorBlock(1), rdomainIntSubset%p_Dcoords, &
                   rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &

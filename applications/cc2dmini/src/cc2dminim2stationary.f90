@@ -1073,12 +1073,12 @@ CONTAINS
       ! Switch off adaptive matrix generation if our discretisation is not a 
       ! uniform Q1~ discretisation - the matrix restriction does not support
       ! other cases.
-      p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscretisation(1)
+      p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscr(1)
       IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-          ((p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E030) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E031) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM30) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM31))) THEN
+          ((p_rdiscr%RelementDistr(1)%celement .NE. EL_E030) .AND. &
+           (p_rdiscr%RelementDistr(1)%celement .NE. EL_E031) .AND. &
+           (p_rdiscr%RelementDistr(1)%celement .NE. EL_EM30) .AND. &
+           (p_rdiscr%RelementDistr(1)%celement .NE. EL_EM31))) THEN
         i = 0
       END IF
       

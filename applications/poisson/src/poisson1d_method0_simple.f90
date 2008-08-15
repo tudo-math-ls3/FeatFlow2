@@ -146,7 +146,7 @@ CONTAINS
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
     ! Setting up a linear element and trapezoidal rule would be...
                                    EL_P1_1D,CUB_TRZ_1D,rtriangulation)
     ! Setting up a quadratic element and 3-point Gauss rule would be...
@@ -158,14 +158,14 @@ CONTAINS
     ! We will set the evaluation cubature formula to 3-point Gauss.
     ! If we don't do this, then the L2-error, which is calculated in the
     ! post-processing phase would be beyond machine exactness...
-    rdiscretisation%RspatialDiscretisation(1)%RelementDistribution(1)%ccubTypeEval = &
+    rdiscretisation%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval = &
       CUB_G6_1D
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
+    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrix)
     
     ! And now to the entries of the matrix. For assembling of the entries,
@@ -200,7 +200,7 @@ CONTAINS
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                  rlinform,.TRUE.,rrhs,coeff_RHS_1D)
     
     ! The linear solver only works for block matrices/vectors - but above,

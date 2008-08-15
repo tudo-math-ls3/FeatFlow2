@@ -233,7 +233,7 @@ CONTAINS
     ! and cubature rule for this solution component:
     DO i = NLMIN, NLMAX
       CALL spdiscr_initDiscr_simple (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1), &
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
           EL_E030,CUB_G3X3,Rlevels(i)%rtriangulation, rboundary)
     END DO
                  
@@ -253,7 +253,7 @@ CONTAINS
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       CALL bilf_createMatrixStructure ( &
-           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
       
       ! Update the structural information of the block matrix, as we manually
@@ -305,7 +305,7 @@ CONTAINS
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
     
     DO i = NLMIN, NLMAX
@@ -392,14 +392,14 @@ CONTAINS
 
       ! Now create the matrix structure of the 2-Level mass matrix.
       CALL mlop_create2LvlMatrixStruct(&
-          Rlevels(i-1)%rdiscretisation%RspatialDiscretisation(1),&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrix2Lvl)
       
       ! And assemble the entries of the 2-Level mass matrix:
       CALL mlop_build2LvlMassMatrix (&
-          Rlevels(i-1)%rdiscretisation%RspatialDiscretisation(1),&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           .TRUE., Rlevels(i)%rmatrix2Lvl)
       
       ! Now set up an interlevel projecton structure for this level
@@ -569,12 +569,13 @@ CONTAINS
     CALL spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, CUB_G3X3, &
                                   Rlevels(NLMAX)%rtriangulation, rboundary)
 
-    ! And a combined discretisation with Q2~ trial and Q1 test spaces:
-    CALL spdiscr_initDiscr_combined (rdiscrPrj, EL_E030, EL_Q1, CUB_G3X3, &
-                                     Rlevels(NLMAX)%rtriangulation, rboundary)
+    ! Derive a discretisation structure with Q2~ for the test space.
+    call spdiscr_deriveSimpleDiscrSc (rdiscrQ1, EL_E030, CUB_G3X3, &
+                                      rdiscrPrj)
 
-    ! Now create the the matrix structure of N:
-    CALL bilf_createMatrixStructure (rdiscrPrj, LSYSSC_MATRIX9, rmatrixMassPrj)
+    ! Now create the the matrix structure of N.
+    ! Test space is Q1, trial space is Q1~.
+    CALL bilf_createMatrixStructure (rdiscrPrj,LSYSSC_MATRIX9, rmatrixMassPrj, rdiscrQ1)
 
     ! And assemble the mass matrix entries of N:
     CALL stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)

@@ -192,7 +192,7 @@ CONTAINS
     ! and cubature rule for this solution component:
     DO i = 1, nlevels
       CALL spdiscr_initDiscr_simple (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1), &
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
       ! Setting up a linear element and trapezoidal rule would be...
           EL_P1_1D,CUB_TRZ_1D,Rlevels(i)%rtriangulation)
       ! Setting up a quadratic element and 3-point Gauss rule would be...
@@ -215,7 +215,7 @@ CONTAINS
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       CALL bilf_createMatrixStructure ( &
-           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
 
       ! Update the structural information of the block matrix, as we manually
@@ -263,7 +263,7 @@ CONTAINS
     
     ! ... and then discretise the RHS to get a discrete version of it.
     CALL linf_buildVectorScalar (&
-        Rlevels(nlevels)%rdiscretisation%RspatialDiscretisation(1),&
+        Rlevels(nlevels)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_1D)
     
     ! Now we have the raw problem. What is missing is the definition of the boudary

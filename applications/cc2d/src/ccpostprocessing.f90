@@ -345,7 +345,7 @@ CONTAINS
     
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF ((rsolution%p_rblockDiscr%RspatialDiscr(1)% &
          ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
         (boundary_igetNBoundComp(rproblem%rboundary) .GE. 2)) THEN
 
@@ -398,16 +398,16 @@ CONTAINS
     TYPE(t_matrixScalar) :: rBmatrix
     TYPE(t_vectorScalar), TARGET :: rtempVector
     
-    IF (rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF (rsolution%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .EQ. SPDISC_UNIFORM) THEN
         
-      ieltype = rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
+      ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
+                RelementDistr(1)%celement
                 
       IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
       
         ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscretisation,&
+        CALL lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.TRUE.)
 
         ! Calculate divergence = B1^T u1 + B2^T u2
@@ -543,17 +543,17 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(1))
+                 rprjDiscretisation%RspatialDiscr(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(2))
+                 rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -665,11 +665,11 @@ CONTAINS
         p_Ddata(1:p_rtriangulation%NEL))
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF (rvector%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .EQ. SPDISC_UNIFORM) THEN
         
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
+      ieltype = rvector%p_rblockDiscr%RspatialDiscr(1)% &
+                RelementDistr(1)%celement
                 
       IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
           
@@ -889,19 +889,19 @@ CONTAINS
 
     ! Piecewise constant space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q0, CUB_G1X1, &
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q2, CUB_G3X3, &
                  rpostprocessing%rdiscrQuadratic)
   

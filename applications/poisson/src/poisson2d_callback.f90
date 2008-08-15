@@ -78,7 +78,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Laplace_2D (rdiscretisation,rform, &
+  SUBROUTINE coeff_Laplace_2D (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -103,9 +103,14 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
     
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
@@ -512,7 +517,7 @@ CONTAINS
       END IF
       
       ! Get the triangulation array for the point coordinates
-      p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+      p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
       CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoordinates)
 
@@ -699,80 +704,80 @@ CONTAINS
 
     ! Initialise block discretisations
     CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
-        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+        rtriangulation, rsolution%p_rspatialDiscr%p_rboundary)
     CALL spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
-        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+        rtriangulation, rsolution%p_rspatialDiscr%p_rboundary)
 
     ! What kind of element type is used for the FE solution
     SELECT CASE(ieltype)
     CASE(1)
       ! Initialise spatial discretisations for gradient with P0-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
       
     CASE(2)
       ! Initialise spatial discretisations for gradient with P1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P2-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
     CASE(11)
       ! Initialise spatial discretisations for gradient with Q0-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
     CASE(13)
       ! Initialise spatial discretisations for gradient with Q1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q2-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
     CASE(-1)
       ! Initialise spatial discretisations for gradient with P0/Q0-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlock%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          rdiscrBlock%RspatialDiscr(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlock%Rspatialdiscretisation(2))
+          rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1/Q1-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlockRef%Rspatialdiscretisation(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          rdiscrBlockRef%RspatialDiscr(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlockRef%Rspatialdiscretisation(2))
+          rdiscrBlockRef%RspatialDiscr(2))
       
     CASE DEFAULT
       CALL output_line('Unsupproted element type!',&

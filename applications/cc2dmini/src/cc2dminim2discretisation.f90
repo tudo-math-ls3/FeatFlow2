@@ -129,28 +129,26 @@ CONTAINS
         ! For simplicity, we set up one discretisation structure for the 
         ! velocity...
         CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    p_rdiscretisation%RspatialDiscr(1), &
                     EL_EM30,icubA, &
                     p_rtriangulation, p_rboundary)
                     
         ! Manually set the cubature formula for the RHS as the above routine
         ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscretisation(1)% &
-          RelementDistribution(1)%ccubTypeLinForm = icubF
+        p_rdiscretisation%RspatialDiscr(1)% &
+          RelementDistr(1)%ccubTypeLinForm = icubF
                     
         ! ...and copy this structure also to the discretisation structure
         ! of the 2nd component (Y-velocity). This needs no additional memory, 
         ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscretisation(1),&
-            p_rdiscretisation%RspatialDiscretisation(2))
+        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
+            p_rdiscretisation%RspatialDiscr(2))
     
         ! For the pressure (3rd component), we set up a separate discretisation 
         ! structure, as this uses different finite elements for trial and test
         ! functions.
-        CALL spdiscr_initDiscr_combined ( &
-                    p_rdiscretisation%RspatialDiscretisation(3), &
-                    EL_Q0,EL_EM30,icubB, &
-                    p_rtriangulation, p_rboundary)
+        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
+            EL_Q0,icubB,p_rdiscretisation%RspatialDiscr(3))
                     
       CASE DEFAULT
         PRINT *,'Unknown discretisation: iElementType = ',ielementType
@@ -249,7 +247,7 @@ CONTAINS
       
       ! Create the matrix structure of the Laplace matrix:
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixLaplace)
       
       ! And now to the entries of the matrix. For assembling of the entries,
@@ -285,10 +283,11 @@ CONTAINS
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the same structure.
       ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(3),LSYSSC_MATRIX9,&
-                rproblem%RlevelInfo(i)%rmatrixB1)
+                p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
+                rproblem%RlevelInfo(i)%rmatrixB1,&
+                p_rdiscretisation%RspatialDiscr(1))
                 
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
       ! lsyssc_duplicateMatrix to create B2. Share the matrix 
@@ -371,8 +370,11 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-        p_rdiscretisation%RspatialDiscretisation(2)
+      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
+        p_rdiscretisation%RspatialDiscr(2)
+      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
+        p_rdiscretisation%RspatialDiscr(2)
+      p_rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
                                   
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -452,13 +454,13 @@ CONTAINS
     !
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               p_rrhs%RvectorBlock(1),coeff_RHS_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
               p_rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
                                 

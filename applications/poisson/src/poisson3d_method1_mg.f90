@@ -194,7 +194,7 @@ CONTAINS
     ! and cubature rule for this solution component:
     DO i = NLMIN, NLMAX
       CALL spdiscr_initDiscr_simple (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1), &
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
           ielemType,CUB_G3_3D,Rlevels(i)%rtriangulation)
     END DO
                  
@@ -210,7 +210,7 @@ CONTAINS
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       CALL bilf_createMatrixStructure ( &
-           Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
       
       ! Update the structural information of the block matrix, as we manually
@@ -265,7 +265,7 @@ CONTAINS
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_3D)
     
     ! Now we have the raw problem. What is missing is the definition of the boudary

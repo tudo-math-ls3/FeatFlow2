@@ -111,7 +111,7 @@ iUpwind            = 0
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam             = 1.0 0.1
+dUpsam             = 1.0 # 0.1
 
 # ------------------------------------------------------------------------
 

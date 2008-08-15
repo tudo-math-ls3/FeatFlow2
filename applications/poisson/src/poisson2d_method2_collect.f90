@@ -144,7 +144,7 @@ CONTAINS
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (p_rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2, &
                                    p_rtriangulation, rboundary)
                                    
@@ -206,7 +206,7 @@ CONTAINS
     ! We create that directly in the block (1,1) of the block matrix
     ! using the discretisation structure of the first block.
     CALL bilf_createMatrixStructure (&
-              p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+              p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
               p_rmatrix%RmatrixBlock(1,1))
     
     ! Update the structural information of the block matrix, as we manually
@@ -255,7 +255,7 @@ CONTAINS
     ! the block vector using the discretisation structure of the 
     ! first block.
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               p_rrhs%RvectorBlock(1),coeff_RHS_2D)
     
     ! Now we have block vectors for the RHS and the matrix. What we
@@ -563,7 +563,7 @@ CONTAINS
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+      p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 

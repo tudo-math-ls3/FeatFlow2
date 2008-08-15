@@ -163,7 +163,7 @@ CONTAINS
     
     ! Get the triangulation on the highest level
     !p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation
-    p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+    p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
     
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate

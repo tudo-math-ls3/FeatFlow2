@@ -229,7 +229,7 @@ CONTAINS
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:
       CALL spdiscr_initDiscr_simple ( &
-                  p_rdiscretisation%RspatialDiscretisation(1), &
+                  p_rdiscretisation%RspatialDiscr(1), &
                   EL_E011,CUB_G2X2, &
                   p_rtriangulation, p_rboundary)
 
@@ -361,7 +361,7 @@ CONTAINS
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrix%RmatrixBlock(1,1))
     
       ! Update the structural information of the block matrix, as we manually
@@ -430,7 +430,7 @@ CONTAINS
     ! so the callback routine has access to everything what is
     ! in the collection.
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               p_rrhs%RvectorBlock(1),coeff_RHS,&
               rproblem%rcollection)
     
@@ -485,7 +485,7 @@ CONTAINS
       
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
+      p_rdiscretisation => p_rmatrix%p_rblockDiscrTrial
       
       ! For implementing boundary conditions, we use a 'filter technique with
       ! discretised boundary conditions'. This means, we first have to calculate
@@ -826,7 +826,7 @@ CONTAINS
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+      p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 

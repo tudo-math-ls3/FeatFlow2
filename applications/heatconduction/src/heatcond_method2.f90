@@ -180,7 +180,7 @@ CONTAINS
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_TRZ,rtriangulation, rboundary)
                                    !CUB_G2X2
 
@@ -244,7 +244,7 @@ CONTAINS
     ! At first: create the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
+    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrix)
                                      
     ! For the time dependent problem, we need a Laplace matrix and a
@@ -335,7 +335,7 @@ CONTAINS
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                  rlinform,.TRUE.,rrhs,coeff_RHS)
 
     ! Immediately create a 1-block version of the scalar RHS.

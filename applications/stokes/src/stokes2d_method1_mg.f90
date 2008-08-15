@@ -207,7 +207,7 @@ CONTAINS
                                      Rlevels(i)%rtriangulation, rboundary)
     END DO
 
-    ! rdiscretisation%RspatialDiscretisation is a list of scalar 
+    ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.
     ! We have a solution vector with three components:
     !  Component 1 = X-velocity
@@ -217,22 +217,21 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           EL_EM30, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards.
       CALL spdiscr_duplicateDiscrSc (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(2))
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(2))
 
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(3),&
-          EL_Q0,EL_EM30,CUB_G2X2,Rlevels(i)%rtriangulation,rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
+          EL_Q0, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
     
     END DO
 
@@ -255,7 +254,7 @@ CONTAINS
       !
       ! Create the matrix structure of the X-velocity.
       CALL bilf_createMatrixStructure (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrix%RmatrixBlock(1,1))
 
       ! In the Stokes problem, the matrix for the Y-velocity is identical to
@@ -271,10 +270,11 @@ CONTAINS
       !    ( B1^T B2^T    )
       !
       ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       CALL bilf_createMatrixStructure (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(3),&
-          LSYSSC_MATRIX9, Rlevels(i)%rmatrixB1)
+          Rlevels(i)%rdiscretisation%RspatialDiscr(3),&
+          LSYSSC_MATRIX9, Rlevels(i)%rmatrixB1,&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1))
                 
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
       ! lsyssc_duplicateMatrix to create B2. Share the matrix 
@@ -323,8 +323,11 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-        Rlevels(i)%rdiscretisation%RspatialDiscretisation(2)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
                                   
       ! Build the first pressure matrix B1.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -398,11 +401,11 @@ CONTAINS
     !
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
 
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(2),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2),&
         rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
                                 
     ! The third subvector must be zero - as it represents the RHS of
@@ -626,12 +629,12 @@ CONTAINS
                                       rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1), &
-        EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(1))
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1), &
+        EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(2), &
-        EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(2))
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2), &
+        EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !

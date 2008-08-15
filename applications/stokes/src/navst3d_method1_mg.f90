@@ -273,7 +273,7 @@ CONTAINS
                                    Rlevels(i)%rtriangulation)
     END DO
 
-    ! rdiscretisation%RspatialDiscretisation is a list of scalar 
+    ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.
     ! We have a solution vector with three components:
     !  Component 1 = X-velocity
@@ -284,7 +284,7 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           EL_EM30_3D, CUB_G3_3D, Rlevels(i)%rtriangulation)
                   
       ! ...and copy this structure also to the discretisation structure
@@ -292,18 +292,17 @@ CONTAINS
       ! additional memory, as all three structures will share the same dynamic
       ! information afterwards.
       CALL spdiscr_duplicateDiscrSc (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(2))
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(2))
       CALL spdiscr_duplicateDiscrSc (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(3))
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(3))
 
       ! For the pressure (4th component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(4),&
-          EL_Q0_3D,EL_EM30_3D,CUB_G3_3D,Rlevels(i)%rtriangulation)
+      CALL spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
+          EL_Q0, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
     
     END DO
 
@@ -326,7 +325,7 @@ CONTAINS
       !
       ! Create the matrix structure of the X-velocity.
       CALL bilf_createMatrixStructure (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(1),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrixStokes)
 
       ! In the Stokes problem, the matrices for the Y-velocity and Z-velocity
@@ -344,10 +343,11 @@ CONTAINS
       !    \ B1^T B2^T B3^T    /
       !
       ! Create the matrices structure of the pressure using the 4th
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       CALL bilf_createMatrixStructure (&
-          Rlevels(i)%rdiscretisation%RspatialDiscretisation(4),&
-          LSYSSC_MATRIX9, Rlevels(i)%rmatrixB1)
+          Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
+          LSYSSC_MATRIX9, Rlevels(i)%rmatrixB1,&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1))
                 
       ! Duplicate the B1 matrix structure to the B2/B3 matrix, so use
       ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix 
@@ -416,12 +416,18 @@ CONTAINS
       ! matrix to the Y-/Z-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      Rlevels(i)%rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation => &
-        Rlevels(i)%rdiscretisation%RspatialDiscretisation(1)
-      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-        Rlevels(i)%rdiscretisation%RspatialDiscretisation(2)
-      Rlevels(i)%rmatrix%RmatrixBlock(3,3)%p_rspatialDiscretisation => &
-        Rlevels(i)%rdiscretisation%RspatialDiscretisation(3)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
+      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
+
+      Rlevels(i)%rmatrix%RmatrixBlock(3,3)%p_rspatialDiscrTrial => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(3)
+      Rlevels(i)%rmatrix%RmatrixBlock(3,3)%p_rspatialDiscrTest => &
+        Rlevels(i)%rdiscretisation%RspatialDiscr(3)
+      Rlevels(i)%rmatrix%RmatrixBlock(3,3)%bidenticalTrialAndTest = .true.
+      
                                   
       ! Build the first pressure matrix B1.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -551,15 +557,15 @@ CONTAINS
     !
     ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
 
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(2),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2),&
         rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_X_3D)
 
     CALL linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(3),&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(3),&
         rlinform,.TRUE.,rrhs%RvectorBlock(3),coeff_RHS_X_3D)
                                 
     ! The fourth subvector must be zero - as it represents the RHS of
@@ -874,14 +880,14 @@ CONTAINS
                                       rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(1), &
-        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscretisation(1))
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1), &
+        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(1))
     CALL spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(2), &
-        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscretisation(2))
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2), &
+        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(2))
     CALL spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscretisation(3), &
-        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscretisation(3))
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(3), &
+        EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
     !

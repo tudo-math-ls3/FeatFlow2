@@ -337,26 +337,26 @@ CONTAINS
       ! and cubature rule for this solution component:
       SELECT CASE (ieltype)
       CASE (1)
-        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
             EL_E001,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (2)
-        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
             EL_E002,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (11)
-        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
             EL_E011,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (13)
-        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
             EL_E013,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (-30)
-        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
             EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
       CASE (-1)
-        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
             EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
             rtriangulation,rboundary)
       CASE (-2)
-        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
             EL_E002,EL_E013,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
             rtriangulation,rboundary)
       CASE DEFAULT
@@ -373,12 +373,12 @@ CONTAINS
       CASE (1)
         ! Jump stabilisation. Needs an extended matrix stencil.
         CALL bilf_createMatrixStructure (&
-            rdiscretisation%RspatialDiscretisation(1),&
-            LSYSSC_MATRIX9,rmatrix,BILF_MATC_EDGEBASED)
+            rdiscretisation%RspatialDiscr(1),&
+            LSYSSC_MATRIX9,rmatrix,cconstrType=BILF_MATC_EDGEBASED)
       CASE DEFAULT
         ! No stabilisation
         CALL bilf_createMatrixStructure (&
-            rdiscretisation%RspatialDiscretisation(1),&
+            rdiscretisation%RspatialDiscr(1),&
             LSYSSC_MATRIX9,rmatrix)
       END SELECT
       
@@ -450,7 +450,7 @@ CONTAINS
       ! discretisation structure.
       ! This scalar vector will later be used as the one and only first
       ! component in a block vector.
-      CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
+      CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
           rlinform,.TRUE.,rrhs,coeff_RHS,rcollection)
       
       ! The linear solver only works for block matrices/vectors - but above,
@@ -649,7 +649,7 @@ CONTAINS
       CALL spdiscr_initBlockDiscr2D (rdiscretisationPostProc,1,&
           rtriangulation, rboundary)
       CALL spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
-          rvectorPostProc,rdiscretisationPostProc%RspatialDiscretisation(1))
+          rvectorPostProc,rdiscretisationPostProc%RspatialDiscr(1))
           
       ! Discretise the boundary conditions and include them into the Q1
       ! solution vector rvectorPostProc using the corresponding vector filter.
