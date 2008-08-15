@@ -2972,10 +2972,10 @@ CONTAINS
 
     ! Extend the raw mesh by basic edge numbering,
     ! initialise an extended raw mesh.
-    if (.not. present(bnoExtendedRaw)) then
+    if (.not.present(bnoExtendedRaw)) then
       call tria_initExtendedRawMesh (rtriangulation)
     else
-      if (bnoExtendedRaw) then
+      if (.NOT.bnoExtendedRaw) then
         call tria_initExtendedRawMesh (rtriangulation)
       end if
     end if
@@ -13793,7 +13793,7 @@ CONTAINS
       end if
     end if
     
-    ! Initialise the array by increasíng numbers.
+    ! Initialise the array by increasÃ­ng numbers.
     ! Vertices get numbers 1..NVT, edges NVT+1..NMT, faces NVT+NMT+1,NVT+NMT+NAT,
     ! and elements NVT+NMT+NAT+1..NVT+NMT+NAT+NEL
     ! so simply initialise by a sequence 1..NVT+NMT+NAT+NEL.
