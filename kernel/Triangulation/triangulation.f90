@@ -7763,7 +7763,7 @@ CONTAINS
     if (.not. present(bnoExtendedRaw)) then
       call tria_initExtendedRawMesh (rtriangulation)
     else
-      if (bnoExtendedRaw) then
+      if (.not. bnoExtendedRaw) then
         call tria_initExtendedRawMesh (rtriangulation)
       end if
     end if
