@@ -67,7 +67,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Laplace_3D rdiscretisationTrial,(rdiscretisationTest,rform, &
+  SUBROUTINE coeff_Laplace_3D(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
