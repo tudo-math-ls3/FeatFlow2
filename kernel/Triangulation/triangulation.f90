@@ -106,6 +106,9 @@
 !#      -> Calculate a list of all elements adjacent to a vertex
 !#         inside of a macro cell.
 !#
+!# 26.) tria_resetToRaw
+!#      -> Resets a mesh to a raw mesh.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -592,6 +595,10 @@ MODULE triangulation
   
   INTEGER(I32), PARAMETER :: TR_SHARE_IMACRONODALPROPERTY    = 2**29  
   
+  ! Share information for an extended raw mesh.
+  INTEGER(I32), PARAMETER :: TR_SHARE_EXTENDEDRAW            = &
+            TR_SHARE_IELEMENTSATVERTEX + TR_SHARE_INEIGHBOURSATELEMENT + &
+            TR_SHARE_IEDGESATELEMENT + TR_SHARE_IFACESATELEMENT
   ! Share everything
   INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
@@ -633,8 +640,7 @@ MODULE triangulation
   INTEGER(I32), PARAMETER :: TR_GEN_ITWISTINDEX            = TR_SHARE_ITWISTINDEX
   
   ! Generate information for an extended raw mesh.
-  INTEGER(I32), PARAMETER :: TR_GEN_EXTENDEDRAW            = TR_GEN_IELEMENTSATVERTEX + &
-            TR_GEN_INEIGHBOURSATELEMENT + TR_GEN_IEDGESATELEMENT + TR_GEN_IFACESATELEMENT
+  INTEGER(I32), PARAMETER :: TR_GEN_EXTENDEDRAW            = TR_SHARE_EXTENDEDRAW
   
   ! Generate everything
   INTEGER(I32), PARAMETER :: TR_GEN_ALL = NOT(0_I32)
@@ -2586,7 +2592,7 @@ CONTAINS
           rtriangulation%h_IboundaryEdgePos)
     
     ! Bit  1: DCORMG is a copy of another structure
-    CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
+    CALL checkAndRelease(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
           rtriangulation%h_DfreeVertexCoordinates)
 
     ! Bit 20: IrefinementPatch          
@@ -2706,6 +2712,219 @@ CONTAINS
 
   ! ***************************************************************************
 
+!<subroutine>
+
+  SUBROUTINE tria_resetToRaw (rtriangulation,bkeepExtendedRaw)
+  
+!<description>
+  ! This routine resets a mesh to a raw mesh by deleting all not necessary
+  ! information.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be resetted.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  
+  ! OPTIONAL: If not specified or set to TRUE, arrays of the extended
+  ! raw mesh are not removed. When set to FALSE, the mesh is reset to pure
+  ! RAW state.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepExtendedRaw
+!</inputoutput>
+  
+!</subroutine>
+
+    INTEGER(I32) :: idupflag
+    LOGICAL :: bext
+    
+    bext = .true.
+    if (PRESENT(bkeepExtendedRaw)) bext = bkeepExtendedRaw
+    
+    IF (rtriangulation%ndim .EQ. 0) RETURN
+    
+    idupflag = rtriangulation%iduplicationFlag
+    
+    ! Bit  8: KMM    is a copy of another structure
+    ! ... does not exist!?!
+
+    ! Just release all allocated handles.
+    ! Take care of which handles are duplicates from other structures - 
+    ! these must not be released, as we are not the owner of them!
+    
+    ! Bit  3: KMID   is a copy of another structure
+    IF (.not. bext) THEN
+      CALL checkAndRelease(idupflag, TR_SHARE_IEDGESATELEMENT,&
+            rtriangulation%h_IedgesAtElement)
+    END IF
+    
+    ! Bit  4: KADJ   is a copy of another structure
+    IF (.not. bext) THEN
+      CALL checkAndRelease(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
+            rtriangulation%h_IneighboursAtElement)
+    END IF
+    
+    ! Bit  6: KMEL   is a copy of another structure
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge)
+    ! Bit  5: KMEL  3d Version          
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d)
+          
+    ! Bit  5: KMEL  3d Version      
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d)
+
+    ! Bit 16: KEAN   is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge)
+
+    ! Bit 19: DAREA  is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementVolume)
+
+    IF (.not. bext) THEN
+      ! Bit  5: KVEL   is a copy of another structure
+      CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+            rtriangulation%h_IelementsAtVertexIdx)
+      CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+            rtriangulation%h_IelementsAtVertex)
+    END IF
+
+    ! Bit 11: KBCT   is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx)
+
+    ! Bit 14: KMBD   is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary)
+
+    ! Bit 10: KEBD   is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
+          rtriangulation%h_IelementsAtBoundary)
+
+    ! Bit 13: DMBDP  is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
+          rtriangulation%h_DedgeParameterValue)
+
+    ! Bit 17: KVBDI  is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
+          rtriangulation%h_IboundaryVertexPos)
+
+    ! Bit 18: KMBDI  is a copy of another structure
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
+          rtriangulation%h_IboundaryEdgePos)
+    
+    ! Bit 20: IrefinementPatch          
+    CALL checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
+           rtriangulation%h_IrefinementPatch)
+    CALL checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
+           rtriangulation%h_IrefinementPatchIdx)
+
+    ! Bit 21: IcoarseGridElement
+    CALL checkAndRelease(idupflag, TR_SHARE_ICOARSEGRIDELEMENT, &
+           rtriangulation%h_IcoarseGridElement)
+
+    ! Bit 22: KVAR          
+    CALL checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
+           rtriangulation%h_IverticesAtFace)
+
+    IF (.not. bext) THEN           
+      ! Bit 23: KAREA           
+      CALL checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
+            rtriangulation%h_IFacesAtElement)
+    END IF
+    
+    ! Bit 24: K????       
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
+           rtriangulation%h_IelementsAtFace)
+           
+    ! Bit 23: K????       
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
+           rtriangulation%h_IelementsAtFace)
+           
+    ! Bit 24: K????       
+    CALL checkAndRelease(idupflag, TR_SHARE_IEDGESATFACE, &
+           rtriangulation%h_IedgesAtFace)
+           
+    ! Bit 25: K????       
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
+           rtriangulation%h_IfacesAtEdgeIdx)
+       
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertexIdx)
+
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertex)
+    
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
+           rtriangulation%h_IfacesAtEdge)
+
+    CALL checkAndRelease(idupflag, TR_SHARE_IFACESATBOUNDARY, &
+           rtriangulation%h_IfacesAtBoundary)
+           
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpEdgesIdx)
+
+    CALL checkAndRelease(idupflag,TR_SHARE_IFACESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpFacesIdx)
+     
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
+          rtriangulation%h_IedgesAtVertexIdx)
+
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
+          rtriangulation%h_IedgesAtVertex)
+
+    CALL checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
+          rtriangulation%h_ItwistIndexEdges)
+           
+    CALL checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
+          rtriangulation%h_ItwistIndexFaces)
+           
+    IF (.not. bext) THEN           
+      CALL checkAndRelease(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
+          rtriangulation%h_InodalProperty)
+    END IF
+
+    ! Clean up the rest of the structure
+
+    IF (.not. bext) THEN  
+      rtriangulation%NMT = 0
+      rtriangulation%NAT = 0
+      rtriangulation%NNelAtVertex = 0
+      rtriangulation%NNelAtEdge = 0
+      rtriangulation%iduplicationFlag = IAND(rtriangulation%iduplicationFlag,&
+        NOT(TR_SHARE_DVERTEXCOORDS+TR_SHARE_IVERTICESATELEMENT+&
+        TR_SHARE_INODALPROPERTY+TR_SHARE_IVERTICESATBOUNDARY))
+    ELSE
+      rtriangulation%iduplicationFlag = IAND(rtriangulation%iduplicationFlag,&
+        NOT(TR_SHARE_EXTENDEDRAW+TR_SHARE_DVERTEXCOORDS+TR_SHARE_IVERTICESATELEMENT+&
+        TR_SHARE_INODALPROPERTY+TR_SHARE_IVERTICESATBOUNDARY))
+    END IF
+
+    ! That's it...
+
+  CONTAINS
+  
+    ! **********************************************************
+    ! Release handle ihandle if bitfield ibitfield in idubFlag is not set.
+    ! Otherwise, ihandle is set to ST_NOHANDLE.    
+    SUBROUTINE checkAndRelease (idupFlag,ibitfield,ihandle)
+    
+    INTEGER(I32), INTENT(IN) :: ibitfield
+    INTEGER(I32), INTENT(IN) :: idupFlag
+    INTEGER, INTENT(INOUT) :: ihandle
+    
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (ihandle .NE. ST_NOHANDLE) CALL storage_free(ihandle)
+      ELSE
+        ihandle = ST_NOHANDLE
+      END IF
+      
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
 !<subroutine>    
 
   SUBROUTINE tria_rawGridToTri (rtriangulation)
@@ -2775,8 +2994,11 @@ CONTAINS
     
     ! If the mesh is an extended raw mesh, regenerate extended raw mesh
     ! information.
-    if (rtriangulation%h_IelementsAtVertexIdx .ne. ST_NOHANDLE) &
+    if (rtriangulation%h_IelementsAtVertexIdx .ne. ST_NOHANDLE) then
+      ! Remove the old extended raw mesh arrays. Recreate everything.
+      call tria_resetToRaw(rtriangulation,.false.)
       call tria_initExtendedRawMesh (rtriangulation)    
+    end if
     
     ! That's it.
 
