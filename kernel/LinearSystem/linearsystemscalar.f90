@@ -199,6 +199,9 @@
 !# 56.) lsyssc_createFullMatrix
 !#      -> Create a full square or rectangular matrix in matrix format 1
 !#
+!# 57.) lsyssc_assignDiscretDirectMat
+!#      -> Assign a block discretisation to a matrix
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -17485,6 +17488,69 @@ CONTAINS
     rvector2%p_rspatialDiscr => rvector%p_rspatialDiscr
   END SUBROUTINE lsyssc_swapVectors
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_assignDiscretDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
+  
+!<description>
+  ! Assigns given discretisation structures for trial/test spaces to a
+  ! matrix.
+!</description>
+  
+!<input>
+  ! Discretisation structure for trial functions.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscrTrial
+
+  ! OPTIONAL: Discretisation structure for test functions.
+  ! If not specified, trial and test functions coincide.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscrTest
+!</input>
+
+!<inputoutput>
+  ! Destination matrix.
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    IF (rmatrix%NCOLS .NE. dof_igetNDofGlob(rdiscrTrial)) THEN
+      CALL output_line ('Discretisation invalid for the matrix!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+      CALL sys_halt()
+    END IF
+          
+    rmatrix%p_rspatialDiscrTrial => rdiscrTrial
+    
+    ! Depending on whether rdiscrTest is given, set the pointers for
+    ! the test functions.
+    rmatrix%bidenticalTrialAndTest = present(rdiscrTest)
+    
+    IF (present(rdiscrTest)) THEN
+
+      IF (rmatrix%NEQ .NE. dof_igetNDofGlob(rdiscrTest)) THEN
+        CALL output_line ('Discretisation invalid for the matrix!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+        CALL sys_halt()
+      END IF
+
+      ! Set the block discretisation of the block matrix
+      rmatrix%p_rspatialDiscrTest => rdiscrTest
+    ELSE
+      ! Trial and test functions coincide
+      IF (rmatrix%NEQ .NE. dof_igetNDofGlob(rdiscrTrial)) THEN
+        CALL output_line ('Discretisation invalid for the matrix!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+        CALL sys_halt()
+      END IF
+
+      ! Set the block discretisation of the block matrix
+      rmatrix%p_rspatialDiscrTest => rdiscrTrial
+    END IF
+  
+  END SUBROUTINE
+  
   ! ***************************************************************************
 
 !<subroutine>

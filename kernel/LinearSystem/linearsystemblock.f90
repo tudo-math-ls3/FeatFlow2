@@ -175,6 +175,12 @@
 !# 50.) lsysbl_insertSubmatrix
 !#      -> Insert a block matrix into another block matrix
 !#
+!# 51.) lsysbl_assignDiscretDirectMat
+!#      -> Assign a block discretisation to a matrix
+!#
+!# 52.) lsysbl_assignDiscretDirectVec
+!#      -> Assign a block discretisation to a vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1572,6 +1578,140 @@ CONTAINS
     rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
     rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_assignDiscretDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
+  
+!<description>
+  ! Assigns given discretisation structures for trial/test spaces to a
+  ! matrix.
+!</description>
+  
+!<input>
+  ! Discretisation structure for trial functions.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rdiscrTrial
+
+  ! OPTIONAL: Discretisation structure for test functions.
+  ! If not specified, trial and test functions coincide.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscrTest
+!</input>
+
+!<inputoutput>
+  ! Destination matrix.
+  TYPE(t_matrixBlock),INTENT(INOUT) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i,j
+
+    ! Modify all pointers of all submatrices.
+    DO j=1,rmatrix%ndiagblocks
+      DO i=1,rmatrix%ndiagblocks
+        IF (lsysbl_isSubmatrixPresent(rmatrix,i,j,.true.)) THEN
+
+          IF (.NOT. PRESENT(rdiscrTest)) THEN
+            CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
+                rdiscrTrial%RspatialDiscr(j))
+          ELSE
+            CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
+                rdiscrTrial%RspatialDiscr(j),rdiscrTest%RspatialDiscr(i))
+          END IF
+
+        END IF
+      END DO
+    END DO
+    
+    IF (rmatrix%NCOLS .NE. dof_igetNDofGlobBlock(rdiscrTrial)) THEN
+      CALL output_line ('Discretisation invalid for the matrix!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+      CALL sys_halt()
+    END IF
+
+    ! Set the block discretisation of the block matrix
+    rmatrix%p_rblockDiscrTrial => rdiscrTrial
+    
+    ! Depending on whether rdiscrTest is given set the discretisation structure
+    ! of the test functions.
+    rmatrix%bidenticalTrialAndTest = present(rdiscrTest)
+    
+    IF (present(rdiscrTest)) THEN
+      
+      IF (rmatrix%NEQ .NE. dof_igetNDofGlobBlock(rdiscrTest)) THEN
+        CALL output_line ('Discretisation invalid for the matrix!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+        CALL sys_halt()
+      END IF
+
+      ! Set the block discretisation of the block matrix
+      rmatrix%p_rblockDiscrTest => rdiscrTest
+    ELSE
+      ! Trial and test functions coincide
+      IF (rmatrix%NEQ .NE. dof_igetNDofGlobBlock(rdiscrTrial)) THEN
+        CALL output_line ('Discretisation invalid for the matrix!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+        CALL sys_halt()
+      END IF
+
+      ! Set the block discretisation of the block matrix
+      rmatrix%p_rblockDiscrTest => rdiscrTrial
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_assignDiscretDirectVec (rvector,rblockdiscr)
+  
+!<description>
+  ! Assigns given discretisation structures for trial/test spaces to a
+  ! vector.
+!</description>
+  
+!<input>
+  ! Discretisation structure for trial functions.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+!</input>
+
+!<inputoutput>
+  ! Destination vector.
+  TYPE(t_vectorBlock),INTENT(INOUT) :: rvector
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: j
+
+    ! Modify all pointers of all submatrices.
+    DO j=1,rvector%nblocks
+
+      IF (rvector%RvectorBlock(j)%NEQ .NE. &
+          dof_igetNDofGlob(rblockDiscr%RspatialDiscr(j))) THEN
+        CALL output_line ('Discretisation invalid for the vector!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectVec')
+        CALL sys_halt()
+      END IF
+
+      rvector%RvectorBlock(j)%p_rspatialDiscr => rblockDiscr%RspatialDiscr(j)
+    END DO
+    
+    IF (rvector%NEQ .NE. dof_igetNDofGlobBlock(rblockDiscr)) THEN
+      CALL output_line ('Discretisation invalid for the matrix!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+      CALL sys_halt()
+    END IF
+
+    ! Set the block discretisation of the block vector
+    rvector%p_rblockDiscr => rblockDiscr
+    
   END SUBROUTINE
   
   ! ***************************************************************************
