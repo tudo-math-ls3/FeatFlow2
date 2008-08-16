@@ -323,11 +323,8 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
-        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
-      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
-        Rlevels(i)%rdiscretisation%RspatialDiscr(2)
-      Rlevels(i)%rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
+      CALL lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+          Rlevels(i)%rdiscretisation%RspatialDiscr(2))
                                   
       ! Build the first pressure matrix B1.
       ! Again first set up the bilinear form, then call the matrix assembly.

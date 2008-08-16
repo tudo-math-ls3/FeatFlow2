@@ -370,11 +370,8 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
-        p_rdiscretisation%RspatialDiscr(2)
-      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
-        p_rdiscretisation%RspatialDiscr(2)
-      p_rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
+      CALL lsyssc_assignDiscretDirectMat (p_rmatrix%RmatrixBlock(2,2),&
+          p_rdiscretisation%RspatialDiscr(2))
                                   
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.

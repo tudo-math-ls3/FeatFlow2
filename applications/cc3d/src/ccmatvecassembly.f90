@@ -555,17 +555,10 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest => &
-        p_rdiscretisation%RspatialDiscr(2)
-      rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTrial => &
-        p_rdiscretisation%RspatialDiscr(2)
-      rmatrix%RmatrixBlock(2,2)%bidenticalTrialAndTest = .true.
-      
-      rmatrix%RmatrixBlock(3,3)%p_rspatialDiscrTest => &
-        p_rdiscretisation%RspatialDiscr(3)
-      rmatrix%RmatrixBlock(3,3)%p_rspatialDiscrTrial => &
-        p_rdiscretisation%RspatialDiscr(3)
-      rmatrix%RmatrixBlock(3,3)%bidenticalTrialAndTest = .true.
+      CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+          p_rdiscretisation%RspatialDiscr(2))
+      CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(3,3),&
+          p_rdiscretisation%RspatialDiscr(3))
                                           
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
       IF (bfulltensor) THEN
