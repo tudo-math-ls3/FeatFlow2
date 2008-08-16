@@ -22,7 +22,7 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 1.0 1.0                           # TIMEMX
+dtimeMax = 1.0 # 1.0                           # TIMEMX
 
 # ----------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ ctimeStepScheme = 0                       # IFRSTP
 # parameter for one step scheme (THETA) if itimeStepScheme=0;
 # =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
 
-dtimeStepTheta = 1.0 0.5                      # THETA
+dtimeStepTheta = 1.0 # 0.5                      # THETA
 
 # ----------------------------------------------------------------------
 
@@ -92,17 +92,13 @@ nmaxIterations     = 30 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 15 2 10 2 5 1E-8 0.001
-
-# Minimum relative difference between two iterates
-
-depsDiff           = 1E-3
+depsRel            = 1E-5 # 8 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-0 0.001
+depsAbs            = 1E-0 # 0.001
 
 # General damping parameter when adding the preconditioned defect
 # to the solution in the nonlinear space-time iteration
@@ -111,7 +107,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 2 3
+ioutputLevel       = 2 # 3
 
 #####################
 [TIME-POSTPROCESSING]
@@ -149,7 +145,7 @@ nmaxIterations = 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-10 1E-7
+depsRel            = 1E-2 # 10 1E-7
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The solver stops if both, absolute error < depsAbs and 
@@ -191,18 +187,18 @@ dspacetimeRefFactor = 1.0
 nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
-nmaxIterations = 10
+nmaxIterations = 10 # 0 00
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 1E-2
+depsRel            = 1E-2 # 8 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-5
+depsAbs            = 1E-0
 
 # Minimum relative difference between two iterates
 
@@ -216,7 +212,7 @@ istoppingCriterion = 0
 
 # Output level of the solver
 
-ioutputLevel       = 2 3
+ioutputLevel       = 2 # 3
 
 # Cycle. 0=F-cycle, 1=V-cycle, 2=W-cycle
 
@@ -246,10 +242,10 @@ dalphamax = 1.0
 # =4: CG (Forward-Backward Gauss-Seidel)
 # =6: Defect correction with UMFPACK preconditioning
 # =7: BiCGStab with Block Forward-Backward Gauss-Seidel preconditioning
-cspaceTimeSmoother = 2 2 0 6
+cspaceTimeSmoother = 2 # 2 0 6
 
 # Damping parameter
-domega = 0.7 0.5 0.7
+domega = 0.7 # 0.5 0.7
 
 # Damping parameter of a precondirtioner; only used for cascaded solvers
 # (e.g. CG(...)) or SOR
@@ -297,16 +293,16 @@ slinearSolver        = 'CC-LINEARSOLVER'
 #######################
 
 # Type of coarse grid solver.
-# =0: Iterative Block Jacobi.
+# =0: Iterative Defect correction with Block Jacobi prec.
 # =1: Iterative Block SOR(domegaPrecond)
-# =2: Iterative Block Forward-Backward Gauss-Seidel
+# =2: Iterative Defect correction with Block Forward-Backward Gauss-Seidel precond.
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
 # =5: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
 # =6: Defect correction with UMFPACK preconditioning
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-COARSEPRECOND] below!
-ctypeCoarseGridSolver = 5 4 0 2 5 4
+ctypeCoarseGridSolver = 2 # 5 4 0 2 5 4
 
 # Minimum number of time-iterations on the coarsest time-mesh
 nminIterations = 1 3
@@ -315,18 +311,18 @@ nminIterations = 1 3
 nmaxIterations = 100 20
 
 # Damping parameter
-domega = 1.0 1.0 1.0 1.0
+domega = 0.7 # 1.0 1.0 1.0 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-6 13 13 3 1E-10 
+depsRel            = 1E-2 # 6 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-5 13 13 5
+depsAbs            = 1E-0 # 5 13 13 5
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
@@ -334,8 +330,8 @@ ddivRel            = 1E20
 
 # Output level of the solver.
 
-ioutputLevel = 1 2 3
-
+ioutputLevel = 2 2 3
+ 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
@@ -358,24 +354,24 @@ slinearSolver        = 'CC-LINEARSOLVER'
 # solver type!
 
 # Minimum number of time-iterations on the coarsest time-mesh
-nminIterations = 1 3
+nminIterations = 1 # 3
 
 # Maximum number of time-iterations on the coarsest time-mesh
-nmaxIterations = 1 0 20
+nmaxIterations = 1 # 0 20
 
 # Damping parameter
-domega = 1.0 1.0 1.0
+domega = 1.0 # 1.0 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-13 13 3 1E-10 
+depsRel            = 1E-13 # 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-5 13 13 5
+depsAbs            = 1E-0 # 5 13 13 5
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
@@ -385,7 +381,7 @@ ddivRel            = 1E20
 # If a subsolver is embedded in the solver, it receives the output level
 # ioutputLevel-2.
 
-ioutputLevel = 0 2 3
+ioutputLevel = 0 # 2 3
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.

@@ -37,7 +37,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 6=BiCGStab with Full VANCA preconditioning
 # 7=BiCGStab with Diagonal VANCA preconditioning
 
-ismootherType = 6
+ismootherType = 7
 
 # Name of the section in this file which configures the smoother.
 
@@ -46,8 +46,9 @@ ssmootherSection = 'CC-SMOOTHER'
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
 # =1: Defect correction with diagonal VANCA preconditioning.
-# =2: BiCGStab with diagonal VANCA preconditioning
-# =3: BiCGStab with full VANCA preconditioning
+# =2: Defect correction with full VANCA preconditioning.
+# =3: BiCGStab with diagonal VANCA preconditioning
+# =4: BiCGStab with full VANCA preconditioning
 
 icoarseGridSolverType = 0
 
@@ -80,7 +81,7 @@ depsRel            = 1E-2
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-5
+depsAbs            = 1E-0
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -120,7 +121,7 @@ icycle             = 0
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
 
-ccorrectionTypeAlpha = 1
+ccorrectionTypeAlpha = 0
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -181,7 +182,7 @@ depsRel            = 1E-2
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-2
+depsAbs            = 1E-0 # 2
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
