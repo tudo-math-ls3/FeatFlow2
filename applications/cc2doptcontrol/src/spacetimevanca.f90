@@ -150,8 +150,8 @@ CONTAINS
     ! element about its number of local DOF's and sum that stuff up.
     ndofLocal = 0
     DO i=1,rdiscretisation%ncomponents
-      ielType = rdiscretisation%RspatialDiscretisation(i)%&
-          RelementDistribution(1)%itrialElement
+      ielType = rdiscretisation%RspatialDiscr(i)%&
+          RelementDistr(1)%celement
       ndofLocal = ndofLocal + elem_igetNDofLoc(ielType)
     END DO
     
@@ -162,12 +162,12 @@ CONTAINS
     ndofLocalPrimalDual = ndofLocal / 2
     
     ! Get the number of velocity DOF's in the primal space.
-    ielType = rdiscretisation%RspatialDiscretisation(1)%&
-        RelementDistribution(1)%itrialElement
+    ielType = rdiscretisation%RspatialDiscr(1)%&
+        RelementDistr(1)%celement
     ndofVelocity = elem_igetNDofLoc(ielType)
 
-    ielType = rdiscretisation%RspatialDiscretisation(3)%&
-        RelementDistribution(1)%itrialElement
+    ielType = rdiscretisation%RspatialDiscr(3)%&
+        RelementDistr(1)%celement
     ndofPressure = elem_igetNDofLoc(ielType)
     
     ! Multiplying that with the number of timesteps (+1) gives the size of the
@@ -711,15 +711,15 @@ CONTAINS
     ! Set up index positions to quickly find entries in a spatial vector.
     iposGlobalPrimalVelocityX = 1
     iposGlobalPrimalVelocityY = iposGlobalPrimalVelocityX + &
-        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscretisation(1))
+        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscr(1))
     iposGlobalPrimalPressure = iposGlobalPrimalVelocityY + &
-        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscretisation(2))
+        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscr(2))
     iposGlobalDualVelocityX = iposGlobalPrimalPressure + &
-        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscretisation(3))
+        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscr(3))
     iposGlobalDualVelocityY = iposGlobalDualVelocityX + &
-        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscretisation(4))
+        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscr(4))
     iposGlobalDualPressure = iposGlobalDualVelocityY + &
-        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscretisation(5))
+        dof_igetNDofGlob(p_rdiscretisation%RspatialDiscr(5))
 
     ! Perforn niterations iterations
     DO iiteration = 1,niterations

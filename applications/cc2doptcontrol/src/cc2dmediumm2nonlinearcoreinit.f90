@@ -856,9 +856,9 @@ CONTAINS
         imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rpreconditioner%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
-              rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents),&
+              rdiscretisation%RspatialDiscr(1:p_rdiscretisation%ncomponents),&
             rproblem%RlevelInfo(i)% &
-              rdiscretisation%RspatialDiscretisation(1:p_rdiscretisation%ncomponents)))
+              rdiscretisation%RspatialDiscr(1:p_rdiscretisation%ncomponents)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear

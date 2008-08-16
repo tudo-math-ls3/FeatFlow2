@@ -490,7 +490,7 @@ CONTAINS
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
-    p_rdiscretisation => rrhs%p_rblockDiscretisation
+    p_rdiscretisation => rrhs%p_rblockDiscr
     
     ! The vector structure is already prepared, but the entries are missing.
     !
@@ -515,13 +515,13 @@ CONTAINS
 
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               rrhs%RvectorBlock(1),coeff_RHS_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
                                 
@@ -534,13 +534,13 @@ CONTAINS
     !
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               rrhs%RvectorBlock(4),coeff_TARGET_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(5),coeff_TARGET_y,&
               rproblem%rcollection)
       

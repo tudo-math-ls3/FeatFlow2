@@ -197,7 +197,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVectorDirect (rspaceTimeVector,NEQtime,rblockDiscr,btestFctSpace)
+  SUBROUTINE sptivec_initVectorDirect (rspaceTimeVector,NEQtime,rblockDiscr)
 
 !<description>
   ! Initialises a space time vector. rblockDiscr is a block discretisation 
@@ -214,10 +214,6 @@ CONTAINS
   ! Block discretisation structure of the spatial discretisation.
   ! A pointer to this structure is saved in the space time vector.
   TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
-  
-  ! OPTIONAL: If set to TRUE, the test space in rblockDiscr defines
-  ! the shape of the spatial vectors rather than the trial space.
-  LOGICAL, INTENT(IN), OPTIONAL :: btestFctSpace
   
 !</input>
 
@@ -240,10 +236,7 @@ CONTAINS
     ! Get NEQ and save a pointer to the spatial discretisation structure
     ! to the vector.
     rspaceTimeVector%p_rblockDiscretisation => rblockDiscr
-    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr,btestFctSpace)
-    
-    rspaceTimeVector%btestFctSpace = PRESENT(btestFctSpace)
-    IF (rspaceTimeVector%btestFctSpace) rspaceTimeVector%btestFctSpace = btestFctSpace
+    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr)
     
     ! Allocate memory for every subvector
     DO i=1,NEQtime
@@ -258,7 +251,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVectorDiscr (rspaceTimeVector,rtimeDiscr,rblockDiscr,btestFctSpace)
+  SUBROUTINE sptivec_initVectorDiscr (rspaceTimeVector,rtimeDiscr,rblockDiscr)
 
 !<description>
   ! Initialises a space time vector according to a time discretisation
@@ -276,10 +269,6 @@ CONTAINS
   ! Block discretisation structure of the spatial discretisation.
   ! A pointer to this structure is saved in the space time vector.
   TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
-  
-  ! OPTIONAL: If set to TRUE, the test space in rblockDiscr defines
-  ! the shape of the spatial vectors rather than the trial space.
-  LOGICAL, INTENT(IN), OPTIONAL :: btestFctSpace
   
 !</input>
 
@@ -308,10 +297,7 @@ CONTAINS
     ! Get NEQ and save a pointer to the spatial discretisation structure
     ! to the vector.
     rspaceTimeVector%p_rblockDiscretisation => rblockDiscr
-    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr,btestFctSpace)
-    
-    rspaceTimeVector%btestFctSpace = PRESENT(btestFctSpace)
-    IF (rspaceTimeVector%btestFctSpace) rspaceTimeVector%btestFctSpace = btestFctSpace
+    rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr)
     
     ! Allocate memory for every subvector
     DO i=1,NEQtime
@@ -724,8 +710,7 @@ CONTAINS
     
     IF ((ry%NEQ .EQ. 0) .AND. (ry%NEQtime .EQ. 0)) THEN
       ! Destination vector does not exist. Create it.
-      CALL sptivec_initVector (ry,rx%NEQtime,rx%p_rblockDiscretisation,&
-        rx%btestFctSpace)
+      CALL sptivec_initVector (ry,rx%NEQtime,rx%p_rblockDiscretisation)
     END IF
     
     IF (rx%NEQ .NE. ry%NEQ) THEN

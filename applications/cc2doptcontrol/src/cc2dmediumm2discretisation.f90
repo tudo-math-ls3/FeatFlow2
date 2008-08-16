@@ -158,33 +158,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_E031,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_E031,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE (1)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -196,33 +194,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_E030,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_E030,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE (2)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -234,33 +230,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_EM31,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_EM31,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE (3)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -272,33 +266,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_EM30,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_EM30,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE (4)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -310,33 +302,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_Q2,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_QP1,EL_Q2,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_QP1, icubB, rdiscretisation%RspatialDiscr(3))
                   
     CASE (5)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -348,33 +338,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_EM30_UNPIVOTED,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_EM30_UNPIVOTED,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE (6)
       ! rdiscretisation%Rdiscretisations is a list of scalar 
@@ -386,33 +374,31 @@ CONTAINS
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscretisation(1), &
+                  rdiscretisation%RspatialDiscr(1), &
                   EL_EM30_UNSCALED,icubA, &
                   rtriangulation, rboundary)
                   
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscretisation(1)% &
-        RelementDistribution(1)%ccubTypeLinForm = icubF
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
-      ! rdiscretisation%RspatialDiscretisation(2) = &
-      !   rdiscretisation%RspatialDiscretisation(1)
+      ! rdiscretisation%RspatialDiscr(2) = &
+      !   rdiscretisation%RspatialDiscr(1)
       ! New implementation: Use spdiscr_duplicateDiscrSc!
-      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscretisation(1), &
-          rdiscretisation%RspatialDiscretisation(2), .TRUE.)
+      CALL spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+          rdiscretisation%RspatialDiscr(2), .TRUE.)
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_initDiscr_combined ( &
-                  rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_EM30_UNSCALED,icubB, &
-                  rtriangulation, rboundary)
+      CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     CASE DEFAULT
       PRINT *,'Unknown discretisation: iElementType = ',ielementType
@@ -482,12 +468,12 @@ CONTAINS
       ! Variable 1 = x-velocity  -->  Variable 4 = dual x-velocity
       ! Variable 2 = y-velocity  -->  Variable 5 = dual y-velocity
       ! Variable 3 = pressure    -->  Variable 6 = dual pressure
-      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(1),&
-                                     p_rdiscretisation%RspatialDiscretisation(4))
-      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(2),&
-                                     p_rdiscretisation%RspatialDiscretisation(5))
-      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(3),&
-                                     p_rdiscretisation%RspatialDiscretisation(6))
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
+                                     p_rdiscretisation%RspatialDiscr(4))
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(2),&
+                                     p_rdiscretisation%RspatialDiscr(5))
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3),&
+                                     p_rdiscretisation%RspatialDiscr(6))
           
       ! -----------------------------------------------------------------------
       ! Separated discretisation structures for primal and dual problem
@@ -508,7 +494,7 @@ CONTAINS
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
       ALLOCATE(p_rdiscretisationMass)
-      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(1),&
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
           rproblem%RlevelInfo(i)%rdiscretisationMass,.TRUE.)
       p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
       
@@ -523,7 +509,7 @@ CONTAINS
 
       ! Initialise the cubature formula appropriately.
       DO k = 1,p_rdiscretisationMass%inumFESpaces
-        p_rdiscretisationMass%RelementDistribution(k)%ccubTypeBilForm = icubM
+        p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
       END DO
 
     END DO
@@ -666,18 +652,18 @@ CONTAINS
 
       ! Create the matrix structure
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
-                p_rmatrixTemplateFEM,cmatBuildType)
+                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
+                p_rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
       ! In the global system, there are two gradient matrices B1 and B2.
       ! Create a template matrix that defines their structure.
       p_rmatrixTemplateGradient => rproblem%RlevelInfo(i)%rmatrixTemplateGradient
       
       ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(3),LSYSSC_MATRIX9,&
-                p_rmatrixTemplateGradient)
+                p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
+                p_rmatrixTemplateGradient,p_rdiscretisation%RspatialDiscr(1))
       
       ! Ok, now we use the matrices from above to create the actual submatrices
       ! that are used in the global system.
@@ -701,7 +687,7 @@ CONTAINS
       ! So connect the two B-matrices to the template gradient matrix
       ! such that they share the same structure.
       ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       !
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
@@ -727,9 +713,9 @@ CONTAINS
           rproblem%RlevelInfo(i)%rmatrixB1%NCOLS,LSYSSC_MATRIX9)
       CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
           LSYSSC_SETM_UNDEFINED)
-      rproblem%RlevelInfo(i)%rmatrixIdentityPressure%p_rspatialDiscretisation => &
-        p_rdiscretisation%RspatialDiscretisation(3)
-
+      CALL lsyssc_assignDiscretDirectMat (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
+          p_rdiscretisation%RspatialDiscr(3))
+          
       ! -----------------------------------------------------------------------
       ! Temporary vectors
       !
@@ -849,8 +835,8 @@ CONTAINS
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
-    p_rmatrixMass%p_rspatialDiscretisation => &
-      rlevelInfo%rdiscretisationMass
+    CALL lsyssc_assignDiscretDirectMat (p_rmatrixMass,&
+        rlevelInfo%rdiscretisationMass)
 
     ! Call the standard matrix setup routine to build the matrix.                    
     CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
@@ -933,7 +919,7 @@ CONTAINS
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
-    p_rdiscretisation => rrhs%p_rblockDiscretisation
+    p_rdiscretisation => rrhs%p_rblockDiscr
     
     ! The vector structure is already prepared, but the entries are missing.
     !
@@ -958,13 +944,13 @@ CONTAINS
 
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               rrhs%RvectorBlock(1),coeff_RHS_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
                                 
@@ -977,13 +963,13 @@ CONTAINS
     !
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
               rrhs%RvectorBlock(4),coeff_TARGET_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(5),coeff_TARGET_y,&
               rproblem%rcollection)
       
@@ -1450,7 +1436,7 @@ CONTAINS
           0, rproblem%roptcontrol%stargetFlow, .TRUE.)
           
       ! Connect the vector to the discretisation structure.
-      rproblem%roptcontrol%rtargetFlow%p_rblockDiscretisation => &
+      rproblem%roptcontrol%rtargetFlow%p_rblockDiscr => &
           rproblem%roptcontrol%p_rdiscrTargetFlow
           
     CASE (2,4)
@@ -1468,7 +1454,7 @@ CONTAINS
           0, TRIM(rproblem%roptcontrol%stargetFlow)//'.00000', .TRUE.)
 
       IF (dof_igetNDofGlob(&
-          rproblem%roptcontrol%p_rdiscrTargetFlow%RspatialDiscretisation(1)) .NE. &
+          rproblem%roptcontrol%p_rdiscrTargetFlow%RspatialDiscr(1)) .NE. &
           rproblem%roptcontrol%rtargetFlow%RvectorBlock(1)%NEQ) THEN
         CALL output_line ('Target flow vector invalid, NEQ wrong!',&
             OU_CLASS_ERROR,OU_MODE_STD,'cc_initTargetFlow')

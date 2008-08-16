@@ -233,7 +233,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Stokes (rdiscretisation,rform, &
+  SUBROUTINE coeff_Stokes (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset,&
                   Dcoefficients, rcollection)
@@ -258,8 +258,13 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
     
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
@@ -313,7 +318,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Pressure (rdiscretisation,rform, &
+  SUBROUTINE coeff_Pressure (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -338,8 +343,13 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
     
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
@@ -937,7 +947,7 @@ CONTAINS
 !        
 !        ! Element type
 !        ieltype = &
-!            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+!            rdiscretisation%RelementDistr(rdomainIntSubset%ielementDistribution)% &
 !            itrialElement
 !        
 !        ! DEBUG!!!
@@ -960,7 +970,7 @@ CONTAINS
         ALLOCATE(IelementsAct(npointsPerElement*nelements))
         ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
         ALLOCATE(DvaluesAct(npointsPerElement*nelements))
-        NEL = p_rvector%p_rblockDiscretisation%p_rtriangulation%NEL
+        NEL = p_rvector%p_rblockDiscr%p_rtriangulation%NEL
         DO i=0,nelements-1
           DO j=1,npointsPerElement
             iel = rdomainIntSubset%p_Ielements(i+1)
@@ -1152,7 +1162,7 @@ CONTAINS
 !        
 !        ! Element type
 !        ieltype = &
-!            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+!            rdiscretisation%RelementDistr(rdomainIntSubset%ielementDistribution)% &
 !            itrialElement
 !        
 !        ! Evaluate at the given points
@@ -1173,7 +1183,7 @@ CONTAINS
         ALLOCATE(IelementsAct(npointsPerElement*nelements))
         ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
         ALLOCATE(DvaluesAct(npointsPerElement*nelements))
-        NEL = p_rvector%p_rblockDiscretisation%p_rtriangulation%NEL
+        NEL = p_rvector%p_rblockDiscr%p_rtriangulation%NEL
         DO i=0,nelements-1
           DO j=1,npointsPerElement
             iel = rdomainIntSubset%p_Ielements(i+1)
@@ -1385,7 +1395,7 @@ CONTAINS
     IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
     
       ! Get the triangulation array for the point coordinates
-      p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+      p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
       CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoordinates)
       CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&

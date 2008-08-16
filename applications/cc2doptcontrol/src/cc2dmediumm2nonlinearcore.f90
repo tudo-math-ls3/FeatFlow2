@@ -691,7 +691,7 @@ CONTAINS
           ! to the current level.
           p_rcore => rpreconditioner%RcoreEquation(ilev)
           rmatrixAssembly%p_rdiscretisation         => &
-              p_rmatrix%p_rblockDiscretisation
+              p_rmatrix%p_rblockDiscrTrial
           rmatrixAssembly%p_rmatrixStokes           => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixStokes          
           rmatrixAssembly%p_rmatrixB1             => &
