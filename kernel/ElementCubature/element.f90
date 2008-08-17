@@ -308,7 +308,7 @@ MODULE element
   ! ID of cubic conforming triangular FE, P3
   INTEGER(I32), PARAMETER :: EL_E003 = EL_P3
 
-  ! General rotated linear $\tilde P1$ element (Crouzeix-Raviart)
+  ! ID for rotated linear $\tilde P1$ element (Crouzeix-Raviart)
   INTEGER(I32), PARAMETER :: EL_P1T  = EL_2D + 20
 
   ! ID of constant conforming quadrilateral FE, Q0 (just for the FEAST-users...)
@@ -826,9 +826,9 @@ CONTAINS
 
   ! Default setup
   ndofAtVertices = 0
-  ndofAtEdges = 0
-  ndofAtFaces = 0
-  ndofAtElement = 0
+  ndofAtEdges    = 0
+  ndofAtFaces    = 0
+  ndofAtElement  = 0
 
   SELECT CASE (elem_getPrimaryElement(ieltype))
   
@@ -987,15 +987,16 @@ CONTAINS
 
   SELECT CASE (IAND(ieltype,EL_ELNRMASK+EL_NONPARAMETRIC))
   ! 1D Element types
-  CASE (EL_P0_1D,EL_P1_1D,EL_P2_1D,EL_S31_1D)
+  CASE (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
     ! Line elements
     elem_igetCoordSystem = TRAFO_CS_REF1D
   
   ! 2D Element Types
-  CASE (EL_P0,EL_P1,EL_P2,EL_P3,EL_P1T)
+  CASE (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
     ! Triangular elements work in barycentric coordinates
     elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
+  CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+        EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
     ! These work on the reference quadrilateral
     elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
   CASE (EL_Q1T+EL_NONPARAMETRIC)
@@ -1052,7 +1053,8 @@ CONTAINS
     ! Linear triangular transformation, 2D
     elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
     
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
+  CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+        EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
     ! Bilinear quadrilateral transformation, 2D.
     elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
   
@@ -1219,10 +1221,10 @@ CONTAINS
 !</function>
 
     SELECT CASE (elem_getPrimaryElement(ieltype))
-    CASE (EL_P0_1D,EL_P0,EL_P0_3D)
+    CASE (EL_P0_1D, EL_P0, EL_P0_3D)
       ! No information about Jacobian necessary
       elem_getEvaluationTag = 0
-    CASE (EL_Q2T,EL_Q2TB)
+    CASE (EL_Q2T, EL_Q2TB)
       ! We need the twist indices. This element is 2D!
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDXEDGE
@@ -1406,6 +1408,7 @@ CONTAINS
 
   ! Choose the right element subroutine to call.
   SELECT CASE (ieltyp)
+  ! 1D elements
   CASE (EL_P0_1D)
     CALL elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_P1_1D)
@@ -1414,6 +1417,7 @@ CONTAINS
     CALL elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_S31_1D)
     CALL elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+
   ! 2D elements
   CASE (EL_P0)
     CALL elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -1445,6 +1449,7 @@ CONTAINS
     CALL elem_E035 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_E037)
     CALL elem_E037 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
+
   ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -1460,9 +1465,10 @@ CONTAINS
     CALL elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_E031_3D)
     CALL elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+
   CASE DEFAULT
     ! Element not implemened!
-    ! Thow a floating point exception so that the program stops here!
+    ! Throw a floating point exception so that the program stops here!
     ! We cannot use "PRINT" here as the routine is PURE!
     CALL sys_throwFPE()
   END SELECT
@@ -1520,6 +1526,7 @@ CONTAINS
 
   ! Choose the right element subroutine to call.
   SELECT CASE (ieltyp)
+  ! 1D elements
   CASE (EL_P0_1D)
     CALL elem_P0_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
         revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
@@ -1532,6 +1539,7 @@ CONTAINS
   CASE (EL_S31_1D)
     CALL elem_S31_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
         revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+
   ! 2D elements
   CASE (EL_P0)
     CALL elem_P0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
@@ -1557,7 +1565,7 @@ CONTAINS
   CASE (EL_QP1)
     CALL elem_QP1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
         revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  CASE (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+  CASE (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
     CALL elem_EM30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
         revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
   CASE (EL_E030)
@@ -1578,6 +1586,7 @@ CONTAINS
   CASE (EL_E037)
     CALL elem_E037 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
         revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+
   ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
@@ -1600,9 +1609,10 @@ CONTAINS
   CASE (EL_E031_3D)
     CALL elem_E031_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
         revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+
   CASE DEFAULT
     ! Element not implemened!
-    ! Thow a floating point exception so that the program stops here!
+    ! Throw a floating point exception so that the program stops here!
     ! We cannot use "PRINT" here as the routine is PURE!
     CALL sys_throwFPE()
   END SELECT
@@ -1695,6 +1705,8 @@ CONTAINS
     CALL elem_P2_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_S31_1D)
     CALL elem_S31_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    
+  ! 2D elements
   CASE (EL_P0)
     CALL elem_P0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_P1)
@@ -1707,7 +1719,7 @@ CONTAINS
     CALL elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_Q1)
     CALL elem_Q1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  CASE (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+  CASE (EL_EM30, EL_EM30_UNPIVOTED ,EL_EM30_UNSCALED)
     CALL elem_EM30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_E030)
     CALL elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
@@ -1718,6 +1730,8 @@ CONTAINS
   CASE (EL_E035)
     CALL elem_E035_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
                          npoints, Dpoints)
+
+  ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_P1_3D)
@@ -1732,6 +1746,7 @@ CONTAINS
     CALL elem_E030_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_E031_3D)
     CALL elem_E031_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+
   CASE DEFAULT
     ! Compatibility handling: evaluate all points separately
     DO i=1,npoints
@@ -1841,6 +1856,7 @@ CONTAINS
 
   ! Choose the right element subroutine to call.
   SELECT CASE (ieltyp)
+  ! 1D elements
   CASE (EL_P0_1D)
     CALL elem_P0_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                          Bder, Dbas, npoints, nelements, Dpoints)
@@ -1853,6 +1869,8 @@ CONTAINS
   CASE (EL_S31_1D)
     CALL elem_S31_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
+
+  ! 2D elements
   CASE (EL_P0)
     CALL elem_P0_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
@@ -1874,7 +1892,7 @@ CONTAINS
   CASE (EL_Q2)
     CALL elem_Q2_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
-  CASE (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+  CASE (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
     CALL elem_EM30_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
   CASE (EL_E030)
@@ -1889,6 +1907,8 @@ CONTAINS
   CASE (EL_E035)
     CALL elem_E035_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
+
+  ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
@@ -1910,6 +1930,7 @@ CONTAINS
   CASE (EL_E031_3D)
     CALL elem_E031_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
+
   CASE DEFAULT
     ! Compatibility handling: evaluate on all elements separately
     IF (PRESENT(ItwistIndexEdges)) THEN
@@ -1976,6 +1997,7 @@ CONTAINS
 
   ! Choose the right element subroutine to call.
   SELECT CASE (ieltyp)
+  ! 1D elements
   CASE (EL_P0_1D)
     CALL elem_P0_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -2000,6 +2022,7 @@ CONTAINS
       Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       revalElementSet%p_DpointsRef)
   
+  ! 2D elements
   CASE (EL_P0)
     CALL elem_P0_sim (ieltyp, revalElementSet%p_Dcoords, &
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -2042,7 +2065,7 @@ CONTAINS
       Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       revalElementSet%p_DpointsRef)
   
-  CASE (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+  CASE (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
     CALL elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
       Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
@@ -2073,6 +2096,7 @@ CONTAINS
       Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       revalElementSet%p_DpointsRef)
   
+  ! 3D elements
   CASE (EL_P0_3D)
     CALL elem_P0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -2084,7 +2108,7 @@ CONTAINS
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
       Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       revalElementSet%p_DpointsRef)
-  
+
   CASE (EL_Q0_3D)
     CALL elem_Q0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
       revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -4125,10 +4149,20 @@ CONTAINS
 
   REAL(DP) :: dxj,dp1,dp2,dp3 !auxiliary variables
   
+  ! The P2_2D element is specified by six polynomials on the reference element.
+  ! These six polynomials are:
+  !
+  ! p1(xi1,xi2,xi3) = xi1 * (2 * xi1 - 1) 
+  ! p2(xi1,xi2,xi3) = xi2 * (2 * xi2 - 1)
+  ! p3(xi1,xi2,xi3) = xi3 * (2 * xi3 - 1)
+  ! p4(xi1,xi2,xi3) = 4 * xi1 * xi2
+  ! p5(xi1,xi2,xi3) = 4 * xi2 * xi3
+  ! p6(xi1,xi2,xi3) = 4 * xi1 * xi3
+
   ! Clear the output array
   !Dbas = 0.0_DP
     
-  ! Remark: The Q1-element always computes function value and 1st derivatives.
+  ! Remark: The P2-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
@@ -4259,7 +4293,7 @@ CONTAINS
   ! Clear the output array
   !Dbas = 0.0_DP
 
-  ! Remark: The P1-element always computes function value and 1st derivatives.
+  ! Remark: The P2-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
@@ -10816,8 +10850,13 @@ CONTAINS
   ! reference element and the real element.
   !  Djac(1,i) = J_i(1,1)
   !  Djac(2,i) = J_i(2,1)
-  !  Djac(3,i) = J_i(1,2)
-  !  Djac(4,i) = J_i(2,2)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_i(3,3)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   REAL(DP), DIMENSION(EL_NJACENTRIES3D), INTENT(IN) :: Djac
@@ -10959,8 +10998,13 @@ CONTAINS
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
   !  Djac(2,i) = J_i(2,1)
-  !  Djac(3,i) = J_i(1,2)
-  !  Djac(4,i) = J_i(2,2)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_i(3,3)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   REAL(DP), DIMENSION(EL_NJACENTRIES3D,npoints), INTENT(IN) :: Djac
@@ -11114,8 +11158,13 @@ CONTAINS
   ! reference element and the real elements. For every point i:
   !  Djac(1,i,.) = J_i(1,1,.)
   !  Djac(2,i,.) = J_i(2,1,.)
-  !  Djac(3,i,.) = J_i(1,2,.)
-  !  Djac(4,i,.) = J_i(2,2,.)
+  !  Djac(3,i,.) = J_i(3,1,.)
+  !  Djac(4,i,.) = J_i(1,2,.)
+  !  Djac(5,i,.) = J_i(2,2,.)
+  !  Djac(6,i,.) = J_i(3,2,.)
+  !  Djac(7,i,.) = J_i(1,3,.)
+  !  Djac(8,i,.) = J_i(2,3,.)
+  !  Djac(9,i,.) = J_i(3,3,.)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
