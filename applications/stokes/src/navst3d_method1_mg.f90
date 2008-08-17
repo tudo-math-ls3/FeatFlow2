@@ -302,7 +302,7 @@ CONTAINS
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       CALL spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_Q0, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
+          EL_Q0_3D, CUB_G3_3D, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
     
     END DO
 
