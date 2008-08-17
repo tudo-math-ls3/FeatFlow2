@@ -609,6 +609,16 @@ CONTAINS
               END IF
               RETURN
             END SELECT
+
+          CASE (EL_P1T, EL_Q1T)
+            SELECT CASE (IelTypes(2))
+            CASE (EL_P1T, EL_Q1T)
+              ! DOF's in the edges
+              ! That works like P1 elements.
+              CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+              CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
+              RETURN
+            END SELECT
             
           END SELECT
 
@@ -899,7 +909,7 @@ CONTAINS
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
   ! of the degrees of freedom of the elements in the list IelIdx.
-  ! all elements in the list are assumed to be Q1.
+  ! all elements in the list are assumed to be either P1 or Q1.
   ! A uniform grid is assumed, i.e. a grid completely discretised the
   ! same element.
 !</description>
