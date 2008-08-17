@@ -1738,7 +1738,7 @@ CONTAINS
                 !
                 ! Write the connectivity of element IEL
                 WRITE(mfile,'(A)') 'line 2'
-                WRITE(mfile,'(2I8)') p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel)
+                WRITE(mfile,'(2I8)') p_IverticesAtElement(1,iel),iel+rexport%p_rtriangulation%NVT
 
               END SELECT
               
@@ -1758,7 +1758,7 @@ CONTAINS
                 !
                 ! Element "NEL+1"
                 WRITE(mfile,'(A)') 'line 2'
-                WRITE(mfile,'(2I8)') p_IedgesAtElement(1,iel),p_IverticesAtElement(2,iel)
+                WRITE(mfile,'(2I8)') iel+rexport%p_rtriangulation%NVT,p_IverticesAtElement(2,iel)
                 
               END SELECT
               
@@ -1804,7 +1804,7 @@ CONTAINS
                 ! of the "main" element
                     
                 WRITE(mfile,'(A)') 'tri 3'
-                WRITE(mfile,'(3I8)') p_IedgesAtElement(1:3,iel)
+                WRITE(mfile,'(3I8)') p_IedgesAtElement(1:3,iel)+rexport%p_rtriangulation%NVT
                 
               CASE (4)
                 ! Quad
@@ -1834,9 +1834,10 @@ CONTAINS
                 
                 WRITE(mfile,'(A)')'quad 4'
                 WRITE(mfile,'(4I8)') &
-                    p_IverticesAtElement(1,iel),p_IedgesAtElement(1,iel),&
+                    p_IverticesAtElement(1,iel),&
+                    p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT,&
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                    p_IedgesAtElement(4,iel)
+                    p_IedgesAtElement(4,iel)+rexport%p_rtriangulation%NVT
                 
               END SELECT
               
@@ -1858,17 +1859,20 @@ CONTAINS
                 ! Element "NEL+1"
                 WRITE(mfile,'(A)') 'tri 3'
                 WRITE(mfile,'(3I8)') p_IverticesAtElement(2,iel), &
-                    p_IedgesAtElement(2,iel),p_IedgesAtElement(1,iel)
+                    p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT,&
+                    p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
 
                 ! Element "NEL+2"
                 WRITE(mfile,'(A)') 'tri 3'
                 WRITE(mfile,'(3I8)') p_IverticesAtElement(1,iel), &
-                    p_IedgesAtElement(1,iel),p_IedgesAtElement(3,iel)
+                    p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT,&
+                    p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
 
                 ! Element "NEL+3"
                 WRITE(mfile,'(A)') 'tri 3'
                 WRITE(mfile,'(3I8)') p_IverticesAtElement(3,iel), &
-                    p_IedgesAtElement(3,iel),p_IedgesAtElement(2,iel)
+                    p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT,&
+                    p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
                 
               CASE (4)
                 ! Quad
@@ -1876,23 +1880,26 @@ CONTAINS
                 ! Element "NEL+1"
                 WRITE(mfile,'(A)')'quad 4'
                 WRITE(mfile,'(4I8)') &
-                    p_IverticesAtElement(2,iel),p_IedgesAtElement(2,iel),&
+                    p_IverticesAtElement(2,iel),&
+                    p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT,&
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                    p_IedgesAtElement(1,iel)
+                    p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
 
                 ! Element "NEL+2"
                 WRITE(mfile,'(A)')'quad 4'
                 WRITE(mfile,'(4I8)') &
-                    p_IverticesAtElement(3,iel),p_IedgesAtElement(3,iel),&
+                    p_IverticesAtElement(3,iel),&
+                    p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT,&
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                    p_IedgesAtElement(2,iel)
+                    p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
 
                 ! Element "NEL+3"
                 WRITE(mfile,'(A)')'quad 4'
                 WRITE(mfile,'(4I8)') &
-                    p_IverticesAtElement(4,iel),p_IedgesAtElement(4,iel),&
+                    p_IverticesAtElement(4,iel),&
+                    p_IedgesAtElement(4,iel)+rexport%p_rtriangulation%NVT,&
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel, &
-                    p_IedgesAtElement(3,iel)
+                    p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
                 
               END SELECT
               
@@ -2768,7 +2775,7 @@ CONTAINS
               !
               ! Write the connectivity of element IEL
               nod2ids(1) = p_IverticesAtElement(1,iel)
-              nod2ids(2) = p_IedgesAtElement(1,iel)
+              nod2ids(2) = iel+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('line 2',2,nod2ids)
 
             CASE DEFAULT
@@ -2791,8 +2798,8 @@ CONTAINS
               ! Line in 1D.
               !
               ! Element "NEL+1"
-              nod2ids(1) = p_IverticesAtElement(1,iel)
-              nod2ids(2) = p_IedgesAtElement(1,iel)
+              nod2ids(1) = iel+rexport%p_rtriangulation%NVT
+              nod2ids(2) = p_IverticesAtElement(2,iel)
               CALL fgmvwrite_cell_type('line 2',2,nod2ids)
 
             CASE DEFAULT
@@ -2841,9 +2848,9 @@ CONTAINS
               ! So write the edge(-midpoint) numbers as corner numbers
               ! of the "main" element
               
-              nod3ids(1) = p_IedgesAtElement(1,iel)
-              nod3ids(2) = p_IedgesAtElement(2,iel)
-              nod3ids(3) = p_IedgesAtElement(3,iel)
+              nod3ids(1) = p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
+              nod3ids(2) = p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
+              nod3ids(3) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
               
             CASE (4)
@@ -2873,9 +2880,9 @@ CONTAINS
               ! of the element -- which is defined as the element number itself.
 
               nod4ids(1) = p_IverticesAtElement(1,iel)
-              nod4ids(2) = p_IedgesAtElement(1,iel)
+              nod4ids(2) = p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
               nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
-              nod4ids(4) = p_IedgesAtElement(4,iel)
+              nod4ids(4) = p_IedgesAtElement(4,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
 
             CASE DEFAULT
@@ -2900,20 +2907,20 @@ CONTAINS
               
               ! Element "NEL+1"
               nod3ids(1) = p_IverticesAtElement(2,iel)
-              nod3ids(2) = p_IedgesAtElement(2,iel)
-              nod3ids(3) = p_IedgesAtElement(1,iel)
+              nod3ids(2) = p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
+              nod3ids(3) = p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
               
               ! Element "NEL+2"
               nod3ids(1) = p_IverticesAtElement(1,iel)
-              nod3ids(2) = p_IedgesAtElement(1,iel)
-              nod3ids(3) = p_IedgesAtElement(3,iel)
+              nod3ids(2) = p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
+              nod3ids(3) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
               
               ! Element "NEL+3"
               nod3ids(1) = p_IverticesAtElement(3,iel)
-              nod3ids(2) = p_IedgesAtElement(3,iel)
-              nod3ids(3) = p_IedgesAtElement(2,iel)
+              nod3ids(2) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
+              nod3ids(3) = p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('tri 3',3,nod3ids)
               
             CASE (4)
@@ -2921,23 +2928,23 @@ CONTAINS
               !
               ! Element "NEL+1"
               nod4ids(1) = p_IverticesAtElement(2,iel)
-              nod4ids(2) = p_IedgesAtElement(2,iel)
+              nod4ids(2) = p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
               nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
-              nod4ids(4) = p_IedgesAtElement(1,iel)
+              nod4ids(4) = p_IedgesAtElement(1,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
               
               ! Element "NEL+2"
               nod4ids(1) = p_IverticesAtElement(3,iel)
-              nod4ids(2) = p_IedgesAtElement(3,iel)
+              nod4ids(2) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
               nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
-              nod4ids(4) = p_IedgesAtElement(2,iel)
+              nod4ids(4) = p_IedgesAtElement(2,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
               
               ! Element "NEL+3"
               nod4ids(1) = p_IverticesAtElement(4,iel)
-              nod4ids(2) = p_IedgesAtElement(4,iel)
+              nod4ids(2) = p_IedgesAtElement(4,iel)+rexport%p_rtriangulation%NVT
               nod4ids(3) = rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+iel
-              nod4ids(4) = p_IedgesAtElement(3,iel)
+              nod4ids(4) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
               CALL fgmvwrite_cell_type('quad 4',4,nod4ids)
 
             CASE DEFAULT

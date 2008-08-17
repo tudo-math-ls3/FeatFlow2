@@ -1251,7 +1251,7 @@ CONTAINS
         !    |   X iedgeright
         !  IVT---+---
         
-        iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+        iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
       
         ! Loop through the macro row until we find the right border of the macro
         DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
@@ -1288,7 +1288,7 @@ CONTAINS
           !    |   |   X iedgeright
           !    +--IVT--+--
           
-          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
           
         END DO
         
@@ -1327,7 +1327,7 @@ CONTAINS
         !    |IEL|
         !  IVT---+---
         
-        iedgetop = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+        iedgetop = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
         
         ! Get the vertex and the element there. Note: If there is no neighbour
         ! element, the current element number gets =0 which is the terminal criterion.
@@ -1355,7 +1355,7 @@ CONTAINS
             IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
           END DO
 
-          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
         END IF
       END DO
       
@@ -1391,7 +1391,7 @@ CONTAINS
         IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
       END DO
       
-      iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+      iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
     
       ! Loop through the macro row until we find the right border of the macro
       DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
@@ -1428,7 +1428,7 @@ CONTAINS
         !    +---+---+--
         !    |   |   |  
         
-        iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+        iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
         
       END DO    
       

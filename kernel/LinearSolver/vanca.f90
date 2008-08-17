@@ -2162,7 +2162,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -2197,7 +2196,6 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
@@ -2289,7 +2287,7 @@ CONTAINS
       DO inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
-        idof = p_IedgesAtElement(inode,iel)-NVT
+        idof = p_IedgesAtElement(inode,iel)
 
         ! Write the number of the edge/node to idofGlobal:
         idofGlobal(inode) = idof
@@ -2576,7 +2574,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -2607,7 +2604,6 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
@@ -2702,7 +2698,7 @@ CONTAINS
       DO inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
-        idof = p_IedgesAtElement(inode,iel)-NVT
+        idof = p_IedgesAtElement(inode,iel)
 
         ! Write the number of the edge/node to idofGlobal:
         idofGlobal(inode) = idof
@@ -3369,7 +3365,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -3411,7 +3406,6 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
@@ -3506,7 +3500,7 @@ CONTAINS
       DO inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
-        idof = p_IedgesAtElement(inode,iel)-NVT
+        idof = p_IedgesAtElement(inode,iel)
 
         ! Write the number of the edge/node to idofGlobal:
         idofGlobal(inode) = idof
@@ -3980,10 +3974,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -4019,11 +4010,7 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -4119,9 +4106,9 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
       ! Get the velocity DOF's on the current element.
-      ! We assume: DOF 1..4 = edge-NVT.
+      ! We assume: DOF 1..4 = edge.
       ! That's the same implementation as in dofmapping.f90!
-      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
       DO inode=1,nnvel
@@ -4430,10 +4417,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -4479,11 +4463,7 @@ CONTAINS
     p_DD2 => rvanca%p_DD2
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -4579,9 +4559,9 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
       ! Get the velocity DOF's on the current element.
-      ! We assume: DOF 1..4 = edge-NVT.
+      ! We assume: DOF 1..4 = edge.
       ! That's the same implementation as in dofmapping.f90!
-      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
       DO inode=1,nnvel
@@ -5042,7 +5022,7 @@ CONTAINS
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
       ! That's the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
-      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)
+      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
@@ -5504,7 +5484,7 @@ CONTAINS
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
       ! That's the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
-      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)
+      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
@@ -5956,7 +5936,7 @@ CONTAINS
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
       ! That's the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
-      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)
+      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
@@ -6423,7 +6403,7 @@ CONTAINS
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
       ! That's the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
-      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)
+      IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
@@ -6770,10 +6750,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -6840,11 +6817,7 @@ CONTAINS
     END IF
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -6942,9 +6915,9 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
       ! Get the velocity DOF's on the current element.
-      ! We assume: DOF 1..4 = edge-NVT.
+      ! We assume: DOF 1..4 = edge.
       ! That's the same implementation as in dofmapping.f90!
-      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
       DO inode=1,nnvel
@@ -7859,7 +7832,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -7922,7 +7894,6 @@ CONTAINS
     dmult66 = rvanca%Dmultipliers(6,6)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
@@ -8022,7 +7993,7 @@ CONTAINS
       DO inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
-        idof = p_IedgesAtElement(inode,iel)-NVT
+        idof = p_IedgesAtElement(inode,iel)
 
         ! Write the number of the edge/node to idofGlobal:
         idofGlobal(inode) = idof
@@ -8377,10 +8348,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -8488,11 +8456,7 @@ CONTAINS
     END IF
 
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -8601,7 +8565,7 @@ CONTAINS
       ! Get the velocity DOF's on the current element.
       ! We assume: DOF 1..4 = edge-NVT.
       ! That's the same implementation as in dofmapping.f90!
-      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
       DO inode=1,nnvel
@@ -9253,10 +9217,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -9356,11 +9317,7 @@ CONTAINS
     END IF
 
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -9472,9 +9429,9 @@ CONTAINS
         FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
         
         ! Get the velocity DOF's on the current element.
-        ! We assume: DOF 1..4 = edge-NVT.
+        ! We assume: DOF 1..4 = edge.
         ! That's the same implementation as in dofmapping.f90!
-        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
         DO inode=1,nnvel
@@ -9966,9 +9923,9 @@ CONTAINS
         FF(1+lofsp) = p_Drhs(iel+ioffsetp)
         
         ! Get the velocity DOF's on the current element.
-        ! We assume: DOF 1..4 = edge-NVT.
+        ! We assume: DOF 1..4 = edge.
         ! That's the same implementation as in dofmapping.f90!
-        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
         DO inode=1,nnvel
@@ -10304,9 +10261,9 @@ CONTAINS
         FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
         
         ! Get the velocity DOF's on the current element.
-        ! We assume: DOF 1..4 = edge-NVT.
+        ! We assume: DOF 1..4 = edge.
         ! That's the same implementation as in dofmapping.f90!
-        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
         DO inode=1,nnvel
@@ -11232,8 +11189,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX) :: NVT
-    INTEGER(PREC_EDGEIDX) :: NMT
     INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -11270,8 +11225,6 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
@@ -11300,7 +11253,7 @@ CONTAINS
       DO inode=1,6
       
         ! Set idof to the DOF that belongs to our face node:
-        idof = p_IfacesAtElement(inode,iel)-NVT-NMT
+        idof = p_IfacesAtElement(inode,iel)
 
         ! Write the number of the face node to idofGlobal:
         idofGlobal(inode) = idof
@@ -11526,8 +11479,6 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX) :: NVT
-    INTEGER(PREC_EDGEIDX) :: NMT
     INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -11563,8 +11514,6 @@ CONTAINS
     !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
@@ -11596,7 +11545,7 @@ CONTAINS
       DO inode=1,6
       
         ! Set idof to the DOF that belongs to our face node:
-        idof = p_IfacesAtElement(inode,iel)-NVT-NMT
+        idof = p_IfacesAtElement(inode,iel)
 
         ! Write the number of the face node to idofGlobal:
         idofGlobal(inode) = idof
@@ -12231,11 +12180,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX) :: NVT
-    INTEGER(PREC_EDGEIDX) :: NMT
-    INTEGER(PREC_FACEIDX) :: NAT
     INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -12273,12 +12218,7 @@ CONTAINS
     p_DD3 => rvanca%p_DD3
     
     ! Get pointers to the vectors, RHS, get triangulation information
-    NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
-    NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
-    NAT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NAT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
-                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     CALL lsysbl_getbase_double (rvector,p_Dvector)
@@ -12309,9 +12249,9 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
       ! Get the velocity DOF's on the current element.
-      ! We assume: DOF 1..6 = face-NVT-NMT.
+      ! We assume: DOF 1..6 = face.
       ! That's the same implementation as in dofmapping.f90!
-      IdofGlobal(1:6) = p_IfacesAtElement(1:6,iel)-NVT-NMT
+      IdofGlobal(1:6) = p_IfacesAtElement(1:6,iel)
 
       ! Loop over all U-nodes of that element.
       DO inode=1,nnvel

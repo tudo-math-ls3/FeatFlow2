@@ -439,7 +439,7 @@ CONTAINS
               IF (PRESENT(iresult)) iresult = -1
               IF (PRESENT(ilastElement)) ilastElement = iel
               IF (PRESENT(ilastEdge)) THEN
-                ilastEdge = IedgesAtElement(ive,iel) - rtriangulation%NVT
+                ilastEdge = IedgesAtElement(ive,iel)
               END IF
               
               iel = 0

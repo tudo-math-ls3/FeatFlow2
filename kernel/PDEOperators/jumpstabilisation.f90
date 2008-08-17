@@ -585,7 +585,7 @@ CONTAINS
         
         IEL = p_IelementsAtEdge(i,IMT)
         DO iedge = 1,NVE
-          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT+NVT) EXIT
+          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT) EXIT
         END DO
         
         ! Copy the coordinates of the corresponding cubature points

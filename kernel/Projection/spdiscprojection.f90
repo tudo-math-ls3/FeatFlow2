@@ -397,10 +397,104 @@ CONTAINS
     DO iel=1,NEL
     
       ! Get the global DOF's on the current element in the E030 space
-      IM1 = IedgesAtElement(1,iel)-NVT
-      IM2 = IedgesAtElement(2,iel)-NVT
-      IM3 = IedgesAtElement(3,iel)-NVT
-      IM4 = IedgesAtElement(4,iel)-NVT
+      IM1 = IedgesAtElement(1,iel)
+      IM2 = IedgesAtElement(2,iel)
+      IM3 = IedgesAtElement(3,iel)
+      IM4 = IedgesAtElement(4,iel)
+      
+      ! Get the global DOF's on the current element in the Q1 space
+      IV1 = IverticesAtElement(1,iel)
+      IV2 = IverticesAtElement(2,iel)
+      IV3 = IverticesAtElement(3,iel)
+      IV4 = IverticesAtElement(4,iel)
+      
+      ! Get the values of the DOF's in the E030 space
+      DUH1 = Dsource(IM1)
+      DUH2 = Dsource(IM2)
+      DUH3 = Dsource(IM3)
+      DUH4 = Dsource(IM4)
+      
+      ! Bilinear interpolation gives what we have to add to the
+      ! value in each corner:
+      Ddest(IV1) = Ddest(IV1) + 0.75_DP*(DUH1+DUH4) - 0.25_DP*(DUH2+DUH3)
+      Ddest(IV2) = Ddest(IV2) + 0.75_DP*(DUH2+DUH1) - 0.25_DP*(DUH3+DUH4)
+      Ddest(IV3) = Ddest(IV3) + 0.75_DP*(DUH3+DUH2) - 0.25_DP*(DUH4+DUH1)
+      Ddest(IV4) = Ddest(IV4) + 0.75_DP*(DUH4+DUH3) - 0.25_DP*(DUH1+DUH2)
+      
+    END DO
+
+    ! Divide by the number of adjacent elements, this results
+    ! in the interpolated solution.
+    DO iv=1,NVT
+      nadj = IelementsAtVertexIdx(iv+1) - IelementsAtVertexIdx(iv)
+      Ddest(iv) = Ddest(iv) / REAL(nadj,DP)
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdp_E037toQ1_dble (Dsource, Ddest, NVT, NEL, &
+                                 IverticesAtElement,IedgesAtElement,&
+                                 IelementsAtVertexIdx,ItwistIndexEdges)
+  
+!<description>
+  ! AUXILIARY ROUTINE.
+  ! Convert a solution vector based on a uniform discretisation with E030, E031,
+  ! EM30, EM31 to a solution vector based on the Q1 element.
+!</description>
+
+!<input>
+  ! Source vector to be converted
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
+  
+  ! Number of vertices in the triangulation
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
+  
+  ! Number of elements in the triangulation
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NEL
+  
+  ! IelementsAtVertexIdx array of the triangulation
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+  
+  ! IverticesAtElement array of the triangulation (old KVERT)
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+  ! IedgesAtElement array of the triangulation (old KMID)
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+  
+  ! ItwistIndexEdges array of the triangulation
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: ItwistIndexEdges
+!</input>
+  
+!<output>
+  ! Destination vector of size NVT; receives the interpolated solution
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_VERTEXIDX) :: iv
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_EDGEIDX) :: IM1,IM2,IM3,IM4
+    INTEGER(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
+    REAL(DP) :: DUH1,DUH2,DUH3,DUH4
+    INTEGER :: nadj
+    
+    ! Clear the output array
+    CALL lalg_clearVectorDble (Ddest)
+    
+    ! Loop through the elements
+    DO iel=1,NEL
+    
+      ! Get the global DOF's on the current element in the E030 space
+      IM1 = IedgesAtElement(1,iel)
+      IM2 = IedgesAtElement(2,iel)
+      IM3 = IedgesAtElement(3,iel)
+      IM4 = IedgesAtElement(4,iel)
       
       ! Get the global DOF's on the current element in the Q1 space
       IV1 = IverticesAtElement(1,iel)
@@ -568,7 +662,7 @@ CONTAINS
     DO iel=1,NEL
     
       ! Get the global DOF's on the current element in the E030 space
-      F(1:6) = IfacesAtElement(1:6,iel)-NVT-NMT
+      F(1:6) = IfacesAtElement(1:6,iel)
       
       ! Get the global DOF's on the current element in the Q1 space
       V(1:8) = IverticesAtElement(1:8,iel)

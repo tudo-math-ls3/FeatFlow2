@@ -4621,7 +4621,6 @@ CONTAINS
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX) :: NVT
     INTEGER(PREC_EDGEIDX) :: iedge
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -4679,8 +4678,6 @@ CONTAINS
     
     CALL storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
     
-    NVT = rtriangulation%NVT
-    
     ! Loop through all elements and all edges on the elements
     !$OMP PARALLEL DO PRIVATE(ive,iedge)
     ! all elements
@@ -4697,7 +4694,7 @@ CONTAINS
           !  don't have 4 edges :-) )
           IF (p_IedgesAtElement(ive,iel) .NE. 0) THEN
 
-            iedge = p_IedgesAtElement (ive,iel)-NVT
+            iedge = p_IedgesAtElement (ive,iel)
             p_IelementsAtEdge(1,iedge) = iel
             p_IelementsAtEdge(2,iedge) = 0
             
@@ -4708,7 +4705,7 @@ CONTAINS
           ! There is a neighbour and it has a smaller number than the current element --
           ! so we haven't had that edge! Store the two adjacent elements.
         
-          iedge = p_IedgesAtElement (ive,iel)-NVT
+          iedge = p_IedgesAtElement (ive,iel)
           p_IelementsAtEdge(1,iedge) = iel
           p_IelementsAtEdge(2,iedge) = p_IneighboursAtElement(ive,iel)
         
@@ -4751,7 +4748,6 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX) :: ivtneighbour
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_EDGEIDX) :: iedge
-    INTEGER(PREC_VERTEXIDX) :: NVT
     INTEGER(I32), DIMENSION(2) :: Isize
 
     ! Is everything here we need?
@@ -4798,7 +4794,6 @@ CONTAINS
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
     
     nnve = UBOUND(p_IedgesAtElement,1)
-    NVT = rtriangulation%NVT
     
     ! Loop through all elements and all edges on the elements
     !$OMP PARALLEL DO PRIVATE(ive,iedge,ivtneighbour)
@@ -4816,7 +4811,7 @@ CONTAINS
         IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
 
           ! Save the numbers of the adjacent vertices.
-          iedge = p_IedgesAtElement (ive,iel)-NVT
+          iedge = p_IedgesAtElement (ive,iel)
           
           p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(ive,iel)
           
@@ -4910,8 +4905,7 @@ CONTAINS
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     
     ! iedge counts the edges and specifies the last given edge number.
-    ! The numbering starts with NVT, the first edge gets the number NVT+1.
-    iedge = rtriangulation%NVT
+    iedge = 0
     
     ! Loop through all elements
     DO iel = 1,Isize(2)
@@ -4956,7 +4950,7 @@ CONTAINS
     END DO
     
     ! Save the correct NMT.
-    rtriangulation%NMT = iedge-rtriangulation%NVT
+    rtriangulation%NMT = iedge
     
   END SUBROUTINE
 
@@ -4990,7 +4984,7 @@ CONTAINS
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_VERTEXIDX) :: isize
-    INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2
+    INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
 
     ! Is everything here we need?
     IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) THEN
@@ -5033,6 +5027,9 @@ CONTAINS
     ! Initialise the nodal property with 0 by default.
     CALL lalg_clearVectorInt (&
         p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
+        
+    ! Get NVT
+    NVT = rtriangulation%NVT
     
     ! Loop through all elements and all edges on the elements
     !$OMP PARALLEL DO PRIVATE(ive,ivt1,ivt2)
@@ -5067,11 +5064,11 @@ CONTAINS
           IF (p_InodalProperty(ivt1) .EQ. p_InodalProperty(ivt2)) THEN
             ! Get the number of the boundary component from the vertex preceeding
             ! the edge and store it as information for the edge. 
-            p_InodalProperty(p_IedgesAtElement(ive,iel)) = &
+            p_InodalProperty(p_IedgesAtElement(ive,iel)+NVT) = &
                 p_InodalProperty(ivt1)
           ELSE
             ! 'blind' edge
-            p_InodalProperty(p_IedgesAtElement(ive,iel)) = rtriangulation%NBCT+1
+            p_InodalProperty(p_IedgesAtElement(ive,iel)+NVT) = rtriangulation%NBCT+1
           END IF
         
         END IF
@@ -6535,7 +6532,7 @@ CONTAINS
       INTEGER(PREC_EDGEIDX) :: imt
       INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
       INTEGER(I32), DIMENSION(2) :: Isize
-      INTEGER :: nnve, ive
+      INTEGER :: nnve, ive,NVTsrc,NMTsrc
       REAL(DP) :: x,y
       
       ! Get the arrays with information of the source mesh.
@@ -6547,6 +6544,10 @@ CONTAINS
           p_IedgesAtElementSource)
       CALL storage_getbase_int2D (rsourceTriangulation%h_IverticesAtEdge,&
           p_IvertAtEdgeSource)
+      
+      ! Get the total number of vertices and edges
+      NVTsrc = rsourceTriangulation%NVT
+      NMTsrc = rsourceTriangulation%NMT
       
       ! The 2-level ordering has the following properties:
       !
@@ -6590,6 +6591,7 @@ CONTAINS
       ! We expect NVT+NMT+nquads new points.
       rdestTriangulation%NVT = &
           rsourceTriangulation%NVT + rsourceTriangulation%NMT + nquads
+      
       
       ! Allocate memory for the new vertex coordinates and
       ! get the pointers to the coordinate array
@@ -6786,24 +6788,24 @@ CONTAINS
           p_IrefinementPatch(1+(iel-1)*4+3) = iel3
           
           ! Step 1: Initialise IverticesOnElement for element IEL
-          p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
-          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
-          p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)+NVTsrc
+          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)+NVTsrc
+          p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)+NVTsrc
           
           ! Step 2: Initialise IverticesOnElement for element IEL1
           p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (1,iel)
-          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)
-          p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)+NVTsrc
+          p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)+NVTsrc
 
           ! Step 3: Initialise IverticesOnElement for element IEL2
           p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (2,iel)
-          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)
-          p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)+NVTsrc
+          p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)+NVTsrc
 
           ! Step 4: Initialise IverticesOnElement for element IEL3
           p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (3,iel)
-          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)
-          p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
+          p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)+NVTsrc
         
         END DO
         !$OMP END PARALLEL DO
@@ -6834,27 +6836,27 @@ CONTAINS
           
           ! Step 1: Initialise IverticesOnElement for element IEL
           p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
-          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)+NVTsrc
           p_IvertAtElementDest(3,iel) = nquads
-          p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+          p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)+NVTsrc
           
           ! Step 2: Initialise IverticesOnElement for element IEL1
           p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
-          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)+NVTsrc
           p_IvertAtElementDest(3,iel1) = nquads
-          p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)+NVTsrc
         
           ! Step 3: Initialise IverticesOnElement for element IEL2
           p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
-          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)+NVTsrc
           p_IvertAtElementDest(3,iel2) = nquads
-          p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)+NVTsrc
 
           ! Step 4: Initialise IverticesOnElement for element IEL3
           p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
-          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)+NVTsrc
           p_IvertAtElementDest(3,iel3) = nquads
-          p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
         
         END DO ! iel
         !$OMP END PARALLEL DO
@@ -6882,24 +6884,24 @@ CONTAINS
             p_IrefinementPatch(1+(iel-1)*4+3) = iel3
 
             ! Step 1: Initialise IverticesOnElement for element IEL
-            p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
-            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
-            p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)+NVTsrc
+            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)+NVTsrc
+            p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)+NVTsrc
             
             ! Step 2: Initialise IverticesOnElement for element IEL1
             p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (1,iel)
-            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)
-            p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)+NVTsrc
+            p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)+NVTsrc
 
             ! Step 3: Initialise IverticesOnElement for element IEL2
             p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (2,iel)
-            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)
-            p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)+NVTsrc
+            p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)+NVTsrc
 
             ! Step 4: Initialise IverticesOnElement for element IEL3
             p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (3,iel)
-            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)
-            p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
+            p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)+NVTsrc
           
           ELSE
           
@@ -6923,27 +6925,27 @@ CONTAINS
             
             ! Step 1: Initialise IverticesOnElement for element IEL
             p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
-            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)+NVTsrc
             p_IvertAtElementDest(3,iel) = nquads
-            p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+            p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)+NVTsrc
             
             ! Step 2: Initialise IverticesOnElement for element IEL1
             p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
-            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)+NVTsrc
             p_IvertAtElementDest(3,iel1) = nquads
-            p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)+NVTsrc
           
             ! Step 3: Initialise IverticesOnElement for element IEL2
             p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
-            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)+NVTsrc
             p_IvertAtElementDest(3,iel2) = nquads
-            p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)+NVTsrc
 
             ! Step 4: Initialise IverticesOnElement for element IEL3
             p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
-            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)+NVTsrc
             p_IvertAtElementDest(3,iel3) = nquads
-            p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
           
           END IF
         
@@ -7050,7 +7052,8 @@ CONTAINS
       !$OMP PARALLEL DO
       DO ivbd = 0,SIZE(p_IvertAtBoundartySource)-1
         p_IvertAtBoundartyDest(1+2*ivbd) = p_IvertAtBoundartySource(1+ivbd)
-        p_IvertAtBoundartyDest(2+2*ivbd) = p_IedgesAtBoundartySource(1+ivbd)
+        p_IvertAtBoundartyDest(2+2*ivbd) = p_IedgesAtBoundartySource(1+ivbd)&
+                                         + rsourceTriangulation%NVT
       END DO
       !$OMP END PARALLEL DO
       
@@ -7261,7 +7264,7 @@ CONTAINS
           dx = 0.0_DP
           dy = 0.0_DP
           DO i=1,TRIA_NVEQUAD2D
-            ipt = p_IedgesAtElementCoarse(i,iel)
+            ipt = p_IedgesAtElementCoarse(i,iel)+rsourceTriangulation%NVT
             dx = dx + p_DvertexCoordsFine(1,ipt)
             dy = dy + p_DvertexCoordsFine(2,ipt)
           END DO
@@ -9037,8 +9040,7 @@ CONTAINS
   CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     
   ! iedge counts the edges and specifies the last given edge number.
-  ! The numbering starts with NVT, the first edge gets the number NVT+1.
-  iedge = rtriangulation%NVT
+  iedge = 0
   
   ! loop over all elements
   DO iel=1,rtriangulation%NEL
@@ -9066,40 +9068,40 @@ CONTAINS
       ! so assign an index to the edge                   
       IF(iSCElement >= iel) THEN
       
-      ! increment edge number
-      iedge = iedge + 1
-      
-      ! assign the edge number
-      p_IedgesAtElement(ied,iel) = iedge
+        ! increment edge number
+        iedge = iedge + 1
+        
+        ! assign the edge number
+        p_IedgesAtElement(ied,iel) = iedge
       
       ELSE
-      ! the smallest common element index is less than the current iel
-      ! the edge already has a number, so                   
-      ! search for edge (iVertex1,iVertex2) in the smallest common element
-      
-      DO i=1,rtriangulation%NNEE
-      
-          ! get the indices of the current edge of iSCElement
-          iVertexAtEdge1=p_IVerticesAtElement(Iedges(1,i),iSCElement)
-          iVertexAtEdge2=p_IVerticesAtElement(Iedges(2,i),iSCElement)
-          
-          ! for better readability ... ;)
-          ! if iVGlobal1 == iVertexAtEdge1 and iVGlobal2 == iVertexAtEdge2
-          IF( (iVGlobal1 == iVertexAtEdge1) & 
-              .and. (iVGlobal2 == iVertexAtEdge2) .or. &
-              ! or iVGlobal1==iVertexAtEdge2 and iVGlobal2==iVertexAtEdge1
-              (iVGlobal1 == iVertexAtEdge2) .and. &
-              (iVGlobal2 == iVertexAtEdge1)) THEN
-          
-          ! assign the edge number
-          p_IedgesAtElement(ied,iel) = p_IedgesAtElement(i,iSCElement)
-          
-          ! the edge was found we can break out of the loop
-          exit
+        ! the smallest common element index is less than the current iel
+        ! the edge already has a number, so                   
+        ! search for edge (iVertex1,iVertex2) in the smallest common element
+        
+        DO i=1,rtriangulation%NNEE
+        
+            ! get the indices of the current edge of iSCElement
+            iVertexAtEdge1=p_IVerticesAtElement(Iedges(1,i),iSCElement)
+            iVertexAtEdge2=p_IVerticesAtElement(Iedges(2,i),iSCElement)
+            
+            ! for better readability ... ;)
+            ! if iVGlobal1 == iVertexAtEdge1 and iVGlobal2 == iVertexAtEdge2
+            IF( (iVGlobal1 .EQ. iVertexAtEdge1) & 
+                .and. (iVGlobal2 .EQ. iVertexAtEdge2) .or. &
+                ! or iVGlobal1==iVertexAtEdge2 and iVGlobal2==iVertexAtEdge1
+                (iVGlobal1 .EQ. iVertexAtEdge2) .and. &
+                (iVGlobal2 .EQ. iVertexAtEdge1)) THEN
+            
+              ! assign the edge number
+              p_IedgesAtElement(ied,iel) = p_IedgesAtElement(i,iSCElement)
               
-          END IF
-      
-      END DO ! end i
+              ! the edge was found we can break out of the loop
+              EXIT
+                
+            END IF
+        
+        END DO ! end i
       
       END IF
     
@@ -9108,7 +9110,7 @@ CONTAINS
   END DO ! end iel
   
   ! Save the correct NMT.
-  rtriangulation%NMT = iedge-rtriangulation%NVT
+  rtriangulation%NMT = iedge
   
   END SUBROUTINE ! end tria_genEdgesAtElement3D
   
@@ -9267,7 +9269,7 @@ CONTAINS
     DO iedge = 1, rtriangulation%NNEE
 
       ! iglobalEdge is the iedge-th edge at element iel
-      iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
+      iglobalEdge = p_IedgesAtElement(iedge,iel)
             
       ! increase the number of elements by one
       p_IelementsAtEdgeIdx3d(iglobalEdge+1) = p_IelementsAtEdgeIdx3d(iglobalEdge+1) + 1
@@ -9321,7 +9323,7 @@ CONTAINS
     DO iedge = 1, rtriangulation%NNEE
 
       ! iglobalEdge is the iedge-th edge at element iel
-      iglobalEdge = p_IedgesAtElement(iedge,iel)-rtriangulation%NVT
+      iglobalEdge = p_IedgesAtElement(iedge,iel)
        
       ! store the adjacency information at position p_Iaux1(ivt)        
       p_IelementsAtEdge3d( p_Iaux1(iglobalEdge) ) = iel
@@ -9400,7 +9402,7 @@ CONTAINS
       ! loop over all local edges
       DO ilocEdge = 1,rtriangulation%NNEE
         ! get the global edge number
-        iglobalEdge = p_IedgesAtElement(ilocEdge,iel)-rtriangulation%NVT
+        iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
         ! check if this edge's global number equal to the current edge
         IF(iedge == iglobalEdge) THEN
           ! get the global indices of the vertices attached to that edge
@@ -9451,8 +9453,8 @@ CONTAINS
 
   INTEGER, DIMENSION(2) :: Isize
   
-  ! face numbering starts at NVT+NMT+1
-  IFaceGlobal = rtriangulation%NVT+rtriangulation%NMT
+  ! face numbering starts at 1
+  IFaceGlobal = 0
   
   ! allocate memory and get pointers
   CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
@@ -9513,8 +9515,7 @@ CONTAINS
   END DO ! end iel
   
   ! number of faces in total
-  rtriangulation%NAT = ifaceGlobal-rtriangulation%NMT - &
-                       rtriangulation%NVT 
+  rtriangulation%NAT = ifaceGlobal
   
   END SUBROUTINE ! end tria_genFacesAtElement
   
@@ -9611,8 +9612,7 @@ CONTAINS
         END DO
         
         ! index of the face in the array is obtained by nmt and nvt
-        IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour) - &
-                      rtriangulation%NMT - rtriangulation%NVT
+        IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
         
         ! assign the vertices at this face
         p_IverticesAtFace(:,ifaceNumber) = p_IverticesAtElement(ifaces(:,iface),iel)
@@ -9680,9 +9680,7 @@ CONTAINS
       ! if there is no neighbour at this element
       IF(p_IneighboursAtElement(iface,iel) == 0) THEN
         
-        IFaceNumber = p_IfacesAtElement(iface,iel) - &
-                      rtriangulation%NVT - &
-                      rtriangulation%NMT
+        IFaceNumber = p_IfacesAtElement(iface,iel)
                       
         p_IelementsAtFace(1,ifaceNumber) = iel
         p_IelementsAtFace(2,ifaceNumber) = 0
@@ -9692,9 +9690,7 @@ CONTAINS
         ! There is a neighbour and it has a smaller number than the current element --
         ! so we haven't had that face! Store the two adjacent elements.
         
-        IFaceNumber = p_IfacesAtElement(iface,iel) - &
-                      rtriangulation%NVT - &
-                      rtriangulation%NMT
+        IFaceNumber = p_IfacesAtElement(iface,iel)
         
         p_IelementsAtFace(1,ifaceNumber) = iel
         
@@ -9768,9 +9764,7 @@ CONTAINS
     
     ! determine which local face is iface 
     DO ilocalFace=1,rtriangulation%NNAE
-     iglobalFace = p_IfacesAtElement(ilocalFace,iel) - &
-                   rtriangulation%NVT - &
-                   rtriangulation%NMT
+     iglobalFace = p_IfacesAtElement(ilocalFace,iel)
      IF(iglobalFace == iface) exit
     END DO
     
@@ -9889,8 +9883,7 @@ CONTAINS
   
     ! increase the facecount at these edges by one
     DO iedge=1,4
-    iglobalEdge = p_IedgesAtFace(iedge,iface) - &
-                  rtriangulation%NVT
+    iglobalEdge = p_IedgesAtFace(iedge,iface)
                 
     p_IfacesAtEdgeIdx(iglobalEdge+1) = &
     p_IfacesAtEdgeIdx(iglobalEdge+1) + 1 
@@ -9926,9 +9919,7 @@ CONTAINS
     DO iedge=1,4
     
       ! iglobalFace is the iedge-th edge at face iface
-      iglobalEdge = p_IedgesAtFace(iedge,iface) - &
-             rtriangulation%NVT
-
+      iglobalEdge = p_IedgesAtFace(iedge,iface)
        
       ! store the adjacency information at position p_Iaux1(ivt)        
       p_IfacesAtEdge( p_Iaux1(iglobalEdge) ) = iface
@@ -10097,7 +10088,7 @@ CONTAINS
   INTEGER(prec_vertexidx) :: midpointFaceD, midpointFaceE, midpointFaceF
   
   INTEGER(i32), DIMENSION(2) :: Isize
-  INTEGER :: nnve, ive, nve
+  INTEGER :: nnve, ive, nve,NVTsrc,NMTsrc
   REAL(DP) :: x,y,z
   
   ! Get the arrays with information of the source mesh.
@@ -10117,7 +10108,9 @@ CONTAINS
       p_IfacesAtElement)
       
   
-      
+  NVTsrc = rsourceTriangulation%NVT
+  NMTsrc = rsourceTriangulation%NMT
+  
       
       
       
@@ -10389,12 +10382,12 @@ CONTAINS
      
      ! the vertex number of the midpoint is
      ! the old face number
-     midpointFaceA = p_IfacesAtElement(1,iel)
-     midpointFaceB = p_IfacesAtElement(2,iel)
-     midpointFaceC = p_IfacesAtElement(3,iel)
-     midpointFaceD = p_IfacesAtElement(4,iel)
-     midpointFaceE = p_IfacesAtElement(5,iel)
-     midpointFaceF = p_IfacesAtElement(6,iel)
+     midpointFaceA = p_IfacesAtElement(1,iel)+NVTsrc+NMTsrc
+     midpointFaceB = p_IfacesAtElement(2,iel)+NVTsrc+NMTsrc
+     midpointFaceC = p_IfacesAtElement(3,iel)+NVTsrc+NMTsrc
+     midpointFaceD = p_IfacesAtElement(4,iel)+NVTsrc+NMTsrc
+     midpointFaceE = p_IfacesAtElement(5,iel)+NVTsrc+NMTsrc
+     midpointFaceF = p_IfacesAtElement(6,iel)+NVTsrc+NMTsrc
      
      ! In nquads we count the number of the quad +NVT+NMT+NAT we process.
      ! That's the number of the midpoint of that element!
@@ -10409,14 +10402,14 @@ CONTAINS
      ! the first vertex of the original hexahedron
      p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
      ! the index of the first edge is now the number of the 2nd vertex
-     p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+     p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)+NVTsrc
      ! the midpoint of face A is the 3rd vertex 
      p_IvertAtElementDest(3,iel) = midpointFaceA
      ! the index of the 4th edge is now the index of the 4th vertex
-     p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+     p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)+NVTsrc
      
      ! the index of the 5th edge is now the index of the 5th vertex     
-     p_IvertAtElementDest(5,iel) = p_IedgesAtElementSource (5,iel)
+     p_IvertAtElementDest(5,iel) = p_IedgesAtElementSource (5,iel)+NVTsrc
      ! the index of the 6th vertex is the index of the midpoint of face B
      p_IvertAtElementDest(6,iel) = midpointFaceB
      ! the index of the 7th vertex is the index of the midpoint of the old
@@ -10428,55 +10421,55 @@ CONTAINS
          
      ! Step 2: Initialise IverticesOnElement for element IEL1
      p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
-     p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+     p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)+NVTsrc
      p_IvertAtElementDest(3,iel1) = midPointFaceA
-     p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+     p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)+NVTsrc
 
-     p_IvertAtElementDest(5,iel1) = p_IedgesAtElementSource (6,iel)
+     p_IvertAtElementDest(5,iel1) = p_IedgesAtElementSource (6,iel)+NVTsrc
      p_IvertAtElementDest(6,iel1) = midpointFaceC
      p_IvertAtElementDest(7,iel1) = midPointOfIel
      p_IvertAtElementDest(8,iel1) = midpointFaceB
         
      ! Step 3: Initialise IverticesOnElement for element IEL2
      p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
-     p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+     p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)+NVTsrc
      p_IvertAtElementDest(3,iel2) = midpointFaceA
-     p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+     p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)+NVTsrc
      
-     p_IvertAtElementDest(5,iel2) = p_IedgesAtElementSource (7,iel)
+     p_IvertAtElementDest(5,iel2) = p_IedgesAtElementSource (7,iel)+NVTsrc
      p_IvertAtElementDest(6,iel2) = midpointFaceD
      p_IvertAtElementDest(7,iel2) = midPointOfIel
      p_IvertAtElementDest(8,iel2) = midpointFaceC
      
      ! Step 4: Initialise IverticesOnElement for element IEL3
      p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
-     p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+     p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)+NVTsrc
      p_IvertAtElementDest(3,iel3) = midpointFaceA
-     p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+     p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
 
-     p_IvertAtElementDest(5,iel3) = p_IedgesAtElementSource (8,iel)
+     p_IvertAtElementDest(5,iel3) = p_IedgesAtElementSource (8,iel)+NVTsrc
      p_IvertAtElementDest(6,iel3) = midpointFaceE
      p_IvertAtElementDest(7,iel3) = midPointOfIel
      p_IvertAtElementDest(8,iel3) = midpointFaceD
 
      ! Step 5: Initialise IverticesOnElement for element IEL
      p_IvertAtElementDest(1,iel4) = p_IvertAtElementSource (5,iel)
-     p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource (9,iel)
+     p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource (9,iel)+NVTsrc
      p_IvertAtElementDest(3,iel4) = midpointFaceF
-     p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource (12,iel)
+     p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource (12,iel)+NVTsrc
 
-     p_IvertAtElementDest(5,iel4) = p_IedgesAtElementSource (5,iel)
+     p_IvertAtElementDest(5,iel4) = p_IedgesAtElementSource (5,iel)+NVTsrc
      p_IvertAtElementDest(6,iel4) = midpointFaceB
      p_IvertAtElementDest(7,iel4) = midPointOfIel
      p_IvertAtElementDest(8,iel4) = midpointFaceE
          
      ! Step 6: Initialise IverticesOnElement for element IEL1
      p_IvertAtElementDest(1,iel5) = p_IvertAtElementSource (6,iel)
-     p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource (10,iel)
+     p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource (10,iel)+NVTsrc
      p_IvertAtElementDest(3,iel5) = midpointFaceF
-     p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource (9,iel)
+     p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource (9,iel)+NVTsrc
      
-     p_IvertAtElementDest(5,iel5) = p_IedgesAtElementSource (6,iel)
+     p_IvertAtElementDest(5,iel5) = p_IedgesAtElementSource (6,iel)+NVTsrc
      p_IvertAtElementDest(6,iel5) = midpointFaceC
      p_IvertAtElementDest(7,iel5) = midPointOfIel
      p_IvertAtElementDest(8,iel5) = midpointFaceB
@@ -10484,22 +10477,22 @@ CONTAINS
         
      ! Step 7: Initialise IverticesOnElement for element IEL2
      p_IvertAtElementDest(1,iel6) = p_IvertAtElementSource (7,iel)
-     p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource (11,iel)
+     p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource (11,iel)+NVTsrc
      p_IvertAtElementDest(3,iel6) = midpointFaceF
-     p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource (10,iel)
+     p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource (10,iel)+NVTsrc
      
-     p_IvertAtElementDest(5,iel6) = p_IedgesAtElementSource (7,iel)
+     p_IvertAtElementDest(5,iel6) = p_IedgesAtElementSource (7,iel)+NVTsrc
      p_IvertAtElementDest(6,iel6) = midpointFaceD
      p_IvertAtElementDest(7,iel6) = midPointOfIel
      p_IvertAtElementDest(8,iel6) = midpointFaceC
      
      ! Step 8: Initialise IverticesOnElement for element IEL3
      p_IvertAtElementDest(1,iel7) = p_IvertAtElementSource(8,iel)
-     p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(12,iel)
+     p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(12,iel)+NVTsrc
      p_IvertAtElementDest(3,iel7) = midpointFaceF
-     p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource (11,iel)
+     p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource (11,iel)+NVTsrc
      
-     p_IvertAtElementDest(5,iel7) = p_IedgesAtElementSource (8,iel)
+     p_IvertAtElementDest(5,iel7) = p_IedgesAtElementSource (8,iel)+NVTsrc
      p_IvertAtElementDest(6,iel7) = midpointFaceE
      p_IvertAtElementDest(7,iel7) = midPointOfIel
      p_IvertAtElementDest(8,iel7) = midpointFaceD
@@ -11966,9 +11959,12 @@ CONTAINS
     integer(I32), dimension(:), pointer :: p_ImacroNodalPropertyDest
     integer(I32) :: ivt, ivt2, iel,ielsrc,ivtpos,ivtsource,ivtdest, ivtstart
     integer(PREC_EDGEIDX) :: iedge, imt
-    integer :: idim, ive, htemp, htempinverse, ibc
+    integer :: idim, ive, htemp, htempinverse, ibc,NVTsrc,NMTsrc
     integer(I32), dimension(2) :: Isize
     integer(I32) :: ivertexAtElement
+
+    NVTsrc = rtriangulation%NVT
+    NMTsrc = rtriangulation%NMT
 
     ! Set up basic information
     rtriaDest%ndim = rtriangulation%ndim
@@ -12329,8 +12325,8 @@ CONTAINS
                   p_ImacroNodalPropertySrc(p_IverticesAtElementSrc(ive,Ielements(iel))) 
                   
               ! Edges
-              p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))) 
+              p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)+rtriaDest%NVT) = &
+                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT) 
             end if
           end do
           
@@ -12367,16 +12363,17 @@ CONTAINS
           ! Edges
           do ive = 1,ubound(p_IedgesAtElementSrc,1)
             if (p_IedgesAtElementSrc(ive,iel) .ne. 0) then
-              p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))) 
+              p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)+rtriaDest%NVT) = &
+                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT) 
             end if
           end do
 
           ! Faces
           do ive = 1,ubound(p_IfacesAtElementSrc,1)
             if (p_IfacesAtElementSrc(ive,iel) .ne. 0) then
-              p_ImacroNodalPropertyDest(p_IfacesAtElementDest(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IfacesAtElementSrc(ive,Ielements(iel))) 
+              p_ImacroNodalPropertyDest(p_IfacesAtElementDest(ive,iel)+rtriaDest%NVT+rtriaDest%NMT) = &
+                  p_ImacroNodalPropertySrc(p_IfacesAtElementSrc(ive,Ielements(iel))&
+                    +rtriangulation%NVT+rtriangulation%NMT) 
             end if
           end do
           
@@ -13456,7 +13453,7 @@ CONTAINS
     do iel = 1,size(Ielements)
       do ive=1,ubound(p_IedgesAtElementSrc,1)
         if (p_IedgesAtElementSrc(ive,Ielements(iel)) .ne. 0) then
-          imt = p_IedgesAtElementSrc(ive,Ielements(iel)) - rtriaSource%NVT
+          imt = p_IedgesAtElementSrc(ive,Ielements(iel))
 
           ! Increase IedgeHang. Inner vertices get a 2 (as they are touched twice
           ! or when they have already a hanging vertex), 
@@ -13668,25 +13665,25 @@ CONTAINS
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)) .lt. 0) then
           iedge1 = -p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel))
         else        
-          iedge1 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (1,iel)-rtriaSource%NVT)
+          iedge1 = IedgeLocalId(p_IedgesAtElementSrc (1,iel))
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)) .lt. 0) then
           iedge2 = -p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel))
         else        
-          iedge2 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (2,iel)-rtriaSource%NVT)
+          iedge2 = IedgeLocalId(p_IedgesAtElementSrc (2,iel))
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)) .lt. 0) then
           iedge3 = -p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel))
         else        
-          iedge3 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (3,iel)-rtriaSource%NVT)
+          iedge3 = IedgeLocalId(p_IedgesAtElementSrc (3,iel))
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)) .lt. 0) then
           iedge4 = -p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel))
         else        
-          iedge4 = rtriaSource%NVT + IedgeLocalId(p_IedgesAtElementSrc (4,iel)-rtriaSource%NVT)
+          iedge4 = IedgeLocalId(p_IedgesAtElementSrc (4,iel))
         end if
         
         
@@ -13697,27 +13694,27 @@ CONTAINS
         
         ! Step 1: Initialise IverticesOnElement for element IEL
         p_IverticesAtElementDest(1,iel) = p_IverticesAtElementSrc (1,iel)
-        p_IverticesAtElementDest(2,iel) = iedge1
+        p_IverticesAtElementDest(2,iel) = iedge1+rtriaSource%NVT
         p_IverticesAtElementDest(3,iel) = nquads
-        p_IverticesAtElementDest(4,iel) = iedge4
+        p_IverticesAtElementDest(4,iel) = iedge4+rtriaSource%NVT
         
         ! Step 2: Initialise IverticesOnElement for element IEL1
         p_IverticesAtElementDest(1,iel1) = p_IverticesAtElementSrc (2,iel)
-        p_IverticesAtElementDest(2,iel1) = iedge2
+        p_IverticesAtElementDest(2,iel1) = iedge2+rtriaSource%NVT
         p_IverticesAtElementDest(3,iel1) = nquads
-        p_IverticesAtElementDest(4,iel1) = iedge1
+        p_IverticesAtElementDest(4,iel1) = iedge1+rtriaSource%NVT
       
         ! Step 3: Initialise IverticesOnElement for element IEL2
         p_IverticesAtElementDest(1,iel2) = p_IverticesAtElementSrc (3,iel)
-        p_IverticesAtElementDest(2,iel2) = iedge3
+        p_IverticesAtElementDest(2,iel2) = iedge3+rtriaSource%NVT
         p_IverticesAtElementDest(3,iel2) = nquads
-        p_IverticesAtElementDest(4,iel2) = iedge2
+        p_IverticesAtElementDest(4,iel2) = iedge2+rtriaSource%NVT
 
         ! Step 4: Initialise IverticesOnElement for element IEL3
         p_IverticesAtElementDest(1,iel3) = p_IverticesAtElementSrc (4,iel)
-        p_IverticesAtElementDest(2,iel3) = iedge4
+        p_IverticesAtElementDest(2,iel3) = iedge4+rtriaSource%NVT
         p_IverticesAtElementDest(3,iel3) = nquads
-        p_IverticesAtElementDest(4,iel3) = iedge3
+        p_IverticesAtElementDest(4,iel3) = iedge3+rtriaSource%NVT
         
       end if
     end do
@@ -13851,10 +13848,10 @@ CONTAINS
             imt2 = p_IedgesAtElementDest (ive2,iel)
             
             ! Put it to the nodal property array.
-            p_InodalPropertyDst(imt2) = -ivt
+            p_InodalPropertyDst(imt2+rtriaDest%NVT) = -ivt
             
             ! Mark the vertex as hanging vertex
-            p_InodalPropertyDst(ivt) = -(imt2-rtriaDest%NVT)
+            p_InodalPropertyDst(ivt) = -imt2
             
             ! Find the two subedges of the big edge and mark them.
             ! Note that there are exactly 2 elements adjacent to that
@@ -14273,28 +14270,28 @@ CONTAINS
           iellocal(4) = iellocal(2)+2
         
           ! Get the tags on the coarse grid edges and the coarse grid element
-          IrefTag(1) = IrefTagsCoarse(p_IedgesAtElementC(1,iel))
-          IrefTag(2) = IrefTagsCoarse(p_IedgesAtElementC(2,iel))
-          IrefTag(3) = IrefTagsCoarse(p_IedgesAtElementC(3,iel))
-          IrefTag(4) = IrefTagsCoarse(p_IedgesAtElementC(4,iel))
+          IrefTag(1) = IrefTagsCoarse(p_IedgesAtElementC(1,iel)+rtriaCoarse%NVT)
+          IrefTag(2) = IrefTagsCoarse(p_IedgesAtElementC(2,iel)+rtriaCoarse%NVT)
+          IrefTag(3) = IrefTagsCoarse(p_IedgesAtElementC(3,iel)+rtriaCoarse%NVT)
+          IrefTag(4) = IrefTagsCoarse(p_IedgesAtElementC(4,iel)+rtriaCoarse%NVT)
           IrefTag(5) = IrefTagsCoarse(nvt+nmt+iel)
           
           ! Transfer the tags according to the above figure.
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(1))) = IrefTag(1)
-          IrefTagsFine(p_IedgesAtElementF(2,iellocal(1))) = IrefTag(5)
-          IrefTagsFine(p_IedgesAtElementF(3,iellocal(1))) = IrefTag(5)
-          IrefTagsFine(p_IedgesAtElementF(4,iellocal(1))) = IrefTag(4)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(1))+rtriaFine%NVT) = IrefTag(1)
+          IrefTagsFine(p_IedgesAtElementF(2,iellocal(1))+rtriaFine%NVT) = IrefTag(5)
+          IrefTagsFine(p_IedgesAtElementF(3,iellocal(1))+rtriaFine%NVT) = IrefTag(5)
+          IrefTagsFine(p_IedgesAtElementF(4,iellocal(1))+rtriaFine%NVT) = IrefTag(4)
           
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(2))) = IrefTag(2)
-          IrefTagsFine(p_IedgesAtElementF(2,iellocal(2))) = IrefTag(5)
-          IrefTagsFine(p_IedgesAtElementF(4,iellocal(2))) = IrefTag(1)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(2))+rtriaFine%NVT) = IrefTag(2)
+          IrefTagsFine(p_IedgesAtElementF(2,iellocal(2))+rtriaFine%NVT) = IrefTag(5)
+          IrefTagsFine(p_IedgesAtElementF(4,iellocal(2))+rtriaFine%NVT) = IrefTag(1)
           
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(3))) = IrefTag(3)
-          IrefTagsFine(p_IedgesAtElementF(2,iellocal(3))) = IrefTag(5)
-          IrefTagsFine(p_IedgesAtElementF(4,iellocal(3))) = IrefTag(2)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(3))+rtriaFine%NVT) = IrefTag(3)
+          IrefTagsFine(p_IedgesAtElementF(2,iellocal(3))+rtriaFine%NVT) = IrefTag(5)
+          IrefTagsFine(p_IedgesAtElementF(4,iellocal(3))+rtriaFine%NVT) = IrefTag(2)
           
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(4))) = IrefTag(4)
-          IrefTagsFine(p_IedgesAtElementF(4,iellocal(4))) = IrefTag(3)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(4))+rtriaFine%NVT) = IrefTag(4)
+          IrefTagsFine(p_IedgesAtElementF(4,iellocal(4))+rtriaFine%NVT) = IrefTag(3)
         else
           ! A coarse grid triangle is decomponed into the four fine grid
           ! quads...
@@ -14304,24 +14301,24 @@ CONTAINS
           iellocal(4) = iellocal(2)+2
 
           ! Get the tags on the coarse grid edges and the coarse grid element
-          IrefTag(1) = IrefTagsCoarse(p_IedgesAtElementC(1,iel))
-          IrefTag(2) = IrefTagsCoarse(p_IedgesAtElementC(2,iel))
-          IrefTag(3) = IrefTagsCoarse(p_IedgesAtElementC(3,iel))
+          IrefTag(1) = IrefTagsCoarse(p_IedgesAtElementC(1,iel)+rtriaCoarse%NVT)
+          IrefTag(2) = IrefTagsCoarse(p_IedgesAtElementC(2,iel)+rtriaCoarse%NVT)
+          IrefTag(3) = IrefTagsCoarse(p_IedgesAtElementC(3,iel)+rtriaCoarse%NVT)
           IrefTag(4) = IrefTagsCoarse(nvt+nmt+iel)
           
           ! Transfer the tags according to the above figure.
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(1))) = IrefTag(4)
-          IrefTagsFine(p_IedgesAtElementF(2,iellocal(1))) = IrefTag(4)
-          IrefTagsFine(p_IedgesAtElementF(3,iellocal(1))) = IrefTag(4)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(1))+rtriaFine%NVT) = IrefTag(4)
+          IrefTagsFine(p_IedgesAtElementF(2,iellocal(1))+rtriaFine%NVT) = IrefTag(4)
+          IrefTagsFine(p_IedgesAtElementF(3,iellocal(1))+rtriaFine%NVT) = IrefTag(4)
           
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(2))) = IrefTag(2)
-          IrefTagsFine(p_IedgesAtElementF(3,iellocal(2))) = IrefTag(1)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(2))+rtriaFine%NVT) = IrefTag(2)
+          IrefTagsFine(p_IedgesAtElementF(3,iellocal(2))+rtriaFine%NVT) = IrefTag(1)
           
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(3))) = IrefTag(3)
-          IrefTagsFine(p_IedgesAtElementF(3,iellocal(3))) = IrefTag(2)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(3))+rtriaFine%NVT) = IrefTag(3)
+          IrefTagsFine(p_IedgesAtElementF(3,iellocal(3))+rtriaFine%NVT) = IrefTag(2)
 
-          IrefTagsFine(p_IedgesAtElementF(1,iellocal(4))) = IrefTag(1)
-          IrefTagsFine(p_IedgesAtElementF(3,iellocal(4))) = IrefTag(3)
+          IrefTagsFine(p_IedgesAtElementF(1,iellocal(4))+rtriaFine%NVT) = IrefTag(1)
+          IrefTagsFine(p_IedgesAtElementF(3,iellocal(4))+rtriaFine%NVT) = IrefTag(3)
         end if
         
         ! The four new elements receive the tag of the element

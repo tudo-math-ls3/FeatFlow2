@@ -314,7 +314,7 @@ CONTAINS
       
       ! Egde number
       iedgeglobal = p_IedgesAtBoundary(iedgeidx)
-      iedge       = iedgeglobal - p_rtriangulation%NVT
+      iedge       = iedgeglobal
       
       ! What are the vertices adjacent to that edge?
       ivt1 = p_IverticesAtEdge(1,iedge)
@@ -615,7 +615,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), POINTER                :: p_Dvertex
 
   ! other local variables
-  INTEGER :: iat, iface,ilocalface,idfl,i,NVT,NMT
+  INTEGER :: iat, iface,ilocalface,idfl,i
   INTEGER(PREC_DOFIDX) :: neqU,neqP
   INTEGER(PREC_ELEMENTIDX) :: iel
   REAL(DP) :: dpf1,dpf2,dpres,du1,du2,du3,dweight,dv
@@ -701,9 +701,6 @@ CONTAINS
     ! And get the face index array of the mesh region
     CALL storage_getbase_int(rregion%h_IfaceIdx, p_IfaceIdx)
     
-    NVT = p_rtria%NVT
-    NMT = p_rtria%NMT
-                                   
     ! Does the element need twist indices?
     NULLIFY(p_ItwistIndex)
     IF (p_rtria%h_ItwistIndexEdges .NE. ST_NOHANDLE) THEN
@@ -757,7 +754,7 @@ CONTAINS
 
       ! Get the local index of the face on that element
       DO ilocalface = 1, 6
-        IF(p_IfaceAtElem(ilocalface,iel) .EQ. iface+NVT+NMT) EXIT
+        IF(p_IfaceAtElem(ilocalface,iel) .EQ. iface) EXIT
       END DO
       
       ! We have to transfer the coordinates of the cubature points from
@@ -974,9 +971,9 @@ CONTAINS
       
         DO j = 1, 3
           ! Dx := dT / dx
-          Dx(j) = Dt(j,1) + Dt(j,3)*Dcub(i,1)
+          Dx(j) = Dt(j,1) + Dt(j,3)*Dcub(i,2)
           ! Dy := dT / dy
-          Dy(j) = Dt(j,2) + Dt(j,3)*Dcub(i,2)
+          Dy(j) = Dt(j,2) + Dt(j,3)*Dcub(i,1)
         END DO
         
         ! Dn := Dx x Dy
@@ -1360,7 +1357,7 @@ CONTAINS
           ! Get the DOF that corresponds to the current edge.
           ! The number of the edge coincides with the number of the
           ! vertex that was marked at last.
-          imid = IedgesAtElement (ilastMarked,iel)-NVT
+          imid = IedgesAtElement (ilastMarked,iel)
           
           ! Calculate the streamfunction in inextvertex from the value
           ! in ivt by:

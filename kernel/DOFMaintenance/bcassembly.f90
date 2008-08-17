@@ -2482,7 +2482,7 @@ CONTAINS
       
       ! Save the current modifier (normal stress value)*n to the structure for
       ! later implementation in to the RHS vector.
-      p_IpressureDropDOFs(i) = iedge-NVT
+      p_IpressureDropDOFs(i) = iedge
       p_Dmodifier(1:NDIM2D,i) = Dvalues(1:NDIM2D)*Dnormal(1:NDIM2D)
     
     END DO ! i
@@ -2728,7 +2728,7 @@ CONTAINS
       Dnormal(1:2) = Dnormal(1:2) * d
       
       ! Save the DOF and the normal of the edge.            
-      p_IslipDOFs(i) = iedge-NVT
+      p_IslipDOFs(i) = iedge
       p_Dnormals(1:NDIM2D,i) = Dnormal(1:NDIM2D)
     
     END DO ! i
@@ -3541,7 +3541,7 @@ CONTAINS
           ! 2D P1~ element
           CASE (EL_P1T)
             DO j=1,3
-              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+              IF ((p_IedgesAtElem(j,iel)) .EQ. imt) THEN
                 idof = IdofGlob(j)
                 EXIT
               END IF
@@ -3550,7 +3550,7 @@ CONTAINS
           ! 2D P2 element
           CASE (EL_P2)
             DO j=1,3
-              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+              IF ((p_IedgesAtElem(j,iel)) .EQ. imt) THEN
                 ! The first 3 DOFs belong to the vertices
                 idof = IdofGlob(3+j)
                 EXIT
@@ -3560,7 +3560,7 @@ CONTAINS
           ! 2D Q1~ element
           CASE (EL_Q1T)
             DO j=1,4
-              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+              IF ((p_IedgesAtElem(j,iel)) .EQ. imt) THEN
                 idof = IdofGlob(j)
                 EXIT
               END IF
@@ -3569,7 +3569,7 @@ CONTAINS
           ! 2D Q2 element
           CASE (EL_Q2)
             DO j=1,4
-              IF ((p_IedgesAtElem(j,iel)-itriaNVT) .EQ. imt) THEN
+              IF ((p_IedgesAtElem(j,iel)) .EQ. imt) THEN
                 ! The first 4 DOFs belong to the vertices
                 idof = IdofGlob(4+j)
                 EXIT
@@ -3658,7 +3658,7 @@ CONTAINS
         ! 3D Q1~ element
         CASE (EL_Q1T_3D)
           DO j=1,6
-            IF ((p_IfacesAtElem(j,iel)-itriaNVT-itriaNMT) .EQ. iat) THEN
+            IF ((p_IfacesAtElem(j,iel)) .EQ. iat) THEN
               idof = IdofGlob(j)
               EXIT
             END IF

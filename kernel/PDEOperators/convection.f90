@@ -823,7 +823,7 @@ CONTAINS
         
         ! Get the number of the II'th edge - which is at the same time the
         ! DOF in the velocity vector(s).
-        I = p_Kmid(II,iel) - NVT
+        I = p_Kmid(II,iel)
           
         ! Store the number of the edge/DOF in Iedge:
         Iedge(II)=I
@@ -1864,10 +1864,8 @@ CONTAINS
         DO IEL=1,IELmax-IELset+1
           CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_IedgesAtElement,&
-                      p_DvertexCoords,Idofs(:,IEL),indof, &
+                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
-          DlocalDelta(IEL) = DlocalDelta(IEL)
         END DO ! IEL
       END IF
                                    
@@ -2843,10 +2841,8 @@ CONTAINS
         DO IEL=1,IELmax-IELset+1
           CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_IedgesAtElement,&
-                      p_DvertexCoords,Idofs(:,IEL),indof, &
+                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
-          DlocalDelta(IEL) = DlocalDelta(IEL)
         END DO ! IEL
       END IF
                                    
@@ -4214,8 +4210,7 @@ CONTAINS
         DO IEL=1,IELmax-IELset+1
           CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_IedgesAtElement,&
-                      p_DvertexCoords,Idofs(:,IEL),indof, &
+                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
         END DO ! IEL
       END IF
@@ -5248,8 +5243,7 @@ CONTAINS
   ! ----------------------------------------------------------------------
 
   PURE SUBROUTINE getLocalDeltaQuad (U1L1,U1L2,U2L1,U2L2,A1L,A2L,IEL,&
-                      duMaxR,ddelta, &
-                      Kvert,Kmid,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
+                      duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 
   ! This routine calculates a local ddelta=DELTA_T for a finite element
   ! T=IEL. This can be used by the streamline diffusion stabilisation
@@ -5301,7 +5295,6 @@ CONTAINS
   INTEGER(PREC_DOFIDX), DIMENSION(*), INTENT(IN) :: KDFG
   
   INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
-  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNME2D,*), INTENT(IN) :: Kmid
   REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN) :: Dcorvg
 
   ! local ddelta
@@ -5349,7 +5342,7 @@ CONTAINS
       ! the element T. At next, calculate the local mesh width
       ! dlocalH = h = h_T on our element T=IEL:
 
-      CALL getLocalMeshWidthQuad (dlocalH,dunorm, DU1, DU2, IEL, Kvert,Kmid,Dcorvg)
+      CALL getLocalMeshWidthQuad (dlocalH,dunorm, DU1, DU2, IEL, Kvert,Dcorvg)
 
       ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
 
@@ -5380,7 +5373,7 @@ CONTAINS
   ! ----------------------------------------------------------------------
 
   PURE SUBROUTINE getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
-                      XBETA2, JEL,Kvert,Kmid,Dcorvg)
+                      XBETA2, JEL,Kvert,Dcorvg)
   
   ! Determine the local mesh width for an element JEL of a 
   ! triangulation.
@@ -5389,7 +5382,6 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), INTENT(IN)               :: JEL
   
   INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
-  INTEGER(PREC_EDGEIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN)  :: Kmid
   REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
@@ -9840,7 +9832,7 @@ CONTAINS
         
         IEL = p_IelementsAtEdge(i,IMT)
         DO iedge = 1,NVE
-          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT+NVT) EXIT
+          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT) EXIT
         END DO
         
         ! Copy the coordinates of the corresponding cubature points
@@ -10722,7 +10714,7 @@ CONTAINS
         
         IEL = p_IelementsAtEdge(i,IMT)
         DO iedge = 1,NVE
-          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT+NVT) EXIT
+          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT) EXIT
         END DO
         
         ! Copy the coordinates of the corresponding cubature points

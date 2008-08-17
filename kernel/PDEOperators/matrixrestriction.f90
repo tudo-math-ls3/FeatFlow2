@@ -398,9 +398,9 @@ CONTAINS
         ! Subtract NVT to get the corresponding degree of freedom
         ! in the Q1~ discretisation.
 
-        imid1 =p_IedgesAtElementCoarse(iedge1,iel)-nvt1
-        imid2 =p_IedgesAtElementCoarse(iedge2,iel)-nvt1
-        imid3 =p_IedgesAtElementCoarse(iedge4,iel)-nvt1
+        imid1 =p_IedgesAtElementCoarse(iedge1,iel)
+        imid2 =p_IedgesAtElementCoarse(iedge2,iel)
+        imid3 =p_IedgesAtElementCoarse(iedge4,iel)
 
         ! i.e.:
         !
@@ -415,13 +415,13 @@ CONTAINS
         !
         ! The same way, calculate the DOF's on the fine grid:
 
-        im1 =p_IedgesAtElementFine(1,iel1)-nvt2
-        im2 =p_IedgesAtElementFine(4,iel2)-nvt2
-        im3 =p_IedgesAtElementFine(2,iel1)-nvt2
-        im4 =p_IedgesAtElementFine(4,iel1)-nvt2
-        im5 =p_IedgesAtElementFine(1,iel2)-nvt2
-        im6 =p_IedgesAtElementFine(3,iel1)-nvt2
-        im7 =p_IedgesAtElementFine(2,iel2)-nvt2
+        im1 =p_IedgesAtElementFine(1,iel1)
+        im2 =p_IedgesAtElementFine(4,iel2)
+        im3 =p_IedgesAtElementFine(2,iel1)
+        im4 =p_IedgesAtElementFine(4,iel1)
+        im5 =p_IedgesAtElementFine(1,iel2)
+        im6 =p_IedgesAtElementFine(3,iel1)
+        im7 =p_IedgesAtElementFine(2,iel2)
       
         ! i.e.:
         !
@@ -499,8 +499,8 @@ CONTAINS
           ! Get the global DOF's on the coarse grid corresponding to
           ! these two edges:
  
-          imid4 =p_IedgesAtElementCoarse(jedge2,iadj1)-nvt1
-          imid5 =p_IedgesAtElementCoarse(jedge4,iadj1)-nvt1
+          imid4 =p_IedgesAtElementCoarse(jedge2,iadj1)
+          imid5 =p_IedgesAtElementCoarse(jedge4,iadj1)
 
           ! i.e.
           !
@@ -579,11 +579,11 @@ CONTAINS
           ! DOF's of the elements jel1 and jel2 that give a contribution
           ! to the constant prolongation/restriction:
 
-          im8  = p_IedgesAtElementFine(2,jel1)-nvt2
-          im9  = p_IedgesAtElementFine(4,jel1)-nvt2
-          im10 = p_IedgesAtElementFine(1,jel2)-nvt2
-          im11 = p_IedgesAtElementFine(3,jel1)-nvt2
-          im12 = p_IedgesAtElementFine(2,jel2)-nvt2
+          im8  = p_IedgesAtElementFine(2,jel1)
+          im9  = p_IedgesAtElementFine(4,jel1)
+          im10 = p_IedgesAtElementFine(1,jel2)
+          im11 = p_IedgesAtElementFine(3,jel1)
+          im12 = p_IedgesAtElementFine(2,jel2)
 
           ! i.e.:
           !

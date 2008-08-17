@@ -656,12 +656,9 @@ MODULE meshregion
         ! Calculate the edge mid-points
         DO i=1, rtriangulation%NMBD
           
-          ! Get the index of the edge
-          idx = rtriangulation%NVT + i
-          
           ! Calculate the mid-point
-          p_Dcoords(:,i) = 0.5_DP * (p_Dverts(:, p_IvertsAtCell(1,idx)) &
-                                  +  p_Dverts(:, p_IvertsAtCell(2,idx)))
+          p_Dcoords(:,i) = 0.5_DP * (p_Dverts(:, p_IvertsAtCell(1,i)) &
+                                  +  p_Dverts(:, p_IvertsAtCell(2,i)))
         END DO
         
         ! And call the hit-test routine
@@ -759,14 +756,11 @@ MODULE meshregion
         ! Calculate the face mid-points
         DO i=1, rtriangulation%NMBD
           
-          ! Get the index of the face
-          idx = rtriangulation%NVT + rtriangulation%NMT + i
-          
           ! Calculate the mid-point
-          p_Dcoords(:,i) = 0.25_DP * (p_Dverts(:, p_IvertsAtCell(1,idx)) &
-                                   +  p_Dverts(:, p_IvertsAtCell(2,idx)) &
-                                   +  p_Dverts(:, p_IvertsAtCell(3,idx)) &
-                                   +  p_Dverts(:, p_IvertsAtCell(4,idx)))
+          p_Dcoords(:,i) = 0.25_DP * (p_Dverts(:, p_IvertsAtCell(1,i)) &
+                                   +  p_Dverts(:, p_IvertsAtCell(2,i)) &
+                                   +  p_Dverts(:, p_IvertsAtCell(3,i)) &
+                                   +  p_Dverts(:, p_IvertsAtCell(4,i)))
         END DO
         
         ! And call the hit-test routine
@@ -1319,7 +1313,7 @@ MODULE meshregion
       DO j=1, UBOUND(p_IedgesAtFace,1)
         
         IF (p_IedgesAtFace(j,iface) .GT. 0) THEN
-          Imap(p_IedgesAtFace(j,iface) - p_rtria%NVT) = 1
+          Imap(p_IedgesAtFace(j,iface)) = 1
         END IF
         
       END DO
@@ -1501,7 +1495,7 @@ MODULE meshregion
   REAL(DP), DIMENSION(3) :: Du,Dv,Dn
   REAL(DP), DIMENSION(3,8) :: Dcorners
   REAL(DP) :: dt
-  INTEGER :: iat,ivt,iel,ifae,iface,NVT,NMT
+  INTEGER :: iat,ivt,iel,ifae,iface
   
   
     ! Get a pointer to the triangulation
@@ -1532,9 +1526,6 @@ MODULE meshregion
     ! And get the edge index array of the mesh region
     CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
     
-    NVT = p_rtria%NVT
-    NMT = p_rtria%NMT
-    
     ! Now loop through all face in the mesh region
     DO iat = 1, rmeshRegion%NAT
       
@@ -1546,7 +1537,7 @@ MODULE meshregion
       
       ! Now go through all faces of the element and search for this one
       DO ifae = 1, 6
-        IF (p_IfaceAtElem(ifae,iel) .EQ. iface+NVT+NMT) EXIT
+        IF (p_IfaceAtElem(ifae,iel) .EQ. iface) EXIT
       END DO
       
       ! Get the eight corner vertices of the hexahedron

@@ -501,7 +501,8 @@ CONTAINS
           ! DOF's in the vertices and egde midpoints
           CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
-          CALL dof_locGlobUniMult_P2(p_2darray, p_2darray2, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_P2(p_rtriangulation%NVT,p_2darray, p_2darray2,&
+                                     IelIdx, IdofGlob)
           RETURN
         CASE (EL_Q2)
           ! DOF's in the vertices, egde midpoints and element midpoints
@@ -520,30 +521,28 @@ CONTAINS
         CASE (EL_P1T)
           ! DOF's in the edges
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_E20(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_E20(p_2darray, IelIdx, IdofGlob)
           RETURN
         CASE (EL_Q1T)
           ! DOF's in the edges
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_E30(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_E30(p_2darray, IelIdx, IdofGlob)
           RETURN
         CASE (EL_Q1TB)
           ! DOF's in the edges
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_E30B(p_rtriangulation%NVT,p_rtriangulation%NMT,&
-              p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_E30B(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           RETURN
         CASE (EL_Q2T)
           ! DOF's in the edges and the element center
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_E035(p_rtriangulation%NVT,p_rtriangulation%NMT,&
-              p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_E035(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           RETURN
         CASE (EL_Q2TB)
           ! DOF's in the edges and the element center
           CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_E037(p_rtriangulation%NVT,p_rtriangulation%NMT,&
-              p_rtriangulation%NEL,p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_E037(p_rtriangulation%NMT,p_rtriangulation%NEL,&
+                                       p_2darray, IelIdx, IdofGlob)
           RETURN
         END SELECT
         
@@ -640,8 +639,7 @@ CONTAINS
         CASE (EL_Q1T_3D)
           ! DOF's in the face midpoints
           CALL storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
-          CALL dof_locGlobUniMult_Q1T_3D(p_rtriangulation%NVT,&
-            p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
+          CALL dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
           RETURN
         END SELECT
         
@@ -948,7 +946,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_P2(IverticesAtElement, &
+  PURE SUBROUTINE dof_locGlobUniMult_P2(NVT, IverticesAtElement, &
                                         IedgesAtElement,IelIdx, IdofGlob)
   
 !<description>
@@ -960,6 +958,7 @@ CONTAINS
 !</description>
 
 !<input>
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
   INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
@@ -997,7 +996,7 @@ CONTAINS
 
     ! Then append the numbers of the edges as midpoint numbers.
     ! Note that the number in this array is NVT+1..NVT+NMT.
-    IdofGlob(4:6,i) = IedgesAtElement(1:3,IelIdx(i))
+    IdofGlob(4:6,i) = NVT + IedgesAtElement(1:3,IelIdx(i))
     
   END DO
 
@@ -1061,7 +1060,7 @@ CONTAINS
 
     ! Then append the numbers of the edges as midpoint numbers.
     ! Note that the number in this array is NVT+1..NVT+NMT.
-    IdofGlob(5:8,i) = IedgesAtElement(1:4,IelIdx(i))
+    IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
     
     ! At last append the element number - shifted by NVT+NMT to get
     ! a number behind.
@@ -1141,7 +1140,7 @@ CONTAINS
 
       ! Then append the numbers of the edges as midpoint numbers.
       ! Note that the number in this array is NVT+1..NVT+NMT.
-      IdofGlob(4:6,i) = IedgesAtElement(1:3,IelIdx(i))
+      IdofGlob(4:6,i) = NVT+IedgesAtElement(1:3,IelIdx(i))
       
     END DO
      
@@ -1159,7 +1158,7 @@ CONTAINS
 
       ! Then append the numbers of the edges as midpoint numbers.
       ! Note that the number in this array is NVT+1..NVT+NMT.
-      IdofGlob(5:8,i) = IedgesAtElement(1:4,IelIdx(i))
+      IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
       
       ! At last append the element number - shifted by NVT+NMT to get
       ! a number behind. Note that we must not specify the actual element
@@ -1227,7 +1226,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_E20(iNVT, IedgesAtElement, IelIdx, IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_E20(IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1238,9 +1237,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation.
-  INTEGER(I32), INTENT(IN) :: iNVT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
@@ -1271,7 +1267,7 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))
   END DO
 
   END SUBROUTINE
@@ -1280,7 +1276,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_E30(iNVT, IedgesAtElement, IelIdx, IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_E30(IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1291,9 +1287,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation.
-  INTEGER(I32), INTENT(IN) :: iNVT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
@@ -1323,7 +1316,7 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
   END DO
 
   END SUBROUTINE
@@ -1332,7 +1325,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_E30B(iNVT, iNMT, IedgesAtElement, IelIdx, IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_E30B(iNMT, IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1344,9 +1337,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation.
-  INTEGER(I32), INTENT(IN) :: iNVT
 
   ! Number of edges in the triangulation.
   INTEGER(I32), INTENT(IN) :: iNMT
@@ -1380,7 +1370,7 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
     IdofGlob(TRIA_NVEQUAD2D+1,i) = iNMT + IelIdx(i)
   END DO
 
@@ -1390,7 +1380,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_E035(iNVT, iNMT, IedgesAtElement, IelIdx, IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_E035(iNMT, IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1401,9 +1391,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation.
-  INTEGER(I32), INTENT(IN) :: iNVT
 
   ! Number of edges in the triangulation.
   INTEGER(I32), INTENT(IN) :: iNMT
@@ -1439,9 +1426,9 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
     IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
-        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT+iNMT
+        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
     IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
   END DO
 
@@ -1451,7 +1438,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_E037(iNVT, iNMT, iNEL, &
+  PURE SUBROUTINE dof_locGlobUniMult_E037(iNMT, iNEL, &
       IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
@@ -1463,9 +1450,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation.
-  INTEGER(I32), INTENT(IN) :: iNVT
 
   ! Number of edges in the triangulation.
   INTEGER(I32), INTENT(IN) :: iNMT
@@ -1505,9 +1489,9 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
     IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
-        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT+iNMT
+        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
     IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
     IdofGlob(2*TRIA_NVEQUAD2D+2,i) = 2*iNMT + iNEL + IelIdx(i)
   END DO
@@ -1613,8 +1597,7 @@ CONTAINS
   
 !<subroutine>
 
-  PURE SUBROUTINE dof_locGlobUniMult_Q1T_3D(iNVT,iNMT,IfacesAtElement, IelIdx,&
-                                             IdofGlob)
+  PURE SUBROUTINE dof_locGlobUniMult_Q1T_3D(IfacesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1625,12 +1608,6 @@ CONTAINS
 !</description>
 
 !<input>
-
-  ! Number of vertices in the triangulation
-  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: iNVT
-
-  ! Number of edges in the triangulation
-  INTEGER(PREC_EDGEIDX), INTENT(IN) :: iNMT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
@@ -1653,16 +1630,11 @@ CONTAINS
 
   ! local variables 
   INTEGER(I32) :: i
-  INTEGER(PREC_DOFIDX) :: ioffset
-  
-  ioffset = iNVT+iNMT
   
   ! Loop through the elements to handle
   DO i=1,SIZE(IelIdx)
     ! Calculate the global DOF's - which are simply the face numbers.
-    ! Substract the number of vertices and edges as the face numbers
-    ! begin at NVT+NMT+1!
-    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i)) - ioffset
+    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
   END DO
 
   END SUBROUTINE
