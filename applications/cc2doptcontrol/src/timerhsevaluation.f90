@@ -534,13 +534,13 @@ CONTAINS
     !
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(4),rlinform,.TRUE.,&
               rrhs%RvectorBlock(4),coeff_TARGET_x,&
               rproblem%rcollection)
-
+    
     ! And the Y-velocity part:
     CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
+              p_rdiscretisation%RspatialDiscr(5),rlinform,.TRUE.,&
               rrhs%RvectorBlock(5),coeff_TARGET_y,&
               rproblem%rcollection)
       
@@ -549,7 +549,6 @@ CONTAINS
     ! because the RHS of the dual equation is '-z'!
     ! Remember that it this case the signs of the mass matrices that couple
     ! primal and dual velocity must be changed, too!
-    
     IF (rproblem%roptcontrol%ispaceTimeFormulation .EQ. 0) THEN
       CALL lsyssc_scaleVector (rrhs%RvectorBlock(4),-1.0_DP)
       CALL lsyssc_scaleVector (rrhs%RvectorBlock(5),-1.0_DP)
