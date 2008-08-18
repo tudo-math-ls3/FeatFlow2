@@ -3797,6 +3797,7 @@ CONTAINS
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines as well as element evaluation routines.
   TYPE(t_domainIntSubset) :: rintSubset
+  LOGICAL :: bcubPtsInitialised
   
   ! The discretisation - for easier access
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrTest
@@ -4005,6 +4006,9 @@ CONTAINS
     
     ! Initialisation of the element set.
     CALL elprep_init(rintSubset%revalElementSet)
+    
+    ! Indicate that cubature points must still be initialised in the element set.
+    bcubPtsInitialised = .false.
     
     ! In case of nonconstant coefficients in that part of the matrix, we
     ! need an additional array to save all the coefficients:
@@ -4217,7 +4221,15 @@ CONTAINS
       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      !
+      ! Note: Why not using
+      !   IF (IELset .EQ. 1) THEN
+      ! here, but this strange concept with the boolean variable?
+      ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
+      ! is a local variable and will therefore ensure that every thread
+      ! is initialising its local set of cubature points!
+      IF (.NOT. bcubPtsInitialised) THEN
+        bcubPtsInitialised = .TRUE.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))

@@ -3874,6 +3874,7 @@ CONTAINS
 
   ! A t_domainIntSubset structure for integrating over the domain.
   TYPE(t_domainIntSubset) :: rintSubset
+  LOGICAL :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
@@ -4090,6 +4091,9 @@ CONTAINS
     ! Initialisation of the element set.
     CALL elprep_init(rintSubset%revalElementSet)
 
+    ! Indicate that cubature points must still be initialised in the element set.
+    bcubPtsInitialised = .false.
+    
     IF (dnewton .NE. 0.0_DP) THEN
       ALLOCATE(DvelocityUderiv(NDIM2D,ncubp,nelementsPerBlock))
       ALLOCATE(DvelocityVderiv(NDIM2D,ncubp,nelementsPerBlock))
@@ -4393,7 +4397,15 @@ CONTAINS
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      !
+      ! Note: Why not using
+      !   IF (IELset .EQ. 1) THEN
+      ! here, but this strange concept with the boolean variable?
+      ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
+      ! is a local variable and will therefore ensure that every thread
+      ! is initialising its local set of cubature points!
+      IF (.NOT. bcubPtsInitialised) THEN
+        bcubPtsInitialised = .TRUE.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
@@ -7446,6 +7458,7 @@ CONTAINS
 
   ! A t_domainIntSubset structure for integrating over the domain.
   TYPE(t_domainIntSubset) :: rintSubset
+  LOGICAL :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
@@ -7669,6 +7682,9 @@ CONTAINS
     ! Initialisation of the element set.
     CALL elprep_init(rintSubset%revalElementSet)
 
+    ! Indicate that cubature points must still be initialised in the element set.
+    bcubPtsInitialised = .false.
+    
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
       dre = 1.0_DP/dnu
@@ -7906,7 +7922,15 @@ CONTAINS
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      !
+      ! Note: Why not using
+      !   IF (IELset .EQ. 1) THEN
+      ! here, but this strange concept with the boolean variable?
+      ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
+      ! is a local variable and will therefore ensure that every thread
+      ! is initialising its local set of cubature points!
+      IF (.NOT. bcubPtsInitialised) THEN
+        bcubPtsInitialised = .TRUE.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
       ELSE
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
