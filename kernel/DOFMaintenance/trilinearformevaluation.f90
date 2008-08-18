@@ -607,6 +607,9 @@ CONTAINS
     ! no constant coefficients.
     ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
                     
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     ! p_IdofsTest points either to the just created array or to the
     ! array with the DOF's of the trial functions - when trial and
     ! test functions are identical.
@@ -1039,7 +1042,6 @@ CONTAINS
     ! Release memory
     CALL elprep_releaseElementSet(rintSubset%revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(Dcoefficients)
     DEALLOCATE(IdofsTrial)
     DEALLOCATE(IdofsTest)
@@ -1049,6 +1051,8 @@ CONTAINS
     DEALLOCATE(Dentry)
     
     !$OMP END PARALLEL
+
+    DEALLOCATE(p_DcubPtsRef)
 
   END DO ! icurrentElementDistr
 

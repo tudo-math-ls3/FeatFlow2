@@ -414,6 +414,9 @@ CONTAINS
       ! Allocate memory for the coefficients
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,2))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(rintSubset%revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
@@ -840,6 +843,9 @@ CONTAINS
       ! Allocate memory for the coefficients
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,4))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(rintSubset%revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
@@ -1275,6 +1281,9 @@ CONTAINS
       ! Allocate memory for the coefficients
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,6))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(rintSubset%revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
@@ -2463,6 +2472,9 @@ CONTAINS
       ! Allocate memory for the coefficients, that is, two times the spatial dimension
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,2*rvector%nblocks))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
@@ -2936,6 +2948,9 @@ CONTAINS
       ! Allocate memory for the coefficients.
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,rvector%nblocks))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
@@ -3105,6 +3120,9 @@ CONTAINS
       ! Allocate memory for the coefficients.
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,rvector%nblocks))
     
+      ! Initialisation of the element set.
+      CALL elprep_init(revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 

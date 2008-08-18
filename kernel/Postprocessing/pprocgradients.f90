@@ -520,6 +520,9 @@ CONTAINS
       ! Allocate memory for the values of the derivatives in the corners
       ALLOCATE(Dderivatives(nlocalDOFsDest,nelementsPerBlock,2))
 
+      ! Initialisation of the element set.
+      CALL elprep_init(revalElementSet)
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 

@@ -1754,6 +1754,9 @@ CONTAINS
     ! Allocate memory for the velocity in the cubature points.
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
       dre = 1.0_DP/dnu
@@ -2731,6 +2734,9 @@ CONTAINS
     ! Allocate memory for the velocity in the cubature points.
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
       dre = 1.0_DP/dnu
@@ -4081,6 +4087,9 @@ CONTAINS
     ! Allocate memory for the velocity in the cubature points.
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     IF (dnewton .NE. 0.0_DP) THEN
       ALLOCATE(DvelocityUderiv(NDIM2D,ncubp,nelementsPerBlock))
       ALLOCATE(DvelocityVderiv(NDIM2D,ncubp,nelementsPerBlock))
@@ -5219,7 +5228,6 @@ CONTAINS
     ! Release memory
     CALL elprep_releaseElementSet(rintSubset%revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DlocalDelta)
     IF (dnewton .NE. 0.0_DP) THEN
       DEALLOCATE(DentryA22)
@@ -5237,7 +5245,9 @@ CONTAINS
     DEALLOCATE(Idofs)
     DEALLOCATE(DbasALE)
     DEALLOCATE(Dbas)
-  !$OMP END PARALLEL
+    !$OMP END PARALLEL
+    DEALLOCATE(p_DcubPtsRef)
+    
   END SUBROUTINE
 
   ! ----------------------------------------------------------------------
@@ -6211,6 +6221,9 @@ CONTAINS
     
     ! Allocate memory for the velocity in the cubature points.
     ALLOCATE(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
+
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
     
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
@@ -7653,6 +7666,9 @@ CONTAINS
       ALLOCATE(DvelocityWderiv(NDIM3D,ncubp,nelementsPerBlock))
     END IF
     
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
       dre = 1.0_DP/dnu
@@ -8829,7 +8845,6 @@ CONTAINS
     ! Release memory
     CALL elprep_releaseElementSet(rintSubset%revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DlocalDelta)
     IF (dnewton .NE. 0.0_DP) THEN
       DEALLOCATE(DentryA33)
@@ -8852,7 +8867,8 @@ CONTAINS
     DEALLOCATE(Idofs)
     DEALLOCATE(DbasALE)
     DEALLOCATE(Dbas)
-  !§OMP END PARALLEL
+    !§OMP END PARALLEL
+    DEALLOCATE(p_DcubPtsRef)
   END SUBROUTINE
 
   ! ***************************************************************************

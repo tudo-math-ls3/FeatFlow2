@@ -6,6 +6,14 @@
 !# <purpose>
 !# This module contains basic structures and routines for integrating
 !# a function over a domain.
+!#
+!# Routines in this module:
+!#
+!# 1.) domint_initIntegration
+!#     -> Initialises a domain integration structure.
+!#
+!# 2.) domint_doneIntegration
+!#     -> Releases a domain integration structure.
 !# </purpose>
 !##############################################################################
 
@@ -29,29 +37,29 @@ MODULE domainintegration
   TYPE t_domainIntSubset
   
     ! Maximum number of elements in each element set.
-    INTEGER                                       :: nelements
+    INTEGER                                       :: nelements = 0
     
     ! Number of (cubature) points per element.
-    INTEGER                                       :: npointsPerElement
+    INTEGER                                       :: npointsPerElement = 0
 
     ! The currently active element distribution in the discretisation.
     ! Allows the routine to get the currently active element type for
     ! trial and test functions.
-    INTEGER                                       :: ielementDistribution
+    INTEGER                                       :: ielementDistribution = 0
     
     ! Start index of the current element block in the current element 
     ! distribution ielementDistribution of the discretisation. 
     ! If this is =1, e.g., this is the very first element block
     ! that is currently being integrated.
-    INTEGER(PREC_ELEMENTIDX)                      :: ielementStartIdx
+    INTEGER(PREC_ELEMENTIDX)                      :: ielementStartIdx = 0
 
     ! The element set that is currently in progress by the integration 
     ! routine.
-    INTEGER(I32), DIMENSION(:), POINTER           :: p_Ielements
+    INTEGER(I32), DIMENSION(:), POINTER           :: p_Ielements => NULL()
     
     ! A list of the corner vertices of all elements in progress.
     ! array [1..dimension,1..#vertices per element,1..Number of elements] of double
-    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_Dcoords
+    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_Dcoords => NULL()
     
     ! A list of points in coordinates on the reference element.
     ! On each element in the current set of elements, this gives the
@@ -59,28 +67,28 @@ MODULE domainintegration
     ! Remark: As long as the same cubature formula is used on all
     !  elements, the coordinates here are the same for each element.
     ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
-    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsRef
+    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsRef => NULL()
 
     ! A list of points, corresponding to DcubPtsRef, in real coordinates.
     ! On each element in the current set of elements, this gives the
     ! coordinates of the cubature points on the real element.
     ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
-    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsReal
+    REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsReal => NULL()
 
     ! The Jacobian matrix of the mapping between the reference and each
     ! real element, for all points on all elements in progress.
     ! array [1..dimension*dimension,1..npointsPerElement,1..Number of elements)
-    REAL(DP), DIMENSION(:,:,:),POINTER            :: p_Djac
+    REAL(DP), DIMENSION(:,:,:),POINTER            :: p_Djac => NULL()
     
     ! The Jacobian determinant of the mapping of each point from the
     ! reference element to each real element in progress.
     ! array [1..npointsPerElement,1..Number of elements]
-    REAL(DP), DIMENSION(:,:), POINTER             :: p_Ddetj
+    REAL(DP), DIMENSION(:,:), POINTER             :: p_Ddetj => NULL()
     
     ! Twist index array to define the orientation of edges.
     ! May point to NULL() if the element does not need twist indices.
     ! array [1..NVE/NVA,1..Number of elements]
-    INTEGER(I32), DIMENSION(:), POINTER         :: p_ItwistIndex
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_ItwistIndex => NULL()
 
 
 

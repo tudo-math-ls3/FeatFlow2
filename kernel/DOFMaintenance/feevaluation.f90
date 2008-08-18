@@ -237,7 +237,7 @@ CONTAINS
           ELSE IF (cnonmesh .EQ. FEVL_NONMESHPTS_ZERO) THEN
             
             ! Assume zero here.
-            Dvalues(ipoint) = dval
+            Dvalues(ipoint) = 0.0_DP
             
             CYCLE
             

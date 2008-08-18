@@ -11,15 +11,18 @@
 !# and whatever and set up evaluation structures. Calling the element routines
 !# with these evaluation structures will then evaluate the element there.
 !#
-!# 1.) elprep_prepareForEvaluation
+!# 1.) elprep_init
+!#     -> Initialises an element evaluation structure with default values.
+!#
+!# 2.) elprep_prepareForEvaluation
 !#     -> Prepares an element for the evaluation on a single point in a 
 !#        single cell.
 !#
-!# 2.) elprep_prepareSetForEvaluation
+!# 3.) elprep_prepareSetForEvaluation
 !#     -> Prepares an element for the evaluation on multiple points on multiple
 !#        cells.
 !#
-!# 3.) elprep_releaseElementSet
+!# 4.) elprep_releaseElementSet
 !#     -> Releases an evaluation set for multiple points on multiple elements.
 !#
 !#  Frequently Asked Questions
@@ -69,6 +72,28 @@ MODULE elementpreprocessing
   IMPLICIT NONE
 
 CONTAINS
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  SUBROUTINE elprep_init (revalElementSet)
+
+!<description>
+  ! Initialises an element set with default values.
+!</description>
+
+!<output>
+  ! The element set that is to be initialised. If this is already initialised,
+  ! previous information is overwritten.
+  TYPE(t_evalElementSet), INTENT(OUT) :: revalElementSet
+!</output>
+
+! </subroutine>
+
+    ! No commands here; use default initialisation of Fortran 90.
+
+  END SUBROUTINE
 
   !************************************************************************
   

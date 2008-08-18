@@ -3950,7 +3950,7 @@ CONTAINS
     !
     !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef, &
     !$OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
-    !$OMP   IdofsTest,IdofsTrial,&
+    !$OMP   IdofsTest,IdofsTrial,p_Ddetj,&
     !$OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
     !$OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
     !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
@@ -4002,6 +4002,9 @@ CONTAINS
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
     ALLOCATE(Kentry(indofTrial,indofTest,nelementsPerBlock))
     ALLOCATE(Dentry(indofTrial,indofTest))
+    
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
     
     ! In case of nonconstant coefficients in that part of the matrix, we
     ! need an additional array to save all the coefficients:
@@ -4481,7 +4484,6 @@ CONTAINS
     ! Release memory
     CALL elprep_releaseElementSet(rintSubset%revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
     IF (.NOT. rform%ballCoeffConstant) THEN
       DEALLOCATE(Dcoefficients)
     END IF
@@ -4493,6 +4495,8 @@ CONTAINS
     DEALLOCATE(Dentry)
 
     !$OMP END PARALLEL
+
+    DEALLOCATE(p_DcubPtsRef)
 
   END DO ! icurrentElementDistr
 

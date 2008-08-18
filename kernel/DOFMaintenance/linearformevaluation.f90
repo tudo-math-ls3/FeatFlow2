@@ -1388,7 +1388,7 @@ CONTAINS
         p_DcubPtsRef(k,i) = Dxi(i,k)
       END DO
     END DO
-
+    
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
@@ -1426,6 +1426,9 @@ CONTAINS
     ! Allocate memory for the coefficients
     ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
   
+    ! Initialisation of the element set.
+    CALL elprep_init(rintSubset%revalElementSet)
+
     !CALL ZTIME(DT(3))
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
@@ -1494,6 +1497,7 @@ CONTAINS
       rintSubset%ielementDistribution = icurrentElementDistr
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+      
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                 IELmax-IELset+1_I32,ncubp,rintSubset%revalElementSet%p_DpointsReal, &
                 IdofsTest,rintSubset, &
@@ -1596,7 +1600,6 @@ CONTAINS
     !$OMP END DO
     
     ! Release memory
-    DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(Dcoefficients)
     DEALLOCATE(IdofsTest)
     DEALLOCATE(DbasTest)
@@ -1605,8 +1608,10 @@ CONTAINS
     
     !$OMP END PARALLEL
 
-  END DO ! icurrentElementDistr
+    DEALLOCATE(p_DcubPtsRef)
 
+  END DO ! icurrentElementDistr
+  
   !CALL ZTIME(DT(11))
   
   !DO i=2,11
