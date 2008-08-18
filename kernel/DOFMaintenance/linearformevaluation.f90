@@ -1390,15 +1390,13 @@ CONTAINS
     END DO
 
     ! Open-MP-Extension: Open threads here.
-    ! "j" is declared as private; shared gave errors with the Intel compiler
-    ! in Windows!?!
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
-    !$OMP   p_Djac,p_Ddetj,p_Dcoords,DbasTest, cevaluationTag, &
+    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef, &
+    !$OMP   p_Ddetj,DbasTest, cevaluationTag, &
     !$OMP   IdofsTest,&
-    !$OMP   p_DcubPtsTest,Dcoefficients, &
-    !$OMP   j, ielmax,IEL, idofe, &
+    !$OMP   Dcoefficients, &
+    !$OMP   ielmax,IEL, idofe, &
     !$OMP   ICUBP, IALBET,OM,IA,aux)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:

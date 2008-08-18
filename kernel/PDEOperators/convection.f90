@@ -4016,15 +4016,15 @@ CONTAINS
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
         
-    !$OMP PARALLEL PRIVATE(csysTrial, p_DcubPtsRef, p_DcubPtsReal, &
-    !$OMP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
-    !$OMP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
+    !$OMP PARALLEL PRIVATE(p_DcubPtsRef, &
+    !$OMP p_Ddetj, i,k,Dbas,Idofs,DbasALE, &
+    !$OMP IdofsALE,DlocalDelta,Kentry,Kentry12,Dentry, &
     !$OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
     !$OMP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,& 
     !$OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
     !$OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,& 
     !$OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !$OMP AH22,IELmax,rintSubset,dny,p_DcubPts)
+    !$OMP AH22,IELmax,rintSubset,dny)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -7581,8 +7581,6 @@ CONTAINS
     END DO
     
     ! Open-MP-Extension: Open threads here.
-    ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
-    ! in Windows!?!
     ! Each thread will allocate its own local memory...
         
     !§OMP PARALLEL PRIVATE(csysTrial, p_DcubPtsRef, p_DcubPtsReal, &

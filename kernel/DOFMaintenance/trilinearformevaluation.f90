@@ -532,13 +532,13 @@ CONTAINS
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,&
     !$OMP   p_Ddetj,kentry, dentry,DbasTest,DbasTrial, &
-    !$OMP   IdofsTest,IdofsTrial,p_DcubPtsTrial,cevaluationTag, &
-    !$OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !$OMP   IdofsTest,IdofsTrial,cevaluationTag, &
+    !$OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
     !$OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
     !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,ifunc,aux, db,IdofsFunc,DbasFunc, &
-    !$OMP   p_DcubPtsFunc,bIdenticalFuncAndTrial,p_IdofsFunc, &
+    !$OMP   bIdenticalFuncAndTrial,p_IdofsFunc, &
     !$OMP   p_DbasFunc,iderType,p_IelementList,p_Ddata)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
