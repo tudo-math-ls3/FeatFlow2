@@ -4023,7 +4023,7 @@ CONTAINS
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
         
-    !$OMP PARALLEL PRIVATE(p_DcubPtsRef, &
+    !$OMP PARALLEL PRIVATE( &
     !$OMP p_Ddetj, i,k,Dbas,Idofs,DbasALE, &
     !$OMP IdofsALE,DlocalDelta,Kentry,Kentry12,Dentry, &
     !$OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
@@ -4039,6 +4039,7 @@ CONTAINS
     !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
+    
     ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
@@ -7609,7 +7610,7 @@ CONTAINS
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
         
-    !別MP PARALLEL PRIVATE(csysTrial, p_DcubPtsRef, p_DcubPtsReal, &
+    !別MP PARALLEL PRIVATE(csysTrial, p_DcubPtsReal, &
     !別MP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
     !別MP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
     !別MP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &

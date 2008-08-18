@@ -533,7 +533,7 @@ CONTAINS
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,&
+    !$OMP PARALLEL PRIVATE(rintSubset, &
     !$OMP   p_Ddetj,kentry, dentry,DbasTest,DbasTrial, &
     !$OMP   IdofsTest,IdofsTrial,cevaluationTag, &
     !$OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
