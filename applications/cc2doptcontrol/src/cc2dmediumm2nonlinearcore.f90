@@ -437,7 +437,7 @@ CONTAINS
     
     INTEGER :: i
     LOGICAL :: bassembleNewton
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     TYPE(t_linsol_alterSolverConfig) :: ralterSolver
     TYPE(t_vectorBlock) :: rsubvectorD
