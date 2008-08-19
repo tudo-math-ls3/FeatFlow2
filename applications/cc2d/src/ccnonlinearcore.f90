@@ -840,9 +840,7 @@ CONTAINS
     ! FOR NONLINEAR ITERATION:
     ! Defect vector calculation callback routine. Based on the current iteration 
     ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
-    ! p_rcollection, which allows the routine to access information from the
-    ! main application (e.g. system matrices).
+    ! defect vector rd. 
   !</description>
 
   !<inputoutput>
