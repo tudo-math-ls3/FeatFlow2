@@ -478,13 +478,21 @@ CONTAINS
       CALL linsol_initMultigrid2 (p_rsolverNode,nlevels,&
           rnonlinearIteration%p_RfilterChain)
       
+      ! Manually trim the coarse grid correction in Multigrid to multiply the 
+      ! pressure equation with -1. This (un)symmetrises the operator and gives
+      ! much better convergence rates.
+      CALL cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
+      CALL cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,NDIM2D+1)
+      p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(3) &
+          = -1.0_DP
+      
       ! Init standard solver parameters and extended multigrid parameters
       ! from the DAT file.
       CALL linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
           LINSOL_ALG_UNDEFINED)
       CALL linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
           LINSOL_ALG_MULTIGRID2)
-      
+          
       ! Ok, now we have to initialise all levels. First, we create a coarse
       ! grid solver and configure it.
       CALL linsol_getMultigridLevel2 (p_rsolverNode,1,p_rlevelInfo)
