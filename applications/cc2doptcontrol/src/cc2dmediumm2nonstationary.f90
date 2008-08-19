@@ -132,7 +132,7 @@ CONTAINS
 
 !</subroutine>
 
-    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: RspaceTimeDiscr
+    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), POINTER :: RspaceTimeDiscr
     TYPE(t_spacetimeVector) :: rx,rd,rb
     INTEGER :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
     INTEGER :: nmaxSimulRefLevel,icurrentspace,icurrenttime
@@ -330,6 +330,9 @@ CONTAINS
     DO i=TIMENLMIN,TIMENLMAX-1
       CALL sptidis_doneDiscretisation (RspaceTimeDiscr(i))
     END DO
+    
+    DEALLOCATE(RspaceTimeDiscr)
+    
     CALL sptivec_releaseVector (rb)
     CALL sptivec_releaseVector (rd)
     CALL sptivec_releaseVector (rx)
