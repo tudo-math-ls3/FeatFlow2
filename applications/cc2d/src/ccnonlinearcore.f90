@@ -859,10 +859,6 @@ CONTAINS
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
 
-    ! Pointer to collection structure of the application. Points to NULL()
-    ! if there is none.
-    TYPE(t_collection), POINTER                   :: p_rcollection
-    
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
@@ -900,7 +896,7 @@ CONTAINS
     INTEGER :: i
     REAL(DP) :: dresInit,dres
     LOGICAL :: bassembleNewton
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     TYPE(t_ccDynamicNewtonControl), POINTER :: p_rnewton
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
@@ -967,7 +963,7 @@ CONTAINS
         
         ! Assemble the preconditioner matrices in rnonlinearIteration
         ! on all levels that the solver uses.
-        CALL assembleLinsolMatrices (rnonlinearIteration,p_rcollection,&
+        CALL assembleLinsolMatrices (rnonlinearIteration,rproblem%rcollection,&
             bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
         
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
@@ -1707,7 +1703,6 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  TYPE(t_collection), POINTER :: p_rcollection
   INTEGER :: ite
   REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DvecNorm
   TYPE(t_vectorBlock) :: rtemp
