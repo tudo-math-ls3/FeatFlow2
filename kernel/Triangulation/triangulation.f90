@@ -5892,9 +5892,9 @@ CONTAINS
         ! The parameter value of the 'neighbour' is the maximum parameter
         ! value of the boundary component + the parameter value of the
         ! first vertex of the boundary component.
-        !
-        ! Note that ivbd points to p_IboundaryCpIdx(ibct+1)-1 by
-        ! Fortran standard of DO-loops!
+        
+        ivbd = p_IboundaryCpIdx(ibct+1)-1
+        
         IF ((ibct .LE. rtriangulation%NBCT) .AND. &
             (p_InodalProperty(p_IedgesAtBoundary(ivbd)) .LE. rtriangulation%NBCT)) THEN
       
