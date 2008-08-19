@@ -1373,9 +1373,6 @@ CONTAINS
       CALL cc_getDefectNorm (rx,rb,rd,Dresiduals)
       Dresiduals(3) = SQRT(Dresiduals(1)**2 + Dresiduals(2)**2 )
 
-      ! Replace the 'old' residual by the current one
-      rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
-
       ! In the first iteration (initial defect), print the norm of the defect
       ! and save the norm of the initial residuum to the structure
       IF (ite .EQ. 0) THEN
@@ -1404,6 +1401,9 @@ CONTAINS
         dresOld = SQRT(rnonlinearIteration%DresidualOld(1)**2 + &
                        rnonlinearIteration%DresidualOld(2)**2)
         
+        ! Replace the 'old' residual by the current one
+        rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
+
         ! Nonlinear convergence rate
         drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/REAL(ite,DP))
         
