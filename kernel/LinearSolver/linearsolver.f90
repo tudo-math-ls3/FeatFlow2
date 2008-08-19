@@ -11036,6 +11036,9 @@ CONTAINS
   ! to this solver.
   ALLOCATE(p_rsolverNode%p_rsubnodeMultigrid)
   
+  ! Initialise the coarse grid correction structure.1
+  CALL cgcor_init (p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection)
+
   ! Attach the filter if given. 
   
   IF (PRESENT(p_Rfilter)) THEN
@@ -11884,6 +11887,9 @@ CONTAINS
   
   ! Remove all the levels
   CALL linsol_cleanMultigridLevels (rsolverNode)
+  
+  ! Release the coarse grid correction structure
+  CALL cgcor_release (rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection)
   
   ! Release MG substructure, that's it.
   DEALLOCATE(rsolverNode%p_rsubnodeMultigrid)
@@ -13004,6 +13010,9 @@ CONTAINS
   ! to this solver.
   ALLOCATE(p_rsolverNode%p_rsubnodeMultigrid2)
   
+  ! Initialise the coarse grid correction structure.1
+  CALL cgcor_init (p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
+  
   ! Allocate level information data
   ALLOCATE(p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlevels))
   
@@ -13825,6 +13834,9 @@ CONTAINS
   ! Remove all the levels
   CALL linsol_cleanMultigrid2Levels (rsolverNode)
   DEALLOCATE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+  
+  ! Release the coarse grid correction structure
+  CALL cgcor_release (rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
   
   ! Release MG substructure, that's it.
   DEALLOCATE(rsolverNode%p_rsubnodeMultigrid2)
