@@ -851,7 +851,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     
     ! Pointer to the template FEM matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM

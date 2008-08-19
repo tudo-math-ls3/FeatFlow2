@@ -863,9 +863,7 @@ CONTAINS
     ! FOR NONLINEAR ITERATION:
     ! Defect vector calculation callback routine. Based on the current iteration 
     ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
-    ! p_rcollection, which allows the routine to access information from the
-    ! main application (e.g. system matrices).
+    ! defect vector rd. 
   !</description>
 
   !<inputoutput>
@@ -882,10 +880,6 @@ CONTAINS
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
 
-    ! Pointer to collection structure of the application. Points to NULL()
-    ! if there is none.
-    TYPE(t_collection), POINTER                   :: p_rcollection
-    
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
@@ -923,7 +917,7 @@ CONTAINS
     INTEGER :: i
     REAL(DP) :: dresInit,dres
     LOGICAL :: bassembleNewton
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(:), POINTER :: Rmatrices
     TYPE(t_ccDynamicNewtonControl), POINTER :: p_rnewton
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
@@ -985,7 +979,7 @@ CONTAINS
         
         ! Assemble the preconditioner matrices in rnonlinearIteration
         ! on all levels that the solver uses.
-        CALL assembleLinsolMatrices (rnonlinearIteration,p_rcollection,&
+        CALL assembleLinsolMatrices (rnonlinearIteration,rproblem%rcollection,&
             bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
         
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
