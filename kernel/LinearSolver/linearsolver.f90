@@ -12847,6 +12847,17 @@ CONTAINS
           
         END DO  ! ite
         
+        ! Finish - either with an error or if converged.
+        ! Print the last residuum.
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (ite .GE. 1) .AND. (ITE .LE. rsolverNode%nmaxIterations) .AND. &
+            (rsolverNode%iresult .GE. 0)) THEN
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        END IF
+        
         ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
@@ -12862,17 +12873,6 @@ CONTAINS
           ite = rsolverNode%nmaxIterations
         END IF
 
-        ! Finish - either with an error or if converged.
-        ! Print the last residuum.
-
-        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
-            (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
-            (rsolverNode%iresult .GE. 0)) THEN
-          CALL output_line ('Multigrid: Iteration '// &
-              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
-              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        END IF
-        
         ! Final number of iterations
         rsolverNode%iiterations = ite
       
@@ -14576,6 +14576,17 @@ CONTAINS
           
         END DO  ! ite
         
+        ! Finish - either with an error or if converged.
+        ! Print the last residuum.
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (ite .GE. 1) .AND. (ITE .LE. rsolverNode%nmaxIterations) .AND. &
+            (rsolverNode%iresult .GE. 0)) THEN
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        END IF
+        
         ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
@@ -14591,17 +14602,6 @@ CONTAINS
           ite = rsolverNode%nmaxIterations
         END IF
 
-        ! Finish - either with an error or if converged.
-        ! Print the last residuum.
-
-        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
-            (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
-            (rsolverNode%iresult .GE. 0)) THEN
-          CALL output_line ('Multigrid: Iteration '// &
-              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
-              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        END IF
-        
         ! Final number of iterations
         rsolverNode%iiterations = ite
       
