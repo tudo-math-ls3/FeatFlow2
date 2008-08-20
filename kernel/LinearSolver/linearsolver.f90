@@ -620,6 +620,17 @@ MODULE linearsolver
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTDIRECT    = 5
 
+  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation,
+  ! Solution-based variant.
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVSTSB         = 6
+
+  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  ! Solution-based variant.
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVSTDIRECTSB   = 7
+
   ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTOC        = 20
 
@@ -3855,8 +3866,6 @@ CONTAINS
   ! The local subnode
   TYPE(t_linsolSubnodeEMS), POINTER :: p_rsubnode
   
-  INTEGER :: i, n
-
     ! Status reset
     rsolverNode%iresult = 0
     
@@ -5486,6 +5495,7 @@ CONTAINS
       END DO
 
     CASE (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  ,&
+          LINSOL_VANCA_2DNAVSTSB, LINSOL_VANCA_2DNAVSTDIRECTSB,&
           LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
       ! Blocks (3,1) and (3,2) must be virtually transposed
       IF ((IAND(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
@@ -5643,6 +5653,12 @@ CONTAINS
       CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANCA%rvanca,&
                                 VANCAPC_2DNAVIERSTOKES,VANCATP_DIAGONAL)
+
+    CASE (LINSOL_VANCA_2DNAVSTSB, LINSOL_VANCA_2DNAVSTDIRECTSB)
+      ! Diagonal-type VANCA for Navier-Stokes
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_2DNAVIERSTOKES,VANCATP_DIAGONAL_SOLBASED)
                                 
     CASE (LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
       ! Full VANCA for Navier-Stokes
@@ -11997,6 +12013,7 @@ CONTAINS
       SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
       CASE (LINSOL_VANCA_GENERALDIRECT,&
             LINSOL_VANCA_2DNAVSTDIRECT,&
+            LINSOL_VANCA_2DNAVSTDIRECTSB,&
             LINSOL_VANCA_2DFNAVSTDIRECT,&
             LINSOL_VANCA_2DFNAVSTOCDIRECT,&
             LINSOL_VANCA_2DFNAVSTOCDIAGDIR,&

@@ -209,6 +209,9 @@ MODULE vanca
   ! 'Diagonal' VANCA for optimal control problems
   INTEGER, PARAMETER :: VANCATP_DIAGOPTC        = 4
 
+  ! Diagonal-type VANCA, solution based
+  INTEGER, PARAMETER :: VANCATP_DIAGONAL_SOLBASED = 5
+
 !</constantblock>
 
 !</constants>
@@ -368,6 +371,10 @@ MODULE vanca
     ! that into VANCA, some further speed analysis has to be done to make
     ! sure there's not too much speed impact when using these!)
     REAL(DP), DIMENSION(3,3) :: Dmultipliers
+    
+    ! A temporary vector for solution based VANCA variants.
+    ! Undefined if not needed.
+    TYPE(t_vectorBlock) :: rtempVector
     
   END TYPE
   
@@ -727,7 +734,7 @@ CONTAINS
     
     CASE (VANCAPC_2DNAVIERSTOKES)
       ! Vanca for 2D Navier-Stokes problems
-      CALL vanca_init2DNavierStokes (rmatrix,rvanca)
+      CALL vanca_init2DNavierStokes (rmatrix,rvanca,csubtype)
 
     CASE (VANCAPC_2DNAVIERSTOKESOPTC)
       ! Vanca for 2D Navier-Stokes optimal control problems
@@ -765,6 +772,9 @@ CONTAINS
 
     ! Type of VANCA?
     SELECT CASE (rvanca%cproblemClass)
+    CASE (VANCAPC_2DNAVIERSTOKES)
+      ! Vanca for 2D Navier-Stokes problems
+      CALL vanca_done2DNavierStokes (rvanca%rvanca2DNavSt)
     CASE (VANCAPC_GENERAL)
       ! Release data of the general VANCA
       CALL vanca_doneGeneralVanca (rvanca%rvancaGeneral)
@@ -811,7 +821,7 @@ CONTAINS
   TYPE(t_vanca), INTENT(INOUT) :: rvanca
 
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  TYPE(t_vectorBlock), INTENT(INOUT)      :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1524,7 +1534,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanca_init2DNavierStokes (rmatrix,rvanca)
+  SUBROUTINE vanca_init2DNavierStokes (rmatrix,rvanca,csubtype)
   
 !<description>
   ! Initialises the VANCA variant for 2D Navier-Stokes problems 
@@ -1540,7 +1550,10 @@ CONTAINS
 !<input>
   ! The system matrix of the linear system.
   TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
-  !</input>
+
+  ! Desired subtype
+  INTEGER, INTENT(IN) :: csubtype  
+!</input>
 
 !<inputoutput>
   ! t_vancaPointer2DSPNavSt structure that saves algorithm-specific parameters.
@@ -1754,6 +1767,34 @@ CONTAINS
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
       CALL sys_halt()
     END IF
+    
+    ! Solution based VANCA variants need an additional temp vector
+    IF (csubtype .EQ. VANCATP_DIAGONAL_SOLBASED) then
+      CALL lsysbl_createVecBlockIndMat (rmatrix,rvanca%rvanca2DNavSt%rtempVector, .false.)
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_done2DNavierStokes (rvanca2DNavSt)
+  
+!<description>
+  ! Releases any memory allocated in rvanca2DNavSt.
+!</description>
+
+!<inputoutput>
+  ! t_vanca structure that to be cleaned up.
+  TYPE(t_vancaPointer2DNavSt), INTENT(INOUT) :: rvanca2DNavSt
+!</inputoutput>
+
+!</subroutine>
+
+    IF (rvanca2DNavSt%rtempVector%NEQ .NE. 0) THEN
+      CALL lsysbl_releaseVector (rvanca2DNavSt%rtempVector)
+    END IF
 
   END SUBROUTINE
 
@@ -1787,9 +1828,6 @@ CONTAINS
   ! Relaxation parameter. Standard=1.0_DP.
   REAL(DP), INTENT(IN)                    :: domega
 
-  ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
-
   ! The subtype of VANCA that should handle the above problem class.
   ! One of the VANCATP_xxxx constants, e.g. VANCATP_DIAGONAL.
   INTEGER :: csubtype
@@ -1802,6 +1840,9 @@ CONTAINS
 !</input>
 
 !<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+
   ! t_vanca structure that saves algorithm-specific parameters.
   TYPE(t_vancaPointer2DNavSt), INTENT(INOUT) :: rvanca2DNavSt
 !</inputoutput>
@@ -1870,6 +1911,26 @@ CONTAINS
                   rvector, rrhs, domega,p_IelementList)
           END IF
           
+        CASE (VANCATP_DIAGONAL_SOLBASED)
+          ! Diagonal VANCA. Solution based if possible. Check if A12 exists.
+          IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
+            ! Call the VANCA subsolver to apply VANCA to our current element list.
+            IF (rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+              ! Uniform discretisation
+              CALL vanca_2DSPQ1TQ0simpleSol (rvanca2DNavSt, &
+                  rvector, rrhs, domega,rvanca2DNavSt%rtempVector)
+            ELSE
+              ! Conformal discretisation
+              CALL vanca_2DSPQ1TQ0simpleConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            END IF
+          ELSE
+            ! Apply the conformal VANCA that allows different matrices
+            ! in A11, A12, A21 and A22!
+            CALL vanca_2DSPQ1TQ0simpleCoupConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+          END IF
+
         CASE (VANCATP_FULL)
           ! Full VANCA; check if A12 exists.
           IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
@@ -2514,6 +2575,411 @@ CONTAINS
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
     END DO ! iel
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_2DSPQ1TQ0simpleSol (rvanca, rvector, rrhs, domega, rtempVector)
+  
+!<description>
+  ! This routine applies the specialised diagonal VANCA algorithm for
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
+  ! to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. The rvanca structure has to be initialised before calling
+  ! this routine, as this holds a reference to the system matrix.
+  !
+  ! Solution-based algorithm which does not use the defect correction
+  ! approach (for FEAT1-compatibility).
+!</description>
+
+!<input>
+  ! t_vancaPointer2DNavSt structure that saves algorithm-specific parameters.
+  TYPE(t_vancaPointer2DNavSt), INTENT(IN) :: rvanca
+
+  ! The right-hand-side vector of the system
+  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  REAL(DP), INTENT(IN)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+  
+  ! A temporary vector in the size and structure of rvector
+  TYPE(t_vectorBlock), INTENT(INOUT)         :: rtempVector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local vairables
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER :: inode,idof
+    
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    
+    ! Triangulation information
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    
+    ! offset information in arrays
+    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
+    INTEGER, PARAMETER :: lofsv = 4
+    INTEGER, PARAMETER :: lofsp = 8
+    REAL(DP) :: daux
+    !REAL(DP), DIMENSION(3,3) :: Dmult
+    
+    ! Local arrays for informations about one element
+    REAL(DP), DIMENSION(4) :: AA,BB1,BB2,DD1,DD2
+    REAL(DP), DIMENSION(9) :: FF,UU
+    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    
+    ! WARNING: DOCUMENTATION PARTIALLY WRONG AND INCOMPLETE!
+    ! Preconditioner was build from FEAT1 in a quick-and-dirty way...
+    
+    ! Get pointers to the system matrix, so we don't have to write
+    ! so much - and it's probably faster.
+    
+    p_KcolA => rvanca%p_KcolA
+    p_KldA => rvanca%p_KldA
+    p_KdiagonalA => rvanca%p_KdiagonalA
+    p_DA => rvanca%p_DA
+    p_KcolB => rvanca%p_KcolB
+    p_KldB => rvanca%p_KldB
+    p_DB1 => rvanca%p_DB1
+    p_DB2 => rvanca%p_DB2
+    p_DD1 => rvanca%p_DD1
+    p_DD2 => rvanca%p_DD2
+    
+    ! For support of scaled matrices, use the following line; currently switched off.
+    !Dmult(:,:) = rvanca%Dmultipliers(:,:)
+    
+    ! Get pointers to the vectors, RHS, get triangulation information
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+                                p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    CALL lsysbl_getbase_double (rvector,p_Dvector)
+    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    
+    ! Backup the solution vector
+    CALL lsysbl_copyVector (rvector,rtempVector)
+    
+    ! Get the relative offsets of the 2nd and 3rd solution of the component
+    ioffsetv = rvector%RvectorBlock(1)%NEQ
+    ioffsetp = ioffsetv+rvector%RvectorBlock(2)%NEQ
+    
+    !=======================================================================
+    !     Block Gauss-Seidel on Schur Complement
+    !=======================================================================
+
+    ! Basic algorithm:
+    !
+    ! What are we doing here? Well, we want to perform 
+    ! *preconditioning*, i.e. we have to solve the problem
+    !
+    !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
+    !
+    ! for a "special" preconditioner C which we define in a moment.
+    ! This is equivalent to solving the system
+    !
+    !   C (x_new)  = x_old
+    !
+    ! C should be some approximation to A. Imagine our global system:
+    !
+    !     [ A   B ] (u) = (f)
+    !     [ B^t 0 ] (p)   (g)
+    !
+    ! In the Navier-Stokes equations with (u,p) being the preconditioned
+    ! vector, there should be g=0 - but this cannot be assumed
+    ! as it does not happen in general.
+    ! Now the algorithm for generating a new (u,p) vector from the old
+    ! one reads roughly as follows:
+    !
+    ! a) Restrict to a small part of the domain, in our case to one cell.
+    ! b) Fetch all the data (velocity, pressure) on that cell. On the
+    !    first cell, we have only "old" velocity entries. These values
+    !    are updated and then the calculation proceeds with the 2nd cell.
+    !
+    !           old                      new
+    !        |---X---|                |---X---|
+    !        |       |                |       |
+    !    old X   1   X old   -->  new X   1   X new
+    !        |       |                |       |
+    !        |---X---|                |---X---|
+    !           old                      new
+    !
+    !    From the second cell on, there might be "old" data and "new" 
+    !    data on that cell - the old data that has not been updated and
+    !    perhaps some already updated velocity data from a neighbor cell.
+    !    
+    !           new     old                   new     new
+    !        |---X---|---X---|             |---X---|---X---|
+    !        |       |       |             |       |       |
+    !    new X   1   X   2   X old --> new X   1   X   2   X new
+    !        |       |new    |             |       |newer  |
+    !        |---X---|---X---|             |---X---|---X---|
+    !           new     old                   new     new
+    !
+    !    These values are updated and then the calculation proceeds
+    !    with the next cell.
+    !    As can be seen in the above picture, the "new" node in the
+    !    middle is even going to be a "newer" node when handled again
+    !    for the 2nd cell. This is meant by "Gauss-Seldel" character:
+    !    Information is updated subsequently by using "old" data and
+    !    "new" data from a previous calculation.
+    !
+    ! So we start with a loop over all elements
+
+    DO iel=1,NEL
+    
+      ! We now have the element
+      !                                      U3/V3
+      ! |---------|                       |----X----|
+      ! |         |                       |         |
+      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |         |                       |         |
+      ! |---------|                       |----X----|
+      !                                      U1/V1
+      !
+      ! Fetch the pressure P on the current element into FFP
+    
+      FF(1+lofsp) = p_Drhs(iel+ioffsetp)
+
+      ! Loop over all 4 U-nodes of that element.
+      DO inode=1,4
+      
+        ! Set idof to the DOF that belongs to our edge inode:
+        idof = p_IedgesAtElement(inode,iel)
+
+        ! Write the number of the edge/node to idofGlobal:
+        idofGlobal(inode) = idof
+        
+        ! Put on AA(.) the diagonal entry of matrix A
+        AA(inode) = p_DA(p_KdiagonalA(idof))
+        
+        ! For support of scaled matrices, use the following line; currently switched off.
+        ! Node that this way, VANCA would not support a different scaling factor for
+        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
+        
+        ! Set FF initially to the value of the right hand
+        ! side vector that belongs to our current DOF corresponding
+        ! to inode
+        
+        FF(inode)       = p_Drhs(idof)
+        FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
+        
+        ! What do we have at this point?                           
+        ! FF     : "local" RHS vector belonging to the DOF's on the
+        !          current element                                 
+        ! AA     : Diagonal entries of A belonging to these DOF's  
+        !                                                          
+        ! And at the moment:                                       
+        ! idof      : number of current DOF on element IEL            
+        ! inode     : "local" number of DOF on element IEL, i.e.      
+        !              number of the edge         
+        !                     
+        ! Now comes the crucial point with the "update": How to         
+        ! subsequently update the vertex values, such that the whole    
+        ! thing still converges to the solution, even if a node         
+        ! is updated more than once? Here, we use a typical             
+        ! matrix-decomposition approach:                                
+        !                                                               
+        ! Again consider the problem:                                   
+        !                                                               
+        !    [ A   B ] (u) = (f)                                        
+        !    [ B^t 0 ] (p)   (g)                                        
+        !                                                               
+        ! We assume, that all components in the vector (u,p) are        
+        ! given - except for the four velocity unknowns and the         
+        ! pressure unknown on the current element; these five unknowns  
+        ! are located anywhere in the (u,p) vector. The idea is to      
+        ! shift "everything known" to the right hand side to obtain     
+        ! a system for only these unknowns!                             
+        !                                                               
+        ! Extracting all the lines of the system that correspond to     
+        ! DOF's on our single element IEL results in a rectangular      
+        ! system of the form                                            
+        !                                                               
+        !    [ === A^ === B~ ] (|) = (f1)                                
+        !    [ B~^t       0  ] (u)   (f2)                                
+        !                      (|)   (g )                                   
+        !                      (p)                                      
+        !                                                               
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
+        ! components and B being an (2*4) x 1 matrix that couples the   
+        ! velocities to the pressure on our current element.            
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
+        ! two pressure elements on the neighbour cell, so we have       
+        ! 2 columns in the B-matrix.                                    
+        !                                                               
+        !        IEL                              IEL                   
+        !     |--------|             |--------|--------|                
+        !     |        |             |        |        |                
+        !     |   P    |      or     |   Q    X   P    |                
+        !     |        |             |        |        |                
+        !   --|---X----|--           |--------|--------|                
+        !                                                               
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!  
+        !                                                               
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
+        !   (dp)    (g )                     (p)
+        !                                                                 
+        !
+        ! That way, A^ is reduced to a square matrix with two square    
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! two 4 x 1 submatrices (originally, every velocity couples with
+        ! two pressure elements on the neighbour cell, so we have       
+        ! 2 columns in the B-matrix).                                   
+        !
+        ! At first build: fi = fi-Aui
+        
+        ia1 = p_KldA(idof)
+        ia2 = p_KldA(idof+1)-1
+        DO ia = ia1,ia2
+          J = p_KcolA(ia)
+          daux = p_DA(ia)
+          FF(inode)       = FF(inode)      -daux*p_Dvector(J)
+          FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
+          
+          ! For support of scaled matrices, use the following line; currently switched off.
+          !daux = Dmult(1,1)*p_DA(ia)
+          !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
+          !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
+        END DO
+        
+        ! The diagonal entry was also subtracted, but this is not
+        ! desired in this approach. We therefore revert the subtraction
+        ! of the diagonal element.
+        FF(inode)       = FF(inode)       + AA(inode)*p_Dvector(idof)
+        FF(inode+lofsv) = FF(inode+lofsv) + AA(inode)*p_Dvector(idof+ioffsetv)
+        
+        ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+        
+        ib1=p_KldB(idof)
+        ib2=p_KldB(idof+1)-1
+
+        DO ib = ib1,ib2
+          ! Subtract contributions from the RHS which don't belong to our element.
+          IF (p_KcolB(ib) .NE. IEL) THEN 
+          
+            J = p_KcolB(ib)
+            daux = p_Dvector(j+ioffsetp)
+            FF(inode)       = FF(inode)      -p_DB1(ib)*daux
+            FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
+            
+            ! For support of scaled matrices, use the following lines; currently switched off.
+            !FF(inode)       = FF(inode)      -Dmult(1,3)*p_DB1(ib)*daux
+            !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,3)*p_DB2(ib)*daux
+          
+          ELSE
+          
+            ! Get the entries in the B-matrices
+            BB1(inode) = p_DB1(ib)
+            BB2(inode) = p_DB2(ib)
+            
+            ! The same way, get DD1 and DD2.
+            ! Note that DDi has exacty the same matrix structrure as BBi and is noted
+            ! as 'transposed matrix' only because of the transposed-flag.
+            ! So we can use "ib" as index here to access the entry of DDi:
+            DD1(inode) = p_DD1(ib)
+            DD2(inode) = p_DD2(ib)
+            
+            ! For support of scaled matrices, use the following lines; currently switched off.
+            !BB1(inode) = Dmult(1,3)*p_DB1(ib)
+            !BB2(inode) = Dmult(2,3)*p_DB2(ib)
+            !DD1(inode) = Dmult(3,1)*p_DD1(ib)
+            !DD2(inode) = Dmult(3,2)*p_DD2(ib)
+            
+            ! Build the pressure entry in the local defect vector:
+            !   f_i = (f_i-Aui) - D_i pi
+            ! or more precisely (as D is roughly B^T):
+            !   f_i = (f_i-Aui) - (B^T)_i pi
+            !
+            ! COMMENTED OUT, we are working solution based!
+            ! FF(1+lofsp) = FF(1+lofsp) &
+            !             - DD1(inode)*p_Dvector(idof) &
+            !             - DD2(inode)*p_Dvector(idof+ioffsetv)
+          
+            ! Quit the loop - the other possible entry belongs to another 
+            ! element, not to the current one
+            ! EXIT
+          END IF
+        END DO ! ib
+        
+      END DO ! inode
+    
+      ! Now we make a defect-correction approach for this system:
+      !
+      !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
+      !                                     -----------
+      !                                        =d~
+      !
+      ! Here the 'projection' operator simply converts the small
+      ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
+      ! of the same size as x - what is easy using the number of
+      ! the DOF's on the element.
+      !
+      ! The only question now will be: What is C^{-1}?
+      !
+      ! Well, here we have different choices. 
+      ! For full linear systems, one would choose C=A, which ist the
+      ! theoretically best preconditioner. A more simple preconditioner
+      ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
+      ! entries of A and those lines of the B/D-matrices that correspond
+      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! in the above variables. It has the form:
+      ! 
+      ! C = ( AA(1)                                                   BB1(1) )
+      !     (        AA(2)                                            BB1(2) )
+      !     (               AA(3)                                     BB1(3) )
+      !     (                      AA(4)                              BB1(4) )
+      !     (                             AA(1)                       BB2(1) )
+      !     (                                    AA(2)                BB2(2) )
+      !     (                                           AA(3)         BB2(3) )
+      !     (                                                  AA(4)  BB2(4) )
+      !     ( DD1(1) DD1(2) DD1(3) DD1(4) DD2(1) DD2(2) DD2(3) DD2(4)        )
+      !
+      ! We could theoretically pass this to LAPACK or so to invert it - but
+      ! as this is a saddle-point system, we can much faster 'solve' the equation
+      ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
+      ! call the element update routine that calculates the update vector y.
+      
+      CALL vanca_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
+    
+      ! Ok, we got the update vector UU. Incorporate this now into our
+      ! solution vector with the update formula
+      !
+      !  x_{n+1} = x_n + domega * y!
+      
+      DO inode=1,4
+        p_Dvector(idofGlobal(inode)) = UU(inode)
+        p_Dvector(idofGlobal(inode)+ioffsetv) = UU(inode+lofsv)
+      END DO
+      
+      p_Dvector(iel+ioffsetp) = UU(1+lofsp)
+    
+    END DO ! iel
+    
+    ! The final vector is a mean between the old and the new vector.
+    CALL lsysbl_vectorLinearComb (rtempVector,rvector,1.0_DP-domega,domega)
 
   END SUBROUTINE
 
