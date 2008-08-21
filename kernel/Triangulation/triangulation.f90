@@ -5775,7 +5775,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
     
     INTEGER :: ibct, ivbd, hvertAtBd
-    INTEGER(PREC_VERTEXIDX) :: isize
+    INTEGER(PREC_VERTEXIDX) :: isize,NVT
     REAL(DP) :: dpar1,dpar2,dmaxPar
 
     ! Is everything here we need?
@@ -5848,6 +5848,8 @@ CONTAINS
     CALL storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
         p_DedgeParameterValue)
 
+    NVT = rtriangulation%NVT
+
     ! Loop through all boundary components
     DO ibct = 1,rtriangulation%NBCT
     
@@ -5868,7 +5870,7 @@ CONTAINS
           ! of the two endpoints. If the edge belongs to the 'blind'
           ! boundary (happens on subdomains, where the domain boundary os not
           ! the physical boundary), 
-          IF (p_InodalProperty(p_IedgesAtBoundary(ivbd)) .LE. &
+          IF (p_InodalProperty(p_IedgesAtBoundary(ivbd)+NVT) .LE. &
               rtriangulation%NBCT) THEN
         
             ! Get the parameter value of the current vertex and its neighbour.
@@ -5896,7 +5898,8 @@ CONTAINS
         ivbd = p_IboundaryCpIdx(ibct+1)-1
         
         IF ((ibct .LE. rtriangulation%NBCT) .AND. &
-            (p_InodalProperty(p_IedgesAtBoundary(ivbd)) .LE. rtriangulation%NBCT)) THEN
+            (p_InodalProperty(p_IedgesAtBoundary(ivbd)+NVT) .LE. &
+             rtriangulation%NBCT)) THEN
       
           ! Get the parameter value of the current vertex and its neighbour.
           dpar1 = p_DvertexParameterValue(ivbd)
@@ -11183,7 +11186,7 @@ CONTAINS
     
     INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
       
-    INTEGER :: isize,IboundaryComponent,ive,NMBD,NABD,NMT,NAT
+    INTEGER :: isize,iboundaryComponent,ive,NMBD,NABD,NMT,NAT
     INTEGER :: NVT,NEL,NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
@@ -11236,12 +11239,8 @@ CONTAINS
     DO ive=1,rtriangulation%NMT
     
       ! get the boundary component index of the vertices
-      ! that build the edge
-      IboundaryComponent = p_IverticesAtEdge(1,ive)
-      
-      ! get the boundary component number  
-      IboundaryComponent = p_InodalProperty( &
-      IboundaryComponent)
+      ! that build the edge and calculate the boundary component number 
+      iboundaryComponent = p_InodalProperty(p_IverticesAtEdge(1,ive))
       
       ! if the vertex is an inner vertex
       ! we can skip this edge
@@ -11259,7 +11258,7 @@ CONTAINS
          ! the edge is on the boundary
          ! write that number to the p_InodalProperty array 
          p_InodalProperty(rtriangulation%NVT+ive) = &
-         IboundaryComponent
+         iboundaryComponent
        ELSE
          ! the edge is an inner edge assign a zero
          p_InodalProperty(rtriangulation%NVT+ive) = 0
@@ -11296,7 +11295,7 @@ CONTAINS
     
     INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtFace
       
-    INTEGER :: isize,IboundaryComponent,NMBD,NABD,iface,NMT,NAT
+    INTEGER :: isize,iboundaryComponent,NMBD,NABD,iface,NMT,NAT
     INTEGER :: NVT,NEL,NBCT, IcpIdx1, IcpIdx2
       
     ! these names are just too long...
@@ -11348,23 +11347,19 @@ CONTAINS
     DO iface=1,rtriangulation%NAT
     
       ! get the boundary component index of the vertices
-      ! that build the face
-      IboundaryComponent = p_IverticesAtFace(1,iface)
-         
-      ! get the boundary component number from the
-      ! p_InodalProperty array
-      IboundaryComponent = p_InodalProperty( &
-      IboundaryComponent)
+      ! that build the face and calculate the boundary component 
+      ! number from the p_InodalProperty array
+      iboundaryComponent = p_InodalProperty(p_IverticesAtFace(1,iface))
       
       ! if the vertex is an inner vertex
       ! we can skip this face
-      IF(IboundaryComponent == 0) THEN
+      IF(iboundaryComponent == 0) THEN
         p_InodalProperty(rtriangulation%NVT+NMT+iface) = 0
         cycle
       END IF
       
-      IcpIdx1 = p_IboundaryCpFacesIdx(IboundaryComponent)
-      IcpIdx2 = p_IboundaryCpFacesIdx(IboundaryComponent+1)-1
+      IcpIdx1 = p_IboundaryCpFacesIdx(iboundaryComponent)
+      IcpIdx2 = p_IboundaryCpFacesIdx(iboundaryComponent+1)-1
       
       ! check if face is on border
       IF(tria_BinSearch(p_IfacesAtBoundary,iface,IcpIdx1,IcpIdx2)&
@@ -11373,7 +11368,7 @@ CONTAINS
          ! write the boundary component number to the
          ! position NVT+NMT+iface
          p_InodalProperty(rtriangulation%NVT+NMT+iface) = &
-         IboundaryComponent
+         iboundaryComponent
        ELSE
          ! the face is an inner face so assign zero
          p_InodalProperty(rtriangulation%NVT+NMT+iface) = 0
@@ -13415,6 +13410,7 @@ CONTAINS
     real(dp), dimension(:,:), pointer :: p_DvertexCoordsSrc,p_DvertexCoordsDest
     integer(i32), dimension(:), pointer :: p_InodalPropertySrc,p_InodalPropertyDst
     integer(i32), dimension(:), pointer :: p_IelementsAtVertex,p_IelementsAtVertexIdx
+    integer(PREC_VERTEXIDX) :: NVT
     
     nnve = rtriaSource%NNVE
     IF (nnve .ne. TRIA_NVEQUAD2D) THEN
@@ -13447,6 +13443,8 @@ CONTAINS
     call storage_getbase_int(&
         rtriaSource%h_InodalProperty,p_InodalPropertySrc)
 
+    NVT = rtriaSource%NVT
+
     ! Loop through all elements and mark the edges to be refined.
     allocate(IedgeHang(rtriaSource%NMT))
     IedgeHang(:) = 0
@@ -13465,7 +13463,7 @@ CONTAINS
             IedgeHang(imt) = 2
           end if
           
-          if (p_InodalPropertySrc(imt+rtriaSource%NVT) .lt. 0) then
+          if (p_InodalPropertySrc(imt+NVT) .lt. 0) then
             ! Mark edges with already hanging vertices with a 3;
             ! these edges must not produce new vertices.
             IedgeHang(imt) = 3
@@ -13662,26 +13660,26 @@ CONTAINS
         ! If this element has already a hanging vertex on an edge,
         ! the vertex number is taken from the coarse grid.
 
-        if (p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)) .lt. 0) then
-          iedge1 = -p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel))
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)+NVT) .lt. 0) then
+          iedge1 = -p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)+NVT)
         else        
-          iedge1 = IedgeLocalId(p_IedgesAtElementSrc (1,iel))
+          iedge1 = IedgeLocalId(p_IedgesAtElementSrc (1,iel)+NVT)
         end if
         
-        if (p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)) .lt. 0) then
-          iedge2 = -p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel))
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)+NVT) .lt. 0) then
+          iedge2 = -p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)+NVT)
         else        
           iedge2 = IedgeLocalId(p_IedgesAtElementSrc (2,iel))
         end if
         
-        if (p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)) .lt. 0) then
-          iedge3 = -p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel))
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)+NVT) .lt. 0) then
+          iedge3 = -p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)+NVT)
         else        
           iedge3 = IedgeLocalId(p_IedgesAtElementSrc (3,iel))
         end if
         
-        if (p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)) .lt. 0) then
-          iedge4 = -p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel))
+        if (p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)+NVT) .lt. 0) then
+          iedge4 = -p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)+NVT)
         else        
           iedge4 = IedgeLocalId(p_IedgesAtElementSrc (4,iel))
         end if
@@ -13787,8 +13785,8 @@ CONTAINS
     
     ! Old edges -> New vertices
     do imt = 1,nmtsum
-      p_InodalPropertyDst(rtriaSource%NVT+imt) = &
-        p_InodalPropertySrc(rtriaSource%NVT+Iedges(imt))
+      p_InodalPropertyDst(NVT+imt) = &
+        p_InodalPropertySrc(NVT+Iedges(imt))
     end do
     
     ! Old elements -> new vertices.
@@ -13864,7 +13862,7 @@ CONTAINS
                   (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel1) .eq. ivt1)) then
                 ! The edge 'after' the vertex is the neighbour.
                 imt2 = p_IedgesAtElementDest(ive,iel1)
-                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                p_InodalPropertyDst(imt2+NVT) = -IedgeLocalId(imt)
                 exit
               end if
               
@@ -13872,7 +13870,7 @@ CONTAINS
                   (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel1) .eq. ivt)) then
                 ! The edge 'before' the vertex is the neighbour.
                 imt2 = p_IedgesAtElementDest(ive,iel1)
-                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                p_InodalPropertyDst(imt2+NVT) = -IedgeLocalId(imt)
                 exit
               end if
             end do
@@ -13882,7 +13880,7 @@ CONTAINS
                   (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel2) .eq. ivt1)) then
                 ! The edge 'after' the vertex is the neighbour.
                 imt2 = p_IedgesAtElementDest(ive,iel2)
-                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                p_InodalPropertyDst(imt2+NVT) = -IedgeLocalId(imt)
                 exit
               end if
               
@@ -13890,7 +13888,7 @@ CONTAINS
                   (p_IverticesAtElementDest(MOD(ive,nnve)+1,iel2) .eq. ivt)) then
                 ! The edge 'before' the vertex is the neighbour.
                 imt2 = p_IedgesAtElementDest(ive,iel2)
-                p_InodalPropertyDst(imt2) = -IedgeLocalId(imt)
+                p_InodalPropertyDst(imt2+NVT) = -IedgeLocalId(imt)
                 exit
               end if
             end do
