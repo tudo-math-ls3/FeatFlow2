@@ -681,6 +681,9 @@ CONTAINS
           CALL cc_performTimestep (rproblem,rpredictedSolution,rrhs,&
               rtimesteppingPredictor,rnonlinearIteration,rnlSol,&
               rtempBlock1,rtempBlock2)
+          
+          ! Gather statistics
+          rproblem%rstatistics%ntimesteps = rproblem%rstatistics%ntimesteps + 1
               
           ! Remember the status of the nonlinear solver for later use.
           isolverStatusPredictor = rnlSol%iresult
@@ -781,6 +784,9 @@ CONTAINS
         ! Proceed the next time step -- if we are allowed to.
         CALL cc_performTimestep (rproblem,rvector,rrhs,&
             rtimestepping,rnonlinearIteration,rnlSol,rtempBlock1,rtempBlock2)
+            
+        ! Gather statistics
+        rproblem%rstatistics%ntimesteps = rproblem%rstatistics%ntimesteps + 1
             
         ! Do we count in steps a 1 or in steps a 3?
         ! Respecting this, i is assigned the number of the substep in the

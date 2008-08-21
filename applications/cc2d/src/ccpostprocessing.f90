@@ -62,6 +62,7 @@ MODULE ccpostprocessing
   USE nonlinearsolver
   USE paramlist
   USE ccboundaryconditionparser
+  USE statistics
   
   USE collection
   USE convection
@@ -168,6 +169,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! local variables
+    TYPE(t_timer) :: rtimer
+
+    CALL stat_clearTimer(rtimer)
+    CALL stat_startTimer(rtimer)
+
     ! Calculate body forces.
     CALL cc_calculateBodyForces (rvector,rproblem)
     
@@ -179,6 +186,11 @@ CONTAINS
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     CALL cc_writeUCD (rpostprocessing, rvector, rproblem)
+    
+    ! Gather statistics
+    CALL stat_stopTimer(rtimer)
+    rproblem%rstatistics%dtimePostprocessing = &
+      rproblem%rstatistics%dtimePostprocessing + rtimer%delapsedReal
     
   END SUBROUTINE
 
@@ -208,6 +220,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! local variables
+    TYPE(t_timer) :: rtimer
+
+    CALL stat_clearTimer(rtimer)
+    CALL stat_startTimer(rtimer)
+
     ! Calculate body forces.
     CALL cc_calculateBodyForces (rvector,rproblem)
     
@@ -225,6 +243,11 @@ CONTAINS
     CALL cc_writeFilm (rpostprocessing, rvector, rproblem, &
         rproblem%rtimedependence%dtime)
     
+    ! Gather statistics
+    CALL stat_stopTimer(rtimer)
+    rproblem%rstatistics%dtimePostprocessing = &
+      rproblem%rstatistics%dtimePostprocessing + rtimer%delapsedReal
+
   END SUBROUTINE
 
 !******************************************************************************

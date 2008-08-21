@@ -34,6 +34,7 @@ MODULE ccinitparamtriang
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE statistics
   
   USE collection
   USE convection
@@ -70,6 +71,10 @@ CONTAINS
     ! Variable for a filename:  
     CHARACTER(LEN=SYS_STRLEN) :: sString
     CHARACTER(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
+    TYPE(t_timer) :: rtimer
+
+    CALL stat_clearTimer(rtimer)
+    CALL stat_startTimer(rtimer)
 
     ! Get min/max level from the parameter file.
     !
@@ -128,6 +133,11 @@ CONTAINS
       CALL tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation)
     END DO
+    
+    ! Gather statistics
+    CALL stat_stopTimer(rtimer)
+    rproblem%rstatistics%dtimeGridGeneration = &
+      rproblem%rstatistics%dtimeGridGeneration + rtimer%delapsedReal
 
   END SUBROUTINE
 

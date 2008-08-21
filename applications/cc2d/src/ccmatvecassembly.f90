@@ -77,6 +77,7 @@ MODULE ccmatvecassembly
   USE matrixrestriction
   USE trilinearformevaluation
   USE matrixio
+  USE statistics
   
   USE convection
     

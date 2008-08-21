@@ -159,6 +159,9 @@ CONTAINS
     CALL output_lbrk ()
     CALL output_line ("Time for mesh generation: "//&
       TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+      
+    p_rproblem%rstatistics%dtimeGridGeneration = &
+      p_rproblem%rstatistics%dtimeGridGeneration + rtimerGridGeneration%delapsedReal
     
     ! Print mesh information
     IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
@@ -297,6 +300,10 @@ CONTAINS
       
     END IF
     
+    ! Gather statistics    
+    p_rproblem%rstatistics%dtimeSolver = &
+      p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
+    
     ! (Probably) write final solution vector
     CALL cc_writeSolution (p_rproblem,rvector)
     
@@ -323,21 +330,62 @@ CONTAINS
     ! Finally release the collection and the problem structure.
     CALL collct_done (p_rproblem%rcollection)
     
-    DEALLOCATE(p_rproblem)
-    
     ! Stop the timer
     CALL stat_stopTimer(rtimerTotal)
+
+    ! Gather statistics    
+    p_rproblem%rstatistics%dtimeTotal = &
+      p_rproblem%rstatistics%dtimeTotal + rtimerTotal%delapsedReal
     
     ! Print the time for the total computation
     CALL output_lbrk ()
+    CALL output_line ("Total time:                             "//&
+        TRIM(sys_sdL(p_rproblem%rstatistics%dtimeTotal,10)))
+
     CALL output_line ("Time for initial mesh generation:       "//&
         TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-    CALL output_line ("Time for initial matrix initialisation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-    CALL output_line ("Total time for solver:                  "//&
-      TRIM(sys_sdL(rtimerSolver%delapsedReal,10)))
-    CALL output_line ("Total time:                             "//&
-        TRIM(sys_sdL(rtimerTotal%delapsedReal,10)))
+        
+    CALL output_line ("Time for initial matrix assembly:       "//&
+      TRIM(sys_sdL(rtimerMatrixGeneration%delapsedReal,10)))
+      
+    CALL output_line ("Total time for grid generation:         "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeGridGeneration,10)))
+      
+    CALL output_line ("Total time for complete solver:         "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeSolver,10)))
+      
+    CALL output_line ("Total time for nonlinear solver:        "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeNonlinearSolver,10)))
+      
+    CALL output_line ("Total time for defect calculation:      "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeDefectCalculation,10)))
+
+    CALL output_line ("Total time for optimal damping:         "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeOptimalCorrection,10)))
+      
+    CALL output_line ("Total time for matrix assembly:         "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeMatrixAssembly,10)))
+      
+    CALL output_line ("Total time for linear solver:           "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolver,10)))
+      
+    CALL output_line ("Total time for factorisation:           "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolverFactorisation,10)))
+
+    CALL output_line ("Total time for postprocessing:          "//&
+      TRIM(sys_sdL(p_rproblem%rstatistics%dtimePostprocessing,10)))
+      
+    CALL output_line ("Total #iterations nonlinear solver:     "//&
+      TRIM(sys_siL(p_rproblem%rstatistics%nnonlinearIterations,10)))
+      
+    CALL output_line ("Total #iterations linear solver:        "//&
+      TRIM(sys_siL(p_rproblem%rstatistics%nlinearIterations,10)))
+
+    CALL output_line ("Total number of calculated timesteps:   "//&
+      TRIM(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
+
+    ! That's it.    
+    DEALLOCATE(p_rproblem)
     
   END SUBROUTINE
 

@@ -519,6 +519,9 @@ CONTAINS
       ! DEBUG!!!
       !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
+      CALL stat_clearTimer(rtimer)
+      CALL stat_startTimer(rtimer)
+
       ! Build the nonlinear defect
       CALL lsysbl_copyVector (rb,rd)
       
@@ -561,6 +564,11 @@ CONTAINS
       END IF
     
       CALL vecfil_discreteNLSlipBCdef (rd)
+      
+      ! Gather statistics
+      CALL stat_stopTimer(rtimer)
+      rproblem%rstatistics%dtimeDefectCalculation = &
+        rproblem%rstatistics%dtimeDefectCalculation + rtimer%delapsedReal
       
     END SUBROUTINE
     
@@ -647,6 +655,9 @@ CONTAINS
         domega = rnonlinearIteration%domegaMin
         RETURN
       END IF
+      
+      CALL stat_clearTimer(rtimer)
+      CALL stat_startTimer(rtimer)
       
       ! Get minimum/maximum level from the collection
       ilvmax = rnonlinearIteration%NLMAX
@@ -823,6 +834,11 @@ CONTAINS
                    min(rnonlinearIteration%domegamax,domega))
       
       ! That's it, we have our new Omega.
+
+      ! Gather statistics
+      CALL stat_stopTimer(rtimer)
+      rproblem%rstatistics%dtimeOptimalCorrection = &
+        rproblem%rstatistics%dtimeDefectCalculation + rtimer%delapsedReal
       
     END SUBROUTINE
 
@@ -959,10 +975,21 @@ CONTAINS
           
         END IF
         
+        CALL stat_clearTimer(rtimer)
+        CALL stat_startTimer(rtimer)
+        
         ! Assemble the preconditioner matrices in rnonlinearIteration
         ! on all levels that the solver uses.
         CALL assembleLinsolMatrices (rnonlinearIteration,rproblem%rcollection,&
             bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
+        
+        ! Gather statistics
+        CALL stat_stopTimer(rtimer)
+        rproblem%rstatistics%dtimeMatrixAssembly = &
+          rproblem%rstatistics%dtimeMatrixAssembly + rtimer%delapsedReal
+
+        CALL stat_clearTimer(rtimer)
+        CALL stat_startTimer(rtimer)
         
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -997,12 +1024,27 @@ CONTAINS
         CALL linsol_initData (p_rsolverNode, ierror)
         IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
         
+        ! Gather statistics
+        CALL stat_stopTimer(rtimer)
+        rproblem%rstatistics%dtimeLinearSolverFactorisation = &
+          rproblem%rstatistics%dtimeLinearSolverFactorisation + rtimer%delapsedReal
+        
+        CALL stat_clearTimer(rtimer)
+        CALL stat_startTimer(rtimer)
+        
         ! Finally solve the system. As we want to solve Ax=b with
         ! b being the real RHS and x being the real solution vector,
         ! we use linsol_solveAdaptively. If b is a defect
         ! RHS and x a defect update to be added to a solution vector,
         ! we would have to use linsol_precondDefect instead.
         CALL linsol_precondDefect (p_rsolverNode,rd)
+
+        ! Gather statistics
+        CALL stat_stopTimer(rtimer)
+        rproblem%rstatistics%dtimeLinearSolver = &
+          rproblem%rstatistics%dtimeLinearSolver + rtimer%delapsedReal
+        rproblem%rstatistics%nlinearIterations = &
+          rproblem%rstatistics%nlinearIterations + p_rsolverNode%iiterations
         
         ! Remember convergence rate for output
         rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
@@ -1872,6 +1914,7 @@ CONTAINS
 
     ! local variables
     TYPE(t_vectorBlock), POINTER :: p_rtempBlock
+    TYPE(t_timer) :: rtimer
 
     IF (.NOT. PRESENT(rtempBlock)) THEN
       ! Create a temporary vector we need for the nonlinear iteration.
@@ -1881,10 +1924,21 @@ CONTAINS
       p_rtempBlock => rtempBlock
     END IF
 
+    CALL stat_clearTimer(rtimer)
+    CALL stat_startTimer(rtimer)
+
     ! Call the nonlinear solver. For preconditioning and defect calculation,
     ! the solver calls our callback routines.
     CALL cc_nonlinearSolver(rproblem,rnonlinearIteration,rnlSolver,&
         rvector,rrhs,p_rtempBlock)
+
+    ! Gather statistics
+    CALL stat_stopTimer(rtimer)
+    rproblem%rstatistics%dtimeNonlinearSolver = &
+      rproblem%rstatistics%dtimeNonlinearSolver + rtimer%delapsedReal
+      
+    rproblem%rstatistics%nnonlinearIterations = &
+      rproblem%rstatistics%nnonlinearIterations + rnlSolver%iiterations
 
     IF (.NOT. PRESENT(rtempBlock)) THEN
       ! Release the temporary vector

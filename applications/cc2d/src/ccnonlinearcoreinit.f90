@@ -87,6 +87,7 @@ MODULE ccnonlinearcoreinit
   USE paramlist
   USE linearsolverautoinitialise
   USE matrixrestriction
+  USE statistics
   
   USE collection
   USE convection
@@ -826,6 +827,7 @@ CONTAINS
     INTEGER :: i,cmatrixType
     CHARACTER(LEN=PARLST_MLDATA) :: sstring,snewton
     LOGICAL :: btranspose
+    TYPE(t_timer) :: rtimer
 
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
@@ -1046,6 +1048,9 @@ CONTAINS
         
       END DO
       
+      CALL stat_clearTimer(rtimer)
+      CALL stat_startTimer(rtimer)
+      
       ! Attach the system matrices to the solver.
       !
       ! For this purpose, copy the matrix structures from the preconditioner
@@ -1083,6 +1088,11 @@ CONTAINS
         IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
         
       END IF
+      
+      ! Gather statistics
+      CALL stat_stopTimer(rtimer)
+      rproblem%rstatistics%dtimeLinearSolverFactorisation = &
+        rproblem%rstatistics%dtimeLinearSolverFactorisation + rtimer%delapsedReal
       
     CASE DEFAULT
       

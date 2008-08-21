@@ -144,6 +144,56 @@ MODULE ccbasic
 
 !</typeblock>
 
+!<typeblock>
+
+  ! Object that collects statistics gathered during the simulation.
+  TYPE t_cc_statistics
+    
+    ! Total number of nonlinear iterations
+    INTEGER :: nnonlinearIterations = 0
+    
+    ! Total number of iterations in the linear solver
+    INTEGER :: nlinearIterations = 0
+    
+    ! Total number of calculated timesteps
+    INTEGER :: ntimesteps = 0
+
+    ! Total time used for nonlinear solver 
+    REAL(DP) :: dtimeNonlinearSolver = 0.0_DP
+    
+    ! Total time used for linear solver 
+    REAL(DP) :: dtimeLinearSolver = 0.0_DP
+
+    ! Total time used for symbolical/numerical factorisation
+    ! in the preparation of the linear solver
+    REAL(DP) :: dtimeLinearSolverFactorisation = 0.0_DP
+    
+    ! Total time for matrix assembly
+    REAL(DP) :: dtimeMatrixAssembly = 0.0_DP
+    
+    ! Total time for defect vector calculation
+    REAL(DP) :: dtimeDefectCalculation = 0.0_DP
+    
+    ! Total time for grid generation
+    REAL(DP) :: dtimeGridGeneration = 0.0_DP
+    
+    ! Total time for postprocessing
+    REAL(DP) :: dtimePostprocessing = 0.0_DP
+    
+    ! Total time for calculating optimal correction factors in the
+    ! nonlinear iteration
+    REAL(DP) :: dtimeOptimalCorrection = 0.0_DP
+    
+    ! Total time for solver (without initial initialisation)
+    REAL(DP) :: dtimeSolver = 0.0_DP
+    
+    ! Total time
+    REAL(DP) :: dtimeTotal = 0.0_DP
+    
+  END TYPE
+
+!</typeblock>
+
 
 !<typeblock description="Application-specific type block for the Nav.St. problem">
 
@@ -215,6 +265,10 @@ MODULE ccbasic
     
     ! A param list that saves all parameters from the DAT/INI file(s).
     TYPE(t_parlist)                       :: rparamList
+
+    ! A statistics structure gathering statistical data about the
+    ! simulation.
+    TYPE(t_cc_statistics)                 :: rstatistics
 
   END TYPE
 
