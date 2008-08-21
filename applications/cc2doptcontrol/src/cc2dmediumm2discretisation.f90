@@ -1048,7 +1048,7 @@ CONTAINS
       READ(sfileString,*) sfile
 
       CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.FALSE.)
+          rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.TRUE.)
       
       ! Read in the vector, create a new block vector.
       CALL vecio_readBlockVectorHR (&
