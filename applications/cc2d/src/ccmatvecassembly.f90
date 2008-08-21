@@ -1273,7 +1273,9 @@ CONTAINS
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
-                    rmatrix%RmatrixBlock(2,2))
+                    rmatrix%RmatrixBlock(2,2)) .OR.&
+                (.NOT. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(1,1)) .AND.&
+                 .NOT. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(2,2)))
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
