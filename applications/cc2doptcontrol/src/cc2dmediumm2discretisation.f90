@@ -1017,8 +1017,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: istart
-    TYPE(t_vectorBlock) :: rvector1,rvector2
+    INTEGER(I32) :: istart,nblock,iblock
+    TYPE(t_vectorBlock) :: rvector1,rvector2,rtempVector
     TYPE(t_vectorScalar) :: rvectorTemp
     CHARACTER(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     INTEGER :: ilev
@@ -1050,10 +1050,30 @@ CONTAINS
       CALL lsysbl_createVectorBlock (&
           rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.FALSE.)
       
-      ! Read in the vector
+      ! Read in the vector, create a new block vector.
       CALL vecio_readBlockVectorHR (&
-          rvector1, sarray, .TRUE., 0, sfile, istart .GT. 0)
-          
+          rtempVector, sarray, .TRUE., 0, sfile, istart .GT. 0)
+      
+      ! Copy velocity/pressure vectors from the temp to the actual
+      ! vector. If the temp vector provides dual solutions, copy
+      ! them as well.
+      nblock = 3
+      IF (rtempVector%nblocks .GE. 2*(NDIM2D+1)) THEN
+        nblock = 6
+      END IF
+      
+      DO iblock = 1,nblock
+        IF (rtempVector%RvectorBlock(iblock)%NEQ .NE. rvector1%RvectorBlock(iblock)%NEQ) THEN
+          CALL output_line ('Start vector incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
+          CALL sys_halt()
+        END IF
+        
+        CALL lsyssc_duplicateVector (rtempVector%RvectorBlock(iblock),&
+            rvector1%RvectorBlock(iblock),&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+      END DO
+      
       ! If the vector is on level < NLMAX, we have to bring it to level NLMAX
       DO WHILE (ilev .LT. rproblem%NLMAX)
         
