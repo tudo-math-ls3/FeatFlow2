@@ -2584,6 +2584,15 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
                                 'dalphaMax', p_rmgSolver%p_rsubnodeMultigrid%dalphaMax,&
                                 1.0_DP)
+                                
+    ! For the optimal coarse grid correction, we multiply the residuum of the
+    ! 3rd and 6th equation by -1; gives better results (matrix symmetry?!?).
+    ! Note that there is currently no INIT/DONE-Routine for the weights, so we
+    ! do that manually...
+    ALLOCATE(p_rmgSolver%p_rsubnodeMultigrid%p_DequationWeights(6))
+    p_rmgSolver%p_rsubnodeMultigrid%p_DequationWeights(:) = 1.0_DP
+    p_rmgSolver%p_rsubnodeMultigrid%p_DequationWeights(3) = -1.0_DP
+    p_rmgSolver%p_rsubnodeMultigrid%p_DequationWeights(6) = -1.0_DP
     
     ! Initialise the basic parameters of the system matrices on all levels.
     DO ilev=1,SIZE(RspatialPrecond)
@@ -2961,6 +2970,9 @@ CONTAINS
       ! Normalise the primal and dual pressure to integral mean value zero.
       CALL tbc_pressureToL20 (rx,rtempVectorX)
     END IF
+    
+    ! Release the multiplication weights for the energy minimisation.
+    DEALLOCATE(p_rmgSolver%p_rsubnodeMultigrid%p_DequationWeights)
     
     ! Release the space-time and spatial preconditioner. 
     ! We don't need them anymore.

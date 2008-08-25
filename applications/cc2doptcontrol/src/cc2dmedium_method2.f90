@@ -324,7 +324,7 @@ CONTAINS
       ! cc_solveNonstationaryDirect!
 
       ! Call the nonstationary solver to solve the problem.
-      CALL cc_solveNonstationaryDirect (p_rproblem)
+      CALL cc_solveNonstationaryDirect (p_rproblem,rvector)
       
     END IF
     

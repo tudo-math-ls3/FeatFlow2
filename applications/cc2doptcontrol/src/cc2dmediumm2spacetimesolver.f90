@@ -731,6 +731,17 @@ MODULE cc2dmediumm2spacetimesolver
     ! grid correction. Standard = 1.0.
     REAL(DP)                      :: dalphamax                = 1.0_DP
     
+    ! A list of weights for the different equations in each timestep.
+    ! If not associated, a standard value of 1.0 is assumed for every equation.
+    ! If associated, the calculation routine for the optimal
+    ! coarse grid correction will multiply residuals of the corresponding
+    ! equation with this factor.
+    ! Example: 2D Navier-Stokes: (1,1,-1)
+    ! -> The pressure equation is multiplied by -1 before taking the norm
+    !    of the residual.
+    ! Can be used to symmetrise equations.
+    REAL(DP), DIMENSION(:), POINTER :: p_DequationWeights => NULL()
+
     ! Array of t_sptilsMGLevelInfo structures for all the levels the MG solver
     ! should handle.
     TYPE(t_sptilsMGLevelInfo), DIMENSION(:), POINTER :: p_Rlevels => NULL()
@@ -7253,14 +7264,26 @@ END SUBROUTINE
               IF (p_rsubnode%dalphamin .NE. p_rsubnode%dalphamax) THEN
               
                 ! Calculate the optimal alpha.
-                CALL calcCGCenergyMin (rsolverNode%p_rproblem,&
-                    p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
-                    p_rsubnode%p_Rlevels(ilev)%rtempVector,&
-                    p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
-                    p_rmatrix,&
-                    p_rsubnode%p_Rlevels(ilev)%rtempCGCvector,&
-                    p_rsubnode%p_Rlevels(ilev)%rprjVector,&
-                    p_rsubnode%dalphamin, p_rsubnode%dalphamax, dstep)
+                IF (.NOT. ASSOCIATED(p_rsubnode%p_DequationWeights)) THEN
+                  CALL calcCGCenergyMin (rsolverNode%p_rproblem,&
+                      p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
+                      p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                      p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
+                      p_rmatrix,&
+                      p_rsubnode%p_Rlevels(ilev)%rtempCGCvector,&
+                      p_rsubnode%p_Rlevels(ilev)%rprjVector,&
+                      p_rsubnode%dalphamin, p_rsubnode%dalphamax, dstep)
+                ELSE
+                  CALL calcCGCenergyMinWeighted (rsolverNode%p_rproblem,&
+                      p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
+                      p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                      p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
+                      p_rmatrix,&
+                      p_rsubnode%p_Rlevels(ilev)%rtempCGCvector,&
+                      p_rsubnode%p_Rlevels(ilev)%rprjVector,&
+                      p_rsubnode%dalphamin, p_rsubnode%dalphamax, &
+                      p_rsubnode%p_DequationWeights,dstep)
+                END IF
                 
                 ! Some output
                 IF (rsolverNode%ioutputLevel .GE. 2) THEN
@@ -7617,7 +7640,7 @@ END SUBROUTINE
       !    rmatrix%p_rspaceTimeDiscretisation,&
       !    rtempVector, rtempSpaceVector)
 
-      ! Get the nominator      
+      ! Get the nominator
       dnom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
 
       ! Calculate the denominator:
@@ -7648,6 +7671,104 @@ END SUBROUTINE
                     
     END SUBROUTINE
   
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE calcCGCenergyMinWeighted (rproblem,&
+                    rsolutionVector,rcorrectionVector,rrhsVector,rmatrix,&
+                    rtempVector,rtempSpaceVector,dalphamin, dalphamax, &
+                    Dweights,dstep)
+                  
+    ! Calculates the optimal coarse grid correction factor using
+    ! energy minimisation. Use weighted energy minimisation that
+    ! multiplies the residualy by a given factor before setting up
+    ! the correction factor.
+    
+    ! Problem structure
+    TYPE(t_problem), INTENT(INOUT) :: rproblem
+    
+    ! Uncorrected solution vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rsolutionVector
+    
+    ! Correction vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rcorrectionVector
+
+    ! RHS vector
+    TYPE(t_spacetimeVector), INTENT(IN) :: rrhsVector
+    
+    ! Corresponding space-time matrix
+    TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rmatrix
+    
+    ! Temp vector
+    TYPE(t_spacetimeVector), INTENT(INOUT) :: rtempVector
+    
+    ! A temp vector, only in space
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rtempSpaceVector
+    
+    ! Minimum/maximum value for the correction factor
+    REAL(DP), INTENT(IN) :: dalphamin,dalphamax
+    
+    ! A weight factor for each equation of a timestep. This is applied
+    ! to all timesteps. The weighting factor is multiplied by the residual
+    ! before taking scalar products. Standard value is an array (1,1,1,...).
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dweights
+    
+    ! OUTPUT: Calculated step length parameter
+    REAL(DP), INTENT(OUT) :: dstep
+    
+      ! local variables
+      REAL(DP) :: dnom, ddenom
+    
+      ! The formula is just as for standard multigrid.
+      ! With u=uncorrected solution, c=correction vector, 
+      ! f=rhs vector, calculate
+      !
+      !           ( f-Au, c )
+      !  dstep = -------------
+      !            ( Ac, c )
+      !
+      ! Calculate the nominator
+      CALL sptivec_copyVector (rrhsVector,rtempVector)
+      CALL cc_spaceTimeMatVec (rproblem, rmatrix, &
+          rsolutionVector,rtempVector, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT)
+
+      ! Implement boundary conditions into the vector.
+      !CALL tbc_implementInitCondDefect (&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+      !CALL tbc_implementBCdefect (rproblem,&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+
+      ! Get the nominator
+      dnom = sptivec_scalarProductWeighted (rtempVector,rcorrectionVector,Dweights)
+      ! Calculate the denominator:
+      
+      CALL sptivec_clearVector (rtempVector)
+      CALL cc_spaceTimeMatVec (rproblem, rmatrix, &
+          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP,SPTID_FILTER_DEFECT)
+      
+      ! Implement boundary conditions into the vector.
+      !CALL tbc_implementInitCondDefect (&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+      !CALL tbc_implementBCdefect (rproblem,&
+      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rtempVector, rtempSpaceVector)
+
+      ! Get the denominator      
+      ddenom = sptivec_scalarProductWeighted (rtempVector,rcorrectionVector,Dweights)
+      
+      ! Trick to avoid div/0
+      IF (ddenom .EQ. 0.0_DP) ddenom = 1.0_DP
+      
+      ! Result...
+      dstep = dnom / ddenom
+                   
+      ! Force it to be in the allowed range.
+      dstep = MIN(dalphamax,MAX(dalphamin,dstep))
+                    
+    END SUBROUTINE
+
   END SUBROUTINE
 
 END MODULE

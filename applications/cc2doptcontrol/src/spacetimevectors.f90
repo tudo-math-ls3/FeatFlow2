@@ -67,6 +67,12 @@
 !# 16.) sptivec_saveToFileSequence
 !#      -> Writes a space-time vector to a sequence of files on disc
 !#
+!# 17.) sptivec_scalarProduct
+!#     -> Calculate the scalar product of two vectors
+!#
+!# 18.) sptivec_scalarProductWeighted
+!#     -> Calculate the weighted scalar product of two vectors
+!#
 !# </purpose>
 !##############################################################################
 
@@ -831,6 +837,96 @@ CONTAINS
     CALL lsysbl_releaseVector (rxBlock)
       
     sptivec_scalarProduct = dres
+      
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>
+  
+  REAL(DP) FUNCTION sptivec_scalarProductWeighted (rx, ry, Dweights)
+  
+!<description>
+  ! Calculates a weighted scalar product of two block vectors.
+  ! Both vectors must be compatible to each other (same size, sorting 
+  ! strategy,...).
+!</description>
+
+!<input>
+  ! First source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+
+  ! Second source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: ry
+  
+  ! An array with weights for each component of a solution
+  ! vector in a timestep. Dweights(i) is multiplied to
+  ! the i'th solution component of each timestep.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dweights
+!</input>
+
+!<result>
+  ! The scalar product (rx,ry) of the two block vectors.
+!</result>
+
+!</function>
+
+    INTEGER :: i,irow
+    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    REAL(DP) :: dres,a
+    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    
+    IF (rx%NEQ .NE. ry%NEQ) THEN
+      CALL output_line('Space-time vectors have different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      CALL sys_halt()
+    END IF
+
+    IF (rx%NEQtime .NE. ry%NEQtime) THEN
+      CALL output_line('Space-time vectors have different number of timesteps!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      CALL sys_halt()
+    END IF
+
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
+    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rxBlock,p_Dx)
+    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+
+    ! Loop through the substeps, load the data in, perform the scalar product.
+    dres = 0.0_DP
+    DO i=1,rx%NEQtime
+      
+      IF ((rx%p_Dscale(i) .NE. 0.0_DP) .AND. (ry%p_Dscale(i) .NE. 0.0_DP)) THEN
+        CALL sptivec_getTimestepData (rx, i, rxBlock)
+        CALL sptivec_getTimestepData (ry, i, ryBlock)
+        
+        ! Calculate a weighted scalar product using the equation weights.
+        a = 0.0_DP
+        DO irow = 1,rxBlock%nblocks
+          a = a + Dweights(irow) * &
+              lsyssc_scalarProduct(rxBlock%RvectorBlock(irow),&
+                                   ryBlock%RvectorBlock(irow))
+        END DO
+        
+        dres = dres + a
+      END IF
+
+    END DO
+
+    ! Release temp memory    
+    CALL lsysbl_releaseVector (ryBlock)
+    CALL lsysbl_releaseVector (rxBlock)
+      
+    sptivec_scalarProductWeighted = dres
       
   END FUNCTION
 

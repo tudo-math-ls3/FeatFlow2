@@ -115,7 +115,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE cc_solveNonstationaryDirect (rproblem)
+  SUBROUTINE cc_solveNonstationaryDirect (rproblem,rvector)
   
 !<description>
   ! Solve the nonstationary optimal control problem. This allocates
@@ -124,6 +124,11 @@ CONTAINS
   ! This is the 'single-grid' variant of the coupled solver, i.e.
   ! it calls the solver once without any multigrid schemes in space/time.
 !</description>
+
+!<input>
+  ! OPTIONAL: A block vector that serves as stationary initial condition.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -138,7 +143,7 @@ CONTAINS
     INTEGER :: nmaxSimulRefLevel,icurrentspace,icurrenttime
     REAL(DP) :: dspacetimeRefFactor,dcurrentfactor
     INTEGER :: ctypePreconditioner
-    INTEGER(I32) :: TIMENLMIN,TIMENLMAX
+    INTEGER(I32) :: TIMENLMIN,TIMENLMAX,istep
     INTEGER, DIMENSION(:,:), ALLOCATABLE :: Ispacetimelevel
 
     ! Get the minimum and maximum time level from the parameter list    
@@ -164,6 +169,13 @@ CONTAINS
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
     CALL sptivec_initVector (rd,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
+        
+    ! If a start vector is given, propagate it to all timesteps.
+    IF (PRESENT(rvector)) THEN
+      DO istep = 1,rx%NEQtime
+        CALL sptivec_setTimestepData(rx,istep,rvector)
+      END DO
+    END IF
 
     ! Read the target flow -- stationary or nonstationary
     CALL cc_initTargetFlow (rproblem,&
