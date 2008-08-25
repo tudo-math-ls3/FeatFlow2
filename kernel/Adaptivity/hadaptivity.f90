@@ -241,6 +241,7 @@ MODULE hadaptivity
 
   USE arraylist
   USE binarytree
+  USE boundary
   USE collection
   USE hadaptaux3d
   USE io
@@ -640,6 +641,7 @@ CONTAINS
 
     ! local variables
     INTEGER(I32) :: idupFlag
+    INTEGER :: ibct
     LOGICAL :: bupd
 
     bupd = .FALSE.
@@ -744,7 +746,22 @@ CONTAINS
     END IF
         
     ! Bit   7: rBoundary
-    
+    IF (IAND(idupFlag, HADAPT_SHARE_RBOUNDARY) .NE.&
+                       HADAPT_SHARE_RBOUNDARY) THEN
+      
+      IF (ASSOCIATED(rhadaptBackup%rBoundary)) THEN
+        DO ibct = 1, SIZE(rhadaptBackup%rBoundary,1)
+          CALL btree_releaseTree(rhadaptBackup%rBoundary(ibct))
+        END DO
+        DEALLOCATE(rhadaptBackup%rBoundary)
+      END IF
+
+      ALLOCATE(rhadaptBackup%rBoundary(SIZE(rhadapt%rBoundary,1)))
+      DO ibct = 1, SIZE(rhadapt%rBoundary,1)
+        CALL btree_duplicateTree(rhadapt%rBoundary(ibct),&
+                                 rhadaptBackup%rBoundary(ibct))
+      END DO
+    END IF
     
     ! Bit   8: rElementsAtVertex
     IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
@@ -806,6 +823,7 @@ CONTAINS
 
     ! local variables
     INTEGER(I32) :: idupFlag
+    INTEGER :: ibct
   
     idupFlag = rhadapt%iduplicationFlag
 
@@ -890,6 +908,20 @@ CONTAINS
     END IF
 
     ! Bit   7: rBoundary
+    IF (IAND(idupFlag, HADAPT_SHARE_RBOUNDARY) .NE.&
+                       HADAPT_SHARE_RBOUNDARY) THEN
+      IF (SIZE(rhadaptBackup%rBoundary,1) .NE. &
+          SIZE(rhadapt%rBoundary,1)) THEN
+        CALL output_line('Invalid number of boundary components!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_restoreAdaptation')
+        CALL sys_halt()
+      END IF
+      DO ibct = 1, SIZE(rhadapt%rBoundary,1)
+        CALL btree_restoreTree(rhadaptBackup%rBoundary(ibct),&
+                               rhadapt%rBoundary(ibct))
+      END DO
+    END IF
+    
 
     ! Bit   8: rElementsAtVertex
     IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
