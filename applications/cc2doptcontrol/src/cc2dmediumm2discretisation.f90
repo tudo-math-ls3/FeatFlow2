@@ -1456,8 +1456,8 @@ CONTAINS
           0, rproblem%roptcontrol%stargetFlow, .TRUE.)
           
       ! Connect the vector to the discretisation structure.
-      rproblem%roptcontrol%rtargetFlow%p_rblockDiscr => &
-          rproblem%roptcontrol%p_rdiscrTargetFlow
+      CALL lsysbl_enforceStructureDiscr (rproblem%roptcontrol%p_rdiscrTargetFlow,&
+          rproblem%roptcontrol%rtargetFlow)
           
     CASE (2,4)
     
