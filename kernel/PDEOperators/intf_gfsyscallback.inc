@@ -9,7 +9,7 @@ INTERFACE
 
 !<subroutine>
 
-SUBROUTINE fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+SUBROUTINE fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
 
 USE fsystem
 
@@ -37,6 +37,10 @@ USE fsystem
   REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
 !</input>
 
+!<inputoutput>
+  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+!</inputoutput>
+
 !<output>
   REAL(DP), DIMENSION(:), INTENT(OUT)           :: W_ij
   REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: Lbd_ij
@@ -52,7 +56,7 @@ END SUBROUTINE fcb_calcCharacteristics
 
 !<subroutine>
 
-SUBROUTINE fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+SUBROUTINE fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
 USE fsystem
 
@@ -76,6 +80,10 @@ USE fsystem
   REAL(DP),               INTENT(IN)  :: dscale
 !</input>
 
+!<inputoutput>
+  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+!</inputoutput>
+
 !<output>
   REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij,F_ji
 !</output>
@@ -88,7 +96,7 @@ END SUBROUTINE fcb_calcFlux
 
 !<subroutine>
 
-SUBROUTINE fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij)
+SUBROUTINE fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
 
 USE fsystem
 
@@ -102,6 +110,10 @@ USE fsystem
   REAL(DP),               INTENT(IN)  :: dscale
 !</input>
 
+!<inputoutput>
+  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+!</inputoutput>
+
 !<output>
   REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij
 !</output>
@@ -114,7 +126,7 @@ END SUBROUTINE fcb_calcRawFlux
 
 !<subroutine>
 
-SUBROUTINE fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+SUBROUTINE fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 USE fsystem
 
@@ -133,6 +145,10 @@ USE fsystem
   REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
   REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
 !</input>
+
+!<inputoutput>
+  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+!</inputoutput>
 
 !<outptu>
   REAL(DP), DIMENSION(:), INTENT(OUT) :: A_ij,S_ij
