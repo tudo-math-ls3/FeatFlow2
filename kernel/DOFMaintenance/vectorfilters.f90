@@ -105,7 +105,7 @@
 !#      -> Nonlinear filter
 !#      -> Implements discrete pressure drop BC's into a RHS vector.
 !#
-!# 11.) vecfil_normaliseSmallL1To0
+!# 11.) vecfil_subvectorSmallL1To0
 !#      -> Linear filter
 !#      -> Normalise a subvector to have an l1 vector sum = 0.
 !#
@@ -1954,7 +1954,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_normaliseSmallL1To0 (rx,isubvector)
+  SUBROUTINE vecfil_subvectorSmallL1To0 (rx,isubvector)
 
 !<description>
   ! This routine realises the 'vector sum to 0' filter.
