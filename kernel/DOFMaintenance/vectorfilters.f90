@@ -105,6 +105,10 @@
 !#      -> Nonlinear filter
 !#      -> Implements discrete pressure drop BC's into a RHS vector.
 !#
+!# 11.) vecfil_normaliseSmallL1To0
+!#      -> Linear filter
+!#      -> Normalise a subvector to have an l1 vector sum = 0.
+!#
 !# Auxiliary routines, usually not called by the main program:
 !#
 !#  1.) vecfil_imposeDirichletBC
@@ -126,6 +130,9 @@
 !#  6.) vecfil_imposeNLSlipDefectBC 
 !#      -> Implements discrete nonlinear slip BC's into a scalar defect vector
 !#         as configured in the slip BC structure.
+!#
+!#  6.) vecfil_normaliseSmallL1To0Sca (rx)
+!#      -> Normalise a scalar vector to have an l1 vector sum = 0.
 !#
 !# </purpose>
 !##############################################################################
@@ -646,6 +653,46 @@ CONTAINS
     END IF
 
   END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine vecfil_normaliseSmallL1To0Sca (rx)
+
+!<description>
+  ! This routine realises the 'vector sum to 0' filter.
+  ! The vector rxis normalised to bring it to the vector sum = 0
+  ! (which corresponds to an l1-norm = 0).
+!</description>
+  
+!<inputoutput>
+  ! The vector which is to be normalised.
+  type(t_vectorScalar), intent(inout),target :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX) :: ieq
+    real(DP) :: dsum
+    
+    ! Sum up all components of the vector
+    call lsyssc_getbase_double (rx,p_Ddata)
+    dsum = 0
+    do ieq = 1,rx%NEQ
+      dsum = dsum + p_Ddata(ieq)
+    end do
+    
+    ! Divide by NEQ to get the mean value
+    dsum = dsum / REAL(rx%NEQ,DP)
+    
+    ! Substract this from all components; this finishes the filter.
+    do ieq = 1,rx%NEQ
+      p_Ddata(ieq) = p_Ddata(ieq) - dsum
+    end do
+
+  end subroutine
 
 ! ***************************************************************************
 ! Block vector filters
@@ -1869,7 +1916,7 @@ CONTAINS
   SUBROUTINE vecfil_subvectorToL20 (rx,isubvector)
 
 !<description>
-  ! This routine realises the 'subvector to $L^2_0$ filter.
+  ! This routine realises the 'subvector to $L^2_0$' filter.
   ! The subvector isubvector of the block vector rx is normalised
   ! with vecfil_normaliseScalarToL20 to bring it to the space $L^2_0$.
 !</description>
@@ -1900,6 +1947,48 @@ CONTAINS
         
     ! Normalise the subvector isubvector
     CALL vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_normaliseSmallL1To0 (rx,isubvector)
+
+!<description>
+  ! This routine realises the 'vector sum to 0' filter.
+  ! The subvector isubvector of the block vector rx is normalised
+  ! with vecfil_normaliseSmallL1To0Sca to bring it to the vector sum = 0
+  ! (which corresponds to an l1-norm = 0).
+!</description>
+  
+!<inputoutput>
+
+  ! The block vector which is partially to be normalised.
+  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  
+  ! The number of the subvector in rx which is to be normalised.
+  INTEGER, INTENT(IN) :: isubvector
+  
+!</inputoutput>
+
+!</subroutine>
+
+    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
+      CALL output_line('isubvector out of allowed range!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseSmallL1To0')
+      CALL sys_halt()
+    END IF
+      
+    ! Don't use one single IF here as this may lead to errors depending
+    ! on the compiler (subvector=0 and access to vector(isubvector)).
+    IF ((rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
+        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) &
+      RETURN
+        
+    ! Normalise the subvector isubvector
+    CALL vecfil_normaliseSmallL1To0Sca (rx%RvectorBlock(isubvector))
 
   END SUBROUTINE
 
