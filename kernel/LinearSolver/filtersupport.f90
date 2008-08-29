@@ -158,7 +158,7 @@ MODULE filtersupport
   INTEGER, PARAMETER :: FILTER_TOL20             =  9
 
   ! Vector filter for bringing the vector sum (small l1-norm) to mean value 0.
-  INTEGER, PARAMETER :: FILTER_SMALLL1TOL0       =  10
+  INTEGER, PARAMETER :: FILTER_SMALLL1TO0        =  10
 
 !</constantblock>
   
@@ -182,7 +182,7 @@ MODULE filtersupport
     ! space $L^2_0$.
     INTEGER                            :: itoL20component = 0
     
-    ! Information tag for the SMALLL1TOL0 filter if ifilterType=FILTER_SMALLL1TOL0:
+    ! Information tag for the SMALLL1TOL0 filter if ifilterType=FILTER_SMALLL1TO0:
     ! Number of the subvector that should be filtered.
     INTEGER                            :: ismallL1to0component = 0
     
@@ -270,7 +270,7 @@ CONTAINS
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
       CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
 
-    CASE (FILTER_SMALLL1TOL0)
+    CASE (FILTER_SMALLL1TO0)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
       CALL vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
 
