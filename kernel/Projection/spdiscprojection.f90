@@ -19,16 +19,27 @@
 !# 3.) spdp_stdProjectionToP1Q1Scalar
 !#     -> Project a scalar solution vector to another one discretised by
 !#        $P_1$ and/or $Q_1$ elements.
+!#
+!# 4.) spdp_projectToVertices
+!#     -> Project a scalar vector from primal space to the vertices of the
+!#        underlying mesh.
+!#
+!# 5.) spdp_projectToToCells
+!#     -> Project a scalar vector from primal space to the cells of the
+!#        underlying mesh.
 !# </purpose>
 !##############################################################################
 
 MODULE spdiscprojection
 
   USE fsystem
+  USE storage
   USE triangulation
   USE spatialdiscretisation
   USE linearsystemscalar
   USE linearsystemblock
+  USE feevaluation
+  USE linearalgebra
   
   IMPLICIT NONE
 
@@ -816,6 +827,426 @@ CONTAINS
     ! Project the solution to the $P_1$ / $Q_1$ space.
     CALL spdp_projectSolutionScalar (rsourceVector,rdestVector)
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE spdp_projectToVertices (rvector, p_Dvalues)
+  
+!<description>
+  ! This routines projects a vector from primal space to the vertices of the
+  ! mesh, i.e. the FE function which is described by the coefficient vector
+  ! is evaluated in the vertices of its underlying mesh.
+  ! The coefficient vector must be unsorted.
+!</description>
+
+!<input>
+  ! The coefficient vector to be projected.
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+
+!<inputoutput>
+  ! An array that recieves the values of the FE function in the vertices of
+  ! the mesh. If set to NULL on entry, an array of the correct size is
+  ! allocated.
+  REAL(DP), DIMENSION(:), POINTER :: p_Dvalues
+!</inputoutput>
+
+!</subroutine>
+
+  ! A hand full of local variables
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+  TYPE(t_triangulation), POINTER :: p_rtria
+  TYPE(t_elementDistribution), POINTER :: p_relemDist
+  INTEGER, DIMENSION(:), POINTER :: p_IelemList, p_IelemAtVertIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IvertAtElem
+  REAL(DP), DIMENSION(4,TRIA_MAXNVE) :: DpointsRef
+  REAL(DP), DIMENSION(TRIA_MAXNVE) :: Deval
+  INTEGER :: NVT,NVE,NDIM,ied,ivt,iel,i,j
+  
+    ! First of all, get the spatial discretisation
+    p_rdiscr => rvector%p_rspatialDiscr
+    
+    IF(.NOT. ASSOCIATED(p_rdiscr)) THEN
+      PRINT *, 'ERROR: spdp_projectToVertices'
+      PRINT *, 'Vector does not have a discretisation!'
+      CALL sys_halt()
+    END IF
+    
+    ! Now get the triangulation
+    p_rtria => p_rdiscr%p_rtriangulation
+    
+    ! Get the dimension and the number of vertices
+    NVT = p_rtria%NVT
+    NDIM = p_rtria%ndim
+    
+    ! Get the vertices-at-element and elements-at-vertex-idx arrays
+    CALL storage_getbase_int2d(p_rtria%h_IverticesAtElement, p_IvertAtElem)
+    CALL storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
+    
+    ! Prepare the values array
+    IF(.NOT. ASSOCIATED(p_Dvalues)) THEN
+      ALLOCATE(p_Dvalues(NVT))
+    ELSE IF(UBOUND(p_Dvalues,1) .LT. NVT) THEN
+      DEALLOCATE(p_Dvalues)
+      ALLOCATE(p_Dvalues(NVT))
+    END IF
+    CALL lalg_clearVectorDble(p_Dvalues,NVT)
+    
+    ! Although we call the FE-evaluation routines to evaluate the function,
+    ! we still need to loop through all FE spaces, as in a mixed conformal
+    ! discretisation, we need to set up the reference coordinates for each
+    ! cell type...
+    
+    ! Okay, now loop through all element distributions
+    DO ied = 1, p_rdiscr%inumFESpaces
+    
+      ! Get the element distribution
+      p_relemDist => p_rdiscr%RelementDistr(ied)
+    
+      ! Get the element list for this distribution
+      CALL storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
+      
+      ! Get the number of vertice coordinates
+      NVE = elem_igetNVE(p_relemDist%celement)
+      
+      ! Calculate the corner vertice reference coordinates
+      CALL spdp_aux_getCornerRefCoords(DpointsRef, NDIM, NVE)
+      
+      ! Now go through all elements in this element set
+      DO i = 1, SIZE(p_IelemList)
+      
+        ! Get the index of the element
+        iel = p_IelemList(i)
+        
+        ! Call the FE evaluation
+        CALL fevl_evaluate_mult1 (DER_FUNC, Deval, rvector, iel, DpointsRef)
+        
+        ! Now incorporate the evaluation into the global array
+        DO j = 1, UBOUND(p_IvertAtElem,1)
+        
+          ! Get the index of the global vertice
+          ivt = p_IvertAtElem(j,iel)
+          
+          IF(ivt .GT. 0) THEN
+          
+            ! Add the local solution onto the global entry
+            p_Dvalues(ivt) = p_Dvalues(ivt) + Deval(j)
+            
+          END IF
+        
+        END DO ! j
+        
+        ! Go for the next element in this distribution
+        
+      END DO ! i
+    
+      ! Go for the next element distribution
+    
+    END DO ! ied
+    
+    ! And loop through all vertices
+    DO ivt = 1, NVT
+    
+      ! Calculate the number of elements adjacent to this vertice
+      j = p_IelemAtVertIdx(ivt+1) - p_IelemAtVertIdx(ivt)
+      
+      ! And divide the value in this vertice by the number of elements adjacent
+      ! to this vertice.
+      IF(j .GT. 1) THEN
+        p_Dvalues(ivt) = p_Dvalues(ivt) / REAL(j,DP)
+      END IF
+    
+    END DO
+    
+    ! That's it
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE spdp_projectToCells (rvector, p_Dvalues)
+  
+!<description>
+  ! This routines projects a vector from primal space to the cells of the
+  ! mesh, i.e. the FE function which is described by the coefficient vector
+  ! is evaluated in the element midpoints of its underlying mesh.
+  ! The coefficient vector must be unsorted.
+!</description>
+
+!<input>
+  ! The coefficient vector to be projected.
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+
+!<inputoutput>
+  ! An array that recieves the values of the FE function in the cells of
+  ! the mesh. If set to NULL on entry, an array of the correct size is
+  ! allocated.
+  REAL(DP), DIMENSION(:), POINTER :: p_Dvalues
+!</inputoutput>
+
+!</subroutine>
+
+  ! A hand full of local variables
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+  TYPE(t_triangulation), POINTER :: p_rtria
+  TYPE(t_elementDistribution), POINTER :: p_relemDist
+  INTEGER, DIMENSION(:), POINTER :: p_IelemList, p_IelemAtVertIdx
+  INTEGER, DIMENSION(:,:), POINTER :: p_IvertAtElem
+  REAL(DP), DIMENSION(4,1) :: DpointsRef
+  REAL(DP), DIMENSION(1) :: Deval
+  INTEGER :: NEL,NVE,NDIM,ied,iel,i
+  
+    ! First of all, get the spatial discretisation
+    p_rdiscr => rvector%p_rspatialDiscr
+    
+    IF(.NOT. ASSOCIATED(p_rdiscr)) THEN
+      PRINT *, 'ERROR: spdp_projectToCells'
+      PRINT *, 'Vector does not have a discretisation!'
+      CALL sys_halt()
+    END IF
+    
+    ! Now get the triangulation
+    p_rtria => p_rdiscr%p_rtriangulation
+    
+    ! Get the dimension and the number of elements
+    NEL = p_rtria%NEL
+    NDIM = p_rtria%ndim
+    
+    ! Prepare the values array
+    IF(.NOT. ASSOCIATED(p_Dvalues)) THEN
+      ALLOCATE(p_Dvalues(NEL))
+    ELSE IF(UBOUND(p_Dvalues,1) .LT. NEL) THEN
+      DEALLOCATE(p_Dvalues)
+      ALLOCATE(p_Dvalues(NEL))
+    END IF
+    CALL lalg_clearVectorDble(p_Dvalues,NEL)
+    
+    ! Although we call the FE-evaluation routines to evaluate the function,
+    ! we still need to loop through all FE spaces, as in a mixed conformal
+    ! discretisation, we need to set up the reference coordinates for each
+    ! cell type...
+    
+    ! Okay, now loop through all element distributions
+    DO ied = 1, p_rdiscr%inumFESpaces
+    
+      ! Get the element distribution
+      p_relemDist => p_rdiscr%RelementDistr(ied)
+    
+      ! Get the element list for this distribution
+      CALL storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
+      
+      ! Get the number of vertice coordinates
+      NVE = elem_igetNVE(p_relemDist%celement)
+      
+      ! Calculate the element midpoint reference coordinates
+      CALL spdp_aux_getMidpointRefCoords(DpointsRef, NDIM, NVE)
+      
+      ! Now go through all elements in this element set
+      DO i = 1, SIZE(p_IelemList)
+      
+        ! Get the index of the element
+        iel = p_IelemList(i)
+        
+        ! Call the FE evaluation
+        CALL fevl_evaluate_mult1 (DER_FUNC, Deval, rvector, iel, DpointsRef)
+        
+        ! Now incorporate the evaluation into the global array
+        p_Dvalues(iel) = Deval(iel)
+        
+        ! Go for the next element in this distribution
+        
+      END DO ! i
+    
+      ! Go for the next element distribution
+    
+    END DO ! ied
+    
+    ! That's it
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+    
+  PURE SUBROUTINE spdp_aux_getCornerRefCoords(Dcoords, ndim, nve)
+
+!<description>
+  ! Auxiliary routine:
+  ! Returns the reference coordinates of the corner vertices for a cell type.
+!</description>
+
+!<output>
+  ! The reference coordinates of the corner vertices.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoords
+!</output>
+
+!<input>
+  ! The dimension of the element.
+  INTEGER, INTENT(IN) :: ndim
+  
+  ! The number of corner vertices of the element.
+  INTEGER, INTENT(IN) :: nve
+!</input>
+
+!</subroutine>
+  
+    ! What cell type to we have here?
+    SELECT CASE(ndim)
+    CASE(1)
+      ! 1D, so it has to be an edge -> reference coordinates
+      Dcoords(1,1) = -1.0_DP
+      Dcoords(1,2) =  1.0_DP
+    
+    CASE(2)
+      ! 2D
+      SELECT CASE(nve)
+      CASE(3)
+        ! Triangle -> barycentric coordinates
+        Dcoords(1,1) = 1.0_DP
+        Dcoords(2,1) = 0.0_DP
+        Dcoords(3,1) = 0.0_DP
+        Dcoords(1,2) = 0.0_DP
+        Dcoords(2,2) = 1.0_DP
+        Dcoords(3,2) = 0.0_DP
+        Dcoords(1,3) = 0.0_DP
+        Dcoords(2,3) = 0.0_DP
+        Dcoords(3,3) = 1.0_DP
+      
+      CASE(4)
+        ! Quadrilateral -> reference coordinates
+        Dcoords(1,1) = -1.0_DP
+        Dcoords(2,1) = -1.0_DP
+        Dcoords(1,2) =  1.0_DP
+        Dcoords(2,2) = -1.0_DP
+        Dcoords(1,3) =  1.0_DP
+        Dcoords(2,3) =  1.0_DP
+        Dcoords(1,4) = -1.0_DP
+        Dcoords(2,4) =  1.0_DP
+      
+      END SELECT
+    
+    CASE(3)
+      ! 3D
+      SELECT CASE(nve)
+      CASE(4)
+        ! Tetrahedron -> barycentric coordinates
+        Dcoords(1,1) = 1.0_DP
+        Dcoords(2,1) = 0.0_DP
+        Dcoords(3,1) = 0.0_DP
+        Dcoords(4,1) = 0.0_DP
+        Dcoords(1,2) = 0.0_DP
+        Dcoords(2,2) = 1.0_DP
+        Dcoords(3,2) = 0.0_DP
+        Dcoords(4,2) = 0.0_DP
+        Dcoords(1,3) = 0.0_DP
+        Dcoords(2,3) = 0.0_DP
+        Dcoords(3,3) = 1.0_DP
+        Dcoords(4,3) = 0.0_DP
+        Dcoords(1,4) = 0.0_DP
+        Dcoords(2,4) = 0.0_DP
+        Dcoords(3,4) = 0.0_DP
+        Dcoords(4,4) = 1.0_DP
+      
+      CASE(8)
+        ! Hexahedron -> reference coordinates
+        Dcoords(1,1) = -1.0_DP
+        Dcoords(2,1) = -1.0_DP
+        Dcoords(3,1) = -1.0_DP
+        Dcoords(1,2) =  1.0_DP
+        Dcoords(2,2) = -1.0_DP
+        Dcoords(3,2) = -1.0_DP
+        Dcoords(1,3) =  1.0_DP
+        Dcoords(2,3) =  1.0_DP
+        Dcoords(3,3) = -1.0_DP
+        Dcoords(1,4) = -1.0_DP
+        Dcoords(2,4) =  1.0_DP
+        Dcoords(3,4) = -1.0_DP
+        Dcoords(1,5) = -1.0_DP
+        Dcoords(2,5) = -1.0_DP
+        Dcoords(3,5) =  1.0_DP
+        Dcoords(1,6) =  1.0_DP
+        Dcoords(2,6) = -1.0_DP
+        Dcoords(3,6) =  1.0_DP
+        Dcoords(1,7) =  1.0_DP
+        Dcoords(2,7) =  1.0_DP
+        Dcoords(3,7) =  1.0_DP
+        Dcoords(1,8) = -1.0_DP
+        Dcoords(2,8) =  1.0_DP
+        Dcoords(3,8) =  1.0_DP
+      
+      END SELECT
+    
+    END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+    
+  PURE SUBROUTINE spdp_aux_getMidpointRefCoords(Dcoords, ndim, nve)
+
+!<description>
+  ! Auxiliary routine:
+  ! Returns the reference coordinates of the element midpoint for a cell type.
+!</description>
+
+!<output>
+  ! The reference coordinates of the element midpoint.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoords
+!</output>
+
+!<input>
+  ! The dimension of the element.
+  INTEGER, INTENT(IN) :: ndim
+  
+  ! The number of corner vertices of the element.
+  INTEGER, INTENT(IN) :: nve
+!</input>
+
+!</subroutine>
+  
+    ! What cell type to we have here?
+    SELECT CASE(ndim)
+    CASE(1)
+      ! 1D, so it has to be an edge -> reference coordinates
+      Dcoords = 0.0_DP
+    
+    CASE(2)
+      ! 2D
+      SELECT CASE(nve)
+      CASE(3)
+        ! Triangle -> barycentric coordinates
+        Dcoords = 1.0_DP / 3.0_DP
+      
+      CASE(4)
+        ! Quadrilateral -> reference coordinates
+        Dcoords = 0.0_DP
+      
+      END SELECT
+    
+    CASE(3)
+      ! 3D
+      SELECT CASE(nve)
+      CASE(4)
+        ! Tetrahedron -> barycentric coordinates
+        Dcoords = 0.25_DP
+      
+      CASE(8)
+        ! Hexahedron -> reference coordinates
+        Dcoords = 0.0_DP
+      
+      END SELECT
+    
+    END SELECT
+  
   END SUBROUTINE
 
 END MODULE
