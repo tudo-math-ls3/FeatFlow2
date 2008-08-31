@@ -190,14 +190,19 @@ CONTAINS
       ! Compute:
       ! Derror(1) = ||y-z||^2_{L^2}.
       
-      ! Perform error analysis to calculate and add 1/2||y-z||_{L^2}.
+      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
       CALL pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
                         ffunction_TargetX,rproblem%rcollection)
 
       CALL pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
                         ffunction_TargetY,rproblem%rcollection)
 
-      Derror(1) = Derror(1) + 0.5_DP*(Derr(1)**2 + Derr(2)**2)
+      ! We use the summed trapezoidal rule.
+      IF ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) THEN
+        Derror(1) = Derror(1) + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+      ELSE
+        Derror(1) = Derror(1) + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+      END IF
 
       ! Compute:
       ! Derror(3) = ||y(T)-z(T)||^2
@@ -207,19 +212,23 @@ CONTAINS
       
       ! Compute:
       ! Derror(2) = ||lambda||^2_{L^2}.
-      ! (intermediate solution; ||u||=-1/alpha ||lambda|| !
+      ! (intermediate solution; ||u||=1/alpha ||-lambda|| !
       CALL pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
       CALL pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
                           
-      Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2)
+      IF ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) THEN
+        Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+      ELSE
+        Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+      END IF
       
       CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
     END DO
     
     ! Normalise...
-    Derror(1) = Derror(1) / REAL(rsolution%NEQtime,DP)
-    Derror(2) = Derror(2) / REAL(rsolution%NEQtime,DP)
+    ! Derror(1) = Derror(1) / REAL(rsolution%NEQtime,DP)
+    ! Derror(2) = Derror(2) / REAL(rsolution%NEQtime,DP)
     
     ! Calculate J(.)
     Derror(4) = 0.5_DP * Derror(1)  +  0.5_DP * dgamma * Derror(3)
