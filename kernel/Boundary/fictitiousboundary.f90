@@ -15,11 +15,11 @@
 !# </purpose>
 !##############################################################################
 
-MODULE fictitiousboundary
+module fictitiousboundary
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
@@ -30,29 +30,29 @@ MODULE fictitiousboundary
   ! fill it with as much data as necessary to be able to identify a fictitious
   ! boundary region when discretising the associated boundary conditions.
   
-  TYPE t_fictBoundaryRegion
+  type t_fictBoundaryRegion
   
     ! Name of the region. Application specific.
-    CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
+    character(LEN=SYS_NAMELEN) :: sname = ''
     
     ! Integer identifier for the region. Application specific
-    INTEGER :: iidentifier = 0
+    integer :: iidentifier = 0
   
     ! Integer value containing some flags that specify additional
     ! properties of the region. Application specific.
-    INTEGER(I32) :: iflags = 0
+    integer(I32) :: iflags = 0
     
     ! Integer tag. Application specific
-    INTEGER :: itag = 0
+    integer :: itag = 0
     
     ! Double precision tag. Application specific
-    REAL(DP) :: dtag = 0.0_DP
+    real(DP) :: dtag = 0.0_DP
     
-  END TYPE
+  end type
   
 !</typeblock>
 
 ! </types>
 
-END MODULE
+end module
 

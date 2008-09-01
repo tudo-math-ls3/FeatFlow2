@@ -23,38 +23,38 @@
 !# </purpose>
 !##############################################################################
 
-MODULE io
+module io
 
-  USE fsystem
-  USE error
+  use fsystem
+  use error
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
   !<constantblock description="Input/output block type identifiers">
   
   ! defines the default value for files
-  INTEGER, PARAMETER :: IO_UNKNOWN = 0
+  integer, parameter :: IO_UNKNOWN = 0
 
   ! defines that a file must already exist
-  INTEGER, PARAMETER :: IO_OLD = 1
+  integer, parameter :: IO_OLD = 1
   
   ! defines that a file must not exist
-  INTEGER, PARAMETER :: IO_NEW = 2
+  integer, parameter :: IO_NEW = 2
 
   ! defines that an existing file should be replaced
-  INTEGER, PARAMETER :: IO_REPLACE = 3
+  integer, parameter :: IO_REPLACE = 3
 
   ! defines that a temporary file should be deleted when closed
-  INTEGER, PARAMETER :: IO_SCRATCH = 4
+  integer, parameter :: IO_SCRATCH = 4
     
   !</constantblock>
 
 !</constants>
 
 
-CONTAINS
+contains
 
 !************************************************************************************
 
@@ -75,7 +75,7 @@ CONTAINS
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
-    LOGICAL, INTENT(IN), OPTIONAL :: bformatted
+    logical, intent(IN), optional :: bformatted
 
 !</input>
 
@@ -108,15 +108,15 @@ CONTAINS
 
     if (bexists) then
     
-      IF (.NOT. PRESENT(bformatted)) THEN
+      if (.not. present(bformatted)) then
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read")
-      ELSE IF (bformatted) THEN
+      else if (bformatted) then
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read",&
              form="formatted")
-      ELSE
+      else
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read",&
              form="unformatted")
-      END IF
+      end if
       if (istatus .ne. 0) then
         write(unit=*,fmt=*) "*** Error while opening file '",trim(sfilename),"'. ***"
         iunit = -1
@@ -156,7 +156,7 @@ CONTAINS
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
-    LOGICAL, INTENT(IN), OPTIONAL :: bformatted
+    logical, intent(IN), optional :: bformatted
 !</input>
 
 !<output>
@@ -186,7 +186,7 @@ CONTAINS
     endif
 
     inquire(file=trim(sfilename), exist=bexists)
-    IF (.NOT. PRESENT(bformatted)) THEN
+    if (.not. present(bformatted)) then
       if (bexists .and. cflag .eq. SYS_REPLACE) then
         open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
             action="write")
@@ -194,25 +194,25 @@ CONTAINS
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
             position="append")
       endif
-    ELSE
+    else
       if (bexists .and. cflag .eq. SYS_REPLACE) then
-        IF (bformatted) THEN
+        if (bformatted) then
           open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
               action="write", form="formatted")
-        ELSE
+        else
           open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
               action="write", form="unformatted")
-        END IF
+        end if
       else
-        IF (bformatted) THEN
+        if (bformatted) then
           open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
               position="append", form="formatted")
-        ELSE
+        else
           open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
               position="append", form="unformatted")
-        END IF
+        end if
       endif    
-    END IF
+    end if
     if (present(bfileExists)) then
       bfileExists = bexists
     endif
@@ -226,7 +226,7 @@ CONTAINS
 ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE io_deleteFile(sfilename)
+  subroutine io_deleteFile(sfilename)
 
 !<description>
   ! this routione deletes a file sfilename.
@@ -234,25 +234,25 @@ CONTAINS
 
 !<input>
   ! filename
-  CHARACTER(*), INTENT(IN) :: sfilename
+  character(*), intent(IN) :: sfilename
 !</input>
 !</subroutine>
 
-    INTEGER :: iunit
+    integer :: iunit
     
     ! Open the file for writing, overwrite the old one.
-    CALL io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
+    call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
     
     ! Close the file and delete it.
-    CLOSE (iunit, STATUS='DELETE')
+    close (iunit, STATUS='DELETE')
 
-  END SUBROUTINE 
+  end subroutine 
 
 ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE io_readlinefromfile (iunit, sdata, ilinelen, ios)
+  subroutine io_readlinefromfile (iunit, sdata, ilinelen, ios)
 
 !<description>
   !This routine reads a line from a text file
@@ -260,25 +260,25 @@ CONTAINS
 
 !<input>  
     ! The unit where to read from; must be connected to a file.
-    INTEGER, INTENT(IN) :: iunit
+    integer, intent(IN) :: iunit
 !</input>  
 
 !<output>
     ! The string where to write data to
-    CHARACTER(LEN=*), INTENT(OUT) :: sdata
+    character(LEN=*), intent(OUT) :: sdata
     
     ! Length of the output
-    INTEGER, INTENT(OUT) :: ilinelen
+    integer, intent(OUT) :: ilinelen
     
     ! Status of the reading process. Set to a value <> 0 if the end
     ! of the file is reached.
-    INTEGER, INTENT(OUT) :: ios
+    integer, intent(OUT) :: ios
 !</output>
 !</subroutine>
     
     ! local variables
-    INTEGER :: eol
-    CHARACTER :: c
+    integer :: eol
+    character :: c
     
     sdata = ''
     ilinelen = 0
@@ -286,38 +286,38 @@ CONTAINS
     ! Read the data - as long as the line/file does not end.
     eol = NO
     ios = 0
-    DO WHILE ((ios .EQ. 0) .AND. (eol .EQ. NO))
+    do while ((ios .eq. 0) .and. (eol .eq. NO))
       
       ! Read a character.
       ! Unfortunately, Fortran forces me to use this dirty GOTO
       ! to decide processor-independently whether the line or
       ! the record ends.
-      READ (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
-      GOTO 30
+      read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
+      goto 30
       
-10    CONTINUE
+10    continue
       ! End of file. 
       ios = -1
-      GOTO 30
+      goto 30
       
-20    CONTINUE
+20    continue
       ! End of record = END OF LINE.
       eol = YES
       
       ! Set error flag back to 0.
       ios = 0
       
-30    CONTINUE    
+30    continue    
       ! Don't do anything in case of an error
-      IF (ios .EQ. 0) THEN
+      if (ios .eq. 0) then
         
         ilinelen = ilinelen + 1
         sdata (ilinelen:ilinelen) = c
         
-      END IF
+      end if
       
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
