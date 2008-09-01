@@ -95,70 +95,70 @@
 !# </purpose>
 !##############################################################################
 
-MODULE filtersupport
+module filtersupport
 
-  USE fsystem
-  USE linearsystemblock
-  USE spatialdiscretisation
-  USE matrixfilters
-  USE vectorfilters
+  use fsystem
+  use linearsystemblock
+  use spatialdiscretisation
+  use matrixfilters
+  use vectorfilters
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="General constants concerning filters">
 
   ! A standard length for arrays holding a filter chain.
-  INTEGER, PARAMETER :: FILTER_MAXFILTERS        =  32
+  integer, parameter :: FILTER_MAXFILTERS        =  32
 
 !</constantblock>
 
 !<constantblock description="Filter type flags for t\_filterChain%ifilterType">
 
   ! Abort-filter. Causes the filter chain to stop filtering immediately.
-  INTEGER, PARAMETER :: FILTER_ABORT             =  -1
+  integer, parameter :: FILTER_ABORT             =  -1
 
   ! Do-nothing filter; does nothing
-  INTEGER, PARAMETER :: FILTER_DONOTHING         =  0
+  integer, parameter :: FILTER_DONOTHING         =  0
 
   ! Vector filter for imposing discrete boundary conditions of the 
   ! real boundary into a solution vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCSOLREAL     =  1
+  integer, parameter :: FILTER_DISCBCSOLREAL     =  1
 
   ! Vector filter for imposing discrete boundary conditions of the 
   ! real boundary into a right-hand-side vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCRHSREAL     =  2
+  integer, parameter :: FILTER_DISCBCRHSREAL     =  2
 
   ! Vector filter for imposing discrete boundary conditions of the 
   ! real boundary into a defect vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCDEFREAL     =  3
+  integer, parameter :: FILTER_DISCBCDEFREAL     =  3
 
   ! Matrix filter for imposing discrete boundary conditions of the 
   ! real boundary into a matrix.
-  INTEGER, PARAMETER :: FILTER_DISCBCMATREAL     =  4
+  integer, parameter :: FILTER_DISCBCMATREAL     =  4
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a solution vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCSOLFICT     =  5
+  integer, parameter :: FILTER_DISCBCSOLFICT     =  5
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a right-hand-side vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCRHSFICT     =  6
+  integer, parameter :: FILTER_DISCBCRHSFICT     =  6
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a defect vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  7
+  integer, parameter :: FILTER_DISCBCDEFFICT     =  7
 
   ! Matrix filter for imposing discrete boundary conditions of the 
   ! fictitious boundary into a matrix.
-  INTEGER, PARAMETER :: FILTER_DISCBCMATFICT     =  8
+  integer, parameter :: FILTER_DISCBCMATFICT     =  8
 
   ! Vector filter for bringing a subvector of a vector to the space $L^2_0$.
-  INTEGER, PARAMETER :: FILTER_TOL20             =  9
+  integer, parameter :: FILTER_TOL20             =  9
 
   ! Vector filter for bringing the vector sum (small l1-norm) to mean value 0.
-  INTEGER, PARAMETER :: FILTER_SMALLL1TO0        =  10
+  integer, parameter :: FILTER_SMALLL1TO0        =  10
 
 !</constantblock>
   
@@ -171,34 +171,34 @@ MODULE filtersupport
   ! A structure for using filters in a solver. This structure contains all
   ! information that are necessary to apply a filter (level independent!).
   
-  TYPE t_filterChain
+  type t_filterChain
     
     ! Tag that identifies the type of filter to be applied to a vector.
     ! One of the FILTER_XXXX constants
-    INTEGER                            :: ifilterType = FILTER_ABORT
+    integer                            :: ifilterType = FILTER_ABORT
     
     ! Information tag for the TOL20 filter if ifilterType=FILTER_TOL20:
     ! Number of the subvector that should be filtered to be in the
     ! space $L^2_0$.
-    INTEGER                            :: itoL20component = 0
+    integer                            :: itoL20component = 0
     
     ! Information tag for the SMALLL1TOL0 filter if ifilterType=FILTER_SMALLL1TO0:
     ! Number of the subvector that should be filtered.
-    INTEGER                            :: ismallL1to0component = 0
+    integer                            :: ismallL1to0component = 0
     
-  END TYPE
+  end type
   
   !</typeblock>
 
 !</types>
   
-CONTAINS
+contains
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE filter_applyFilterChainVec (rx, RfilterChain)
+  subroutine filter_applyFilterChainVec (rx, RfilterChain)
 
 !<description>
   ! This routine applies a filter chain on a (block) vector rx. All filters in
@@ -209,7 +209,7 @@ CONTAINS
 !<input>
   
   ! The filter chain
-  TYPE(t_filterChain), DIMENSION(:), INTENT(IN) :: RfilterChain
+  type(t_filterChain), dimension(:), intent(IN) :: RfilterChain
   
 !</input>
 
@@ -217,77 +217,77 @@ CONTAINS
   
   ! The vector where the filter will be applied to.
   ! This is also the result vector.
-  TYPE(t_vectorBlock), INTENT(INOUT)            :: rx
+  type(t_vectorBlock), intent(INOUT)            :: rx
   
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables
-  INTEGER :: i, ifilterType
+  integer :: i, ifilterType
   
   ! Apply the filters to rx - one after the other
   
-  DO i=LBOUND(RfilterChain,1),UBOUND(RfilterChain,1)
+  do i=lbound(RfilterChain,1),ubound(RfilterChain,1)
   
     ifilterType = RfilterChain(i)%ifilterType
   
     ! Choose the filter and apply it
-    SELECT CASE (ifilterType)
-    CASE (FILTER_ABORT)
+    select case (ifilterType)
+    case (FILTER_ABORT)
       ! Cancel if we reached the last filter before reaching the end of the
       ! array
-      EXIT
+      exit
       
-    CASE (FILTER_DONOTHING)
+    case (FILTER_DONOTHING)
       ! Do nothing
       
-    CASE (FILTER_DISCBCSOLREAL)
+    case (FILTER_DISCBCSOLREAL)
       ! Impose Dirichlet boundary contitions into the solution vector rx
-      CALL vecfil_discreteBCsol (rx)
+      call vecfil_discreteBCsol (rx)
     
-    CASE (FILTER_DISCBCRHSREAL)
+    case (FILTER_DISCBCRHSREAL)
       ! Impose Dirichlet boundary contitions into the RHS vector rx
-      CALL vecfil_discreteBCrhs (rx)
+      call vecfil_discreteBCrhs (rx)
     
-    CASE (FILTER_DISCBCDEFREAL)
+    case (FILTER_DISCBCDEFREAL)
       ! Impose Dirichlet boundary contitions into the defect vector rx
-      CALL vecfil_discreteBCdef (rx)
+      call vecfil_discreteBCdef (rx)
 
-    CASE (FILTER_DISCBCSOLFICT)
+    case (FILTER_DISCBCSOLFICT)
       ! Impose Dirichlet fictitious boundary contitions into the solution vector rx
-      CALL vecfil_discreteFBCsol (rx)
+      call vecfil_discreteFBCsol (rx)
     
-    CASE (FILTER_DISCBCRHSFICT)
+    case (FILTER_DISCBCRHSFICT)
       ! Impose Dirichlet fictitious boundary contitions into the RHS vector rx
-      CALL vecfil_discreteFBCrhs (rx)
+      call vecfil_discreteFBCrhs (rx)
     
-    CASE (FILTER_DISCBCDEFFICT)
+    case (FILTER_DISCBCDEFFICT)
       ! Impose Dirichlet fictitious boundary contitions into the defect vector rx
-      CALL vecfil_discreteFBCdef (rx)
+      call vecfil_discreteFBCdef (rx)
 
-    CASE (FILTER_TOL20)
+    case (FILTER_TOL20)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
-      CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
+      call vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
 
-    CASE (FILTER_SMALLL1TO0)
+    case (FILTER_SMALLL1TO0)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
-      CALL vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
+      call vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
 
-    CASE DEFAULT
-      PRINT *,'filter_applyFilterChainVec: Unknown filter.'
-      EXIT
-    END SELECT
+    case DEFAULT
+      print *,'filter_applyFilterChainVec: Unknown filter.'
+      exit
+    end select
   
-  END DO
+  end do
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE filter_applyFilterChainMat (rmatrix, RfilterChain)
+  subroutine filter_applyFilterChainMat (rmatrix, RfilterChain)
 
 !<description>
   ! This routine applies a filter chain on a (block) matrix rmatrix. All 
@@ -306,7 +306,7 @@ CONTAINS
 !<input>
   
   ! The filter chain
-  TYPE(t_filterChain), DIMENSION(:), INTENT(IN) :: RfilterChain
+  type(t_filterChain), dimension(:), intent(IN) :: RfilterChain
   
 !</input>
 
@@ -314,53 +314,53 @@ CONTAINS
   
   ! The matrix where the filter will be applied to.
   ! This is also the result matrix.
-  TYPE(t_matrixBlock), INTENT(INOUT)            :: rmatrix
+  type(t_matrixBlock), intent(INOUT)            :: rmatrix
   
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables
-  INTEGER :: i, ifilterType
+  integer :: i, ifilterType
   
   ! Apply the filters to matrixx - one after the other
   
-  DO i=LBOUND(RfilterChain,1),UBOUND(RfilterChain,1)
+  do i=lbound(RfilterChain,1),ubound(RfilterChain,1)
   
     ifilterType = RfilterChain(i)%ifilterType
   
     ! Choose the filter and apply it
-    SELECT CASE (ifilterType)
-    CASE (FILTER_ABORT)
+    select case (ifilterType)
+    case (FILTER_ABORT)
       ! Cancel if we reached the last filter before reaching the end of the
       ! array
-      EXIT
+      exit
       
-    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL, &
+    case (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL, &
           FILTER_DISCBCDEFREAL,FILTER_DISCBCMATREAL)
       ! Impose Dirichlet boundary contitions into the matrix rmatrix.
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).
-      CALL matfil_discreteBC (rmatrix)
+      call matfil_discreteBC (rmatrix)
     
-    CASE (FILTER_DISCBCSOLFICT,FILTER_DISCBCRHSFICT, &
+    case (FILTER_DISCBCSOLFICT,FILTER_DISCBCRHSFICT, &
           FILTER_DISCBCDEFFICT,FILTER_DISCBCMATFICT)
       ! Impose Dirichlet fictitious boundary contitions into the matrix rmatrix.
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).
-      CALL matfil_discreteFBC (rmatrix)
+      call matfil_discreteFBC (rmatrix)
 
-    CASE (FILTER_TOL20,FILTER_DONOTHING)
+    case (FILTER_TOL20,FILTER_DONOTHING)
       ! These filters have no effect for matrices.
     
-    CASE DEFAULT
-      PRINT *,'filter_applyFilterChainMat: Unknown filter: ',ifilterType
-      EXIT
+    case DEFAULT
+      print *,'filter_applyFilterChainMat: Unknown filter: ',ifilterType
+      exit
     
-    END SELECT
+    end select
   
-  END DO
+  end do
   
-  END SUBROUTINE
+  end subroutine
   
-END MODULE
+end module

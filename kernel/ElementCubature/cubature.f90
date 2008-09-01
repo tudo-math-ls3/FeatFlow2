@@ -28,173 +28,173 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cubature
+module cubature
 
-  USE fsystem
-  USE basicgeometry
+  use fsystem
+  use basicgeometry
 
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
 
 !<constantblock variable="ccubType" description="1D formulas">  
 
   ! 1-point Gauss formula, 1D, degree = 2, ncubp = 1
-  INTEGER, PARAMETER :: CUB_G1_1D = 101
+  integer, parameter :: CUB_G1_1D = 101
  
   ! trapezoidal rule, 1D, degree = 2, ncubp = 2
-  INTEGER, PARAMETER :: CUB_TRZ_1D = 102
+  integer, parameter :: CUB_TRZ_1D = 102
 
   ! 2-point Gauss formula, 1D, degree = 4, ncubp = 2
-  INTEGER, PARAMETER :: CUB_G2_1D = 103
+  integer, parameter :: CUB_G2_1D = 103
 
   ! 3-point Gauss formula, 1D, degree = 6, ncubp = 3
-  INTEGER, PARAMETER :: CUB_G3_1D = 104
+  integer, parameter :: CUB_G3_1D = 104
 
   ! 4-point Gauss formula, 1D, degree = 8, ncubp = 4
-  INTEGER, PARAMETER :: CUB_G4_1D = 105
+  integer, parameter :: CUB_G4_1D = 105
 
   ! 5-point Gauss formula, 1D, degree = 10, ncubp = 5
-  INTEGER, PARAMETER :: CUB_G5_1D = 106
+  integer, parameter :: CUB_G5_1D = 106
 
   ! Simpson-rule, 1D, degree = 4, ncubp = 3
-  INTEGER, PARAMETER :: CUB_SIMPSON_1D = 107
+  integer, parameter :: CUB_SIMPSON_1D = 107
 
   ! 6-point Gauss formula, 1D, degree = 12, ncubp = 6
-  INTEGER, PARAMETER :: CUB_G6_1D = 108
+  integer, parameter :: CUB_G6_1D = 108
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, quad">  
 
   ! 1x1 Gauss formula, degree = 2, ncubp = 1
-  INTEGER, PARAMETER :: CUB_G1X1 = 201
+  integer, parameter :: CUB_G1X1 = 201
 
   ! trapezoidal rule, degree = 2, ncubp = 4
-  INTEGER, PARAMETER :: CUB_TRZ = 202
+  integer, parameter :: CUB_TRZ = 202
 
   ! midpoint rule, degree = 2, ncubp = 4
-  INTEGER, PARAMETER :: CUB_MID = 203
+  integer, parameter :: CUB_MID = 203
 
   ! 2x2 Gauss formula, degree = 4, ncubp = 4
-  INTEGER, PARAMETER :: CUB_G2X2 = 204
+  integer, parameter :: CUB_G2X2 = 204
 
   ! Newton formula 1, degree = 4, ncubp = 4 
-  INTEGER, PARAMETER :: CUB_NS1 = 205
+  integer, parameter :: CUB_NS1 = 205
 
   ! Newton formula 2, degree = 5, ncubp = 6
-  INTEGER, PARAMETER :: CUB_NS2 = 206
+  integer, parameter :: CUB_NS2 = 206
 
   ! Newton formula 3, degree = 6, ncubp = 7
-  INTEGER, PARAMETER :: CUB_NS3 = 207
+  integer, parameter :: CUB_NS3 = 207
 
   ! 3x3 Gauss formula, degree = 6, ncubp = 9
-  INTEGER, PARAMETER :: CUB_G3X3 = 208
+  integer, parameter :: CUB_G3X3 = 208
 
   ! Gauss formula, degree = 7, ncubp = 12
-  INTEGER, PARAMETER :: CUB_G = 209
+  integer, parameter :: CUB_G = 209
 
   ! 4x4 Gauss formula, degree = 8, ncubp = 16
-  INTEGER, PARAMETER :: CUB_G4X4 = 210
+  integer, parameter :: CUB_G4X4 = 210
 
   ! 5x5 Gauss formula, degree = 10, ncubp = 25
-  INTEGER, PARAMETER :: CUB_G5X5 = 211
+  integer, parameter :: CUB_G5X5 = 211
 
   ! piecewise 1x1 Gauss formula, degree = 2, ncubp = 4
-  INTEGER, PARAMETER :: CUB_PG1X1 = 212
+  integer, parameter :: CUB_PG1X1 = 212
 
   ! piecewise trapezoidal rule, degree = 2, ncubp = 9
-  INTEGER, PARAMETER :: CUB_PTRZ = 213
+  integer, parameter :: CUB_PTRZ = 213
 
   ! piecewise 2x2 Gauss formula, degree = 4, ncubp = 16 
-  INTEGER, PARAMETER :: CUB_PG2X2 = 214
+  integer, parameter :: CUB_PG2X2 = 214
 
   ! piecewise 3x3 Gauss formula, degree = 6, ncubp = 36
-  INTEGER, PARAMETER :: CUB_PG3X3 = 215
+  integer, parameter :: CUB_PG3X3 = 215
   
   ! Simpson rule (corners and element midpoint), degree = 3, ncubp = 9
-  INTEGER, PARAMETER :: CUB_SIMPSON = 216
+  integer, parameter :: CUB_SIMPSON = 216
 
   ! Simpson 3/8 rule (corners and 1/3 + 2/3), degree = 3, ncubp = 16
-  INTEGER, PARAMETER :: CUB_3_8 = 217
+  integer, parameter :: CUB_3_8 = 217
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, tri">
 
   ! 1-point Gauss formula, triangle, degree = 2, ncubp = 1
-  INTEGER, PARAMETER :: CUB_G1_T = 250
+  integer, parameter :: CUB_G1_T = 250
 
   ! trapezoidal rule, triangle, degree = 2, ncubp = 3 
-  INTEGER, PARAMETER :: CUB_TRZ_T = 251
+  integer, parameter :: CUB_TRZ_T = 251
 
   ! 3-point Gauss formula, triangle, degree = 3, ncubp = 3
-  INTEGER, PARAMETER :: CUB_G3_T = 252
+  integer, parameter :: CUB_G3_T = 252
 
   ! Collatz formula, degree = 3, ncubp = 3
-  INTEGER, PARAMETER :: CUB_Collatz = 253
+  integer, parameter :: CUB_Collatz = 253
 
   ! vertices, midpoints, center, degree = 4, ncubp = 7 
-  INTEGER, PARAMETER :: CUB_VMC = 254
+  integer, parameter :: CUB_VMC = 254
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, hexa">
 
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
-  INTEGER, PARAMETER :: CUB_G1_3D = 301
+  integer, parameter :: CUB_G1_3D = 301
 
   ! midpoints of areas, 3D, degree = 2, ncubp = 6
-  INTEGER, PARAMETER :: CUB_MIDAREA_3D = 302
+  integer, parameter :: CUB_MIDAREA_3D = 302
 
   ! trapezoidal rule, 3D, degree = 2, ncubp = 8
-  INTEGER, PARAMETER :: CUB_TRZ_3D = 303
+  integer, parameter :: CUB_TRZ_3D = 303
 
   ! 2-point Gauss formula, 3D, degree = 4, ncubp = 8
-  INTEGER, PARAMETER :: CUB_G2_3D = 304
+  integer, parameter :: CUB_G2_3D = 304
   
   ! 3-point Gauss formula, 3D, degree = 6, ncubp = 27
-  INTEGER, PARAMETER :: CUB_G3_3D = 305
+  integer, parameter :: CUB_G3_3D = 305
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, tetra">
   ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
-  INTEGER, PARAMETER :: CUB_G1_3D_T = 350
+  integer, parameter :: CUB_G1_3D_T = 350
   
   ! trapezoidal rule, 3D, degree = 2, ncubp = 4
-  INTEGER, PARAMETER :: CUB_TRZ_3D_T = 351
+  integer, parameter :: CUB_TRZ_3D_T = 351
   
   ! 4-point Stroud rule, 3D, degree = 2, ncubp = 4
-  INTEGER, PARAMETER :: CUB_S2_3D_T = 352
+  integer, parameter :: CUB_S2_3D_T = 352
   
   ! 10-point Stroud rule, 3D, degree = 3, ncubp = 10
-  INTEGER, PARAMETER :: CUB_S3_3D_T = 353
+  integer, parameter :: CUB_S3_3D_T = 353
   
   ! 15-point Stroud rule, 3D, degree = 5, ncubp = 15
-  INTEGER, PARAMETER :: CUB_S5_3D_T = 354
+  integer, parameter :: CUB_S5_3D_T = 354
   
 !</constantblock>
 
   ! maximal size of cubature node field
-  INTEGER, PARAMETER :: CUB_MAXCUBP = 36
+  integer, parameter :: CUB_MAXCUBP = 36
 
   ! maximal number of cubature points in 1D
-  INTEGER, PARAMETER :: CUB_MAXCUBP_1D = 6
+  integer, parameter :: CUB_MAXCUBP_1D = 6
   
   ! maximal number of cubature points in 2D
-  INTEGER, PARAMETER :: CUB_MAXCUBP_2D = 36
+  integer, parameter :: CUB_MAXCUBP_2D = 36
   
   ! maximal number of cubature points in 3D
-  INTEGER, PARAMETER :: CUB_MAXCUBP_3D = 15
+  integer, parameter :: CUB_MAXCUBP_3D = 15
 
 !</constants>
 
-CONTAINS
+contains
 
   !****************************************************************************
 
 !<function>  
-  INTEGER FUNCTION cub_igetID(scubName)
+  integer function cub_igetID(scubName)
   
 !<description>
   ! This routine returns the cubature id to a given cubature formula name. It is 
@@ -208,112 +208,112 @@ CONTAINS
   !<input>
 
   !cubature formula name - one of the CUB_xxxx constants.
-  CHARACTER (LEN=*) :: scubName
+  character (LEN=*) :: scubName
 
   !</input>
   
 !</function>
 
-  SELECT CASE(TRIM(sys_upcase(scubName)))
+  select case(trim(sys_upcase(scubName)))
 
   ! 1D-formulas
-  CASE("G1_1D")
+  case("G1_1D")
     cub_igetID=CUB_G1_1D
-  CASE("TRZ_1D")
+  case("TRZ_1D")
     cub_igetID =CUB_TRZ_1D
-  CASE("G2_1D")
+  case("G2_1D")
     cub_igetID=CUB_G2_1D
-  CASE("G3_1D")
+  case("G3_1D")
     cub_igetID=CUB_G3_1D
-  CASE("G4_1D")
+  case("G4_1D")
     cub_igetID=CUB_G4_1D
-  CASE("G5_1D")
+  case("G5_1D")
     cub_igetID=CUB_G5_1D
-  CASE("SIMPSON_1D")
+  case("SIMPSON_1D")
     cub_igetID=CUB_SIMPSON_1D
-  CASE("G6_1D")
+  case("G6_1D")
     cub_igetID=CUB_G6_1D
 
   ! 2D-fomulas, quadrilateral
-  CASE ("G1X1")
+  case ("G1X1")
     cub_igetID=CUB_G1X1
-  CASE ("TRZ")
+  case ("TRZ")
     cub_igetID=CUB_TRZ
-  CASE ("MID")
+  case ("MID")
     cub_igetID=CUB_MID
-  CASE ("G2X2")
+  case ("G2X2")
     cub_igetID=CUB_G2X2
-  CASE ("NS1")
+  case ("NS1")
     cub_igetID=CUB_NS1
-  CASE ("NS2")
+  case ("NS2")
     cub_igetID=CUB_NS2
-  CASE ("NS3")
+  case ("NS3")
     cub_igetID=CUB_NS3
-  CASE ("G3X3")
+  case ("G3X3")
     cub_igetID=CUB_G3X3
-  CASE ("G")
+  case ("G")
     cub_igetID=CUB_G
-  CASE ("G4X4")
+  case ("G4X4")
     cub_igetID=CUB_G4X4
-  CASE ("G5X5")
+  case ("G5X5")
     cub_igetID=CUB_G5X5
-  CASE ("PG1X1")
+  case ("PG1X1")
     cub_igetID=CUB_PG1X1
-  CASE ("PTRZ")
+  case ("PTRZ")
     cub_igetID=CUB_PTRZ
-  CASE ("PG2X2")
+  case ("PG2X2")
     cub_igetID=CUB_PG2X2
-  CASE ("PG3X3")
+  case ("PG3X3")
     cub_igetID=CUB_PG3X3
     
   ! 2D-formulas, triangle
-  CASE ("G1_T")
+  case ("G1_T")
     cub_igetID=CUB_G1_T
-  CASE ("TRZ_T")
+  case ("TRZ_T")
     cub_igetID=CUB_TRZ_T
-  CASE ("G3_T")
+  case ("G3_T")
     cub_igetID=CUB_G3_T
-  CASE ("COLLATZ")
+  case ("COLLATZ")
     cub_igetID=CUB_COLLATZ
-  CASE ("VMC")
+  case ("VMC")
     cub_igetID=CUB_VMC
 
   ! 3D-formulas, hexahedron
-  CASE("G1_3D")
+  case("G1_3D")
     cub_igetID=CUB_G1_3D
-  CASE("MIDAREA_3D")
+  case("MIDAREA_3D")
     cub_igetID =CUB_MIDAREA_3D
-  CASE("TRZ_3D")
+  case("TRZ_3D")
     cub_igetID=CUB_TRZ_3D
-  CASE("G2_3D")
+  case("G2_3D")
     cub_igetID=CUB_G2_3D
-  CASE("G3_3D")
+  case("G3_3D")
     cub_igetID=CUB_G3_3D
   
   ! 3D-formulas, tetrahedron
-  CASE("G1_3D_T")
+  case("G1_3D_T")
     cub_igetID=CUB_G1_3D_T
-  CASE("TRZ_3D_T")
+  case("TRZ_3D_T")
     cub_igetID=CUB_TRZ_3D_T
-  CASE("S2_3D_T")
+  case("S2_3D_T")
     cub_igetID=CUB_S2_3D_T
-  CASE("S3_3D_T")
+  case("S3_3D_T")
     cub_igetID=CUB_S3_3D_T
-  CASE("S5_3D_T")
+  case("S5_3D_T")
     cub_igetID=CUB_S5_3D_T
 
-  CASE DEFAULT
-    PRINT *,'Error: Unknown cubature formula: ',scubname
-    CALL sys_halt()
-  END SELECT
+  case DEFAULT
+    print *,'Error: Unknown cubature formula: ',scubname
+    call sys_halt()
+  end select
     
-  END FUNCTION 
+  end function 
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
+  subroutine cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
 
 !<description>
   ! This routine initializes the coordinates and weight fields according 
@@ -325,12 +325,12 @@ CONTAINS
 
 !<input>
   ! id of the cubature formula to be set
-  INTEGER, INTENT(IN) :: ccubType
+  integer, intent(IN) :: ccubType
 !</input>
   
 !<output>
   ! number of cubature points; =0: error, unknown cubature formula
-  INTEGER , INTENT(OUT) :: ncubp
+  integer , intent(OUT) :: ncubp
   
   ! Coordinates of the cubature points.
   ! 1D: Dxi(1..ncubp,1)=coordinates,
@@ -350,29 +350,29 @@ CONTAINS
   !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
   !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
   !        Dxi(1..ncubp,4)=4th barycentric coordinate
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi
+  real(DP), dimension(:,:), intent(OUT) :: Dxi
   
   ! For every cubature point the corresponding cubature weight
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Domega
+  real(DP), dimension(:), intent(OUT) :: Domega
   
 !</output>
 
 !</subroutine>    
 
   ! local variables
-  INTEGER :: i 
+  integer :: i 
   
-  SELECT CASE (ccubType)
+  select case (ccubType)
 
   !1D cubature formulas
-  CASE (CUB_G1_1D)
+  case (CUB_G1_1D)
     Dxi(1,1)  = 0.0_DP
      
     Domega(1) = 2.0_DP
      
     ncubp     = 1
      
-  CASE(CUB_TRZ_1D)
+  case(CUB_TRZ_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  =  1.0_DP
     
@@ -381,7 +381,7 @@ CONTAINS
     
     ncubp     =  2
      
-  CASE(CUB_G2_1D)
+  case(CUB_G2_1D)
     Dxi(1,1)  = -0.577350269189626_DP
     Dxi(2,1)  =  0.577350269189626_DP
     
@@ -390,7 +390,7 @@ CONTAINS
     
     ncubp     =  2
      
-  CASE(CUB_G3_1D)
+  case(CUB_G3_1D)
     Dxi(1,1)  = -0.774596669241483_DP
     Dxi(2,1)  =  0.0_DP
     Dxi(3,1)  =  0.774596669241483_DP
@@ -401,7 +401,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(CUB_G4_1D)
+  case(CUB_G4_1D)
     Dxi(1,1)  = -0.861136311594053_DP
     Dxi(2,1)  = -0.339981043584856_DP
     Dxi(3,1)  =  0.339981043584856_DP
@@ -414,7 +414,7 @@ CONTAINS
     
     ncubp     =  4
     
-  CASE(CUB_G5_1D)
+  case(CUB_G5_1D)
     Dxi(1,1)  = -0.906179845938664_DP
     Dxi(2,1)  = -0.538469310105683_DP
     Dxi(3,1)  =  0.0_DP
@@ -429,7 +429,7 @@ CONTAINS
     
     ncubp = 5
     
-  CASE(CUB_SIMPSON_1D) 
+  case(CUB_SIMPSON_1D) 
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  =  0.0_DP
     Dxi(3,1)  =  1.0_DP
@@ -440,7 +440,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(CUB_G6_1D)
+  case(CUB_G6_1D)
     Dxi(1,1)  = -0.932469514203152_DP
     Dxi(2,1)  = -0.661209386466265_DP
     Dxi(3,1)  = -0.238619186083197_DP
@@ -458,7 +458,7 @@ CONTAINS
     ncubp     =  6
     
   !2D cubature formulas
-  CASE (CUB_G1X1)
+  case (CUB_G1X1)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     
@@ -466,7 +466,7 @@ CONTAINS
     
     ncubp     =  1
     
-  CASE (CUB_TRZ)
+  case (CUB_TRZ)
     Dxi(1,1)  = -1.0_DP
     Dxi(1,2)  = -1.0_DP
     Dxi(2,1)  =  1.0_DP
@@ -483,7 +483,7 @@ CONTAINS
     
     ncubp     = 4
     
-  CASE (CUB_MID)
+  case (CUB_MID)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  = -1.0_DP
     Dxi(2,1)  =  1.0_DP
@@ -500,7 +500,7 @@ CONTAINS
     
     ncubp     =  4
      
-  CASE (CUB_G2X2)
+  case (CUB_G2X2)
     Dxi(1,1)  =  0.577350269189626_DP
     Dxi(1,2)  =  0.577350269189626_DP
     Dxi(2,1)  = -0.577350269189626_DP
@@ -517,7 +517,7 @@ CONTAINS
     
     ncubp     =  4
      
-  CASE (CUB_NS1)
+  case (CUB_NS1)
     Dxi(1,1)  =  0.816496580927726_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(2,1)  = -0.816496580927726_DP
@@ -534,7 +534,7 @@ CONTAINS
     
     ncubp     =  4
     
-  CASE (CUB_NS2)
+  case (CUB_NS2)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.934172358962716_DP
     Dxi(2,1)  =  0.0_DP
@@ -557,7 +557,7 @@ CONTAINS
     
     ncubp     =  6
 
-  CASE (CUB_NS3)
+  case (CUB_NS3)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(2,1)  =  0.0_DP
@@ -583,7 +583,7 @@ CONTAINS
     
     ncubp     =  7
 
-  CASE (CUB_G3X3)
+  case (CUB_G3X3)
     Dxi(1,1)  =  0.774596669241483_DP
     Dxi(1,2)  =  0.774596669241483_DP
     Dxi(2,1)  = -0.774596669241483_DP
@@ -615,7 +615,7 @@ CONTAINS
     
     ncubp     =  9 
     
-  CASE (CUB_G)
+  case (CUB_G)
     Dxi(1,1)  =  0.92582009977255146_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(2,1)  = -0.92582009977255146_DP
@@ -660,7 +660,7 @@ CONTAINS
     
     ncubp     =  12
     
-  CASE (CUB_G4X4)
+  case (CUB_G4X4)
     Dxi(1,1)  =  0.861136311594053003_DP
     Dxi(1,2)  =  0.339981043584855994_DP
     Dxi(2,1)  = -0.861136311594053003_DP
@@ -716,7 +716,7 @@ CONTAINS
     
     ncubp     =  16
 
-  CASE (CUB_G5X5)
+  case (CUB_G5X5)
     Dxi(1,1)  =  0.906179845938664005_DP
     Dxi(1,2)  =  0.906179845938664005_DP
     Dxi(2,1)  =  0.906179845938664005_DP
@@ -807,7 +807,7 @@ CONTAINS
     
     ncubp     =  25
     
-  CASE (CUB_PG1X1)
+  case (CUB_PG1X1)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.5_DP
     Dxi(2,1)  =  0.5_DP
@@ -824,7 +824,7 @@ CONTAINS
     
     ncubp     =  4
 
-  CASE (CUB_PTRZ)
+  case (CUB_PTRZ)
     Dxi (1,1) = -1.0_DP
     Dxi (1,2) = -1.0_DP
     Dxi (2,1) =  0.0_DP
@@ -880,7 +880,7 @@ CONTAINS
     
     ncubp     =  16
 
-  CASE (CUB_PG2X2)
+  case (CUB_PG2X2)
     Dxi(1,1)  =  0.7886751345948130_DP
     Dxi(1,2)  =  0.7886751345948130_DP
     Dxi(2,1)  =  0.2113248654051870_DP
@@ -936,7 +936,7 @@ CONTAINS
     
     ncubp     =  16
     
-  CASE (CUB_PG3X3)
+  case (CUB_PG3X3)
     Dxi(1,1)  =  0.8872983346207415_DP
     Dxi(1,2)  =  0.8872983346207415_DP
     Dxi(2,1)  =  0.1127016653792585_DP
@@ -1032,7 +1032,7 @@ CONTAINS
     
     ncubp     =  36
     
-  CASE(CUB_SIMPSON)
+  case(CUB_SIMPSON)
     Dxi(1,1)  = -1.0_DP
     Dxi(1,2)  = -1.0_DP
     Dxi(2,1)  =  0.0_DP
@@ -1063,7 +1063,7 @@ CONTAINS
     Domega(9) = 0.111111111111111_DP
     ncubp     = 9
 
-  CASE(CUB_3_8)
+  case(CUB_3_8)
     Dxi(1,1)   = -1.0_DP
     Dxi(1,2)   = -1.0_DP
     Dxi(2,1)   = -0.33333333333033_DP
@@ -1117,7 +1117,7 @@ CONTAINS
     ncubp     = 16
     
   !triangle cubature formulas
-  CASE(CUB_G1_T)
+  case(CUB_G1_T)
     Dxi(1,1)  =  0.3333333333333333_DP
     Dxi(1,2)  =  0.3333333333333333_DP
     Dxi(1,3)  =  0.3333333333333333_DP
@@ -1126,7 +1126,7 @@ CONTAINS
     
     ncubp     =  1
     
-  CASE(CUB_TRZ_T)
+  case(CUB_TRZ_T)
     Dxi(1,1)  =  1.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  =  0.0_DP
@@ -1143,7 +1143,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(CUB_G3_T)
+  case(CUB_G3_T)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.5_DP
     Dxi(1,3)  =  0.0_DP
@@ -1160,7 +1160,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(CUB_Collatz)
+  case(CUB_Collatz)
     Dxi(1,1)  =  0.6666666666666667_DP
     Dxi(1,2)  =  0.1666666666666667_DP
     Dxi(1,3)  =  0.1666666666666667_DP
@@ -1177,7 +1177,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(CUB_VMC)
+  case(CUB_VMC)
     !center
     Dxi(1,1)  =  0.3333333333333333_DP
     Dxi(1,2)  =  0.3333333333333333_DP
@@ -1215,7 +1215,7 @@ CONTAINS
 
   ! 3D cubature formulas
 
-  CASE(CUB_G1_3D)
+  case(CUB_G1_3D)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  =  0.0_DP
@@ -1224,7 +1224,7 @@ CONTAINS
     
     ncubp      =  1
     
-  CASE(CUB_MIDAREA_3D)
+  case(CUB_MIDAREA_3D)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  = -1.0_DP
@@ -1258,7 +1258,7 @@ CONTAINS
 
     ncubp     =  6      
 
-  CASE(CUB_TRZ_3D)
+  case(CUB_TRZ_3D)
     Dxi(1,1)  = -1.0_DP
     Dxi(1,2)  = -1.0_DP
     Dxi(1,3)  = -1.0_DP
@@ -1302,7 +1302,7 @@ CONTAINS
 
     ncubp     =  8
     
-  CASE(CUB_G2_3D)
+  case(CUB_G2_3D)
 
     Dxi(1,1)  =  0.577350269189626_DP
     Dxi(1,2)  =  0.577350269189626_DP
@@ -1347,7 +1347,7 @@ CONTAINS
 
     ncubp     =  8
 
-  CASE(CUB_G3_3D)
+  case(CUB_G3_3D)
     
     Dxi(1,1)  =  0.774596669241483_DP
     Dxi(1,2)  =  0.774596669241483_DP
@@ -1489,7 +1489,7 @@ CONTAINS
     ncubp     =  27
 
   ! tetrahedra
-  CASE(CUB_G1_3D_T)
+  case(CUB_G1_3D_T)
     Dxi(1,1)  =  0.25_DP
     Dxi(1,2)  =  0.25_DP
     Dxi(1,3)  =  0.25_DP
@@ -1499,7 +1499,7 @@ CONTAINS
     
     ncubp = 1
     
-  CASE(CUB_TRZ_3D_T)
+  case(CUB_TRZ_3D_T)
     Dxi(1,1)  =  1.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  =  0.0_DP
@@ -1524,7 +1524,7 @@ CONTAINS
     
     ncubp     =  4
 
-  CASE(CUB_S2_3D_T)
+  case(CUB_S2_3D_T)
     Dxi(1,1)  = 0.5854101966249685_DP
     Dxi(1,2)  = 0.1381966011250105_DP
     Dxi(1,3)  = 0.1381966011250105_DP
@@ -1549,7 +1549,7 @@ CONTAINS
     
     ncubp = 4
   
-  CASE(CUB_S3_3D_T)
+  case(CUB_S3_3D_T)
     Dxi( 1,1) = 0.1438564719343849_DP
     Dxi( 1,2) = 0.1438564719343849_DP
     Dxi( 1,3) = 0.1438564719343849_DP
@@ -1604,7 +1604,7 @@ CONTAINS
     
     ncubp = 10
   
-  CASE(CUB_S5_3D_T)
+  case(CUB_S5_3D_T)
     Dxi( 1,1)  = 0.25_DP
     Dxi( 1,2)  = 0.25_DP
     Dxi( 1,3)  = 0.25_DP
@@ -1684,11 +1684,11 @@ CONTAINS
     
     ncubp = 15
 
-  CASE DEFAULT 
-    PRINT *,'Error: unknown cubature formula: ',ccubType
-    CALL sys_halt()
-  END SELECT
+  case DEFAULT 
+    print *,'Error: unknown cubature formula: ',ccubType
+    call sys_halt()
+  end select
    
-  END SUBROUTINE cub_getCubPoints
+  end subroutine cub_getCubPoints
 
-END MODULE
+end module

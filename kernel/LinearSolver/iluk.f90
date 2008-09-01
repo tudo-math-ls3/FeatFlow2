@@ -56,7 +56,7 @@ module iluk
     ! 
     ! The start indices of the rows of U we find in ilup.
 
-  TYPE t_MILUdecomp
+  type t_MILUdecomp
 
   
     ! this is an array of length nzlu, where nzlu is the number of
@@ -65,24 +65,24 @@ module iluk
     ! This is a handle to an array that stores the non-zero
     ! entries of the lu-decomposition, the entries of both L and U 
     ! are stored in one array
-    INTEGER  :: h_lu = ST_NOHANDLE
+    integer  :: h_lu = ST_NOHANDLE
   
     ! This is a handle to an index array
     ! that tells us the beginning of the rows of L and
     ! the column indices of the entries
-    INTEGER  :: h_jlu = ST_NOHANDLE
+    integer  :: h_jlu = ST_NOHANDLE
     
     ! This is a handle to an index array where we store pointers to the 
     ! starting index of each row of U in the array jlu array
-    INTEGER  :: h_ilup = ST_NOHANDLE
+    integer  :: h_ilup = ST_NOHANDLE
     
     ! The number of nonzero elements in the lu decomposition
-    INTEGER  :: nzlu = 0
+    integer  :: nzlu = 0
     
     ! total number of entries in all arrays
-    INTEGER  :: isize = 0
+    integer  :: isize = 0
   
-  END TYPE
+  end type
 
 !</typeblock>  
   
@@ -103,11 +103,11 @@ contains
     
 !</subroutine>    
       ! check if the structure is initialized
-      IF(rMILUdecomp%h_lu .ne. ST_NOHANDLE) THEN
-        CALL storage_free(rMILUdecomp%h_lu)
-        CALL storage_free(rMILUdecomp%h_jlu)
-        CALL storage_free(rMILUdecomp%h_ilup)
-      END IF    
+      if(rMILUdecomp%h_lu .ne. ST_NOHANDLE) then
+        call storage_free(rMILUdecomp%h_lu)
+        call storage_free(rMILUdecomp%h_jlu)
+        call storage_free(rMILUdecomp%h_ilup)
+      end if    
     
     end subroutine ! end iluk_freeDecomp
 

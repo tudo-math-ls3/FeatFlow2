@@ -59,14 +59,14 @@
 !# </purpose>
 !##############################################################################
 
-MODULE coarsegridcorrection
+module coarsegridcorrection
 
-  USE fsystem
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE filtersupport
+  use fsystem
+  use linearsystemscalar
+  use linearsystemblock
+  use filtersupport
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
@@ -78,16 +78,16 @@ MODULE coarsegridcorrection
   ! Remark: This is the optimal setting for a scalar equation with conformal
   !  elements; however, using nonconformal elements or nonscalar equations
   !  might make it necessary to switch to another method.
-  INTEGER, PARAMETER :: CGCOR_STANDARD       = 0
+  integer, parameter :: CGCOR_STANDARD       = 0
   
   ! Damping by energy minimisation.
   ! Remark: This is the optimal setting for a scalar Laplace equation
   !  with nonconformal Rannacher-Turek element Ex30/Ex31.
-  INTEGER, PARAMETER :: CGCOR_SCALARENERGYMIN = 1
+  integer, parameter :: CGCOR_SCALARENERGYMIN = 1
   
   ! Damping by defect minimisation.
   ! Remark: Easy/cheap to calculate, but no functional analytic background.
-  INTEGER, PARAMETER :: CGCOR_SCALARDEFMIN    = 2
+  integer, parameter :: CGCOR_SCALARDEFMIN    = 2
   
 !</constantblock>
 
@@ -100,18 +100,18 @@ MODULE coarsegridcorrection
 
   ! Coarse grid correction structure; defines the behaviour of 
   ! how to calculate the optimal coarse grid correction.
-  TYPE t_coarseGridCorrection
+  type t_coarseGridCorrection
     
     ! Method identifier. This is one of the CGCOR_xxxx constants and specifies
     ! the algorithm that is used to calculate the optimal coarse grid
     ! correction.
-    INTEGER :: ccorrectionType = CGCOR_STANDARD
+    integer :: ccorrectionType = CGCOR_STANDARD
     
     ! Minimum damping parameter
-    REAL(DP) :: dalphaMin = -10.0_DP
+    real(DP) :: dalphaMin = -10.0_DP
     
     ! Maximum damping parameter
-    REAL(DP) :: dalphaMax = 10.0_DP
+    real(DP) :: dalphaMax = 10.0_DP
     
     ! A list of weights for the different equations.
     ! If not associated, a standard value of 1.0 is assumed for every equation.
@@ -122,9 +122,9 @@ MODULE coarsegridcorrection
     ! -> The pressure equation is multiplied by -1 before taking the norm
     !    of the residual.
     ! Can be used to symmetrise equations.
-    REAL(DP), DIMENSION(:), POINTER :: p_DequationWeights => NULL()
+    real(DP), dimension(:), pointer :: p_DequationWeights => null()
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -132,13 +132,13 @@ MODULE coarsegridcorrection
 
   ! ***************************************************************************
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_init (rcoarseGridCorrection,nequations)
+  subroutine cgcor_init (rcoarseGridCorrection,nequations)
                                           
 !<description>
   ! Initialises a coarse grid correction structure.
@@ -148,29 +148,29 @@ CONTAINS
   ! OPTIONAL: Number of equations.
   ! If specified, the p_DequationWeights array in the coarse grid correction
   ! structure is allocated and initially filled with 1.0-values.
-  INTEGER, INTENT(IN), OPTIONAL :: nequations
+  integer, intent(IN), optional :: nequations
 !</input>
 
 !<output>
   ! A coarse grid correction structure to be initialised
-  TYPE(t_coarseGridCorrection), INTENT(OUT) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(OUT) :: rcoarseGridCorrection
 !</output>
 
     ! Initialise by default initialisation
     !
     ! Exception: The p_DequationWeights array.
-    IF (PRESENT(nequations)) THEN
-      ALLOCATE(rcoarseGridCorrection%p_DequationWeights(nequations))
+    if (present(nequations)) then
+      allocate(rcoarseGridCorrection%p_DequationWeights(nequations))
       rcoarseGridCorrection%p_DequationWeights = 1.0_DP
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_release (rcoarseGridCorrection)
+  subroutine cgcor_release (rcoarseGridCorrection)
                                           
 !<description>
   ! Releases a coarse grid correction structure.
@@ -178,21 +178,21 @@ CONTAINS
 
 !<inputoutput>
   ! A coarse grid correction structure to be released
-  TYPE(t_coarseGridCorrection), INTENT(INOUT) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(INOUT) :: rcoarseGridCorrection
 !</inputoutput>
 
     ! Release the pointer to the equation weights if associated
-    IF (ASSOCIATED(rcoarseGridCorrection%p_DequationWeights)) THEN
-      DEALLOCATE(rcoarseGridCorrection%p_DequationWeights)
-    END IF
+    if (associated(rcoarseGridCorrection%p_DequationWeights)) then
+      deallocate(rcoarseGridCorrection%p_DequationWeights)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_calcOptimalCorrection (rcoarseGridCorrection,&
+  subroutine cgcor_calcOptimalCorrection (rcoarseGridCorrection,&
                                           rmatrix,rvector,rrhs,rcorrVector,&
                                           rtempVector,p_RfilterChain,dalpha)
                                           
@@ -205,26 +205,26 @@ CONTAINS
 
 !<input>
   ! A coarse grid correction structure specifying the algorithm to use.
-  TYPE(t_coarseGridCorrection), INTENT(IN) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(IN) :: rcoarseGridCorrection
   
   ! The block matrix of the system Ax=b which is solved by multigrid
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
   
   ! The current RHS vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+  type(t_vectorBlock), intent(IN) :: rcorrVector
   
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -232,52 +232,52 @@ CONTAINS
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  REAL(DP), INTENT(OUT) :: dalpha
+  real(DP), intent(OUT) :: dalpha
 !</output>
 
 !</subroutine>
 
-  IF (rcoarseGridCorrection%dalphaMax .LE. rcoarseGridCorrection%dalphaMin) THEN
+  if (rcoarseGridCorrection%dalphaMax .le. rcoarseGridCorrection%dalphaMin) then
     dalpha = 1.0_DP
-  ELSE
+  else
     ! Which method to use?
     
-    SELECT CASE (rcoarseGridCorrection%ccorrectionType)
-    CASE (CGCOR_SCALARENERGYMIN)
-      IF (.NOT. ASSOCIATED(rcoarseGridCorrection%p_DequationWeights)) THEN
+    select case (rcoarseGridCorrection%ccorrectionType)
+    case (CGCOR_SCALARENERGYMIN)
+      if (.not. associated(rcoarseGridCorrection%p_DequationWeights)) then
         ! Standard energy minimisation
-        CALL cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
+        call cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
                                       rtempVector,p_RfilterChain,dalpha)
-      ELSE
+      else
         ! Special energy minimisation with different weights for the
         ! different equations.
-        CALL cgcor_calcCorrEnergyMinWeighted (rmatrix,rvector,rrhs,rcorrVector,&
+        call cgcor_calcCorrEnergyMinWeighted (rmatrix,rvector,rrhs,rcorrVector,&
             rtempVector,p_RfilterChain,dalpha,rcoarseGridCorrection%p_DequationWeights)
-      END IF
-    CASE (CGCOR_SCALARDEFMIN)
-      CALL cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
+      end if
+    case (CGCOR_SCALARDEFMIN)
+      call cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
                                 rtempVector,p_RfilterChain,dalpha)
-    CASE DEFAULT !(=CGCOR_STANDARD)
+    case DEFAULT !(=CGCOR_STANDARD)
       dalpha = 1.0_DP   ! Standard setting
-    END SELECT
-  END IF
+    end select
+  end if
 
   ! Make sure it's in the interval given by the dalphaMin/dalphaMax
-  dalpha = MAX(MIN(dalpha,rcoarseGridCorrection%dalphaMax), &
+  dalpha = max(min(dalpha,rcoarseGridCorrection%dalphaMax), &
                           rcoarseGridCorrection%dalphaMin)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
+  subroutine cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
                                       rtempVecBlock,p_RfilterChain,dalpha)
                                           
 !<description>
@@ -287,23 +287,23 @@ CONTAINS
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
   
   ! The current RHS vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+  type(t_vectorBlock), intent(IN) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -311,19 +311,19 @@ CONTAINS
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  REAL(DP), INTENT(OUT) :: dalpha
+  real(DP), intent(OUT) :: dalpha
 !</output>
 
 !</subroutine>
 
     ! local variables
     
-    REAL(DP) :: a,b
+    real(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
     ! (c.f. p. 206 in Turek's book):
@@ -336,38 +336,38 @@ CONTAINS
     !
     ! Calculate nominator of the fraction
       
-    CALL lsysbl_copyVector(rrhs,rtempVecBlock)
-    CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_copyVector(rrhs,rtempVecBlock)
+    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     a = lsysbl_scalarProduct(rtempVecBlock,rcorrVector)
     
     ! Calculate the demoninator of the fraction
-    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
+    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
     ! Apply the filter
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     b = lsysbl_scalarProduct(rtempVecBlock,rcorrVector)
     
     ! Return the alpha.
-    IF (b .NE. 0.0_DP) THEN
+    if (b .ne. 0.0_DP) then
       dalpha = a/b
-    ELSE
+    else
       dalpha = 1.0_DP
-    END IF
+    end if
     
-  END SUBROUTINE  
+  end subroutine  
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_calcCorrEnergyMinWeighted (rmatrix,rvector,rrhs,rcorrVector,&
+  subroutine cgcor_calcCorrEnergyMinWeighted (rmatrix,rvector,rrhs,rcorrVector,&
       rtempVecBlock,p_RfilterChain,dalpha,DequationWeights)
                                           
 !<description>
@@ -380,26 +380,26 @@ CONTAINS
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
   
   ! The current RHS vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+  type(t_vectorBlock), intent(IN) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
   ! List of weights for every equation (=row of the matrix)
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DequationWeights
+  real(DP), dimension(:), intent(IN) :: DequationWeights
 !</input>
   
 !<inputoutput>
@@ -407,20 +407,20 @@ CONTAINS
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  REAL(DP), INTENT(OUT) :: dalpha
+  real(DP), intent(OUT) :: dalpha
 !</output>
 
 !</subroutine>
 
     ! local variables
     
-    REAL(DP) :: a,b
-    INTEGER :: irow
+    real(DP) :: a,b
+    integer :: irow
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
     ! (c.f. p. 206 in Turek's book):
@@ -433,49 +433,49 @@ CONTAINS
     !
     ! Calculate nominator of the fraction
       
-    CALL lsysbl_copyVector(rrhs,rtempVecBlock)
-    CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_copyVector(rrhs,rtempVecBlock)
+    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     ! Calculate a weighted scalar product using the equation weights.
     a = 0.0_DP
-    DO irow = 1,rtempVecBlock%nblocks
+    do irow = 1,rtempVecBlock%nblocks
       a = a + DequationWeights(irow) * &
           lsyssc_scalarProduct(rtempVecBlock%RvectorBlock(irow),&
                                rcorrVector%RvectorBlock(irow))
-    END DO
+    end do
     
     ! Calculate the demoninator of the fraction
-    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
+    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
     ! Apply the filter
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     b = 0.0_DP
-    DO irow = 1,rtempVecBlock%nblocks
+    do irow = 1,rtempVecBlock%nblocks
       b = b + DequationWeights(irow) * &
           lsyssc_scalarProduct(rtempVecBlock%RvectorBlock(irow),&
                                rcorrVector%RvectorBlock(irow))
-    END DO
+    end do
     
     ! Return the alpha.
-    IF (b .NE. 0.0_DP) THEN
+    if (b .ne. 0.0_DP) then
       dalpha = a/b
-    ELSE
+    else
       dalpha = 1.0_DP
-    END IF
+    end if
     
-  END SUBROUTINE  
+  end subroutine  
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
+  subroutine cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
                                    rtempVecBlock,p_RfilterChain,dalpha)
                                           
 !<description>
@@ -485,23 +485,23 @@ CONTAINS
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
   
   ! The current RHS vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+  type(t_vectorBlock), intent(IN) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -509,20 +509,20 @@ CONTAINS
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  REAL(DP), INTENT(OUT) :: dalpha
+  real(DP), intent(OUT) :: dalpha
 !</output>
 
 !</subroutine>
 
     ! local variables
     
-    TYPE(t_vectorBlock) :: rtempBlock2
-    REAL(DP) :: a,b
+    type(t_vectorBlock) :: rtempBlock2
+    real(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
     ! (c.f. p. 206 in Turek's book):
@@ -535,23 +535,23 @@ CONTAINS
     !    
     ! Calculate nominator of the fraction
       
-    CALL lsysbl_copyVector(rrhs,rtempVecBlock)
-    CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_copyVector(rrhs,rtempVecBlock)
+    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     ! We need a second temp vector which is to be released afterwards.
     ! (Perhaps in a later implementation, we could describe rtempVecBlock
     ! to have double the size?)
-    CALL lsysbl_createVecBlockIndirect (rtempVecBlock,rtempBlock2,.FALSE.)
+    call lsysbl_createVecBlockIndirect (rtempVecBlock,rtempBlock2,.false.)
     
-    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
+    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
     ! Apply the filter
-    IF (ASSOCIATED(p_RfilterChain)) THEN
-      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
-    END IF
+    if (associated(p_RfilterChain)) then
+      call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    end if
     
     a = lsysbl_scalarProduct(rtempVecBlock,rtempBlock2)
     
@@ -560,15 +560,15 @@ CONTAINS
     b = lsysbl_scalarProduct(rtempBlock2,rtempBlock2)
     
     ! Return the alpha.
-    IF (b .NE. 0.0_DP) THEN
+    if (b .ne. 0.0_DP) then
       dalpha = a/b
-    ELSE
+    else
       dalpha = 1.0_DP
-    END IF
+    end if
     
     ! Release the 2nd temp vector
-    CALL lsysbl_releaseVector (rtempBlock2)
+    call lsysbl_releaseVector (rtempBlock2)
     
-  END SUBROUTINE  
+  end subroutine  
 
-END MODULE
+end module
