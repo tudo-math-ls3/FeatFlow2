@@ -229,60 +229,60 @@
 !# </purpose>
 !##############################################################################
  
-MODULE geometry
+module geometry
 
-  USE basicgeometry
-  USE storage
+  use basicgeometry
+  use storage
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Geometry type identifiers">
 
   ! Composed geometry object with sub-objects
-  INTEGER, PARAMETER :: GEOM_COMPOSED  = -1
+  integer, parameter :: GEOM_COMPOSED  = -1
 
   ! No geometry object
-  INTEGER, PARAMETER :: GEOM_NONE      = 0
+  integer, parameter :: GEOM_NONE      = 0
 
   ! Circle object
-  INTEGER, PARAMETER :: GEOM_CIRCLE    = 1
+  integer, parameter :: GEOM_CIRCLE    = 1
 
   ! Square object
-  INTEGER, PARAMETER :: GEOM_SQUARE    = 2
+  integer, parameter :: GEOM_SQUARE    = 2
 
   ! Ellipse object
-  INTEGER, PARAMETER :: GEOM_ELLIPSE   = 3
+  integer, parameter :: GEOM_ELLIPSE   = 3
 
   ! Rectangle object
-  INTEGER, PARAMETER :: GEOM_RECT      = 4
+  integer, parameter :: GEOM_RECT      = 4
 
   ! Polygon object
-  INTEGER, PARAMETER :: GEOM_POLYGON   = 10
+  integer, parameter :: GEOM_POLYGON   = 10
 
 !</constantblock>
 
 !<constantblock description="Polygon type identifiers">
 
   ! General polygon
-  INTEGER, PARAMETER :: GEOM_POLYGON_GENERAL = 0
+  integer, parameter :: GEOM_POLYGON_GENERAL = 0
 
   ! Convex polygon
-  INTEGER, PARAMETER :: GEOM_POLYGON_CONVEX  = 1
+  integer, parameter :: GEOM_POLYGON_CONVEX  = 1
 
 !</constantblock>
 
 !<constantblock description="Composed type identifiers">
 
   ! No composed object
-  INTEGER, PARAMETER :: GEOM_COMP_TYPE_NONE = 0
+  integer, parameter :: GEOM_COMP_TYPE_NONE = 0
 
   ! Union of objects
-  INTEGER, PARAMETER :: GEOM_COMP_TYPE_OR   = 1
+  integer, parameter :: GEOM_COMP_TYPE_OR   = 1
   
   ! Intersection of objects
-  INTEGER, PARAMETER :: GEOM_COMP_TYPE_AND  = 2
+  integer, parameter :: GEOM_COMP_TYPE_AND  = 2
   
 !</constantblock>
 
@@ -297,24 +297,24 @@ MODULE geometry
 
   ! This stucture realises a boundary approximation, which is needed for
   ! distance calculation and boundary projection of composed geometry objects.
-  TYPE t_boundaryApprox
+  type t_boundaryApprox
   
     ! Approximation tolerance
-    REAL(DP) :: dtolerance = 0.0_DP
+    real(DP) :: dtolerance = 0.0_DP
     
     ! Number of allocated vertices
-    INTEGER :: nvertsAllocated = 0
+    integer :: nvertsAllocated = 0
   
     ! Number of vertices used for the boundary approximation
-    INTEGER :: nverts = 0
+    integer :: nverts = 0
     
     ! A handle for the vertice vector
-    INTEGER :: h_Dverts = ST_NOHANDLE
+    integer :: h_Dverts = ST_NOHANDLE
     
     ! An array for the vertice vector
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dverts => null()
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -323,21 +323,21 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the composed geometry object.
-  TYPE t_geometryComposed
+  type t_geometryComposed
   
     ! Type of composed object. One of the GEOM_COMP_TYPE_XXXX constants.
-    INTEGER :: ccomposedType = GEOM_COMP_TYPE_NONE
+    integer :: ccomposedType = GEOM_COMP_TYPE_NONE
     
     ! Number of sub-objects in the composed object.
-    INTEGER :: nsubObjects = 0
+    integer :: nsubObjects = 0
     
     ! An array of sub-objects with are composed.
-    TYPE(t_geometryObject), DIMENSION(:), POINTER :: p_RsubObjects => NULL()
+    type(t_geometryObject), dimension(:), pointer :: p_RsubObjects => null()
     
     ! A pointer to a boundary-approximation structure
-    TYPE(t_boundaryApprox), POINTER :: p_rboundaryApprox => NULL()
+    type(t_boundaryApprox), pointer :: p_rboundaryApprox => null()
     
-  END TYPE
+  end type
   
 !</typeblock>
   
@@ -346,12 +346,12 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the circle object.
-  TYPE t_geometryCircle
+  type t_geometryCircle
     
     ! Radius of the circle. Must be positive.
-    REAL(DP) :: dradius = 0.0_DP
+    real(DP) :: dradius = 0.0_DP
     
-  END TYPE
+  end type
   
 !</typeblock>
   
@@ -360,12 +360,12 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the square object.
-  TYPE t_geometrySquare
+  type t_geometrySquare
   
     ! Length of each edge of the square. Must be positive.
-    REAL(DP) :: dlength = 0.0_DP
+    real(DP) :: dlength = 0.0_DP
     
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -374,12 +374,12 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the ellipse object.
-  TYPE t_geometryEllipse
+  type t_geometryEllipse
   
     ! X- and Y-radius of the ellipse. Must be positive.
-    REAL(DP), DIMENSION(2) :: Dradii = (/ 0.0_DP, 0.0_DP /)
+    real(DP), dimension(2) :: Dradii = (/ 0.0_DP, 0.0_DP /)
     
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -388,13 +388,13 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the rectangle object.
-  TYPE t_geometryRectangle
+  type t_geometryRectangle
   
     ! Lengths of the horizontal and vertical edges of the rectangle. Must be
     ! positive.
-    REAL(DP), DIMENSION(2) :: Dlength = (/ 0.0_DP, 0.0_DP /)
+    real(DP), dimension(2) :: Dlength = (/ 0.0_DP, 0.0_DP /)
     
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -403,15 +403,15 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the polygon object.
-  TYPE t_geometryPolygon
+  type t_geometryPolygon
 
     ! The polygon's type. One of the GEOM_POLYGON_XXXX constants defined above.
-    INTEGER :: npolyType = GEOM_POLYGON_GENERAL
+    integer :: npolyType = GEOM_POLYGON_GENERAL
 
     ! A pointer to the polygon's vertices
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dvertices => null()
 
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -420,84 +420,84 @@ MODULE geometry
 !<typeblock>
 
   ! Geometry object structure for 2D and 3D geometry objects.
-  TYPE t_geometryObject
+  type t_geometryObject
 
     ! Type identifier of the geometry object.
     ! One of the GEOM_**** constants defined above.
-    INTEGER                    :: ctype = GEOM_NONE
+    integer                    :: ctype = GEOM_NONE
 
     ! Dimension of the coordinate system.
     ! May be NDIM2D or NDIM3D (as defined in basicgeometry.f90).
-    INTEGER                    :: ndimension = NDIM2D
+    integer                    :: ndimension = NDIM2D
     
     ! The 2D coordinate system for this geometry object.
     ! Used for 2D geometry objects - undefined for 3D geometry objects.
-    TYPE(t_coordinateSystem2D) :: rcoord2D
+    type(t_coordinateSystem2D) :: rcoord2D
     
     ! The 3D coordinate system for this geometry object.
     ! Used for 3D geometry objects - undefined for 2D geometry objects.
     !TYPE(t_coordinateSystem3D) :: rcoord3D
     
     ! A boolean which tells us whether the geometry object is inverted or not.
-    LOGICAL                    :: binverted = .FALSE.
+    logical                    :: binverted = .false.
     
     ! Structure for the composed geometry object
-    TYPE(t_geometryComposed)   :: rcomposed
+    type(t_geometryComposed)   :: rcomposed
     
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 2D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! Structure for the circle object
-    TYPE(t_geometryCircle)     :: rcircle
+    type(t_geometryCircle)     :: rcircle
     
     ! Structure for the square object
-    TYPE(t_geometrySquare)     :: rsquare
+    type(t_geometrySquare)     :: rsquare
     
     ! Structure for the ellipse object
-    TYPE(t_geometryEllipse)    :: rellipse
+    type(t_geometryEllipse)    :: rellipse
     
     ! Structure for the rectangle object
-    TYPE(t_geometryRectangle)  :: rrectangle
+    type(t_geometryRectangle)  :: rrectangle
 
     ! Structure for the polygon object
-    TYPE(t_geometryPolygon)    :: rpolygon
+    type(t_geometryPolygon)    :: rpolygon
     
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! Todo...
     
-  END TYPE
+  end type
   
 !</typeblock>
 !</types>
 
-  INTERFACE geom_init_circle
-    MODULE PROCEDURE geom_init_circle_indirect
-    MODULE PROCEDURE geom_init_circle_direct
-  END INTERFACE
+  interface geom_init_circle
+    module procedure geom_init_circle_indirect
+    module procedure geom_init_circle_direct
+  end interface
   
-  INTERFACE geom_init_square
-    MODULE PROCEDURE geom_init_square_indirect
-    MODULE PROCEDURE geom_init_square_direct
-  END INTERFACE
+  interface geom_init_square
+    module procedure geom_init_square_indirect
+    module procedure geom_init_square_direct
+  end interface
   
-  INTERFACE geom_init_ellipse
-    MODULE PROCEDURE geom_init_ellipse_indirect
-    MODULE PROCEDURE geom_init_ellipse_direct
-  END INTERFACE
+  interface geom_init_ellipse
+    module procedure geom_init_ellipse_indirect
+    module procedure geom_init_ellipse_direct
+  end interface
   
-  INTERFACE geom_init_rectangle
-    MODULE PROCEDURE geom_init_rectangle_indirect
-    MODULE PROCEDURE geom_init_rectangle_direct
-  END INTERFACE
+  interface geom_init_rectangle
+    module procedure geom_init_rectangle_indirect
+    module procedure geom_init_rectangle_direct
+  end interface
 
-  INTERFACE geom_init_polygon
-    MODULE PROCEDURE geom_init_polygon_indirect
-    MODULE PROCEDURE geom_init_polygon_direct
-  END INTERFACE
+  interface geom_init_polygon
+    module procedure geom_init_polygon_indirect
+    module procedure geom_init_polygon_direct
+  end interface
   
-CONTAINS
+contains
 
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -507,7 +507,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE geom_init_composed(rgeomObject, nsubObjects, ccomposedType, &
+  subroutine geom_init_composed(rgeomObject, nsubObjects, ccomposedType, &
                                 binverted, ndim)
 !<description>
   ! Creates a t_geometryObject representing a composed object, i.e. an union
@@ -516,50 +516,50 @@ CONTAINS
 
 !<input>
   ! The number of sub-objects. Must be positive.
-  INTEGER,                     INTENT(IN)  :: nsubObjects
+  integer,                     intent(IN)  :: nsubObjects
   
   ! The type of the composed object. One of the GEOM_COMP_TYPE_XXXX constants.
-  INTEGER,                     INTENT(IN)  :: ccomposedType
+  integer,                     intent(IN)  :: ccomposedType
   
   ! OPTIONAL: A boolean telling whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
   ! OPTIONAL: The dimension of the composed object. May be NDIM2D or NDIM3D.
   ! If not given, the dimension is set to NDIM2D.
-  INTEGER, OPTIONAL,           INTENT(IN)  :: ndim
+  integer, optional,           intent(IN)  :: ndim
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
 !</subroutine>
 
   ! Check if nsubObjects is valid
-  IF (nsubObjects .LE. 0) THEN
-    RETURN
-  END IF
+  if (nsubObjects .le. 0) then
+    return
+  end if
 
   ! Set the dimension
-  IF (PRESENT(ndim)) THEN
+  if (present(ndim)) then
     rgeomObject%ndimension = ndim
-  ELSE
+  else
     rgeomObject%ndimension = NDIM2D
-  END IF
+  end if
   
   ! Set the composed type
   rgeomObject%ctype = GEOM_COMPOSED
   
   ! Is our object inverted?
-  IF (PRESENT(binverted)) THEN
+  if (present(binverted)) then
     rgeomObject%binverted = binverted
-  ELSE
-    rgeomObject%binverted = .FALSE.
-  END IF
+  else
+    rgeomObject%binverted = .false.
+  end if
   
   ! Set the operator
   rgeomObject%rcomposed%ccomposedType = ccomposedType
@@ -568,20 +568,20 @@ CONTAINS
   rgeomObject%rcomposed%nsubObjects = nsubObjects
   
   ! Allocate sub-objects
-  ALLOCATE(rgeomObject%rcomposed%p_RsubObjects(nsubObjects))
+  allocate(rgeomObject%rcomposed%p_RsubObjects(nsubObjects))
   
   ! Allocate boundary approximation structure
-  ALLOCATE(rgeomObject%rcomposed%p_rboundaryApprox)
+  allocate(rgeomObject%rcomposed%p_rboundaryApprox)
   
   ! That's it
   
-END SUBROUTINE
+end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_composed_addNode(rgeomObject, rsubObject, nindex)
+  subroutine geom_composed_addNode(rgeomObject, rsubObject, nindex)
   
 !<description>
   ! This routine inserts a geometry object into the composed geometry object
@@ -591,31 +591,31 @@ END SUBROUTINE
 !<input>
   ! The index of the child node of the composed geometry object, where
   ! the geometry object is to be attached.
-  INTEGER, INTENT(IN) :: nindex
+  integer, intent(IN) :: nindex
   
 !</input>
 
 !<inputoutput>
   ! The composed geometry object
-  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(INOUT) :: rgeomObject
   
   ! The sub-object
-  TYPE(t_geometryObject), INTENT(INOUT) :: rsubObject
+  type(t_geometryObject), intent(INOUT) :: rsubObject
 
 !</inputoutput>
 
 !</subroutine>
 
     ! Make sure the object is composed
-    IF (rgeomObject%ctype .NE. GEOM_COMPOSED) THEN
-      RETURN
-    END IF
+    if (rgeomObject%ctype .ne. GEOM_COMPOSED) then
+      return
+    end if
     
     ! Make sure the index is in range
-    IF ((nindex .LE. 0) .OR. (nindex .GT. rgeomObject%rcomposed%nsubObjects)) &
-      THEN
-      RETURN
-    END IF
+    if ((nindex .le. 0) .or. (nindex .gt. rgeomObject%rcomposed%nsubObjects)) &
+      then
+      return
+    end if
     
     ! Insert the sub-node
     rgeomObject%rcomposed%p_RsubObjects(nindex) = rsubObject
@@ -625,13 +625,13 @@ END SUBROUTINE
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
       
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_composed_isInGeometry (rgeomObject, Dcoords, &
+  recursive subroutine geom_composed_isInGeometry (rgeomObject, Dcoords, &
                                                     iisInObject)
 
 !<description>
@@ -644,82 +644,82 @@ END SUBROUTINE
 
 !<input>
   ! The object against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! The relative coordinates
-  REAL(DP), DIMENSION(3) :: DrelCoords
+  real(DP), dimension(3) :: DrelCoords
   
   ! some other temporary variables
-  INTEGER(I32) :: i, iisInSubObject
+  integer(I32) :: i, iisInSubObject
   
     ! Transform to local coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Go through all sub-objects
-    IF (rgeomObject%rcomposed%ccomposedType .EQ. GEOM_COMP_TYPE_AND) THEN
+    if (rgeomObject%rcomposed%ccomposedType .eq. GEOM_COMP_TYPE_AND) then
     
       ! Let's assume that the point is inside
       iisInObject = 1
       
-      DO i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%rcomposed%nsubObjects
       
-        CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+        call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
                                DrelCoords, iisInSubObject)
       
-        IF (iisInSubObject .EQ. 0) THEN
+        if (iisInSubObject .eq. 0) then
           ! The point is outside the sub-object
           iisInObject = 0
-          EXIT
-        END IF
+          exit
+        end if
         
-      END DO
+      end do
       
-    ELSE
+    else
     
       ! Let's assume the point is outside
       iisInObject = 0
     
-      DO i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%rcomposed%nsubObjects
       
-        CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+        call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
                                DrelCoords, iisInSubObject)
       
-        IF (iisInSubObject .EQ. 1) THEN
+        if (iisInSubObject .eq. 1) then
           ! The point is inside the sub-object
           iisInObject = 1
-          EXIT
-        END IF
+          exit
+        end if
         
-      END DO
+      end do
       
-    END IF
+    end if
 
     ! Maybe the composed object is inverted?
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
   
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
+  subroutine geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
   
 !<description>
   ! This routine projects a point onto the boundary of a composed object.
@@ -727,12 +727,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -740,35 +740,35 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
 !</subroutine>
   
   ! Some temporary variables
-  REAL(DP), DIMENSION(2) :: DcoordsRef, Dray
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts
-  REAL(DP) :: dminDist, ddist
-  INTEGER :: iminDist, i
-  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+  real(DP), dimension(2) :: DcoordsRef, Dray
+  real(DP), dimension(:,:), pointer :: p_Dverts
+  real(DP) :: dminDist, ddist
+  integer :: iminDist, i
+  type(t_boundaryApprox), pointer :: p_rbndApprox
 
     ! Get boundary approximation
     p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
     
     ! Check if we already have a boundary approximation vector
-    IF(p_rbndApprox%h_Dverts .EQ. ST_NOHANDLE) THEN
+    if(p_rbndApprox%h_Dverts .eq. ST_NOHANDLE) then
     
       ! Update the boundary approximation for this object
-      CALL geom_composed_updateBndApprox(rgeomObject)
+      call geom_composed_updateBndApprox(rgeomObject)
 
-    END IF
+    end if
     
     ! Get vertice vector
     p_Dverts => p_rbndApprox%p_Dverts
     
     ! Transform point to relative coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
     ! Get vector from point to boundary
     Dray = DcoordsRef - p_Dverts(1:2, 1)
@@ -778,7 +778,7 @@ END SUBROUTINE
     iminDist = 1
 
     ! Go through all points of our boundary projection
-    DO i = 2, p_rbndApprox%nverts
+    do i = 2, p_rbndApprox%nverts
     
       ! Get vector from point to boundary
       Dray = DcoordsRef - p_Dverts(1:2, i)
@@ -786,24 +786,24 @@ END SUBROUTINE
       ! Calculate distance
       ddist = Dray(1)**2 + Dray(2)**2
       
-      IF (ddist .LT. dminDist) THEN
+      if (ddist .lt. dminDist) then
         dminDist = ddist
         iminDist = i
-      END IF
+      end if
     
-    END DO
+    end do
     
     ! Transform projection to world coordinates
-    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dverts(1:2, &
+    call bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dverts(1:2, &
                                 iminDist), Dproj)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_composed_calcSignDist (rgeomObject, Dcoords, ddistance)
+  subroutine geom_composed_calcSignDist (rgeomObject, Dcoords, ddistance)
 
 !<description>
   ! This routine calculates the signed distance of a given point and a 
@@ -812,43 +812,43 @@ END SUBROUTINE
 
 !<input>
   ! The composed object
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the object's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP), DIMENSION(2) :: DcoordsRef, Dray
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts
-  REAL(DP) :: dminDist, ddist
-  INTEGER :: i, iInside
-  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+  real(DP), dimension(2) :: DcoordsRef, Dray
+  real(DP), dimension(:,:), pointer :: p_Dverts
+  real(DP) :: dminDist, ddist
+  integer :: i, iInside
+  type(t_boundaryApprox), pointer :: p_rbndApprox
 
     ! Get boundary approximation
     p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
 
     ! Check if we already have a boundary approximation vector
-    IF(p_rbndApprox%h_Dverts .EQ. ST_NOHANDLE) THEN
+    if(p_rbndApprox%h_Dverts .eq. ST_NOHANDLE) then
     
       ! Update the boundary approximation for this object
-      CALL geom_composed_updateBndApprox(rgeomObject)
+      call geom_composed_updateBndApprox(rgeomObject)
       
-    END IF
+    end if
     
     ! Get boundary approximation vector
     p_Dverts => p_rbndApprox%p_Dverts
 
     ! Transform point to relative coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
     ! Get vector from point to boundary
     Dray = DcoordsRef - p_Dverts(1:2, 1)
@@ -857,7 +857,7 @@ END SUBROUTINE
     dminDist = Dray(1)**2 + Dray(2)**2
 
     ! Go through all points of our boundary projection
-    DO i = 2, rgeomObject%rcomposed%p_rboundaryApprox%nverts
+    do i = 2, rgeomObject%rcomposed%p_rboundaryApprox%nverts
     
       ! Get vector from point to boundary
       Dray = DcoordsRef - p_Dverts(1:2, i)
@@ -865,29 +865,29 @@ END SUBROUTINE
       ! Calculate distance
       ddist = Dray(1)**2 + Dray(2)**2
       
-      IF (ddist .LT. dminDist) THEN
+      if (ddist .lt. dminDist) then
         dminDist = ddist
-      END IF
+      end if
     
-    END DO
+    end do
     
     ! Get square root of distance
-    ddistance = SQRT(dminDist)
+    ddistance = sqrt(dminDist)
     
-    CALL geom_composed_isInGeometry(rgeomObject, Dcoords, iInside)
+    call geom_composed_isInGeometry(rgeomObject, Dcoords, iInside)
     
     ! Maybe the composed object is inverted?
-    IF (iInside .EQ. 1) THEN
+    if (iInside .eq. 1) then
       ddistance = -ddistance
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_composed_getNAV(rgeomObject, dtolerance, nverts)
+  recursive subroutine geom_composed_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! Calculates the number of vertices needed to approximate the composed
@@ -896,41 +896,41 @@ END SUBROUTINE
 
 !<input>
   ! The composed object
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  INTEGER :: nsubVerts, i, h_Dverts
-  REAL(DP) :: drelTol
-  TYPE(t_geometryObject), POINTER :: p_rsubObject
+  integer :: nsubVerts, i, h_Dverts
+  real(DP) :: drelTol
+  type(t_geometryObject), pointer :: p_rsubObject
   
     ! Maybe we already have an boundary approximation?
     h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
     
     ! If yes, then we can return the number of allocated vertices
-    IF (h_Dverts .NE. ST_NOHANDLE) THEN
+    if (h_Dverts .ne. ST_NOHANDLE) then
     
       nverts = rgeomObject%rcomposed%p_rboundaryApprox%nverts
 
-      RETURN
+      return
 
-    END IF
+    end if
 
     ! Initialise output
     nverts = 0
     
     ! Go through all sub-objects
-    DO i = 1, rgeomObject%rcomposed%nsubObjects
+    do i = 1, rgeomObject%rcomposed%nsubObjects
       
       ! Get i-th sub-object
       p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
@@ -943,22 +943,22 @@ END SUBROUTINE
       !END IF
             
       ! Get number of vertices for sub-object
-      CALL geom_getNumApproxVerts(p_rsubObject, drelTol, nsubVerts)
+      call geom_getNumApproxVerts(p_rsubObject, drelTol, nsubVerts)
       
       ! Add vertices
       nverts = nverts + nsubVerts
     
-    END DO
+    end do
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_composed_getBndApprox(rgeomObject, dtolerance, &
+  recursive subroutine geom_composed_getBndApprox(rgeomObject, dtolerance, &
                                                   Dverts, nverts)
 
 !<description>
@@ -967,65 +967,65 @@ END SUBROUTINE
 
 !<input>
   ! The composed
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  INTEGER :: i, j, k, io, nsubverts, nmaxverts, ctype
-  INTEGER, DIMENSION(:), ALLOCATABLE :: Iinout
-  REAL(DP) :: dsubtol
-  REAL(DP), DIMENSION(2) :: DmyVert
-  TYPE(t_geometryObject), POINTER :: p_rsubObject
-  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+  integer :: i, j, k, io, nsubverts, nmaxverts, ctype
+  integer, dimension(:), allocatable :: Iinout
+  real(DP) :: dsubtol
+  real(DP), dimension(2) :: DmyVert
+  type(t_geometryObject), pointer :: p_rsubObject
+  type(t_boundaryApprox), pointer :: p_rbndApprox
   
     ! Get boundary approximation
     p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
-    IF (p_rbndApprox%h_Dverts .NE. ST_NOHANDLE) THEN
+    if (p_rbndApprox%h_Dverts .ne. ST_NOHANDLE) then
     
       ! Simply copy the vertices of the boundary approximation
       nverts = p_rbndApprox%nverts
       
-      DO i = 1, nverts
+      do i = 1, nverts
         Dverts(:, i) = p_rbndApprox%p_Dverts(:, i)
-      END DO
+      end do
       
       ! And destroy our boundary approximation
-      CALL storage_free(p_rbndApprox%h_Dverts)
+      call storage_free(p_rbndApprox%h_Dverts)
       p_rbndApprox%nverts = 0
       p_rbndApprox%nvertsAllocated = 0
-      p_rbndApprox%p_Dverts => NULL()
+      p_rbndApprox%p_Dverts => null()
       
       ! Exit here
-      RETURN
+      return
     
-    END IF
+    end if
   
     ! Get composed object's type
     ctype = rgeomObject%rcomposed%ccomposedType
   
     ! Get number of vertices
-    CALL geom_composed_getNAV(rgeomObject, dtolerance, nmaxverts)
+    call geom_composed_getNAV(rgeomObject, dtolerance, nmaxverts)
     
     ! Allocate integer array for inside-outside-test
-    ALLOCATE(Iinout(nmaxverts))
+    allocate(Iinout(nmaxverts))
     
     nverts = 0
     
     ! Now go through all our objects
-    DO i = 1, rgeomObject%rcomposed%nsubObjects
+    do i = 1, rgeomObject%rcomposed%nsubObjects
     
       ! Get i-th sub-object
       p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
@@ -1034,82 +1034,82 @@ END SUBROUTINE
       dsubtol = dtolerance / p_rsubObject%rcoord2D%dscalingFactor
     
       ! Get vertices of i-th sub-object
-      CALL geom_getBoundaryApprox(p_rsubObject, dsubtol, &
+      call geom_getBoundaryApprox(p_rsubObject, dsubtol, &
                                   Dverts(:, nverts+1:), nsubverts)
       
       ! A-priori all vertices of this object belong to the composed object's
       ! boundary
-      DO j = nverts + 1, nverts + nsubverts
+      do j = nverts + 1, nverts + nsubverts
         ! A-priori this vertice belongs to our boundary
         Iinout(j) = 1
         
         ! Transform vertice to our coordinate system
-        CALL bgeom_transformPoint2D(p_rsubObject%rcoord2D, Dverts(1:2, j), &
+        call bgeom_transformPoint2D(p_rsubObject%rcoord2D, Dverts(1:2, j), &
                                     DmyVert)
         Dverts(1:2, j) = DmyVert
         
-      END DO
+      end do
       
       ! Now perform inside-outside test with all other sub-objects
-      DO k = 1, rgeomObject%rcomposed%nsubObjects
+      do k = 1, rgeomObject%rcomposed%nsubObjects
       
         ! Skip i-th sub-object
-        IF (k .NE. i) THEN
+        if (k .ne. i) then
         
           ! Loop through all vertices of i-th sub-object
-          DO j = nverts + 1, nverts + nsubverts
+          do j = nverts + 1, nverts + nsubverts
           
             ! If this point is already out, then skip it
-            IF (Iinout(j) .NE. 0) THEN
+            if (Iinout(j) .ne. 0) then
           
               ! Perform inside-outside-test
-              CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(k), &
+              call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(k), &
                                    Dverts(1:2, j), io)
 
               ! If this is a UNION-quantor node and the point is inside the
               ! object, or if this node is a INTERSECT-quantor node and the
               ! point is outside, then we can kick it
-              IF (((ctype .EQ. GEOM_COMP_TYPE_OR) .AND. (io .EQ. 1)) .OR. &
-                  ((ctype .EQ. GEOM_COMP_TYPE_AND) .AND. (io .EQ. 0))) THEN
+              if (((ctype .eq. GEOM_COMP_TYPE_OR) .and. (io .eq. 1)) .or. &
+                  ((ctype .eq. GEOM_COMP_TYPE_AND) .and. (io .eq. 0))) then
                 Iinout(j) = 0
-              END IF
+              end if
             
-            END IF
+            end if
             
-          END DO
+          end do
         
-        END IF
+        end if
       
-      END DO
+      end do
       
       ! Increment vertice offset
       nverts = nverts + nsubverts
     
-    END DO
+    end do
     
     ! Now we need to compress the vertice vector, or in other words:
     ! We will kick out all vertices which do not belong to the boundary of
     ! this composed object.
     j = 0
     i = 1
-    DO WHILE (i+j .LE. nverts)
+    do while (i+j .le. nverts)
       
-      IF (Iinout(i+j) .NE. 0) THEN
+      if (Iinout(i+j) .ne. 0) then
       
-        IF (j .GT. 0) THEN
+        if (j .gt. 0) then
           ! copy vertice
           Dverts(1:2,i) = Dverts(1:2,i+j)
-        END IF
+        end if
       
         ! increment destination index
         i = i+1
-      ELSE
+      else
         ! vertice has been kicked
         ! increment source index
         j = j+1
-      END IF
+      end if
       
-    END DO
+    end do
     
     ! Print some debug info
     !PRINT *, 'Boundary Approx: ', nmaxverts, ' vertices allocated'
@@ -1121,17 +1121,17 @@ END SUBROUTINE
     nverts = i-1
     
     ! Deallocate integer array
-    DEALLOCATE(Iinout)
+    deallocate(Iinout)
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_composed_updateBndApprox(rgeomObject, dtolerance)
+  subroutine geom_composed_updateBndApprox(rgeomObject, dtolerance)
 
 !<description>
   ! This routine updates the boundary approximation of the composed object.
@@ -1140,32 +1140,32 @@ END SUBROUTINE
 !<input>
   ! OPTIONAL: The tolerance for the boundary approximation.
   ! If not present, 10e-2 is used.
-  REAL(DP), OPTIONAL, INTENT(IN) :: dtolerance  
+  real(DP), optional, intent(IN) :: dtolerance  
 !</input>
 
 !<input>
   ! The composed object
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
 !</input>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dTol
-  INTEGER :: nvertsNeeded, nvertsUsed, h_Dverts
-  INTEGER, DIMENSION(2) :: DmyDim
-  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+  real(DP) :: dTol
+  integer :: nvertsNeeded, nvertsUsed, h_Dverts
+  integer, dimension(2) :: DmyDim
+  type(t_boundaryApprox), pointer :: p_rbndApprox
 
     ! Make sure this is a composed object
-    IF (rgeomObject%ctype .NE. GEOM_COMPOSED) RETURN
+    if (rgeomObject%ctype .ne. GEOM_COMPOSED) return
     
     ! Get tolerance
     dTol = 1E-2_DP
-    IF (PRESENT(dtolerance)) THEN
-      IF ((dtolerance .GT. 1E-8_DP) .AND. (dtolerance .LE. 1E-1_DP)) THEN
+    if (present(dtolerance)) then
+      if ((dtolerance .gt. 1E-8_DP) .and. (dtolerance .le. 1E-1_DP)) then
         dTol = dtolerance
-      END IF
-    END IF
+      end if
+    end if
 
     ! Get a pointer to the boundary approximation
     p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
@@ -1177,41 +1177,41 @@ END SUBROUTINE
     p_rbndApprox%h_Dverts = ST_NOHANDLE
 
     ! Get number of vertices needed for tolerance
-    CALL geom_composed_getNAV(rgeomObject, dTol, nvertsNeeded)
+    call geom_composed_getNAV(rgeomObject, dTol, nvertsNeeded)
     
     ! Do we already have a boundary approximation?
-    IF (h_Dverts .NE. ST_NOHANDLE) THEN
+    if (h_Dverts .ne. ST_NOHANDLE) then
     
       ! Do we need to re-allocate the array?
-      IF (p_rbndApprox%nvertsAllocated .LT. nvertsNeeded) THEN
+      if (p_rbndApprox%nvertsAllocated .lt. nvertsNeeded) then
       
         ! Reallocate array
-        CALL storage_realloc('geom_composed_updateBndApprox', nvertsNeeded, &
-                             h_Dverts, ST_NEWBLOCK_NOINIT, .FALSE.)
+        call storage_realloc('geom_composed_updateBndApprox', nvertsNeeded, &
+                             h_Dverts, ST_NEWBLOCK_NOINIT, .false.)
         
         ! Store allocated size
         p_rbndApprox%nvertsAllocated = nvertsNeeded
         
-      END IF
+      end if
       
-    ELSE
+    else
         
       ! Allocate some space for us
       DmyDim(1) = 2
       DmyDim(2) = nvertsNeeded
-      CALL storage_new2D('geom_composed_updateBndApprox', 'Dverts', &
+      call storage_new2D('geom_composed_updateBndApprox', 'Dverts', &
                          DmyDim, ST_DOUBLE, h_Dverts, ST_NEWBLOCK_NOINIT)
 
       ! Store allocated size
       p_rbndApprox%nvertsAllocated = nvertsNeeded
 
-    END IF
+    end if
     
     ! Get the vertice vector
-    CALL storage_getbase_double2D(h_Dverts, p_rbndApprox%p_Dverts)
+    call storage_getbase_double2D(h_Dverts, p_rbndApprox%p_Dverts)
     
     ! Get the object's boundary approximation
-    CALL geom_composed_getBndApprox(rgeomObject, dTol, p_rbndApprox%p_Dverts, &
+    call geom_composed_getBndApprox(rgeomObject, dTol, p_rbndApprox%p_Dverts, &
                                     nvertsUsed)
     
     ! Store tolerance and number of used vertices
@@ -1220,20 +1220,20 @@ END SUBROUTINE
     p_rbndApprox%h_Dverts = h_Dverts
     
     ! Check if we have allocated more than 200% of the vertices we use.
-    IF ((2 * nvertsUsed) .LE. p_rbndApprox%nvertsAllocated) THEN
+    if ((2 * nvertsUsed) .le. p_rbndApprox%nvertsAllocated) then
     
       ! Reallocate array
-      CALL storage_realloc('geom_composed_updateBndApprox', nvertsUsed, &
-                           p_rbndApprox%h_Dverts, ST_NEWBLOCK_NOINIT, .TRUE.)
+      call storage_realloc('geom_composed_updateBndApprox', nvertsUsed, &
+                           p_rbndApprox%h_Dverts, ST_NEWBLOCK_NOINIT, .true.)
       
       ! Remember we have reallocated the array
      p_rbndApprox%nvertsAllocated = nvertsUsed
       
-    END IF
+    end if
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
     
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -1243,7 +1243,7 @@ END SUBROUTINE
   
 !<subroutine>
 
-  SUBROUTINE geom_init_circle_indirect(rgeomObject, rcoordSys, dradius, &
+  subroutine geom_init_circle_indirect(rgeomObject, rcoordSys, dradius, &
                                        binverted)
 
 !<description>
@@ -1252,20 +1252,20 @@ END SUBROUTINE
 
 !<input>
   ! A 2D coordinate system for the circle.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
   
   ! A radius for the circle.
-  REAL(DP),                    INTENT(IN)  :: dradius
+  real(DP),                    intent(IN)  :: dradius
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -1281,24 +1281,24 @@ END SUBROUTINE
     rgeomObject%rcoord2D = rcoordSys
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the radius of the circle
     rgeomObject%rcircle%dradius = dradius
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_init_circle_direct(rgeomObject, dradius, Dorigin, &
+  subroutine geom_init_circle_direct(rgeomObject, dradius, Dorigin, &
                                      drotation, dscalingFactor, binverted)
 
 !<description>
@@ -1307,29 +1307,29 @@ END SUBROUTINE
 
 !<input>
   ! A radius for the circle.
-  REAL(DP),                          INTENT(IN)  :: dradius
+  real(DP),                          intent(IN)  :: dradius
   
   ! OPTIONAL: The origin of the circle.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation of the circle.
   ! Is set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  real(DP), optional,                intent(IN)  :: drotation
   
   ! OPTIONAL: The scaling factor of the circle.
   ! Is set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                intent(IN)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,                 INTENT(IN)  :: binverted
+  logical, optional,                 intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),            INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -1342,28 +1342,28 @@ END SUBROUTINE
     rgeomObject%ctype = GEOM_CIRCLE
     
     ! Now we need to create the coordinate system.
-    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
                                dscalingFactor)
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the radius of the circle
     rgeomObject%rcircle%dradius = dradius
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_circle_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_circle_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the circle or not.
@@ -1375,22 +1375,22 @@ END SUBROUTINE
 
 !<input>
   ! The circle against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! We need one local variable for distance calculation
-  REAL(DP) :: ddistance
+  real(DP) :: ddistance
 
     ! Checking if a point is inside a circle is quite easy.
     ! We can also improve the performance a bit by not calling the
@@ -1406,29 +1406,29 @@ END SUBROUTINE
     
     ! Now we check if the squared distance is <= than the scaled radius
     ! squared.
-    IF (ddistance .LE. ((rgeomObject%rcoord2D%dscalingFactor * &
-                         rgeomObject%rcircle%dradius)**2)) THEN
+    if (ddistance .le. ((rgeomObject%rcoord2D%dscalingFactor * &
+                         rgeomObject%rcircle%dradius)**2)) then
       ! We are inside the circle
       iisInObject = 1
-    ELSE
+    else
       ! We are not inside the circle
       iisInObject = 0
-    END IF
+    end if
 
     ! Maybe the circle is inverted?    
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
         
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE geom_circle_prjToBoundary (rgeomObject, Dcoords, Dproj)
+  subroutine geom_circle_prjToBoundary (rgeomObject, Dcoords, Dproj)
   
 !<description>
   ! This routine projects a point onto the boundary of a 2D circle.
@@ -1436,12 +1436,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -1449,13 +1449,13 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
 !</subroutine>
 
-  REAL(DP) :: dlen, drad
+  real(DP) :: dlen, drad
   
     ! Calculate scaled radius
     drad = rgeomObject%rcoord2D%dscalingFactor * rgeomObject%rcircle%dradius
@@ -1466,29 +1466,29 @@ END SUBROUTINE
     Dproj(2) = Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2)
     
     ! Calculate the length of the vector
-    dlen = SQRT(Dproj(1)**2 + Dproj(2)**2)
+    dlen = sqrt(Dproj(1)**2 + Dproj(2)**2)
     
     ! If the length is 0, then the given point is the circle's midpoint.
-    IF (dlen == 0.0_DP) THEN
+    if (dlen == 0.0_DP) then
       ! Any point on the circle's boundary is okay
       Dproj(1) = rgeomObject%rcoord2D%Dorigin(1) + drad
       Dproj(2) = rgeomObject%rcoord2D%Dorigin(2)
 
-    ELSE
+    else
       ! Normalize the vector and scale it by the radius
       Dproj(1) = (Dproj(1) * drad) / dlen
       Dproj(2) = (Dproj(2) * drad) / dlen
 
-    END IF
+    end if
     
     ! That's it
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_circle_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+  subroutine geom_circle_calcSignedDistance (rgeomObject, Dcoords, ddistance)
 
 !<description>
   ! This routine calculates the signed distance of a given point and a circle.
@@ -1496,16 +1496,16 @@ END SUBROUTINE
 
 !<input>
   ! The circle against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the circle's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
@@ -1515,25 +1515,25 @@ END SUBROUTINE
     
     ! Calculate the distance of the coordinate system's origin and the given
     ! point and subtract the scaled radius.
-    ddistance = SQRT(((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
+    ddistance = sqrt(((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
                    + ((Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2))**2)) &
                    - (rgeomObject%rcoord2D%dscalingFactor * &
                    rgeomObject%rcircle%dradius)
     
     ! Now we need to check whether the circle is inverted.
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       ddistance = -ddistance
-    END IF
+    end if
         
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_circle_polygonise (rgeomObject, hpolyHandle, &
+  subroutine geom_circle_polygonise (rgeomObject, hpolyHandle, &
                                      ndesiredVerticeCount)
   
 !<description>
@@ -1544,64 +1544,64 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The desired number of vertices for the produced polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
   ! If not given, 32 vertices are generated.
-  INTEGER, INTENT(IN) :: ndesiredVerticeCount
+  integer, intent(IN) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
-  INTEGER :: i
+  integer :: i
   
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
-  REAL(DP) :: dstep, dangle, dradius
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  real(DP) :: dstep, dangle, dradius
   
-  INTEGER(I32), DIMENSION(2) :: Isize
+  integer(I32), dimension(2) :: Isize
   
     ! Calculate angle step
-    dstep = (SYS_PI * 2.0_DP) / REAL(ndesiredVerticeCount, DP)
+    dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
     
     ! Get radius
     dradius = rgeomObject%rcircle%dradius
   
     ! Allocate desired number of vertices
     Isize = (/ 2, ndesiredVerticeCount /)
-    CALL storage_new2D('geom_circle_polygonise', 'hpolyHandle', Isize, &
+    call storage_new2D('geom_circle_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set vertices
-    DO i=1, ndesiredVerticeCount
+    do i=1, ndesiredVerticeCount
     
       ! Calculate angle
-      dangle = dstep * REAL(i, DP)
+      dangle = dstep * real(i, DP)
       
       ! Calculate vertice position
-      p_DVertices(1, i) = dradius * COS(dangle)
-      p_DVertices(2, i) = dradius * SIN(dangle)
+      p_DVertices(1, i) = dradius * cos(dangle)
+      p_DVertices(2, i) = dradius * sin(dangle)
     
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+  pure subroutine geom_circle_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! Calculates the number of vertices needed to approximate the circle's
@@ -1610,36 +1610,36 @@ END SUBROUTINE
 
 !<input>
   ! The circle
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! The length of the boundary
-  REAL(DP) :: dboundLen
+  real(DP) :: dboundLen
   
     ! The length of the boundary is 2 * radius * PI
     dboundLen = 2.0_DP * rgeomObject%rcircle%dradius * SYS_PI
     
     ! The number of vertices is simply the boundary length divided by the
     ! tolerance
-    nverts = INT(dboundLen / dtolerance)
+    nverts = int(dboundLen / dtolerance)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+  subroutine geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
 
 !<description>
   ! Calculates the boundary approximation vertices for the circle.
@@ -1647,50 +1647,50 @@ END SUBROUTINE
 
 !<input>
   ! The circle
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dangle, drad, dstep
-  INTEGER :: i
+  real(DP) :: dangle, drad, dstep
+  integer :: i
   
     ! Get circle radius
     drad = rgeomObject%rcircle%dradius
     
     ! Get number of vertices to allocate
-    CALL geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+    call geom_circle_getNAV(rgeomObject, dtolerance, nverts)
 
     ! Calculate angle delta    
-    dstep = (2.0_DP * SYS_PI) / REAL(nverts, DP)
+    dstep = (2.0_DP * SYS_PI) / real(nverts, DP)
     
     ! Loop though all vertices
-    DO i = 1, nverts
+    do i = 1, nverts
     
       ! Calculate angle
-      dangle = REAL(i-1, DP) * dstep
+      dangle = real(i-1, DP) * dstep
     
       ! Calculate point
-      Dverts(1, i) = drad * COS(dangle)
-      Dverts(2, i) = drad * SIN(dangle)
+      Dverts(1, i) = drad * cos(dangle)
+      Dverts(2, i) = drad * sin(dangle)
       
-    END DO
+    end do
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -1700,7 +1700,7 @@ END SUBROUTINE
     
 !<subroutine>
 
-  SUBROUTINE geom_init_square_indirect(rgeomObject, rcoordSys, dlength, &
+  subroutine geom_init_square_indirect(rgeomObject, rcoordSys, dlength, &
                                        binverted)
 
 !<description>
@@ -1709,20 +1709,20 @@ END SUBROUTINE
 
 !<input>
   ! A 2D coordinate system for the square.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
   
   ! The edge length for the square.
-  REAL(DP),                    INTENT(IN)  :: dlength
+  real(DP),                    intent(IN)  :: dlength
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -1738,24 +1738,24 @@ END SUBROUTINE
     rgeomObject%rcoord2D = rcoordSys
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the edge length of the square.
     rgeomObject%rsquare%dlength = dlength
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE geom_init_square_direct(rgeomObject, dlength, Dorigin,drotation, &
+  subroutine geom_init_square_direct(rgeomObject, dlength, Dorigin,drotation, &
                                      dscalingFactor, binverted)
 
 !<description>
@@ -1764,29 +1764,29 @@ END SUBROUTINE
 
 !<input>
   ! The edge length for the square.
-  REAL(DP),                          INTENT(IN)  :: dlength
+  real(DP),                          intent(IN)  :: dlength
   
   ! OPTIONAL: The origin of the square.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation of the square.
   ! Is set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  real(DP), optional,                intent(IN)  :: drotation
   
   ! OPTIONAL: The scaling factor of the square.
   ! Is set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                intent(IN)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,                 INTENT(IN)  :: binverted
+  logical, optional,                 intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),            INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -1799,28 +1799,28 @@ END SUBROUTINE
     rgeomObject%ctype = GEOM_SQUARE
     
     ! Now we need to create the coordinate system.
-    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
                                dscalingFactor)
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the edge length of the square.
     rgeomObject%rsquare%dlength = dlength
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_square_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_square_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the square or not.
@@ -1832,55 +1832,55 @@ END SUBROUTINE
 
 !<input>
   ! The square against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
     ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! We need one local variable for distance calculation
-  REAL(DP) :: ddistance
+  real(DP) :: ddistance
   
   ! And an array for the transformed X- and Y-coordinates of our point
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
 
     ! First transfrom the point's coordinates into the square's local
     ! coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
     
     ! Get the distance
-    ddistance = MAX(ABS(DrelCoords(1)), ABS(DrelCoords(2)))
+    ddistance = max(abs(DrelCoords(1)), abs(DrelCoords(2)))
     
     ! Check against half of the edge length
-    IF (ddistance .LE. (0.5_DP * rgeomObject%rsquare%dlength)) THEN
+    if (ddistance .le. (0.5_DP * rgeomObject%rsquare%dlength)) then
       ! We are inside the square
       iisInObject = 1
-    ELSE
+    else
       ! We are outside the square
       iisInObject = 0
-    END IF
+    end if
     
     ! Maybe the square is inverted
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
 
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
   
-  SUBROUTINE geom_square_prjToBoundary (rgeomObject, Dcoords, Dproj)
+  subroutine geom_square_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
   ! This routine calculates the projection of a point onto a 2D square's
@@ -1892,12 +1892,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -1905,67 +1905,67 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
 !</subroutine>
 
   ! Square's half edge length
-  REAL(DP) :: dlen
+  real(DP) :: dlen
   
   ! Temporary coords in reference coordinate system
-  REAL(DP), DIMENSION(2) :: DcoordsRef
+  real(DP), dimension(2) :: DcoordsRef
   
   ! mirroring factors
-  REAL(DP), DIMENSION(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
+  real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
   
     ! Get square's half egde length
     dlen = (rgeomObject%rsquare%dlength * 0.5_DP)
   
     ! First we need to transform the point's coordinates into the square's
     ! local coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
     ! Now mirror the point, so that the resulting point is inside the positive
     ! quadrant.
-    IF (DcoordsRef(1) .LT. 0.0) THEN
+    if (DcoordsRef(1) .lt. 0.0) then
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
       DcoordsRef(1) = -DcoordsRef(1)
-    END IF
+    end if
     
-    IF (DcoordsRef(2) .LT. 0.0) THEN
+    if (DcoordsRef(2) .lt. 0.0) then
       ! Y-coord of point is negative, so multiply with -1
       Dmirror(2) = -1.0_DP
       DcoordsRef(2) = -DcoordsRef(2)
-    END IF
+    end if
     
     ! If both coordinates are greater than half of the square's egde length,
     ! then the projection is the square's corner.
     
-    IF ((DcoordsRef(1) .GE. dlen) .AND. (DcoordsRef(2) .GE. dlen)) THEN
+    if ((DcoordsRef(1) .ge. dlen) .and. (DcoordsRef(2) .ge. dlen)) then
     
       ! Save square's corner
       DcoordsRef(1) = dlen
       DcoordsRef(2) = dlen
     
-    ELSE
+    else
       ! In all other cases, the projection is on an edge of the square.
       ! Now find out which coordinate is greater.
-      IF (DcoordsRef(1) .GE. DcoordsRef(2)) THEN
+      if (DcoordsRef(1) .ge. DcoordsRef(2)) then
         ! The X-coordinate is greater than the Y-coordinate.
         ! Now we need to set the X-coordinate to half of the square's edge
         ! length and then we have our projection.
         DcoordsRef(1) = dlen
       
-      ELSE
+      else
         ! Otherwise correct Y-coordinate
         DcoordsRef(2) = dlen
       
-      END IF
+      end if
     
-    END IF
+    end if
     
     ! The projection itself is calculated, now we need to mirror the projection
     ! into the quadrant where our original point was in.
@@ -1973,17 +1973,17 @@ END SUBROUTINE
     DcoordsRef(2) = DcoordsRef(2) * Dmirror(2)
     
     ! And transform the projection back into world coordinates
-    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
+    call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+  subroutine geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
   
 !<description>
   ! This routine calculates the shortest signed distance between a point and
@@ -1992,23 +1992,23 @@ END SUBROUTINE
 
 !<input>
   ! The square against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
 
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the square's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
 
   ! We need one local array for the transformed X- and Y-coordinates of our
   ! point.
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
   
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Now we are going to use some nasty tricks to calculate the shortest
@@ -2046,24 +2046,24 @@ END SUBROUTINE
   
     ! We are now going to transform our point into the square's local
     ! coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Now get the absolute values of the relative coords, and subtract one
     ! half of the square's edge length
-    DrelCoords(1) = ABS(DrelCoords(1)) - (rgeomObject%rsquare%dlength * 0.5_DP)
-    DrelCoords(2) = ABS(DrelCoords(2)) - (rgeomObject%rsquare%dlength * 0.5_DP)
+    DrelCoords(1) = abs(DrelCoords(1)) - (rgeomObject%rsquare%dlength * 0.5_DP)
+    DrelCoords(2) = abs(DrelCoords(2)) - (rgeomObject%rsquare%dlength * 0.5_DP)
   
     ! Check whether the resulting coordinates are both positive
-    IF ((DrelCoords(1) > 0.0_DP) .AND. (DrelCoords(2) > 0.0_DP)) THEN
-      ddistance = SQRT(DrelCoords(1)**2 + DrelCoords(2)**2)
-    ELSE
-      ddistance = MAX(DrelCoords(1), DrelCoords(2))
-    END IF
+    if ((DrelCoords(1) > 0.0_DP) .and. (DrelCoords(2) > 0.0_DP)) then
+      ddistance = sqrt(DrelCoords(1)**2 + DrelCoords(2)**2)
+    else
+      ddistance = max(DrelCoords(1), DrelCoords(2))
+    end if
     
     ! Is the square inverted?
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       ddistance = -ddistance
-    END IF
+    end if
     
     ! Make sure to scale the distance by the square's coordinate system's
     ! scaling factor
@@ -2071,13 +2071,13 @@ END SUBROUTINE
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_square_polygonise (rgeomObject, hpolyHandle)
+  subroutine geom_square_polygonise (rgeomObject, hpolyHandle)
   
 !<description>
   ! This routine converts a square to a polygon, so that it can
@@ -2087,32 +2087,32 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
-  REAL(DP) :: dedge
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  real(DP) :: dedge
 
-  INTEGER(I32), DIMENSION(2), PARAMETER :: Isize = (/ 2, 4 /)  
+  integer(I32), dimension(2), parameter :: Isize = (/ 2, 4 /)  
   
     ! Get edge length
     dedge = rgeomObject%rsquare%dlength * 0.5_DP
   
     ! Allocate desired number of vertices
-    CALL storage_new2D('geom_square_polygonise', 'hpolyHandle', Isize, &
+    call storage_new2D('geom_square_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set coords
     p_Dvertices(1,1) = -dedge
@@ -2124,13 +2124,13 @@ END SUBROUTINE
     p_Dvertices(1,4) = dedge
     p_Dvertices(2,4) = dedge
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE geom_square_getNAV(rgeomObject, dtolerance, nverts)
+  pure subroutine geom_square_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! Calculates the number of vertices needed to approximate the square's
@@ -2139,36 +2139,36 @@ END SUBROUTINE
 
 !<input>
   ! The square
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! The length of the boundary
-  REAL(DP) :: dboundLen
+  real(DP) :: dboundLen
   
     ! The length of the boundary is 4 * edge_length
     dboundLen = 4.0_DP * rgeomObject%rsquare%dlength
     
     ! The number of vertices is simply the boundary length divided by the
     ! tolerance
-    nverts = INT(dboundLen / dtolerance) + 4
+    nverts = int(dboundLen / dtolerance) + 4
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+  subroutine geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
 
 !<description>
   ! Calculates the boundary approximation vertices for the square.
@@ -2176,65 +2176,65 @@ END SUBROUTINE
 
 !<input>
   ! The square
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dedge
-  INTEGER :: i, nvpe
+  real(DP) :: dedge
+  integer :: i, nvpe
   
     ! Get square's edge length
     dedge = rgeomObject%rsquare%dlength
     
     ! Calculate number of vertices per edge
-    nvpe = INT(dedge / dtolerance)
+    nvpe = int(dedge / dtolerance)
     
     ! Get half of square's edge length
     dedge = 0.5_DP * dedge
 
     ! Edge 1
-    DO i = 1, nvpe
+    do i = 1, nvpe
       Dverts(1, i) = dedge
-      Dverts(2, i) = -dedge + (REAL(i-1, DP) * dtolerance)
-    END DO
+      Dverts(2, i) = -dedge + (real(i-1, DP) * dtolerance)
+    end do
     
     ! Edge 2
-    DO i = 1, nvpe
-      Dverts(1, nvpe + i) = dedge - (REAL(i-1, DP) * dtolerance)
+    do i = 1, nvpe
+      Dverts(1, nvpe + i) = dedge - (real(i-1, DP) * dtolerance)
       Dverts(2, nvpe + i) = dedge
-    END DO
+    end do
 
     ! Edge 3
-    DO i = 1, nvpe
+    do i = 1, nvpe
       Dverts(1, 2*nvpe + i) = -dedge
-      Dverts(2, 2*nvpe + i) = dedge - (REAL(i-1, DP) * dtolerance)
-    END DO
+      Dverts(2, 2*nvpe + i) = dedge - (real(i-1, DP) * dtolerance)
+    end do
     
     ! Edge 4
-    DO i = 1, nvpe
-      Dverts(1, 3*nvpe + i) = -dedge + (REAL(i-1, DP) * dtolerance)
+    do i = 1, nvpe
+      Dverts(1, 3*nvpe + i) = -dedge + (real(i-1, DP) * dtolerance)
       Dverts(2, 3*nvpe + i) = -dedge
-    END DO
+    end do
     
     ! Store number of vertices written
     nverts = 4 * nvpe
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -2244,7 +2244,7 @@ END SUBROUTINE
   
 !<subroutine>
 
-  SUBROUTINE geom_init_ellipse_indirect(rgeomObject, rcoordSys, Dradii, &
+  subroutine geom_init_ellipse_indirect(rgeomObject, rcoordSys, Dradii, &
                                         binverted)
 
 !<description>
@@ -2253,20 +2253,20 @@ END SUBROUTINE
 
 !<input>
   ! A 2D coordinate system for the ellipse.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
   
   ! An array holding the X- and Y-radii for the ellipse.
-  REAL(DP), DIMENSION(:),      INTENT(IN)  :: Dradii
+  real(DP), dimension(:),      intent(IN)  :: Dradii
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -2282,24 +2282,24 @@ END SUBROUTINE
     rgeomObject%rcoord2D = rcoordSys
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the X- and Y-radii of the ellipse
     rgeomObject%rellipse%Dradii = Dradii(1:2)
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_init_ellipse_direct(rgeomObject, Dradii, Dorigin, &
+  subroutine geom_init_ellipse_direct(rgeomObject, Dradii, Dorigin, &
                                       drotation, dscalingFactor, binverted)
 
 !<description>
@@ -2308,29 +2308,29 @@ END SUBROUTINE
 
 !<input>
   ! A array holding the X- and Y-radii for the ellipse.
-  REAL(DP), DIMENSION(:),            INTENT(IN)  :: Dradii
+  real(DP), dimension(:),            intent(IN)  :: Dradii
   
   ! OPTIONAL: The origin of the ellipse.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation of the ellipse.
   ! Is set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  real(DP), optional,                intent(IN)  :: drotation
   
   ! OPTIONAL: The scaling factor of the ellipse.
   ! Is set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                intent(IN)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,                 INTENT(IN)  :: binverted
+  logical, optional,                 intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),            INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -2343,15 +2343,15 @@ END SUBROUTINE
     rgeomObject%ctype = GEOM_ELLIPSE
     
     ! Now we need to create the coordinate system.
-    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
                                dscalingFactor)
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the X- and Y-radius of the ellipse
     rgeomObject%rellipse%Dradii = Dradii(1:2)
@@ -2359,13 +2359,13 @@ END SUBROUTINE
     ! That's it!
   
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_ellipse_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_ellipse_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the ellipse or not.
@@ -2377,26 +2377,26 @@ END SUBROUTINE
 
 !<input>
   ! The ellipse against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! An array for the transformed X- and Y-coordinates of our point
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
   
     ! First transfrom the point's coordinates into the ellipse's local
     ! coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
 
     ! And scale the coordinates by the inverses of our radiuses.
     ! By doing this, we "transform" our ellipse into a circle with radius 1
@@ -2404,30 +2404,30 @@ END SUBROUTINE
     DrelCoords(2) = DrelCoords(2) / rgeomObject%rellipse%Dradii(2)
     
     ! Now check the length of our resulting point
-    IF ((DrelCoords(1)**2 + DrelCoords(2)**2) .LE. 1.0_DP) THEN
+    if ((DrelCoords(1)**2 + DrelCoords(2)**2) .le. 1.0_DP) then
       ! We're inside the ellipse
       iisInObject = 1
       
-    ELSE
+    else
       ! We are outside the ellipse
       iisInObject = 0
       
-    END IF
+    end if
 
     ! Is the ellipse inverted?
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
   
-  SUBROUTINE geom_ellipse_prjToBoundary (rgeomObject, Dcoords, Dproj)
+  subroutine geom_ellipse_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
   ! This routine calculates the projection of a point onto an ellipse's
@@ -2445,12 +2445,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -2458,26 +2458,26 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
 !</subroutine>
 
   ! Two variables for the ellipses radiuses
-  REAL(DP) :: dradX, dradY
+  real(DP) :: dradX, dradY
   
   ! Some other temporary variables needed for the Newton iteration
-  REAL(DP) :: dT, dF, dFDer, dXDivA, dYDivB, dradXSqr, dradYSqr, dprX, dprY
-  REAL(DP) :: dratio, dXDivASqr, dYDivBSqr
-  LOGICAL :: btranspose = .FALSE.
-  INTEGER :: i
+  real(DP) :: dT, dF, dFDer, dXDivA, dYDivB, dradXSqr, dradYSqr, dprX, dprY
+  real(DP) :: dratio, dXDivASqr, dYDivBSqr
+  logical :: btranspose = .false.
+  integer :: i
 
   ! Temporary coords in reference coordinate system
-  REAL(DP), DIMENSION(2) :: DcoordsRef
+  real(DP), dimension(2) :: DcoordsRef
   
   ! mirroring factors
-  REAL(DP), DIMENSION(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
+  real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
 
     ! Get the ellipse's X- and Y-radii
     dradX = rgeomObject%rellipse%Dradii(1)
@@ -2485,117 +2485,117 @@ END SUBROUTINE
   
     ! First we need to transform the point's coordinates into the ellipse's
     ! local coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
     ! First we are going to check whether the ellipse degenerates to a line
     ! or even a point.
-    IF(dradY .LE. 0.0_DP) THEN
+    if(dradY .le. 0.0_DP) then
       ! Y-radius is 0
       ! Maybe the ellipse is even a point?
-      IF (dradX .LE. 0.0_DP) THEN
+      if (dradX .le. 0.0_DP) then
         ! Special case: point
         ! The projection is the ellipse's midpoint
         DcoordsRef = Dcoords - rgeomObject%rcoord2D%Dorigin
         
-      ELSE
+      else
         ! The ellipse is a line on the X-axis.
         ! So we can set the Y-coordinate of the projection to 0.
         DcoordsRef(2) = 0.0_DP
         
         ! Where is the point's X-coordinate in respect to the line?
-        IF (DcoordsRef(1) .LE. -dradX) THEN
+        if (DcoordsRef(1) .le. -dradX) then
           ! Left of the line
           DcoordsRef(1) = -dradX
           
-        ELSE IF (DcoordsRef(1) .GE. dradX) THEN
+        else if (DcoordsRef(1) .ge. dradX) then
           ! Right of the line
           DcoordsRef(1) = dradX;
           
-        END IF
+        end if
         
         ! If the point was on the line, then the X-coordinate does not need
         ! to be modified.
               
-      END IF
+      end if
     
       ! The projection is calculated - transform it to world coordinates.
-      CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
+      call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
       
-      RETURN
+      return
       
-    ELSE IF(dradX .LE. 0.0_DP) THEN
+    else if(dradX .le. 0.0_DP) then
       ! In this case the ellipse is a line on the Y-axis
       ! So we can set the X-coordinate of the projection to 0.
       DcoordsRef(1) = 0.0_DP
         
       ! Where is the point's Y-coordinate in respect to the line?
-      IF (DcoordsRef(2) .LE. -dradY) THEN
+      if (DcoordsRef(2) .le. -dradY) then
         ! Below of the line
         DcoordsRef(2) = -dradY
           
-      ELSE IF (DcoordsRef(2) .GE. dradY) THEN
+      else if (DcoordsRef(2) .ge. dradY) then
         ! Above of the line
         DcoordsRef(2) = dradY;
           
-      END IF
+      end if
         
       ! If the point was on the line, then the Y-coordinate does not need
       ! to be modified.
       ! The projection is calculated - transform it to world coordinates.
-      CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
+      call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
       
-      RETURN
+      return
       
-    END IF
+    end if
     
     ! One more special case: The ellipse is a circle.
-    IF (dradX == dradY) THEN
+    if (dradX == dradY) then
       ! Get vector between circle's midpoint and point
       Dproj = Dcoords - rgeomObject%rcoord2D%Dorigin
       
       ! Get length of vector
-      dT = SQRT(Dproj(1)**2 + Dproj(2)**2)
+      dT = sqrt(Dproj(1)**2 + Dproj(2)**2)
       
       ! Is the point equal to the circle's midpoint?
-      IF (dT == 0.0_DP) THEN
+      if (dT == 0.0_DP) then
         ! Then the projection is the circle's midpoint
         Dproj = Dcoords
         
-        RETURN
+        return
         
-      END IF
+      end if
       
       ! Scale vector
       Dproj = (Dproj * rgeomObject%rcoord2D%dscalingFactor * dradX) / dT
       
-      RETURN
+      return
     
-    END IF
+    end if
     
     ! Now here comes the more interesting part - the ellipse is not a circle,
     ! line or point.
 
     ! The first thing we have to do is to move our point into the positive
     ! quadrant.
-    IF (DcoordsRef(1) .LT. 0.0_DP) THEN
+    if (DcoordsRef(1) .lt. 0.0_DP) then
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
       DcoordsRef(1) = -DcoordsRef(1)
-    ELSE 
+    else 
       Dmirror(1) = 1.0_DP
-    END IF
+    end if
     
-    IF (DcoordsRef(2) .LT. 0.0_DP) THEN
+    if (DcoordsRef(2) .lt. 0.0_DP) then
       ! Y-coord of point is negative, so multiply with -1
       Dmirror(2) = -1.0_DP
       DcoordsRef(2) = -DcoordsRef(2)
-    ELSE
+    else
       Dmirror(2) = 1.0_DP
-    END IF
+    end if
     
     ! Now maybe we need to transpose the ellipse?
-    IF (dradX .LT. dradY) THEN
-      btranspose = .TRUE.
+    if (dradX .lt. dradY) then
+      btranspose = .true.
 
       ! Change ellipse radius and point coordinates
       dT = dradX
@@ -2605,12 +2605,12 @@ END SUBROUTINE
       DcoordsRef(1) = DcoordsRef(2)
       DcoordsRef(2) = dT
 
-    END IF
+    end if
     
     ! Now where is the point we want to project?
-    IF (DcoordsRef(1) .NE. 0.0_DP) THEN
+    if (DcoordsRef(1) .ne. 0.0_DP) then
     
-      IF (DcoordsRef(2) .NE. 0.0_DP) THEN
+      if (DcoordsRef(2) .ne. 0.0_DP) then
       
         ! The point to be projection is not on one of the axes
         ! This is the part where we are going to start that Newton-iteration.
@@ -2625,7 +2625,7 @@ END SUBROUTINE
         dprY = dradY * DcoordsRef(2)
         
         ! iterate
-        DO i = 1, 50
+        do i = 1, 50
           
           dXDivA = dprX / (dT + dradXSqr)
           dYDivB = dprY / (dT + dradYSqr)
@@ -2634,70 +2634,70 @@ END SUBROUTINE
           
           dF = dXDivASqr + dYDivBSqr - 1.0_DP
           
-          IF (dF .LE. 1D-10) THEN
-            EXIT
-          END IF
+          if (dF .le. 1D-10) then
+            exit
+          end if
           
           dFDer = 2.0_DP * ((dXDivASqr / (dT + dradXSqr)) + &
                             (dYDivBSqr / (dT + dradYSqr)))
           
           dratio = dF / dFDer
-          IF (dRatio .LE. 1D-10) THEN
-            EXIT
-          END IF
+          if (dRatio .le. 1D-10) then
+            exit
+          end if
 
           dT = dT + dRatio
-        END DO
+        end do
 
         DcoordsRef(1) = dXDivA * dradX
         DcoordsRef(2) = dYDivB * dradY
         
-      ELSE
+      else
         
         dradYSqr = dradY**2
-        IF (DcoordsRef(1) .LT. dradX - (dradYSqr / dradX)) THEN
+        if (DcoordsRef(1) .lt. dradX - (dradYSqr / dradX)) then
         
           dradXSqr = dradX**2
           DcoordsRef(1) = dradXSqr * DcoordsRef(1) / (dradXSqr - dradYSqr)
           dXDivA = DcoordsRef(1) / dradX
-          DcoordsRef(2) = dradY * SQRT(ABS(1.0 - dXDivA**2))
+          DcoordsRef(2) = dradY * sqrt(abs(1.0 - dXDivA**2))
           
-        ELSE
+        else
           DcoordsRef(1) = dradX
           DcoordsRef(2) = 0.0_DP
           
-        END IF
+        end if
         
-      END IF
+      end if
       
-    ELSE
+    else
       DcoordsRef(1) = 0.0_DP
       DcoordsRef(2) = dradY
-    END IF
+    end if
     
     ! Do we need to transpose the result?
-    IF (btranspose) THEN
+    if (btranspose) then
       dT = DcoordsRef(1)
       DcoordsRef(1) = DcoordsRef(2)
       DcoordsRef(2) = dT
-    END IF
+    end if
     
     ! Multiplty with mirror
     DcoordsRef(1) = DcoordsRef(1) * Dmirror(1)
     DcoordsRef(2) = DcoordsRef(2) * Dmirror(2)
     
     ! And transform the projection back into world coordinates
-    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
+    call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
     ! That's it
       
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_ellipse_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+  subroutine geom_ellipse_calcSignedDistance (rgeomObject, Dcoords, ddistance)
 
 !<description>
   ! This routine calculates the signed distance of a given point and a ellipse.
@@ -2705,57 +2705,57 @@ END SUBROUTINE
 
 !<input>
   ! The ellipse against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the ellipse's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
 
   ! We need one local variable for temporary distance calculation
-  INTEGER :: iInside
+  integer :: iInside
   
   ! And an array for the transformed X- and Y-coordinates of our point
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
   
   ! And one array for the projection of our point onto the ellipses boundary
-  REAL(DP), DIMENSION(2) :: Dprojection
+  real(DP), dimension(2) :: Dprojection
 
     
     ! Project the point onto the ellipse's boundary.
-    CALL geom_ellipse_prjToBoundary(rgeomObject, DCoords, Dprojection)
+    call geom_ellipse_prjToBoundary(rgeomObject, DCoords, Dprojection)
     
     ! Now subtract the projection from our point
     DrelCoords = Dcoords - Dprojection
     
     ! Caluclate the new length
-    ddistance = SQRT(DrelCoords(1)**2 + DrelCoords(2)**2)
+    ddistance = sqrt(DrelCoords(1)**2 + DrelCoords(2)**2)
 
     ! Is the point inside or outside our ellipse?
-    CALL geom_ellipse_isInGeometry(rgeomObject, Dcoords, iInside)
+    call geom_ellipse_isInGeometry(rgeomObject, Dcoords, iInside)
     
     ! Now we still need to know whether we are inside the ellipse or not.
     ! This information is implicitly given by dreldist
-    IF (iInside .EQ. 1) THEN
+    if (iInside .eq. 1) then
       ddistance = -ddistance
-    END IF
+    end if
 
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_ellipse_polygonise (rgeomObject, hpolyHandle, &
+  subroutine geom_ellipse_polygonise (rgeomObject, hpolyHandle, &
                                       ndesiredVerticeCount)
   
 !<description>
@@ -2766,32 +2766,32 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The desired number of vertices for the produced polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
-  INTEGER, INTENT(IN) :: ndesiredVerticeCount
+  integer, intent(IN) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
-  INTEGER :: i
+  integer :: i
   
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
-  REAL(DP) :: dstep, dangle, dradiusX, dradiusY
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  real(DP) :: dstep, dangle, dradiusX, dradiusY
   
-  INTEGER(I32), DIMENSION(2) :: Isize
+  integer(I32), dimension(2) :: Isize
   
     ! Calculate angle step
-    dstep = (SYS_PI * 2.0_DP) / REAL(ndesiredVerticeCount, DP)
+    dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
     
     ! Get radius
     dradiusX = rgeomObject%rellipse%Dradii(1)
@@ -2799,31 +2799,31 @@ END SUBROUTINE
   
     ! Allocate desired number of vertices
     Isize = (/ 2, ndesiredVerticeCount /)
-    CALL storage_new2D('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
+    call storage_new2D('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set vertices
-    DO i=1, ndesiredVerticeCount
+    do i=1, ndesiredVerticeCount
     
       ! Calculate angle
-      dangle = dstep * REAL(i, DP)
+      dangle = dstep * real(i, DP)
       
       ! Calculate vertice position
-      p_DVertices(1, i) = dradiusX * COS(dangle)
-      p_DVertices(2, i) = dradiusY * SIN(dangle)
+      p_DVertices(1, i) = dradiusX * cos(dangle)
+      p_DVertices(2, i) = dradiusY * sin(dangle)
     
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, &
+  pure subroutine geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, &
                                       dcircumference)
   
 !<description>
@@ -2833,27 +2833,27 @@ END SUBROUTINE
 
 !<input>
   ! The ellipse
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
   
   ! OPTIONAL: An approximation of the ellipse's circumference.
-  REAL(DP), OPTIONAL, INTENT(OUT) :: dcircumference
+  real(DP), optional, intent(OUT) :: dcircumference
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dalpha, dbeta, dlambda, dtheta, domega, dr1, dr2
+  real(DP) :: dalpha, dbeta, dlambda, dtheta, domega, dr1, dr2
 
   ! The length of the boundary
-  REAL(DP) :: dboundLen
+  real(DP) :: dboundLen
   
     ! The boundary length of an ellipse cannot be calculated analytically,
     ! therefore, we will use the approximation of Ramanujan here.
@@ -2863,13 +2863,13 @@ END SUBROUTINE
     dr2 = rgeomObject%rellipse%Dradii(2)
 
     ! Calculate alpha and beta    
-    IF (dr1 .LT. dr2) THEN
+    if (dr1 .lt. dr2) then
       dalpha = dr2
       dbeta = dr1
-    ELSE
+    else
       dalpha = dr1
       dbeta = dr2
-    END IF
+    end if
     
     ! Calculate lambda
     dlambda = (dalpha - dbeta) / (dalpha + dbeta)
@@ -2878,27 +2878,27 @@ END SUBROUTINE
     dtheta = 3.0_DP * dlambda**2
     
     ! Calculate omega
-    domega = 1.0_DP + (dtheta / (10.0_DP + SQRT(4.0_DP - dtheta)))
+    domega = 1.0_DP + (dtheta / (10.0_DP + sqrt(4.0_DP - dtheta)))
   
     ! The approximative length of the boundary
     dboundLen = SYS_PI * (dalpha + dbeta) * domega
     
     ! The number of vertices is simply the boundary length divided by the
     ! tolerance
-    nverts = INT(dboundLen / dtolerance)
+    nverts = int(dboundLen / dtolerance)
     
     ! Return circumference if desired
-    IF (PRESENT(dcircumference)) THEN
+    if (present(dcircumference)) then
       dcircumference = dboundlen
-    END IF
+    end if
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+  subroutine geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
 
 !<description>
   ! Calculates the boundary approximation vertices for the ellipse.
@@ -2906,32 +2906,32 @@ END SUBROUTINE
 
 !<input>
   ! The ellipse
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dangle, dradX, dradY, dcf, dSin, dCos
-  INTEGER :: i
+  real(DP) :: dangle, dradX, dradY, dcf, dSin, dCos
+  integer :: i
   
     ! Get elipse's radii
     dradX = rgeomObject%rellipse%Dradii(1)
     dradY = rgeomObject%rellipse%Dradii(2)
     
     ! Get number of vertices to allocate
-    CALL geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, dcf)
+    call geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, dcf)
     
     ! Special thanks to Dr. Marcus Stiemer and Manuel Jaraczewski for their
     ! help with the following piece of code...
@@ -2940,24 +2940,24 @@ END SUBROUTINE
     dangle = 0.0_DP
     
     ! Loop though all vertices
-    DO i = 1, nverts
+    do i = 1, nverts
     
       ! Calculate SIN and COS
-      dCos = COS(dangle)
-      dSin = SIN(dangle)
+      dCos = cos(dangle)
+      dSin = sin(dangle)
     
       ! Calculate point
       Dverts(1, i) = dradX * dCos
       Dverts(2, i) = dradY * dSin
       
       ! Update angle
-      dangle = dangle + dtolerance / SQRT((dradX*dSin)**2 + (dradY*dCos)**2)
+      dangle = dangle + dtolerance / sqrt((dradX*dSin)**2 + (dradY*dCos)**2)
     
-    END DO
+    end do
 
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -2967,7 +2967,7 @@ END SUBROUTINE
     
 !<subroutine>
 
-  SUBROUTINE geom_init_rectangle_indirect(rgeomObject, rcoordSys, Dlength, &
+  subroutine geom_init_rectangle_indirect(rgeomObject, rcoordSys, Dlength, &
                                           binverted)
 
 !<description>
@@ -2976,20 +2976,20 @@ END SUBROUTINE
 
 !<input>
   ! A 2D coordinate system for the rectangle.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
   
   ! The edge length for the rectangle.
-  REAL(DP), DIMENSION(:),      INTENT(IN)  :: Dlength
+  real(DP), dimension(:),      intent(IN)  :: Dlength
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -3005,24 +3005,24 @@ END SUBROUTINE
     rgeomObject%rcoord2D = rcoordSys
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the edge lengths of the rectangle.
     rgeomObject%rrectangle%Dlength = Dlength(1:2)
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE geom_init_rectangle_direct(rgeomObject, Dlength, Dorigin, &
+  subroutine geom_init_rectangle_direct(rgeomObject, Dlength, Dorigin, &
                                         drotation, dscalingFactor, binverted)
 
 !<description>
@@ -3031,29 +3031,29 @@ END SUBROUTINE
 
 !<input>
   ! The edge lengths for the rectangle.
-  REAL(DP), DIMENSION(:),            INTENT(IN)  :: Dlength
+  real(DP), dimension(:),            intent(IN)  :: Dlength
   
   ! OPTIONAL: The origin of the rectangle.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation of the rectangle.
   ! Is set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  real(DP), optional,                intent(IN)  :: drotation
   
   ! OPTIONAL: The scaling factor of the rectangle.
   ! Is set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                intent(IN)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,                 INTENT(IN)  :: binverted
+  logical, optional,                 intent(IN)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),            INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -3066,28 +3066,28 @@ END SUBROUTINE
     rgeomObject%ctype = geom_rect
     
     ! Now we need to create the coordinate system.
-    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
                                dscalingFactor)
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the edge length of the rectangle.
     rgeomObject%rrectangle%Dlength = Dlength(1:2)
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_rect_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_rect_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the rectangle or not.
@@ -3099,58 +3099,58 @@ END SUBROUTINE
 
 !<input>
   ! The rectangle against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! And an array for the transformed X- and Y-coordinates of our point
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
 
     ! First transfrom the point's coordinates into the rectangle's local
     ! coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
     
     ! Get the absolute values of the coords
-    DrelCoords(1) = ABS(DrelCoords(1))
-    DrelCoords(2) = ABS(DrelCoords(2))
+    DrelCoords(1) = abs(DrelCoords(1))
+    DrelCoords(2) = abs(DrelCoords(2))
     
     ! Check against half of the edge lengths
-    IF ((DrelCoords(1) .LE. (0.5_DP * rgeomObject%rrectangle%Dlength(1))) .AND. &
-        (DrelCoords(2) .LE. (0.5_DP * rgeomObject%rrectangle%Dlength(2)))) THEN
+    if ((DrelCoords(1) .le. (0.5_DP * rgeomObject%rrectangle%Dlength(1))) .and. &
+        (DrelCoords(2) .le. (0.5_DP * rgeomObject%rrectangle%Dlength(2)))) then
       
       ! We are inside the rectangle
       iisInObject = 1
       
-    ELSE
+    else
       ! We are outside the rectangle
       iisInObject = 0
       
-    END IF
+    end if
 
     ! Is the rectangle inverted?
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
 
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
   
-  SUBROUTINE geom_rect_prjToBoundary (rgeomObject, Dcoords, Dproj)
+  subroutine geom_rect_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
   ! This routine calculates the projection of a point onto a 2D rectangle's
@@ -3162,12 +3162,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -3175,66 +3175,66 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
 !</subroutine>
 
   ! Rectangle's half edge lengths
-  REAL(DP), DIMENSION(2) :: Dlen
+  real(DP), dimension(2) :: Dlen
   
   ! Temporary coords in reference coordinate system
-  REAL(DP), DIMENSION(2) :: DcoordsRef
+  real(DP), dimension(2) :: DcoordsRef
   
   ! mirroring factors
-  REAL(DP), DIMENSION(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
+  real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
   
     ! Get rectangle's half egde lengths
     Dlen = rgeomObject%rrectangle%Dlength * 0.5_DP
   
     ! First we need to transform the point's coordinates into the square's
     ! local coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
     ! Now mirror the point, so that the resulting point is inside the positive
     ! quadrant.
-    IF (DcoordsRef(1) .LT. 0.0) THEN
+    if (DcoordsRef(1) .lt. 0.0) then
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
       DcoordsRef(1) = -DcoordsRef(1)
-    END IF
+    end if
     
-    IF (DcoordsRef(2) .LT. 0.0) THEN
+    if (DcoordsRef(2) .lt. 0.0) then
       ! Y-coord of point is negative, so multiply with -1
       Dmirror(2) = -1.0_DP
       DcoordsRef(2) = -DcoordsRef(2)
-    END IF
+    end if
     
     ! If both coordinates are greater than half of the correspoding
     ! rectangle's egde length, then the projection is the rectangle's corner.
     
-    IF ((DcoordsRef(1) .GE. Dlen(1)) .AND. (DcoordsRef(2) .GE. Dlen(2))) THEN
+    if ((DcoordsRef(1) .ge. Dlen(1)) .and. (DcoordsRef(2) .ge. Dlen(2))) then
     
       ! Save square's corner
       DcoordsRef = Dlen
     
-    ELSE
+    else
       ! In all other cases, the projection is on an edge of the square.
       ! Now find out which coordinate is greater.
-      IF (DcoordsRef(1) .GE. DcoordsRef(2)) THEN
+      if (DcoordsRef(1) .ge. DcoordsRef(2)) then
         ! The X-coordinate is greater than the Y-coordinate.
         ! Now we need to set the X-coordinate to half of the rectangle's edge
         ! length and then we have our projection.
         DcoordsRef(1) = Dlen(1)
       
-      ELSE
+      else
         ! Otherwise correct Y-coordinate
         DcoordsRef(2) = Dlen(2)
       
-      END IF
+      end if
     
-    END IF
+    end if
     
     ! The projection itself is calculated, now we need to mirror the projection
     ! into the quadrant where our original point was in.
@@ -3242,17 +3242,17 @@ END SUBROUTINE
     DcoordsRef(2) = DcoordsRef(2) * Dmirror(2)
     
     ! And transform the projection back into world coordinates
-    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
+    call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+  subroutine geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
   
 !<description>
   ! This routine calculates the shortest signed distance between a point and
@@ -3261,48 +3261,48 @@ END SUBROUTINE
 
 !<input>
   ! The rectangle against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
 
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the rectangle's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
 
   ! We need one local array for the transformed X- and Y-coordinates of our
   ! point.
-  REAL(DP), DIMENSION(2) :: DrelCoords
+  real(DP), dimension(2) :: DrelCoords
   
     ! We are going to use the same trick as in the routine for the square.
   
     ! We are now going to transform our point into the rectangle's local
     ! coordinate system.
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Now get the absolute values of the relative coords, and subtract one
     ! half of the rectangle's edge length
-    DrelCoords(1) = ABS(DrelCoords(1)) - &
+    DrelCoords(1) = abs(DrelCoords(1)) - &
                     (rgeomObject%rrectangle%Dlength(1) * 0.5_DP)
-    DrelCoords(2) = ABS(DrelCoords(2)) - &
+    DrelCoords(2) = abs(DrelCoords(2)) - &
                     (rgeomObject%rrectangle%Dlength(2) * 0.5_DP)
   
     ! Check whether the resulting coordinates are both positive
-    IF ((DrelCoords(1) > 0.0_DP) .AND. (DrelCoords(2) > 0.0_DP)) THEN
-      ddistance = SQRT(DrelCoords(1)**2 + DrelCoords(2)**2)
-    ELSE
-      ddistance = MAX(DrelCoords(1), DrelCoords(2))
-    END IF
+    if ((DrelCoords(1) > 0.0_DP) .and. (DrelCoords(2) > 0.0_DP)) then
+      ddistance = sqrt(DrelCoords(1)**2 + DrelCoords(2)**2)
+    else
+      ddistance = max(DrelCoords(1), DrelCoords(2))
+    end if
     
     ! Is the rectangle inverted?
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       ddistance = -ddistance
-    END IF
+    end if
     
     ! Make sure to scale the distance by the rectangle's coordinate system's
     ! scaling factor
@@ -3310,13 +3310,13 @@ END SUBROUTINE
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_rect_polygonise (rgeomObject, hpolyHandle)
+  subroutine geom_rect_polygonise (rgeomObject, hpolyHandle)
   
 !<description>
   ! This routine converts a rectangle to a polygon, so that it can
@@ -3326,33 +3326,33 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
-  REAL(DP) :: dedgeX, dedgeY
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  real(DP) :: dedgeX, dedgeY
   
-  INTEGER(I32), DIMENSION(2), PARAMETER :: Isize = (/ 2, 4 /)
+  integer(I32), dimension(2), parameter :: Isize = (/ 2, 4 /)
   
     ! Get edge lengths
     dedgeX = rgeomObject%rrectangle%Dlength(1) * 0.5_DP
     dedgeY = rgeomObject%rrectangle%Dlength(2) * 0.5_DP
   
     ! Allocate desired number of vertices
-    CALL storage_new2D('geom_rect_polygonise', 'hpolyHandle', Isize, &
+    call storage_new2D('geom_rect_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set coords
     p_Dvertices(1,1) = -dedgeX
@@ -3364,13 +3364,13 @@ END SUBROUTINE
     p_Dvertices(1,4) = dedgeX
     p_Dvertices(2,4) = dedgeY
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE geom_rect_getNAV(rgeomObject, dtolerance, nverts)
+  pure subroutine geom_rect_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! Calculates the number of vertices needed to approximate the rectangle's
@@ -3379,21 +3379,21 @@ END SUBROUTINE
 
 !<input>
   ! The rectangle
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! The length of the boundary
-  REAL(DP) :: dboundLen
+  real(DP) :: dboundLen
   
     ! The length of the boundary is 2 * (X_edge_length + Y_edge_length)
     dboundLen = 2.0_DP * (rgeomObject%rrectangle%Dlength(1) + &
@@ -3401,15 +3401,15 @@ END SUBROUTINE
     
     ! The number of vertices is simply the boundary length divided by the
     ! tolerance
-    nverts = INT(dboundLen / dtolerance) + 4
+    nverts = int(dboundLen / dtolerance) + 4
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+  subroutine geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
 
 !<description>
   ! Calculates the boundary approximation vertices for the rectangle.
@@ -3417,70 +3417,70 @@ END SUBROUTINE
 
 !<input>
   ! The rectangle
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dedgeX, dedgeY
-  INTEGER :: i, nvpeX, nvpeY, off
+  real(DP) :: dedgeX, dedgeY
+  integer :: i, nvpeX, nvpeY, off
   
     ! Get rectangle's edge lengths
     dedgeX = rgeomObject%rrectangle%Dlength(1)
     dedgeY = rgeomObject%rrectangle%Dlength(2)
     
     ! Calculate number of vertices per edge
-    nvpeX = INT(dedgeX / dtolerance)
-    nvpeY = INT(dedgeY / dtolerance)
+    nvpeX = int(dedgeX / dtolerance)
+    nvpeY = int(dedgeY / dtolerance)
     
     ! Get half of rectangle's edge lengths
     dedgeX = 0.5_DP * dedgeX
     dedgeY = 0.5_DP * dedgeY
 
     ! Edge 1
-    DO i = 1, nvpeY
+    do i = 1, nvpeY
       Dverts(1, i) = dedgeX
-      Dverts(2, i) = -dedgeY + (REAL(i-1, DP) * dtolerance)
-    END DO
+      Dverts(2, i) = -dedgeY + (real(i-1, DP) * dtolerance)
+    end do
     
     ! Edge 2
-    DO i = 1, nvpeX
-      Dverts(1, nvpeY + i) = dedgeX - (REAL(i-1, DP) * dtolerance)
+    do i = 1, nvpeX
+      Dverts(1, nvpeY + i) = dedgeX - (real(i-1, DP) * dtolerance)
       Dverts(2, nvpeY + i) = dedgeY
-    END DO
+    end do
 
     ! Edge 3
     off = nvpeX + nvpeY
-    DO i = 1, nvpeY
+    do i = 1, nvpeY
       Dverts(1, off + i) = -dedgeX
-      Dverts(2, off + i) = dedgeY - (REAL(i-1, DP) * dtolerance)
-    END DO
+      Dverts(2, off + i) = dedgeY - (real(i-1, DP) * dtolerance)
+    end do
     
     ! Edge 4
     off = nvpeX + 2*nvpeY
-    DO i = 1, nvpeX
-      Dverts(1, off + i) = -dedgeX + (REAL(i-1, DP) * dtolerance)
+    do i = 1, nvpeX
+      Dverts(1, off + i) = -dedgeX + (real(i-1, DP) * dtolerance)
       Dverts(2, off + i) = -dedgeY
-    END DO
+    end do
     
     ! Store number of vertices written
     nverts = 2 * (nvpeX + nvpeY)
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -3490,7 +3490,7 @@ END SUBROUTINE
     
 !<subroutine>
 
-  SUBROUTINE geom_init_polygon_indirect(rgeomObject, rcoordSys, Dvertices, &
+  subroutine geom_init_polygon_indirect(rgeomObject, rcoordSys, Dvertices, &
                                         npolyType, binverted)
 
 !<description>
@@ -3499,24 +3499,24 @@ END SUBROUTINE
 
 !<input>
   ! A 2D coordinate system for the polygon.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
   
   ! An 2D array for the vertices of the polygon
-  REAL(DP), DIMENSION(:,:), TARGET, INTENT(IN)     :: Dvertices
+  real(DP), dimension(:,:), target, intent(IN)     :: Dvertices
   
   ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
   ! Is set to GEOM_POLYGON_GENERAL if not given.
-  INTEGER, OPTIONAL, INTENT(IN)            :: npolyType
+  integer, optional, intent(IN)            :: npolyType
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>  
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -3532,31 +3532,31 @@ END SUBROUTINE
     rgeomObject%rcoord2D = rcoordSys
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the vertices of the polygon
     rgeomObject%rpolygon%p_Dvertices => Dvertices
     
     ! Store the polygon type
-    IF (PRESENT(npolyType)) THEN
+    if (present(npolyType)) then
       rgeomObject%rpolygon%npolyType = npolyType
-    ELSE
+    else
       rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
-    END IF
+    end if
     
     ! That's it!
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_init_polygon_direct(rgeomObject, Dvertices, npolyType, &
+  subroutine geom_init_polygon_direct(rgeomObject, Dvertices, npolyType, &
                                       Dorigin, drotation, dscalingFactor, &
                                       binverted)
 
@@ -3566,33 +3566,33 @@ END SUBROUTINE
 
 !<input>
   ! An 2D array for the vertices of the polygon
-  REAL(DP), DIMENSION(:,:), TARGET, INTENT(IN)     :: Dvertices
+  real(DP), dimension(:,:), target, intent(IN)     :: Dvertices
   
   ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
   ! Is set to GEOM_POLYGON_GENERAL if not given.
-  INTEGER, OPTIONAL, INTENT(IN)            :: npolyType
+  integer, optional, intent(IN)            :: npolyType
   
   ! OPTIONAL: The origin of the polygon.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation of the polygon.
   ! Is set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  real(DP), optional,                intent(IN)  :: drotation
   
   ! OPTIONAL: The scaling factor of the polygon.
   ! Is set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                intent(IN)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+  logical, optional,           intent(IN)  :: binverted
 
 !</input>  
 
 !<output>
   ! A t_geometryObject structure to be written.
-  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
 
 !</output>
 
@@ -3605,35 +3605,35 @@ END SUBROUTINE
     rgeomObject%ctype = GEOM_POLYGON
     
     ! Now we need to create the coordinate system.
-    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
                                dscalingFactor)
     
     ! Is our object inverted?
-    IF (PRESENT(binverted)) THEN
+    if (present(binverted)) then
       rgeomObject%binverted = binverted
-    ELSE
-      rgeomObject%binverted = .FALSE.
-    END IF
+    else
+      rgeomObject%binverted = .false.
+    end if
     
     ! Store the vertices of the polygon
     rgeomObject%rpolygon%p_Dvertices => Dvertices
     
     ! Store the polygon type
-    IF (PRESENT(npolyType)) THEN
+    if (present(npolyType)) then
       rgeomObject%rpolygon%npolyType = npolyType
-    ELSE
+    else
       rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
-    END IF
+    end if
     
     ! That's it!
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_polygon_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_polygon_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the polygon or not.
@@ -3649,60 +3649,60 @@ END SUBROUTINE
 
 !<input>
   ! The polygon against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
   
   ! The output of the projector routine
-  LOGICAL :: bisInObject
+  logical :: bisInObject
   
   ! 2 Dummys for the projector routine
-  REAL(DP) :: ddummy1
-  REAL(DP), DIMENSION(2) :: Ddummy2
+  real(DP) :: ddummy1
+  real(DP), dimension(2) :: Ddummy2
 
-    SELECT CASE (rgeomObject%rpolygon%npolyType)
+    select case (rgeomObject%rpolygon%npolyType)
 
-    CASE (GEOM_POLYGON_CONVEX)
+    case (GEOM_POLYGON_CONVEX)
       ! Special Case: Convex Polygon
-      CALL geom_polygon_iIG_convex(rgeomObject, Dcoords, iisInObject)
+      call geom_polygon_iIG_convex(rgeomObject, Dcoords, iisInObject)
 
-    CASE DEFAULT
+    case DEFAULT
       ! Call Projector
-      CALL geom_polygon_projector(rgeomObject, Dcoords, Ddummy2, ddummy1, &
+      call geom_polygon_projector(rgeomObject, Dcoords, Ddummy2, ddummy1, &
                                   bisInObject)
       ! Are we inside the polygon?
-      IF (bisInObject) THEN
+      if (bisInObject) then
         iisInObject = 1
-      ELSE
+      else
         iisInObject = 0
-      END IF
+      end if
       
       ! Maybe the polygon is inverted?
-      IF (rgeomObject%binverted) THEN
+      if (rgeomObject%binverted) then
         iisInObject = 1 - iisInObject
-      END IF
+      end if
       
-    END SELECT
+    end select
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_polygon_iIG_convex (rgeomObject, Dcoords, iisInObject)
+  subroutine geom_polygon_iIG_convex (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the convex (!) polygon
@@ -3715,43 +3715,43 @@ END SUBROUTINE
 
 !<input>
   ! The polygon against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
   ! A pointer to the vertex array
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  real(DP), dimension(:,:), pointer :: p_Dvertices
 
   ! The lower and upper bounds of our vertice array
-  INTEGER:: lb, ub, i
+  integer:: lb, ub, i
   
   ! The point in the reference coordinate system and 2 temporary vectors:
   ! an edge and a ray
-  REAL(DP), DIMENSION(2) :: DcoordsRef, Dedge, Dray
+  real(DP), dimension(2) :: DcoordsRef, Dedge, Dray
   
     ! Let's assume that the point is outside the polygon
     iisInObject = 0
   
     ! First we're going to transform the point into the local reference
     ! coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
   
     ! Get our vertice array
     p_Dvertices => rgeomObject%rpolygon%p_Dvertices
   
     ! Get the bounds of our vector array
-    lb = LBOUND(p_Dvertices, 2)
-    ub = UBOUND(p_Dvertices, 2)
+    lb = lbound(p_Dvertices, 2)
+    ub = ubound(p_Dvertices, 2)
     
     ! Once again, we will use a fancy trick to find out whether a point is
     ! inside a convex polygon or not.
@@ -3767,7 +3767,7 @@ END SUBROUTINE
     
     
     ! Loop through the first n-1 edges of our polygon
-    DO i=lb, ub-1
+    do i=lb, ub-1
     
       ! Calculate edge vector
       Dedge = p_Dvertices(1:2,i+1) - p_Dvertices(1:2,i)
@@ -3776,14 +3776,14 @@ END SUBROUTINE
       Dray = DcoordsRef - p_Dvertices(1:2, i)
       
       ! Calculate scalar product of ray vector's normal and the edge
-      IF (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .LT. 0.0_DP) THEN
+      if (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .lt. 0.0_DP) then
         
         ! The point is outside
-        RETURN
+        return
         
-      END IF
+      end if
     
-    END DO
+    end do
         ! Check last edge
     Dedge = p_Dvertices(1:2,lb) - p_Dvertices(1:2,ub)
       
@@ -3791,29 +3791,29 @@ END SUBROUTINE
     Dray = DcoordsRef - p_Dvertices(1:2, ub)
     
     ! Calculate scalar product of ray vector's normal and the edge
-    IF (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .GE. 0.0_DP) THEN
+    if (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .ge. 0.0_DP) then
         
       ! All scalar products are non-negative - so the point is inside the poly
       iisInObject = 1
       
-    ELSE
+    else
       iisInObject = 0;
 
-    END IF
+    end if
     
-    IF (rgeomObject%binverted) THEN
+    if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
-    END IF
+    end if
   
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_polygon_projector (rgeomObject, Dcoords, Dproj, ddistance, &
+  subroutine geom_polygon_projector (rgeomObject, Dcoords, Dproj, ddistance, &
                                      bisInside)
 
 !<description>
@@ -3823,12 +3823,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -3836,47 +3836,47 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
   ! OPTIONAL: The distance between the given point and the projection.
   ! Note: This distance is absolute, not signed!
-  REAL(DP), OPTIONAL, INTENT(OUT) :: ddistance
+  real(DP), optional, intent(OUT) :: ddistance
   
   ! OPTIONAL: A boolean deciding whether the point is inside or outside the
   ! polygon.
-  LOGICAL, OPTIONAL, INTENT(OUT) :: bisInside
+  logical, optional, intent(OUT) :: bisInside
   
 !</output>
 
 !</subroutine>
 
   ! A pointer to the vertex array
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  real(DP), dimension(:,:), pointer :: p_Dvertices
 
   ! The lower and upper bounds of our vertice array
-  INTEGER :: lb, ub, i, iminVert, icurVert, iprev, inext
-  LOGICAL :: bminVert, bcurVert
+  integer :: lb, ub, i, iminVert, icurVert, iprev, inext
+  logical :: bminVert, bcurVert
   
   ! The point in the reference coordinate system and 5 temporary vectors:
   ! two edges, two rays, and 2 vectors for the projection
-  REAL(DP), DIMENSION(2) :: DcoordsRef, Dedge, Dray1, Dray2
-  REAL(DP), DIMENSION(2) :: DprojMin, DprojCur
+  real(DP), dimension(2) :: DcoordsRef, Dedge, Dray1, Dray2
+  real(DP), dimension(2) :: DprojMin, DprojCur
   
   ! The shortest squared distance from the point to the polygon's vertices
-  REAL(DP) :: ddistMin, ddistCur
-  REAL(DP) :: dalpha, dbeta, dgamma, ddelta
-  LOGICAL :: binsideMin, binsideCur
+  real(DP) :: ddistMin, ddistCur
+  real(DP) :: dalpha, dbeta, dgamma, ddelta
+  logical :: binsideMin, binsideCur
   
     ! First we're going to transform the point into the local reference
     ! coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
   
     ! Get our vertice array
     p_Dvertices => rgeomObject%rpolygon%p_Dvertices
   
     ! Get the bounds of our vector array
-    lb = LBOUND(p_Dvertices, 2)
-    ub = UBOUND(p_Dvertices, 2)
+    lb = lbound(p_Dvertices, 2)
+    ub = ubound(p_Dvertices, 2)
     
     ! Calculate the last edge
     Dedge = p_Dvertices(1:2, lb) - p_Dvertices(1:2, ub)
@@ -3894,16 +3894,16 @@ END SUBROUTINE
     ddelta = (dalpha - dbeta + dgamma) / (2.0_DP * dgamma)
     
     ! clip interpolation factor to [0, 1]
-    bminVert = .FALSE.
-    IF (ddelta .LE. 0.0_DP) THEN
+    bminVert = .false.
+    if (ddelta .le. 0.0_DP) then
       ddelta = 0.0_DP
-      bminVert = .TRUE.
+      bminVert = .true.
       iminVert = ub
-    ELSE IF (ddelta .GE. 1.0_DP) THEN
+    else if (ddelta .ge. 1.0_DP) then
       ddelta = 1.0_DP
-      bminVert = .TRUE.
+      bminVert = .true.
       iminVert = lb
-    END IF
+    end if
     
     ! Assume that this is the minimal projection
     DprojMin = p_Dvertices(1:2, ub) + (ddelta * Dedge)
@@ -3917,10 +3917,10 @@ END SUBROUTINE
     ! Decide whether the point is inside or outside the polygon in
     ! respect to this edge
     binsideMin = (((Dray1(2) * Dedge(1)) - (Dray1(1) * Dedge(2))) &
-                  .GE. 0.0_DP)
+                  .ge. 0.0_DP)
     
     ! Now loop though all other edges
-    DO i = lb, ub-1
+    do i = lb, ub-1
       
       ! Calculate i-th edge
       Dedge = p_Dvertices(1:2, i+1) - p_Dvertices(1:2, i)
@@ -3938,17 +3938,17 @@ END SUBROUTINE
       ddelta = (dalpha - dbeta + dgamma) / (2.0_DP * dgamma)
         
       ! clip interpolation factor to [0, 1]
-      bcurVert = .FALSE.
+      bcurVert = .false.
       icurVert = 0
-      IF (ddelta .LE. 0.0_DP) THEN
+      if (ddelta .le. 0.0_DP) then
         ddelta = 0.0_DP
-        bcurVert = .TRUE.
+        bcurVert = .true.
         icurVert = i
-      ELSE IF (ddelta .GE. 1.0_DP) THEN
+      else if (ddelta .ge. 1.0_DP) then
         ddelta = 1.0_DP
-        bcurVert = .TRUE.
+        bcurVert = .true.
         icurVert = i+1
-      END IF
+      end if
         
       ! Calculate current projection
       DprojCur = p_Dvertices(1:2, i) + (ddelta * Dedge)
@@ -3962,10 +3962,10 @@ END SUBROUTINE
       ! Decide whether the point is inside or outside the polygon in
       ! respect to this edge
       binsideCur = (((Dray1(2) * Dedge(1)) - (Dray1(1) * Dedge(2))) &
-                    .GE. 0.0_DP)
+                    .ge. 0.0_DP)
       
       ! Maybe the distance is minimal?
-      IF (ddistCur .LT. ddistMin) THEN
+      if (ddistCur .lt. ddistMin) then
       
         ! Save the current projection as the minimal one
         DprojMin = DprojCur
@@ -3974,34 +3974,34 @@ END SUBROUTINE
         bminVert = bcurVert
         iminVert = icurVert
       
-      END IF
+      end if
       
-    END DO
+    end do
 
     ! Transform projection to world coordinates
-    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DprojMin, Dproj)
+    call bgeom_transformPoint2D(rgeomObject%rcoord2D, DprojMin, Dproj)
     
-    IF (PRESENT(ddistance)) THEN
-      ddistance = SQRT(ddistMin) * rgeomObject%rcoord2D%dscalingFactor
-    END IF
+    if (present(ddistance)) then
+      ddistance = sqrt(ddistMin) * rgeomObject%rcoord2D%dscalingFactor
+    end if
     
-    IF (PRESENT(bisInside)) THEN
+    if (present(bisInside)) then
     
       ! First we need to check if the projection is a vertice
-      IF (bminVert) THEN
+      if (bminVert) then
       
         ! We now need to find out whether the projection vertice is convex or
         ! (strictly) concav.
-        IF (iminVert .LT. ub) THEN
+        if (iminVert .lt. ub) then
           inext = iminVert + 1
-        ELSE
+        else
           inext = lb
-        END IF
-        IF (iminVert .GT. lb) THEN
+        end if
+        if (iminVert .gt. lb) then
           iprev = iminVert - 1
-        ELSE
+        else
           iprev = ub
-        END IF 
+        end if 
 
         Dray1 = p_Dvertices(1:2, iminVert) - p_Dvertices(1:2, iprev)
         Dray2 = p_Dvertices(1:2, inext) - p_Dvertices(1:2, iminVert)
@@ -4015,35 +4015,35 @@ END SUBROUTINE
         dbeta  = (Dedge(2) * Dray1(1)) - (Dedge(1) * Dray1(2))
         dgamma = (Dedge(2) * Dray2(1)) - (Dedge(1) * Dray2(2))
         
-        IF (dalpha .GE. 0.0_DP) THEN
+        if (dalpha .ge. 0.0_DP) then
           ! The vertice is convex.
           ! The point is inside the polygon if and only if both beta and gamma
           ! are greater or equal to 0.
-          bisInside = (dbeta .GE. 0.0_DP) .AND. (dgamma .GE. 0.0_DP)
+          bisInside = (dbeta .ge. 0.0_DP) .and. (dgamma .ge. 0.0_DP)
         
-        ELSE
+        else
           ! The vertice is stricly concav.
           ! The point is outside the polygon if and only if both beta and gamma
           ! are strictly less than 0.
-          bisInside = (dbeta .GE. 0.0_DP) .OR. (dgamma .GE. 0.0_DP)
+          bisInside = (dbeta .ge. 0.0_DP) .or. (dgamma .ge. 0.0_DP)
         
-        END IF
+        end if
       
-      ELSE
+      else
         ! The projection is not a vertice.
         bisInside = binsideMin
-      END IF
-    END IF
+      end if
+    end if
   
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  SUBROUTINE geom_polygon_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+  subroutine geom_polygon_calcSignedDistance (rgeomObject, Dcoords, ddistance)
 
 !<description>
   ! This routine calculates the signed distance of a given point and a polygon.
@@ -4055,43 +4055,43 @@ END SUBROUTINE
 
 !<input>
   ! The polygon against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the circle's boundary.
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
 !</output>
 
 !</subroutine>
 
 
   ! The projection
-  REAL(DP), DIMENSION(2) :: Dproj
+  real(DP), dimension(2) :: Dproj
   
   ! Inside the polygon?
-  LOGICAL :: bisInside
+  logical :: bisInside
   
     ! Calculate projection
-    CALL geom_polygon_projector(rgeomObject, Dcoords, Dproj, ddistance, bisInside)
+    call geom_polygon_projector(rgeomObject, Dcoords, Dproj, ddistance, bisInside)
     
-    IF (bisInside .AND. (.NOT. rgeomObject%binverted)) THEN
+    if (bisInside .and. (.not. rgeomObject%binverted)) then
       ddistance = -ddistance
-    END IF
+    end if
   
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_polygon_polygonise (rgeomObject, hpolyHandle)
+  subroutine geom_polygon_polygonise (rgeomObject, hpolyHandle)
   
 !<description>
   ! This routine converts a polygon to a polygon, so that it can
@@ -4103,50 +4103,50 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
-  INTEGER :: i, inumVerts
+  integer :: i, inumVerts
   
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  real(DP), dimension(:,:), pointer :: p_Dvertices
   
-  INTEGER(I32), DIMENSION(2) :: Isize
+  integer(I32), dimension(2) :: Isize
   
     ! Get number of vertices
-    inumVerts = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
+    inumVerts = ubound(rgeomObject%rpolygon%p_Dvertices, 2)
   
     ! Allocate desired number of vertices
     Isize = (/ 2, inumVerts /)
-    CALL storage_new2D('geom_polygon_polygonise', 'hpolyHandle', Isize, &
+    call storage_new2D('geom_polygon_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Copy all vertices
-    DO i=1, inumVerts
+    do i=1, inumVerts
 
       p_Dvertices(1, i) = rgeomObject%rpolygon%p_Dvertices(1, i)
       p_Dvertices(2, i) = rgeomObject%rpolygon%p_Dvertices(2, i)
     
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
+  pure subroutine geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! Calculates the number of vertices needed to approximate the polygon's
@@ -4155,63 +4155,63 @@ END SUBROUTINE
 
 !<input>
   ! The rectangle
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! The length of the boundary
-  REAL(DP) :: dboundLen
+  real(DP) :: dboundLen
   
   ! The bounds of the polygon
-  INTEGER :: lb, ub, i
+  integer :: lb, ub, i
   
   ! The polygon's vertices
-  REAL(DP), DIMENSION(2) :: Dedge
+  real(DP), dimension(2) :: Dedge
   
     ! Get the polygon's bounds  
-    lb = LBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
-    ub = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2);
+    lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
+    ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
     ! Get last edge
     Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, lb) &
           - rgeomObject%rpolygon%p_Dvertices(1:2, ub)
     
     ! Add edge's length
-    dboundLen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+    dboundLen = sqrt(Dedge(1)**2 + Dedge(2)**2)
     
     ! Go through all other edges
-    DO i = lb, ub-1
+    do i = lb, ub-1
     
       ! Get i-th edge
       Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, i+1) &
             - rgeomObject%rpolygon%p_Dvertices(1:2, i)
             
       ! Add edge's length
-      dboundLen = dboundLen + SQRT(Dedge(1)**2 + Dedge(2)**2)
+      dboundLen = dboundLen + sqrt(Dedge(1)**2 + Dedge(2)**2)
       
-    END DO
+    end do
   
     
     ! The number of vertices is simply the boundary length divided by the
     ! tolerance
-    nverts = INT(dboundLen / dtolerance) + ub - lb + 1
+    nverts = int(dboundLen / dtolerance) + ub - lb + 1
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+  subroutine geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
 
 !<description>
   ! Calculates the boundary approximation vertices for the polygon.
@@ -4219,30 +4219,30 @@ END SUBROUTINE
 
 !<input>
   ! The polygon
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
   ! Some temporary variables
-  REAL(DP) :: dlen, dalpha
-  REAL(DP), DIMENSION(2) :: Dedge, DlastVert
-  INTEGER :: i, j, nvpe, lb, ub
+  real(DP) :: dlen, dalpha
+  real(DP), dimension(2) :: Dedge, DlastVert
+  integer :: i, j, nvpe, lb, ub
   
     ! Get the polygon's bounds  
-    lb = LBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
-    ub = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2);
+    lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
+    ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
     ! Get last edge
     Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, lb) &
@@ -4252,27 +4252,27 @@ END SUBROUTINE
     DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, ub)
 
     ! Get edge's length
-    dlen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+    dlen = sqrt(Dedge(1)**2 + Dedge(2)**2)
     
     ! Calculate number of vertices for this edge
-    nvpe = INT(dlen / dtolerance)
+    nvpe = int(dlen / dtolerance)
     
     ! Loop through this edge's vertices
-    DO j = 1, nvpe
+    do j = 1, nvpe
     
       ! Calculate interpolation factor
-      dalpha = REAL(j-1, DP) * dtolerance / dlen
+      dalpha = real(j-1, DP) * dtolerance / dlen
       
       ! Store vertice
       Dverts(1:2, j) = DlastVert + dalpha * Dedge
     
-    END DO
+    end do
     
     ! Update number of vertices written
     nverts = nvpe
     
     ! Loop through all other edges
-    DO i = lb, ub-1
+    do i = lb, ub-1
     
       ! Get i-th edge
       Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, i+1) &
@@ -4282,36 +4282,36 @@ END SUBROUTINE
       DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, i)
 
       ! Get edge's length
-      dlen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+      dlen = sqrt(Dedge(1)**2 + Dedge(2)**2)
       
       ! Calculate number of vertices for this edge
-      nvpe = INT(dlen / dtolerance)
+      nvpe = int(dlen / dtolerance)
       
       ! Loop through this edge's vertices
-      DO j = 1, nvpe
+      do j = 1, nvpe
       
         ! Calculate interpolation factor
-        dalpha = REAL(j-1, DP) * dtolerance / dlen
+        dalpha = real(j-1, DP) * dtolerance / dlen
         
         ! Store vertice
         Dverts(1:2, nverts + j) = DlastVert + dalpha * Dedge
       
-      END DO
+      end do
       
       ! Update number of vertices written
       nverts = nverts + nvpe
       
-    END DO
+    end do
 
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  PURE SUBROUTINE geom_moveto(rgeomObject, DnewOrigin)
+  pure subroutine geom_moveto(rgeomObject, DnewOrigin)
   
 !<description>
   ! This subroutine moves a given geometry object (2D or 3D) to a new origin
@@ -4324,13 +4324,13 @@ END SUBROUTINE
 
 !<input>
   ! The new origin of the geometric object.
-  REAL(DP), DIMENSION(:), INTENT(IN)    :: DnewOrigin
+  real(DP), dimension(:), intent(IN)    :: DnewOrigin
   
 !</input>
 
 !<inputoutput>
   ! The geometry object that is to be moved.
-  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(INOUT) :: rgeomObject
   
 !</inputoutput>
 
@@ -4338,22 +4338,22 @@ END SUBROUTINE
 
     ! We need to check whether we use a 2D or 3D coordinate system first.
     ! Then we simply overwrite the old origin.
-    SELECT CASE (rgeomObject%ndimension)
-    CASE (NDIM2D)
+    select case (rgeomObject%ndimension)
+    case (NDIM2D)
       rgeomObject%rcoord2D%Dorigin = DnewOrigin(1 : 2)
     !CASE (NDIM3D)
       !rgeomObject%rcoord3D%Dorigin = DnewOrigin(1 : 3)
-    END SELECT
+    end select
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  ELEMENTAL SUBROUTINE geom_rotate2D(rgeomObject, dnewRotation, dscalingFactor)
+  elemental subroutine geom_rotate2D(rgeomObject, dnewRotation, dscalingFactor)
   
 !<description>
   ! This routine overwrites the rotation and scaling factor a 2D geometry
@@ -4362,16 +4362,16 @@ END SUBROUTINE
 
 !<input>
   ! A new rotation angle, range: 0..2*PI
-  REAL(DP),               INTENT(IN)  :: dnewRotation
+  real(DP),               intent(IN)  :: dnewRotation
   
   ! OPTIONAL: A new scaling factor
-  REAL(DP), OPTIONAL,     INTENT(IN)  :: dscalingFactor
+  real(DP), optional,     intent(IN)  :: dscalingFactor
   
 !</input>
 
 !<inputoutput>
   ! The geometry object that is to be rotated and/or scaled.
-  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(INOUT) :: rgeomObject
   
 !</inputoutput>
 
@@ -4386,23 +4386,23 @@ END SUBROUTINE
     rgeomObject%rcoord2D%drotation = dnewRotation
     
     ! Recalculate SIN and COS values of angle
-    rgeomObject%rcoord2D%dsin_rotation = SIN(dnewRotation)
-    rgeomObject%rcoord2D%dcos_rotation = COS(dnewRotation)
+    rgeomObject%rcoord2D%dsin_rotation = sin(dnewRotation)
+    rgeomObject%rcoord2D%dcos_rotation = cos(dnewRotation)
     
     ! Overwrite scaling factor, if given.
-    IF (PRESENT(dscalingFactor)) THEN
+    if (present(dscalingFactor)) then
       rgeomObject%rcoord2D%dscalingFactor = dscalingFactor
-    END IF
+    end if
     
     ! That's it!
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
       
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  recursive subroutine geom_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine is a wrapper for the geom_****_isInGeometry routines.
@@ -4418,51 +4418,51 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object against that the point is to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer storing the number of objects where the point is inside
   ! the object's geometry.
-  INTEGER(I32),           INTENT(OUT) :: iisInObject
+  integer(I32),           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
 
     ! Check what type of object we have and call the object's corresponding
     ! subroutine.
-    SELECT CASE(rgeomObject%ctype)
-    CASE (GEOM_COMPOSED)
-      CALL geom_composed_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_CIRCLE)
-      CALL geom_circle_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_SQUARE)
-      CALL geom_square_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_ELLIPSE)
-      CALL geom_ellipse_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_RECT)
-      CALL geom_rect_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_POLYGON)
-      CALL geom_polygon_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE DEFAULT
+    select case(rgeomObject%ctype)
+    case (GEOM_COMPOSED)
+      call geom_composed_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_CIRCLE)
+      call geom_circle_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_SQUARE)
+      call geom_square_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_ELLIPSE)
+      call geom_ellipse_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_RECT)
+      call geom_rect_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_POLYGON)
+      call geom_polygon_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case DEFAULT
       iisInObject = 0
-    END SELECT
+    end select
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE geom_isInGeometryArray (rgeomObject, Dcoords, IisInObject)
+  subroutine geom_isInGeometryArray (rgeomObject, Dcoords, IisInObject)
 
 !<description>
   ! This routine check whether an array of given points is inside a given
@@ -4472,10 +4472,10 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object against that the points are to be tested.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! An array holding the coordinates of the points that are to be tested.
-  REAL(DP), DIMENSION(:,:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:,:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -4484,33 +4484,33 @@ END SUBROUTINE
   ! the object's geometry.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
-  INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IisInObject
+  integer(I32), dimension(:), intent(OUT) :: IisInObject
 !</output>
 
 !</subroutine>
 
-  INTEGER :: i, lb,ub
+  integer :: i, lb,ub
 
     ! Until now, this routine is a simple DO-loop
-    lb = LBOUND(Dcoords, 2)
-    ub = UBOUND(Dcoords, 2)
+    lb = lbound(Dcoords, 2)
+    ub = ubound(Dcoords, 2)
 
-    DO i = lb, ub
+    do i = lb, ub
 
       ! Call the geom_isInGeometry routine
-      CALL geom_isInGeometry(rgeomObject, Dcoords(:,i), IisInObject(i))
+      call geom_isInGeometry(rgeomObject, Dcoords(:,i), IisInObject(i))
 
-    END DO
+    end do
     
     ! That's it
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
       
   !<subroutine>
   
-  SUBROUTINE geom_projectToBoundary (rgeomObject, Dcoords, Dproj)
+  subroutine geom_projectToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
   ! This routine is a wrapper for the geom_****_prjToBoundary routines.
@@ -4518,12 +4518,12 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -4531,7 +4531,7 @@ END SUBROUTINE
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
   
 !</output>
 
@@ -4539,30 +4539,30 @@ END SUBROUTINE
 
    ! Check what type of object we have and call the object's corresponding
    ! subroutine.
-   SELECT CASE(rgeomObject%ctype)
-   CASE (GEOM_COMPOSED)
-     CALL geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_CIRCLE)
-     CALL geom_circle_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_SQUARE)
-     CALL geom_square_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_ELLIPSE)
-     CALL geom_ellipse_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_RECT)
-     CALL geom_rect_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_POLYGON)
-     CALL geom_polygon_projector(rgeomObject, Dcoords, Dproj)
-   END SELECT
+   select case(rgeomObject%ctype)
+   case (GEOM_COMPOSED)
+     call geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   case (GEOM_CIRCLE)
+     call geom_circle_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   case (GEOM_SQUARE)
+     call geom_square_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   case (GEOM_ELLIPSE)
+     call geom_ellipse_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   case (GEOM_RECT)
+     call geom_rect_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   case (GEOM_POLYGON)
+     call geom_polygon_projector(rgeomObject, Dcoords, Dproj)
+   end select
    
    ! That's it!
    
- END SUBROUTINE
+ end subroutine
  
   ! ***************************************************************************
       
 !<subroutine>
   
-  SUBROUTINE geom_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+  subroutine geom_calcSignedDistance (rgeomObject, Dcoords, ddistance)
 
 !<description>
   ! This routine is a wrapper for the geom_****_calcSignedDistance routines.
@@ -4575,18 +4575,18 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:), intent(IN)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The calculated signed distance
-  REAL(DP),               INTENT(OUT) :: ddistance
+  real(DP),               intent(OUT) :: ddistance
   
 !</output>
 
@@ -4594,32 +4594,32 @@ END SUBROUTINE
 
    ! Check what type of object we have and call the object's corresponding
    ! subroutine.
-   SELECT CASE(rgeomObject%ctype)
-   CASE (GEOM_COMPOSED)
-     CALL geom_composed_calcSignDist(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_CIRCLE)
-     CALL geom_circle_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_SQUARE)
-     CALL geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_ELLIPSE)
-     CALL geom_ellipse_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_RECT)
-     CALL geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_POLYGON)
-     CALL geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE DEFAULT
+   select case(rgeomObject%ctype)
+   case (GEOM_COMPOSED)
+     call geom_composed_calcSignDist(rgeomObject, Dcoords, ddistance)
+   case (GEOM_CIRCLE)
+     call geom_circle_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case (GEOM_SQUARE)
+     call geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case (GEOM_ELLIPSE)
+     call geom_ellipse_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case (GEOM_RECT)
+     call geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case (GEOM_POLYGON)
+     call geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case DEFAULT
      ddistance = 0.0_DP
-   END SELECT
+   end select
    
    ! That's it!
    
- END SUBROUTINE
+ end subroutine
 
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_calcSignedDistanceArray (rgeomObject, Dcoords, Ddistance)
+  subroutine geom_calcSignedDistanceArray (rgeomObject, Dcoords, Ddistance)
 
 !<description>
   
@@ -4627,10 +4627,10 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to calculate the distance from.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! An array holding the coordinates of the points that are to be tested.
-  REAL(DP), DIMENSION(:,:), INTENT(IN)  :: Dcoords
+  real(DP), dimension(:,:), intent(IN)  :: Dcoords
   
 !</input>
 
@@ -4638,34 +4638,34 @@ END SUBROUTINE
   ! An array holding the calculated signed distances.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddistance
+  real(DP), dimension(:), intent(OUT) :: Ddistance
   
 !</output>
 
 !</subroutine>
 
-  INTEGER :: i, lb,ub
+  integer :: i, lb,ub
 
     ! Until now, this routine is a simple DO-loop
-    lb = LBOUND(Dcoords, 2)
-    ub = UBOUND(Dcoords, 2)
+    lb = lbound(Dcoords, 2)
+    ub = ubound(Dcoords, 2)
 
-    DO i = lb, ub
+    do i = lb, ub
 
       ! Call the geom_isInGeometry routine
-      CALL geom_calcSignedDistance(rgeomObject, Dcoords(:,i), Ddistance(i))
+      call geom_calcSignedDistance(rgeomObject, Dcoords(:,i), Ddistance(i))
 
-    END DO
+    end do
     
     ! That's it
    
- END SUBROUTINE
+ end subroutine
 
   ! ***************************************************************************
  
 !<subroutine>
   
-  SUBROUTINE geom_polygonise (rgeomObject, hpolyHandle, bconvertToWorld, &
+  subroutine geom_polygonise (rgeomObject, hpolyHandle, bconvertToWorld, &
                               ndesiredVerticeCount)
   
 !<description>
@@ -4691,104 +4691,104 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object to polygonise.
-  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  type(t_geometryObject), intent(IN)  :: rgeomObject
   
   ! OPTIONAL: Decides whether the coordinates of the polygon should be world
   ! coordinates or coordinates relative to the geometry object's local
   ! coordinate system. If not given, the coordinates are given in world
   ! coordinates.
-  LOGICAL, OPTIONAL, INTENT(IN) :: bconvertToWorld
+  logical, optional, intent(IN) :: bconvertToWorld
   
   ! OPTIONAL: The desired number of vertices for the generated polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
   ! If not given, 64 vertices are generated.
-  INTEGER, OPTIONAL, INTENT(IN) :: ndesiredVerticeCount
+  integer, optional, intent(IN) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  INTEGER, INTENT(OUT) :: hpolyHandle
+  integer, intent(OUT) :: hpolyHandle
   
 !</output>
 
 !</subroutine>
 
   ! Desired vertice count and other temporary variables
-  INTEGER :: ndVC, i, ub, lb
+  integer :: ndVC, i, ub, lb
   
   ! The polygon's vertices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  real(DP), dimension(:,:), pointer :: p_Dvertices
   
   ! A temporary vertice
-  REAL(DP), DIMENSION(1:2) :: Dtemp
+  real(DP), dimension(1:2) :: Dtemp
   
     ! Check the optional parameter
-    IF (PRESENT(ndesiredVerticeCount)) THEN
-      IF (ndesiredVerticeCount .GE. 3) THEN
+    if (present(ndesiredVerticeCount)) then
+      if (ndesiredVerticeCount .ge. 3) then
         ndVC = ndesiredVerticeCount
-      ELSE
+      else
         ndVC = 64
-      END IF
-    ELSE
+      end if
+    else
       ndVC = 64
-    END IF
+    end if
     
     ! Set handle to ST_NOHANDLE
     hpolyHandle = ST_NOHANDLE
     
     ! Call the corresponding subroutine of the geometry object
-    SELECT CASE(rgeomObject%ctype)
-    CASE (GEOM_CIRCLE)
-      CALL geom_circle_polygonise(rgeomObject, hpolyHandle, ndVC)
-    CASE (GEOM_ELLIPSE)
-      CALL geom_ellipse_polygonise(rgeomObject, hpolyHandle, ndVC)
-    CASE (GEOM_SQUARE)
-      CALL geom_square_polygonise(rgeomObject, hpolyHandle)
-    CASE (GEOM_RECT)
-      CALL geom_rect_polygonise(rgeomObject, hpolyHandle)
-    CASE (GEOM_POLYGON)
-      CALL geom_polygon_polygonise(rgeomObject, hpolyHandle)
-    END SELECT
+    select case(rgeomObject%ctype)
+    case (GEOM_CIRCLE)
+      call geom_circle_polygonise(rgeomObject, hpolyHandle, ndVC)
+    case (GEOM_ELLIPSE)
+      call geom_ellipse_polygonise(rgeomObject, hpolyHandle, ndVC)
+    case (GEOM_SQUARE)
+      call geom_square_polygonise(rgeomObject, hpolyHandle)
+    case (GEOM_RECT)
+      call geom_rect_polygonise(rgeomObject, hpolyHandle)
+    case (GEOM_POLYGON)
+      call geom_polygon_polygonise(rgeomObject, hpolyHandle)
+    end select
     
     ! Maybe the subroutine failed?
-    IF (hpolyHandle .EQ. ST_NOHANDLE) THEN
-      RETURN
-    END IF
+    if (hpolyHandle .eq. ST_NOHANDLE) then
+      return
+    end if
     
     ! Don't we need to convert them to world coordinates?
-    IF (PRESENT(bconvertToWorld)) THEN
-      IF (.NOT. bconvertToWorld) RETURN
-    END IF
+    if (present(bconvertToWorld)) then
+      if (.not. bconvertToWorld) return
+    end if
     
     ! Get the vertices
-    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Get bounds
-    ub = UBOUND(p_Dvertices, 2)
-    lb = LBOUND(p_Dvertices, 2)
+    ub = ubound(p_Dvertices, 2)
+    lb = lbound(p_Dvertices, 2)
     
     ! Go through all of them
-    DO i=lb, ub
+    do i=lb, ub
 
       ! Call transform routine
-      CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dvertices(1:2, i), &
+      call bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dvertices(1:2, i), &
                                   Dtemp)
       ! Copy back to buffer
       p_Dvertices(1:2,i) = Dtemp
 
-    END DO
+    end do
     
     ! That's it!
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_done(rgeomObject)
+  recursive subroutine geom_done(rgeomObject)
 
 !<description>
   ! This routine releases allocated buffer from a geometry object.
@@ -4797,52 +4797,52 @@ END SUBROUTINE
 
 !<inputoutput>
   ! The geometry object that is to be destroyed
-  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(INOUT) :: rgeomObject
 
 !</inputoutput>
 
 !</subroutine>
 
   ! Some temporary variables
-  INTEGER :: i, h_Dverts
+  integer :: i, h_Dverts
 
     ! If the object is composed, we have some work to do...
-    IF(rgeomObject%ctype .EQ. GEOM_COMPOSED) THEN
+    if(rgeomObject%ctype .eq. GEOM_COMPOSED) then
     
       ! Go through all sub-objects and destroy them
-      DO i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%rcomposed%nsubObjects
       
         ! Destroy sub-object
-        CALL geom_done(rgeomObject%rcomposed%p_RsubObjects(i))
+        call geom_done(rgeomObject%rcomposed%p_RsubObjects(i))
       
-      END DO
+      end do
       
       ! Deallocate object array
-      DEALLOCATE(rgeomObject%rcomposed%p_RsubObjects)
+      deallocate(rgeomObject%rcomposed%p_RsubObjects)
       
       ! Destroy boundary approximation
       h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
-      IF (h_Dverts .NE. ST_NOHANDLE) THEN
-        CALL storage_free(h_Dverts)
-      END IF
+      if (h_Dverts .ne. ST_NOHANDLE) then
+        call storage_free(h_Dverts)
+      end if
       
       ! Deallocate boundary approximation structure
-      DEALLOCATE(rgeomObject%rcomposed%p_rboundaryApprox)
+      deallocate(rgeomObject%rcomposed%p_rboundaryApprox)
     
-    END IF
+    end if
 
     ! Reset the object's type
     rgeomObject%ctype = GEOM_NONE
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_getNumApproxVerts(rgeomObject, dtolerance, nverts)
+  recursive subroutine geom_getNumApproxVerts(rgeomObject, dtolerance, nverts)
   
 !<description>
   ! This routine calculates the number of vertices needed to approximate the
@@ -4853,44 +4853,44 @@ END SUBROUTINE
 
 !<input>
   ! The geometry object
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The tolerance. Must be > EPS
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
   
 !</input>
 
 !<output>
   ! The number of vertices for the boundary approximation
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
   
 !</output>
 
 !</subroutine>
 
-    SELECT CASE(rgeomObject%ctype)
-    CASE (GEOM_COMPOSED)
-      CALL geom_composed_getNAV(rgeomObject, dtolerance, nverts)
-    CASE (GEOM_CIRCLE)
-      CALL geom_circle_getNAV(rgeomObject, dtolerance, nverts)
-    CASE (GEOM_SQUARE)
-      CALL geom_square_getNAV(rgeomObject, dtolerance, nverts)
-    CASE (GEOM_ELLIPSE)
-      CALL geom_ellipse_getNAV(rgeomObject, dtolerance, nverts)
-    CASE (GEOM_RECT)
-      CALL geom_rect_getNAV(rgeomObject, dtolerance, nverts)
-    CASE (GEOM_POLYGON)
-      CALL geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
+    select case(rgeomObject%ctype)
+    case (GEOM_COMPOSED)
+      call geom_composed_getNAV(rgeomObject, dtolerance, nverts)
+    case (GEOM_CIRCLE)
+      call geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+    case (GEOM_SQUARE)
+      call geom_square_getNAV(rgeomObject, dtolerance, nverts)
+    case (GEOM_ELLIPSE)
+      call geom_ellipse_getNAV(rgeomObject, dtolerance, nverts)
+    case (GEOM_RECT)
+      call geom_rect_getNAV(rgeomObject, dtolerance, nverts)
+    case (GEOM_POLYGON)
+      call geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
     
-    END SELECT
+    end select
     
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
 
-  RECURSIVE SUBROUTINE geom_getBoundaryApprox(rgeomObject, dtolerance, &
+  recursive subroutine geom_getBoundaryApprox(rgeomObject, dtolerance, &
                                               Dverts, nverts)
   
 !<description>
@@ -4900,37 +4900,37 @@ END SUBROUTINE
 
 !<input>
   ! The composed object
-  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  type(t_geometryObject), intent(IN) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  REAL(DP), INTENT(IN) :: dtolerance
+  real(DP), intent(IN) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(OUT) :: Dverts
   
   ! Number of vertices created
-  INTEGER, INTENT(OUT) :: nverts
+  integer, intent(OUT) :: nverts
 !</output>
 
 !</subroutine>
 
-    SELECT CASE(rgeomObject%ctype)
-    CASE (GEOM_COMPOSED)
-      CALL geom_composed_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    CASE (GEOM_CIRCLE)
-      CALL geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    CASE (GEOM_SQUARE)
-      CALL geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    CASE (GEOM_ELLIPSE)
-      CALL geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    CASE (GEOM_RECT)
-      CALL geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    CASE (GEOM_POLYGON)
-      CALL geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
-    END SELECT
+    select case(rgeomObject%ctype)
+    case (GEOM_COMPOSED)
+      call geom_composed_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    case (GEOM_CIRCLE)
+      call geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    case (GEOM_SQUARE)
+      call geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    case (GEOM_ELLIPSE)
+      call geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    case (GEOM_RECT)
+      call geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    case (GEOM_POLYGON)
+      call geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    end select
     
-  END SUBROUTINE
+  end subroutine
     
-END MODULE
+end module

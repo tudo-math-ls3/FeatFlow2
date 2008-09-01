@@ -20,64 +20,64 @@
 !# </purpose>
 !##############################################################################
 
-MODULE hadaptaux
+module hadaptaux
   
-  USE arraylist
-  USE binarytree
-  USE fsystem
-  USE octree
-  USE quadtree
-  USE storage
-  USE triangulation
+  use arraylist
+  use binarytree
+  use fsystem
+  use octree
+  use quadtree
+  use storage
+  use triangulation
 
-  IMPLICIT NONE
+  implicit none
 
-  PUBLIC
+  public
 
 !<constantblock description="Global flags for grid refinement/coarsening">
 
   ! No refinement and coarsening
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_NOADAPTATION         = 0
+  integer, parameter, public :: HADAPT_NOADAPTATION         = 0
 
   ! Red-Green refinement and coarsening strategy (R. Banks et al.)
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_REDGREEN             = 1
+  integer, parameter, public :: HADAPT_REDGREEN             = 1
 
   ! Longest edge bisection strategy (M. Rivara)
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_LONGESTEDGE          = 2
+  integer, parameter, public :: HADAPT_LONGESTEDGE          = 2
 
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
   ! Adaptation is undefined
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_UNDEFINED     = 2**0
+  integer, parameter, public :: HADAPT_UNDEFINED     = 2**0
 
   ! Parameters of adaptivity structure are initialized
-  INTEGER, PARAMETER :: HADAPT_HAS_PARAMETERS        = 2**1
+  integer, parameter :: HADAPT_HAS_PARAMETERS        = 2**1
 
   ! Quadtree/octree for vertex coordinates is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_COORDS            = 2**2
+  integer, parameter :: HADAPT_HAS_COORDS            = 2**2
 
   ! Array for IverticesAtElement is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_VERTATELEM        = 2**3
+  integer, parameter :: HADAPT_HAS_VERTATELEM        = 2**3
 
   ! Array for IneighboursAtElement is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_NEIGHATELEM       = 2**4
+  integer, parameter :: HADAPT_HAS_NEIGHATELEM       = 2**4
 
   ! Boundary data is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_BOUNDARY          = 2**5
+  integer, parameter :: HADAPT_HAS_BOUNDARY          = 2**5
 
   ! Nodal property is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_NODALPROP         = 2**6
+  integer, parameter :: HADAPT_HAS_NODALPROP         = 2**6
 
   ! Number of elements for predefined type
-  INTEGER, PARAMETER :: HADAPT_HAS_NELOFTYPE         = 2**7
+  integer, parameter :: HADAPT_HAS_NELOFTYPE         = 2**7
 
   ! Array for IelementsAtVertex is generated
-  INTEGER, PARAMETER :: HADAPT_HAS_ELEMATVERTEX      = 2**8
+  integer, parameter :: HADAPT_HAS_ELEMATVERTEX      = 2**8
 
   ! Dynamic data structures are all generated
-  INTEGER, PARAMETER :: HADAPT_HAS_DYNAMICDATA       = HADAPT_HAS_PARAMETERS+&
+  integer, parameter :: HADAPT_HAS_DYNAMICDATA       = HADAPT_HAS_PARAMETERS+&
                                                        HADAPT_HAS_COORDS+&
                                                        HADAPT_HAS_VERTATELEM+&
                                                        HADAPT_HAS_NEIGHATELEM+&
@@ -87,48 +87,48 @@ MODULE hadaptaux
                                                        HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
-  INTEGER, PARAMETER :: HADAPT_MARKEDREFINE          = 2**9
+  integer, parameter :: HADAPT_MARKEDREFINE          = 2**9
 
   ! Cells are marked for coarsening
-  INTEGER, PARAMETER :: HADAPT_MARKEDCOARSEN         = 2**10
+  integer, parameter :: HADAPT_MARKEDCOARSEN         = 2**10
 
   ! Cells are marked
-  INTEGER, PARAMETER :: HADAPT_MARKED                = HADAPT_MARKEDREFINE+&
+  integer, parameter :: HADAPT_MARKED                = HADAPT_MARKEDREFINE+&
                                                        HADAPT_MARKEDCOARSEN
   
   ! Grid has been refined
-  INTEGER, PARAMETER :: HADAPT_REFINED               = 2**11
+  integer, parameter :: HADAPT_REFINED               = 2**11
   
   ! Grid has been coarsened
-  INTEGER, PARAMETER :: HADAPT_COARSENED             = 2**12
+  integer, parameter :: HADAPT_COARSENED             = 2**12
 
 !</constantblock>
 
 !<constantblock description="Constants for grid adaptation">
   
   ! Array position of the boundary
-  INTEGER, PARAMETER :: BdrValue = 1
+  integer, parameter :: BdrValue = 1
   
   ! Array position of the previous boundary vertex
-  INTEGER, PARAMETER :: BdrPrev  = 1
+  integer, parameter :: BdrPrev  = 1
 
   ! Array position of the next boundary vertex
-  INTEGER, PARAMETER :: BdrNext  = 2
+  integer, parameter :: BdrNext  = 2
 
 !</constantblock>
 
 !<constantblock description="Duplication flags. Specifies which information is
 !                            shared between adaptivity structures">
 
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMARKER                 = 2** 0
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTEXAGE              = 2** 1
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INODALPROPERTY          = 2** 2
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTICESATELEMENT      = 2** 3
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INEIGHATELEMENT         = 2** 4
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMIDNEIGHATELEMENT      = 2** 5
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RVERTEXCOORDINATES      = 2** 6
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RBOUNDARY               = 2** 7
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RELEMENTSATVERTEX       = 2** 8
+  integer(I32), parameter :: HADAPT_SHARE_IMARKER                 = 2** 0
+  integer(I32), parameter :: HADAPT_SHARE_IVERTEXAGE              = 2** 1
+  integer(I32), parameter :: HADAPT_SHARE_INODALPROPERTY          = 2** 2
+  integer(I32), parameter :: HADAPT_SHARE_IVERTICESATELEMENT      = 2** 3
+  integer(I32), parameter :: HADAPT_SHARE_INEIGHATELEMENT         = 2** 4
+  integer(I32), parameter :: HADAPT_SHARE_IMIDNEIGHATELEMENT      = 2** 5
+  integer(I32), parameter :: HADAPT_SHARE_RVERTEXCOORDINATES      = 2** 6
+  integer(I32), parameter :: HADAPT_SHARE_RBOUNDARY               = 2** 7
+  integer(I32), parameter :: HADAPT_SHARE_RELEMENTSATVERTEX       = 2** 8
 
 !</constantblock>
 
@@ -144,9 +144,9 @@ MODULE hadaptaux
   
   ! This type contains all data structures to handle 
   ! adaptive grid refinement and grid coarsening.
-  TYPE :: t_hadapt
+  type :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
-    INTEGER :: iSpec                                 = HADAPT_UNDEFINED
+    integer :: iSpec                                 = HADAPT_UNDEFINED
 
     ! Duplication flag. Bitfield that indicates which information is
     ! shared with another adaptivity structure.
@@ -155,70 +155,70 @@ MODULE hadaptaux
     ! not be deleted by hadapt_releaseAdaptation. 
     ! When the bit is 0, the array is a real copy of another array 
     ! and must be deleted in hadapt_releaseAdaptation.
-    INTEGER(I32) :: iduplicationFlag                 = 0
+    integer(I32) :: iduplicationFlag                 = 0
 
     ! Tag: Specified the strategy for grid refinement and coarsening
-    INTEGER :: iadaptationStrategy                   = HADAPT_NOADAPTATION
+    integer :: iadaptationStrategy                   = HADAPT_NOADAPTATION
 
     ! Maximum number of subdivisions from the original mesh
-    INTEGER :: NSUBDIVIDEMAX                         = 0
+    integer :: NSUBDIVIDEMAX                         = 0
 
     ! Total number of grid refinement steps
-    INTEGER :: nRefinementSteps                      = 0
+    integer :: nRefinementSteps                      = 0
 
     ! Total number of grid coarsening steps
-    INTEGER :: nCoarseningSteps                      = 0
+    integer :: nCoarseningSteps                      = 0
 
     ! Total number of grid smoothing steps
-    INTEGER :: nSmoothingSteps                       = 0
+    integer :: nSmoothingSteps                       = 0
 
     ! Tolerance for refinement
-    REAL(DP) :: drefinementTolerance                 = 0
+    real(DP) :: drefinementTolerance                 = 0
 
     ! Tolerance for coarsening
-    REAL(DP) :: dcoarseningTolerance                 = 0
+    real(DP) :: dcoarseningTolerance                 = 0
 
     ! Dimension of the triangulation
-    INTEGER :: ndim                                  = 0
+    integer :: ndim                                  = 0
 
     ! Total number of vertices (initially)
-    INTEGER(PREC_VERTEXIDX) :: NVT0                  = 0
+    integer(PREC_VERTEXIDX) :: NVT0                  = 0
     
     ! Total number of vertices
-    INTEGER(PREC_VERTEXIDX) :: NVT                   = 0
+    integer(PREC_VERTEXIDX) :: NVT                   = 0
 
     ! Increment of vertices
-    INTEGER(PREC_VERTEXIDX) :: increaseNVT           = 0
+    integer(PREC_VERTEXIDX) :: increaseNVT           = 0
 
     ! Total number of boundary vertives (initially)
-    INTEGER :: NVBD0                                 = 0
+    integer :: NVBD0                                 = 0
 
     ! Total number of boundary vertives
-    INTEGER :: NVBD                                  = 0
+    integer :: NVBD                                  = 0
     
     ! Total number of boundary components (should not change)
-    INTEGER :: NBCT                                  = 0
+    integer :: NBCT                                  = 0
     
     ! Total number of elements (initially)
-    INTEGER(PREC_ELEMENTIDX) :: NEL0                 = 0
+    integer(PREC_ELEMENTIDX) :: NEL0                 = 0
     
     ! Total number of elements
-    INTEGER(PREC_ELEMENTIDX) :: NEL                  = 0
+    integer(PREC_ELEMENTIDX) :: NEL                  = 0
 
     ! Maximum number of elements (before reallocation)
-    INTEGER(PREC_ELEMENTIDX) :: NELMAX               = 0
+    integer(PREC_ELEMENTIDX) :: NELMAX               = 0
     
     ! Total number of green elements (required internally)
-    INTEGER(PREC_ELEMENTIDX) :: nGreenElements       = 0
+    integer(PREC_ELEMENTIDX) :: nGreenElements       = 0
     
     ! Nuber of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quadrilaterals in the mesh (2D).
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE) :: InelOfType = 0
+    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE) :: InelOfType = 0
 
     ! Same as InelOfType but this array stores the number of elements
     ! which are initially present in the mesh
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE) :: InelOfType0 = 0
+    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE) :: InelOfType0 = 0
     
     ! Element marker array.
     ! Handle to
@@ -229,7 +229,7 @@ MODULE hadaptaux
     ! BIT2: Is 0 if second edge is not subdivided, 1 otherwise.
     ! BIT3: Is 0 if third edge is not subdivided, 1 otherwise.
     ! BIT4: Is 0 if fourth edge is not subdivided, 1 otherwise.
-    INTEGER :: h_Imarker = ST_NOHANDLE
+    integer :: h_Imarker = ST_NOHANDLE
     
     ! Vertex age array.
     ! Handle to
@@ -244,12 +244,12 @@ MODULE hadaptaux
     ! A negative age means, the the vertex is lockes, that is, it
     ! cannot be removed. By definition, vertices of the initial
     ! triangulation cannot be removed and are always locked.
-    INTEGER :: h_IvertexAge = ST_NOHANDLE
+    integer :: h_IvertexAge = ST_NOHANDLE
 
     ! Pointer to h_IvertexAge.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    INTEGER, DIMENSION(:), POINTER :: p_IvertexAge => NULL()
+    integer, dimension(:), pointer :: p_IvertexAge => null()
 
     ! Nodal property array.
     ! Handle to
@@ -262,36 +262,36 @@ MODULE hadaptaux
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
     !           boundary. KNPR(.) defines the number of the boundary
     !           component.
-    INTEGER :: h_InodalProperty = ST_NOHANDLE
+    integer :: h_InodalProperty = ST_NOHANDLE
 
     ! Pointer to h_InodalProperty.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    INTEGER, DIMENSION(:), POINTER :: p_InodalProperty => NULL()
+    integer, dimension(:), pointer :: p_InodalProperty => null()
     
     ! Vertices adjacent to an element.
     ! Handle to 
     !       p_IverticesAtElement = array [1..TRIA_MAXNVE2D,1..NEL] of integer.
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
-    INTEGER :: h_IverticesAtElement = ST_NOHANDLE
+    integer :: h_IverticesAtElement = ST_NOHANDLE
 
     ! Pointer to h_IverticesAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement => NULL ()
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement => null ()
 
     ! Neighbour elements adjacent to an element.
     ! Handle to
     !       p_IneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements in mathematically
     ! positive sense, metting the element in an edge.
-    INTEGER :: h_IneighboursAtElement = ST_NOHANDLE
+    integer :: h_IneighboursAtElement = ST_NOHANDLE
 
     ! Pointer to h_IneighboursAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement => NULL ()
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement => null ()
 
     ! Midneighbour elements adjacent to an element.
     ! Handle to
@@ -302,32 +302,32 @@ MODULE hadaptaux
     ! nonconforming state. When time comes to process the other
     ! element (with hanging node), the element knows which elements
     ! are adjacent along the first and the second half of the edge.
-    INTEGER :: h_ImidneighboursAtElement = ST_NOHANDLE
+    integer :: h_ImidneighboursAtElement = ST_NOHANDLE
 
     ! Pointer to h_ImidneighboursAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_ImidneighboursAtElement => NULL ()
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_ImidneighboursAtElement => null ()
     
     ! Quadtree storing the nodal coordinates in 2D
-    TYPE(t_quadtree) :: rVertexCoordinates2D
+    type(t_quadtree) :: rVertexCoordinates2D
 
     ! Octree storing the nodal coordinates in 2D
-    TYPE(t_octree) :: rVertexCoordinates3D
+    type(t_octree) :: rVertexCoordinates3D
     
     ! Array of binary search trees storing the boundary data
     ! p_IboundaryCpIdx and p_IverticesAtBoundary
-    TYPE(t_btree), DIMENSION(:), POINTER :: rBoundary => NULL()
+    type(t_btree), dimension(:), pointer :: rBoundary => null()
 
     ! Arraylist for elements-meeting-at-vertex structure
-    TYPE(t_arraylist) :: rElementsAtVertex
-  END TYPE t_hadapt
+    type(t_arraylist) :: rElementsAtVertex
+  end type t_hadapt
 
   !</typeblock> 
 
 !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -335,7 +335,7 @@ CONTAINS
 
 !<function>
 
-  PURE FUNCTION hadapt_getNVE(rhadapt, iel) RESULT(nve)
+  pure function hadapt_getNVE(rhadapt, iel) result(nve)
 
 !<description>
     ! This function returns the number of vertices present in the given element
@@ -343,47 +343,47 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN)           :: rhadapt
+    type(t_hadapt), intent(IN)           :: rhadapt
 
     ! Number of the element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+    integer(PREC_ELEMENTIDX), intent(IN) :: iel
 !</input>
 
 !<result>
     ! number of vertices per element
-    INTEGER :: nve
+    integer :: nve
 !</result>
 !</function
 
     ! Which spatial dimension do we have?
-    SELECT CASE(rhadapt%ndim)
+    select case(rhadapt%ndim)
 
-    CASE (NDIM2D)
+    case (NDIM2D)
       
       ! Do we have quadrilaterals in the triangulation?
-      IF (rhadapt%InelOfType(TRIA_NVEQUAD2D) .EQ. 0) THEN
+      if (rhadapt%InelOfType(TRIA_NVEQUAD2D) .eq. 0) then
         
         ! There are no quadrilaterals in the current triangulation.
         ! Hence, return TRIA_NVETRI2D by default.
         nve = TRIA_NVETRI2D
         
-      ELSE
+      else
         
         ! There are quadrilaterals and possible also triangles in
         ! the current triangulatin. If the last entry of the
         ! vertices-at-element list is nonzero then TRIA_NVEQUAD2D vertices
         ! are present in the current element. Otherwise return TRIA_NVETRI2D.
-        IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D, iel) .EQ. 0) THEN
+        if (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D, iel) .eq. 0) then
           nve = TRIA_NVETRI2D
-        ELSE
+        else
           nve = TRIA_NVEQUAD2D
-        END IF
+        end if
         
-      END IF
+      end if
 
-    CASE DEFAULT
+    case DEFAULT
       nve = 0
-    END SELECT
-  END FUNCTION hadapt_getNVE
+    end select
+  end function hadapt_getNVE
 
-END MODULE hadaptaux
+end module hadaptaux

@@ -1,31 +1,31 @@
   ! This file describes the interfaces of the callback routines
   ! ***************************************************************************
 
-  INTERFACE
+  interface
 
 !<subroutine>
 
-  SUBROUTINE fcb_hadaptCallback(rcollection,iOperation,Ivertices,Ielements)
+  subroutine fcb_hadaptCallback(rcollection,iOperation,Ivertices,Ielements)
 
-  USE fsystem
-  USE collection
-  USE triangulation
+  use fsystem
+  use collection
+  use triangulation
 
 !<input>
   ! Collection
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  type(t_collection), intent(IN) :: rcollection
  
   ! Identifier for the grid modification operation
-  INTEGER, INTENT(IN) :: iOperation
+  integer, intent(IN) :: iOperation
 
   ! Array of vertices involved in the adaptivity step
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: Ivertices
+  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: Ivertices
 
   ! Array of elements involved in the adaptivity step
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
 !</input>
 !</subroutine>
 
-  END SUBROUTINE
+  end subroutine
 
-  END INTERFACE
+  end interface

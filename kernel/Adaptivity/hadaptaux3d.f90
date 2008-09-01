@@ -17,15 +17,15 @@
 !# </purpose>
 !##############################################################################
 
-MODULE hadaptaux3d
+module hadaptaux3d
 
-  USE collection
-  USE fsystem
-  USE hadaptaux
-  USE hadaptaux2d
+  use collection
+  use fsystem
+  use hadaptaux
+  use hadaptaux2d
 
-  IMPLICIT NONE
+  implicit none
 
-  PUBLIC
+  public
 
-END MODULE hadaptaux3d
+end module hadaptaux3d

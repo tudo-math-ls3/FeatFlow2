@@ -11,19 +11,19 @@
 !# </purpose>
 !##############################################################################
 
-MODULE scalarpde
+module scalarpde
 
-  USE fsystem
-  USE derivatives
+  use fsystem
+  use derivatives
   
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
 
 !<constantblock>
 
   ! Maximum number of additive terms in the integral
-  INTEGER, PARAMETER :: SCPDE_NNAB = 21
+  integer, parameter :: SCPDE_NNAB = 21
 
 !</constantblock>
 
@@ -54,32 +54,32 @@ MODULE scalarpde
   ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term  
   ! 8.) Idescriptors(2,2) = DER_DERIV_Y    -> v_y in the 2nd term
   
-  TYPE t_bilinearForm
+  type t_bilinearForm
   
     ! Number of additive terms in the bilinear form
-    INTEGER :: itermCount = 0
+    integer :: itermCount = 0
     
     ! Descriptors of additive terms.
     ! Idescriptors(1,.) = trial function descriptor,
     ! Idescriptors(2,.) = test function descriptor.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
-    INTEGER, DIMENSION(2,SCPDE_NNAB) :: Idescriptors = DER_FUNC
+    integer, dimension(2,SCPDE_NNAB) :: Idescriptors = DER_FUNC
     
     ! TRUE if all coefficients in the biliear form are constant,
     ! FALSE if there is at least one nonconstant coefficient.
-    LOGICAL                          :: ballCoeffConstant = .TRUE.
+    logical                          :: ballCoeffConstant = .true.
     
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
-    LOGICAL, DIMENSION(SCPDE_NNAB)   :: BconstantCoeff = .TRUE.
+    logical, dimension(SCPDE_NNAB)   :: BconstantCoeff = .true.
     
     ! If ballCoeffConstant=TRUE: the constant coefficients in front of
     ! each additive terms in the bilinear form.
     ! Otherwise: Not used.
-    REAL(DP), DIMENSION(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
-  END TYPE
+    real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+  end type
   
   !</typeblock>
 
@@ -119,10 +119,10 @@ MODULE scalarpde
   ! instead of DER_xxxx means that the function f is the constant 
   ! mapping f_i(u):=1. So this disables the contribution of u for that term.
   
-  TYPE t_trilinearForm
+  type t_trilinearForm
   
     ! Number of additive terms in the bilinear form
-    INTEGER :: itermCount = 0
+    integer :: itermCount = 0
     
     ! Descriptors of additive terms.
     ! Idescriptors(1,.) = coefficient function descriptor,
@@ -130,22 +130,22 @@ MODULE scalarpde
     ! Idescriptors(3,.) = test function descriptor.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
-    INTEGER, DIMENSION(3,SCPDE_NNAB) :: Idescriptors = DER_FUNC
+    integer, dimension(3,SCPDE_NNAB) :: Idescriptors = DER_FUNC
     
     ! TRUE if all coefficients in the biliear form are constant,
     ! FALSE if there is at least one nonconstant coefficient.
-    LOGICAL                          :: ballCoeffConstant = .TRUE.
+    logical                          :: ballCoeffConstant = .true.
     
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
-    LOGICAL, DIMENSION(SCPDE_NNAB)   :: BconstantCoeff = .TRUE.
+    logical, dimension(SCPDE_NNAB)   :: BconstantCoeff = .true.
     
     ! If ballCoeffConstant=TRUE: the constant coefficients in front of
     ! each additive terms in the bilinear form.
     ! Otherwise: Not used.
-    REAL(DP), DIMENSION(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
-  END TYPE
+    real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+  end type
   
   !</typeblock>
 
@@ -169,23 +169,23 @@ MODULE scalarpde
   ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term    
   ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term    
   
-  TYPE t_linearForm
+  type t_linearForm
   
     ! Number of additive terms in the bilinear form
-    INTEGER :: itermCount = 0
+    integer :: itermCount = 0
     
     ! Descriptors of additive terms, i.e. test function descriptors.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
-    INTEGER, DIMENSION(SCPDE_NNAB) :: Idescriptors = DER_FUNC
+    integer, dimension(SCPDE_NNAB) :: Idescriptors = DER_FUNC
     
     ! Constant coefficients in front of each additive terms in the linear form.
     ! Note: This array is not used by the framework! Nevertheless, it can be
     ! used by the main program to pass parameters from the main program to
     ! callback routines.
-    REAL(DP), DIMENSION(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+    real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
     
-  END TYPE
+  end type
   
   !</typeblock>
 
@@ -193,4 +193,4 @@ MODULE scalarpde
   
   ! ***************************************************************************
   
-END MODULE
+end module

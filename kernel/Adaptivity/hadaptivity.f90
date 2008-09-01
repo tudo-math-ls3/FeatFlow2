@@ -237,55 +237,55 @@
 !# </purpose>
 !##############################################################################
 
-MODULE hadaptivity
+module hadaptivity
 
-  USE arraylist
-  USE binarytree
-  USE boundary
-  USE collection
-  USE hadaptaux3d
-  USE io
-  USE linearsystemscalar
-  USE list
-  USE octree
-  USE paramlist
-  USE quadtree
-  USE sort
-  USE storage
-  USE triangulation
-  USE fsystem
+  use arraylist
+  use binarytree
+  use boundary
+  use collection
+  use hadaptaux3d
+  use io
+  use linearsystemscalar
+  use list
+  use octree
+  use paramlist
+  use quadtree
+  use sort
+  use storage
+  use triangulation
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
-  PRIVATE
-  PUBLIC :: t_hadapt
-  PUBLIC :: hadapt_initFromParameterlist
-  PUBLIC :: hadapt_initFromTriangulation
-  PUBLIC :: hadapt_generateRawMesh
-  PUBLIC :: hadapt_releaseAdaptation
-  PUBLIC :: hadapt_duplicateAdaptation
-  PUBLIC :: hadapt_restoreAdaptation
-  PUBLIC :: hadapt_setVertexCoords2D
-  PUBLIC :: hadapt_getVertexCoords2D
-  PUBLIC :: hadapt_setVerticesAtElement
-  PUBLIC :: hadapt_getVerticesAtElement
-  PUBLIC :: hadapt_setNeighboursAtElement
-  PUBLIC :: hadapt_getNeighboursAtElement
-  PUBLIC :: hadapt_setNelOfType
-  PUBLIC :: hadapt_getNelOfType
-  PUBLIC :: hadapt_setBoundary
-  PUBLIC :: hadapt_getBoundary
-  PUBLIC :: hadapt_setNodalProperty
-  PUBLIC :: hadapt_getNodalProperty
-  PUBLIC :: hadapt_genElementsAtVertex
-  PUBLIC :: hadapt_performAdaptation
-  PUBLIC :: hadapt_infoStatistics
-  PUBLIC :: hadapt_writeGridSVG
-  PUBLIC :: hadapt_writeGridGMV
-  PUBLIC :: hadapt_checkConsistency
-  PUBLIC :: hadapt_refreshAdaptation
+  private
+  public :: t_hadapt
+  public :: hadapt_initFromParameterlist
+  public :: hadapt_initFromTriangulation
+  public :: hadapt_generateRawMesh
+  public :: hadapt_releaseAdaptation
+  public :: hadapt_duplicateAdaptation
+  public :: hadapt_restoreAdaptation
+  public :: hadapt_setVertexCoords2D
+  public :: hadapt_getVertexCoords2D
+  public :: hadapt_setVerticesAtElement
+  public :: hadapt_getVerticesAtElement
+  public :: hadapt_setNeighboursAtElement
+  public :: hadapt_getNeighboursAtElement
+  public :: hadapt_setNelOfType
+  public :: hadapt_getNelOfType
+  public :: hadapt_setBoundary
+  public :: hadapt_getBoundary
+  public :: hadapt_setNodalProperty
+  public :: hadapt_getNodalProperty
+  public :: hadapt_genElementsAtVertex
+  public :: hadapt_performAdaptation
+  public :: hadapt_infoStatistics
+  public :: hadapt_writeGridSVG
+  public :: hadapt_writeGridGMV
+  public :: hadapt_checkConsistency
+  public :: hadapt_refreshAdaptation
 
-CONTAINS
+contains
   
   ! ***************************************************************************
   ! ***************************************************************************
@@ -293,7 +293,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_initFromParameterlist(rhadapt, rparlist, ssection)
+  subroutine hadapt_initFromParameterlist(rhadapt, rparlist, ssection)
 
 !<description>
     ! This subroutine initializes the adaptivity structure
@@ -302,37 +302,37 @@ CONTAINS
 
 !<input>
     ! parameter list
-    TYPE(t_parlist), INTENT(IN)  :: rparlist
+    type(t_parlist), intent(IN)  :: rparlist
 
     ! name of the section
-    CHARACTER(LEN=*), INTENT(IN) :: ssection
+    character(LEN=*), intent(IN) :: ssection
 !</input>
 
 !<output>
     ! adaptivity structure
-    TYPE(t_hadapt), INTENT(OUT)  :: rhadapt
+    type(t_hadapt), intent(OUT)  :: rhadapt
 !</output>
 !</subroutine>
 
     ! Get mandatory parameters from list
-    CALL parlst_getvalue_int   (rparlist, ssection, "nsubdividemax",&
+    call parlst_getvalue_int   (rparlist, ssection, "nsubdividemax",&
                                 rhadapt%nsubdividemax)
-    CALL parlst_getvalue_int   (rparlist, ssection, "iadaptationStrategy",&
+    call parlst_getvalue_int   (rparlist, ssection, "iadaptationStrategy",&
                                 rhadapt%iadaptationStrategy)
-    CALL parlst_getvalue_double(rparlist, ssection, "drefinementTolerance",&
+    call parlst_getvalue_double(rparlist, ssection, "drefinementTolerance",&
                                 rhadapt%drefinementTolerance)
-    CALL parlst_getvalue_double(rparlist, ssection, "dcoarseningTolerance",&
+    call parlst_getvalue_double(rparlist, ssection, "dcoarseningTolerance",&
                                 rhadapt%dcoarseningTolerance)
 
     ! Initialize data
     rhadapt%iSpec = HADAPT_HAS_PARAMETERS
-  END SUBROUTINE hadapt_initFromParameterlist
+  end subroutine hadapt_initFromParameterlist
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_initFromTriangulation(rhadapt, rtriangulation)
+  subroutine hadapt_initFromTriangulation(rhadapt, rtriangulation)
 
 !<description>
     ! This subroutine initializes all required components of the adaptativit 
@@ -341,12 +341,12 @@ CONTAINS
 
 !<input>
     ! Triangulation structure
-    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    type(t_hadapt), intent(INOUT)     :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -357,57 +357,57 @@ CONTAINS
     rhadapt%ndim=rtriangulation%ndim
 
     ! Set coordinates
-    SELECT CASE(rhadapt%ndim)
-    CASE(NDIM2D)
-      CALL hadapt_setVertexCoords2D(rhadapt,&
+    select case(rhadapt%ndim)
+    case(NDIM2D)
+      call hadapt_setVertexCoords2D(rhadapt,&
           rtriangulation%h_DvertexCoords, rtriangulation%NVT)
 
-    CASE(NDIM3D)
-      CALL hadapt_setVertexCoords3D(rhadapt,&
+    case(NDIM3D)
+      call hadapt_setVertexCoords3D(rhadapt,&
           rtriangulation%h_DvertexCoords, rtriangulation%NVT)
 
-    CASE DEFAULT
-      CALL output_line('Invalid spatial dimension!',&
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_initFromTriangulation')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
     ! Set nodal properties
-    CALL hadapt_setNodalProperty(rhadapt,&
+    call hadapt_setNodalProperty(rhadapt,&
         rtriangulation%h_InodalProperty)
 
     ! Set element numbers
-    CALL hadapt_setNelOfType(rhadapt,&
+    call hadapt_setNelOfType(rhadapt,&
         rtriangulation%InelOfType)
     
     ! Set vertices at element
-    CALL hadapt_setVerticesAtElement(rhadapt,&
+    call hadapt_setVerticesAtElement(rhadapt,&
         rtriangulation%h_IverticesAtElement, rtriangulation%NEL)
 
     ! Set elements adjacent to element
-    CALL hadapt_setNeighboursAtElement(rhadapt,&
+    call hadapt_setNeighboursAtElement(rhadapt,&
         rtriangulation%h_IneighboursAtElement)
     
     ! Set boundary
-    CALL hadapt_setBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
+    call hadapt_setBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
                             rtriangulation%h_IverticesAtBoundary,&
                             rtriangulation%h_DvertexParameterValue,&
                             rtriangulation%NBCT, rtriangulation%NVBD)
 
     ! Generate "elements-meeting-at-vertex" structure
-    CALL hadapt_genElementsAtVertex(rhadapt)
+    call hadapt_genElementsAtVertex(rhadapt)
     
     ! Create generation array and initialize all nodes with "age" 0
-    CALL storage_new('hadapt_initFromTriangulation','p_IvertexAge',&
+    call storage_new('hadapt_initFromTriangulation','p_IvertexAge',&
         rhadapt%NVT, ST_INT, rhadapt%h_IvertexAge, ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_int(rhadapt%h_IvertexAge, rhadapt%p_IvertexAge)
-  END SUBROUTINE hadapt_initFromTriangulation
+    call storage_getbase_int(rhadapt%h_IvertexAge, rhadapt%p_IvertexAge)
+  end subroutine hadapt_initFromTriangulation
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_generateRawMesh(rhadapt, rtriangulation)
+  subroutine hadapt_generateRawMesh(rhadapt, rtriangulation)
 
 !<description>
     ! This subroutine generates an (extended) raw mesh from the 
@@ -416,10 +416,10 @@ CONTAINS
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT)        :: rhadapt
+    type(t_hadapt), intent(INOUT)        :: rhadapt
     
     ! Triangulation structure
-    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+    type(t_triangulation), intent(INOUT) :: rtriangulation
 !</inputoutput>
 !</subroutine>
 
@@ -427,39 +427,39 @@ CONTAINS
     rtriangulation%ndim=rhadapt%ndim
 
     ! Get coordinates
-    SELECT CASE(rhadapt%ndim)
-    CASE(NDIM2D)
-      CALL hadapt_getVertexCoords2D(rhadapt,&
+    select case(rhadapt%ndim)
+    case(NDIM2D)
+      call hadapt_getVertexCoords2D(rhadapt,&
           rtriangulation%h_DvertexCoords, rtriangulation%NVT)
 
-    CASE(NDIM3D)
-      CALL hadapt_getVertexCoords3D(rhadapt,&
+    case(NDIM3D)
+      call hadapt_getVertexCoords3D(rhadapt,&
           rtriangulation%h_DvertexCoords, rtriangulation%NVT)
 
-    CASE DEFAULT
-      CALL output_line('Invalid spatial dimension!',&
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_generateRawMesh')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
     ! Get number of elements
-    CALL hadapt_getNelOfType(rhadapt,&
+    call hadapt_getNelOfType(rhadapt,&
         rtriangulation%InelOfType)
 
     ! Get vertices at element list
-    CALL hadapt_getVerticesAtElement(rhadapt,&
+    call hadapt_getVerticesAtElement(rhadapt,&
         rtriangulation%h_IverticesAtElement, rtriangulation%NEL)
 
     ! Get element neighbours
-    CALL hadapt_getNeighboursAtElement(rhadapt,&
+    call hadapt_getNeighboursAtElement(rhadapt,&
         rtriangulation%h_IneighboursAtElement)
 
     ! Get nodal property list
-    CALL hadapt_getNodalProperty(rhadapt,&
+    call hadapt_getNodalProperty(rhadapt,&
         rtriangulation%h_InodalProperty)
 
     ! Get boundary
-    CALL hadapt_getBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
+    call hadapt_getBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
                             rtriangulation%h_IverticesAtBoundary,&
                             rtriangulation%h_DvertexParameterValue,&
                             rtriangulation%NVBD, rtriangulation%NBCT)
@@ -468,13 +468,13 @@ CONTAINS
     ! numbering.
     call tria_initExtendedRawMesh (rtriangulation)
     
-  END SUBROUTINE hadapt_generateRawMesh
+  end subroutine hadapt_generateRawMesh
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_releaseAdaptation(rhadapt)
+  subroutine hadapt_releaseAdaptation(rhadapt)
 
 !<description>
     ! This subroutine releases all internal structures of the
@@ -483,58 +483,58 @@ CONTAINS
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: idupflag
-    INTEGER :: ibct
+    integer(I32) :: idupflag
+    integer :: ibct
 
     idupflag = rhadapt%iduplicationFlag
 
     ! Check if quadtree exists
-    IF (IAND(rhadapt%iSpec,HADAPT_HAS_COORDS) .EQ. HADAPT_HAS_COORDS) THEN
-      SELECT CASE(rhadapt%ndim)
-      CASE(NDIM2D)
-        CALL qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
+    if (iand(rhadapt%iSpec,HADAPT_HAS_COORDS) .eq. HADAPT_HAS_COORDS) then
+      select case(rhadapt%ndim)
+      case(NDIM2D)
+        call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
         
-      CASE(NDIM3D)
-        CALL otree_releaseOctree(rhadapt%rVertexCoordinates3D)
+      case(NDIM3D)
+        call otree_releaseOctree(rhadapt%rVertexCoordinates3D)
 
-      CASE DEFAULT
-        CALL output_line('Invalid spatial dimension!',&
+      case DEFAULT
+        call output_line('Invalid spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_releaseAdaptation')
-        CALL sys_halt()
-      END SELECT
-    END IF   
+        call sys_halt()
+      end select
+    end if   
 
     ! Check if boundary structure exists
-    IF (ASSOCIATED(rhadapt%rBoundary)) THEN
-      DO ibct = 1, SIZE(rhadapt%rBoundary, 1)
-        CALL btree_releaseTree(rhadapt%rBoundary(ibct))
-      END DO
-      DEALLOCATE(rhadapt%rBoundary)
-      NULLIFY(rhadapt%rBoundary)
-    END IF
+    if (associated(rhadapt%rBoundary)) then
+      do ibct = 1, size(rhadapt%rBoundary, 1)
+        call btree_releaseTree(rhadapt%rBoundary(ibct))
+      end do
+      deallocate(rhadapt%rBoundary)
+      nullify(rhadapt%rBoundary)
+    end if
 
     ! Release elements-meeting-at-vertex arraylist
-    CALL arrlst_releaseArraylist(rhadapt%relementsAtVertex)
+    call arrlst_releaseArraylist(rhadapt%relementsAtVertex)
 
     ! Release storage which is no longer in use
-    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMARKER,&
+    call checkAndRelease(idupflag, HADAPT_SHARE_IMARKER,&
                          rhadapt%h_Imarker)
-    CALL checkAndRelease(idupflag, HADAPT_SHARE_IVERTEXAGE,&
+    call checkAndRelease(idupflag, HADAPT_SHARE_IVERTEXAGE,&
                          rhadapt%h_IvertexAge)
-    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
+    call checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
                          rhadapt%h_ImidneighboursAtElement)
     
     ! Nullify "performance-pointers"
-    NULLIFY(rhadapt%p_IvertexAge)
-    NULLIFY(rhadapt%p_InodalProperty)
-    NULLIFY(rhadapt%p_IverticesAtElement)
-    NULLIFY(rhadapt%p_IneighboursAtElement)
-    NULLIFY(rhadapt%p_ImidneighboursAtElement)
+    nullify(rhadapt%p_IvertexAge)
+    nullify(rhadapt%p_InodalProperty)
+    nullify(rhadapt%p_IverticesAtElement)
+    nullify(rhadapt%p_IneighboursAtElement)
+    nullify(rhadapt%p_ImidneighboursAtElement)
     
     ! Clear parameters
     rhadapt%iadaptationStrategy  = HADAPT_NOADAPTATION
@@ -560,27 +560,27 @@ CONTAINS
     rhadapt%InelOfType       = 0
     rhadapt%InelOfType0      = 0
 
-  CONTAINS
+  contains
     
-    SUBROUTINE checkAndRelease (idupFlag, ibitfield, ihandle)
-      INTEGER(I32), INTENT(IN) :: ibitfield
-      INTEGER(I32), INTENT(IN) :: idupFlag
-      INTEGER, INTENT(INOUT) :: ihandle
+    subroutine checkAndRelease (idupFlag, ibitfield, ihandle)
+      integer(I32), intent(IN) :: ibitfield
+      integer(I32), intent(IN) :: idupFlag
+      integer, intent(INOUT) :: ihandle
       
-      IF (IAND(idupFlag, ibitfield) .NE. ibitfield) THEN
-        IF (ihandle .NE. ST_NOHANDLE) CALL storage_free(ihandle)
-      ELSE
+      if (iand(idupFlag, ibitfield) .ne. ibitfield) then
+        if (ihandle .ne. ST_NOHANDLE) call storage_free(ihandle)
+      else
         ihandle = ST_NOHANDLE
-      END IF
+      end if
       
-    END SUBROUTINE checkAndRelease
-  END SUBROUTINE hadapt_releaseAdaptation
+    end subroutine checkAndRelease
+  end subroutine hadapt_releaseAdaptation
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_duplicateAdaptation(rhadapt, rhadaptBackup,&
+  subroutine hadapt_duplicateAdaptation(rhadapt, rhadaptBackup,&
                                         iduplicationFlag, bupdate)
 
 !<description>
@@ -599,7 +599,7 @@ CONTAINS
 
 !<input>
     ! The source structure which provides all information
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 
     ! Bitfield that decides which handles are a copy of another structure, thus 
     ! which arrays are shared between the new and the old structure. 
@@ -609,7 +609,7 @@ CONTAINS
     ! Therefore e.g., iduplicationFlag=0 copies all arrays from rhadapt in memory,
     ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between 
     ! rhadapt and rhadaptBackup.
-    INTEGER(I32), INTENT(IN)   :: iduplicationFlag
+    integer(I32), intent(IN)   :: iduplicationFlag
   
     ! OPTIONAL. Defines how to create the backup.
     ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary, 
@@ -629,27 +629,27 @@ CONTAINS
     !          set and which exist as duplicates. Arrays corresponding to flags which
     !          are set or where the handles in rhadapt and rhadaptBackup coincide 
     !          are not touched.
-    LOGICAL, INTENT(IN), OPTIONAL     :: bupdate
+    logical, intent(IN), optional     :: bupdate
 !</input>
 
 !<inputoutput>
     ! The destination structure which receives the information
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadaptBackup
+    type(t_hadapt), intent(INOUT) :: rhadaptBackup
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: idupFlag
-    INTEGER :: ibct
-    LOGICAL :: bupd
+    integer(I32) :: idupFlag
+    integer :: ibct
+    logical :: bupd
 
-    bupd = .FALSE.
-    IF (PRESENT(bupdate)) bupd = bupdate
+    bupd = .false.
+    if (present(bupdate)) bupd = bupdate
     
-    IF (.NOT. bupd) THEN
+    if (.not. bupd) then
       ! Release any old data.
-      CALL hadapt_releaseAdaptation(rhadaptBackup)
+      call hadapt_releaseAdaptation(rhadaptBackup)
 
       rhadaptBackup%iSpec                = rhadapt%iSpec
       rhadaptBackup%iadaptationStrategy  = rhadapt%iadaptationStrategy
@@ -677,129 +677,129 @@ CONTAINS
       rhadaptBackup%iduplicationFlag = iduplicationFlag
       idupFlag = iduplicationFlag
 
-    ELSE
+    else
 
       ! Create a bitfiled what to copy by ORing iduplicationFlag with what
       ! we have in rhadaptBackup. That way, only arrays that exist as real
       ! duplicates are copied from rhadapt to rhadaptBackup.
 
-      idupFlag = IOR(iduplicationFlag, rhadaptBackup%iduplicationFlag)
+      idupFlag = ior(iduplicationFlag, rhadaptBackup%iduplicationFlag)
 
-    END IF
+    end if
 
     ! Call checkAndCopy for all components. This will either copy the handle
     ! or allocate new memory and copy the content of the component.
 
     ! Bit   0: Imarker
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
                       rhadapt%h_Imarker, rhadaptBackup%h_Imarker)
 
     ! Bit   1: IvertexAge
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
                       rhadapt%h_IvertexAge, rhadaptBackup%h_IvertexAge)
-    CALL storage_getbase_int(rhadaptBackup%h_IvertexAge,&
+    call storage_getbase_int(rhadaptBackup%h_IvertexAge,&
                              rhadaptBackup%p_IvertexAge)
 
     ! Bit   2: InodalProperty
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
                       rhadapt%h_InodalProperty, rhadaptBackup%h_InodalProperty)
-    CALL storage_getbase_int(rhadaptBackup%h_InodalProperty,&
+    call storage_getbase_int(rhadaptBackup%h_InodalProperty,&
                              rhadaptBackup%p_InodalProperty)
 
     ! Bit   3: IverticesAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
                       rhadapt%h_IverticesAtElement,&
                       rhadaptBackup%h_IverticesAtElement)
-    CALL storage_getbase_int2D(rhadaptBackup%h_IverticesAtElement,&
+    call storage_getbase_int2D(rhadaptBackup%h_IverticesAtElement,&
                                rhadaptBackup%p_IverticesAtElement)
 
     ! Bit   4: IneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
                       rhadapt%h_IneighboursAtElement,&
                       rhadaptBackup%h_IneighboursAtElement)
-    CALL storage_getbase_int2D(rhadaptBackup%h_IneighboursAtElement,&
+    call storage_getbase_int2D(rhadaptBackup%h_IneighboursAtElement,&
                                rhadaptBackup%p_IneighboursAtElement)
 
     ! Bit   5: ImidneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
                       rhadapt%h_ImidneighboursAtElement,&
                       rhadaptBackup%h_ImidneighboursAtElement)
-    CALL storage_getbase_int2D(rhadaptBackup%h_ImidneighboursAtElement,&
+    call storage_getbase_int2D(rhadaptBackup%h_ImidneighboursAtElement,&
                                rhadaptBackup%p_ImidneighboursAtElement)
 
     ! Bit   6: rVertexCoordinates
-    IF (IAND(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .NE.&
-                       HADAPT_SHARE_RVERTEXCOORDINATES) THEN
+    if (iand(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .ne.&
+                       HADAPT_SHARE_RVERTEXCOORDINATES) then
       
-      SELECT CASE(rhadaptBackup%ndim)
-      CASE(NDIM2D)
-        CALL qtree_duplicateQuadtree(rhadapt%rVertexCoordinates2D,&
+      select case(rhadaptBackup%ndim)
+      case(NDIM2D)
+        call qtree_duplicateQuadtree(rhadapt%rVertexCoordinates2D,&
                                      rhadaptBackup%rVertexCoordinates2D)
-      CASE(NDIM3D)
-        CALL otree_duplicateOctree(rhadapt%rVertexCoordinates3D,&
+      case(NDIM3D)
+        call otree_duplicateOctree(rhadapt%rVertexCoordinates3D,&
                                    rhadaptBackup%rVertexCoordinates3D)
-      CASE DEFAULT
-        CALL output_line('Invalid spatial dimension!',&
+      case DEFAULT
+        call output_line('Invalid spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_duplicateAdaptation')
-        CALL sys_halt()
-      END SELECT
-    END IF
+        call sys_halt()
+      end select
+    end if
         
     ! Bit   7: rBoundary
-    IF (IAND(idupFlag, HADAPT_SHARE_RBOUNDARY) .NE.&
-                       HADAPT_SHARE_RBOUNDARY) THEN
+    if (iand(idupFlag, HADAPT_SHARE_RBOUNDARY) .ne.&
+                       HADAPT_SHARE_RBOUNDARY) then
       
-      IF (ASSOCIATED(rhadaptBackup%rBoundary)) THEN
-        DO ibct = 1, SIZE(rhadaptBackup%rBoundary,1)
-          CALL btree_releaseTree(rhadaptBackup%rBoundary(ibct))
-        END DO
-        DEALLOCATE(rhadaptBackup%rBoundary)
-      END IF
+      if (associated(rhadaptBackup%rBoundary)) then
+        do ibct = 1, size(rhadaptBackup%rBoundary,1)
+          call btree_releaseTree(rhadaptBackup%rBoundary(ibct))
+        end do
+        deallocate(rhadaptBackup%rBoundary)
+      end if
 
-      ALLOCATE(rhadaptBackup%rBoundary(SIZE(rhadapt%rBoundary,1)))
-      DO ibct = 1, SIZE(rhadapt%rBoundary,1)
-        CALL btree_duplicateTree(rhadapt%rBoundary(ibct),&
+      allocate(rhadaptBackup%rBoundary(size(rhadapt%rBoundary,1)))
+      do ibct = 1, size(rhadapt%rBoundary,1)
+        call btree_duplicateTree(rhadapt%rBoundary(ibct),&
                                  rhadaptBackup%rBoundary(ibct))
-      END DO
-    END IF
+      end do
+    end if
     
     ! Bit   8: rElementsAtVertex
-    IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
-                       HADAPT_SHARE_RELEMENTSATVERTEX) THEN
-      CALL arrlst_duplicateArrayList(rhadapt%rElementsAtVertex,&
+    if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
+                       HADAPT_SHARE_RELEMENTSATVERTEX) then
+      call arrlst_duplicateArrayList(rhadapt%rElementsAtVertex,&
                                      rhadaptBackup%rElementsAtVertex)
-    END IF
+    end if
 
-  CONTAINS
+  contains
     
-    SUBROUTINE checkAndCopy (idupFlag, ibitfield, isourcehandle, idesthandle)
+    subroutine checkAndCopy (idupFlag, ibitfield, isourcehandle, idesthandle)
       
       ! Checks if idupFlag has all bits ibitfield set.
       ! If yes, idesthandle is set to isourcehandle.
       ! Otherwise, the memory behind isourcehandle is duplicated in memory
       ! and idesthandle receives the handle to the new memory block.
       
-      INTEGER(I32), INTENT(IN) :: ibitfield
-      INTEGER(I32), INTENT(IN) :: idupFlag
-      INTEGER, INTENT(IN) :: isourcehandle
-      INTEGER, INTENT(INOUT) :: idesthandle
+      integer(I32), intent(IN) :: ibitfield
+      integer(I32), intent(IN) :: idupFlag
+      integer, intent(IN) :: isourcehandle
+      integer, intent(INOUT) :: idesthandle
       
-      IF (IAND(idupFlag, ibitfield) .NE. ibitfield) THEN
-        IF (isourcehandle .NE. ST_NOHANDLE) THEN
-          CALL storage_copy(isourcehandle, idesthandle)
-        END IF
-      ELSE
+      if (iand(idupFlag, ibitfield) .ne. ibitfield) then
+        if (isourcehandle .ne. ST_NOHANDLE) then
+          call storage_copy(isourcehandle, idesthandle)
+        end if
+      else
         idesthandle = isourcehandle
-      END IF
+      end if
       
-    END SUBROUTINE checkAndCopy
-  END SUBROUTINE hadapt_duplicateAdaptation
+    end subroutine checkAndCopy
+  end subroutine hadapt_duplicateAdaptation
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE hadapt_restoreAdaptation(rhadaptBackup, rhadapt)
+  subroutine hadapt_restoreAdaptation(rhadaptBackup, rhadapt)
 
 !<description>
     ! This subroutine restares data of an adaptivity structure. All information
@@ -809,21 +809,21 @@ CONTAINS
 
 !<input>
     ! Backup of an adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadaptBackup
+    type(t_hadapt), intent(IN) :: rhadaptBackup
 !</input>
 
 !<inputoutput>
     ! Destination adaptivity structure
     ! All components where a duplicates exist in rhadaptBackup are copied
     ! to rhadapt, overwriting the old information arrays.
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: idupFlag
-    INTEGER :: ibct
+    integer(I32) :: idupFlag
+    integer :: ibct
   
     idupFlag = rhadapt%iduplicationFlag
 
@@ -853,110 +853,110 @@ CONTAINS
     ! or allocate new memory and copy the content of the component.
     
     ! Bit   0: Imarker
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
                       rhadapt%h_Imarker, rhadaptBackup%h_Imarker)
    
     ! Bit   1: IvertexAge
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
                       rhadapt%h_IvertexAge, rhadaptBackup%h_IvertexAge)
-    CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+    call storage_getbase_int(rhadapt%h_IvertexAge,&
                              rhadapt%p_IvertexAge)
 
     ! Bit   2: InodalProperty
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
                       rhadapt%h_InodalProperty, rhadaptBackup%h_InodalProperty)
-    CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+    call storage_getbase_int(rhadapt%h_InodalProperty,&
                              rhadapt%p_InodalProperty)
 
     ! Bit   3: IverticesAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
                       rhadapt%h_IverticesAtElement,&
                       rhadaptBackup%h_IverticesAtElement)
-    CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+    call storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
                                rhadapt%p_IverticesAtElement)
 
     ! Bit   4: IneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
                       rhadapt%h_IneighboursAtElement,&
                       rhadaptBackup%h_IneighboursAtElement)
-    CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+    call storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
                                rhadapt%p_IneighboursAtElement)
 
     ! Bit   5: ImidneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
+    call checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
                       rhadapt%h_ImidneighboursAtElement,&
                       rhadaptBackup%h_ImidneighboursAtElement)
-    CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+    call storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
                                rhadapt%p_ImidneighboursAtElement)
 
     ! Bit   6: rVertexCoordinates
-    IF (IAND(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .NE.&
-                       HADAPT_SHARE_RVERTEXCOORDINATES) THEN
+    if (iand(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .ne.&
+                       HADAPT_SHARE_RVERTEXCOORDINATES) then
       
-      SELECT CASE(rhadaptBackup%ndim)
-      CASE(NDIM2D)
-        CALL qtree_restoreQuadtree(rhadaptBackup%rVertexCoordinates2D,&
+      select case(rhadaptBackup%ndim)
+      case(NDIM2D)
+        call qtree_restoreQuadtree(rhadaptBackup%rVertexCoordinates2D,&
                                    rhadapt%rVertexCoordinates2D)
-      CASE(NDIM3D)
-        CALL otree_restoreOctree(rhadaptBackup%rVertexCoordinates3D,&
+      case(NDIM3D)
+        call otree_restoreOctree(rhadaptBackup%rVertexCoordinates3D,&
                                  rhadapt%rVertexCoordinates3D)
-      CASE DEFAULT
-        CALL output_line('Invalid spatial dimension!',&
+      case DEFAULT
+        call output_line('Invalid spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_restoreAdaptation')
-        CALL sys_halt()
-      END SELECT
-    END IF
+        call sys_halt()
+      end select
+    end if
 
     ! Bit   7: rBoundary
-    IF (IAND(idupFlag, HADAPT_SHARE_RBOUNDARY) .NE.&
-                       HADAPT_SHARE_RBOUNDARY) THEN
-      IF (SIZE(rhadaptBackup%rBoundary,1) .NE. &
-          SIZE(rhadapt%rBoundary,1)) THEN
-        CALL output_line('Invalid number of boundary components!',&
+    if (iand(idupFlag, HADAPT_SHARE_RBOUNDARY) .ne.&
+                       HADAPT_SHARE_RBOUNDARY) then
+      if (size(rhadaptBackup%rBoundary,1) .ne. &
+          size(rhadapt%rBoundary,1)) then
+        call output_line('Invalid number of boundary components!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_restoreAdaptation')
-        CALL sys_halt()
-      END IF
-      DO ibct = 1, SIZE(rhadapt%rBoundary,1)
-        CALL btree_restoreTree(rhadaptBackup%rBoundary(ibct),&
+        call sys_halt()
+      end if
+      do ibct = 1, size(rhadapt%rBoundary,1)
+        call btree_restoreTree(rhadaptBackup%rBoundary(ibct),&
                                rhadapt%rBoundary(ibct))
-      END DO
-    END IF
+      end do
+    end if
     
 
     ! Bit   8: rElementsAtVertex
-    IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
-                       HADAPT_SHARE_RELEMENTSATVERTEX) THEN
-      CALL arrlst_restoreArrayList(rhadaptBackup%rElementsAtVertex,&
+    if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
+                       HADAPT_SHARE_RELEMENTSATVERTEX) then
+      call arrlst_restoreArrayList(rhadaptBackup%rElementsAtVertex,&
                                    rhadapt%rElementsAtVertex)
-    END IF
+    end if
   
-  CONTAINS
+  contains
     
-    SUBROUTINE checkAndCopy (idupFlag, ibitfield, idesthandle, isourcehandle)
+    subroutine checkAndCopy (idupFlag, ibitfield, idesthandle, isourcehandle)
       
       ! Checks if idupFlag has all bits ibitfield set.
       ! If not, the memory behind isourcehandle is copied to idesthandle
       ! overwriting all previous information.
       
-      INTEGER(I32), INTENT(IN) :: ibitfield
-      INTEGER(I32), INTENT(IN) :: idupFlag
-      INTEGER, INTENT(IN) :: isourcehandle
-      INTEGER, INTENT(INOUT) :: idesthandle
+      integer(I32), intent(IN) :: ibitfield
+      integer(I32), intent(IN) :: idupFlag
+      integer, intent(IN) :: isourcehandle
+      integer, intent(INOUT) :: idesthandle
       
-      IF (IAND(idupFlag, ibitfield) .NE. ibitfield) THEN
-        IF (isourcehandle .NE. ST_NOHANDLE) THEN
-          CALL storage_copy(isourcehandle, idesthandle)
-        END IF
-      END IF
+      if (iand(idupFlag, ibitfield) .ne. ibitfield) then
+        if (isourcehandle .ne. ST_NOHANDLE) then
+          call storage_copy(isourcehandle, idesthandle)
+        end if
+      end if
       
-    END SUBROUTINE checkAndCopy
-  END SUBROUTINE hadapt_restoreAdaptation
+    end subroutine checkAndCopy
+  end subroutine hadapt_restoreAdaptation
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_setVertexCoords2D(rhadapt, h_DvertexCoords, nvt)
+  subroutine hadapt_setVertexCoords2D(rhadapt, h_DvertexCoords, nvt)
 
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
@@ -966,67 +966,67 @@ CONTAINS
 
 !<input>
     ! Handle to the vertex coordinates
-    INTEGER, INTENT(IN)                 :: h_DvertexCoords
+    integer, intent(IN)                 :: h_DvertexCoords
 
     ! Number of vertices
-    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: nvt
+    integer(PREC_VERTEXIDX), intent(IN) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT)    :: rhadapt
+    type(t_hadapt), intent(INOUT)    :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_QTREEIDX)            :: nnode
-    REAL(DP)                          :: xmin,xmax,ymin,ymax
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(PREC_QTREEIDX)            :: nnode
+    real(DP)                          :: xmin,xmax,ymin,ymax
 
     ! Check if handle is not empty
-    IF (h_DvertexCoords .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Invalid handle!',&
+    if (h_DvertexCoords .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if quadtree is already generated, then remove old quadtree/octree first
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_COORDS) .EQ. HADAPT_HAS_COORDS) THEN
-      CALL qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
-    END IF
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq. HADAPT_HAS_COORDS) then
+      call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
+    end if
     
     ! Set pointer
-    CALL storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
+    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
 
     ! Get outer bounding-box of vertex coordinates
-    xmin = MINVAL(p_DvertexCoords(1,:))
-    xmax = MAXVAL(p_DvertexCoords(1,:))
-    ymin = MINVAL(p_DvertexCoords(2,:))
-    ymax = MAXVAL(p_DvertexCoords(2,:))
+    xmin = minval(p_DvertexCoords(1,:))
+    xmax = maxval(p_DvertexCoords(1,:))
+    ymin = minval(p_DvertexCoords(2,:))
+    ymax = maxval(p_DvertexCoords(2,:))
     
     ! Estimate number of initial quadrilaterals
-    nnode = INT(0.5_DP*nvt)
+    nnode = int(0.5_DP*nvt)
 
     ! Create quadtree for vertices
-    CALL qtree_createQuadtree(rhadapt%rVertexCoordinates2D, nvt,&
+    call qtree_createQuadtree(rhadapt%rVertexCoordinates2D, nvt,&
                               nnode, xmin, ymin, xmax, ymax)
     
     ! Copy vertex coordinates to quadtree
-    CALL qtree_copyToQuadtree(p_DvertexCoords, rhadapt%rVertexCoordinates2D)
+    call qtree_copyToQuadtree(p_DvertexCoords, rhadapt%rVertexCoordinates2D)
 
     ! Set specifier for quadtree
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_COORDS)
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
 
     ! Set dimensions
     rhadapt%ndim = NDIM2D
     rhadapt%NVT  = nvt
-  END SUBROUTINE hadapt_setVertexCoords2D
+  end subroutine hadapt_setVertexCoords2D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getVertexCoords2D(rhadapt, h_DvertexCoords, nvt, ndim)
+  subroutine hadapt_getVertexCoords2D(rhadapt, h_DvertexCoords, nvt, ndim)
 
 !<description>
     ! This subroutine gets the vertex coordinates from the quadtree
@@ -1037,50 +1037,50 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    INTEGER, INTENT(INOUT)        :: h_DvertexCoords
+    integer, intent(INOUT)        :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    INTEGER(PREC_VERTEXIDX), INTENT(OUT), OPTIONAL :: nvt
+    integer(PREC_VERTEXIDX), intent(OUT), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
-    INTEGER, INTENT(OUT), OPTIONAL :: ndim
+    integer, intent(OUT), optional :: ndim
 !</output>
 !</subroutine>
 
     ! Check if coordinates exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_COORDS) .NE. HADAPT_HAS_COORDS) THEN
-      CALL output_line('Quadtree does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne. HADAPT_HAS_COORDS) then
+      call output_line('Quadtree does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if coordinates are given in 2D
-    IF (rhadapt%ndim .NE. NDIM2D) THEN
-      CALL output_line('Invalid spatial dimension!',&
+    if (rhadapt%ndim .ne. NDIM2D) then
+      call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Copy quadtree to handle h_DvertexCoords
-    CALL qtree_copyFromQuadtree(rhadapt%rVertexCoordinates2D, h_DvertexCoords)
+    call qtree_copyFromQuadtree(rhadapt%rVertexCoordinates2D, h_DvertexCoords)
 
     ! Set dimension
-    IF (PRESENT(ndim)) ndim = rhadapt%ndim
-    IF (PRESENT(nvt))  nvt  = rhadapt%NVT
-  END SUBROUTINE hadapt_getVertexCoords2D
+    if (present(ndim)) ndim = rhadapt%ndim
+    if (present(nvt))  nvt  = rhadapt%NVT
+  end subroutine hadapt_getVertexCoords2D
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_setVertexCoords3D(rhadapt, h_DvertexCoords, nvt)
+  subroutine hadapt_setVertexCoords3D(rhadapt, h_DvertexCoords, nvt)
 
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
@@ -1090,69 +1090,69 @@ CONTAINS
 
 !<input>
     ! Handle to the vertex coordinates
-    INTEGER, INTENT(IN)                 :: h_DvertexCoords
+    integer, intent(IN)                 :: h_DvertexCoords
 
     ! Number of vertices
-    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: nvt
+    integer(PREC_VERTEXIDX), intent(IN) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT)    :: rhadapt
+    type(t_hadapt), intent(INOUT)    :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_QTREEIDX)            :: nnode
-    REAL(DP)                          :: xmin,xmax,ymin,ymax,zmin,zmax
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(PREC_QTREEIDX)            :: nnode
+    real(DP)                          :: xmin,xmax,ymin,ymax,zmin,zmax
 
     ! Check if handle is not empty
-    IF (h_DvertexCoords .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Invalid handle!',&
+    if (h_DvertexCoords .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords3D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if quadtree is already generated, then remove old quadtree/octree first
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_COORDS) .EQ. HADAPT_HAS_COORDS) THEN
-      CALL otree_releaseOctree(rhadapt%rVertexCoordinates3D)
-    END IF
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq. HADAPT_HAS_COORDS) then
+      call otree_releaseOctree(rhadapt%rVertexCoordinates3D)
+    end if
     
     ! Set pointer
-    CALL storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
+    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
 
     ! Get outer bounding-box of vertex coordinates
-    xmin = MINVAL(p_DvertexCoords(1,:))
-    xmax = MAXVAL(p_DvertexCoords(1,:))
-    ymin = MINVAL(p_DvertexCoords(2,:))
-    ymax = MAXVAL(p_DvertexCoords(2,:))
-    zmin = MINVAL(p_DvertexCoords(3,:))
-    zmax = MAXVAL(p_DvertexCoords(3,:))
+    xmin = minval(p_DvertexCoords(1,:))
+    xmax = maxval(p_DvertexCoords(1,:))
+    ymin = minval(p_DvertexCoords(2,:))
+    ymax = maxval(p_DvertexCoords(2,:))
+    zmin = minval(p_DvertexCoords(3,:))
+    zmax = maxval(p_DvertexCoords(3,:))
     
     ! Estimate number of initial quadrilaterals
-    nnode = INT(0.5_DP*nvt)
+    nnode = int(0.5_DP*nvt)
 
     ! Create octree for vertices
-    CALL otree_createOctree(rhadapt%rVertexCoordinates3D, nvt,&
+    call otree_createOctree(rhadapt%rVertexCoordinates3D, nvt,&
                             nnode, xmin, ymin, zmin, xmax, ymax, zmax)
     
     ! Copy vertex coordinates to octree
-    CALL otree_copyToOctree(p_DvertexCoords, rhadapt%rVertexCoordinates3D)
+    call otree_copyToOctree(p_DvertexCoords, rhadapt%rVertexCoordinates3D)
 
     ! Set specifier for quadtree
-    rhadapt%iSpec=IOR(rhadapt%iSpec, HADAPT_HAS_COORDS)
+    rhadapt%iSpec=ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
 
     ! Set dimensions
     rhadapt%ndim = NDIM3D
     rhadapt%NVT  = nvt
-  END SUBROUTINE hadapt_setVertexCoords3D
+  end subroutine hadapt_setVertexCoords3D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getVertexCoords3D(rhadapt, h_DvertexCoords, nvt, ndim)
+  subroutine hadapt_getVertexCoords3D(rhadapt, h_DvertexCoords, nvt, ndim)
 
 !<description>
     ! This subroutine gets the vertex coordinates from the octree
@@ -1163,50 +1163,50 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    INTEGER, INTENT(INOUT)     :: h_DvertexCoords
+    integer, intent(INOUT)     :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    INTEGER(PREC_VERTEXIDX), INTENT(OUT), OPTIONAL :: nvt
+    integer(PREC_VERTEXIDX), intent(OUT), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
-    INTEGER, INTENT(OUT), OPTIONAL :: ndim
+    integer, intent(OUT), optional :: ndim
 !</output>
 !</subroutine>
 
     ! Check if coordinates exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_COORDS) .NE. HADAPT_HAS_COORDS) THEN
-      CALL output_line('Octree does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne. HADAPT_HAS_COORDS) then
+      call output_line('Octree does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords3D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if coordinates are given in 2D
-    IF (rhadapt%ndim .NE. NDIM3D) THEN
-      CALL output_line('Invalid spatial dimension!',&
+    if (rhadapt%ndim .ne. NDIM3D) then
+      call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords3D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Copy octree to handle h_DvertexCoords
-    CALL otree_copyFromOctree(rhadapt%rVertexCoordinates3D, h_DvertexCoords)
+    call otree_copyFromOctree(rhadapt%rVertexCoordinates3D, h_DvertexCoords)
 
     ! Set dimension
-    IF (PRESENT(ndim)) ndim = rhadapt%ndim
-    IF (PRESENT(nvt))  nvt  = rhadapt%NVT
-  END SUBROUTINE hadapt_getVertexCoords3D
+    if (present(ndim)) ndim = rhadapt%ndim
+    if (present(nvt))  nvt  = rhadapt%NVT
+  end subroutine hadapt_getVertexCoords3D
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE hadapt_setVerticesAtElement(rhadapt, h_IverticesAtElement, nel)
+  subroutine hadapt_setVerticesAtElement(rhadapt, h_IverticesAtElement, nel)
 
 !<description>
     ! This routine assigns the handle to the "vertices-at-element" array
@@ -1215,41 +1215,41 @@ CONTAINS
 
 !<input>
     ! Handle to p_IverticesAtElement
-    INTEGER, INTENT(IN) :: h_IverticesAtElement
+    integer, intent(IN) :: h_IverticesAtElement
 
     ! Total number of elements
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: nel
+    integer(PREC_ELEMENTIDX), intent(IN) :: nel
 !</input>
 
 !<inputoutput>
     ! adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Invalid handle!',&
+    if (h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVerticesAtElement')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     rhadapt%h_IverticesAtElement = h_IverticesAtElement
-    CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+    call storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
                                rhadapt%p_IverticesAtElement)
     
     ! Set specifier for IverticesAtElement
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_VERTATELEM)
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_VERTATELEM)
 
     ! Set dimensions
     rhadapt%NEL = nel
-  END SUBROUTINE hadapt_setVerticesAtElement
+  end subroutine hadapt_setVerticesAtElement
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getVerticesAtElement(rhadapt, h_IverticesAtElement, nel)
+  subroutine hadapt_getVerticesAtElement(rhadapt, h_IverticesAtElement, nel)
 
 !<description>
     ! This routine assigns the "vertices-at-element" array from the
@@ -1258,44 +1258,44 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_IverticesAtElement
-    INTEGER, INTENT(INOUT) :: h_IverticesAtElement
+    integer, intent(INOUT) :: h_IverticesAtElement
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of elements
-    INTEGER(PREC_ELEMENTIDX), INTENT(OUT), OPTIONAL :: nel
+    integer(PREC_ELEMENTIDX), intent(OUT), optional :: nel
 !</output>
 !</subroutine>
 
     ! Check if "vertices-at-element" array exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .NE. HADAPT_HAS_VERTATELEM) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .ne. HADAPT_HAS_VERTATELEM) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVerticesAtElement')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if handle needs to be freed first
-    IF (h_IverticesAtElement .NE. ST_NOHANDLE .AND.&
-        h_IverticesAtElement .NE. rhadapt%h_IverticesAtElement)&
-        CALL storage_free(h_IverticesAtElement)
+    if (h_IverticesAtElement .ne. ST_NOHANDLE .and.&
+        h_IverticesAtElement .ne. rhadapt%h_IverticesAtElement)&
+        call storage_free(h_IverticesAtElement)
 
     ! Assign handle
     h_IverticesAtElement = rhadapt%h_IverticesAtElement
 
     ! Set dimensions
-    IF(PRESENT(nel))   nel = rhadapt%NEL
-  END SUBROUTINE hadapt_getVerticesAtElement
+    if(present(nel))   nel = rhadapt%NEL
+  end subroutine hadapt_getVerticesAtElement
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE hadapt_setNeighboursAtElement(rhadapt, h_IneighboursAtElement)
+  subroutine hadapt_setNeighboursAtElement(rhadapt, h_IneighboursAtElement)
 
 !<description>
     ! This routine assigns the handle to the "neighbours-at-element" array
@@ -1304,41 +1304,41 @@ CONTAINS
 
 !<input>
     ! Handle to p_IneighboursAtElement
-    INTEGER, INTENT(IN) :: h_IneighboursAtElement
+    integer, intent(IN) :: h_IneighboursAtElement
 !</input>
 
 !<inputoutput>
     ! adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Invalid handle!',&
+    if (h_IneighboursAtElement .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNeighboursAtElement')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     rhadapt%h_IneighboursAtElement = h_IneighboursAtElement
-    CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+    call storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
                                rhadapt%p_IneighboursAtElement)
     
     ! Create structure of "mid-adjacent" neighbours
-    CALL storage_copy(rhadapt%h_IneighboursAtElement,&
+    call storage_copy(rhadapt%h_IneighboursAtElement,&
                       rhadapt%h_ImidneighboursAtElement)
-    CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+    call storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
                                rhadapt%p_ImidneighboursAtElement)
     
     ! Set specifier for IverticesAtElement
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM)
-  END SUBROUTINE hadapt_setNeighboursAtElement
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM)
+  end subroutine hadapt_setNeighboursAtElement
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getNeighboursAtElement(rhadapt,&
+  subroutine hadapt_getNeighboursAtElement(rhadapt,&
                                            h_IneighboursAtElement, nel)
 
 !<description>
@@ -1348,44 +1348,44 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_IneighboursAtElement
-    INTEGER, INTENT(INOUT) :: h_IneighboursAtElement
+    integer, intent(INOUT) :: h_IneighboursAtElement
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of elements
-    INTEGER(PREC_ELEMENTIDX), INTENT(OUT), OPTIONAL :: nel
+    integer(PREC_ELEMENTIDX), intent(OUT), optional :: nel
 !</output>
 !</subroutine>
 
     ! Check if "neighbours-at-element" array exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM) .NE. HADAPT_HAS_NEIGHATELEM) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM) .ne. HADAPT_HAS_NEIGHATELEM) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNeighboursAtElement')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if handle needs to be freed first
-    IF (h_IneighboursAtElement .NE. ST_NOHANDLE .AND.&
-        h_IneighboursAtElement .NE. rhadapt%h_IneighboursAtElement)&
-        CALL storage_free(h_IneighboursAtElement)
+    if (h_IneighboursAtElement .ne. ST_NOHANDLE .and.&
+        h_IneighboursAtElement .ne. rhadapt%h_IneighboursAtElement)&
+        call storage_free(h_IneighboursAtElement)
 
     ! Assign handle
     h_IneighboursAtElement = rhadapt%h_IneighboursAtElement
 
     ! Set dimensions
-    IF(PRESENT(nel))   nel = rhadapt%NEL
-  END SUBROUTINE hadapt_getNeighboursAtElement
+    if(present(nel))   nel = rhadapt%NEL
+  end subroutine hadapt_getNeighboursAtElement
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_setNelOfType(rhadapt, InelOfType)
+  subroutine hadapt_setNelOfType(rhadapt, InelOfType)
 
 !<description>
     ! This subroutine sets the number of elements with a defined number
@@ -1394,26 +1394,26 @@ CONTAINS
 
 !<input>
     ! Number of elements with a defined number of vertices per element.
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE), INTENT(IN) :: InelOfType
+    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE), intent(IN) :: InelOfType
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     rhadapt%InelOfType = InelOfType
 
     ! Set specifier for InelOfType
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_NELOFTYPE)
-  END SUBROUTINE hadapt_setNelOfType
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_NELOFTYPE)
+  end subroutine hadapt_setNelOfType
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getNelOfType(rhadapt, InelOfType)
+  subroutine hadapt_getNelOfType(rhadapt, InelOfType)
 
 !<description>
     ! This subroutine returns the number of elements with a defined number
@@ -1422,30 +1422,30 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<output>
     ! Number of elements with a defined number of vertices per element.
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE), INTENT(OUT) :: InelOfType
+    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE), intent(OUT) :: InelOfType
 !</output>
 !</subroutine>
 
     ! Check if "InelOfType" array exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_NELOFTYPE) .NE. HADAPT_HAS_NELOFTYPE) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_NELOFTYPE) .ne. HADAPT_HAS_NELOFTYPE) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNelOfType')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     InelOfType = rhadapt%InelOfType
-  END SUBROUTINE hadapt_getNelOfType
+  end subroutine hadapt_getNelOfType
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_setBoundary(rhadapt, h_IboundaryCpIdx, h_IverticesAtBoundary,&
+  subroutine hadapt_setBoundary(rhadapt, h_IboundaryCpIdx, h_IverticesAtBoundary,&
                                 h_DvertexParameterValue, nbct, nvbd)
 
 !<description>
@@ -1455,76 +1455,76 @@ CONTAINS
 
 !<input>
     ! Handle to p_IboundaryCpIdx
-    INTEGER, INTENT(IN) :: h_IboundaryCpIdx
+    integer, intent(IN) :: h_IboundaryCpIdx
 
     ! Handle to p_IverticesAtBoundary
-    INTEGER, INTENT(IN) :: h_IverticesAtBoundary
+    integer, intent(IN) :: h_IverticesAtBoundary
 
     ! Handle to p_DvertexParameterValue
-    INTEGER, INTENT(IN) :: h_DvertexParameterValue
+    integer, intent(IN) :: h_DvertexParameterValue
 
     ! Number of boundary components
-    INTEGER, INTENT(IN) :: nbct
+    integer, intent(IN) :: nbct
 
     ! Number of vertices at the boundary 
-    INTEGER, INTENT(IN) :: nvbd
+    integer, intent(IN) :: nvbd
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexParameterValue2D
-    REAL(DP), DIMENSION(:), POINTER   :: p_DvertexParameterValue
-    INTEGER, DIMENSION(:), POINTER    :: p_IboundaryCpIdx
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER    :: p_IverticesAtBoundary
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtBoundary
-    INTEGER(I32), DIMENSION(2) :: Isize
-    INTEGER :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
+    real(DP), dimension(:,:), pointer :: p_DvertexParameterValue2D
+    real(DP), dimension(:), pointer   :: p_DvertexParameterValue
+    integer, dimension(:), pointer    :: p_IboundaryCpIdx
+    integer(PREC_VERTEXIDX), dimension(:), pointer    :: p_IverticesAtBoundary
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtBoundary
+    integer(I32), dimension(2) :: Isize
+    integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
     
     ! Check if handle are not empty
-    IF ((h_IboundaryCpIdx .EQ. ST_NOHANDLE) .OR.&
-        (h_IverticesAtBoundary .EQ. ST_NOHANDLE) .OR.&
-        (h_DvertexParameterValue .EQ. ST_NOHANDLE)) THEN
-      CALL output_line('Invalid handle!',&
+    if ((h_IboundaryCpIdx .eq. ST_NOHANDLE) .or.&
+        (h_IverticesAtBoundary .eq. ST_NOHANDLE) .or.&
+        (h_DvertexParameterValue .eq. ST_NOHANDLE)) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setBoundary')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if boundary structure exists and remove it
-    IF (ASSOCIATED(rhadapt%rBoundary)) THEN
-      DO ibct = 1, SIZE(rhadapt%rBoundary,1)
-        CALL btree_releaseTree(rhadapt%rBoundary(ibct))
-      END DO
-      DEALLOCATE(rhadapt%rBoundary)
-    END IF
+    if (associated(rhadapt%rBoundary)) then
+      do ibct = 1, size(rhadapt%rBoundary,1)
+        call btree_releaseTree(rhadapt%rBoundary(ibct))
+      end do
+      deallocate(rhadapt%rBoundary)
+    end if
 
     ! Set pointers
-    CALL storage_getbase_double(h_DvertexParameterValue, p_DvertexParameterValue, nvbd)
-    CALL convert_pointer(nvbd,p_DvertexParameterValue, p_DvertexParameterValue2D)
-    CALL storage_getbase_int(h_IboundaryCpIdx, p_IboundaryCpIdx, nbct+1)
-    CALL storage_getbase_int(h_IverticesAtBoundary, p_IverticesAtBoundary, nvbd)
+    call storage_getbase_double(h_DvertexParameterValue, p_DvertexParameterValue, nvbd)
+    call convert_pointer(nvbd,p_DvertexParameterValue, p_DvertexParameterValue2D)
+    call storage_getbase_int(h_IboundaryCpIdx, p_IboundaryCpIdx, nbct+1)
+    call storage_getbase_int(h_IverticesAtBoundary, p_IverticesAtBoundary, nvbd)
     
     ! Allocate array of search trees
-    ALLOCATE(rhadapt%rBoundary(nbct))
+    allocate(rhadapt%rBoundary(nbct))
     
     ! Create auxiliary array
     Isize = (/2,nvbd/)
-    CALL storage_new('hadapt_setBoundary', 'IData', Isize, ST_INT,&
+    call storage_new('hadapt_setBoundary', 'IData', Isize, ST_INT,&
                      h_IneighboursAtBoundary, ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int2D(h_IneighboursAtBoundary, p_IneighboursAtBoundary)
+    call storage_getbase_int2D(h_IneighboursAtBoundary, p_IneighboursAtBoundary)
 
     ! Initialization
     ioff = 0
 
-    DO ibct = 1, nbct
+    do ibct = 1, nbct
 
       ! Create a separate search tree for each boundary component
       lvbd = p_IboundaryCpIdx(ibct+1)-p_IboundaryCpIdx(ibct)
-      CALL btree_createTree(rhadapt%rBoundary(ibct), lvbd, ST_INT, 1, 0, 2)
+      call btree_createTree(rhadapt%rBoundary(ibct), lvbd, ST_INT, 1, 0, 2)
 
       ! Set subdimensions
       ivbdStart = ioff+1
@@ -1541,11 +1541,11 @@ CONTAINS
       p_IneighboursAtBoundary(BdrPrev,ivbdEnd)             = p_IverticesAtBoundary(ivbdStart)
 
       ! Fill search tree
-      CALL btree_copyToTree(p_IverticesAtBoundary(ivbdStart:ivbdEnd),&
+      call btree_copyToTree(p_IverticesAtBoundary(ivbdStart:ivbdEnd),&
                             rhadapt%rBoundary(ibct),&
                             p_DData=p_DvertexParameterValue2D(:,ivbdStart:ivbdEnd),&
                             p_IData=p_IneighboursAtBoundary(:,ivbdStart:ivbdEnd))
-    END DO
+    end do
     
     ! Set dimensions
     rhadapt%NBCT  = nbct
@@ -1553,30 +1553,30 @@ CONTAINS
     rhadapt%NVBD0 = nvbd
 
     ! Free auxiliary storage
-    CALL storage_free(h_IneighboursAtBoundary)
+    call storage_free(h_IneighboursAtBoundary)
 
     ! Set specifier for boundary
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_BOUNDARY)
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_BOUNDARY)
 
-  CONTAINS
+  contains
     
     ! ****************************************
     ! The convertion routine 1D -> 2D
     
-    SUBROUTINE convert_pointer(isize, ptr_1d, ptr_2d)
-      INTEGER(I32), INTENT(IN)                 :: isize
-      REAL(DP), DIMENSION(1,isize), INTENT(IN), TARGET :: ptr_1d
-      REAL(DP), DIMENSION(:,:), POINTER                :: ptr_2d
+    subroutine convert_pointer(isize, ptr_1d, ptr_2d)
+      integer(I32), intent(IN)                 :: isize
+      real(DP), dimension(1,isize), intent(IN), target :: ptr_1d
+      real(DP), dimension(:,:), pointer                :: ptr_2d
       
       ptr_2d => ptr_1d
-    END SUBROUTINE convert_pointer
-  END SUBROUTINE hadapt_setBoundary
+    end subroutine convert_pointer
+  end subroutine hadapt_setBoundary
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getBoundary(rhadapt, h_IboundaryCpIdx, h_IverticesAtBoundary,&
+  subroutine hadapt_getBoundary(rhadapt, h_IboundaryCpIdx, h_IverticesAtBoundary,&
                                 h_DvertexParameterValue, nvbd, nbct)
 
 !<description>
@@ -1588,40 +1588,40 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handle to p_IboundaryCpIdx
-    INTEGER, INTENT(INOUT) :: h_IboundaryCpIdx
+    integer, intent(INOUT) :: h_IboundaryCpIdx
     
     ! Handle to p_IverticesAtBoundary
-    INTEGER, INTENT(INOUT) :: h_IverticesAtBoundary
+    integer, intent(INOUT) :: h_IverticesAtBoundary
 
     ! Handle to p_DvertexParameterValue
-    INTEGER, INTENT(INOUT) :: h_DvertexParameterValue
+    integer, intent(INOUT) :: h_DvertexParameterValue
 
     ! OPTIONAL: number of vertices at the boundary
-    INTEGER, INTENT(OUT), OPTIONAL :: nvbd
+    integer, intent(OUT), optional :: nvbd
 
     ! OPTIONAL: number of boundary components
-    INTEGER, INTENT(OUT), OPTIONAL :: nbct
+    integer, intent(OUT), optional :: nbct
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER, DIMENSION(:), POINTER  :: p_IboundaryCpIdx
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER   :: p_IverticesAtBoundary
-    INTEGER(I32) :: isize
-    INTEGER :: ioff,lvbd,ivbdStart,ivbdEnd,ibct
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer, dimension(:), pointer  :: p_IboundaryCpIdx
+    integer(PREC_VERTEXIDX), dimension(:), pointer   :: p_IverticesAtBoundary
+    integer(I32) :: isize
+    integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct
 
     ! Check if boundary data exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_BOUNDARY) .NE. HADAPT_HAS_BOUNDARY) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_BOUNDARY) .ne. HADAPT_HAS_BOUNDARY) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getBoundary')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Due to the fact, that the boundary data may be stored in multiple 
     ! binary search trees (one for each component) the static arrays 
@@ -1630,55 +1630,55 @@ CONTAINS
 
     ! Check if the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and 
     ! p_DvertexParameterValue have correct dimension
-    IF (h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('hadapt_getBoundary', 'p_IboundaryCpIdx',&
+    if (h_IboundaryCpIdx .eq. ST_NOHANDLE) then
+      call storage_new('hadapt_getBoundary', 'p_IboundaryCpIdx',&
                        rhadapt%NBCT+1, ST_INT, h_IboundaryCpIdx,&
                        ST_NEWBLOCK_NOINIT)
-    ELSE
-      CALL storage_getsize(h_IboundaryCpIdx, isize)
-      IF (isize < rhadapt%NBCT+1) THEN
-        CALL storage_realloc('hadapt_getBoundary', rhadapt%NBCT+1,&
-                             h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
-    END IF
+    else
+      call storage_getsize(h_IboundaryCpIdx, isize)
+      if (isize < rhadapt%NBCT+1) then
+        call storage_realloc('hadapt_getBoundary', rhadapt%NBCT+1,&
+                             h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT, .false.)
+      end if
+    end if
 
-    IF (h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('hadapt_getBoundary', 'p_IverticesAtBoundary',&
+    if (h_IverticesAtBoundary .eq. ST_NOHANDLE) then
+      call storage_new('hadapt_getBoundary', 'p_IverticesAtBoundary',&
                        rhadapt%NVBD, ST_INT, h_IverticesAtBoundary,&
                        ST_NEWBLOCK_NOINIT)
-    ELSE
-      CALL storage_getsize(h_IverticesAtBoundary, isize)
-      IF (isize < rhadapt%NVBD) THEN
-        CALL storage_realloc('hadapt_getBoundary', rhadapt%NVBD,&
-                             h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
-    END IF
+    else
+      call storage_getsize(h_IverticesAtBoundary, isize)
+      if (isize < rhadapt%NVBD) then
+        call storage_realloc('hadapt_getBoundary', rhadapt%NVBD,&
+                             h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT, .false.)
+      end if
+    end if
 
-    IF (h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('hadapt_getBoundary', 'p_DvertexParameterValue',&
+    if (h_DvertexParameterValue .eq. ST_NOHANDLE) then
+      call storage_new('hadapt_getBoundary', 'p_DvertexParameterValue',&
                        rhadapt%NVBD, ST_DOUBLE, h_DvertexParameterValue,&
                        ST_NEWBLOCK_NOINIT)
-    ELSE
-      CALL storage_getsize(h_DvertexParameterValue, isize)
-      IF (isize < rhadapt%NVBD) THEN
-        CALL storage_realloc('hadapt_getBoundary', rhadapt%NVBD,&
-                             h_DvertexParameterValue, ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
-    END IF
+    else
+      call storage_getsize(h_DvertexParameterValue, isize)
+      if (isize < rhadapt%NVBD) then
+        call storage_realloc('hadapt_getBoundary', rhadapt%NVBD,&
+                             h_DvertexParameterValue, ST_NEWBLOCK_NOINIT, .false.)
+      end if
+    end if
 
     ! Set pointers
-    CALL storage_getbase_int(h_IboundaryCpIdx,&
+    call storage_getbase_int(h_IboundaryCpIdx,&
                              p_IboundaryCpIdx, rhadapt%NBCT+1)
-    CALL storage_getbase_int(h_IverticesAtBoundary,&
+    call storage_getbase_int(h_IverticesAtBoundary,&
                              p_IverticesAtBoundary, rhadapt%NVBD)
-    CALL storage_getbase_double(h_DvertexParameterValue,&
+    call storage_getbase_double(h_DvertexParameterValue,&
                                 p_DvertexParameterValue, rhadapt%NVBD)
 
     ! Initialization
     p_IboundaryCpIdx(1) = 1
     ioff = 0
 
-    DO ibct = 1, rhadapt%NBCT
+    do ibct = 1, rhadapt%NBCT
       
       ! Set subdimensions
       lvbd      = rhadapt%rBoundary(ibct)%NA
@@ -1690,26 +1690,26 @@ CONTAINS
       p_IboundaryCpIdx(ibct+1) = ioff+1
 
       ! Get static boundary data from tree
-      CALL btree_copyFromTreeKey(rhadapt%rBoundary(ibct),&
+      call btree_copyFromTreeKey(rhadapt%rBoundary(ibct),&
                                  p_IverticesAtBoundary(ivbdStart:ivbdEnd))
-      CALL btree_copyFromTreeDble(rhadapt%rBoundary(ibct),&
+      call btree_copyFromTreeDble(rhadapt%rBoundary(ibct),&
                                   p_DvertexParameterValue(ivbdStart:ivbdEnd), 1)
 
       ! Sort array w.r.t. increasing parameter values
-      CALL sort_dp(p_DvertexParameterValue(ivbdStart:ivbdEnd),&
+      call sort_dp(p_DvertexParameterValue(ivbdStart:ivbdEnd),&
                    SORT_QUICK, p_IverticesAtBoundary(ivbdStart:ivbdEnd))
-    END DO
+    end do
 
     ! Set dimension
-    IF(PRESENT(nvbd)) nvbd = rhadapt%NVBD
-    IF(PRESENT(nbct)) nbct = rhadapt%NBCT
-  END SUBROUTINE hadapt_getBoundary
+    if(present(nvbd)) nvbd = rhadapt%NVBD
+    if(present(nbct)) nbct = rhadapt%NBCT
+  end subroutine hadapt_getBoundary
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_setNodalProperty(rhadapt, h_InodalProperty)
+  subroutine hadapt_setNodalProperty(rhadapt, h_InodalProperty)
 
 !<description>
     ! This subroutine sets the nodal property list to the adaptivity structure
@@ -1717,35 +1717,35 @@ CONTAINS
 
 !<input>
     ! Handle to p_InodalProperty
-    INTEGER, INTENT(IN) :: h_InodalProperty
+    integer, intent(IN) :: h_InodalProperty
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_InodalProperty .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Invalid handle!',&
+    if (h_InodalProperty .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNodalProperty')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     rhadapt%h_InodalProperty = h_InodalProperty
-    CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+    call storage_getbase_int(rhadapt%h_InodalProperty,&
                              rhadapt%p_InodalProperty)
     
     ! Set specifier for InodalProperty
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_NODALPROP)
-  END SUBROUTINE hadapt_setNodalProperty
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_NODALPROP)
+  end subroutine hadapt_setNodalProperty
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_getNodalProperty(rhadapt, h_InodalProperty)
+  subroutine hadapt_getNodalProperty(rhadapt, h_InodalProperty)
 
 !<description>
     ! This subroutine assignes the "nodal property" array from the
@@ -1754,36 +1754,36 @@ CONTAINS
 
 !<input>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_InodalProperty
-    INTEGER, INTENT(INOUT) :: h_InodalProperty
+    integer, intent(INOUT) :: h_InodalProperty
 !</inputoutput>
 !</subroutine>
 
     ! Check if "nodal property" list exits
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_NODALPROP) .NE. HADAPT_HAS_NODALPROP) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_NODALPROP) .ne. HADAPT_HAS_NODALPROP) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNodalProperty')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Check if handle needs to be freed first
-    IF (h_InodalProperty .NE. ST_NOHANDLE .AND.&
-        h_InodalProperty .NE. rhadapt%h_InodalProperty)&
-        CALL storage_free(h_InodalProperty)
+    if (h_InodalProperty .ne. ST_NOHANDLE .and.&
+        h_InodalProperty .ne. rhadapt%h_InodalProperty)&
+        call storage_free(h_InodalProperty)
 
     ! Assign handle
     h_InodalProperty = rhadapt%h_InodalProperty
-  END SUBROUTINE hadapt_getNodalProperty
+  end subroutine hadapt_getNodalProperty
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_genElementsAtVertex(rhadapt)
+  subroutine hadapt_genElementsAtVertex(rhadapt)
 
 !<description>
     ! This subroutine generates a list of arrays for the "elements-at-vertex"
@@ -1793,44 +1793,44 @@ CONTAINS
 
 !<inputoutput>
     ! Adaptivity structur
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
-    INTEGER(PREC_ARRAYLISTIDX) :: ipos
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: ive
+    integer(PREC_ARRAYLISTIDX) :: ipos
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: ive
 
     ! Check if "vertices-at-element" list exists
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .NE. HADAPT_HAS_VERTATELEM) THEN
-      CALL output_line('Structure does not exist!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .ne. HADAPT_HAS_VERTATELEM) then
+      call output_line('Structure does not exist!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_genElementsAtVertex')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Create arraylist
-    CALL arrlst_createArraylist(rhadapt%relementsAtVertex,&
+    call arrlst_createArraylist(rhadapt%relementsAtVertex,&
                                 2*rhadapt%NVT, 8*rhadapt%NEL,&
                                 ST_INT, ARRAYLIST_UNORDERED)
 
     ! Fill arraylist
-    DO iel = 1, rhadapt%NEL
-      DO ive = 1, hadapt_getNVE(rhadapt,iel)
-        CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,&
+    do iel = 1, rhadapt%NEL
+      do ive = 1, hadapt_getNVE(rhadapt,iel)
+        call arrlst_appendToArraylist(rhadapt%relementsAtVertex,&
                                       rhadapt%p_IverticesAtElement(ive,iel),&
                                       iel, ipos)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Set specifier for relementsAtVertex
-    rhadapt%iSpec = IOR(rhadapt%iSpec, HADAPT_HAS_ELEMATVERTEX)
-  END SUBROUTINE hadapt_genElementsAtVertex
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_ELEMATVERTEX)
+  end subroutine hadapt_genElementsAtVertex
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_performAdaptation(rhadapt, rindicator,&
+  subroutine hadapt_performAdaptation(rhadapt, rindicator,&
                                       rcollection, fcb_hadaptCallback)
 
 !<description>
@@ -1846,41 +1846,41 @@ CONTAINS
 
 !<input>
     ! Indicator vector for refinement
-    TYPE(t_vectorScalar), INTENT(IN)            :: rindicator
+    type(t_vectorScalar), intent(IN)            :: rindicator
 
     ! callback routines
     include 'intf_hadaptcallback.inc'
-    OPTIONAL                                    :: fcb_hadaptCallback
+    optional                                    :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+    type(t_hadapt), intent(INOUT)               :: rhadapt
 
     ! OPTIONAL: Collection
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
-    INTEGER(PREC_VERTEXIDX), DIMENSION(1) :: Ivertices
-    INTEGER(I32), DIMENSION(2) :: Isize
-    INTEGER(PREC_VERTEXIDX)    :: nvt
-    INTEGER(PREC_ELEMENTIDX)   :: nel
+    integer(PREC_ELEMENTIDX), dimension(1) :: Ielements
+    integer(PREC_VERTEXIDX), dimension(1) :: Ivertices
+    integer(I32), dimension(2) :: Isize
+    integer(PREC_VERTEXIDX)    :: nvt
+    integer(PREC_ELEMENTIDX)   :: nel
 
     ! Check if dynamic data structures are available
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA) THEN
-      CALL output_line('Dynamic data structures are not generated!',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA) then
+      call output_line('Dynamic data structures are not generated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Initialize initial dimensions
-    CALL storage_getsize(rhadapt%h_IverticesAtElement, Isize)
+    call storage_getsize(rhadapt%h_IverticesAtElement, Isize)
     rhadapt%NELMAX = Isize(2)
-    CALL storage_getsize(rhadapt%h_IneighboursAtElement, Isize)
-    rhadapt%NELMAX = MIN(rhadapt%NELMAX,Isize(2))
+    call storage_getsize(rhadapt%h_IneighboursAtElement, Isize)
+    rhadapt%NELMAX = min(rhadapt%NELMAX,Isize(2))
 
     rhadapt%InelOfType0 = rhadapt%InelOfType
     rhadapt%NVT0        = rhadapt%NVT
@@ -1889,111 +1889,111 @@ CONTAINS
     rhadapt%increaseNVT = 0
     
     ! What kind of grid refinement should be performed
-    SELECT CASE(rhadapt%iadaptationStrategy)
-    CASE (HADAPT_NOADAPTATION)   ! No grid refinement
+    select case(rhadapt%iadaptationStrategy)
+    case (HADAPT_NOADAPTATION)   ! No grid refinement
 
       
-    CASE (HADAPT_REDGREEN)       ! Red-green grid refinement
+    case (HADAPT_REDGREEN)       ! Red-green grid refinement
 
       ! Which spatial dimensions are we?
-      SELECT CASE(rhadapt%ndim)
+      select case(rhadapt%ndim)
         
-      CASE (NDIM2D)
+      case (NDIM2D)
         ! Mark elements for refinement based on indicator function
-        CALL mark_refinement2D(rhadapt, rindicator)
+        call mark_refinement2D(rhadapt, rindicator)
         
         ! Mark additional elements to restore conformity
-        CALL redgreen_mark_refinement2D(rhadapt, rcollection, fcb_hadaptCallback)
+        call redgreen_mark_refinement2D(rhadapt, rcollection, fcb_hadaptCallback)
         
         ! Mark element for recoarsening based on indicator function
-        CALL redgreen_mark_coarsening2D(rhadapt, rindicator)
+        call redgreen_mark_coarsening2D(rhadapt, rindicator)
         
-      CASE DEFAULT
-        CALL output_line('Unsupported spatial dimension!',&
+      case DEFAULT
+        call output_line('Unsupported spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
-        CALL sys_halt()
-      END SELECT
+        call sys_halt()
+      end select
 
       ! Compute new dimensions
       nvt = rhadapt%NVT+rhadapt%increaseNVT
       nel = NumberOfElements(rhadapt)
 
       ! Adjust vertex age array and nodal property array
-      CALL storage_realloc('hadapt_performAdaptation', nvt,&
-                           rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation', nvt,&
-                           rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .TRUE.)
+      call storage_realloc('hadapt_performAdaptation', nvt,&
+                           rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_realloc('hadapt_performAdaptation', nvt,&
+                           rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
      
       ! Adjust elemental arrays
-      CALL storage_realloc('hadapt_performAdaptation', nel,&
-                           rhadapt%h_IverticesAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation', nel,&
-                           rhadapt%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
-      CALL storage_realloc('hadapt_performAdaptation', nel,&
-                           rhadapt%h_ImidneighboursAtElement, ST_NEWBLOCK_NOINIT, .TRUE.)
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rhadapt%h_IverticesAtElement, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rhadapt%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rhadapt%h_ImidneighboursAtElement, ST_NEWBLOCK_NOINIT, .true.)
 
       ! Reset pointers
-      CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+      call storage_getbase_int(rhadapt%h_IvertexAge,&
                                rhadapt%p_IvertexAge)
-      CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+      call storage_getbase_int(rhadapt%h_InodalProperty,&
                                rhadapt%p_InodalProperty)
-      CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+      call storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
                                  rhadapt%p_IverticesAtElement)
-      CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+      call storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
                                  rhadapt%p_IneighboursAtElement)
-      CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+      call storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
                                  rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      IF (PRESENT(fcb_hadaptCallback) .AND. PRESENT(rcollection)) THEN
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
         Ivertices = (/nvt/)
         Ielements = (/0/)
-        CALL fcb_hadaptCallback(rcollection, HADAPT_OPR_ADJUSTVERTEXDIM,&
+        call fcb_hadaptCallback(rcollection, HADAPT_OPR_ADJUSTVERTEXDIM,&
                                 Ivertices, Ielements)
-      END IF
+      end if
 
       ! Perform refinement
-      CALL redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
+      call redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
 
       ! Perform coarsening
-      CALL redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
+      call redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
 
       ! Adjust nodal property array
-      CALL storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
-                           rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .TRUE.)
+      call storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
+                           rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
             
-    CASE DEFAULT
-      CALL output_line('Unsupported refinement strategy!',&
+    case DEFAULT
+      call output_line('Unsupported refinement strategy!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
-  CONTAINS
+  contains
 
     ! Here, some auxiliary routines follow
     
     !*************************************************************
     ! This function computes the number of elements after refinement
 
-    FUNCTION NumberOfElements(rhadapt) RESULT(nel)
+    function NumberOfElements(rhadapt) result(nel)
       
-      TYPE(t_hadapt), INTENT(IN) :: rhadapt
-      INTEGER(PREC_ELEMENTIDX)      :: nel
+      type(t_hadapt), intent(IN) :: rhadapt
+      integer(PREC_ELEMENTIDX)      :: nel
       
       ! local variables
-      INTEGER, DIMENSION(:), POINTER :: p_Imarker
-      INTEGER(PREC_ELEMENTIDX)       :: iel
+      integer, dimension(:), pointer :: p_Imarker
+      integer(PREC_ELEMENTIDX)       :: iel
       
-      CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+      call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
       
       ! Initialize number of elements by current number
       nel = rhadapt%NEL0
       
       ! Loop over all elements and check marker
-      DO iel = 1, rhadapt%NEL0
+      do iel = 1, rhadapt%NEL0
         
-        SELECT CASE(p_Imarker(iel))
-        CASE(MARK_REF_TRIA2TRIA_1,&
+        select case(p_Imarker(iel))
+        case(MARK_REF_TRIA2TRIA_1,&
              MARK_REF_TRIA2TRIA_2,&
              MARK_REF_TRIA2TRIA_3,&
              MARK_REF_QUAD2QUAD_13,&
@@ -2004,7 +2004,7 @@ CONTAINS
           ! the number of elements by one which has to be taken into account here.
           nel = nel+1
 
-        CASE(MARK_REF_QUAD3TRIA_1,&
+        case(MARK_REF_QUAD3TRIA_1,&
              MARK_REF_QUAD3TRIA_2,&
              MARK_REF_QUAD3TRIA_3,&
              MARK_REF_QUAD3TRIA_4,&
@@ -2013,23 +2013,23 @@ CONTAINS
              MARK_REF_TRIA3TRIA_13)
           nel = nel+2
           
-        CASE(MARK_REF_TRIA4TRIA,&
+        case(MARK_REF_TRIA4TRIA,&
             MARK_REF_QUAD4QUAD,&
             MARK_REF_QUAD4TRIA_12,&
              MARK_REF_QUAD4TRIA_23,&
              MARK_REF_QUAD4TRIA_34,&
              MARK_REF_QUAD4TRIA_14)
           nel = nel+3
-        END SELECT
-      END DO
-    END FUNCTION NumberOfElements
-  END SUBROUTINE hadapt_performAdaptation
+        end select
+      end do
+    end function NumberOfElements
+  end subroutine hadapt_performAdaptation
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE hadapt_infoStatistics(rhadapt)
+  subroutine hadapt_infoStatistics(rhadapt)
 
 !<description>
     ! This subroutine outputs statistical info about the adaptivity data structure
@@ -2037,76 +2037,76 @@ CONTAINS
 
 !<input>
     ! adaptivity data structure
-    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER :: ibct
+    integer :: ibct
     
-    CALL output_line('Adaptivity statistics:')
-    CALL output_line('----------------------')
-    CALL output_line('Total number of grid refinement steps:           '//&
-        TRIM(sys_siL(rhadapt%nRefinementSteps,3)))
-    CALL output_line('Total number of grid coarsening steps:           '//&
-        TRIM(sys_siL(rhadapt%nCoarseningSteps,3)))
-    CALL output_line('Total number of grid smoothing  steps:           '//&
-        TRIM(sys_siL(rhadapt%nSmoothingSteps,3)))
-    CALL output_line('Strategy for grid refinement and coarsening:     '//&
-        TRIM(sys_siL(rhadapt%iadaptationStrategy,3)))
-    CALL output_line('Total number of elements (initially):            '//&
-        TRIM(sys_siL(rhadapt%NEL,15))//"("//TRIM(sys_siL(rhadapt%NEL0,15))//")")
-    CALL output_line('Total number of vertices (initially):            '//&
-        TRIM(sys_siL(rhadapt%NVT,15))//"("//TRIM(sys_siL(rhadapt%NVT0,15))//")")
-    CALL output_line('Total number of vertices at boundary(initially): '//&
-        TRIM(sys_siL(rhadapt%NVBD,15))//"("//TRIM(sys_siL(rhadapt%NVBD0,15))//")")
-    CALL output_lbrk
+    call output_line('Adaptivity statistics:')
+    call output_line('----------------------')
+    call output_line('Total number of grid refinement steps:           '//&
+        trim(sys_siL(rhadapt%nRefinementSteps,3)))
+    call output_line('Total number of grid coarsening steps:           '//&
+        trim(sys_siL(rhadapt%nCoarseningSteps,3)))
+    call output_line('Total number of grid smoothing  steps:           '//&
+        trim(sys_siL(rhadapt%nSmoothingSteps,3)))
+    call output_line('Strategy for grid refinement and coarsening:     '//&
+        trim(sys_siL(rhadapt%iadaptationStrategy,3)))
+    call output_line('Total number of elements (initially):            '//&
+        trim(sys_siL(rhadapt%NEL,15))//"("//trim(sys_siL(rhadapt%NEL0,15))//")")
+    call output_line('Total number of vertices (initially):            '//&
+        trim(sys_siL(rhadapt%NVT,15))//"("//trim(sys_siL(rhadapt%NVT0,15))//")")
+    call output_line('Total number of vertices at boundary(initially): '//&
+        trim(sys_siL(rhadapt%NVBD,15))//"("//trim(sys_siL(rhadapt%NVBD0,15))//")")
+    call output_lbrk
 
-    CALL output_line('Handles:')
-    CALL output_line('--------')
-    CALL output_line('h_Imarker:                 '//&
-        TRIM(sys_siL(rhadapt%h_Imarker,15)))
-    CALL output_line('h_IvertexAge:              '//&
-        TRIM(sys_siL(rhadapt%h_IvertexAge,15)))
-    CALL output_line('h_InodalProperty:          '//&
-        TRIM(sys_siL(rhadapt%h_InodalProperty,15)))
-    CALL output_line('h_IverticesAtElement:      '//&
-        TRIM(sys_siL(rhadapt%h_IverticesAtElement,15)))
-    CALL output_line('h_IneighboursAtElement:    '//&
-        TRIM(sys_siL(rhadapt%h_IneighboursAtElement,15)))
-    CALL output_line('h_ImidneighboursAtElement: '//&
-        TRIM(sys_siL(rhadapt%h_ImidneighboursAtElement,15)))
-    CALL output_lbrk
+    call output_line('Handles:')
+    call output_line('--------')
+    call output_line('h_Imarker:                 '//&
+        trim(sys_siL(rhadapt%h_Imarker,15)))
+    call output_line('h_IvertexAge:              '//&
+        trim(sys_siL(rhadapt%h_IvertexAge,15)))
+    call output_line('h_InodalProperty:          '//&
+        trim(sys_siL(rhadapt%h_InodalProperty,15)))
+    call output_line('h_IverticesAtElement:      '//&
+        trim(sys_siL(rhadapt%h_IverticesAtElement,15)))
+    call output_line('h_IneighboursAtElement:    '//&
+        trim(sys_siL(rhadapt%h_IneighboursAtElement,15)))
+    call output_line('h_ImidneighboursAtElement: '//&
+        trim(sys_siL(rhadapt%h_ImidneighboursAtElement,15)))
+    call output_lbrk
 
-    CALL output_line('Coordinates:')
-    CALL output_line('------------')
-    SELECT CASE(rhadapt%ndim)
-    CASE(NDIM2D)
-      CALL qtree_infoQuadtree(rhadapt%rVertexCoordinates2D)
-    CASE(NDIM3D)
-      CALL otree_infoOctree(rhadapt%rVertexCoordinates3D)
-    END SELECT
-    CALL output_lbrk
+    call output_line('Coordinates:')
+    call output_line('------------')
+    select case(rhadapt%ndim)
+    case(NDIM2D)
+      call qtree_infoQuadtree(rhadapt%rVertexCoordinates2D)
+    case(NDIM3D)
+      call otree_infoOctree(rhadapt%rVertexCoordinates3D)
+    end select
+    call output_lbrk
     
-    CALL output_line('Boundary:')
-    CALL output_line('---------')
-    DO ibct=1,rhadapt%NBCT
-      CALL output_line('Boundary component '//TRIM(sys_siL(ibct,3))//":")
-      CALL output_line('------------------------')
-      CALL btree_infoTree(rhadapt%rBoundary(ibct))
-    END DO
-    CALL output_lbrk
+    call output_line('Boundary:')
+    call output_line('---------')
+    do ibct=1,rhadapt%NBCT
+      call output_line('Boundary component '//trim(sys_siL(ibct,3))//":")
+      call output_line('------------------------')
+      call btree_infoTree(rhadapt%rBoundary(ibct))
+    end do
+    call output_lbrk
 
-    CALL output_line('Element at vertex structure:')
-    CALL output_line('----------------------------')
-    CALL arrlst_infoArraylist(rhadapt%relementsAtVertex)
-  END SUBROUTINE hadapt_infoStatistics
+    call output_line('Element at vertex structure:')
+    call output_line('----------------------------')
+    call arrlst_infoArraylist(rhadapt%relementsAtVertex)
+  end subroutine hadapt_infoStatistics
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_writeGridSVG(rhadapt, coutputFile, width, height)
+  subroutine hadapt_writeGridSVG(rhadapt, coutputFile, width, height)
 
 !<description>
     ! This subroutine outputs the current state of the adapted grid stored
@@ -2115,262 +2115,262 @@ CONTAINS
 
 !<input>
     ! Output file name w/o suffix .svg
-    CHARACTER(LEN=*), INTENT(IN)     :: coutputFile
+    character(LEN=*), intent(IN)     :: coutputFile
 
     ! OPTIONAL: Width of the generated file
-    INTEGER, INTENT(IN), OPTIONAL :: width
+    integer, intent(IN), optional :: width
 
     ! OPTIONAL: Heigh of the generated file
-    INTEGER, INTENT(IN), OPTIONAL :: height
+    integer, intent(IN), optional :: height
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local parameters
-    INTEGER, PARAMETER :: defaultwidth  = 1280
-    INTEGER, PARAMETER :: defaultheight = 1024
-    INTEGER, PARAMETER :: xoffset       = 100
-    INTEGER, PARAMETER :: yoffset       = 100
-    INTEGER, PARAMETER :: font_size     = 18
-    INTEGER, PARAMETER :: colsep        = 10
-    INTEGER, PARAMETER :: linesep       = 32
-    CHARACTER(LEN=*), PARAMETER :: font_family = "Arial"
+    integer, parameter :: defaultwidth  = 1280
+    integer, parameter :: defaultheight = 1024
+    integer, parameter :: xoffset       = 100
+    integer, parameter :: yoffset       = 100
+    integer, parameter :: font_size     = 18
+    integer, parameter :: colsep        = 10
+    integer, parameter :: linesep       = 32
+    character(LEN=*), parameter :: font_family = "Arial"
     
     ! local variables
-    REAL(DP), DIMENSION(2*NDIM2D) :: bbox
-    REAL(DP) :: x0,y0,xdim,ydim,dscale
+    real(DP), dimension(2*NDIM2D) :: bbox
+    real(DP) :: x0,y0,xdim,ydim,dscale
     
-    INTEGER, DIMENSION(:), POINTER :: p_Imarker
-    INTEGER(PREC_VERTEXIDX)  :: ivt
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_ARRAYLISTIDX):: ipos
-    INTEGER :: xsize,ysize,iunit,ive,nve
-    INTEGER, SAVE :: iout=0
+    integer, dimension(:), pointer :: p_Imarker
+    integer(PREC_VERTEXIDX)  :: ivt
+    integer(PREC_ELEMENTIDX) :: iel
+    integer(PREC_ARRAYLISTIDX):: ipos
+    integer :: xsize,ysize,iunit,ive,nve
+    integer, save :: iout=0
     
     ! Check if dynamic data structures generated
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA) THEN
-      CALL output_line('Dynamic data structures are not generated',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA) then
+      call output_line('Dynamic data structures are not generated',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridSVG')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Increment the sample number
     iout=iout+1
     
     ! Open output file for writing
-    CALL io_openFileForWriting(TRIM(ADJUSTL(coutputFile))//'.'//&
-        TRIM(sys_siL(iout,5))//'.svg', iunit, SYS_REPLACE, bformatted=.TRUE.)
+    call io_openFileForWriting(trim(adjustl(coutputFile))//'.'//&
+        trim(sys_siL(iout,5))//'.svg', iunit, SYS_REPLACE, bformatted=.true.)
     
     ! Write prolog, XML-declaration, document type declaration)
-    WRITE(iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'
-    WRITE(iunit,FMT='(A)') '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"'
-    WRITE(iunit,FMT='(A)') ' "http://www.w3.org/Graphics/SVG/1.0/DTD/svg11.dtd">'
-    WRITE(iunit,FMT='(A)')
-    WRITE(iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
-    WRITE(iunit,FMT='(A)')
-    WRITE(iunit,FMT='(A)') '<svg version="1.0"'
-    WRITE(iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
-    WRITE(iunit,FMT='(A)') ' xmlns:xlink="http://www.w3.org/1999/xlink"'
+    write(iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'
+    write(iunit,FMT='(A)') '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"'
+    write(iunit,FMT='(A)') ' "http://www.w3.org/Graphics/SVG/1.0/DTD/svg11.dtd">'
+    write(iunit,FMT='(A)')
+    write(iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
+    write(iunit,FMT='(A)')
+    write(iunit,FMT='(A)') '<svg version="1.0"'
+    write(iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
+    write(iunit,FMT='(A)') ' xmlns:xlink="http://www.w3.org/1999/xlink"'
     
-    IF (PRESENT(width)) THEN
+    if (present(width)) then
       xsize=width
-    ELSE
+    else
       xsize=defaultwidth
-    END IF
+    end if
 
-    IF (PRESENT(height)) THEN
+    if (present(height)) then
       ysize=height
-    ELSE
+    else
       ysize=defaultheight
-    END IF
+    end if
 
     ! Determine bounding box
     bbox   = qtree_getBoundingBox(rhadapt%rVertexCoordinates2D)
     xdim   = bbox(3)-bbox(1); x0=bbox(1)
     ydim   = bbox(4)-bbox(2); y0=bbox(2)
-    dscale = MIN(xsize/xdim,ysize/ydim)
+    dscale = min(xsize/xdim,ysize/ydim)
 
     ! Set height and width of image
-    WRITE(iunit,FMT='(A)') ' width="100%" height="100%" xml:space="preserve"'
-    WRITE(iunit,FMT='(A)') ' viewBox="'//&
-        TRIM(sys_siL(-xoffset,10))//' '//&
-        TRIM(sys_siL(-yoffset,10))//' '//&
-        TRIM(sys_siL(2*xoffset+xsize,10))//' '//&
-        TRIM(sys_siL(2*yoffset+ysize,10))//'">'
+    write(iunit,FMT='(A)') ' width="100%" height="100%" xml:space="preserve"'
+    write(iunit,FMT='(A)') ' viewBox="'//&
+        trim(sys_siL(-xoffset,10))//' '//&
+        trim(sys_siL(-yoffset,10))//' '//&
+        trim(sys_siL(2*xoffset+xsize,10))//' '//&
+        trim(sys_siL(2*yoffset+ysize,10))//'">'
 
     ! Write embedded java-scripts to file
-    WRITE(iunit,FMT='(A)') '<defs>'
-    WRITE(iunit,FMT='(A)') '<script type="text/javascript">'
-    WRITE(iunit,FMT='(A)') '<![CDATA['
+    write(iunit,FMT='(A)') '<defs>'
+    write(iunit,FMT='(A)') '<script type="text/javascript">'
+    write(iunit,FMT='(A)') '<![CDATA['
 
-    WRITE(iunit,FMT='(A)') '  function ShowVertexInfo(evt,ivt,age,elems) {'
-    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
-    WRITE(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
-    WRITE(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
-    WRITE(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
-    WRITE(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
-    WRITE(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
-    WRITE(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
+    write(iunit,FMT='(A)') '  function ShowVertexInfo(evt,ivt,age,elems) {'
+    write(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    write(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
+    write(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
+    write(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
+    write(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
+    write(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
+    write(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
 
-    WRITE(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_box=svgdoc.getElementById("vinfo_box");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text1=svgdoc.getElementById("vinfo_text1");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text2=svgdoc.getElementById("vinfo_text2");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text3=svgdoc.getElementById("vinfo_text3");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text4=svgdoc.getElementById("vinfo_text4");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text5=svgdoc.getElementById("vinfo_text5");'
-    WRITE(iunit,FMT='(A)') '    var vinfo_text6=svgdoc.getElementById("vinfo_text6");'
+    write(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
+    write(iunit,FMT='(A)') '    var vinfo_box=svgdoc.getElementById("vinfo_box");'
+    write(iunit,FMT='(A)') '    var vinfo_text1=svgdoc.getElementById("vinfo_text1");'
+    write(iunit,FMT='(A)') '    var vinfo_text2=svgdoc.getElementById("vinfo_text2");'
+    write(iunit,FMT='(A)') '    var vinfo_text3=svgdoc.getElementById("vinfo_text3");'
+    write(iunit,FMT='(A)') '    var vinfo_text4=svgdoc.getElementById("vinfo_text4");'
+    write(iunit,FMT='(A)') '    var vinfo_text5=svgdoc.getElementById("vinfo_text5");'
+    write(iunit,FMT='(A)') '    var vinfo_text6=svgdoc.getElementById("vinfo_text6");'
     
-    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("x",p.x);'
-    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("y",p.y);'
-    WRITE(iunit,FMT='(A)') '    vinfo_text1.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text1.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text2.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text2.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text3.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text3.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text4.setAttribute("x",p.x+vinfo_text1.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    vinfo_text4.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text4.firstChild.nodeValue = ivt;'
-    WRITE(iunit,FMT='(A)') '    vinfo_text5.setAttribute("x",p.x+vinfo_text2.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    vinfo_text5.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text5.firstChild.nodeValue = age;'
-    WRITE(iunit,FMT='(A)') '    vinfo_text6.setAttribute("x",p.x+vinfo_text3.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    vinfo_text6.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    vinfo_text6.firstChild.nodeValue = elems;'
+    write(iunit,FMT='(A)') '    vinfo_box.setAttribute("x",p.x);'
+    write(iunit,FMT='(A)') '    vinfo_box.setAttribute("y",p.y);'
+    write(iunit,FMT='(A)') '    vinfo_text1.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text1.setAttribute("y",p.y+'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text2.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text2.setAttribute("y",p.y+2*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text3.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text3.setAttribute("y",p.y+3*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text4.setAttribute("x",p.x+vinfo_text1.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    vinfo_text4.setAttribute("y",p.y+'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text4.firstChild.nodeValue = ivt;'
+    write(iunit,FMT='(A)') '    vinfo_text5.setAttribute("x",p.x+vinfo_text2.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    vinfo_text5.setAttribute("y",p.y+2*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text5.firstChild.nodeValue = age;'
+    write(iunit,FMT='(A)') '    vinfo_text6.setAttribute("x",p.x+vinfo_text3.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    vinfo_text6.setAttribute("y",p.y+3*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    vinfo_text6.firstChild.nodeValue = elems;'
 
-    WRITE(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+&
         &vinfo_text4.getComputedTextLength();'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()&
         &+vinfo_text5.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()&
         &+vinfo_text6.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("width",textlen+30);'
+    write(iunit,FMT='(A)') '    vinfo_box.setAttribute("width",textlen+30);'
 
-    WRITE(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: visible");'
-    WRITE(iunit,FMT='(A)') '  }'
+    write(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: visible");'
+    write(iunit,FMT='(A)') '  }'
     
-    WRITE(iunit,FMT='(A)') '  function HideVertexInfo() {'
-    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
-    WRITE(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
-    WRITE(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: hidden");'
-    WRITE(iunit,FMT='(A)') '  }'
+    write(iunit,FMT='(A)') '  function HideVertexInfo() {'
+    write(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    write(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
+    write(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: hidden");'
+    write(iunit,FMT='(A)') '  }'
 
-    WRITE(iunit,FMT='(A)') '  function ShowElementInfo(evt,iel,state,marker,kadj,kmidadj,kvert) {'
-    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
-    WRITE(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
-    WRITE(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
-    WRITE(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
-    WRITE(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
-    WRITE(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
-    WRITE(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
+    write(iunit,FMT='(A)') '  function ShowElementInfo(evt,iel,state,marker,kadj,kmidadj,kvert) {'
+    write(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    write(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
+    write(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
+    write(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
+    write(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
+    write(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
+    write(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
 
-    WRITE(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
-    WRITE(iunit,FMT='(A)') '    var einfo_box=svgdoc.getElementById("einfo_box");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text1=svgdoc.getElementById("einfo_text1");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text2=svgdoc.getElementById("einfo_text2");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text3=svgdoc.getElementById("einfo_text3");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text4=svgdoc.getElementById("einfo_text4");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text5=svgdoc.getElementById("einfo_text5");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text6=svgdoc.getElementById("einfo_text6");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text7=svgdoc.getElementById("einfo_text7");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text8=svgdoc.getElementById("einfo_text8");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text9=svgdoc.getElementById("einfo_text9");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text10=svgdoc.getElementById("einfo_text10");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text11=svgdoc.getElementById("einfo_text11");'
-    WRITE(iunit,FMT='(A)') '    var einfo_text12=svgdoc.getElementById("einfo_text12");'
+    write(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
+    write(iunit,FMT='(A)') '    var einfo_box=svgdoc.getElementById("einfo_box");'
+    write(iunit,FMT='(A)') '    var einfo_text1=svgdoc.getElementById("einfo_text1");'
+    write(iunit,FMT='(A)') '    var einfo_text2=svgdoc.getElementById("einfo_text2");'
+    write(iunit,FMT='(A)') '    var einfo_text3=svgdoc.getElementById("einfo_text3");'
+    write(iunit,FMT='(A)') '    var einfo_text4=svgdoc.getElementById("einfo_text4");'
+    write(iunit,FMT='(A)') '    var einfo_text5=svgdoc.getElementById("einfo_text5");'
+    write(iunit,FMT='(A)') '    var einfo_text6=svgdoc.getElementById("einfo_text6");'
+    write(iunit,FMT='(A)') '    var einfo_text7=svgdoc.getElementById("einfo_text7");'
+    write(iunit,FMT='(A)') '    var einfo_text8=svgdoc.getElementById("einfo_text8");'
+    write(iunit,FMT='(A)') '    var einfo_text9=svgdoc.getElementById("einfo_text9");'
+    write(iunit,FMT='(A)') '    var einfo_text10=svgdoc.getElementById("einfo_text10");'
+    write(iunit,FMT='(A)') '    var einfo_text11=svgdoc.getElementById("einfo_text11");'
+    write(iunit,FMT='(A)') '    var einfo_text12=svgdoc.getElementById("einfo_text12");'
     
-    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("x",p.x);'
-    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("y",p.y);'
-    WRITE(iunit,FMT='(A)') '    einfo_text1.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text1.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text2.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text2.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text3.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text3.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text4.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text4.setAttribute("y",p.y+4*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text5.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text5.setAttribute("y",p.y+5*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text6.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text6.setAttribute("y",p.y+6*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text7.setAttribute("x",p.x+einfo_text1.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text7.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text7.firstChild.nodeValue = iel;'
-    WRITE(iunit,FMT='(A)') '    einfo_text8.setAttribute("x",p.x+einfo_text2.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text8.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text8.firstChild.nodeValue = state;'
-    WRITE(iunit,FMT='(A)') '    einfo_text9.setAttribute("x",p.x+einfo_text3.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text9.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text9.firstChild.nodeValue = marker;'
-    WRITE(iunit,FMT='(A)') '    einfo_text10.setAttribute("x",p.x+einfo_text4.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text10.setAttribute("y",p.y+4*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text10.firstChild.nodeValue = kadj;'
-    WRITE(iunit,FMT='(A)') '    einfo_text11.setAttribute("x",p.x+einfo_text5.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text11.setAttribute("y",p.y+5*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text11.firstChild.nodeValue = kmidadj;'
-    WRITE(iunit,FMT='(A)') '    einfo_text12.setAttribute("x",p.x+einfo_text6.getComputedTextLength()+20);'
-    WRITE(iunit,FMT='(A)') '    einfo_text12.setAttribute("y",p.y+6*'//TRIM(sys_siL(linesep,10))//');'
-    WRITE(iunit,FMT='(A)') '    einfo_text12.firstChild.nodeValue = kvert;'
+    write(iunit,FMT='(A)') '    einfo_box.setAttribute("x",p.x);'
+    write(iunit,FMT='(A)') '    einfo_box.setAttribute("y",p.y);'
+    write(iunit,FMT='(A)') '    einfo_text1.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text1.setAttribute("y",p.y+'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text2.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text2.setAttribute("y",p.y+2*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text3.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text3.setAttribute("y",p.y+3*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text4.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text4.setAttribute("y",p.y+4*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text5.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text5.setAttribute("y",p.y+5*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text6.setAttribute("x",p.x+'//trim(sys_siL(colsep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text6.setAttribute("y",p.y+6*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text7.setAttribute("x",p.x+einfo_text1.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text7.setAttribute("y",p.y+'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text7.firstChild.nodeValue = iel;'
+    write(iunit,FMT='(A)') '    einfo_text8.setAttribute("x",p.x+einfo_text2.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text8.setAttribute("y",p.y+2*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text8.firstChild.nodeValue = state;'
+    write(iunit,FMT='(A)') '    einfo_text9.setAttribute("x",p.x+einfo_text3.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text9.setAttribute("y",p.y+3*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text9.firstChild.nodeValue = marker;'
+    write(iunit,FMT='(A)') '    einfo_text10.setAttribute("x",p.x+einfo_text4.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text10.setAttribute("y",p.y+4*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text10.firstChild.nodeValue = kadj;'
+    write(iunit,FMT='(A)') '    einfo_text11.setAttribute("x",p.x+einfo_text5.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text11.setAttribute("y",p.y+5*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text11.firstChild.nodeValue = kmidadj;'
+    write(iunit,FMT='(A)') '    einfo_text12.setAttribute("x",p.x+einfo_text6.getComputedTextLength()+20);'
+    write(iunit,FMT='(A)') '    einfo_text12.setAttribute("y",p.y+6*'//trim(sys_siL(linesep,10))//');'
+    write(iunit,FMT='(A)') '    einfo_text12.firstChild.nodeValue = kvert;'
 
-    WRITE(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+&
         &einfo_text7.getComputedTextLength();'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+&
         &einfo_text8.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+&
         &einfo_text9.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+&
         &einfo_text10.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+&
         &einfo_text11.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+&
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+&
         &einfo_text12.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("width",textlen+30);'
+    write(iunit,FMT='(A)') '    einfo_box.setAttribute("width",textlen+30);'
 
-    WRITE(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: visible");'
-    WRITE(iunit,FMT='(A)') '  }'
+    write(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: visible");'
+    write(iunit,FMT='(A)') '  }'
 
-    WRITE(iunit,FMT='(A)') '  function HideElementInfo() {'
-    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
-    WRITE(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
-    WRITE(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: hidden");'
-    WRITE(iunit,FMT='(A)') '  }'
-    WRITE(iunit,FMT='(A)') ']]>'
-    WRITE(iunit,FMT='(A)') '</script>'
-    WRITE(iunit,FMT='(A)') '</defs>'
+    write(iunit,FMT='(A)') '  function HideElementInfo() {'
+    write(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    write(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
+    write(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: hidden");'
+    write(iunit,FMT='(A)') '  }'
+    write(iunit,FMT='(A)') ']]>'
+    write(iunit,FMT='(A)') '</script>'
+    write(iunit,FMT='(A)') '</defs>'
        
     !---------------------------------------------------------------------------
     ! Output all elements
     !---------------------------------------------------------------------------
-    IF (IAND(rhadapt%iSpec, HADAPT_MARKEDREFINE)  .EQ. HADAPT_MARKEDREFINE .OR.&
-        IAND(rhadapt%iSpec, HADAPT_MARKEDCOARSEN) .EQ. HADAPT_MARKEDCOARSEN) THEN
+    if (iand(rhadapt%iSpec, HADAPT_MARKEDREFINE)  .eq. HADAPT_MARKEDREFINE .or.&
+        iand(rhadapt%iSpec, HADAPT_MARKEDCOARSEN) .eq. HADAPT_MARKEDCOARSEN) then
 
       ! Set pointer to marker
-      CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+      call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
 
       ! Output elements and color those which are marked for refinement
-      DO iel = 1, rhadapt%NEL
+      do iel = 1, rhadapt%NEL
         
         ! Get number of vertices per elements
         nve = hadapt_getNVE(rhadapt, iel)
         
-        IF (iel .LE. rhadapt%NEL0) THEN
+        if (iel .le. rhadapt%NEL0) then
           
           ! What kind of element are we?
-          SELECT CASE(p_Imarker(iel))
+          select case(p_Imarker(iel))
             
           ! Element is neither marked for refinement nor coarsening
-          CASE(MARK_ASIS_TRIA,&
+          case(MARK_ASIS_TRIA,&
                MARK_ASIS_QUAD)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="white" stroke="black" stroke-width="1"'
             
           ! Element is marked for green refinement
-          CASE(MARK_REF_TRIA2TRIA_1,&
+          case(MARK_REF_TRIA2TRIA_1,&
                MARK_REF_TRIA2TRIA_2,&
                MARK_REF_TRIA2TRIA_3,&
                MARK_REF_QUAD3TRIA_1,&
@@ -2383,350 +2383,350 @@ CONTAINS
                MARK_REF_QUAD4TRIA_14,&
                MARK_REF_QUAD2QUAD_13,&
                MARK_REF_QUAD2QUAD_24)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="green" stroke="black" stroke-width="1"'
 
           ! Element is marked for blue refinement
-          CASE(MARK_REF_TRIA3TRIA_12,&
+          case(MARK_REF_TRIA3TRIA_12,&
                MARK_REF_TRIA3TRIA_23,&
                MARK_REF_TRIA3TRIA_13,&
                MARK_REF_QUADBLUE_412,&
                MARK_REF_QUADBLUE_234,&
                MARK_REF_QUADBLUE_123,&
                MARK_REF_QUADBLUE_341)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="blue" stroke="black" stroke-width="1"'
 
           ! Element is marked for red refinement
-          CASE(MARK_REF_TRIA4TRIA,&
+          case(MARK_REF_TRIA4TRIA,&
                MARK_REF_QUAD4QUAD)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="red" stroke="black" stroke-width="1"'
 
           ! Element is marked for generic coarsening
-          CASE(MARK_CRS_GENERIC)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+          case(MARK_CRS_GENERIC)
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="lightgray" stroke="black" stroke-width="1"'
             
           ! Element is marked for specific coarsening
-          CASE(MARK_CRS_4QUAD4TRIA:MARK_CRS_4TRIA1TRIA)
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+          case(MARK_CRS_4QUAD4TRIA:MARK_CRS_4TRIA1TRIA)
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="yellow" stroke="black" stroke-width="1"'
 
           ! Unknown element marker
-          CASE DEFAULT
-            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+          case DEFAULT
+            write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="hotpink" stroke="black" stroke-width="1"'
-          END SELECT
+          end select
           
           ! Write data which is common to all elements
-          SELECT CASE(nve)
-          CASE(TRIA_NVETRI2D)
-            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-                TRIM(sys_siL(iel,10))//''','''//&
-                TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-                TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''')"'
-            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          select case(nve)
+          case(TRIA_NVETRI2D)
+            write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                trim(sys_siL(iel,10))//''','''//&
+                trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+                trim(sys_siL(p_Imarker(iel),5))//''','''//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''','''//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''','''//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''')"'
+            write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
 
-          CASE(TRIA_NVEQUAD2D)
-            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-                TRIM(sys_siL(iel,10))//''','''//&
-                TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-                TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
-          END SELECT
+          case(TRIA_NVEQUAD2D)
+            write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                trim(sys_siL(iel,10))//''','''//&
+                trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+                trim(sys_siL(p_Imarker(iel),5))//''','''//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+            write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          end select
 
-        ELSE
+        else
           
           ! For all new elements there si no marker available
-          WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+          write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
               '" fill="white" stroke="black" stroke-width="1"'
           
           ! Write data which is common to all elements
-          SELECT CASE(nve)
-          CASE(TRIA_NVETRI2D)
-            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-                TRIM(sys_siL(iel,10))//''','''//&
-                TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-                TRIM(sys_siL(0,5))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(0,10))//''')"'
-            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          select case(nve)
+          case(TRIA_NVETRI2D)
+            write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                trim(sys_siL(iel,10))//''','''//&
+                trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+                trim(sys_siL(0,5))//''','''//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''','''//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''','''//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                trim(sys_siL(0,10))//''')"'
+            write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
 
-          CASE(TRIA_NVEQUAD2D)
-            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-                TRIM(sys_siL(iel,10))//''','''//&
-                TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-                TRIM(sys_siL(0,5))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-                TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
-          END SELECT
+          case(TRIA_NVEQUAD2D)
+            write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                trim(sys_siL(iel,10))//''','''//&
+                trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+                trim(sys_siL(0,5))//''','''//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                trim(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+            write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          end select
           
-        END IF
+        end if
                
         ! Each element is a polygon made up from 3/4 points
-        WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
-        DO ive =1 , nve
+        write(iunit,FMT='(A)',ADVANCE='NO') ' points="'
+        do ive =1 , nve
           xdim = qtree_getX(rhadapt%rVertexCoordinates2D,&
                             rhadapt%p_IverticesAtElement(ive,iel))-x0
           ydim = qtree_getY(rhadapt%rVertexCoordinates2D,&
                             rhadapt%p_IverticesAtElement(ive,iel))-y0
-          WRITE(iunit,FMT='(A)',ADVANCE='NO') &
-              TRIM(sys_siL(INT(dscale*xdim),10))//','//&
-              TRIM(sys_siL(ysize-INT(dscale*ydim),10))//' '
-        END DO
+          write(iunit,FMT='(A)',ADVANCE='NO') &
+              trim(sys_siL(int(dscale*xdim),10))//','//&
+              trim(sys_siL(ysize-int(dscale*ydim),10))//' '
+        end do
         
         ! And of course, the polygone must be closed !
         xdim = qtree_getX(rhadapt%rVertexCoordinates2D,&
                           rhadapt%p_IverticesAtElement(1,iel))-x0
         ydim = qtree_getY(rhadapt%rVertexCoordinates2D,&
                           rhadapt%p_IverticesAtElement(1,iel))-y0
-        WRITE(iunit,FMT='(A)') &
-            TRIM(sys_siL(INT(dscale*xdim),10))//','//&
-            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//'"/>'       
+        write(iunit,FMT='(A)') &
+            trim(sys_siL(int(dscale*xdim),10))//','//&
+            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'       
 
-      END DO
+      end do
       
-    ELSE
+    else
       
       ! Output only elements without individual coloring
-      DO iel = 1, rhadapt%NEL
+      do iel = 1, rhadapt%NEL
 
         ! Get number of vertices per element
         nve = hadapt_getNVE(rhadapt, iel)
         
         ! For all new elements there si no marker available
-        WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+        write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
             '" fill="white" stroke="black" stroke-width="1"'
 
         ! Write data which is common to all elements
-        SELECT CASE(nve)
-        CASE(TRIA_NVETRI2D)
-          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-              TRIM(sys_siL(iel,10))//''','''//&
-              TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-              TRIM(sys_siL(0,5))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(0,10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(0,10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(0,10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+        select case(nve)
+        case(TRIA_NVETRI2D)
+          write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              trim(sys_siL(iel,10))//''','''//&
+              trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+              trim(sys_siL(0,5))//''','''//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              trim(sys_siL(0,10))//''','''//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              trim(sys_siL(0,10))//''','''//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              trim(sys_siL(0,10))//''')"'
+          write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
           
-        CASE(TRIA_NVEQUAD2D)
-          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-              TRIM(sys_siL(iel,10))//''','''//&
-              TRIM(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
-              TRIM(sys_siL(0,5))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
-        END SELECT
+        case(TRIA_NVEQUAD2D)
+          write(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              trim(sys_siL(iel,10))//''','''//&
+              trim(sys_siL(redgreen_getState2D(rhadapt,iel),4))//''','''//&
+              trim(sys_siL(0,5))//''','''//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              trim(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+          write(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+        end select
         
         ! Each element is a polygon made up from 3/4 points
-        WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
-        DO ive = 1, nve
+        write(iunit,FMT='(A)',ADVANCE='NO') ' points="'
+        do ive = 1, nve
           xdim = qtree_getX(rhadapt%rVertexCoordinates2D,&
                             rhadapt%p_IverticesAtElement(ive,iel))-x0
           ydim = qtree_getY(rhadapt%rVertexCoordinates2D,&
                             rhadapt%p_IverticesAtElement(ive,iel))-y0
-          WRITE(iunit,FMT='(A)',ADVANCE='NO') &
-              TRIM(sys_siL(INT(dscale*xdim),10))//','//&
-              TRIM(sys_siL(ysize-INT(dscale*ydim),10))//' '
-        END DO
+          write(iunit,FMT='(A)',ADVANCE='NO') &
+              trim(sys_siL(int(dscale*xdim),10))//','//&
+              trim(sys_siL(ysize-int(dscale*ydim),10))//' '
+        end do
         
         ! And of course, the polygone must be closed !
         xdim = qtree_getX(rhadapt%rVertexCoordinates2D,&
                           rhadapt%p_IverticesAtElement(1,iel))-x0
         ydim = qtree_getY(rhadapt%rVertexCoordinates2D,&
                           rhadapt%p_IverticesAtElement(1,iel))-y0
-        WRITE(iunit,FMT='(A)') &
-            TRIM(sys_siL(INT(dscale*xdim),10))//','//&
-            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//'"/>'       
+        write(iunit,FMT='(A)') &
+            trim(sys_siL(int(dscale*xdim),10))//','//&
+            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'       
         
-      END DO
-    END IF
+      end do
+    end if
          
     ! Loop over all vertices
-    DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)     
+    do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)     
       xdim = qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
       ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
       
       ! Write vertices as points?
-      IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
-        WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
-            TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
-            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
+      if (rhadapt%p_IvertexAge(ivt) > 0) then
+        write(iunit,FMT='(A)') '<circle id="vt'//trim(sys_siL(ivt,10))//'" cx="'//&
+            trim(sys_siL(int(dscale*xdim),10))//'" cy="'//&
+            trim(sys_siL(ysize-int(dscale*ydim),10))//&
             '" r="0pt" fill="white" stroke="black" stroke-width="1pt"'
-      ELSE
-        WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
-            TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
-            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
+      else
+        write(iunit,FMT='(A)') '<circle id="vt'//trim(sys_siL(ivt,10))//'" cx="'//&
+            trim(sys_siL(int(dscale*xdim),10))//'" cy="'//&
+            trim(sys_siL(ysize-int(dscale*ydim),10))//&
             '" r="0pt" fill="black" stroke="black" stroke-width="1pt"'
-      END IF
+      end if
       
       ! Write data which is common to all vertices
-      WRITE(iunit,FMT='(A)',ADVANCE='NO') ' onmousemove="ShowVertexInfo(evt,'''//&
-          TRIM(sys_siL(ivt,10))//''','''//&
-          TRIM(sys_siL(rhadapt%p_IvertexAge(ivt),5))//''','''
+      write(iunit,FMT='(A)',ADVANCE='NO') ' onmousemove="ShowVertexInfo(evt,'''//&
+          trim(sys_siL(ivt,10))//''','''//&
+          trim(sys_siL(rhadapt%p_IvertexAge(ivt),5))//''','''
       
       ! Generate list of elements meeting at vertex
-      ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .TRUE.)
-      DO WHILE(ipos .GT. ARRLST_NULL)
+      ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .true.)
+      do while(ipos .gt. ARRLST_NULL)
         ! Get element number IEL
         iel = rhadapt%rElementsAtVertex%p_IData(ipos)
         
         ! Proceed to next entry in array list
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .FALSE.)
+        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
 
-        IF (ipos .GT. ARRLST_NULL) THEN
-          WRITE(iunit,FMT='(A)',ADVANCE='NO') TRIM(sys_siL(iel,10))//','
-        ELSE
-          WRITE(iunit,FMT='(A)',ADVANCE='NO') TRIM(sys_siL(iel,10))
-        END IF
-      END DO
-      WRITE(iunit,FMT='(A)') ''')"'
-      WRITE(iunit,FMT='(A)') ' onmouseout="HideVertexInfo()" style="cursor: crosshair"/>'
-    END DO
+        if (ipos .gt. ARRLST_NULL) then
+          write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))//','
+        else
+          write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))
+        end if
+      end do
+      write(iunit,FMT='(A)') ''')"'
+      write(iunit,FMT='(A)') ' onmouseout="HideVertexInfo()" style="cursor: crosshair"/>'
+    end do
 
 
     ! Output info boxes
-    WRITE(iunit,FMT='(A)') '<g id="vinfo" style="visibility: hidden">'
-    WRITE(iunit,FMT='(A)') '  <rect id="vinfo_box"  x="0" y="0" width="200" height="110"'
-    WRITE(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text1" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '<g id="vinfo" style="visibility: hidden">'
+    write(iunit,FMT='(A)') '  <rect id="vinfo_box"  x="0" y="0" width="200" height="110"'
+    write(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
+    write(iunit,FMT='(A)') '  <text id="vinfo_text1" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">Vertex number:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text2" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="vinfo_text2" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">Vertex age:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text3" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="vinfo_text3" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">Elements meeting at vertex:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text4" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="vinfo_text4" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text5" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="vinfo_text5" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text6" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="vinfo_text6" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">null</text>'
-    WRITE(iunit,FMT='(A)') '</g>'
+    write(iunit,FMT='(A)') '</g>'
 
-    WRITE(iunit,FMT='(A)') '<g id="einfo" style="visibility: hidden">'
-    WRITE(iunit,FMT='(A)') '  <rect id="einfo_box"  x="0" y="0" width="200" height="210"'
-    WRITE(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text1" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '<g id="einfo" style="visibility: hidden">'
+    write(iunit,FMT='(A)') '  <rect id="einfo_box"  x="0" y="0" width="200" height="210"'
+    write(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
+    write(iunit,FMT='(A)') '  <text id="einfo_text1" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black">Element number:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text2" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text2" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">Element state:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text3" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text3" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">Element marker:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text4" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text4" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">Element neighbours:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text5" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text5" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">Element mid-neighbours:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text6" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text6" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">Element vertices:</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text7" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text7" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text8" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text8" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text9" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text9" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text10" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text10" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text11" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text11" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '  <text id="einfo_text12" x="0" y="0" style="font-size:'//&
-        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+    write(iunit,FMT='(A)') '  <text id="einfo_text12" x="0" y="0" style="font-size:'//&
+        trim(sys_siL(font_size,3))//'pt;font-family:'//trim(adjustl(font_family))//&
         ';stroke:black;">null</text>'
-    WRITE(iunit,FMT='(A)') '</g>'
+    write(iunit,FMT='(A)') '</g>'
 
     ! Close XML-file
-    WRITE(iunit,FMT='(A)') '</svg>'
-    CLOSE(iunit)
-  END SUBROUTINE hadapt_writeGridSVG
+    write(iunit,FMT='(A)') '</svg>'
+    close(iunit)
+  end subroutine hadapt_writeGridSVG
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_writeGridGMV(rhadapt, coutputFile)
+  subroutine hadapt_writeGridGMV(rhadapt, coutputFile)
 
 !<description>
     ! This subroutine outputs the current state of the adapted grid stored
@@ -2735,139 +2735,139 @@ CONTAINS
 
 !<input>
     ! Output file name w/o suffix .gmv
-    CHARACTER(LEN=*), INTENT(IN)     :: coutputFile
+    character(LEN=*), intent(IN)     :: coutputFile
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
     
     ! local parameters
-    INTEGER,  DIMENSION(:), POINTER :: p_Imarker
-    INTEGER(PREC_VERTEXIDX) :: ivt
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: iunit,nve
-    INTEGER, SAVE :: iout=0
+    integer,  dimension(:), pointer :: p_Imarker
+    integer(PREC_VERTEXIDX) :: ivt
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iunit,nve
+    integer, save :: iout=0
 
     ! Check if dynamic data structures generated
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA) THEN
-      CALL output_line('Dynamic data structures are not generated',&
+    if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA) then
+      call output_line('Dynamic data structures are not generated',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Set pointers
-    CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+    call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
 
     ! Increment the sample number
     iout=iout+1
 
     ! Open output file for writing
-    CALL io_openFileForWriting(TRIM(ADJUSTL(coutputFile))//'.'//&
-        TRIM(sys_siL(iout,5))//'.gmv', iunit, SYS_REPLACE, bformatted=.TRUE.)
-    WRITE(UNIT=iunit,FMT='(A)') 'gmvinput ascii'
+    call io_openFileForWriting(trim(adjustl(coutputFile))//'.'//&
+        trim(sys_siL(iout,5))//'.gmv', iunit, SYS_REPLACE, bformatted=.true.)
+    write(UNIT=iunit,FMT='(A)') 'gmvinput ascii'
 
     ! Write vertices to output file
-    SELECT CASE(rhadapt%ndim)
-    CASE (NDIM2D)
-      WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
-      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-        WRITE(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D, ivt)
-      END DO
-      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-        WRITE(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D, ivt)
-      END DO
-      DO ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
-        WRITE(UNIT=iunit,FMT=10) 0._DP
-      END DO
+    select case(rhadapt%ndim)
+    case (NDIM2D)
+      write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        write(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D, ivt)
+      end do
+      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        write(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D, ivt)
+      end do
+      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        write(UNIT=iunit,FMT=10) 0._DP
+      end do
 
-    CASE (NDIM3D)
-      WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
-      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
-        WRITE(UNIT=iunit,FMT=10) otree_getX(rhadapt%rVertexCoordinates3D, ivt)
-      END DO
-      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
-        WRITE(UNIT=iunit,FMT=10) otree_getY(rhadapt%rVertexCoordinates3D, ivt)
-      END DO
-      DO ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
-        WRITE(UNIT=iunit,FMT=10) otree_getZ(rhadapt%rVertexCoordinates3D, ivt)
-      END DO
+    case (NDIM3D)
+      write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        write(UNIT=iunit,FMT=10) otree_getX(rhadapt%rVertexCoordinates3D, ivt)
+      end do
+      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        write(UNIT=iunit,FMT=10) otree_getY(rhadapt%rVertexCoordinates3D, ivt)
+      end do
+      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+        write(UNIT=iunit,FMT=10) otree_getZ(rhadapt%rVertexCoordinates3D, ivt)
+      end do
 
-    CASE DEFAULT
-      CALL output_line('Invalid spatial dimension!',&
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
       
 
     ! Write cells to output file
-    WRITE(UNIT=iunit,FMT=*) 'cells ', rhadapt%NEL
-    DO iel = 1, rhadapt%NEL
+    write(UNIT=iunit,FMT=*) 'cells ', rhadapt%NEL
+    do iel = 1, rhadapt%NEL
       nve = hadapt_getNVE(rhadapt,iel)
-      SELECT CASE(nve)
-      CASE(TRIA_NVETRI2D)
-        WRITE(UNIT=iunit,FMT=*) 'tri 3'
-        WRITE(UNIT=iunit,FMT=20) rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D, iel)
+      select case(nve)
+      case(TRIA_NVETRI2D)
+        write(UNIT=iunit,FMT=*) 'tri 3'
+        write(UNIT=iunit,FMT=20) rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D, iel)
 
-      CASE(TRIA_NVEQUAD2D)
-        WRITE(UNIT=iunit,FMT=*) 'quad 4'
-        WRITE(UNIT=iunit,FMT=30) rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D, iel)
+      case(TRIA_NVEQUAD2D)
+        write(UNIT=iunit,FMT=*) 'quad 4'
+        write(UNIT=iunit,FMT=30) rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D, iel)
         
-      CASE DEFAULT
-        CALL output_line('Invalid element type!',&
+      case DEFAULT
+        call output_line('Invalid element type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
-        CALL sys_halt()
-      END SELECT
-    END DO
+        call sys_halt()
+      end select
+    end do
 
     ! Write velocity to output file
-    WRITE(UNIT=iunit,FMT=*) 'velocity 1'
-    DO ivt = 1, rhadapt%NVT
-      WRITE(UNIT=iunit,FMT=10) 0._DP
-      WRITE(UNIT=iunit,FMT=10) 0._DP
-      WRITE(UNIT=iunit,FMT=10) 0._DP
-    END DO
+    write(UNIT=iunit,FMT=*) 'velocity 1'
+    do ivt = 1, rhadapt%NVT
+      write(UNIT=iunit,FMT=10) 0._DP
+      write(UNIT=iunit,FMT=10) 0._DP
+      write(UNIT=iunit,FMT=10) 0._DP
+    end do
 
     ! Write variable for vertex age
-    WRITE(UNIT=iunit,FMT=*) 'variable'
-    WRITE(UNIT=iunit,FMT=*) 'vert_age 1'
+    write(UNIT=iunit,FMT=*) 'variable'
+    write(UNIT=iunit,FMT=*) 'vert_age 1'
 
-    DO ivt = 1, MIN(rhadapt%NVT, SIZE(rhadapt%p_IvertexAge, 1))
-      WRITE(UNIT=iunit,FMT=40) rhadapt%p_IvertexAge(ivt)
-    END DO
-    DO ivt = MIN(rhadapt%NVT, SIZE(rhadapt%p_IvertexAge, 1))+1, rhadapt%NVT
-      WRITE(UNIT=iunit,FMT=40) -99
-    END DO
+    do ivt = 1, min(rhadapt%NVT, size(rhadapt%p_IvertexAge, 1))
+      write(UNIT=iunit,FMT=40) rhadapt%p_IvertexAge(ivt)
+    end do
+    do ivt = min(rhadapt%NVT, size(rhadapt%p_IvertexAge, 1))+1, rhadapt%NVT
+      write(UNIT=iunit,FMT=40) -99
+    end do
 
     ! Write variable for element marker
-    WRITE(UNIT=iunit,FMT=*) 'elem_mark 0'
-    DO iel = 1, MIN(rhadapt%NEL, SIZE(p_Imarker, 1))
-      WRITE(UNIT=iunit,FMT=40) p_Imarker(iel)
-    END DO
-    DO iel = MIN(rhadapt%NEL, SIZE(p_Imarker, 1))+1, rhadapt%NEL
-      WRITE(UNIT=iunit,FMT=40) -99
-    END DO
+    write(UNIT=iunit,FMT=*) 'elem_mark 0'
+    do iel = 1, min(rhadapt%NEL, size(p_Imarker, 1))
+      write(UNIT=iunit,FMT=40) p_Imarker(iel)
+    end do
+    do iel = min(rhadapt%NEL, size(p_Imarker, 1))+1, rhadapt%NEL
+      write(UNIT=iunit,FMT=40) -99
+    end do
 
-    WRITE(UNIT=iunit,FMT=*) 'endvars'
-    WRITE(UNIT=iunit,FMT=*) 'probtime ', 0._DP
-    WRITE(UNIT=iunit,FMT=*) 'endgmv'
+    write(UNIT=iunit,FMT=*) 'endvars'
+    write(UNIT=iunit,FMT=*) 'probtime ', 0._DP
+    write(UNIT=iunit,FMT=*) 'endgmv'
 
     ! Close output file
-    CLOSE(iunit)
+    close(iunit)
 
-10  FORMAT(E15.6E3)
-20  FORMAT(3(1X,I8))
-30  FORMAT(4(1X,I8))
-40  FORMAT(I8)
-  END SUBROUTINE hadapt_writeGridGMV
+10  format(E15.6E3)
+20  format(3(1X,I8))
+30  format(4(1X,I8))
+40  format(I8)
+  end subroutine hadapt_writeGridGMV
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hadapt_checkConsistency(rhadapt)
+  subroutine hadapt_checkConsistency(rhadapt)
 
 !<description>
     ! This subroutine checks the internal consistency of the dynamic data structures.
@@ -2878,285 +2878,285 @@ CONTAINS
 
 !<inputoutput>
     ! adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ARRAYLISTIDX) :: ipos
-    INTEGER(PREC_VERTEXIDX)    :: ivt,idx
-    INTEGER(PREC_ELEMENTIDX)   :: iel,jel,jelmid
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
-    INTEGER :: h_IelementsAtVertexIdx,h_IelementsAtVertex
-    INTEGER :: ive,jve,nve,mve
-    LOGICAL :: btest,bfound
+    integer(PREC_ARRAYLISTIDX) :: ipos
+    integer(PREC_VERTEXIDX)    :: ivt,idx
+    integer(PREC_ELEMENTIDX)   :: iel,jel,jelmid
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer :: h_IelementsAtVertexIdx,h_IelementsAtVertex
+    integer :: ive,jve,nve,mve
+    logical :: btest,bfound
 
     ! Test #1: Consistency of element numbers
-    btest = (rhadapt%NEL .EQ. SUM(rhadapt%InelOfType))
-    CALL output_line('Test #1: Checking consistency of element numbers '//&
-        MERGE('PASSED','FAILED',btest))
+    btest = (rhadapt%NEL .eq. sum(rhadapt%InelOfType))
+    call output_line('Test #1: Checking consistency of element numbers '//&
+        merge('PASSED','FAILED',btest))
 
     ! Test #2: Vertex age must not exceed maximum refinement level
-    btest = .TRUE.
-    DO ivt = 1, rhadapt%NVT
-      btest = btest .OR. (rhadapt%p_IvertexAge(ivt) .GT. rhadapt%NSUBDIVIDEMAX)
-    END DO
-    CALL output_line('Test #2: Checking maximum vertex age '//&
-        MERGE('PASSED','FAILED',btest))
+    btest = .true.
+    do ivt = 1, rhadapt%NVT
+      btest = btest .or. (rhadapt%p_IvertexAge(ivt) .gt. rhadapt%NSUBDIVIDEMAX)
+    end do
+    call output_line('Test #2: Checking maximum vertex age '//&
+        merge('PASSED','FAILED',btest))
 
     ! Test #3: Check consistency of element neighbours
-    btest = .TRUE.
-    DO iel = 1, rhadapt%NEL
+    btest = .true.
+    do iel = 1, rhadapt%NEL
 
       ! Get number of vertices per element
       nve = hadapt_getNVE(rhadapt, iel)
       
       ! Loop over all adjacent elements
-      DO ive = 1, nve
+      do ive = 1, nve
         jel    = rhadapt%p_IneighboursAtElement(ive, iel)
         jelmid = rhadapt%p_ImidneighboursAtElement(ive, iel)
 
         ! Check that adjacent element number is not larger than the
         ! total number of elements present in the triangulation
-        IF (jel > rhadapt%NEL .OR. jelmid > rhadapt%NEL) THEN
-          btest = .FALSE.; CYCLE
-        END IF
+        if (jel > rhadapt%NEL .or. jelmid > rhadapt%NEL) then
+          btest = .false.; cycle
+        end if
 
         ! Do nothing if we are adjacent to the boundary
-        IF (jel .EQ. 0 .OR. jelmid .EQ. 0) CYCLE
+        if (jel .eq. 0 .or. jelmid .eq. 0) cycle
         
         ! Is neighboring element subdivided?
-        IF (jel .EQ. jelmid) THEN
+        if (jel .eq. jelmid) then
           
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt,jel)
           
           ! Find element IEL in adjacency list of JEL
-          bfound = .FALSE.
-          DO jve = 1, mve
-            IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. &
-                rhadapt%p_ImidneighboursAtElement(jve, jel)) THEN
-              IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            ELSE
-              IF (rhadapt%p_IneighboursAtElement(jve, jel)    .EQ. iel .OR.&
-                  rhadapt%p_ImidneighboursAtElement(jve, jel) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            END IF
-          END DO
-          btest = btest .AND. bfound
+          bfound = .false.
+          do jve = 1, mve
+            if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. &
+                rhadapt%p_ImidneighboursAtElement(jve, jel)) then
+              if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            else
+              if (rhadapt%p_IneighboursAtElement(jve, jel)    .eq. iel .or.&
+                  rhadapt%p_ImidneighboursAtElement(jve, jel) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            end if
+          end do
+          btest = btest .and. bfound
           
-        ELSE
+        else
 
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt, jel)
           
           ! Find element IEL in adjacency list of JEL
-          bfound = .FALSE.
-          DO jve = 1, mve
-            IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. &
-                rhadapt%p_ImidneighboursAtElement(jve, jel)) THEN
-              IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            ELSE
-              IF (rhadapt%p_IneighboursAtElement(jve, jel)    .EQ. iel .OR.&
-                  rhadapt%p_ImidneighboursAtElement(jve, jel) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            END IF
-          END DO
-          btest = btest .AND. bfound
+          bfound = .false.
+          do jve = 1, mve
+            if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. &
+                rhadapt%p_ImidneighboursAtElement(jve, jel)) then
+              if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            else
+              if (rhadapt%p_IneighboursAtElement(jve, jel)    .eq. iel .or.&
+                  rhadapt%p_ImidneighboursAtElement(jve, jel) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            end if
+          end do
+          btest = btest .and. bfound
 
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt, jelmid)
           
           ! Find element IEL in adjacency list of JELMID
-          bfound = .FALSE.
-          DO jve = 1, mve
-            IF (rhadapt%p_IneighboursAtElement(jve, jelmid) .EQ. &
-                rhadapt%p_ImidneighboursAtElement(jve, jelmid)) THEN
-              IF (rhadapt%p_IneighboursAtElement(jve, jelmid) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            ELSE
-              IF (rhadapt%p_IneighboursAtElement(jve, jelmid)    .EQ. iel .OR.&
-                  rhadapt%p_ImidneighboursAtElement(jve, jelmid) .EQ. iel) THEN
-                bfound = .TRUE.; EXIT
-              END IF
-            END IF
-          END DO
-          btest = btest .AND. bfound
+          bfound = .false.
+          do jve = 1, mve
+            if (rhadapt%p_IneighboursAtElement(jve, jelmid) .eq. &
+                rhadapt%p_ImidneighboursAtElement(jve, jelmid)) then
+              if (rhadapt%p_IneighboursAtElement(jve, jelmid) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            else
+              if (rhadapt%p_IneighboursAtElement(jve, jelmid)    .eq. iel .or.&
+                  rhadapt%p_ImidneighboursAtElement(jve, jelmid) .eq. iel) then
+                bfound = .true.; exit
+              end if
+            end if
+          end do
+          btest = btest .and. bfound
 
-        END IF
-      END DO
-    END DO
-    CALL output_line('Test #3: Checking consistency of element neighbours '//&
-        MERGE('PASSED','FAILED',btest))
+        end if
+      end do
+    end do
+    call output_line('Test #3: Checking consistency of element neighbours '//&
+        merge('PASSED','FAILED',btest))
 
     ! Test #4: Check consistency of common vertices between two edges
-    btest = .TRUE.
-    DO iel = 1, rhadapt%NEL
+    btest = .true.
+    do iel = 1, rhadapt%NEL
 
       ! Get number of vertices per element
       nve = hadapt_getNVE(rhadapt, iel)
       
       ! Loop over all adjacent elements
-      DO ive = 1, nve
+      do ive = 1, nve
         jel    = rhadapt%p_IneighboursAtElement(ive, iel)
         jelmid = rhadapt%p_ImidneighboursAtElement(ive, iel)
         
         ! Check that adjacent element number is not larger than the
         ! total number of elements present in the triangulation
-        IF (jel > rhadapt%NEL .OR. jelmid > rhadapt%NEL) THEN
-          btest = .FALSE.; CYCLE
-        END IF
+        if (jel > rhadapt%NEL .or. jelmid > rhadapt%NEL) then
+          btest = .false.; cycle
+        end if
 
         ! Do nothing if we are adjacent to the boundary
-        IF (jel .EQ. 0 .OR. jelmid .EQ. 0) CYCLE
+        if (jel .eq. 0 .or. jelmid .eq. 0) cycle
         
         ! Do nothing if there exists a temporal hanging node
-        IF (jel .NE. jelmid) CYCLE
+        if (jel .ne. jelmid) cycle
 
         ! Get number of vertices per element
         mve = hadapt_getNVE(rhadapt, jel)
 
         ! Find element IEL in adjacency list of JEL
-        bfound = .FALSE.
-        DO jve = 1, mve
-          IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. &
-              rhadapt%p_ImidneighboursAtElement(jve, jel)) THEN
-            IF (rhadapt%p_IneighboursAtElement(jve, jel) .EQ. iel) THEN
-              bfound = .TRUE.; EXIT
-            END IF
-          ELSE
+        bfound = .false.
+        do jve = 1, mve
+          if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. &
+              rhadapt%p_ImidneighboursAtElement(jve, jel)) then
+            if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. iel) then
+              bfound = .true.; exit
+            end if
+          else
             ! Do nothing if there exists a temporal hanging node
-            CYCLE
-          END IF
-        END DO
+            cycle
+          end if
+        end do
         
         ! If the common edge has been found, check the two endpoints
-        IF (bfound) THEN
-          bfound = ((rhadapt%p_IverticesAtElement(ive, iel) .EQ. &
-                     rhadapt%p_IverticesAtElement(MODULO(jve,mve)+1, jel)) .AND. &
-                     rhadapt%p_IverticesAtElement(MODULO(ive,nve)+1, iel) .EQ. &
+        if (bfound) then
+          bfound = ((rhadapt%p_IverticesAtElement(ive, iel) .eq. &
+                     rhadapt%p_IverticesAtElement(modulo(jve,mve)+1, jel)) .and. &
+                     rhadapt%p_IverticesAtElement(modulo(ive,nve)+1, iel) .eq. &
                      rhadapt%p_IverticesAtElement(jve, jel))
-        END IF
-        btest = btest .AND. bfound
-      END DO
-    END DO
-    CALL output_line('Test #4: Checking consistency of common vertices along edges '//&
-        MERGE('PASSED','FAILED',btest))
+        end if
+        btest = btest .and. bfound
+      end do
+    end do
+    call output_line('Test #4: Checking consistency of common vertices along edges '//&
+        merge('PASSED','FAILED',btest))
 
     ! Test #5: Check consistency of element-meeting-at-vertex lists
-    btest = (rhadapt%rElementsAtVertex%NTABLE .EQ. rhadapt%NVT)
-    IF (btest) THEN
+    btest = (rhadapt%rElementsAtVertex%NTABLE .eq. rhadapt%NVT)
+    if (btest) then
       
       ! Create index array
-      CALL storage_new('hadapt_checkConsistency', 'IelementAtVertexIdx', rhadapt%NVT+1,&
+      call storage_new('hadapt_checkConsistency', 'IelementAtVertexIdx', rhadapt%NVT+1,&
                        ST_INT, h_IelementsAtVertexIdx, ST_NEWBLOCK_ZERO)
-      CALL storage_getbase_int(h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
+      call storage_getbase_int(h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
 
       ! Count number of elements meeting at vertex
-      DO iel = 1, rhadapt%NEL
+      do iel = 1, rhadapt%NEL
 
         ! Get number of vertices per element
         nve = hadapt_getNVE(rhadapt, iel)
 
         ! Loop over corner vertices
-        DO ive = 1, nve
+        do ive = 1, nve
           ivt = rhadapt%p_IverticesAtElement(ive, iel)
           p_IelementsAtVertexIdx(ivt+1) = p_IelementsAtVertexIdx(ivt+1)+1
-        END DO
-      END DO
+        end do
+      end do
 
       ! Convert element couter into absolute position
       p_IelementsAtVertexIdx(1) = 1
-      DO ivt = 2, rhadapt%NVT+1
+      do ivt = 2, rhadapt%NVT+1
         p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt)+&
                                       p_IelementsAtVertexIdx(ivt-1)
-      END DO
+      end do
 
       ! Create working array
-      CALL storage_new('hadapt_checkConsistency', 'IelementAtVertex',&
+      call storage_new('hadapt_checkConsistency', 'IelementAtVertex',&
                        p_IelementsAtVertexIdx(rhadapt%NVT+1)-1,&
                        ST_INT, h_IelementsAtVertex, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int(h_IelementsAtVertex, p_IelementsAtVertex)
+      call storage_getbase_int(h_IelementsAtVertex, p_IelementsAtVertex)
 
       ! Retrieve the element numbers
-      DO iel = 1, rhadapt%NEL
+      do iel = 1, rhadapt%NEL
 
         ! Get number of vertices per element
         nve = hadapt_getNVE(rhadapt, iel)
 
         ! Loop over corner vertices
-        DO ive = 1, nve
+        do ive = 1, nve
           ivt = rhadapt%p_IverticesAtElement(ive, iel)
           idx = p_IelementsAtVertexIdx(ivt)
           p_IelementsAtVertexIdx(ivt) = idx+1
           p_IelementsAtVertex(idx)    = iel
-        END DO
-      END DO
+        end do
+      end do
       
       ! Restore index array
-      DO ivt = rhadapt%NVT+1, 2, -1
+      do ivt = rhadapt%NVT+1, 2, -1
         p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt-1)
-      END DO
+      end do
       p_IelementsAtVertexIdx(1) = 1
 
       ! Start to compare the temporal elements-meeting-at-vertex list
       ! and the dynamic data structure from the adaptivity structure
-      DO ivt = 1, rhadapt%NVT
+      do ivt = 1, rhadapt%NVT
         
         ! Get first entry in array list
-        ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .TRUE.)
+        ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .true.)
         
         ! Repeat until there is no entry left in the array list
-        DO WHILE(ipos .GT. ARRLST_NULL)
+        do while(ipos .gt. ARRLST_NULL)
           
           ! Get element number IEL
           iel = rhadapt%rElementsAtVertex%p_IData(ipos)
 
           ! Proceed to next entry in array list
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .FALSE.)
+          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
 
           ! Look for element IEL in temporal elements-meeting-at-vertex list
           ! If it does exist, multiply its value by minus one so that it cannot
           ! be found twice. At the end, all positive entries in the temporal
           ! list are not present in the dynamic structure
-          bfound = .FALSE.
-          DO idx = p_IelementsAtVertexIdx(ivt), p_IelementsAtVertexIdx(ivt+1)-1
-            IF (p_IelementsAtVertex(idx) .EQ. iel) THEN
+          bfound = .false.
+          do idx = p_IelementsAtVertexIdx(ivt), p_IelementsAtVertexIdx(ivt+1)-1
+            if (p_IelementsAtVertex(idx) .eq. iel) then
               p_IelementsAtVertex(idx) = -p_IelementsAtVertex(idx)
-              bfound = .TRUE.
-              EXIT
-            END IF
-          END DO
-          btest = btest .AND. bfound
-        END DO
-      END DO
-      btest = btest .AND. ALL(p_IelementsAtVertex < 0)
-      CALL output_line('Test #5: Checking consistency of elements meeting at vertices '//&
-        MERGE('PASSED','FAILED',btest))
+              bfound = .true.
+              exit
+            end if
+          end do
+          btest = btest .and. bfound
+        end do
+      end do
+      btest = btest .and. all(p_IelementsAtVertex < 0)
+      call output_line('Test #5: Checking consistency of elements meeting at vertices '//&
+        merge('PASSED','FAILED',btest))
 
       ! Release auxiliary storage
-      CALL storage_free(h_IelementsAtVertexIdx)
-      CALL storage_free(h_IelementsAtVertex)
-    ELSE
+      call storage_free(h_IelementsAtVertexIdx)
+      call storage_free(h_IelementsAtVertex)
+    else
 
-      CALL output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
-          MERGE('PASSED','FAILED',btest))
-    END IF
-  END SUBROUTINE hadapt_checkConsistency
+      call output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
+          merge('PASSED','FAILED',btest))
+    end if
+  end subroutine hadapt_checkConsistency
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE hadapt_refreshAdaptation(rhadapt, rtriangulation)
+  subroutine hadapt_refreshAdaptation(rhadapt, rtriangulation)
 
 !<description>
     ! This subroutine refreshes the pointers and internal structure of the 
@@ -3172,70 +3172,70 @@ CONTAINS
 
 !<input>
     ! Triangulation structure
-    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
 
     ! Get pointer to InodalProperty
-    IF (rhadapt%h_InodalProperty .EQ. &
-        rtriangulation%h_InodalProperty) THEN
-      CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+    if (rhadapt%h_InodalProperty .eq. &
+        rtriangulation%h_InodalProperty) then
+      call storage_getbase_int(rhadapt%h_InodalProperty,&
                                rhadapt%p_InodalProperty)
-    ELSE
-      CALL output_line('Inconsistent handle h_InodalProperty',&
+    else
+      call output_line('Inconsistent handle h_InodalProperty',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Get pointer to IverticesAtElement
-    IF (rhadapt%h_IverticesAtElement .EQ. &
-        rtriangulation%h_IverticesAtElement) THEN
-      CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+    if (rhadapt%h_IverticesAtElement .eq. &
+        rtriangulation%h_IverticesAtElement) then
+      call storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
                                  rhadapt%p_IverticesAtElement)
-    ELSE
-      CALL output_line('Inconsistent handle h_IverticesAtElement',&
+    else
+      call output_line('Inconsistent handle h_IverticesAtElement',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Get pointer to IneighboursAtElement
-    IF (rhadapt%h_IneighboursAtElement .EQ. &
-        rtriangulation%h_IneighboursAtElement) THEN
-      CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+    if (rhadapt%h_IneighboursAtElement .eq. &
+        rtriangulation%h_IneighboursAtElement) then
+      call storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
                                  rhadapt%p_IneighboursAtElement)
-    ELSE
-      CALL output_line('Inconsistent handle h_IneighboursAtElement',&
+    else
+      call output_line('Inconsistent handle h_IneighboursAtElement',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Get pointer to ImidneighboursAtElement
-    IF (rhadapt%h_ImidneighboursAtElement .NE. ST_NOHANDLE) THEN
-      CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+    if (rhadapt%h_ImidneighboursAtElement .ne. ST_NOHANDLE) then
+      call storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
                                  rhadapt%p_ImidneighboursAtElement)
-    ELSE
-      CALL output_line('Inconsistent handle h_ImidneighboursAtElement',&
+    else
+      call output_line('Inconsistent handle h_ImidneighboursAtElement',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Get pointer to IvertexAge
-     IF (rhadapt%h_IvertexAge .NE. ST_NOHANDLE) THEN
-      CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+     if (rhadapt%h_IvertexAge .ne. ST_NOHANDLE) then
+      call storage_getbase_int(rhadapt%h_IvertexAge,&
                                rhadapt%p_IvertexAge)
-    ELSE
-      CALL output_line('Inconsistent handle h_ImidneighboursAtElement',&
+    else
+      call output_line('Inconsistent handle h_ImidneighboursAtElement',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-  END SUBROUTINE hadapt_refreshAdaptation
+  end subroutine hadapt_refreshAdaptation
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -3249,7 +3249,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
+  subroutine redgreen_refine(rhadapt, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs red-green refinement as proposed by R. Bank
@@ -3258,124 +3258,124 @@ CONTAINS
 !<input>
     ! Callback function
     include 'intf_hadaptcallback.inc'
-    OPTIONAL :: fcb_hadaptCallback
+    optional :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+    type(t_hadapt), intent(INOUT)               :: rhadapt
 
     ! OPTIONAL: Collection
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
 !</subroutine>
     
     ! local variables
-    INTEGER, DIMENSION(:), POINTER :: p_Imarker
-    INTEGER(PREC_ELEMENTIDX) :: iel
+    integer, dimension(:), pointer :: p_Imarker
+    integer(PREC_ELEMENTIDX) :: iel
     
     ! Check if dynamic data structures are o.k. and if 
     ! cells are marked for refinement
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA .OR.&
-        IAND(rhadapt%iSpec, HADAPT_MARKEDREFINE)    .NE. HADAPT_MARKEDREFINE) THEN
-      CALL output_line('Dynamic data structures are not generated &
+    if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA .or.&
+        iand(rhadapt%iSpec, HADAPT_MARKEDREFINE)    .ne. HADAPT_MARKEDREFINE) then
+      call output_line('Dynamic data structures are not generated &
           &or no marker for refinement is available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'redgreen_refine')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Set pointers
-    CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+    call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
         
     ! Perform red-green refinement
-    DO iel = 1, SIZE(p_Imarker, 1)
+    do iel = 1, size(p_Imarker, 1)
       
-      SELECT CASE(p_Imarker(iel))
-      CASE(MARK_ASIS_TRIA,&
+      select case(p_Imarker(iel))
+      case(MARK_ASIS_TRIA,&
            MARK_ASIS_QUAD)
 
         ! Do nothing for elements that should be kept 'as is'
 
-      CASE(:MARK_CRS_GENERIC)
+      case(:MARK_CRS_GENERIC)
 
         ! Do nothing for element that have been marked for coarsening
 
-      CASE(MARK_REF_TRIA4TRIA)
+      case(MARK_REF_TRIA4TRIA)
 
         ! Red refinement triangle
-        CALL refine_Tria4Tria(rhadapt, iel,&
+        call refine_Tria4Tria(rhadapt, iel,&
                               rcollection, fcb_hadaptCallback)
         p_Imarker(iel) = MARK_ASIS        
 
-      CASE(MARK_REF_QUAD4QUAD)
+      case(MARK_REF_QUAD4QUAD)
 
         ! Red refinement quadrilateral
-        CALL refine_Quad4Quad(rhadapt, iel,&
+        call refine_Quad4Quad(rhadapt, iel,&
                               rcollection, fcb_hadaptCallback)
         p_Imarker(iel) = MARK_ASIS
         
-      CASE(MARK_REF_TRIA2TRIA_1,&
+      case(MARK_REF_TRIA2TRIA_1,&
            MARK_REF_TRIA2TRIA_2,&
            MARK_REF_TRIA2TRIA_3)   
 
         ! Green refinement triangle
-        CALL refine_Tria2Tria(rhadapt, iel, p_Imarker(iel),&
+        call refine_Tria2Tria(rhadapt, iel, p_Imarker(iel),&
                               rcollection, fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
         p_Imarker(iel)         = MARK_ASIS
         
-      CASE(MARK_REF_QUAD3TRIA_1,&
+      case(MARK_REF_QUAD3TRIA_1,&
            MARK_REF_QUAD3TRIA_2,&
            MARK_REF_QUAD3TRIA_3,&
            MARK_REF_QUAD3TRIA_4)
 
         ! Green refinement quadrilateral
-        CALL refine_Quad3Tria(rhadapt, iel, p_Imarker(iel),&
+        call refine_Quad3Tria(rhadapt, iel, p_Imarker(iel),&
                               rcollection, fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+3
         p_Imarker(iel)         = MARK_ASIS
         
-      CASE(MARK_REF_QUAD2QUAD_13,&
+      case(MARK_REF_QUAD2QUAD_13,&
            MARK_REF_QUAD2QUAD_24)
 
         ! Green refinement quadrilateral
-        CALL refine_Quad2Quad(rhadapt, iel, p_Imarker(iel),&
+        call refine_Quad2Quad(rhadapt, iel, p_Imarker(iel),&
                               rcollection, fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
         p_Imarker(iel)         = MARK_ASIS
 
-      CASE(MARK_REF_QUAD4TRIA_12,&
+      case(MARK_REF_QUAD4TRIA_12,&
            MARK_REF_QUAD4TRIA_23,&
            MARK_REF_QUAD4TRIA_34,&
            MARK_REF_QUAD4TRIA_14)
 
         ! Green refinement quadrilateral
-        CALL refine_Quad4Tria(rhadapt, iel, p_Imarker(iel),&
+        call refine_Quad4Tria(rhadapt, iel, p_Imarker(iel),&
                               rcollection, fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
         p_Imarker(iel)         = MARK_ASIS
 
-      CASE DEFAULT
-        CALL output_line('Invalid element refinement marker!',&
+      case DEFAULT
+        call output_line('Invalid element refinement marker!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_refine')
-        CALL sys_halt()
-      END SELECT
-    END DO
+        call sys_halt()
+      end select
+    end do
 
     ! Increase the number of refinement steps by one
     rhadapt%nRefinementSteps = rhadapt%nRefinementSteps+1
     
     ! Refinement has been performed.
-    rhadapt%iSpec = IOR(rhadapt%ispec, HADAPT_REFINED)
+    rhadapt%iSpec = ior(rhadapt%ispec, HADAPT_REFINED)
     
     ! Hence, the markers are no longer valid
-    rhadapt%iSpec = IAND(rhadapt%iSpec, NOT(HADAPT_MARKEDREFINE))
-  END SUBROUTINE redgreen_refine
+    rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDREFINE))
+  end subroutine redgreen_refine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
+  subroutine redgreen_coarsen(rhadapt, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs red-green coarsening as proposed by R. Bank
@@ -3384,177 +3384,177 @@ CONTAINS
 !<input>
     ! callback routines
     include 'intf_hadaptcallback.inc'
-    OPTIONAL :: fcb_hadaptCallback
+    optional :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+    type(t_hadapt), intent(INOUT)               :: rhadapt
     
     ! OPTIONAL Collection
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
-    INTEGER(PREC_VERTEXIDX), DIMENSION(2)  :: Ivertices
-    INTEGER,  DIMENSION(:), POINTER :: p_Imarker
-    INTEGER(PREC_ARRAYLISTIDX) :: ipos
-    INTEGER(PREC_ELEMENTIDX) :: iel,jel
-    INTEGER(PREC_VERTEXIDX)  :: ivt,ivtReplace
-    INTEGER :: ive
+    integer(PREC_ELEMENTIDX), dimension(1) :: Ielements
+    integer(PREC_VERTEXIDX), dimension(2)  :: Ivertices
+    integer,  dimension(:), pointer :: p_Imarker
+    integer(PREC_ARRAYLISTIDX) :: ipos
+    integer(PREC_ELEMENTIDX) :: iel,jel
+    integer(PREC_VERTEXIDX)  :: ivt,ivtReplace
+    integer :: ive
 
     ! Check if dynamic data structures are o.k. and 
     ! if  cells are marked for coarsening
-    IF (IAND(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .NE. HADAPT_HAS_DYNAMICDATA .OR.&
-        IAND(rhadapt%iSpec, HADAPT_MARKEDCOARSEN)   .NE. HADAPT_MARKEDCOARSEN) THEN
-      CALL output_line('Dynamic data structures are not generated &
+    if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA .or.&
+        iand(rhadapt%iSpec, HADAPT_MARKEDCOARSEN)   .ne. HADAPT_MARKEDCOARSEN) then
+      call output_line('Dynamic data structures are not generated &
           &or no marker for coarsening is available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
-      CALL sys_halt()
-    END IF
-    CALL storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+      call sys_halt()
+    end if
+    call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     
 
     ! Perform hierarchical red-green recoarsening
-    element: DO iel = SIZE(p_Imarker,1), 1, -1
+    element: do iel = size(p_Imarker,1), 1, -1
 
-      SELECT CASE(p_Imarker(iel))
-      CASE(MARK_CRS_GENERIC:)
+      select case(p_Imarker(iel))
+      case(MARK_CRS_GENERIC:)
 
         ! Do nothing for elements that should be kept 'as is'
         ! and those which are marked for refinement.
         
-      CASE(MARK_CRS_2TRIA1TRIA)
-        CALL coarsen_2Tria1Tria(rhadapt,iel,&
+      case(MARK_CRS_2TRIA1TRIA)
+        call coarsen_2Tria1Tria(rhadapt,iel,&
                                 rcollection, fcb_hadaptCallback)
         
-      CASE(MARK_CRS_4TRIA1TRIA)
-        CALL coarsen_4Tria1Tria(rhadapt,iel,&
+      case(MARK_CRS_4TRIA1TRIA)
+        call coarsen_4Tria1Tria(rhadapt,iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_4TRIA2TRIA_1,&
+      case(MARK_CRS_4TRIA2TRIA_1,&
            MARK_CRS_4TRIA2TRIA_2,&
            MARK_CRS_4TRIA2TRIA_3)
-        CALL coarsen_4Tria2Tria(rhadapt, iel, p_Imarker(iel),&
+        call coarsen_4Tria2Tria(rhadapt, iel, p_Imarker(iel),&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_3TRIA1QUAD)
-        CALL coarsen_3Tria1Quad(rhadapt, iel,&
+      case(MARK_CRS_3TRIA1QUAD)
+        call coarsen_3Tria1Quad(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_4TRIA1QUAD)
-        CALL coarsen_4Tria1Quad(rhadapt, iel,&
+      case(MARK_CRS_4TRIA1QUAD)
+        call coarsen_4Tria1Quad(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
         
-      CASE(MARK_CRS_4TRIA3TRIA_LEFT,&
+      case(MARK_CRS_4TRIA3TRIA_LEFT,&
            MARK_CRS_4TRIA3TRIA_RIGHT)
-        CALL coarsen_4Tria3Tria(rhadapt, iel, p_Imarker(iel),&
+        call coarsen_4Tria3Tria(rhadapt, iel, p_Imarker(iel),&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_2QUAD1QUAD)
-        CALL coarsen_2Quad1Quad(rhadapt, iel,&
+      case(MARK_CRS_2QUAD1QUAD)
+        call coarsen_2Quad1Quad(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_2QUAD3TRIA)
-        CALL coarsen_2Quad3Tria(rhadapt, iel,&
+      case(MARK_CRS_2QUAD3TRIA)
+        call coarsen_2Quad3Tria(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
         
-      CASE(MARK_CRS_4QUAD1QUAD)
-        CALL coarsen_4Quad1Quad(rhadapt, iel,&
+      case(MARK_CRS_4QUAD1QUAD)
+        call coarsen_4Quad1Quad(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_4QUAD2QUAD)
-        CALL coarsen_4Quad2Quad(rhadapt, iel,&
+      case(MARK_CRS_4QUAD2QUAD)
+        call coarsen_4Quad2Quad(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE(MARK_CRS_4QUAD3TRIA)
-        CALL coarsen_4Quad3Tria(rhadapt, iel,&
+      case(MARK_CRS_4QUAD3TRIA)
+        call coarsen_4Quad3Tria(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
         
-      CASE(MARK_CRS_4QUAD4TRIA)
-        CALL coarsen_4Quad4Tria(rhadapt, iel,&
+      case(MARK_CRS_4QUAD4TRIA)
+        call coarsen_4Quad4Tria(rhadapt, iel,&
                                 rcollection, fcb_hadaptCallback)
 
-      CASE DEFAULT
-        CALL output_line('Invalid recoarsening marker!',&
+      case DEFAULT
+        call output_line('Invalid recoarsening marker!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
-        CALL sys_halt()
-      END SELECT
+        call sys_halt()
+      end select
 
-    END DO element
+    end do element
 
 
     ! Loop over all vertices 1...NVT0 present in the triangulation before
     ! refinement and check if they are free for vertex removal.
-    vertex: DO ivt = rhadapt%NVT0, 1, -1
+    vertex: do ivt = rhadapt%NVT0, 1, -1
       
       ! If the vertex is locked, then skip this vertex
-      IF (rhadapt%p_IvertexAge(ivt) .LE. 0) CYCLE vertex
+      if (rhadapt%p_IvertexAge(ivt) .le. 0) cycle vertex
       
       ! Remove vertex physically. Note that this vertex is no longer associated
       ! to any element. All associations have been removed in the above element
       ! coarsening/conversion step. In order to prevent "holes" in the vertex list,
       ! vertex IVT is replaced by the last vertex if it is not the last one itself.
-      CALL remove_vertex2D(rhadapt, ivt, ivtReplace)
+      call remove_vertex2D(rhadapt, ivt, ivtReplace)
       
       ! If vertex IVT was not the last one, update the "elements-meeting-at-vertex" list
-      IF (ivtReplace .NE. 0) THEN
+      if (ivtReplace .ne. 0) then
         
         ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
         ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                         ivtReplace, .TRUE.)
+                                         ivtReplace, .true.)
 
-        update: DO WHILE(ipos .GT. ARRLST_NULL)
+        update: do while(ipos .gt. ARRLST_NULL)
           
           ! Get element number JEL
           jel = rhadapt%rElementsAtVertex%p_IData(ipos)
           
           ! Proceed to next element
           ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                           ivtReplace, .FALSE.)
+                                           ivtReplace, .false.)
           
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
-          DO ive = 1, hadapt_getNVE(rhadapt, jel)
-            IF (rhadapt%p_IverticesAtElement(ive, jel) .EQ. ivtReplace) THEN
+          do ive = 1, hadapt_getNVE(rhadapt, jel)
+            if (rhadapt%p_IverticesAtElement(ive, jel) .eq. ivtReplace) then
               rhadapt%p_IverticesAtElement(ive, jel) = ivt
-              CYCLE update
-            END IF
-          END DO
+              cycle update
+            end if
+          end do
           
           ! If the replaced vertex ivtReplace could not be found in element JEL
           ! something is wrong and we stop the simulation
-          CALL output_line('Unable to find replacement vertex in element',&
+          call output_line('Unable to find replacement vertex in element',&
               OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
-          CALL sys_halt()            
-        END DO update
+          call sys_halt()            
+        end do update
         
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
-        CALL arrlst_swapArrayList(rhadapt%rElementsAtVertex, ivt, ivtReplace)
-        CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivtReplace)
+        call arrlst_swapArrayList(rhadapt%rElementsAtVertex, ivt, ivtReplace)
+        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivtReplace)
         
-      ELSE
+      else
         
         ! Release table IVT
-        CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivt)
-      END IF
+        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivt)
+      end if
             
       ! Optionally, invoke callback function
-      IF (PRESENT(fcb_hadaptCallback) .AND. PRESENT(rcollection)) THEN
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
         Ivertices = (/ivt,ivtReplace/); Ielements = (/0/)
-        CALL fcb_hadaptCallback(rcollection, HADAPT_OPR_REMOVEVERTEX,&
+        call fcb_hadaptCallback(rcollection, HADAPT_OPR_REMOVEVERTEX,&
                                 Ivertices, Ielements)
-      END IF
-    END DO vertex
+      end if
+    end do vertex
         
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
 
     ! Coarsening has been performed.
-    rhadapt%iSpec = IOR(rhadapt%ispec, HADAPT_COARSENED)
+    rhadapt%iSpec = ior(rhadapt%ispec, HADAPT_COARSENED)
     
     ! Hence, the markers are no longer valid
-    rhadapt%iSpec = IAND(rhadapt%iSpec, NOT(HADAPT_MARKEDCOARSEN))
-  END SUBROUTINE redgreen_coarsen
-END MODULE hadaptivity
+    rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDCOARSEN))
+  end subroutine redgreen_coarsen
+end module hadaptivity

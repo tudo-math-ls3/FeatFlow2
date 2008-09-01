@@ -23,11 +23,11 @@
 !# </purpose>
 !##############################################################################
 
-MODULE basicgeometry
+module basicgeometry
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
 
   ! One could ask: Why do we need the following two constants...?
@@ -38,13 +38,13 @@ MODULE basicgeometry
 !<constantblock description="Dimension constants">
   
   ! Dimension constant for 1D triangulations.
-  INTEGER, PARAMETER :: NDIM1D = 1
+  integer, parameter :: NDIM1D = 1
 
   ! Dimension constant for 2D triangulations.
-  INTEGER, PARAMETER :: NDIM2D = 2
+  integer, parameter :: NDIM2D = 2
 
   ! Dimension constant for 3D triangulations.
-  INTEGER, PARAMETER :: NDIM3D = 3
+  integer, parameter :: NDIM3D = 3
 
 !</constantblock>
 !</constants>
@@ -54,33 +54,33 @@ MODULE basicgeometry
   !<typeblock>
   
   ! The point structure for 2D points.
-  TYPE t_point2D
+  type t_point2D
   
     ! X-coordinate
-    REAL(DP) :: X
+    real(DP) :: X
     
     ! Y-coordinate
-    REAL(DP) :: Y
+    real(DP) :: Y
   
-  END TYPE
+  end type
 
   !<typeblock>
   
   !</typeblock>
   
   ! The point structure for 3D points.
-  TYPE t_point3D
+  type t_point3D
   
     ! X-coordinate
-    REAL(DP) :: X
+    real(DP) :: X
     
     ! Y-coordinate
-    REAL(DP) :: Y
+    real(DP) :: Y
 
     ! Z-coordinate
-    REAL(DP) :: Z
+    real(DP) :: Z
     
-  END TYPE
+  end type
 
   !</typeblock>
 
@@ -88,35 +88,35 @@ MODULE basicgeometry
   
   ! The point structure for regular 2D coordinate systems, consisting of
   ! a rotated X- and Y-axes
-  TYPE t_coordinateSystem2D
+  type t_coordinateSystem2D
   
     ! Coordinates of the origin
-    REAL(DP), DIMENSION(2) :: Dorigin = (/0.0_DP,0.0_DP/)
+    real(DP), dimension(2) :: Dorigin = (/0.0_DP,0.0_DP/)
     
     ! Rotation angle; 0..2*PI
-    REAL(DP) :: drotation = 0.0_DP
+    real(DP) :: drotation = 0.0_DP
     
     ! precalculated value: sin(rotation); for quicker calculations
-    REAL(DP) :: dsin_rotation = 0.0_DP
+    real(DP) :: dsin_rotation = 0.0_DP
 
     ! precalculated value: cos(rotation); for quicker calculations
-    REAL(DP) :: dcos_rotation = 1.0_DP
+    real(DP) :: dcos_rotation = 1.0_DP
     
     ! scaling factor of the coordinate system; usually = 1.0
-    REAL(DP) :: dscalingFactor = 1.0_DP
+    real(DP) :: dscalingFactor = 1.0_DP
     
-  END TYPE
+  end type
 
   !</typeblock>
   !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   
 !<subroutine>
   
-  PURE SUBROUTINE bgeom_initCoordSys2D(rcoordSys, Dorigin, drotation, &
+  pure subroutine bgeom_initCoordSys2D(rcoordSys, Dorigin, drotation, &
                                        dscalingFactor)
 
 !<description>
@@ -127,44 +127,44 @@ CONTAINS
 !<input>
   ! OPTIONAL: The origin of the coordinate system.
   ! Set to (/ 0.0_DP, 0.0_DP /) if not given.
-  REAL(DP), DIMENSION(:), OPTIONAL,    INTENT(IN)  :: Dorigin
+  real(DP), dimension(:), optional,    intent(IN)  :: Dorigin
   
   ! OPTIONAL: The rotation angle of the coordinate system.
   ! Angle range: 0..2*PI
   ! Set to 0.0_DP if not given.
-  REAL(DP), OPTIONAL,                  INTENT(IN)  :: drotation
+  real(DP), optional,                  intent(IN)  :: drotation
   
   ! The scaling factor. Should be != 0.0_DP
   ! Set to 1.0_DP if not given.
-  REAL(DP), OPTIONAL,                  INTENT(IN)  :: dscalingFactor
+  real(DP), optional,                  intent(IN)  :: dscalingFactor
 
 !</input>
 
 !<output>
   ! A t_coordinateSystem2D structure to be written.
-  TYPE(t_coordinateSystem2D),          INTENT(OUT) :: rcoordSys
+  type(t_coordinateSystem2D),          intent(OUT) :: rcoordSys
 
 !</output>
 
 !</subroutine>
 
     ! Set the origin, if given.
-    IF (PRESENT(Dorigin)) THEN
+    if (present(Dorigin)) then
       rcoordSys%Dorigin = (/ Dorigin(1), Dorigin(2) /)
-    ELSE
+    else
       rcoordSys%Dorigin = (/ 0.0_DP, 0.0_DP /)
-    END IF
+    end if
       
     ! Set the rotation, if given.
-    IF (PRESENT(drotation)) THEN
+    if (present(drotation)) then
       
       rcoordSys%drotation = drotation
         
       ! Calculate SIN and COS of rotation angle
-      rcoordSys%dsin_rotation = SIN(drotation)
-      rcoordSys%dcos_rotation = COS(drotation)
+      rcoordSys%dsin_rotation = sin(drotation)
+      rcoordSys%dcos_rotation = cos(drotation)
         
-    ELSE
+    else
       
       rcoordSys%drotation = 0.0_DP
         
@@ -172,24 +172,24 @@ CONTAINS
       rcoordSys%dsin_rotation = 0.0_DP
       rcoordSys%dcos_rotation = 1.0_DP
         
-    END IF
+    end if
       
     ! Set the scaling factor, if given.
-    IF (PRESENT(dscalingFactor)) THEN
+    if (present(dscalingFactor)) then
       rcoordSys%dscalingFactor = dscalingFactor
-    ELSE
+    else
       rcoordSys%dscalingFactor = 1.0_DP
-    ENDIF
+    endif
   
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  PURE SUBROUTINE bgeom_transformPoint2D(rcoordSys, DpointIn, DpointOut)
+  pure subroutine bgeom_transformPoint2D(rcoordSys, DpointIn, DpointOut)
 
 !<description>
   ! Transforms a given 2D point with coordinates relative to the given
@@ -198,21 +198,21 @@ CONTAINS
 
 !<input>
   ! The 2D coordinate system that is to be applied to the given point.
-  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
 
   ! The 2D point that is to be transformed.
-  REAL(DP), DIMENSION(:),      INTENT(IN)  :: DpointIn
+  real(DP), dimension(:),      intent(IN)  :: DpointIn
 !</input>
 
 !<output>
   ! The transformed 2D point.
-  REAL(DP), DIMENSION(:),      INTENT(OUT) :: DpointOut
+  real(DP), dimension(:),      intent(OUT) :: DpointOut
 !</output>
 
 !</subroutine>
 
     ! Check if the rotation of the coordinate system is non-zero.
-    IF (rcoordSys%drotation .NE. 0.0_DP) THEN
+    if (rcoordSys%drotation .ne. 0.0_DP) then
 
       ! Apply rotation to the input coordinates.
       DpointOut(1) = (rcoordSys%dcos_rotation * DpointIn(1)) - &
@@ -220,13 +220,13 @@ CONTAINS
       DpointOut(2) = (rcoordSys%dsin_rotation * DpointIn(1)) + &
                      (rcoordSys%dcos_rotation * DpointIn(2))
 
-    ELSE
+    else
 
       ! No rotation in the coordinate system, so simply copy the input coords.
       DpointOut(1) = DpointIn(1)
       DpointOut(2) = DpointIn(2)
 
-    END IF
+    end if
 
     ! Now scale the given coordinates by the scaling factor and translate them
     ! by the origin of our coordinate system.
@@ -237,14 +237,14 @@ CONTAINS
 
     ! That's it!
 
-  END SUBROUTINE
+  end subroutine
 
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  PURE SUBROUTINE bgeom_transformBackPoint2D(rcoordSys, DpointIn, DpointOut)
+  pure subroutine bgeom_transformBackPoint2D(rcoordSys, DpointIn, DpointOut)
 
 !<description>
   ! Transform a 2D point given in world coordinates to coordinates relative
@@ -254,22 +254,22 @@ CONTAINS
 
 !<input>
   ! The 2D coordinate system of our input point.
-  TYPE(t_coordinateSystem2D), INTENT(IN)  :: rcoordSys
+  type(t_coordinateSystem2D), intent(IN)  :: rcoordSys
 
   ! The 2D point that is to be transformed, relative to the given coordinate
   ! system.
-  REAL(DP), DIMENSION(:),     INTENT(IN)  :: DpointIn
+  real(DP), dimension(:),     intent(IN)  :: DpointIn
 !</input>
 
 !<output>
   ! The transformed 2D point, in world coordinates.
-  REAL(DP), DIMENSION(:),     INTENT(OUT) :: DpointOut
+  real(DP), dimension(:),     intent(OUT) :: DpointOut
 !</output>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: X,Y
+    real(DP) :: X,Y
 
     ! Translate the given point by the negatives of our coordinate system
     ! origin.
@@ -278,37 +278,37 @@ CONTAINS
 
     ! Now scale the point by the inverse of our coordinate system sclaing
     ! factor, of course only if it is non-zero ...
-    IF (rcoordSys%dscalingFactor .NE. 0.0_DP) THEN
+    if (rcoordSys%dscalingFactor .ne. 0.0_DP) then
 
       X = X / rcoordSys%dscalingFactor
       Y = Y / rcoordSys%dscalingFactor
 
-    ELSE
+    else
 
       ! ... or set the result to zero and exit subroutine otherwise.
       DpointOut(1) = 0.0_DP
       DpointOut(2) = 0.0_DP
-      RETURN
+      return
 
-    ENDIF
+    endif
 
     ! Check if the rotation of the coordinate system is non-zero.
-    IF (rcoordSys%drotation .NE. 0.0_DP) THEN
+    if (rcoordSys%drotation .ne. 0.0_DP) then
 
       ! Apply rotation to the input coordinates.
       DpointOut(1) = ( rcoordSys%dcos_rotation * X) + (rcoordSys%dsin_rotation * Y)
       DpointOut(2) = (-rcoordSys%dsin_rotation * X) + (rcoordSys%dcos_rotation * Y)
 
-    ELSE
+    else
 
       ! No rotation in the coordinate system, so simply copy the input coords.
       DpointOut(1) = X
       DpointOut(2) = Y
 
-    END IF
+    end if
 
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

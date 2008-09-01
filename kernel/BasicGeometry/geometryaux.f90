@@ -45,19 +45,19 @@
 !# </purpose>
 !##############################################################################
 
-MODULE geometryaux
+module geometryaux
 
-  USE fsystem
+  use fsystem
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   
 !<function>
 
-  PURE REAL(DP) FUNCTION gaux_getAspectRatio_quad2D (Dpoints)
+  pure real(DP) function gaux_getAspectRatio_quad2D (Dpoints)
   
 !<description>
   ! This routine calculates the aspect ratio of a 2D quadrilateral
@@ -70,7 +70,7 @@ CONTAINS
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-  REAL(DP), DIMENSION(2,4), INTENT(IN) :: Dpoints
+  real(DP), dimension(2,4), intent(IN) :: Dpoints
 !</input>
 
 !<result>
@@ -79,7 +79,7 @@ CONTAINS
 
 !</function>
 
-    REAL(DP) :: XM1,XM2,XM3,XM4,YM1,YM2,YM3,YM4,LE1,LE2
+    real(DP) :: XM1,XM2,XM3,XM4,YM1,YM2,YM3,YM4,LE1,LE2
 
     ! Calculate the position of the edge mitpoints
     XM1 = (Dpoints(1,2)+Dpoints(1,1))*0.5_DP
@@ -97,15 +97,15 @@ CONTAINS
     LE2 = (XM4-XM2)**2+(YM4-YM2)**2
 
     ! ...and the aspect ratio.
-    gaux_getAspectRatio_quad2D = SQRT(LE1/MAX(LE2,1E-10_DP))
+    gaux_getAspectRatio_quad2D = sqrt(LE1/max(LE2,1E-10_DP))
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
   
-  PURE REAL(DP) FUNCTION gaux_getArea_tria2D (Dpoints)
+  pure real(DP) function gaux_getArea_tria2D (Dpoints)
 
 !<description>
     ! This routine calculates the signed area of a 2D triangular
@@ -118,7 +118,7 @@ CONTAINS
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-    REAL(DP), DIMENSION(2,3), INTENT(IN) :: Dpoints
+    real(DP), dimension(2,3), intent(IN) :: Dpoints
 !</input>
 
 !<result>
@@ -129,13 +129,13 @@ CONTAINS
     gaux_getArea_tria2D = 0.5_DP*( &
         (Dpoints(1,2)-Dpoints(1,1))*(Dpoints(2,3)-Dpoints(2,1))-&
         (Dpoints(1,3)-Dpoints(1,1))*(Dpoints(2,2)-Dpoints(2,1)) )
-  END FUNCTION gaux_getArea_tria2D
+  end function gaux_getArea_tria2D
 
   ! ***************************************************************************
 
 !<function>
 
-  REAL(DP) FUNCTION gaux_getArea_quad2D (Dpoints)
+  real(DP) function gaux_getArea_quad2D (Dpoints)
 
 !<description>
     ! This routine calculates the area of a 2D quadrilateral
@@ -148,7 +148,7 @@ CONTAINS
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-    REAL(DP), DIMENSION(2,4), INTENT(IN) :: Dpoints
+    real(DP), dimension(2,4), intent(IN) :: Dpoints
 !</input>
 
 !<result>
@@ -257,18 +257,18 @@ CONTAINS
     !     V0                 V1
     
     gaux_getArea_quad2D = &
-            0.5_DP *  ABS( (Dpoints(1,3) - Dpoints(1,1) ) * &
+            0.5_DP *  abs( (Dpoints(1,3) - Dpoints(1,1) ) * &
                            (Dpoints(2,4) - Dpoints(2,2) ) - &
                            (Dpoints(1,4) - Dpoints(1,2) ) * &
                            (Dpoints(2,3) - Dpoints(2,1) ) )
                            
-  END FUNCTION gaux_getArea_quad2D
+  end function gaux_getArea_quad2D
 
 !************************************************************************
 
 !<function>
 
-  PURE REAL(DP) FUNCTION gaux_getVolume_tetra3D (Dpoints)
+  pure real(DP) function gaux_getVolume_tetra3D (Dpoints)
 
 !<description>
   ! This function calculates the volume of a 3D tetrahedron. The
@@ -280,7 +280,7 @@ CONTAINS
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates,
   ! Dpoints(3,.) = z-coordinates
-  REAL(DP), DIMENSION(3,4), INTENT(IN) :: Dpoints
+  real(DP), dimension(3,4), intent(IN) :: Dpoints
 !</input>
 
 !<result>
@@ -289,25 +289,25 @@ CONTAINS
 !</function>
 
     ! A temporary array for the edge lengths
-    REAL(DP), DIMENSION(3,3) :: Dv
+    real(DP), dimension(3,3) :: Dv
     
     Dv(1:3,1) = Dpoints(1:3,1) - Dpoints(1:3,4)
     Dv(1:3,2) = Dpoints(1:3,2) - Dpoints(1:3,4)
     Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,4)
     
     ! Return the absolute volume
-    gaux_getVolume_tetra3D = ABS(&
+    gaux_getVolume_tetra3D = abs(&
         Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
         Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
         Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3))) / 6.0_DP
         
-  END FUNCTION gaux_getVolume_tetra3D
+  end function gaux_getVolume_tetra3D
 
 !************************************************************************
 
 !<function>
 
-  PURE REAL(DP) FUNCTION gaux_getVolume_hexa3D (Dv)
+  pure real(DP) function gaux_getVolume_hexa3D (Dv)
 
 !<description>
   ! This function calculates the volume of a 3D hexahedron. The
@@ -319,7 +319,7 @@ CONTAINS
   ! Dv(1,.) = x-coordinates,
   ! Dv(2,.) = y-coordinates,
   ! Dv(3,.) = z-coordinates
-  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dv
+  real(DP), dimension(3,8), intent(IN) :: Dv
 !</input>
 
 !<result>
@@ -329,44 +329,44 @@ CONTAINS
 
     ! Return the absolute volume
     gaux_getVolume_hexa3D = (1.0_DP / 6.0_DP) * (&
-        ABS((Dv(1,4)-Dv(1,1))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,8))&
+        abs((Dv(1,4)-Dv(1,1))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,8))&
            +(Dv(2,4)-Dv(2,1))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,8))&
            +(Dv(3,4)-Dv(3,1))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,8))&
            -(Dv(1,4)-Dv(1,8))*(Dv(2,4)-Dv(2,3))*(Dv(3,4)-Dv(3,1))&
            -(Dv(2,4)-Dv(2,8))*(Dv(3,4)-Dv(3,3))*(Dv(1,4)-Dv(1,1))&
            -(Dv(3,4)-Dv(3,8))*(Dv(1,4)-Dv(1,3))*(Dv(2,4)-Dv(2,1)))+&
-        ABS((Dv(1,2)-Dv(1,3))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,6))&
+        abs((Dv(1,2)-Dv(1,3))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,6))&
            +(Dv(2,2)-Dv(2,3))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,6))&
            +(Dv(3,2)-Dv(3,3))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,6))&
            -(Dv(1,2)-Dv(1,6))*(Dv(2,2)-Dv(2,1))*(Dv(3,2)-Dv(3,3))&
            -(Dv(2,2)-Dv(2,6))*(Dv(3,2)-Dv(3,1))*(Dv(1,2)-Dv(1,3))&
            -(Dv(3,2)-Dv(3,6))*(Dv(1,2)-Dv(1,1))*(Dv(2,2)-Dv(2,3)))+&
-        ABS((Dv(1,5)-Dv(1,8))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,1))&
+        abs((Dv(1,5)-Dv(1,8))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,1))&
            +(Dv(2,5)-Dv(2,8))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,1))&
            +(Dv(3,5)-Dv(3,8))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,1))&
            -(Dv(1,5)-Dv(1,1))*(Dv(2,5)-Dv(2,6))*(Dv(3,5)-Dv(3,8))&
            -(Dv(2,5)-Dv(2,1))*(Dv(3,5)-Dv(3,6))*(Dv(1,5)-Dv(1,8))&
            -(Dv(3,5)-Dv(3,1))*(Dv(1,5)-Dv(1,6))*(Dv(2,5)-Dv(2,8)))+&
-        ABS((Dv(1,7)-Dv(1,6))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,3))&
+        abs((Dv(1,7)-Dv(1,6))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,3))&
            +(Dv(2,7)-Dv(2,6))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,3))&
            +(Dv(3,7)-Dv(3,6))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,3))&
            -(Dv(1,7)-Dv(1,3))*(Dv(2,7)-Dv(2,8))*(Dv(3,7)-Dv(3,6))&
            -(Dv(2,7)-Dv(2,3))*(Dv(3,7)-Dv(3,8))*(Dv(1,7)-Dv(1,6))&
            -(Dv(3,7)-Dv(3,3))*(Dv(1,7)-Dv(1,8))*(Dv(2,7)-Dv(2,6)))+&
-        ABS((Dv(1,1)-Dv(1,3))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,6))&
+        abs((Dv(1,1)-Dv(1,3))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,6))&
            +(Dv(2,1)-Dv(2,3))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,6))&
            +(Dv(3,1)-Dv(3,3))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,6))&
            -(Dv(1,1)-Dv(1,6))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,3))&
            -(Dv(2,1)-Dv(2,6))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,3))&
            -(Dv(3,1)-Dv(3,6))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,3))))
              
-  END FUNCTION gaux_getVolume_hexa3D
+  end function gaux_getVolume_hexa3D
     
 !************************************************************************
 
 !<subroutine>
   
-  ELEMENTAL SUBROUTINE gaux_isIntersection_line2D(&
+  elemental subroutine gaux_isIntersection_line2D(&
       dx1,dy1,dx2,dy2,dx3,dy3,dx4,dy4, bintersect)
   
 !<description>
@@ -376,27 +376,27 @@ CONTAINS
 
 !<input>
   ! First point on ray 1.
-  REAL(DP), INTENT(IN) :: dx1,dy1
+  real(DP), intent(IN) :: dx1,dy1
   
   ! A second point on ray 1. Must be different to (dx1,dy1)
-  REAL(DP), INTENT(IN) :: dx2,dy2
+  real(DP), intent(IN) :: dx2,dy2
   
   ! First point on ray 2.
-  REAL(DP), INTENT(IN) :: dx3,dy3
+  real(DP), intent(IN) :: dx3,dy3
   
   ! A second point on ray 2. Must be different to (dx3,dy3)
-  REAL(DP), INTENT(IN) :: dx4,dy4
+  real(DP), intent(IN) :: dx4,dy4
 !</input>
 
 !<result>
   ! TRUE if the two rays intersect. FALSE otherwise.
-  LOGICAL, INTENT(OUT) :: bintersect
+  logical, intent(OUT) :: bintersect
 !</result>
 
 !</subroutine>
 
     ! local variables: aux parameters
-    REAL(DP) :: daux1, daux2, daux3, daux4
+    real(DP) :: daux1, daux2, daux3, daux4
 
     ! position of point 3 with respect to line between 1 and 2
 
@@ -416,16 +416,16 @@ CONTAINS
 
     ! Determine if the lines truely intersect by checking the sign
 
-    bintersect = ((daux3*daux4 .LE. 0.0_DP) .AND. &
-                  (daux1*daux2 .LE. 0.0_DP)) 
+    bintersect = ((daux3*daux4 .le. 0.0_DP) .and. &
+                  (daux1*daux2 .le. 0.0_DP)) 
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
   
-  ELEMENTAL SUBROUTINE gaux_getIntersection_ray2D(&
+  elemental subroutine gaux_getIntersection_ray2D(&
       dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect)
   
 !<description>
@@ -435,34 +435,34 @@ CONTAINS
 
 !<input>
   ! First point on ray 1.
-  REAL(DP), INTENT(IN) :: dx0,dy0
+  real(DP), intent(IN) :: dx0,dy0
   
   ! A second point on ray 1. Must be different to (dx1,dy1)
-  REAL(DP), INTENT(IN) :: dx1,dy1
+  real(DP), intent(IN) :: dx1,dy1
   
   ! First point on ray 2.
-  REAL(DP), INTENT(IN) :: dx2,dy2
+  real(DP), intent(IN) :: dx2,dy2
   
   ! A second point on ray 2. Must be different to (dx3,dy3)
-  REAL(DP), INTENT(IN) :: dx3,dy3
+  real(DP), intent(IN) :: dx3,dy3
 !</input>
 
 !<result>
   ! Intersection point.
   ! If the two rays do not intersect or are identical, this is set to (0,0).
-  REAL(DP), INTENT(OUT) :: dx,dy
+  real(DP), intent(OUT) :: dx,dy
 
   ! Returns the type of intersection between the rays.
   ! =-1: The rays are the same
   ! = 0: The rays don't intersect.
   ! = 1: The rays intersect in exactly one point.
-  INTEGER, INTENT(OUT) :: iintersect
+  integer, intent(OUT) :: iintersect
 !</result>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: ddet,da
+    real(DP) :: ddet,da
 
     ! Initial setting of the destination point
     dx = 0.0_DP
@@ -494,18 +494,18 @@ CONTAINS
        
     ! If it's =0, the lines are the same or completely different...
         
-    IF (ddet .EQ. 0.0_DP) THEN
+    if (ddet .eq. 0.0_DP) then
        
       ! If the vector (X2,Y2)->(X0,Y0) is linear dependent to
       ! (X2,Y2)->(X3,Y3), the lines are the same.
 
       ddet = -dy0*dx2-dx3*dy2+dy0*dx3+dx2*dy3+dx0*dy2-dx0*dy3
        
-      IF (ddet .EQ. 0.0_DP) THEN
+      if (ddet .eq. 0.0_DP) then
         iintersect = -1
-      END IF
+      end if
      
-    ELSE
+    else
 
       ! There is an intersection point. Calculate one of the 
       ! "parameter" values along the two lines.
@@ -519,15 +519,15 @@ CONTAINS
       
       iintersect = 1
        
-    END IF
+    end if
       
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
   
-  PURE SUBROUTINE gaux_isInElement_quad2D(dx,dy,DcornerCoords,binside)
+  pure subroutine gaux_isInElement_quad2D(dx,dy,DcornerCoords,binside)
   
 !<description>
   ! Checks if a point (dx,dy) is inside of a 2D quadrilateral element
@@ -536,7 +536,7 @@ CONTAINS
 
 !<input>
   ! Point to check
-  REAL(DP), INTENT(IN) :: dx,dy
+  real(DP), intent(IN) :: dx,dy
   
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
@@ -545,30 +545,30 @@ CONTAINS
   !   explicit array of dimension (2,4). As this deactivates array
   !   checking in Fortran, the caller must take care to specify exactly
   !   this type of array here!
-  REAL(DP), DIMENSION(2,4), INTENT(IN) :: DcornerCoords
+  real(DP), dimension(2,4), intent(IN) :: DcornerCoords
 !</input>
 
 !<result>
   ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
-  LOGICAL, INTENT(OUT) :: binside
+  logical, intent(OUT) :: binside
 !</result>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER, PARAMETER :: NVE = 4
-    INTEGER, DIMENSION(4), PARAMETER :: Inext = (/2,3,4,1/)
-    REAL(DP) :: dxmid,dymid,dxdist,dydist,dxnormal,dynormal
-    INTEGER :: ive,ive2
-    REAL(DP) :: dsproduct
+    integer, parameter :: NVE = 4
+    integer, dimension(4), parameter :: Inext = (/2,3,4,1/)
+    real(DP) :: dxmid,dymid,dxdist,dydist,dxnormal,dynormal
+    integer :: ive,ive2
+    real(DP) :: dsproduct
       
-    binside = .TRUE.
+    binside = .true.
 
     ! Compute edge-midpoints and normal vectors to the four
     ! edges on element IEL
 
-    DO ive=1,NVE
+    do ive=1,NVE
 
       ive2 = Inext(ive)   ! Use of Inext avoids a division by avoiding MOD!
 
@@ -599,17 +599,17 @@ CONTAINS
       ! Actually we have to check against <=0, but it's more advisable
       ! to check against something that is 'near' 0 in terms
       ! of machine exactness...
-      binside = binside .AND. (dsproduct .LE. dsproduct*100.0_DP)
+      binside = binside .and. (dsproduct .le. dsproduct*100.0_DP)
 
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
   
-  PURE SUBROUTINE gaux_getBarycentricCoords_tri2D(&
+  pure subroutine gaux_getBarycentricCoords_tri2D(&
       DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
   
 !<description>
@@ -620,23 +620,23 @@ CONTAINS
 
 !<input>
   ! Point in real coordinates
-  REAL(DP), INTENT(IN) :: dx,dy
+  real(DP), intent(IN) :: dx,dy
   
   ! Array with coordinates of the three corner points of the element.
   ! The corners must be ordered in counterclockwise order.
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DcornerCoords
+  real(DP), dimension(:,:), intent(IN) :: DcornerCoords
 !</input>
 
 !<result>
   ! The barycentric coordinates of (dx,dy) relative to the element
   ! specified by DcornerCoords.
-  REAL(DP), INTENT(OUT) :: dxi1,dxi2,dxi3
+  real(DP), intent(OUT) :: dxi1,dxi2,dxi3
 !</result>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: DAX, DAY, DBX, DBY, DCX, DCY, DDET
+    real(DP) :: DAX, DAY, DBX, DBY, DCX, DCY, DDET
 
     DAX = DcornerCoords(1, 1) 
     DAY = DcornerCoords(2, 1)
@@ -653,13 +653,13 @@ CONTAINS
     dxi2 = (DAX*(dy-DCY)+dx*(DCY-DAY)+DCX*(DAY-dy)) * DDET
     dxi3 = (DAX*(DBY-dy)+DBX*(dy-DAY)+dx*(DAY-DBY)) * DDET
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
   
-  PURE SUBROUTINE gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
+  pure subroutine gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
   
 !<description>
   ! Checks if a point (dx,dy) is inside of a 2D triangular element
@@ -668,7 +668,7 @@ CONTAINS
 
 !<input>
   ! Point to check
-  REAL(DP), INTENT(IN) :: dx,dy
+  real(DP), intent(IN) :: dx,dy
   
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
@@ -677,38 +677,38 @@ CONTAINS
   !   explicit array of dimension (2,4). As this deactivates array
   !   checking in Fortran, the caller must take care to specify exactly
   !   this type of array here!
-  REAL(DP), DIMENSION(2,4), INTENT(IN) :: DcornerCoords
+  real(DP), dimension(2,4), intent(IN) :: DcornerCoords
 !</input>
 
 !<result>
   ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
-  LOGICAL, INTENT(OUT) :: binside
+  logical, intent(OUT) :: binside
 !</result>
 
 !</subroutine>
 
-    REAL(DP) :: dxi1,dxi2,dxi3
+    real(DP) :: dxi1,dxi2,dxi3
 
     ! We use barycentric coordinates for that task.
     ! Calculate the barycentric coordinates of the point relative
     ! to the element specified by DcornerCoords.
-    CALL gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,&
+    call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,&
         dxi1,dxi2,dxi3)
 
     ! If all barycentric coordinates are in the range [0..1],
     ! we are inside of the element
-    binside = (dxi1 .GE. 0.0_DP) .AND. (dxi1 .LE. 1.0_DP) .AND. &
-              (dxi2 .GE. 0.0_DP) .AND. (dxi2 .LE. 1.0_DP) .AND. &
-              (dxi3 .GE. 0.0_DP) .AND. (dxi3 .LE. 1.0_DP) 
+    binside = (dxi1 .ge. 0.0_DP) .and. (dxi1 .le. 1.0_DP) .and. &
+              (dxi2 .ge. 0.0_DP) .and. (dxi2 .le. 1.0_DP) .and. &
+              (dxi3 .ge. 0.0_DP) .and. (dxi3 .le. 1.0_DP) 
 
-  END SUBROUTINE
+  end subroutine
 
 
 !************************************************************************
 
 !<function>
 
-  PURE LOGICAL FUNCTION gaux_isFlipped_hexa3D (Dpoints)
+  pure logical function gaux_isFlipped_hexa3D (Dpoints)
 
 !<description>
   ! This function checks whether a 3D hexahedron is flipped.
@@ -719,7 +719,7 @@ CONTAINS
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates,
   ! Dpoints(3,.) = z-coordinates
-  REAL(DP), DIMENSION(3,8), INTENT(IN) :: Dpoints
+  real(DP), dimension(3,8), intent(IN) :: Dpoints
 !</input>
 
 !<result>
@@ -729,8 +729,8 @@ CONTAINS
 
     ! Three vectors connecting two opposite faces of the hexahedron,
     ! and a normal vector
-    REAL(DP), DIMENSION(3) :: Du,Dv,Dw,Dn
-    REAL(DP) :: dt
+    real(DP), dimension(3) :: Du,Dv,Dw,Dn
+    real(DP) :: dt
     
     Du(:) = 0.25_DP * (Dpoints(:,5)+Dpoints(:,6)+Dpoints(:,7)+Dpoints(:,8)&
                       -Dpoints(:,1)-Dpoints(:,2)-Dpoints(:,3)-Dpoints(:,4))
@@ -748,8 +748,8 @@ CONTAINS
     dt = Dn(1)*Dw(1) + Dn(2)*Dw(2) + Dn(3)*Dw(3)
     
     ! Now if dt < 0, then the hexahedron is flipped
-    gaux_isFlipped_hexa3D = (dt .LT. 0.0_DP)
+    gaux_isFlipped_hexa3D = (dt .lt. 0.0_DP)
 
-  END FUNCTION gaux_isFlipped_hexa3D
+  end function gaux_isFlipped_hexa3D
 
-END MODULE
+end module
