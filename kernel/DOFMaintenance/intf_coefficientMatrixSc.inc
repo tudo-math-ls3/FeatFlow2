@@ -1,20 +1,20 @@
   ! This file describes the interface for a coefficient function that is called
   ! during the matrix assembly of scalar matrices.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE fcoeff_buildMatrixSc_sim (rdiscretisationTrial,rdiscretisationTest,rform, &
+    subroutine fcoeff_buildMatrixSc_sim (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset,&
                   Dcoefficients, rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -31,44 +31,44 @@
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
     
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
 
     ! The bilinear form which is currently being evaluated:
-    TYPE(t_bilinearForm), INTENT(IN)                            :: rform
+    type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -77,12 +77,12 @@
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

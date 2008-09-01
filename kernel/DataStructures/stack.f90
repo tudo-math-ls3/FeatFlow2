@@ -10,61 +10,61 @@
 !# </purpose>
 !##############################################################################
 
-MODULE stack
-  USE storage
+module stack
+  use storage
   
-  IMPLICIT NONE
+  implicit none
 
-  PRIVATE
+  private
 
-  PUBLIC :: t_stack
-  PUBLIC :: stack_create
-  PUBLIC :: stack_release
-  PUBLIC :: stack_clear
-  PUBLIC :: stack_isempty
-  PUBLIC :: stack_size
-  PUBLIC :: stack_pushback
-  PUBLIC :: stack_backInt
-  PUBLIC :: stack_backSngl
-  PUBLIC :: stack_backDble
-  PUBLIC :: stack_popbackInt
-  PUBLIC :: stack_popbackSngl
-  PUBLIC :: stack_popbackDble
+  public :: t_stack
+  public :: stack_create
+  public :: stack_release
+  public :: stack_clear
+  public :: stack_isempty
+  public :: stack_size
+  public :: stack_pushback
+  public :: stack_backInt
+  public :: stack_backSngl
+  public :: stack_backDble
+  public :: stack_popbackInt
+  public :: stack_popbackSngl
+  public :: stack_popbackDble
 
-  INTERFACE stack_pushback
-    MODULE PROCEDURE stack_pushbackInt
-    MODULE PROCEDURE stack_pushbackSngl
-    MODULE PROCEDURE stack_pushbackDble
-  END INTERFACE
+  interface stack_pushback
+    module procedure stack_pushbackInt
+    module procedure stack_pushbackSngl
+    module procedure stack_pushbackDble
+  end interface
 
 !<types>
 
 !<typeblock>
 
   ! Type block for holding a dynamic stack
-  TYPE t_stack
+  type t_stack
     ! Size of stack
-    INTEGER :: istackSize = 0
+    integer :: istackSize = 0
 
     ! Position of last stack item
-    INTEGER :: istackPosition = 0
+    integer :: istackPosition = 0
 
     ! Data type stored in stack
-    INTEGER :: idataType
+    integer :: idataType
 
     ! Handle to stack data
-    INTEGER :: h_StackData = ST_NOHANDLE
-  END TYPE t_stack
+    integer :: h_StackData = ST_NOHANDLE
+  end type t_stack
 
 !</typeblock>
 
 !</types>
   
-CONTAINS
+contains
 
 !<subroutine>
 
-  SUBROUTINE stack_create(rstack,isize,cdataType)
+  subroutine stack_create(rstack,isize,cdataType)
 
 !<description>
     ! Creates a stack with initial memory
@@ -72,429 +72,429 @@ CONTAINS
 
 !<input>
     ! Initial stack size
-    INTEGER, INTENT(IN) :: isize
+    integer, intent(IN) :: isize
 
     ! Stack data type
-    INTEGER, INTENT(IN) :: cdataType
+    integer, intent(IN) :: cdataType
 !</input>
 
 !<inputoutput>
     ! Stack
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
     
-    SELECT CASE (cdataType)
-    CASE (ST_INT)
-      CALL storage_new("stack_create","h_StackData",INT(isize,I32),ST_INT,&
+    select case (cdataType)
+    case (ST_INT)
+      call storage_new("stack_create","h_StackData",int(isize,I32),ST_INT,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
       
-    CASE (ST_SINGLE)
-      CALL storage_new("stack_create","h_StackData",INT(isize,I32),ST_SINGLE,&
+    case (ST_SINGLE)
+      call storage_new("stack_create","h_StackData",int(isize,I32),ST_SINGLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
 
-    CASE (ST_DOUBLE)
-      CALL storage_new("stack_create","h_StackData",INT(isize,I32),ST_DOUBLE,&
+    case (ST_DOUBLE)
+      call storage_new("stack_create","h_StackData",int(isize,I32),ST_DOUBLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
       
-    CASE DEFAULT
-      PRINT *, "stack_create: Invalid data type!"
-      CALL sys_halt()
-    END SELECT
+    case DEFAULT
+      print *, "stack_create: Invalid data type!"
+      call sys_halt()
+    end select
 
     rstack%istackSize=isize
     rstack%idataType=cdataType
-  END SUBROUTINE stack_create
+  end subroutine stack_create
   
   !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stack_release(rstack)
+  subroutine stack_release(rstack)
 
 !<description>
     ! Release a stack
 !</description>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
     
-    IF (rstack%h_StackData /= ST_NOHANDLE) CALL storage_free(rstack%h_StackData)
+    if (rstack%h_StackData /= ST_NOHANDLE) call storage_free(rstack%h_StackData)
     
     rstack%istackSize=0
     rstack%istackPosition=0
-  END SUBROUTINE stack_release
+  end subroutine stack_release
   
   !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stack_clear(rstack)
+  subroutine stack_clear(rstack)
 
 !<description>
     ! Clear stack, i.e., reset stack pointer to zero
 !</description>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
     
     rstack%istackPosition=0       
-  END SUBROUTINE stack_clear
+  end subroutine stack_clear
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_isempty(rstack) RESULT(bisempty)
+  function stack_isempty(rstack) result(bisempty)
 
 !<description>
     ! Returns TRUE if stack is empty
 !</description>
 
 !<input>
-    TYPE(t_stack), INTENT(IN) :: rstack
+    type(t_stack), intent(IN) :: rstack
 !</input>
 
 !<result>
-    LOGICAL :: bisempty
+    logical :: bisempty
 !</result>
 !</function>
 
     bisempty=(rstack%istackPosition==0)
-  END FUNCTION stack_isempty
+  end function stack_isempty
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_size(rstack) RESULT(isize)
+  function stack_size(rstack) result(isize)
 
 !<description>
     ! Returns the stack size
 !</description>
 
 !<input>
-    TYPE(t_stack), INTENT(IN) :: rstack
+    type(t_stack), intent(IN) :: rstack
 !</input>
 
 !<result>
-    INTEGER :: isize
+    integer :: isize
 !</result>
 !</function>
 
     isize=rstack%istackPosition
-  END FUNCTION stack_size
+  end function stack_size
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE stack_pushbackInt(rstack,idata)
+  subroutine stack_pushbackInt(rstack,idata)
 
 !<description>
     ! Add an integer value to the top of the stack
 !</description>
     
 !<input>
-    INTEGER, INTENT(IN) :: idata
+    integer, intent(IN) :: idata
 !</input>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(I32), DIMENSION(:), POINTER :: StackData
+    integer(I32), dimension(:), pointer :: StackData
     
-    IF (rstack%h_StackData == ST_NOHANDLE) THEN
-      PRINT *, "stack_pushbackInt: Invalid data type"
-      CALL sys_halt()
-    END IF
+    if (rstack%h_StackData == ST_NOHANDLE) then
+      print *, "stack_pushbackInt: Invalid data type"
+      call sys_halt()
+    end if
     
     ! Double storage for stack if required
-    IF (rstack%istackSize == rstack%istackPosition) THEN
-      CALL storage_realloc("stack_pushbackInt",INT(2*rstack%istackSize,I32),&
-          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
+    if (rstack%istackSize == rstack%istackPosition) then
+      call storage_realloc("stack_pushbackInt",int(2*rstack%istackSize,I32),&
+          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
-    END IF
+    end if
     
     ! Push to stack
     rstack%istackPosition=rstack%istackPosition+1
-    CALL storage_getbase_int(rstack%h_StackData,StackData)
+    call storage_getbase_int(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=idata
-  END SUBROUTINE stack_pushbackInt
+  end subroutine stack_pushbackInt
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE stack_pushbackSngl(rstack,sdata)
+  subroutine stack_pushbackSngl(rstack,sdata)
 
 !<description>
     ! Add a single value to the top of the stack
 !</description>
     
 !<input>
-    REAL(SP), INTENT(IN) :: sdata
+    real(SP), intent(IN) :: sdata
 !</input>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(SP), DIMENSION(:), POINTER :: StackData
+    real(SP), dimension(:), pointer :: StackData
 
-    IF (rstack%h_StackData == ST_NOHANDLE) THEN
-      PRINT *, "stack_pushbackSngl: Invalid data type"
-      CALL sys_halt()
-    END IF
+    if (rstack%h_StackData == ST_NOHANDLE) then
+      print *, "stack_pushbackSngl: Invalid data type"
+      call sys_halt()
+    end if
 
     ! Double storage for stack if required
-    IF (rstack%istackSize == rstack%istackPosition) THEN
-      CALL storage_realloc("stack_pushbackSngl",INT(2*rstack%istackSize,I32),&
-          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
+    if (rstack%istackSize == rstack%istackPosition) then
+      call storage_realloc("stack_pushbackSngl",int(2*rstack%istackSize,I32),&
+          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
-    END IF
+    end if
 
     ! Push to stack
     rstack%istackPosition=rstack%istackPosition+1
-    CALL storage_getbase_single(rstack%h_StackData,StackData)
+    call storage_getbase_single(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=sdata
-  END SUBROUTINE stack_pushbackSngl
+  end subroutine stack_pushbackSngl
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE stack_pushbackDble(rstack,ddata)
+  subroutine stack_pushbackDble(rstack,ddata)
 
 !<description>
     ! Add a double value to the top of the stack
 !</description>
     
 !<input>
-    REAL(DP), INTENT(IN) :: ddata
+    real(DP), intent(IN) :: ddata
 !</input>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    real(DP), dimension(:), pointer :: StackData
 
-    IF (rstack%h_StackData == ST_NOHANDLE) THEN
-      PRINT *, "stack_pushbackDble: Invalid data type"
-      CALL sys_halt()
-    END IF
+    if (rstack%h_StackData == ST_NOHANDLE) then
+      print *, "stack_pushbackDble: Invalid data type"
+      call sys_halt()
+    end if
 
     ! Double storage for stack if required
-    IF (rstack%istackSize == rstack%istackPosition) THEN
-      CALL storage_realloc("stack_pushbackDble",INT(2*rstack%istackSize,I32),&
-          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
+    if (rstack%istackSize == rstack%istackPosition) then
+      call storage_realloc("stack_pushbackDble",int(2*rstack%istackSize,I32),&
+          rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
-    END IF
+    end if
     
     ! Push to stack
     rstack%istackPosition=rstack%istackPosition+1
-    CALL storage_getbase_double(rstack%h_StackData,StackData)
+    call storage_getbase_double(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=ddata
-  END SUBROUTINE stack_pushbackDble
+  end subroutine stack_pushbackDble
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_backInt(rstack) RESULT(idata)
+  function stack_backInt(rstack) result(idata)
 
 !<description>
     ! Return integer value from top of the stack
 !</description>
 
 !<input>
-    TYPE(t_stack), INTENT(IN) :: rstack
+    type(t_stack), intent(IN) :: rstack
 !</input>
 
 !<result>
-    INTEGER :: idata
+    integer :: idata
 !</result>
 !</function>
 
-    INTEGER(I32), DIMENSION(:), POINTER :: StackData
+    integer(I32), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_int(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_int(rstack%h_StackData,StackData)
       idata=StackData(rstack%istackPosition)
-    ELSE
-      PRINT *, "stack_backInt: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_backInt: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_backInt
+  end function stack_backInt
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_backSngl(rstack) RESULT(sdata)
+  function stack_backSngl(rstack) result(sdata)
 
 !<description>
     ! Return single value from top of the stack
 !</description>
 
 !<input>
-    TYPE(t_stack), INTENT(IN) :: rstack
+    type(t_stack), intent(IN) :: rstack
 !</input>
 
 !<result>
-    REAL(SP) :: sdata
+    real(SP) :: sdata
 !</result>
 !</function>
 
-    REAL(SP), DIMENSION(:), POINTER :: StackData
+    real(SP), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_single(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_single(rstack%h_StackData,StackData)
       sdata=StackData(rstack%istackPosition)
-    ELSE
-      PRINT *, "stack_backSngl: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_backSngl: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_backSngl
+  end function stack_backSngl
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_backDble(rstack) RESULT(ddata)
+  function stack_backDble(rstack) result(ddata)
 
 !<description>
     ! Return a single value from top of the stack
 !</description>
 
 !<input>
-    TYPE(t_stack), INTENT(IN) :: rstack
+    type(t_stack), intent(IN) :: rstack
 !</input>
 
 !<result>
-    REAL(SP) :: ddata
+    real(SP) :: ddata
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    real(DP), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_double(rstack%h_StackData,StackData)
       ddata=StackData(rstack%istackPosition)
-    ELSE
-      PRINT *, "stack_backDble: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_backDble: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_backDble
+  end function stack_backDble
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_popbackInt(rstack) RESULT(idata)
+  function stack_popbackInt(rstack) result(idata)
 
 !<description>
     ! Remove an integer value from top of the stack
 !</description>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 
 !<result>
-    INTEGER :: idata
+    integer :: idata
 !</result>
 !</function>
 
-    INTEGER(I32), DIMENSION(:), POINTER :: StackData
+    integer(I32), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_int(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_int(rstack%h_StackData,StackData)
       idata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
-    ELSE
-      PRINT *, "stack_popbackInt: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_popbackInt: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_popbackInt
+  end function stack_popbackInt
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_popbackSngl(rstack) RESULT(sdata)
+  function stack_popbackSngl(rstack) result(sdata)
 
 !<description>
     ! Remove a single value from top of the stack
 !</description>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 
 !<result>
-    REAL(SP) :: sdata
+    real(SP) :: sdata
 !</result>
 !</function>
 
-    REAL(SP), DIMENSION(:), POINTER :: StackData
+    real(SP), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_single(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_single(rstack%h_StackData,StackData)
       sdata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
-    ELSE
-      PRINT *, "stack_popbackSngl: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_popbackSngl: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_popbackSngl
+  end function stack_popbackSngl
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION stack_popbackDble(rstack) RESULT(ddata)
+  function stack_popbackDble(rstack) result(ddata)
 
 !<description>
     ! Remove a single value from top of the stack
 !</description>
 
 !<inputoutput>
-    TYPE(t_stack), INTENT(INOUT) :: rstack
+    type(t_stack), intent(INOUT) :: rstack
 !</inputoutput>
 
 !<result>
-    REAL(SP) :: ddata
+    real(SP) :: ddata
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    real(DP), dimension(:), pointer :: StackData
     
-    IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
+    if (.not.stack_isempty(rstack)) then
+      call storage_getbase_double(rstack%h_StackData,StackData)
       ddata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
-    ELSE
-      PRINT *, "stack_popbackDble: Stack empty!"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "stack_popbackDble: Stack empty!"
+      call sys_halt()
+    end if
     
-  END FUNCTION stack_popbackDble
-END MODULE stack
+  end function stack_popbackDble
+end module stack

@@ -4,17 +4,17 @@
   ! this interface is used for calculating values on a boundary which is described
   ! using a mesh region structure instead of an analytic boundary region structure.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValuesMR (Icomponents,rdiscretisation,rmeshRegion,&
+    subroutine fgetBoundaryValuesMR (Icomponents,rdiscretisation,rmeshRegion,&
                                      cinfoNeeded,Iwhere,Dwhere,Dcoords,Dvalues,&
                                      rcollection)
     
-    USE collection
-    USE spatialdiscretisation
-    USE meshregion
+    use collection
+    use spatialdiscretisation
+    use meshregion
     
   !<description>
     ! This subroutine is called during the assembly of boundary conditions which
@@ -30,20 +30,20 @@
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
     !   Velocity components that are affected by the normal stress
-    INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+    integer, dimension(:), intent(IN)                           :: Icomponents
 
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! Mesh region that is currently being processed.
-    TYPE(t_meshRegion), INTENT(IN)                              :: rmeshRegion
+    type(t_meshRegion), intent(IN)                              :: rmeshRegion
 
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
-    INTEGER, INTENT(IN)                                         :: cinfoNeeded
+    integer, intent(IN)                                         :: cinfoNeeded
     
     ! An array holding information about what type of DOF is currently processed.
     ! The information is build up as follows:
@@ -52,7 +52,7 @@
     ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
     ! Iwhere(4) = currently processed element number.
     ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
-    INTEGER, DIMENSION(4), INTENT(IN)                           :: Iwhere
+    integer, dimension(4), intent(IN)                           :: Iwhere
     
     ! The coordinates of the point which is currently processed, given in
     ! reference coordinates of the currently processed cell type (edge,face,element).
@@ -60,15 +60,15 @@
     ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
     ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
     ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
-    REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dwhere
+    real(DP), dimension(:), intent(IN)                          :: Dwhere
     
     ! The coordinates of the point for which the boundary values are to be
     ! calculated.
-    REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
+    real(DP), dimension(:), intent(IN)                          :: Dcoords
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL                 :: rcollection
+    type(t_collection), intent(INOUT), optional                 :: rcollection
 
   !</input>
   
@@ -81,12 +81,12 @@
     ! The function may return SYS_INFINITY as a value. This indicates the
     ! framework to ignore the node and treat it as 'natural boundary condition'
     ! node.
-    REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+    real(DP), dimension(:), intent(OUT)                         :: Dvalues
   !</output>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

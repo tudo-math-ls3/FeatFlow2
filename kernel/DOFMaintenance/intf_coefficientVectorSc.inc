@@ -1,20 +1,20 @@
   ! This file describes the interface for a coefficient function that is called
   ! during the matrix assembly of scalar vectors.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
+    subroutine fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -31,35 +31,35 @@
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements test in the test space.
     ! DIMENSION(\#local DOF's in test space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -68,12 +68,12 @@
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

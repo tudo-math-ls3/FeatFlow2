@@ -137,19 +137,19 @@
 !# </purpose>
 !##############################################################################
 
-MODULE vectorfilters
+module vectorfilters
 
-  USE fsystem
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE discretebc
-  USE discretefbc
-  USE dofmapping
-  USE genoutput
+  use fsystem
+  use linearsystemscalar
+  use linearsystemblock
+  use discretebc
+  use discretefbc
+  use dofmapping
+  use genoutput
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 ! *****************************************************************************
 ! Scalar vector filters
@@ -157,7 +157,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeDirichletBC (rx,rdbcStructure)
+  subroutine vecfil_imposeDirichletBC (rx,rdbcStructure)
   
 !<description>
   ! Implements discrete Dirichlet BC's into a scalar vector.
@@ -165,97 +165,97 @@ CONTAINS
 
 !<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
-  TYPE(t_discreteBCDirichlet), INTENT(IN), TARGET  :: rdbcStructure
+  type(t_discreteBCDirichlet), intent(IN), target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
 
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: rx
+  type(t_vectorScalar), intent(INOUT), target :: rx
   
 !</inputoutput>
   
 !</subroutine>
     
     ! local variables
-    INTEGER(PREC_DOFIDX) :: i
-    REAL(DP), DIMENSION(:), POINTER    :: p_vec
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    REAL(DP), DIMENSION(:), POINTER    :: p_val
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    integer(PREC_DOFIDX) :: i
+    real(DP), dimension(:), pointer    :: p_vec
+    integer(I32), dimension(:), pointer :: p_idx
+    real(DP), dimension(:), pointer    :: p_val
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rdbcStructure%nDOF .EQ. 0) RETURN
+    if (rdbcStructure%nDOF .eq. 0) return
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Dirichlet BC''s not correctly configured!',&
+    if (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE) then
+      call output_line('Dirichlet BC''s not correctly configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      CALL output_line('Are the BC''s only configured for defect values?!?',&
+      call output_line('Are the BC''s only configured for defect values?!?',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
-      CALL output_line('DBC not configured',&
+    if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
-    CALL storage_getbase_double(rdbcStructure%h_DdirichletValues,p_val)
+    call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    call storage_getbase_double(rdbcStructure%h_DdirichletValues,p_val)
 
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     
-    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      CALL output_line('DBC not configured',&
+    if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)  
     
-    IF (.NOT.ASSOCIATED(p_vec)) THEN
-      CALL output_line('No vector!',&
+    if (.not.associated(p_vec)) then
+      call output_line('No vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Only handle nDOF DOF's, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
     ! Is the vector sorted?
-    IF (rx%isortStrategy .LE. 0) THEN
+    if (rx%isortStrategy .le. 0) then
       ! No. Implement directly.
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = p_val(i)
-      END DO
-    ELSE
+      end do
+    else
       ! Ups, vector sorted. At first get the permutation how its sorted
       ! - or more precisely, the back-permutation, as we need this one for 
       ! the loop below.
-      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
       
       ! And 'filter' each DOF during the boundary value implementation!
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = p_val(i)
-      END DO
-    END IF
+      end do
+    end if
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeDirichletDefectBC (rx,rdbcStructure)
+  subroutine vecfil_imposeDirichletDefectBC (rx,rdbcStructure)
   
 !<description>
   ! Implements discrete Dirichlet BC's into a scalar defect vector.
@@ -263,51 +263,51 @@ CONTAINS
 
 !<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
-  TYPE(t_discreteBCDirichlet), INTENT(IN),TARGET  :: rdbcStructure
+  type(t_discreteBCDirichlet), intent(IN),target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: rx
+  type(t_vectorScalar), intent(INOUT), target :: rx
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_DOFIDX) :: i
-    REAL(DP), DIMENSION(:), POINTER :: p_vec
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    integer(PREC_DOFIDX) :: i
+    real(DP), dimension(:), pointer :: p_vec
+    integer(I32), dimension(:), pointer :: p_idx
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
     
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rdbcStructure%nDOF .EQ. 0) RETURN
+    if (rdbcStructure%nDOF .eq. 0) return
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
-      CALL output_line('DBC not configured',&
+    if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     
-    IF (.NOT.ASSOCIATED(p_idx)) THEN
-      CALL output_line('DBC not configured',&
+    if (.not.associated(p_idx)) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)  
     
-    IF (.NOT.ASSOCIATED(p_vec)) THEN
-      CALL output_line('No vector!',&
+    if (.not.associated(p_vec)) then
+      call output_line('No vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Impose the BC-DOF's directly - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
@@ -317,31 +317,31 @@ CONTAINS
     ! contains only some entries...
 
     ! Is the vector sorted?
-    IF (rx%isortStrategy .LE. 0) THEN
+    if (rx%isortStrategy .le. 0) then
       ! No. Implement directly.
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = 0.0_DP
-      END DO
-    ELSE
+      end do
+    else
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for 
       ! the loop below.
-      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
       
       ! And 'filter' each DOF during the boundary value implementation!
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = 0.0_DP
-      END DO
-    END IF
+      end do
+    end if
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
+  subroutine vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
   
 !<description>
   ! Implements discrete Dirichlet fictitious boundary conditions into a 
@@ -350,95 +350,95 @@ CONTAINS
 
 !<input>
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
-  TYPE(t_discreteFBCDirichlet), INTENT(IN), TARGET  :: rdbcStructure
+  type(t_discreteFBCDirichlet), intent(IN), target  :: rdbcStructure
   
   ! Index of the solution component in rdbcStructure\%Icomponent
-  INTEGER, INTENT(IN) :: icomponent
+  integer, intent(IN) :: icomponent
 !</input>
 
 !<inputoutput>
 
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: rx
+  type(t_vectorScalar), intent(INOUT), target :: rx
   
 !</inputoutput>
   
 !</subroutine>
     
     ! local variables
-    INTEGER(PREC_DOFIDX) :: i
-    REAL(DP), DIMENSION(:), POINTER    :: p_vec
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    REAL(DP), DIMENSION(:,:), POINTER    :: p_val
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    integer(PREC_DOFIDX) :: i
+    real(DP), dimension(:), pointer    :: p_vec
+    integer(I32), dimension(:), pointer :: p_idx
+    real(DP), dimension(:,:), pointer    :: p_val
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rdbcStructure%nDOF .EQ. 0) RETURN
+    if (rdbcStructure%nDOF .eq. 0) return
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF ((rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) .OR. &
-        (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE)) THEN
-      CALL output_line('Dirichlet BC''s not correctly configured!',&
+    if ((rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) .or. &
+        (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE)) then
+      call output_line('Dirichlet BC''s not correctly configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
-      CALL output_line('Are the BC''s only configured for defect values?!?',&
+      call output_line('Are the BC''s only configured for defect values?!?',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
-    CALL storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
+    call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    call storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
 
-    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      CALL output_line('DBC not configured',&
+    if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     
-    CALL lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)  
     
-    IF (.NOT.ASSOCIATED(p_vec)) THEN
-      CALL output_line('Error: No vector',&
+    if (.not.associated(p_vec)) then
+      call output_line('Error: No vector',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Only handle nDOF DOF's, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
     ! Is the vector sorted?
-    IF (rx%isortStrategy .LE. 0) THEN
+    if (rx%isortStrategy .le. 0) then
       ! No. Implement directly.
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = p_val(icomponent,i)
-      END DO
-    ELSE
+      end do
+    else
       ! Ups, vector sorted. At first get the permutation how its sorted
       ! - or more precisely, the back-permutation, as we need this one for 
       ! the loop below.
-      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
       
       ! And 'filter' each DOF during the boundary value implementation!
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = p_val(icomponent,i)
-      END DO
-    END IF
+      end do
+    end if
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeDirichletDefectFBC (rx,rdbcStructure)
+  subroutine vecfil_imposeDirichletDefectFBC (rx,rdbcStructure)
   
 !<description>
   ! Implements discrete Dirichlet fictitious boundary conditions into 
@@ -447,51 +447,51 @@ CONTAINS
 
 !<input>
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
-  TYPE(t_discreteFBCDirichlet), INTENT(IN),TARGET  :: rdbcStructure
+  type(t_discreteFBCDirichlet), intent(IN),target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: rx
+  type(t_vectorScalar), intent(INOUT), target :: rx
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_DOFIDX) :: i
-    REAL(DP), DIMENSION(:), POINTER :: p_vec
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    integer(PREC_DOFIDX) :: i
+    real(DP), dimension(:), pointer :: p_vec
+    integer(I32), dimension(:), pointer :: p_idx
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
     
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rdbcStructure%nDOF .EQ. 0) RETURN
+    if (rdbcStructure%nDOF .eq. 0) return
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
-      CALL output_line('DBC not configured',&
+    if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     
-    IF (.NOT.ASSOCIATED(p_idx)) THEN
-      CALL output_line('DBC not configured',&
+    if (.not.associated(p_idx)) then
+      call output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)  
     
-    IF (.NOT.ASSOCIATED(p_vec)) THEN
-      CALL output_line('No vector!',&
+    if (.not.associated(p_vec)) then
+      call output_line('No vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Impose the BC-DOF's directly - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
@@ -501,25 +501,25 @@ CONTAINS
     ! contains only some entries...
 
     ! Is the vector sorted?
-    IF (rx%isortStrategy .LE. 0) THEN
+    if (rx%isortStrategy .le. 0) then
       ! No. Implement directly.
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = 0.0_DP
-      END DO
-    ELSE
+      end do
+    else
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for 
       ! the loop below.
-      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
       
       ! And 'filter' each DOF during the boundary value implementation!
-      DO i=1,rdbcStructure%nDOF
+      do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = 0.0_DP
-      END DO
-    END IF
+      end do
+    end if
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Other scalar filters
@@ -527,7 +527,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE vecfil_normaliseToL20Sca (rx)
+  subroutine vecfil_normaliseToL20Sca (rx)
 
 !<description>
   ! This routine normalises a scalar vector to bring it into the space $L^2_0$.
@@ -535,19 +535,19 @@ CONTAINS
   
 !<inputoutput>
   ! The vector which is to be normalised.
-  TYPE(t_vectorScalar), INTENT(INOUT),TARGET :: rx
+  type(t_vectorScalar), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    REAL(DP), DIMENSION(:), POINTER        :: p_DelementArea,p_Ddata
-    REAL(DP) :: dpintegral,c
-    INTEGER(PREC_ELEMENTIDX) :: iel,nel,itrialspace
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    real(DP), dimension(:), pointer        :: p_DelementArea,p_Ddata
+    real(DP) :: dpintegral,c
+    integer(PREC_ELEMENTIDX) :: iel,nel,itrialspace
     
     ! Get the discretisation...
-    IF (.NOT. ASSOCIATED(rx%p_rspatialDiscr)) RETURN
+    if (.not. associated(rx%p_rspatialDiscr)) return
 
     p_rdiscretisation => rx%p_rspatialDiscr
     
@@ -557,24 +557,24 @@ CONTAINS
     ! which is somehow more costly...
     
 
-    IF (p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    if (p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
     
       itrialspace = elem_getPrimaryElement(&
           p_rdiscretisation%RelementDistr(1)%celement)
   
-      SELECT CASE (itrialspace)
-      CASE (EL_P0, EL_Q0) 
+      select case (itrialspace)
+      case (EL_P0, EL_Q0) 
     
         ! Ok, easy case. Get from the triangulation the AREA-array for calculating
         ! a simple integral of rx:
         
-        CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
+        call storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
                                      p_DelementArea)
                                       
         ! Get the vector data of rx
-        CALL lsyssc_getbase_double (rx,p_Ddata)
+        call lsyssc_getbase_double (rx,p_Ddata)
         
-        nel = SIZE(p_DelementArea)-1
+        nel = size(p_DelementArea)-1
                                       
         ! Build the integral
         !   int_Omega p dx
@@ -582,9 +582,9 @@ CONTAINS
         !   dpintegral = SUM_Elements P(Element)*Volume(Element)
         
         dpintegral=0.0_DP
-        DO iel=1,nel 
+        do iel=1,nel 
           dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
-        END DO
+        end do
         
         ! Divide dpintegral by the volume of the domain; this gives the integral
         ! mean value of the pressure:
@@ -594,22 +594,22 @@ CONTAINS
         ! Subtract the integral mean value C of the pressure from all
         ! pressure components. Afterwards, P has integral mean value = 0.
 
-        DO iel=1,nel
+        do iel=1,nel
           p_Ddata(iel) = p_Ddata(iel) - C
-        END DO
+        end do
         
-      CASE (EL_QP1)
+      case (EL_QP1)
     
         ! Ok, quadrilateral P1 element. Get from the triangulation the AREA-array for 
         ! calculating a simple integral of rx:
         
-        CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
+        call storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
                                     p_DelementArea)
                                       
         ! Get the vector data of rx
-        CALL lsyssc_getbase_double (rx,p_Ddata)
+        call lsyssc_getbase_double (rx,p_Ddata)
         
-        nel = SIZE(p_DelementArea)-1
+        nel = size(p_DelementArea)-1
                                       
         ! Build the integral
         !   int_Omega p dx
@@ -620,9 +620,9 @@ CONTAINS
         ! is the same as in the Q0 and P0 case, respectively.
         
         dpintegral=0.0_DP
-        DO iel=1,nel 
+        do iel=1,nel 
           dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
-        END DO
+        end do
         
         ! Divide dpintegral by the volume of the domain; this gives the integral
         ! mean value of the pressure:
@@ -632,27 +632,27 @@ CONTAINS
         ! Subtract the integral mean value C of the pressure from all
         ! pressure components. Afterwards, P has integral mean value = 0.
 
-        DO iel=1,nel
+        do iel=1,nel
           p_Ddata(iel) = p_Ddata(iel) - C
-        END DO
+        end do
         
-      CASE DEFAULT
+      case DEFAULT
 
-        CALL output_line('Unsupported discretisation!',&
+        call output_line('Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
+      end select
       
-    ELSE
+    else
     
-      CALL output_line('Unsupported discretisation!',&
+      call output_line('Unsupported discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
-      CALL sys_halt()
+      call sys_halt()
       
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
@@ -685,7 +685,7 @@ CONTAINS
     end do
     
     ! Divide by NEQ to get the mean value
-    dsum = dsum / REAL(rx%NEQ,DP)
+    dsum = dsum / real(rx%NEQ,DP)
     
     ! Substract this from all components; this finishes the filter.
     do ieq = 1,rx%NEQ
@@ -700,7 +700,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
+  subroutine vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
   
 !<description>
   ! Implements discrete pressure drop BC's into a block vector.
@@ -709,97 +709,97 @@ CONTAINS
 !<input>
   ! The t_discreteBCpressureDrop that describes the discrete pressure 
   ! drop BC's
-  TYPE(t_discreteBCpressureDrop), INTENT(IN), TARGET  :: rpdbcStructure
+  type(t_discreteBCpressureDrop), intent(IN), target  :: rpdbcStructure
   
   ! Weighting factor for time-dependent problems.
   ! =1.0 for stationary simulation.
-  REAL(DP), INTENT(IN) :: dtimeweight
+  real(DP), intent(IN) :: dtimeweight
 !</input>
 
 !<inputoutput>
 
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorblock), INTENT(INOUT), TARGET :: rx
+  type(t_vectorblock), intent(INOUT), target :: rx
   
 !</inputoutput>
   
 !</subroutine>
     
     ! local variables
-    INTEGER :: j,icp
-    INTEGER(PREC_DOFIDX) :: i
-    REAL(DP), DIMENSION(:), POINTER    :: p_vec
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    REAL(DP), DIMENSION(:,:), POINTER    :: p_val
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    integer :: j,icp
+    integer(PREC_DOFIDX) :: i
+    real(DP), dimension(:), pointer    :: p_vec
+    integer(I32), dimension(:), pointer :: p_idx
+    real(DP), dimension(:,:), pointer    :: p_val
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rpdbcStructure%nDOF .EQ. 0) RETURN
+    if (rpdbcStructure%nDOF .eq. 0) return
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    CALL storage_getbase_int(rpdbcStructure%h_IpressureDropDOFs,p_idx)
-    CALL storage_getbase_double2d(rpdbcStructure%h_Dmodifier,p_val)
+    call storage_getbase_int(rpdbcStructure%h_IpressureDropDOFs,p_idx)
+    call storage_getbase_double2d(rpdbcStructure%h_Dmodifier,p_val)
 
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvectors that is indexed by Icomponent(1..NDIM2D).
     
-    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      CALL output_line('Pressure drop BC not configured!',&
+    if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
+      call output_line('Pressure drop BC not configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Currently, only 2D is supported. 
     ! First handle the X-velocity (j=1), then the Y-velocity (j=2)
-    DO j=1,NDIM2D
+    do j=1,NDIM2D
     
       ! Get the subvector
       icp = rpdbcStructure%Icomponents(j)
-      CALL lsyssc_getbase_double (rx%RvectorBlock(icp), p_vec)
+      call lsyssc_getbase_double (rx%RvectorBlock(icp), p_vec)
     
-      IF (.NOT.ASSOCIATED(p_vec)) THEN
-        CALL output_line('No vector!',&
+      if (.not.associated(p_vec)) then
+        call output_line('No vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
 
       ! Only handle nDOF DOF's, not the complete array!
       ! Probably, the array is longer (e.g. has the length of the vector), but
       ! contains only some entries...
 
       ! Is the vector sorted?
-      IF (rx%RvectorBlock(j)%isortStrategy .LE. 0) THEN
+      if (rx%RvectorBlock(j)%isortStrategy .le. 0) then
         ! No. Implement directly.
-        DO i=1,rpdbcStructure%nDOF
+        do i=1,rpdbcStructure%nDOF
           p_vec(p_idx(i)) = p_vec(p_idx(i)) + p_val(j,i)*dtimeweight
-        END DO
-      ELSE
+        end do
+      else
         ! Oops, vector sorted. At first get the permutation how its sorted
         ! - or more precisely, the back-permutation, as we need this one for 
         ! the loop below.
-        CALL storage_getbase_int (rx%RvectorBlock(j)%h_IsortPermutation,p_Iperm)
+        call storage_getbase_int (rx%RvectorBlock(j)%h_IsortPermutation,p_Iperm)
         p_Iperm => p_Iperm(rx%RvectorBlock(j)%NEQ+1:)
 
         ! And 'filter' each DOF during the boundary value implementation!
-        DO i=1,rpdbcStructure%nDOF
+        do i=1,rpdbcStructure%nDOF
           p_vec(p_Iperm(p_idx(i))) = p_vec(p_Iperm(p_idx(i))) + &
                                      p_val(j,i) * dtimeweight
-        END DO
-      END IF
+        end do
+      end if
       
-    END DO
+    end do
   
-  END SUBROUTINE
+  end subroutine
   
 ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeNLSlipDefectBC (rx,rslipBCStructure)
+  subroutine vecfil_imposeNLSlipDefectBC (rx,rslipBCStructure)
   
 !<description>
   ! Implements discrete nonlinear slip BC's into a scalar defect vector
@@ -813,81 +813,81 @@ CONTAINS
 
 !<input>
   ! The t_discreteBCSlip that describes the discrete Dirichlet BC's
-  TYPE(t_discreteBCSlip), INTENT(IN), TARGET  :: rslipBCStructure
+  type(t_discreteBCSlip), intent(IN), target  :: rslipBCStructure
 !</input>
 
 !<inputoutput>
 
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+  type(t_vectorBlock), intent(INOUT), target :: rx
   
 !</inputoutput>
   
 !</subroutine>
     
     ! local variables
-    INTEGER(PREC_DOFIDX) :: i,idof
-    REAL(DP), DIMENSION(:), POINTER :: p_vecX,p_vecY
-    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dnormals
-    REAL(DP) :: d
+    integer(PREC_DOFIDX) :: i,idof
+    real(DP), dimension(:), pointer :: p_vecX,p_vecY
+    integer(I32), dimension(:), pointer :: p_idx
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    real(DP), dimension(:,:), pointer :: p_Dnormals
+    real(DP) :: d
     
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
-    IF (rslipBCStructure%nDOF .EQ. 0) RETURN
+    if (rslipBCStructure%nDOF .eq. 0) return
     
     ! Only 2D supported at the moment
-    IF (rslipBCStructure%ncomponents .NE. NDIM2D) THEN
-      CALL output_line('Only 2D supported!',&
+    if (rslipBCStructure%ncomponents .ne. NDIM2D) then
+      call output_line('Only 2D supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Only double precision vectors supported.
-    IF (rx%cdataType .NE. ST_DOUBLE) THEN 
-      CALL output_line('Only double precision supported!',&
+    if (rx%cdataType .ne. ST_DOUBLE) then 
+      call output_line('Only double precision supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF (rslipBCStructure%h_IslipDOFs .EQ. ST_NOHANDLE) THEN
-      CALL output_line('Slip-BC not configured!',&
+    if (rslipBCStructure%h_IslipDOFs .eq. ST_NOHANDLE) then
+      call output_line('Slip-BC not configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    CALL storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
+    call storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
     
-    IF (.NOT.ASSOCIATED(p_idx)) THEN
-      CALL output_line('Slip-BC not configured!',&
+    if (.not.associated(p_idx)) then
+      call output_line('Slip-BC not configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .NE.&
-        rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) THEN
-      CALL output_line('Subectors differently sorted!',&
+    if (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .ne.&
+        rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) then
+      call output_line('Subectors differently sorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    CALL lsyssc_getbase_double ( &
+    call lsyssc_getbase_double ( &
            rx%RvectorBlock(rslipBCStructure%Icomponents(1)), p_vecX)
-    CALL lsyssc_getbase_double ( &
+    call lsyssc_getbase_double ( &
            rx%RvectorBlock(rslipBCStructure%Icomponents(2)), p_vecY)
     
-    IF ( (.NOT.ASSOCIATED(p_vecX)) .OR. (.NOT.ASSOCIATED(p_vecX)) )THEN
-      CALL output_line('No vector!',&
+    if ( (.not.associated(p_vecX)) .or. (.not.associated(p_vecX)) )then
+      call output_line('No vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    CALL storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
+    call storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
 
     ! Impose the BC-DOF's directly - more precisely, into the
     ! components of all the subvectors.
@@ -897,9 +897,9 @@ CONTAINS
     ! contains only some entries...
 
     ! Is the vector sorted? If yes, all vectors are sorted the same way!
-    IF (rx%RvectorBlock(1)%isortStrategy .LE. 0) THEN
+    if (rx%RvectorBlock(1)%isortStrategy .le. 0) then
       ! No. Implement directly.
-      DO i=1,rslipBCStructure%nDOF
+      do i=1,rslipBCStructure%nDOF
         ! Get the DOF:
         idof = p_idx(i)
 
@@ -909,16 +909,16 @@ CONTAINS
         ! Compute: r := r - (n*r)*n
         p_vecX(idof) = p_vecX(idof) - d*p_Dnormals(1,i)
         p_vecY(idof) = p_vecY(idof) - d*p_Dnormals(2,i)
-      END DO
-    ELSE
+      end do
+    else
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for 
       ! the loop below.
-      CALL storage_getbase_int (rx%RvectorBlock(1)%h_IsortPermutation,p_Iperm)
+      call storage_getbase_int (rx%RvectorBlock(1)%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
       
       ! And 'filter' each DOF during the boundary value implementation!
-      DO i=1,rslipBCStructure%nDOF
+      do i=1,rslipBCStructure%nDOF
         ! Get the DOF:
         idof = p_Iperm(p_idx(i))
 
@@ -928,16 +928,16 @@ CONTAINS
         ! Compute: r := r - (n*r)*n
         p_vecX(idof) = p_vecX(idof) - d*p_Dnormals(1,idof)
         p_vecY(idof) = p_vecY(idof) - d*p_Dnormals(2,idof)
-      END DO
-    END IF
+      end do
+    end if
   
-  END SUBROUTINE
+  end subroutine
 
 ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeFeastMirrorBC (rx,rfmbcStructure)
+  subroutine vecfil_imposeFeastMirrorBC (rx,rfmbcStructure)
   
 !<description>
   ! Implements discrete Feast Mirror BC's into a scalar vector.
@@ -945,79 +945,79 @@ CONTAINS
 
 !<input>
   ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
-  TYPE(t_discreteBCFeastMirror), INTENT(IN), TARGET  :: rfmbcStructure
+  type(t_discreteBCFeastMirror), intent(IN), target  :: rfmbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+  type(t_vectorBlock), intent(INOUT), target :: rx
 !</inputoutput>
   
 !</subroutine>
     
   ! local variables
-  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
-  INTEGER :: i
-  REAL(DP), DIMENSION(:), POINTER    :: p_Dvec
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
-  REAL(DP) :: dmirrorWeight
+  integer(I32), dimension(:), pointer :: p_ImirrorDOFs
+  integer :: i
+  real(DP), dimension(:), pointer    :: p_Dvec
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  real(DP) :: dmirrorWeight
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
   
-  IF (rx%cdataType .NE. ST_DOUBLE) THEN
-    CALL output_line('Matrix must be double precision!',&
+  if (rx%cdataType .ne. ST_DOUBLE) then
+    call output_line('Matrix must be double precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
-    CALL sys_halt()
-  END IF
+    call sys_halt()
+  end if
   
-  IF (rfmbcStructure%icomponent .EQ. 0) THEN
-    CALL output_line('FMBC not configured!',&
+  if (rfmbcStructure%icomponent .eq. 0) then
+    call output_line('FMBC not configured!',&
         OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
-    CALL sys_halt()
-  END IF
+    call sys_halt()
+  end if
   
-  IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
+  if (rfmbcStructure%h_ImirrorDOFs .eq. ST_NOHANDLE) then
     ! No data inside of this structure.
     ! May happen if the region is not large enough to cover at least one DOF.
-    RETURN
-  END IF
+    return
+  end if
   
   ! Get the weight of the entries.
   ! =2 on finest level, =1.5 on level NLMAX-1,...
   !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
-  dmirrorWeight = 1.0_DP+1.0_DP*REAL(2**rfmbcStructure%icoarseningLevel,DP)
+  dmirrorWeight = 1.0_DP+1.0_DP*real(2**rfmbcStructure%icoarseningLevel,DP)
   
   ! Get the vector data
-  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
+  call lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
   
   ! Get pointers to the list of DOF's that belong to that region and have
   ! to be tackled.
-  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+  call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
 
-  IF ((rfmbcStructure%isubtype .EQ. 1) .OR. (rfmbcStructure%isubtype .EQ. 3)) THEN
+  if ((rfmbcStructure%isubtype .eq. 1) .or. (rfmbcStructure%isubtype .eq. 3)) then
     ! The DOF's should be treated as Dirichlet-DOF's.
     ! Only the matrix is modified according to the FEAST mirror bondary conditions!
     !
     ! For the implementation, we just set dmirrorWeight to 0.0.
     ! This clears all DOF entries and thus treats the DOF's like Dirichlet DOF's.
     dmirrorWeight = 0.0_DP
-  END IF
+  end if
   
   ! The vector entry corresponds to the DOF. For every DOF decide on
   ! whether it's on the FEAST mirror boundary component or not.
   ! If yes, double the entry entry.
   
   ! Is the vector sorted?
-  IF (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .LE. 0) THEN
+  if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
     
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
-    DO i=1,SIZE(p_ImirrorDOFs)
+    do i=1,size(p_ImirrorDOFs)
       p_Dvec(p_ImirrorDOFs(i)) = dmirrorWeight * p_Dvec(p_ImirrorDOFs(i))
-    END DO
+    end do
     
-  ELSE
+  else
   
     ! Ok, vector is sorted, so we have to filter all the DOF's through the
     ! permutation before using them for implementing boundary conditions.
@@ -1025,25 +1025,25 @@ CONTAINS
     ! Get the permutation (or more precisely, the inverse permutation)
     ! from the vector to renumber the columns into
     ! the actual DOF numbers.
-    CALL storage_getbase_int (&
+    call storage_getbase_int (&
         rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
     p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
     
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
-    DO i=1,SIZE(p_ImirrorDOFs)
+    do i=1,size(p_ImirrorDOFs)
       p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Dvec(p_Iperm(p_ImirrorDOFs(i)))
-    END DO
+    end do
 
-  END IF
+  end if
   
-  END SUBROUTINE
+  end subroutine
   
 ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposeFeastMirrorDefBC (rx,rfmbcStructure)
+  subroutine vecfil_imposeFeastMirrorDefBC (rx,rfmbcStructure)
   
 !<description>
   ! Implements discrete Feast Mirror BC's into a scalar defect vector.
@@ -1051,51 +1051,51 @@ CONTAINS
 
 !<input>
   ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
-  TYPE(t_discreteBCFeastMirror), INTENT(IN), TARGET  :: rfmbcStructure
+  type(t_discreteBCFeastMirror), intent(IN), target  :: rfmbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+  type(t_vectorBlock), intent(INOUT), target :: rx
 !</inputoutput>
   
 !</subroutine>
     
   ! local variables
-  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
-  INTEGER :: i
-  REAL(DP), DIMENSION(:), POINTER    :: p_Dvec
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+  integer(I32), dimension(:), pointer :: p_ImirrorDOFs
+  integer :: i
+  real(DP), dimension(:), pointer    :: p_Dvec
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
   
-  IF (rx%cdataType .NE. ST_DOUBLE) THEN
-    CALL output_line('Matrix must be double precision!',&
+  if (rx%cdataType .ne. ST_DOUBLE) then
+    call output_line('Matrix must be double precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
-    CALL sys_halt()
-  END IF
+    call sys_halt()
+  end if
   
-  IF (rfmbcStructure%icomponent .EQ. 0) THEN
-    CALL output_line('FMBC not configured!',&
+  if (rfmbcStructure%icomponent .eq. 0) then
+    call output_line('FMBC not configured!',&
         OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
-    CALL sys_halt()
-  END IF
+    call sys_halt()
+  end if
   
-  IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
+  if (rfmbcStructure%h_ImirrorDOFs .eq. ST_NOHANDLE) then
     ! No data inside of this structure.
     ! May happen if the region is not large enough to cover at least one DOF.
-    RETURN
-  END IF
+    return
+  end if
   
   ! Get the vector data
-  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
+  call lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
   
   ! Get pointers to the list of DOF's that belong to that region and have
   ! to be tackled.
-  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+  call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
 
-  IF ((rfmbcStructure%isubtype .EQ. 1) .OR. (rfmbcStructure%isubtype .EQ. 3)) THEN
+  if ((rfmbcStructure%isubtype .eq. 1) .or. (rfmbcStructure%isubtype .eq. 3)) then
     ! The DOF's should be treated as Dirichlet-DOF's.
     !
     ! The vector entry corresponds to the DOF. For every DOF decide on
@@ -1103,15 +1103,15 @@ CONTAINS
     ! If yes, put the entry to zero.
     
     ! Is the vector sorted?
-    IF (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .LE. 0) THEN
+    if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
       
       ! Loop through the DOF's. Each DOF gives us the number of an entry
       ! which is to be doubled.
-      DO i=1,SIZE(p_ImirrorDOFs)
+      do i=1,size(p_ImirrorDOFs)
         p_Dvec(p_ImirrorDOFs(i)) = 0.0_DP
-      END DO
+      end do
       
-    ELSE
+    else
     
       ! Ok, vector is sorted, so we have to filter all the DOF's through the
       ! permutation before using them for implementing boundary conditions.
@@ -1119,21 +1119,21 @@ CONTAINS
       ! Get the permutation (or more precisely, the inverse permutation)
       ! from the vector to renumber the columns into
       ! the actual DOF numbers.
-      CALL storage_getbase_int (&
+      call storage_getbase_int (&
           rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
       
       ! Loop through the DOF's. Each DOF gives us the number of an entry
       ! which is to be doubled.
-      DO i=1,SIZE(p_ImirrorDOFs)
+      do i=1,size(p_ImirrorDOFs)
         p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = 0.0_DP
-      END DO
+      end do
 
-    END IF
+    end if
     
-  END IF
+  end if
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   ! Implementation of discrete boundary conditions into block solution vectors
@@ -1141,7 +1141,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteBCsol (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCsol (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to solution'
@@ -1156,59 +1156,59 @@ CONTAINS
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations or when filtering
   ! vectors during the solution process of a linear system.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i
-    REAL(DP) :: dtweight
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    integer :: iblock,i
+    real(DP) :: dtweight
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
 
-    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+    if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBC)) THEN
+      if (associated(rx%p_rdiscreteBC)) then
         p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteBC)
+      end if
+    else
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    if (.not. associated(p_RdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteBC(i)%itype)
-      CASE (DISCBC_TPUNDEFINED)
+      select case (p_RdiscreteBC(i)%itype)
+      case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCBC_TPDIRICHLET)
+      case (DISCBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
@@ -1216,29 +1216,29 @@ CONTAINS
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
-        CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
+        call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
                                       p_RdiscreteBC(i)%rdirichletBCs)
         
-      CASE (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
 
-      CASE (DISCBC_TPSLIP)  
+      case (DISCBC_TPSLIP)  
         ! Nothing to do
         
-      CASE (DISCBC_TPFEASTMIRROR)
+      case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
                 
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Implementation of discrete boundary conditions into block RHS vectors
@@ -1246,7 +1246,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteBCrhs (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCrhs (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to RHS'
@@ -1260,52 +1260,52 @@ CONTAINS
   ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i
-    REAL(DP) :: dtweight
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    integer :: iblock,i
+    real(DP) :: dtweight
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
 
-    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+    if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-    ELSE
+    else
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    if (.not. associated(p_RdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteBC(i)%itype)
-      CASE (DISCBC_TPUNDEFINED)
+      select case (p_RdiscreteBC(i)%itype)
+      case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCBC_TPDIRICHLET)
+      case (DISCBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
@@ -1313,35 +1313,35 @@ CONTAINS
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
-        CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
+        call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
                                       p_RdiscreteBC(i)%rdirichletBCs)
       
-      CASE (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do.
         
-      CASE (DISCBC_TPSLIP)
+      case (DISCBC_TPSLIP)
         ! Nothing to do.
         
-      CASE (DISCBC_TPFEASTMIRROR)
-        CALL vecfil_imposeFeastMirrorBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
+      case (DISCBC_TPFEASTMIRROR)
+        call vecfil_imposeFeastMirrorBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCrhs')
                 
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteNLPDropBCrhs (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteNLPDropBCrhs (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
   ! Implements discrete pressure drop BC's into a block RHS vector.
@@ -1358,62 +1358,62 @@ CONTAINS
   ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the vector.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i
-    REAL(DP) :: dtweight
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    integer :: i
+    real(DP) :: dtweight
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
 
-    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+    if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBC)) THEN
+      if (associated(rx%p_rdiscreteBC)) then
         p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteBC)
+      end if
+    else
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    if (.not. associated(p_RdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete pressure drop BC's.
-      IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPPRESSUREDROP) THEN
-        CALL vecfil_imposePressureDropBC (rx,dtweight,&
+      if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPPRESSUREDROP) then
+        call vecfil_imposePressureDropBC (rx,dtweight,&
                                           p_RdiscreteBC(i)%rpressureDropBCs)        
-      END IF
+      end if
       
-    END DO
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Implementation of discrete boundary conditions into block defect vectors
@@ -1421,7 +1421,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteBCdef (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCdef (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to defect'
@@ -1436,59 +1436,59 @@ CONTAINS
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations or when filtering
   ! vectors during the solution process of a linear system.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i !,icp
-    REAL(DP) :: dtweight
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    integer :: iblock,i !,icp
+    real(DP) :: dtweight
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
 
-    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+    if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBC)) THEN
+      if (associated(rx%p_rdiscreteBC)) then
         p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteBC)
+      end if
+    else
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    if (.not. associated(p_RdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteBC(i)%itype)
-      CASE (DISCBC_TPUNDEFINED)
+      select case (p_RdiscreteBC(i)%itype)
+      case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCBC_TPDIRICHLET)
+      case (DISCBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
@@ -1496,36 +1496,36 @@ CONTAINS
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
-        CALL vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
+        call vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
                                             p_RdiscreteBC(i)%rdirichletBCs)
         
-      CASE (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
         
-      CASE (DISCBC_TPSLIP)
+      case (DISCBC_TPSLIP)
         ! Slip boundary conditions in the linear case are implemented
         ! in a nonlinear loop - so there's nothing to do here.
                 
-      CASE (DISCBC_TPFEASTMIRROR)
+      case (DISCBC_TPFEASTMIRROR)
         ! Routine is on purpose not commented in! Not used for now!
         ! CALL vecfil_imposeFeastMirrorDefBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCdef')
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteNLSlipBCdef (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteNLSlipBCdef (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
   ! Implements discrete nonlinear slip BC's into a defect vector.
@@ -1544,61 +1544,61 @@ CONTAINS
   ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the vector.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i
-    REAL(DP) :: dtweight
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    integer :: i
+    real(DP) :: dtweight
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
 
-    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+    if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBC)) THEN
+      if (associated(rx%p_rdiscreteBC)) then
         p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteBC)
+      end if
+    else
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    if (.not. associated(p_RdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    DO i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete slip BC's.
-      IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPSLIP) THEN
-        CALL vecfil_imposeNLSlipDefectBC (rx,p_RdiscreteBC(i)%rslipBCs)          
-      END IF
+      if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPSLIP) then
+        call vecfil_imposeNLSlipDefectBC (rx,p_RdiscreteBC(i)%rslipBCs)          
+      end if
       
-    END DO
+    end do
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   ! Implementation of discrete fictitious boundary conditions into 
@@ -1607,7 +1607,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteFBCsol (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCsol (rx,dtimeWeight,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1623,85 +1623,85 @@ CONTAINS
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations or when filtering
   ! vectors during the solution process of a linear system.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default fictitious boundary conditions associated 
   ! to the vector rx are imposed to the matrix.
-  TYPE(t_discreteFBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i,j
-    REAL(DP) :: dtweight
-    TYPE(t_discreteFBCEntry), DIMENSION(:), POINTER :: p_RdiscreteFBC
+    integer :: iblock,i,j
+    real(DP) :: dtweight
+    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
-    IF (.NOT. PRESENT(rdiscreteFBC)) THEN
+    if (.not. present(rdiscreteFBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBCfict)) THEN
+      if (associated(rx%p_rdiscreteBCfict)) then
         p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteFBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteFBC)
+      end if
+    else
       p_RdiscreteFBC => rdiscreteFBC%p_RdiscFBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteFBC)) RETURN
+    if (.not. associated(p_RdiscreteFBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteFBC)
+    do i=1,size(p_RdiscreteFBC)
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteFBC(i)%itype)
-      CASE (DISCFBC_TPUNDEFINED)
+      select case (p_RdiscreteFBC(i)%itype)
+      case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCFBC_TPDIRICHLET)
+      case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         ! Loop through all components, these boundary conditions should apply to.
         
-        DO j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
+        do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
           ! Implement the Dirichlet boundary conditions into that component
           ! of the vector.
-          CALL vecfil_imposeDirichletFBC (rx%RvectorBlock(iblock),j,&
+          call vecfil_imposeDirichletFBC (rx%RvectorBlock(iblock),j,&
                                           p_RdiscreteFBC(i)%rdirichletFBCs)
-        END DO
+        end do
 
-      CASE (DISCBC_TPSLIP)
+      case (DISCBC_TPSLIP)
         ! Nothing to do.
         
-      CASE (DISCBC_TPFEASTMIRROR)
+      case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Implementation of discrete fictitious boundary conditions into 
@@ -1710,7 +1710,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteFBCrhs (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCrhs (rx,dtimeWeight,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1725,83 +1725,83 @@ CONTAINS
   ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  TYPE(t_discreteFBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i,j
-    REAL(DP) :: dtweight
-    TYPE(t_discreteFBCEntry), DIMENSION(:), POINTER :: p_RdiscreteFBC
+    integer :: iblock,i,j
+    real(DP) :: dtweight
+    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
-    IF (.NOT. PRESENT(rdiscreteFBC)) THEN
+    if (.not. present(rdiscreteFBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBCfict)) THEN
+      if (associated(rx%p_rdiscreteBCfict)) then
         p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
-      ELSE
+      else
         ! No BC
-        NULLIFY(p_RdiscreteFBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteFBC)
+      end if
+    else
       p_RdiscreteFBC => rdiscreteFBC%p_RdiscFBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteFBC)) RETURN
+    if (.not. associated(p_RdiscreteFBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteFBC)
+    do i=1,size(p_RdiscreteFBC)
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteFBC(i)%itype)
-      CASE (DISCFBC_TPUNDEFINED)
+      select case (p_RdiscreteFBC(i)%itype)
+      case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCFBC_TPDIRICHLET)
+      case (DISCFBC_TPDIRICHLET)
         ! Loop through all components, these boundary conditions should apply to.
         
-        DO j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
+        do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
           
           ! Implement the Dirichlet boundary conditions into that component
           ! of the vector.
-          CALL vecfil_imposeDirichletFBC (rx%RvectorBlock(iblock),j,&
+          call vecfil_imposeDirichletFBC (rx%RvectorBlock(iblock),j,&
                                           p_RdiscreteFBC(i)%rdirichletFBCs)
-        END DO
+        end do
       
-      CASE (DISCBC_TPSLIP)
+      case (DISCBC_TPSLIP)
         ! Nothing to do.
         
-      CASE (DISCBC_TPFEASTMIRROR)
+      case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCrhs')
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Implementation of discrete fictitious boundary conditions into 
@@ -1810,7 +1810,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteFBCdef (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCdef (rx,dtimeWeight,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1826,86 +1826,86 @@ CONTAINS
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations or when filtering
   ! vectors during the solution process of a linear system.
-  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+  real(DP), intent(IN), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  TYPE(t_discreteFBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: iblock,i,j
-    REAL(DP) :: dtweight
-    TYPE(t_discreteFBCEntry), DIMENSION(:), POINTER :: p_RdiscreteFBC
+    integer :: iblock,i,j
+    real(DP) :: dtweight
+    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
-    IF (.NOT. PRESENT(rdiscreteFBC)) THEN
+    if (.not. present(rdiscreteFBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      IF (ASSOCIATED(rx%p_rdiscreteBCfict)) THEN
+      if (associated(rx%p_rdiscreteBCfict)) then
         p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
-      ELSE
+      else
         ! No BC.
-        NULLIFY(p_RdiscreteFBC)
-      END IF
-    ELSE
+        nullify(p_RdiscreteFBC)
+      end if
+    else
       p_RdiscreteFBC => rdiscreteFBC%p_RdiscFBCList
-    END IF
+    end if
     
-    IF (.NOT. ASSOCIATED(p_RdiscreteFBC)) RETURN
+    if (.not. associated(p_RdiscreteFBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
-    IF (PRESENT(dtimeWeight)) THEN
+    if (present(dtimeWeight)) then
       dtweight = dtimeWeight
-    ELSE
+    else
       dtweight = 1.0_DP
-    END IF
+    end if
     ! Note: Time-step weight not used by any filter up to now!
     ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
-    DO i=1,SIZE(p_RdiscreteFBC)
+    do i=1,size(p_RdiscreteFBC)
     
       ! What for BC's do we have here?
-      SELECT CASE (p_RdiscreteFBC(i)%itype)
-      CASE (DISCFBC_TPUNDEFINED)
+      select case (p_RdiscreteFBC(i)%itype)
+      case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
         
-      CASE (DISCFBC_TPDIRICHLET)
+      case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         
         ! Loop over all blocks where to implement these FBC's.
-        DO j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
+        do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
         
           ! Implement the Dirichlet boundary conditions into that component
           ! of the vector.
-          CALL vecfil_imposeDirichletDefectFBC (rx%RvectorBlock(iblock),&
+          call vecfil_imposeDirichletDefectFBC (rx%RvectorBlock(iblock),&
                                                 p_RdiscreteFBC(i)%rdirichletFBCs)
-        END DO
+        end do
         
-      CASE (DISCBC_TPSLIP)
+      case (DISCBC_TPSLIP)
         ! Nothing to do.
         
-      CASE (DISCBC_TPFEASTMIRROR)
+      case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
         
-      CASE DEFAULT
-        CALL output_line(&
+      case DEFAULT
+        call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCdef')
-        CALL sys_halt()
+        call sys_halt()
         
-      END SELECT
-    END DO
+      end select
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! Other block filters
@@ -1913,7 +1913,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_subvectorToL20 (rx,isubvector)
+  subroutine vecfil_subvectorToL20 (rx,isubvector)
 
 !<description>
   ! This routine realises the 'subvector to $L^2_0$' filter.
@@ -1924,37 +1924,37 @@ CONTAINS
 !<inputoutput>
 
   ! The block vector which is partially to be normalised.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
   
   ! The number of the subvector in rx which is to be normalised.
-  INTEGER, INTENT(IN) :: isubvector
+  integer, intent(IN) :: isubvector
   
 !</inputoutput>
 
 !</subroutine>
 
-    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
-      CALL output_line('isubvector out of allowed range!',&
+    if ((isubvector .le. 0) .or. (isubvector .gt. size(rx%RvectorBlock))) then
+      call output_line('isubvector out of allowed range!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_subvectorToL20')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
       
     ! Don't use one single IF here as this may lead to errors depending
     ! on the compiler (subvector=0 and access to vector(isubvector)).
-    IF ((rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
-        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) &
-      RETURN
+    if ((rx%RvectorBlock(isubvector)%h_Ddata .eq. ST_NOHANDLE) .or. &
+        (rx%RvectorBlock(isubvector)%NEQ .le. 0)) &
+      return
         
     ! Normalise the subvector isubvector
-    CALL vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))
+    call vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_subvectorSmallL1To0 (rx,isubvector)
+  subroutine vecfil_subvectorSmallL1To0 (rx,isubvector)
 
 !<description>
   ! This routine realises the 'vector sum to 0' filter.
@@ -1966,30 +1966,30 @@ CONTAINS
 !<inputoutput>
 
   ! The block vector which is partially to be normalised.
-  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+  type(t_vectorBlock), intent(INOUT),target :: rx
   
   ! The number of the subvector in rx which is to be normalised.
-  INTEGER, INTENT(IN) :: isubvector
+  integer, intent(IN) :: isubvector
   
 !</inputoutput>
 
 !</subroutine>
 
-    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
-      CALL output_line('isubvector out of allowed range!',&
+    if ((isubvector .le. 0) .or. (isubvector .gt. size(rx%RvectorBlock))) then
+      call output_line('isubvector out of allowed range!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseSmallL1To0')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
       
     ! Don't use one single IF here as this may lead to errors depending
     ! on the compiler (subvector=0 and access to vector(isubvector)).
-    IF ((rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
-        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) &
-      RETURN
+    if ((rx%RvectorBlock(isubvector)%h_Ddata .eq. ST_NOHANDLE) .or. &
+        (rx%RvectorBlock(isubvector)%NEQ .le. 0)) &
+      return
         
     ! Normalise the subvector isubvector
-    CALL vecfil_normaliseSmallL1To0Sca (rx%RvectorBlock(isubvector))
+    call vecfil_normaliseSmallL1To0Sca (rx%RvectorBlock(isubvector))
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

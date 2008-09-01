@@ -1,16 +1,16 @@
   ! This file describes the interface for a callback routine that is called
   ! for calculating values at the boundary for boundary conditions.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+    subroutine fgetBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
     
-    USE collection
-    USE spatialdiscretisation
-    USE discretebc
+    use collection
+    use spatialdiscretisation
+    use discretebc
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
@@ -30,23 +30,23 @@
     !   Velocity components that are affected by the normal stress
     !   (usually "1 2" for x- and y-velocity while returned value musr specify
     !   the pressure at the boundary)
-    INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+    integer, dimension(:), intent(IN)                           :: Icomponents
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! Boundary region that is currently being processed.
-    TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
+    type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
     
     ! The element number on the boundary which is currently being processed
-    INTEGER(I32), INTENT(IN)                                    :: ielement
+    integer(I32), intent(IN)                                    :: ielement
     
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
-    INTEGER, INTENT(IN)                                         :: cinfoNeeded
+    integer, intent(IN)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -65,7 +65,7 @@
     !            should be computed
     ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
     !   iwhere = Number of the edge where the normal stress should be computed.
-    INTEGER(I32), INTENT(IN)                                    :: iwhere
+    integer(I32), intent(IN)                                    :: iwhere
 
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -77,11 +77,11 @@
     ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
     !   dwhere = parameter value of the point on edge iwhere where the normal
     !            stress should be computed.
-    REAL(DP), INTENT(IN)                                        :: dwhere
+    real(DP), intent(IN)                                        :: dwhere
      
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
 
   !</input>
   
@@ -94,7 +94,7 @@
     ! The function may return SYS_INFINITY as a value. This indicates the
     ! framework to ignore the node and treat it as 'natural boundary condition'
     ! node.
-    REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+    real(DP), dimension(:), intent(OUT)                         :: Dvalues
   !</output>
     
   !</subroutine>
@@ -106,7 +106,7 @@
       ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
       !     rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

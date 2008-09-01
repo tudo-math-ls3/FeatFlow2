@@ -28,46 +28,46 @@
 !# </purpose>
 !##############################################################################
 
-MODULE discretefbc
+module discretefbc
 
-  USE fsystem
-  USE boundarycondition
-  USE dofmapping
+  use fsystem
+  use boundarycondition
+  use dofmapping
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="General constants concerning filters">
 
   ! A standard length for arrays holding a set of discretised BC's
-  INTEGER, PARAMETER :: DISCFBC_MAXDISCBC         =  32
+  integer, parameter :: DISCFBC_MAXDISCBC         =  32
 
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete boundary conditions">
 
   ! undefined discrete BC's
-  INTEGER, PARAMETER :: DISCFBC_TPUNDEFINED    = 0
+  integer, parameter :: DISCFBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
-  INTEGER, PARAMETER :: DISCFBC_TPDIRICHLET    = 1
+  integer, parameter :: DISCFBC_TPDIRICHLET    = 1
   
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of FBC's">
   
   ! Calculate the function value in corner vertices of elements in the object
-  INTEGER, PARAMETER :: DISCFBC_NEEDFUNC         = 0
+  integer, parameter :: DISCFBC_NEEDFUNC         = 0
 
   ! Calculate the function value in a edge midpoints of elements in the object
-  INTEGER, PARAMETER :: DISCFBC_NEEDFUNCMID      = 1
+  integer, parameter :: DISCFBC_NEEDFUNCMID      = 1
   
   ! Calculate the integral mean value on edges in the object
-  INTEGER, PARAMETER :: DISCFBC_NEEDINTMEAN      = 2
+  integer, parameter :: DISCFBC_NEEDINTMEAN      = 2
 
   ! Calculate the function value in midpoints of elements in the object
-  INTEGER, PARAMETER :: DISCFBC_NEEDFUNCELMID    = 3
+  integer, parameter :: DISCFBC_NEEDFUNCELMID    = 3
 
 !</constantblock>
   
@@ -85,30 +85,30 @@ MODULE discretefbc
   ! The variable Icomponents receives a list of all components in the solution
   ! vector that are affected by this bonudary condition.
   
-  TYPE t_discreteFBCDirichlet
+  type t_discreteFBCDirichlet
     
     ! Number of boundary components affected by this boundary condition.
     ! E.g. =2 for X- and Y-velocity.
-    INTEGER                             :: ncomponents       = 0
+    integer                             :: ncomponents       = 0
     
     ! A list of 1..ncomponents components of the equation, this discrete BC 
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
-    INTEGER, DIMENSION(:), POINTER      :: Icomponents       => NULL()
+    integer, dimension(:), pointer      :: Icomponents       => null()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    INTEGER(PREC_DOFIDX)                :: nDOF              = 0
+    integer(PREC_DOFIDX)                :: nDOF              = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer
     ! p_IdirichletDOFs(i) is the number of the i'th DOF that is to be overwritten
     ! by the 'Dirichlet replacement' filter. 
-    INTEGER :: h_IdirichletDOFs   = ST_NOHANDLE
+    integer :: h_IdirichletDOFs   = ST_NOHANDLE
     
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
     !   array [1..ncomponents,1..nDOF] of double
-    INTEGER :: h_DdirichletValues = ST_NOHANDLE
+    integer :: h_DdirichletValues = ST_NOHANDLE
     
-  END TYPE
+  end type
   
 !</typeblock>
   
@@ -120,17 +120,17 @@ MODULE discretefbc
   ! describes. Depending on the type, one of the information blocks
   ! is filled with data about the discrete BC's.
   
-  TYPE t_discreteFBCEntry
+  type t_discreteFBCEntry
     
     ! The type identifier. Identifies the type of discrete BC's, this
     ! structure describes.
-    INTEGER                             :: itype = DISCFBC_TPUNDEFINED
+    integer                             :: itype = DISCFBC_TPUNDEFINED
     
     ! Structure for discrete Dirichlet BC's.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
-    TYPE(t_discreteFBCDirichlet)        :: rdirichletFBCs
+    type(t_discreteFBCDirichlet)        :: rdirichletFBCs
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -141,21 +141,21 @@ MODULE discretefbc
   ! This is just an array of t_discreteFBCEntry structures, each describing
   ! a single discrete boundary condition (so to speak, a collection of objects
   ! sharing the same boundary conditions, discretised in the same way).
-  TYPE t_discreteFBC
+  type t_discreteFBC
   
     ! Total number of allocated t_discreteFBCEntry structures in p_RdiscFBCList.
-    INTEGER :: inumEntriesAlloc = 0
+    integer :: inumEntriesAlloc = 0
     
     ! Total number of used t_discreteFBCEntry structures in p_RdiscFBCList.
-    INTEGER :: inumEntriesUsed = 0
+    integer :: inumEntriesUsed = 0
 
     ! An array of t_discreteFBCEntry structures. Each structure describes
     ! one discrete fictitions boundary boundary condition - so one group of
     ! objects with the same 'boundary' condition discretised
     ! in a special, discretisation-dependent way.
-    TYPE(t_discreteFBCEntry), DIMENSION(:), POINTER :: p_RdiscFBCList => NULL()
+    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscFBCList => null()
   
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -164,12 +164,12 @@ MODULE discretefbc
   ! A structure of this type is passed to the callback routine for assembling the FB
   ! boundary conditions. This structure specifies the points/locations where the
   ! callback routine for the assembly should evaluate.
-  TYPE t_discreteFBCevaluation
+  type t_discreteFBCevaluation
 
     ! An integer tag that defines what to evaluate. One of the DISCFBC_xxxx constants.
     ! The constant in this tag defines what can be found in the other entries of
     ! this structure!
-    INTEGER :: cinfoNeeded = 0
+    integer :: cinfoNeeded = 0
 
     ! Number of values to calculate. What to calculate is depending on cinfoNeeded:
     ! cinfoNeeded = DISCFBC_NEEDFUNC: 
@@ -183,7 +183,7 @@ MODULE discretefbc
     !  
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID:
     !               nvalues = number of elements (=length of p_Iwhere) 
-    INTEGER :: nvalues = 0
+    integer :: nvalues = 0
 
     ! An integer array specifying the location of points/edges/elements where
     ! to evaluate. The content is depending on the situation, specifíed by the
@@ -208,7 +208,7 @@ MODULE discretefbc
     ! Usually, nvalues defines the number of entries in p_Iwhere where to evaluate;
     ! the actual size of p_Iwhere might be larger than nvalues, so the callback
     ! routine should orientate on nvalues.
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Iwhere => NULL()
+    integer(I32), dimension(:), pointer :: p_Iwhere => null()
   
     ! A pointer to an array that accepts calculated values. The callback routine
     ! for evaluating on the fictitious boundary component must fill this
@@ -236,7 +236,7 @@ MODULE discretefbc
     ! Remark: Depending on what is to be evaluated, not all values (point values,...)
     ! must be calculated. If some values are left out, the callback routine can
     ! use the p_Binside array to indicate what is calculated and what not.
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dvalues => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dvalues => null()
     
     ! A pointer to an array of integer values for each value to calculate.
     ! Must be set to 1 by the callback routine for those values that are 
@@ -265,12 +265,12 @@ MODULE discretefbc
     !   object and p_Dvalues(i,1) is calculated. 
     !   Set "p_Iinside(i) = 0" if the midpoint of element i is outside of the FBC 
     !   object; p_Dvalues(i,1) need not to be calculated.
-    INTEGER, DIMENSION(:), POINTER :: p_Iinside
+    integer, dimension(:), pointer :: p_Iinside
   
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
   
-END MODULE
+end module

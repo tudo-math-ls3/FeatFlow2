@@ -31,55 +31,55 @@
 !# </purpose>
 !##############################################################################
 
-MODULE discretebc
+module discretebc
 
-  USE fsystem
-  USE dofmapping
+  use fsystem
+  use dofmapping
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="The type identifier for discrete (linear) boundary conditions">
 
   ! undefined discrete BC's
-  INTEGER, PARAMETER :: DISCBC_TPUNDEFINED    = 0
+  integer, parameter :: DISCBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPDIRICHLET    = 1
+  integer, parameter :: DISCBC_TPDIRICHLET    = 1
   
   ! Discrete FEAST mirror boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPFEASTMIRROR  = 2
+  integer, parameter :: DISCBC_TPFEASTMIRROR  = 2
   
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete nonlinear boundary conditions">
 
   ! Discrete pressure drop boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 100
+  integer, parameter :: DISCBC_TPPRESSUREDROP = 100
 
   ! Discrete slip boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPSLIP         = 101
+  integer, parameter :: DISCBC_TPSLIP         = 101
 
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of BC's">
   
   ! Calculate the function value in a point on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDFUNC         = 0
+  integer, parameter :: DISCBC_NEEDFUNC         = 0
 
   ! Calculate the function value in a point on an edge on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDFUNCMID      = 1
+  integer, parameter :: DISCBC_NEEDFUNCMID      = 1
   
   ! Calculate the x- and y-derivative in a point on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDDERIV        = 2
+  integer, parameter :: DISCBC_NEEDDERIV        = 2
 
   ! Calculate the integral mean value over an edge on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDINTMEAN      = 3
+  integer, parameter :: DISCBC_NEEDINTMEAN      = 3
 
   ! Calculate the normal stress in a point. For flow-like problems,
   ! this corresponds to a prescribed pressure in pressure-drop problems.
-  INTEGER, PARAMETER :: DISCBC_NEEDNORMALSTRESS = 4
+  integer, parameter :: DISCBC_NEEDNORMALSTRESS = 4
 
 !</constantblock>
 
@@ -87,7 +87,7 @@ MODULE discretebc
 
   ! Default blocksize for allocating new structures in the p_RdiscBCList
   ! list - if the list is full.
-  INTEGER, PARAMETER :: DISCBC_LISTBLOCKSIZE = 10
+  integer, parameter :: DISCBC_LISTBLOCKSIZE = 10
 
 !</constantblock>
 !</constants>
@@ -103,24 +103,24 @@ MODULE discretebc
   ! The variable icomponent describes the number of the component/equation
   ! in the PDE that must be treated that way.
   
-  TYPE t_discreteBCDirichlet
+  type t_discreteBCDirichlet
     
     ! The component of the equation, this discrete BC is specified for
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    INTEGER                            :: icomponent        = 0
+    integer                            :: icomponent        = 0
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    INTEGER(PREC_DOFIDX)               :: nDOF              = 0
+    integer(PREC_DOFIDX)               :: nDOF              = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer
-    INTEGER :: h_IdirichletDOFs   = ST_NOHANDLE
+    integer :: h_IdirichletDOFs   = ST_NOHANDLE
     
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
     !   array [1..*] of double
-    INTEGER :: h_DdirichletValues = ST_NOHANDLE
+    integer :: h_DdirichletValues = ST_NOHANDLE
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -138,23 +138,23 @@ MODULE discretebc
   ! Normally there is Icomponents(1)=1=X-velocity, Icomponents(1)=2=Y-velocity,
   ! probably Icomponents(3)=3=Z-velocity, 
   
-  TYPE t_discreteBCSlip
+  type t_discreteBCSlip
     
     ! Number of velocity components that take part on the slip
     ! boundary conditions.
-    INTEGER                                 :: ncomponents        = 0
+    integer                                 :: ncomponents        = 0
     
     ! List of all velocity components in the PDE that take part on
     ! the slip boundary conditions.
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    INTEGER, DIMENSION(:), POINTER          :: Icomponents        => NULL()
+    integer, dimension(:), pointer          :: Icomponents        => null()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    INTEGER(PREC_DOFIDX)               :: nDOF              = 0
+    integer(PREC_DOFIDX)               :: nDOF              = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer
-    INTEGER :: h_IslipDOFs   = ST_NOHANDLE
+    integer :: h_IslipDOFs   = ST_NOHANDLE
     
     ! Handle to an array that contains the normal vectors of the
     ! boundary edges.
@@ -162,9 +162,9 @@ MODULE discretebc
     !   DnormalVectors(1)=X-component,
     !   DnormalVectors(2)=Y-component,...
     ! of the normal vector.
-    INTEGER :: h_DnormalVectors = ST_NOHANDLE
+    integer :: h_DnormalVectors = ST_NOHANDLE
     
-  END TYPE
+  end type
   
 !</typeblock>
   
@@ -177,34 +177,34 @@ MODULE discretebc
   ! The variable icomponent describes the number of the component/equation
   ! in the PDE that must be treated that way.
   
-  TYPE t_discreteBCpressureDrop
+  type t_discreteBCpressureDrop
     
     ! Number of "velocity" components that must be modified when implementing
     ! pressure drop boundary conditions.
-    INTEGER :: ncomponents = 0
+    integer :: ncomponents = 0
     
     ! The components of the solutions/RHS vectors that should be modified
     ! by pressure drop boundary conditions.
     ! Each of the 1..ncomponents entries in the vector specifies a component
     ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity 
     ! or similar)
-    INTEGER, DIMENSION(:), POINTER     :: Icomponents        => NULL()
+    integer, dimension(:), pointer     :: Icomponents        => null()
     
     ! Number of DOF's in the arrays below; may be different from the length of 
     ! the array!
-    INTEGER(PREC_DOFIDX)               :: nDOF              = 0
+    integer(PREC_DOFIDX)               :: nDOF              = 0
     
     ! Handle to array with all velocity DOF's on the boundary that must be 
     ! modified.
     !   array [1..*] of integer
-    INTEGER :: h_IpressureDropDOFs   = ST_NOHANDLE
+    integer :: h_IpressureDropDOFs   = ST_NOHANDLE
     
     ! Handle to array with additive content that must be added to the DOF's
     ! in the h_IpressureDropDOFs array.
     !   array [1..NDIM2D,1..*] of double
-    INTEGER :: h_Dmodifier = ST_NOHANDLE
+    integer :: h_Dmodifier = ST_NOHANDLE
     
-  END TYPE
+  end type
   
 !</typeblock>
   
@@ -217,31 +217,31 @@ MODULE discretebc
   ! h_ImirrorBCs specifies a bitfield that defines for every DOF if it is
   ! a FEAST mirror BC DOF or not.
   
-  TYPE t_discreteBCFeastMirror
+  type t_discreteBCFeastMirror
     
     ! The component of the equation, this discrete BC is specified for
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    INTEGER  :: icomponent        = 0
+    integer  :: icomponent        = 0
     
     ! Coarsening level. Used when adding additional contributions to the 
     ! matrix/vector. Usually = 0. Must be increased for every level coarser
     ! than the maximum one in a mesh hierarchy.
-    REAL(DP) :: icoarseningLevel  = 0
+    real(DP) :: icoarseningLevel  = 0
     
     ! =0: Modify matrix and defect vectors.
     ! =1: Modify matrix, treat defect vectors as Dirichlet.
-    INTEGER :: isubtype           = 0
+    integer :: isubtype           = 0
     
     ! Handle to a list of all DOF's in the FEAST mirror boundary region.
     ! The list is sorted for increasing DOF numbers.
-    INTEGER :: h_ImirrorDOFs   = ST_NOHANDLE
+    integer :: h_ImirrorDOFs   = ST_NOHANDLE
 
     ! Handle to a list of all DOF's in the FEAST mirror boundary region
     ! plus the start- and endpoint
     ! The list is sorted for increasing DOF numbers.
-    INTEGER :: h_ImirrorDOFsClosed   = ST_NOHANDLE
+    integer :: h_ImirrorDOFsClosed   = ST_NOHANDLE
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -253,29 +253,29 @@ MODULE discretebc
   ! describes. Depending on the type, one of the information blocks
   ! is filled with data about the discrete BC's.
   
-  TYPE t_discreteBCEntry
+  type t_discreteBCEntry
     
     ! The type identifier. Identifies the type of discrete BC's, this
     ! structure describes.
-    INTEGER                             :: itype = DISCBC_TPUNDEFINED
+    integer                             :: itype = DISCBC_TPUNDEFINED
     
     ! Structure for discrete Dirichlet BC's.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
-    TYPE(t_discreteBCDirichlet)         :: rdirichletBCs
+    type(t_discreteBCDirichlet)         :: rdirichletBCs
     
     ! Structure for discrete pressure drop BC's.
     ! Only valid if itype=DISCBC_TPPRESSUREDROP.
-    TYPE(t_discreteBCpressureDrop)      :: rpressuredropBCs
+    type(t_discreteBCpressureDrop)      :: rpressuredropBCs
     
     ! Structure for discrete Slip BC's.
     ! Only valid if itype=DISCBC_TPSLIP.
-    TYPE(t_discreteBCSlip)              :: rslipBCs
+    type(t_discreteBCSlip)              :: rslipBCs
     
     ! Structure for discrete FEAST mirror BC's.
     ! Only valid if itype=DISCBC_TPFEASTMIRROR.
-    TYPE(t_discreteBCFeastMirror)         :: rfeastMirrorBCs
+    type(t_discreteBCFeastMirror)         :: rfeastMirrorBCs
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -285,23 +285,23 @@ MODULE discretebc
   ! This is just an array of t_discreteBCEntry structures, each describing
   ! a single discrete boundary condition (so to speak, a segment on the
   ! boundary discretised in a special way).
-  TYPE t_discreteBC
+  type t_discreteBC
   
     ! Total number of allocated t_discreteBCEntry structures in p_RdiscBCList.
-    INTEGER :: inumEntriesAlloc = 0
+    integer :: inumEntriesAlloc = 0
     
     ! Total number of used t_discreteBCEntry structures in p_RdiscBCList.
-    INTEGER :: inumEntriesUsed = 0
+    integer :: inumEntriesUsed = 0
   
     ! An array of t_discreteBCEntry structures. Each structure describes
     ! one discrete boundary condition - so one part of the boundary discretised
     ! in a special, discretisation-dependent way.
-    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscBCList => NULL()
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscBCList => null()
   
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-END MODULE
+end module

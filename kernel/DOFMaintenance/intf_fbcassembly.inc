@@ -2,16 +2,16 @@
   ! for calculating values at the boundary for boundary conditions of fictitious
   ! boundary components.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValuesFBC (Icomponents,rdiscretisation,&
+    subroutine fgetBoundaryValuesFBC (Icomponents,rdiscretisation,&
                                       Revaluation, rcollection)
     
-    USE collection
-    USE spatialdiscretisation
-    USE discretefbc
+    use collection
+    use spatialdiscretisation
+    use discretefbc
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
@@ -36,16 +36,16 @@
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
     !     (1=x, 2=y component)
-    INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+    integer, dimension(:), intent(IN)                           :: Icomponents
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
+    type(t_blockDiscretisation), intent(IN)                     :: rdiscretisation
     
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
 
   !</input>
   
@@ -68,12 +68,12 @@
     !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
     !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
     !
-    TYPE(t_discreteFBCevaluation), DIMENSION(:), INTENT(INOUT) :: Revaluation
+    type(t_discreteFBCevaluation), dimension(:), intent(INOUT) :: Revaluation
   !</inputoutput>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

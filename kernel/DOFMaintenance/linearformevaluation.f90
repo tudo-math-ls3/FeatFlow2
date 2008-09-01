@@ -14,37 +14,37 @@
 !# </purpose>
 !##############################################################################
 
-MODULE linearformevaluation
+module linearformevaluation
 
-  USE fsystem
-  USE linearsystemscalar
-  USE spatialdiscretisation
-  USE scalarpde
-  USE derivatives
-  USE cubature
-  USE collection
-  USE domainintegration
-  USE element
-  USE elementpreprocessing
+  use fsystem
+  use linearsystemscalar
+  use spatialdiscretisation
+  use scalarpde
+  use derivatives
+  use cubature
+  use collection
+  use domainintegration
+  use element
+  use elementpreprocessing
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building vectors
-  INTEGER :: LINF_NELEMSIM   = 1000
+  integer :: LINF_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
 
-CONTAINS
+contains
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE linf_buildVectorScalar (rdiscretisation,rform,bclear,rvectorScalar,&
+  subroutine linf_buildVectorScalar (rdiscretisation,rform,bclear,rvectorScalar,&
                                      fcoeff_buildVectorSc_sim,rcollection)
   
 !<description>
@@ -61,73 +61,73 @@ CONTAINS
 !<input>
   ! The underlying discretisation structure which is to be used to
   ! create the vector.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
   ! The linear form specifying the underlying PDE of the discretisation.
-  TYPE(t_linearForm), INTENT(IN) :: rform
+  type(t_linearForm), intent(IN) :: rform
   
   ! Whether to clear the vector before calculating the entries.
   ! If .FALSE., the new entries are added to the existing entries.
-  LOGICAL, INTENT(IN) :: bclear
+  logical, intent(IN) :: bclear
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+  type(t_collection), intent(INOUT), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
-  INCLUDE 'intf_coefficientVectorSc.inc'
-  OPTIONAL :: fcoeff_buildVectorSc_sim
+  include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
 !</input>
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>
   
   ! If the vector is not set up as new vector, it has to be unsorted.
   ! If it's a new vector, we switch off the sorting.
-  IF (bclear) THEN
-    rvectorScalar%isortStrategy = -ABS(rvectorScalar%isortStrategy)
-  END IF
+  if (bclear) then
+    rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
+  end if
   
   ! The vector must be unsorted, otherwise we can't set up the vector.
-  IF (rvectorScalar%isortStrategy .GT. 0) THEN
-    PRINT *,'linf_buildVectorScalar: Vector must be unsorted!'
-    CALL sys_halt()
-  END IF
+  if (rvectorScalar%isortStrategy .gt. 0) then
+    print *,'linf_buildVectorScalar: Vector must be unsorted!'
+    call sys_halt()
+  end if
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN 
+  if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then 
   
-    IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
+    if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
-      CALL linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&  
+      call linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,rcollection)
-    ELSE
-      PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
-    END IF
+    else
+      print *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
+    end if
   
   ! Do we have a uniform triangulation? Would simplify a lot...
-  ELSE IF (rdiscretisation%ccomplexity .EQ. SPDISC_CONFORMAL) THEN 
+  else if (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then 
   
-    IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
+    if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
-      CALL linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&  
+      call linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,rcollection)
-    ELSE
-      PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
-    END IF
+    else
+      print *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
+    end if
   
-  ELSE
-    PRINT *,'linf_buildVectorScalar: General discretisation &
+  else
+    print *,'linf_buildVectorScalar: General discretisation &
             & not implemented!'
-    CALL sys_halt()
-  END IF
+    call sys_halt()
+  end if
 
-  END SUBROUTINE
+  end subroutine
   
 !  !****************************************************************************
 !
@@ -1157,7 +1157,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&
+  subroutine linf_buildVectord_conf3 (rdiscretisation,rform,bclear,rVectorScalar,&
                                      fcoeff_buildVectorSc_sim,rcollection)
 
 !<description>
@@ -1179,109 +1179,109 @@ CONTAINS
 !<input>
   ! The underlying discretisation structure which is to be used to
   ! create the vector.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
   ! The linear form specifying the underlying PDE of the discretisation.
-  TYPE(t_linearForm), INTENT(IN) :: rform
+  type(t_linearForm), intent(IN) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  LOGICAL, INTENT(IN) :: bclear
+  logical, intent(IN) :: bclear
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+  type(t_collection), intent(INOUT), target, optional :: rcollection
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  INCLUDE 'intf_coefficientVectorSc.inc'
-  OPTIONAL :: fcoeff_buildVectorSc_sim
+  include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
 !</input>
 
 !<inputoutput>
   ! The FE vector. Calculated matrix entries are added to this vector.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
-  REAL(DP) :: OM,AUX
+  integer :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA
+  integer(I32) :: IEL, IELmax, IELset, IDOFE
+  real(DP) :: OM,AUX
   
   ! Array to tell the element which derivatives to calculate
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  logical, dimension(EL_MAXNDER) :: Bder
   
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
   
   ! Pointer to the vector entries
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  real(DP), dimension(:), pointer :: p_Ddata
 
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
+  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTest
   !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
   !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest
+  real(DP), dimension(:,:,:,:), allocatable, target :: DbasTest
   
   ! Number of entries in the vector - for quicker access
-  INTEGER(I32) :: NEQ
+  integer(I32) :: NEQ
   
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
 
   ! Number of local degees of freedom for test functions
-  INTEGER :: indofTest
+  integer :: indofTest
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
+  type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
   
   ! A small vector holding only the additive controbutions of
   ! one element
-  REAL(DP), DIMENSION(EL_MAXNBAS) :: DlocalData
+  real(DP), dimension(EL_MAXNBAS) :: DlocalData
   
   ! An array that takes coordinates of the cubature formula on the reference element
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
 
   ! Pointer to the jacobian determinants
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+  type(t_elementDistribution), pointer :: p_elementDistribution
   
   ! Number of elements in the current element distribution
-  INTEGER(PREC_ELEMENTIDX) :: NEL
+  integer(PREC_ELEMENTIDX) :: NEL
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
   
   ! Pointer to the coefficients that are computed by the callback routine.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+  real(DP), dimension(:,:,:), allocatable :: Dcoefficients
   
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
-  TYPE(t_domainIntSubset) :: rintSubset
-  LOGICAL :: bcubPtsInitialised
+  type(t_domainIntSubset) :: rintSubset
+  logical :: bcubPtsInitialised
   
   !REAL(DP), DIMENSION(11) :: DT
   
@@ -1293,23 +1293,23 @@ CONTAINS
 
   !CALL ZTIME(DT(1))
 
-  Bder = .FALSE.
+  Bder = .false.
   
   ! Loop through the additive terms
-  DO i=1,rform%itermCount
+  do i=1,rform%itermCount
     ! The desriptor Idescriptors gives directly the derivative
     ! which is to be computed!
     I1=rform%Idescriptors(i)
     
-    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'linf_buildVectord_conf: Invalid descriptor'
-      CALL sys_halt()
-    ENDIF
+    if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
+      print *,'linf_buildVectord_conf: Invalid descriptor'
+      call sys_halt()
+    endif
     
-    Bder(I1)=.TRUE.
-  END DO
+    Bder(I1)=.true.
+  end do
   
-  IF (rvectorScalar%h_Ddata .EQ. ST_NOHANDLE) THEN
+  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
   
     ! Get the size of the vector and put it to the matrix structure.
     NEQ = dof_igetNDofGlob(rdiscretisation)
@@ -1322,31 +1322,31 @@ CONTAINS
 
     ! Clear the entries in the vector - we need to start with zero
     ! when assembling a new vector.
-    CALL storage_new1D ('linf_buildVectord_conf', 'vector', &
+    call storage_new1D ('linf_buildVectord_conf', 'vector', &
                         NEQ, ST_DOUBLE, rvectorScalar%h_Ddata, &
                         ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
+    call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
 
-  ELSE
+  else
   
     ! Get information about the vector:
     NEQ = rvectorScalar%NEQ
   
-    CALL storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
+    call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
     
     ! Maybe the vector is a partial vector of a larger one.
     ! Let the pointer point to the right position.
-    IF (rvectorScalar%iidxFirstEntry .NE. 1) THEN
+    if (rvectorScalar%iidxFirstEntry .ne. 1) then
       p_Ddata => p_Ddata (rvectorScalar%iidxFirstEntry : &
                           rvectorScalar%iidxFirstEntry + rvectorScalar%NEQ - 1)
-    END IF
+    end if
 
     ! If desired, clear the vector before assembling.
-    IF (bclear) THEN
-      CALL lalg_clearVectorDble (p_Ddata)
-    END IF
+    if (bclear) then
+      call lalg_clearVectorDble (p_Ddata)
+    end if
     
-  END IF
+  end if
   
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -1355,19 +1355,19 @@ CONTAINS
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = MIN(LINF_NELEMSIM,p_rtriangulation%NEL)
+  nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
   !CALL ZTIME(DT(2))
 
-  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+  do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
   
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+    if (p_elementDistribution%NEL .eq. 0) cycle
 
     ! Get the number of local DOF's for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
@@ -1377,18 +1377,18 @@ CONTAINS
     ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,ubound(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
@@ -1401,15 +1401,15 @@ CONTAINS
     !$OMP   ICUBP, IALBET,OM,IA,aux)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
-    DO IALBET = 1,rform%itermcount
+    do IALBET = 1,rform%itermcount
       IA = rform%Idescriptors(IALBET)
-      IF ((IA.LT.0) .OR. &
-          (IA .GT. elem_getMaxDerivative(p_elementDistribution%celement))) THEN
-        PRINT *,'linf_buildVectord_conf2: Specified test-derivative',IA,&
+      if ((IA.lt.0) .or. &
+          (IA .gt. elem_getMaxDerivative(p_elementDistribution%celement))) then
+        print *,'linf_buildVectord_conf2: Specified test-derivative',IA,&
                 ' not available'
-        CALL sys_halt()
-      END IF
-    END DO
+        call sys_halt()
+      end if
+    end do
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -1418,17 +1418,17 @@ CONTAINS
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
+    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
+    allocate(IdofsTest(indofTest,nelementsPerBlock))
 
     ! Allocate memory for the coefficients
-    ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
+    allocate(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
   
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    call elprep_init(rintSubset%revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -1436,7 +1436,7 @@ CONTAINS
     !CALL ZTIME(DT(3))
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+    call storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
                               
     ! Get the number of elements there.
@@ -1445,20 +1445,20 @@ CONTAINS
   
     ! Loop over the elements - blockwise.
     !$OMP do schedule(static,1)
-    DO IELset = 1, NEL, LINF_NELEMSIM
+    do IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = min(NEL,IELset-1+LINF_NELEMSIM)
     
       ! Calculate the global DOF's into IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our LINF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                   IdofsTest)
                                    
       !CALL ZTIME(DT(4))
@@ -1477,7 +1477,7 @@ CONTAINS
       cevaluationTag = elem_getEvaluationTag(p_elementDistribution%celement)
                       
       ! Evaluate real coordinates; they are needed in the callback function.
-      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REALPOINTS)
+      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -1488,17 +1488,17 @@ CONTAINS
       ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
       ! is a local variable and will therefore ensure that every thread
       ! is initialising its local set of cubature points!
-      IF (.NOT. bcubPtsInitialised) THEN
+      if (.not. bcubPtsInitialised) then
         bcubPtsInitialised = .true.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+      else
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+      end if
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      call elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
           
@@ -1511,14 +1511,14 @@ CONTAINS
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
       
-      CALL fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
+      call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                 IELmax-IELset+1_I32,ncubp,rintSubset%revalElementSet%p_DpointsReal, &
                 IdofsTest,rintSubset, &
                 Dcoefficients(:,:,1:IELmax-IELset+1_I32),rcollection)
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_elementDistribution%celement, &
+      call elem_generic_sim2 (p_elementDistribution%celement, &
           rintSubset%revalElementSet, Bder, DbasTest)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -1531,7 +1531,7 @@ CONTAINS
       ! loop through the DOF's and cubature points to calculate the
       ! integral:
       
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
         
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
@@ -1541,7 +1541,7 @@ CONTAINS
         DlocalData(1:indofTest) = 0.0_DP
 
         ! Loop over all cubature points on the current element
-        DO ICUBP = 1, ncubp
+        do ICUBP = 1, ncubp
         
           ! calculate the current weighting factor in the cubature formula
           ! in that cubature point.
@@ -1550,10 +1550,10 @@ CONTAINS
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that's normal!
 
-          OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
+          OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
 
           ! Loop over the additive factors in the linear form.
-          DO IALBET = 1,rform%itermcount
+          do IALBET = 1,rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
             ! test and trial functions. The summand we calculate
@@ -1577,7 +1577,7 @@ CONTAINS
             ! Now loop through all possible combinations of DOF's
             ! in the current cubature point. 
 
-            DO IDOFE=1,indofTest
+            do IDOFE=1,indofTest
             
               ! Get the value of the basis function 
               ! phi_o in the cubature point. 
@@ -1593,37 +1593,37 @@ CONTAINS
 
               DlocalData(IDOFE) = DlocalData(IDOFE)+DbasTest(IDOFE,IA,ICUBP,IEL)*AUX
             
-            END DO ! IDOFE
+            end do ! IDOFE
             
-          END DO ! IALBET
+          end do ! IALBET
 
-        END DO ! ICUBP 
+        end do ! ICUBP 
 
         ! Incorporate the local vector into the global one.
         ! The 'local' DOF 1..indofTest is mapped to the global DOF using
         ! the IdofsTest array.
-        DO IDOFE=1,indofTest
+        do IDOFE=1,indofTest
           p_Ddata(IdofsTest(IDOFE,IEL)) = p_Ddata(IdofsTest(IDOFE,IEL)) + DlocalData(IDOFE)
-        END DO
+        end do
 
-      END DO ! IEL
+      end do ! IEL
 
       !CALL ZTIME(DT(10))
-    END DO ! IELset
+    end do ! IELset
     !$OMP END DO
     
     ! Release memory
-    DEALLOCATE(Dcoefficients)
-    DEALLOCATE(IdofsTest)
-    DEALLOCATE(DbasTest)
+    deallocate(Dcoefficients)
+    deallocate(IdofsTest)
+    deallocate(DbasTest)
 
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    call elprep_releaseElementSet(rintSubset%revalElementSet)
     
     !$OMP END PARALLEL
 
-    DEALLOCATE(p_DcubPtsRef)
+    deallocate(p_DcubPtsRef)
 
-  END DO ! icurrentElementDistr
+  end do ! icurrentElementDistr
   
   !CALL ZTIME(DT(11))
   
@@ -1631,6 +1631,6 @@ CONTAINS
   !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
   !END DO
   
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

@@ -66,31 +66,31 @@
 !# </purpose>
 !#########################################################################
 
-MODULE sortstrategy
+module sortstrategy
 
-  USE fsystem
-  USE storage
-  USE genoutput
-  USE linearalgebra
-  USE spatialdiscretisation
-  USE element
-  USE triangulation
-  USE linearsystemscalar
+  use fsystem
+  use storage
+  use genoutput
+  use linearalgebra
+  use spatialdiscretisation
+  use element
+  use triangulation
+  use linearsystemscalar
 
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
 
 !<constantblock description="Sort strategy identifiers.">
 
   ! No sort strategy; this must be =0!
-  INTEGER, PARAMETER :: SSTRAT_UNSORTED     = 0
+  integer, parameter :: SSTRAT_UNSORTED     = 0
 
   ! Cuthill-McKee sort strategy
-  INTEGER, PARAMETER :: SSTRAT_CM           = 1
+  integer, parameter :: SSTRAT_CM           = 1
 
   ! Reverse Cuthill-McKee sort strategy
-  INTEGER, PARAMETER :: SSTRAT_RCM          = 2
+  integer, parameter :: SSTRAT_RCM          = 2
   
   ! Row-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
@@ -98,27 +98,27 @@ MODULE sortstrategy
   ! the DOF's can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
   ! like the unit square.
-  INTEGER, PARAMETER :: SSTRAT_XYZCOORD     = 3
+  integer, parameter :: SSTRAT_XYZCOORD     = 3
   
   ! Column-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
   ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
   ! the DOF's can be identified with X/Y/Z coordinates.
-  INTEGER, PARAMETER :: SSTRAT_ZYXCOORD     = 4
+  integer, parameter :: SSTRAT_ZYXCOORD     = 4
   
   ! General FEAST renumbering.
   ! The DOF's are numbered rowwise, independent of the geometrical
   ! structure of the domain.
   ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
-  INTEGER, PARAMETER :: SSTRAT_FEAST        = 5
+  integer, parameter :: SSTRAT_FEAST        = 5
   
   ! Stochastic renumbering / Random permutation.
   ! The permutation is completely random.
-  INTEGER, PARAMETER :: SSTRAT_STOCHASTIC   = 6
+  integer, parameter :: SSTRAT_STOCHASTIC   = 6
 
   ! Hierarchical renumbering: The permutation is calculated by a sequence of meshes,
   ! regularly refined.
-  INTEGER, PARAMETER :: SSTRAT_HIERARCHICAL = 7
+  integer, parameter :: SSTRAT_HIERARCHICAL = 7
   
 !</constantblock>
 
@@ -130,39 +130,39 @@ MODULE sortstrategy
 
   ! A local structure for the hierarchical sorting strategy.
   ! Represents one level in the hierarchy.
-  TYPE t_levelHirarchy
+  type t_levelHirarchy
   
     ! Pointer to the refinement-patch array of the level
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatch
     
     ! Pointer to the refinement-patch-index array of the level
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIdx
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatchIdx
 
     ! Whether the corresponding discretisation on that level is uniform or not.
-    LOGICAL :: bisUniform
+    logical :: bisUniform
     
     ! Element type; only valid if the corresponding discretisation is uniform.
-    INTEGER(I32) :: ieltype
+    integer(I32) :: ieltype
     
     ! Pointer to the identifier for the element distribution of an element.
     ! Only valid if the corresponding discretisation is not uniform.
-    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
+    integer(I32), dimension(:), pointer :: p_IelementDistr
     
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-  PRIVATE :: t_levelHirarchy
+  private :: t_levelHirarchy
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sstrat_calcStochastic (Ipermutation)
+  subroutine sstrat_calcStochastic (Ipermutation)
   
   !<description>
     ! Generates a random permutation.
@@ -177,41 +177,41 @@ CONTAINS
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
-    REAL(DP) :: d
-    INTEGER(I32) :: i,k,n
-    INTEGER(PREC_VECIDX) :: j
+    real(DP) :: d
+    integer(I32) :: i,k,n
+    integer(PREC_VECIDX) :: j
 
     ! Fill the array with 1,2,3,...
-    n = SIZE(Ipermutation) / 2
+    n = size(Ipermutation) / 2
     
-    DO i = 1,n
+    do i = 1,n
       Ipermutation(i) = i
-    END DO
+    end do
     
     ! Loop through the array and randomly swap element i with element [i,...,n]
-    DO i = 1,n-1
-      CALL RANDOM_NUMBER(d)
-      k = i + INT(REAL(n-i,DP) * d + 0.5_DP)
+    do i = 1,n-1
+      call random_number(d)
+      k = i + int(real(n-i,DP) * d + 0.5_DP)
       
       j = Ipermutation(i)
       Ipermutation(i) = Ipermutation(k)
       Ipermutation(k) = j
-    END DO
+    end do
 
     ! Calculate the inverse permutation, that's it.
-    CALL sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+    call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcCuthillMcKee (rmatrix,Ipermutation)
+  subroutine sstrat_calcCuthillMcKee (rmatrix,Ipermutation)
   
   !<description>
     ! Computes a column renumbering strategy using the algorithm
@@ -222,7 +222,7 @@ CONTAINS
     
   !<input>
     ! Matrix which should be used to calculate the renumbering strategy
-    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+    type(t_matrixScalar), intent(IN) :: rmatrix
   !</input>
     
   !<output>
@@ -230,86 +230,86 @@ CONTAINS
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    INTEGER(PREC_VECIDX), DIMENSION(2*rmatrix%neq), INTENT(OUT) :: Ipermutation
+    integer(PREC_VECIDX), dimension(2*rmatrix%neq), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
   ! local variables
-  INTEGER :: h_Ideg,h_IcolTmp
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ideg
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
-  INTEGER(PREC_VECIDX) :: NEQ
+  integer :: h_Ideg,h_IcolTmp
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Ideg
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
+  integer(PREC_VECIDX) :: NEQ
   
   NEQ = rmatrix%NEQ
   
   ! Currently, only matrix structure 7 and 9 are supported:
-  SELECT CASE (rmatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9)
+  select case (rmatrix%cmatrixFormat)
+  case (LSYSSC_MATRIX9)
     ! At first, duplicate KCOL and also get a temporary Ideg array
     h_IcolTmp = ST_NOHANDLE
-    CALL storage_copy(rmatrix%h_Kcol,h_IcolTmp)
-    CALL storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
+    call storage_copy(rmatrix%h_Kcol,h_IcolTmp)
+    call storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int(h_IcolTmp, p_IcolTmp)
-    CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-    CALL storage_getbase_int(h_Ideg, p_Ideg)
-    CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
-    CALL lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiag)
+    call storage_getbase_int(h_IcolTmp, p_IcolTmp)
+    call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+    call storage_getbase_int(h_Ideg, p_Ideg)
+    call lsyssc_getbase_Kld(rmatrix, p_Kld)
+    call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiag)
     
     ! Calculate the strategy, calculate p_IcolTmp
     ! BETA STATUS, ROUTINE NOT TESTED!!!
-    CALL sstrat_calcColNumberingCM9 (p_Kld, p_Kcol, p_Kdiag,&
+    call sstrat_calcColNumberingCM9 (p_Kld, p_Kcol, p_Kdiag,&
                                      p_IcolTmp, p_Ideg, NEQ, NEQ)
     
     ! Use p_IcolTmp to calculate the actual resorting permutation
     ! and its inverse. Clear the target vector before calling the
     ! calculation routine, as we are creating a new permutation!
-    CALL lalg_clearVectorInt(Ipermutation(1:NEQ*2))
-    CALL sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
+    call lalg_clearVectorInt(Ipermutation(1:NEQ*2))
+    call sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
                                    Ipermutation(1:NEQ), Ipermutation(NEQ+1:NEQ*2))
 
     ! Release temp data.
-    CALL storage_free (h_Ideg)
-    CALL storage_free (h_IcolTmp)    
+    call storage_free (h_Ideg)
+    call storage_free (h_IcolTmp)    
 
-  CASE (LSYSSC_MATRIX7)
+  case (LSYSSC_MATRIX7)
     ! At first, duplicate KCOL and also get a temporary Ideg array
     h_IcolTmp = ST_NOHANDLE
-    CALL storage_copy(rmatrix%h_Kcol,h_IcolTmp)
-    CALL storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
+    call storage_copy(rmatrix%h_Kcol,h_IcolTmp)
+    call storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int(h_IcolTmp, p_IcolTmp)
-    CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-    CALL storage_getbase_int(h_Ideg, p_Ideg)
-    CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
+    call storage_getbase_int(h_IcolTmp, p_IcolTmp)
+    call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+    call storage_getbase_int(h_Ideg, p_Ideg)
+    call lsyssc_getbase_Kld(rmatrix, p_Kld)
     
     ! Calculate the strategy, calculate p_IcolTmp
-    CALL sstrat_calcColNumberingCM7 (p_Kld, p_Kcol, p_IcolTmp, p_Ideg, NEQ, NEQ)
+    call sstrat_calcColNumberingCM7 (p_Kld, p_Kcol, p_IcolTmp, p_Ideg, NEQ, NEQ)
     
     ! Use p_IcolTmp to calculate the actual resorting permutation
     ! and its inverse. Clear the target vector before calling the
     ! calculation routine, as we are creating a new permutation!
-    CALL lalg_clearVectorInt(Ipermutation(1:NEQ*2))
-    CALL sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
+    call lalg_clearVectorInt(Ipermutation(1:NEQ*2))
+    call sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
                                    Ipermutation(1:NEQ), Ipermutation(NEQ+1:NEQ*2))
 
     ! Release temp data.
-    CALL storage_free (h_Ideg)
-    CALL storage_free (h_IcolTmp)    
+    call storage_free (h_Ideg)
+    call storage_free (h_IcolTmp)    
   
-  CASE DEFAULT
-    PRINT *,'sstrat_calcCuthillMcKee: Unsupported matrix format'
-    CALL sys_halt()
-  END SELECT
+  case DEFAULT
+    print *,'sstrat_calcCuthillMcKee: Unsupported matrix format'
+    call sys_halt()
+  end select
     
 
-  END SUBROUTINE     
+  end subroutine     
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcColNumberingCM7 (Ild, Icol, Icon, Ideg, neq, ndeg)
+  subroutine sstrat_calcColNumberingCM7 (Ild, Icol, Icon, Ideg, neq, ndeg)
   
     !<description>
     ! Purpose: Cuthill McKee matrix renumbering
@@ -328,36 +328,36 @@ CONTAINS
   !<input>
   
     ! Number of equations
-    INTEGER(I32),INTENT(IN)                    :: neq
+    integer(I32),intent(IN)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    INTEGER(PREC_VECIDX), INTENT(IN)                   :: ndeg    
+    integer(PREC_VECIDX), intent(IN)                   :: ndeg    
    
     ! Row description of matrix
-    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(IN) :: Ild
+    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: Ild
   
     ! Column description of matrix
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)     :: Icol
+    integer(PREC_VECIDX), dimension(:), intent(IN)     :: Icol
     
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    INTEGER(PREC_VECIDX), DIMENSION(ndeg), INTENT(INOUT) :: Ideg
+    integer(PREC_VECIDX), dimension(ndeg), intent(INOUT) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
+    integer(PREC_VECIDX), dimension(:), intent(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
-    INTEGER(I32) :: idegMin, iidxMin
+    integer(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
+    integer(I32) :: idegMin, iidxMin
   
     ! Clear auxiliary vector
     Ideg(1:ndeg) = 0
@@ -369,23 +369,23 @@ CONTAINS
     ! entries are changed. The numbers of the diagonal entries are not
     ! touched. Therefore we copy the column numbers of the diagonal
     ! entries directly.
-    DO ieq=1, neq
+    do ieq=1, neq
       Icon(Ild(ieq)) = Icol(Ild(ieq))
-    END DO
+    end do
     
     ! Loop about all rows in the matrix: ieq = current row.
     ! Every row corresponds to an entry in the solution vector = a node
     ! in the graph of the matrix.
-    DO ieq=1, neq
+    do ieq=1, neq
     
       ! Copy the column numbers of the non-diagonal entries in the current
       ! column to the auxiliary vector Ideg. Ideg contains always the
       ! following nodes of the current node ieq, which are not processed yet.
       ! The entries of the vector are set to 0 one after the other in the
       ! order of the degree of the following nodes.
-      DO ildIdx=Ild(ieq)+1, Ild(ieq+1)-1
+      do ildIdx=Ild(ieq)+1, Ild(ieq+1)-1
         Ideg(ildIdx-Ild(ieq)) = Icol(ildIdx)
-      END DO
+      end do
       
       ! Loop about every column in the current row. The entries in the
       ! row (=column numbers) of the matrix represent the node numbers of
@@ -401,7 +401,7 @@ CONTAINS
       ! It's only necessary to search in the non-diagonal entries,
       ! because we want to sort the adjacent nodes of the current one
       ! for increasing degree.
-      DO idegIdx1=1, Ild(ieq+1)-Ild(ieq)-1
+      do idegIdx1=1, Ild(ieq+1)-Ild(ieq)-1
       
         ! iidxMin will receive the index in the Ideg-array of the node with
         ! the smallest degree. We start with node 1 in the current column:
@@ -418,15 +418,15 @@ CONTAINS
         ! Otherwise idegMin receives the degree of the node described by
         ! iidxMin, which is calculated by the number of elements in Icol,
         ! i.e. the difference of the indices in the Ild array.
-        IF (Ideg(iidxMin) .EQ. 0) THEN
+        if (Ideg(iidxMin) .eq. 0) then
           idegMin = neq
-        ELSE
+        else
           idegMin = Ild(Ideg(iidxMin)+1)-Ild(Ideg(iidxMin))-1
-        ENDIF
+        endif
 
         ! Compare iidxMin with every node in that line to find that with
         ! minimum degree:
-        DO idegIdx2=1, Ild(ieq+1)-Ild(ieq)-1
+        do idegIdx2=1, Ild(ieq+1)-Ild(ieq)-1
 
           ! If Ideg(idegIdx2)=0, idegIdx2 has already been processed. Set
           ! idegIdx=neq ; here a lower bound to prevent the current node
@@ -434,20 +434,20 @@ CONTAINS
           
           ! Otherwise set idegIdx to the degree of the node with index
           ! idegIdx2
-          IF (Ideg(idegIdx2) .EQ. 0) THEN
+          if (Ideg(idegIdx2) .eq. 0) then
             idegIdx = neq
-          ELSE
+          else
             idegIdx = Ild(Ideg(idegIdx2)+1)-Ild(Ideg(idegIdx2))-1
-          ENDIF
+          endif
                 
           ! If now idegIdx=grad(iidxMin) < grad(idegIdx2)=idegMin set
           ! iidxMin to the new node with smaller degree.
-          IF (idegIdx .LT. idegMin) THEN
+          if (idegIdx .lt. idegMin) then
             iidxMin=idegIdx2
             idegMin=idegIdx
-          ENDIF
+          endif
 
-        END DO
+        end do
 
         ! At this point, iidxMin contains the index in Ideg of that node with
         ! minimal degree, which has not yet been processed.
@@ -464,24 +464,24 @@ CONTAINS
         ! searching process for nodes with minimum degree.
         Ideg(iidxMin) = 0
   
-      END DO
+      end do
       
       ! Clear auxiliary vector; only some entries were used. This is only for
       ! reasons of safetyness, as if the upper loops are processed correctly,
       ! (no nodes were forgotten), all Ideg-arrays should already be 0.
-      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)
+      do idegIdx=1, Ild(ieq+1)-Ild(ieq)
         Ideg(idegIdx) = 0
-      END DO
+      end do
       
     ! Process next line:  
-    END DO 
+    end do 
   
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcColNumberingCM9 (Ild, Icol, Idiag, Icon, Ideg, &
+  subroutine sstrat_calcColNumberingCM9 (Ild, Icol, Idiag, Icon, Ideg, &
                                          neq, ndeg)
   
     !<description>
@@ -501,66 +501,66 @@ CONTAINS
   !<input>
   
     ! Number of equations
-    INTEGER(I32),INTENT(IN)                    :: neq
+    integer(I32),intent(IN)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    INTEGER(PREC_VECIDX), INTENT(IN)                   :: ndeg    
+    integer(PREC_VECIDX), intent(IN)                   :: ndeg    
    
     ! Row description of matrix
-    INTEGER(PREC_VECIDX), DIMENSION(neq+1), INTENT(IN) :: Ild
+    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: Ild
   
     ! Column description of matrix
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)     :: Icol
+    integer(PREC_VECIDX), dimension(:), intent(IN)     :: Icol
     
     ! Incides of diagonal elements in structure 9 matrix
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)     :: Idiag
+    integer(PREC_MATIDX), dimension(:), intent(IN)     :: Idiag
     
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    INTEGER(PREC_VECIDX), DIMENSION(ndeg), INTENT(INOUT) :: Ideg
+    integer(PREC_VECIDX), dimension(ndeg), intent(INOUT) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
+    integer(PREC_VECIDX), dimension(:), intent(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
-    INTEGER(I32) :: idegMin, iidxMin
+    integer(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
+    integer(I32) :: idegMin, iidxMin
   
     ! Clear auxiliary vector
-    DO idegIdx=1, ndeg
+    do idegIdx=1, ndeg
       Ideg(idegIdx) = 0
-    END DO
+    end do
     
     ! Later in the algorithm the column numbers of the non-diagonal
     ! entries are changed. The numbers of the diagonal entries are not
     ! touched. Therefore we copy the column numbers of the diagonal
     ! entries directly.
-    DO ieq=1, neq
+    do ieq=1, neq
       Icon(Idiag(ieq)) = Icol(Idiag(ieq))
-    END DO
+    end do
     
     ! Loop about all rows in the matrix: ieq = current row.
     ! Every row corresponds to an entry in the solution vector = a node
     ! in the graph of the matrix.
-    DO ieq=1, neq
+    do ieq=1, neq
     
       ! Copy the column numbers of the non-diagonal entries in the current
       ! column to the auxiliary vector Ideg. Ideg contains always the
       ! following nodes of the current node ieq, which are not processed yet.
       ! The entries of the vector are set to 0 one after the other in the
       ! order of the degree of the following nodes.
-      DO ildIdx=Ild(ieq), Ild(ieq+1)-1
+      do ildIdx=Ild(ieq), Ild(ieq+1)-1
         Ideg(ildIdx-Ild(ieq)+1) = Icol(ildIdx)
-      END DO
+      end do
 
       ! Set Ideg of the diagonal entry to 0 to prevent it from being 
       ! processed later.
@@ -577,12 +577,12 @@ CONTAINS
       ! and so on.
       ! We don't have many nodes, so we use a simple O(n^2) algorithm here
       ! which simply loops over all nodes.
-      DO idegIdx1=1, Ild(ieq+1)-Ild(ieq)
+      do idegIdx1=1, Ild(ieq+1)-Ild(ieq)
       
         ! It's only necessary to search in the non-diagonal entries,
         ! because we want to sort the adjacent nodes of the current one
         ! for increasing degree.
-        IF (Icol(Ild(ieq)+idegIdx1-1) .NE. ieq) THEN
+        if (Icol(Ild(ieq)+idegIdx1-1) .ne. ieq) then
         
           ! iidxMin will receive the index in the Ideg-array of the node with
           ! the smallest degree. We start with node 1 in the current column:
@@ -599,15 +599,15 @@ CONTAINS
           ! Otherwise idegMin receives the degree of the node described by
           ! iidxMin, which is calculated by the number of elements in Icol,
           ! i.e. the difference of the indices in the Ild array.
-          IF (Ideg(iidxMin) .EQ. 0) THEN
+          if (Ideg(iidxMin) .eq. 0) then
             idegMin = neq
-          ELSE
+          else
             idegMin = Ild(Ideg(iidxMin)+1)-Ild(Ideg(iidxMin))-1
-          ENDIF
+          endif
 
           ! Compare iidxMin with every node in that line to find that with
           ! minimum degree:
-          DO idegIdx2=1, Ild(ieq+1)-Ild(ieq)
+          do idegIdx2=1, Ild(ieq+1)-Ild(ieq)
 
             ! If Ideg(idegIdx2)=0, idegIdx2 has already been processed (or it's
             ! the diagonal element which does not have to be processed). Set
@@ -616,20 +616,20 @@ CONTAINS
             
             ! Otherwise set idegIdx to the degree of the node with index
             ! idegIdx2
-            IF (Ideg(idegIdx2) .EQ. 0) THEN
+            if (Ideg(idegIdx2) .eq. 0) then
               idegIdx = neq
-            ELSE
+            else
               idegIdx = Ild(Ideg(idegIdx2)+1)-Ild(Ideg(idegIdx2))-1
-            ENDIF
+            endif
                   
             ! If now idegIdx=grad(iidxMin) < grad(idegIdx2)=idegMin set
             ! iidxMin to the new node with smaller degree.
-            IF (idegIdx .LT. idegMin) THEN
+            if (idegIdx .lt. idegMin) then
               iidxMin=idegIdx2
               idegMin=idegIdx
-            ENDIF
+            endif
 
-          END DO
+          end do
 
           ! At this point, iidxMin contains the index in Ideg of that node with
           ! minimal degree, which has not yet been processed.
@@ -646,26 +646,26 @@ CONTAINS
           ! searching process for nodes with minimum degree.
           Ideg(iidxMin) = 0
     
-        END IF
+        end if
       
-      END DO
+      end do
         
       ! Clear auxiliary vector; only some entries were used. This is only for
       ! reasons of safetyness, as if the upper loops are processed correctly,
       ! (no nodes were forgotten), all Ideg-arrays should already be 0.
-      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)
+      do idegIdx=1, Ild(ieq+1)-Ild(ieq)
         Ideg(idegIdx) = 0
-      END DO
+      end do
       
     ! Process next line:  
-    END DO 
+    end do 
   
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcPermutationCM (Ild, Icon, neq, Itr1, Itr2)
+  subroutine sstrat_calcPermutationCM (Ild, Icon, neq, Itr1, Itr2)
   
     !<description>
     ! Purpose: Cuthill McKee matrix renumbering
@@ -685,30 +685,30 @@ CONTAINS
     !<input>
     
     ! Number of equations
-    INTEGER(I32), INTENT(IN)                   :: neq
+    integer(I32), intent(IN)                   :: neq
     
     ! Row description of matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(IN) :: Ild
+    integer(I32), dimension(neq+1), intent(IN) :: Ild
     
     ! Auxiliary vector, calculated with cmsort_calcColumnNumbering
-    INTEGER(I32), DIMENSION(:), INTENT(IN)     :: Icon
+    integer(I32), dimension(:), intent(IN)     :: Icon
     !</input>
     
     !<output>
     
     ! The permutation vector that describes how the solution vector
     ! has to be restored
-    INTEGER(I32), DIMENSION(neq), INTENT(OUT) :: Itr1
+    integer(I32), dimension(neq), intent(OUT) :: Itr1
     
     ! Describes how a resorted vector can be sorted back 
-    INTEGER(I32), DIMENSION(neq), INTENT(OUT) :: Itr2
+    integer(I32), dimension(neq), intent(OUT) :: Itr2
 
     !</output>    
 
   !</subroutine>
     
     ! local variables
-    INTEGER(I32) :: ineqIdx, icount, ildIdx, icolIdx
+    integer(I32) :: ineqIdx, icount, ildIdx, icolIdx
     
 !    DO icount=1, neq
 !      IF (Itr1(icount) .EQ. 0) Itr1(icount) = icount
@@ -756,7 +756,7 @@ CONTAINS
     ! Now loop over all nodes (=lines in the matrix). The following loop
     ! processes every node in a kind of quere exactly one time, so it
     ! has neq passes:
-    DO icount=1, neq
+    do icount=1, neq
 
       ! Look at line Itr1(icount) (=0, if a new matrix block starts, like
       ! in the beginning). We look at every element in that line and save
@@ -771,7 +771,7 @@ CONTAINS
       ! (i.e. we give the next free number directly), and continue with
       ! processing the neighbours of the corresponding node in the graph
       ! of the matrix.
-      IF (Itr1(icount) .EQ. 0) THEN
+      if (Itr1(icount) .eq. 0) then
 
         ! New block. all previous blocks are contained in line 1..icount-1.
         ! The next line number to fix is therefore icount.          
@@ -790,11 +790,11 @@ CONTAINS
         ! The inverse of the entry is calculated in the DO-loop below,
         ! which also increments ineqIdx appropriately.
 
-      END IF
+      end if
 
       ! Now loop about the elements in the line and collect the neighbours
       ! of the corresponding node in the graph:        
-      DO ildIdx=Ild(Itr1(icount)), Ild(Itr1(icount)+1)-1
+      do ildIdx=Ild(Itr1(icount)), Ild(Itr1(icount)+1)-1
 
         ! Collect the column numbers in the current line in the order of
         ! increasing degree of the nodes. icolIdx will receive the column
@@ -804,7 +804,7 @@ CONTAINS
         ! Test if we already calculated the permutation for the current node.
         ! For that purpose analyze if the Itr2-entry of the currently
         ! processed neighbour contains a value:
-        IF (Itr2(icolIdx) .EQ. 0) THEN
+        if (Itr2(icolIdx) .eq. 0) then
 
           ! This is a new node, which follows our current node Itr1(icount).
           ! Give it the next free number.
@@ -823,18 +823,18 @@ CONTAINS
           ! accessed.
           Itr1(ineqIdx) = icolIdx
 
-        END IF  
+        end if  
 
-      END DO
+      end do
           
-    END DO
+    end do
 
-  END SUBROUTINE     
+  end subroutine     
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcXYZsorting (rdiscretisation,Ipermutation,idirection)
+  subroutine sstrat_calcXYZsorting (rdiscretisation,Ipermutation,idirection)
   
   !<description>
     ! Computes a column renumbering strategy based on the coordinates of
@@ -861,7 +861,7 @@ CONTAINS
   !<input>
     ! Spatial discretisation structure that specifies the DOF's and the
     ! triangulation
-    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! OPTIONAL: Specifies the sorting direction.
     ! =0: Sort first for X-, then for Y-, then for Z-coordinate.
@@ -869,7 +869,7 @@ CONTAINS
     ! =1: Sort first for Z-, then for Y-, then for X-coordinate.
     !     In 2D this is columnwise sorting.
     ! If not specified, idirection=0 is assumed.
-    INTEGER, INTENT(IN),OPTIONAL :: idirection
+    integer, intent(IN),optional :: idirection
   !</input>
     
   !<output>
@@ -877,49 +877,49 @@ CONTAINS
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords,p_Dcoords2
-    INTEGER(PREC_EDGEIDX), DIMENSION(2) :: Isize
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER :: hhandle
-    INTEGER :: idir
-    INTEGER(PREC_VERTEXIDX) :: ivt,nvt
-    INTEGER(PREC_EDGEIDX) :: imt,nmt
-    INTEGER(PREC_ELEMENTIDX) :: iel,nel
-    INTEGER :: idim,ivtlocal
+    real(DP), dimension(:,:), pointer :: p_Dcoords,p_Dcoords2
+    integer(PREC_EDGEIDX), dimension(2) :: Isize
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: hhandle
+    integer :: idir
+    integer(PREC_VERTEXIDX) :: ivt,nvt
+    integer(PREC_EDGEIDX) :: imt,nmt
+    integer(PREC_ELEMENTIDX) :: iel,nel
+    integer :: idim,ivtlocal
     
-    IF (rdiscretisation%ndimension .EQ. 0) THEN
-      CALL output_line ('Discretisation not initialised.', &
+    if (rdiscretisation%ndimension .eq. 0) then
+      call output_line ('Discretisation not initialised.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     idir = 0
-    IF (PRESENT(idirection)) idir=idirection
+    if (present(idirection)) idir=idirection
 
     ! Depending on the discrisation, choose the correct implementation.
-    SELECT CASE (rdiscretisation%ccomplexity)
-    CASE (SPDISC_UNIFORM)
+    select case (rdiscretisation%ccomplexity)
+    case (SPDISC_UNIFORM)
     
       ! FE-space?
-      SELECT CASE (elem_getPrimaryElement(&
+      select case (elem_getPrimaryElement(&
                        rdiscretisation%RelementDistr(1)%celement))
-      CASE (EL_Q1,EL_P1)
+      case (EL_Q1,EL_P1)
       
         ! $Q_1$-element. Take the vertex coordinates as DOF's and sort for that.
-        CALL storage_getbase_double2d (&
+        call storage_getbase_double2d (&
             rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords)
             
-        CALL sortCoords (p_Dcoords, &
+        call sortCoords (p_Dcoords, &
           Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
       
-      CASE (EL_Q2)
+      case (EL_Q2)
       
         ! $Q_2$-element. Allocate an array for all the coordinates
         nvt = rdiscretisation%p_rtriangulation%NVT
@@ -928,91 +928,91 @@ CONTAINS
         
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = nvt+nmt+nel
-        CALL storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_double2d (hhandle,p_Dcoords)
+        call storage_getbase_double2d (hhandle,p_Dcoords)
         
         ! Get triangulation information
-        CALL storage_getbase_double2d (&
+        call storage_getbase_double2d (&
           rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords2)
-        CALL storage_getbase_int2d ( &
+        call storage_getbase_int2d ( &
           rdiscretisation%p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-        CALL storage_getbase_int2d ( &
+        call storage_getbase_int2d ( &
           rdiscretisation%p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
         
         ! Copy the vertex coordinates
-        DO ivt = 1,nvt
-          DO idim = 1,UBOUND(p_Dcoords,1)
+        do ivt = 1,nvt
+          do idim = 1,ubound(p_Dcoords,1)
             p_Dcoords(idim,ivt) = p_Dcoords2(idim,ivt)
-          END DO
-        END DO
+          end do
+        end do
         
         ! Calculate edge midpoint coordinates
-        DO imt = 1,nmt
+        do imt = 1,nmt
           p_Dcoords(:,nvt+imt) = &
               0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(1,imt)) + &
               0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(2,imt)) 
-        END DO
+        end do
         
         ! Calculate element midpoint coordinates
-        DO iel = 1,nel
+        do iel = 1,nel
           p_Dcoords(:,nvt+nmt+iel) = 0.0_DP
-          DO ivtlocal = 1,UBOUND(p_IverticesAtElement,1)
+          do ivtlocal = 1,ubound(p_IverticesAtElement,1)
             ivt = p_IverticesAtElement (ivtlocal,iel)
             p_Dcoords(:,nvt+nmt+iel) = &
                 p_Dcoords(:,nvt+nmt+iel) &
                 + 0.25_DP*p_Dcoords2(:,ivt) 
-          END DO
-        END DO
+          end do
+        end do
         
         ! Sort for the coordinates
-        CALL sortCoords (p_Dcoords, &
+        call sortCoords (p_Dcoords, &
             Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
 
         ! Release temp memory
-        CALL storage_free (hhandle)
+        call storage_free (hhandle)
 
-      CASE (EL_Q1T)
+      case (EL_Q1T)
       
         ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF's
         ! and sort for that. We have to calculate the midpoints for that...
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = rdiscretisation%p_rtriangulation%NMT
-        CALL storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_double2d (hhandle,p_Dcoords)
+        call storage_getbase_double2d (hhandle,p_Dcoords)
         
         ! Call tria_getPointsOnEdge with npointsPerEdge=1; this calculates
         ! the midpoint coordinates.
-        CALL tria_getPointsOnEdge (rdiscretisation%p_rtriangulation,p_Dcoords,1)
+        call tria_getPointsOnEdge (rdiscretisation%p_rtriangulation,p_Dcoords,1)
         
         ! Sort for the midpoint coordinates
-        CALL sortCoords (p_Dcoords, &
+        call sortCoords (p_Dcoords, &
             Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
         
         ! Release temp array, finish
-        CALL storage_free (hhandle)
+        call storage_free (hhandle)
       
-      CASE DEFAULT
-        CALL output_line ('Element type not supported.', &
+      case DEFAULT
+        call output_line ('Element type not supported.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-        CALL sys_halt()
-      END SELECT
+        call sys_halt()
+      end select
     
-    CASE DEFAULT
-      CALL output_line ('Discretisation too complex.', &
+    case DEFAULT
+      call output_line ('Discretisation too complex.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
   
     ! Calculate the inverse permutation, that's it.
-    CALL sstrat_calcInversePermutation (&
+    call sstrat_calcInversePermutation (&
         Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
         Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
     
-  CONTAINS
+  contains
   
-    SUBROUTINE sortCoords (Dcoords, Ipermutation,idirection)
+    subroutine sortCoords (Dcoords, Ipermutation,idirection)
 
     ! Calculates the rowwise sorting. Dcoords must contain a 2D or 3D
     ! array of point coordinates. In Ipermutation, the routine returns
@@ -1023,68 +1023,68 @@ CONTAINS
     ! =1: points are first ordered for Z- (in 3D), then for Y- and at 
     !     the end for the X-coordinate.
     
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ipermutation
-    INTEGER, INTENT(IN) :: idirection
+    real(DP), dimension(:,:), intent(IN) :: Dcoords
+    integer(I32), dimension(:), intent(OUT) :: Ipermutation
+    integer, intent(IN) :: idirection
     
       ! local variables
-      INTEGER(I32), DIMENSION(2) :: Isize
-      INTEGER :: h_Dsort
-      INTEGER :: i
-      REAL(DP), DIMENSION(:,:), POINTER :: p_Dsort
+      integer(I32), dimension(2) :: Isize
+      integer :: h_Dsort
+      integer :: i
+      real(DP), dimension(:,:), pointer :: p_Dsort
       
       ! Allocate a 2D array with (dim(Dcoords)+1,#coords) elements.
-      Isize(1) = UBOUND(Dcoords,1)+1
-      Isize(2) = UBOUND(Dcoords,2)
-      CALL storage_new2D ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
+      Isize(1) = ubound(Dcoords,1)+1
+      Isize(2) = ubound(Dcoords,2)
+      call storage_new2D ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
                           h_Dsort, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_double2d (h_Dsort,p_Dsort)
+      call storage_getbase_double2d (h_Dsort,p_Dsort)
       
       ! In the first element of each ndim+1-tupel, store the number of
       ! the point. In the 2nd/3rd,... element, store the coordinate.
-      DO i=1,Isize(2)
-        p_Dsort(1,i) = REAL(i,DP)
+      do i=1,Isize(2)
+        p_Dsort(1,i) = real(i,DP)
         p_Dsort(2:,i) = Dcoords(:,i)
-      END DO
+      end do
       
       ! Sort the array. First for the last coordinate, then for the
       ! last but one, etc.
       ! Use a stable sorting algorithm to prevent the previous sorting
       ! from getting destroyed.
-      SELECT CASE (idirection)
-      CASE (0)
-        DO i=1,UBOUND(Dcoords,1)
-          CALL arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
-        END DO
+      select case (idirection)
+      case (0)
+        do i=1,ubound(Dcoords,1)
+          call arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
+        end do
         
-      CASE (1)
-        DO i=UBOUND(Dcoords,1),1,-1
-          CALL arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
-        END DO
+      case (1)
+        do i=ubound(Dcoords,1),1,-1
+          call arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
+        end do
       
-      CASE DEFAULT
-        CALL output_line ('Invalid direction!', &
+      case DEFAULT
+        call output_line ('Invalid direction!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcXYZsorting')
-        CALL sys_halt()
-      END SELECT
+        call sys_halt()
+      end select
       
       ! The first element in each ndim+2-tupel is now the permutation.
       ! Do a type conversion to int to get it.
-      DO i=1,Isize(2)
-        Ipermutation(i) = INT(p_Dsort(1,i),I32)
-      END DO
+      do i=1,Isize(2)
+        Ipermutation(i) = int(p_Dsort(1,i),I32)
+      end do
       
       ! Release the temp array, that's it.
-      CALL storage_free (h_Dsort)
+      call storage_free (h_Dsort)
       
-    END SUBROUTINE
+    end subroutine
 
-  END SUBROUTINE     
+  end subroutine     
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcFEASTsorting (rdiscretisation,Ipermutation,ifirstVertex)
+  subroutine sstrat_calcFEASTsorting (rdiscretisation,Ipermutation,ifirstVertex)
   
   !<description>
     ! Computes a column renumbering strategy based on the tensor product
@@ -1105,11 +1105,11 @@ CONTAINS
   !<input>
     ! Spatial discretisation structure that specifies the DOF's and the
     ! triangulation
-    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! OPTIONAL: First vertex (lower left corner) of the domain.
     ! If not specified, ifirstVertex=1 is assumed.
-    INTEGER, INTENT(IN), OPTIONAL :: ifirstVertex
+    integer, intent(IN), optional :: ifirstVertex
   !</input>
     
   !<output>
@@ -1117,78 +1117,78 @@ CONTAINS
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
     ! local variables
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX) :: ivt
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdge
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(I32), dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer(PREC_ELEMENTIDX) :: iel
+    integer(PREC_VERTEXIDX) :: ivt
     
-    IF (rdiscretisation%ndimension .EQ. 0) THEN
-      CALL output_line ('Discretisation not initialised.', &
+    if (rdiscretisation%ndimension .eq. 0) then
+      call output_line ('Discretisation not initialised.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Depending on the discrisation, choose the correct implementation.
-    SELECT CASE (rdiscretisation%ccomplexity)
-    CASE (SPDISC_UNIFORM)
+    select case (rdiscretisation%ccomplexity)
+    case (SPDISC_UNIFORM)
     
       ! FE-space?
-      SELECT CASE (elem_getPrimaryElement(&
+      select case (elem_getPrimaryElement(&
                        rdiscretisation%RelementDistr(1)%celement))
-      CASE (EL_Q1)
+      case (EL_Q1)
       
         ! Get geometrical data
-        CALL storage_getbase_int2d (rdiscretisation%p_rtriangulation%h_IelementsAtEdge,&
+        call storage_getbase_int2d (rdiscretisation%p_rtriangulation%h_IelementsAtEdge,&
             p_IelementsAtEdge)
-        CALL storage_getbase_int2d (&
+        call storage_getbase_int2d (&
             rdiscretisation%p_rtriangulation%h_IverticesAtElement,&
             p_IverticesAtElement)
-        CALL storage_getbase_int2d (&
+        call storage_getbase_int2d (&
             rdiscretisation%p_rtriangulation%h_IedgesAtElement,&
             p_IedgesAtElement)
             
         ! Get the first element on vertex ifirstVertex
         ivt = 1
-        IF (PRESENT(ifirstVertex)) ivt = ifirstVertex
-        CALL storage_getbase_int (rdiscretisation%p_rtriangulation%h_IelementsAtVertex,&
+        if (present(ifirstVertex)) ivt = ifirstVertex
+        call storage_getbase_int (rdiscretisation%p_rtriangulation%h_IelementsAtVertex,&
             p_IelementsAtVertex)
-        CALL storage_getbase_int (&
+        call storage_getbase_int (&
             rdiscretisation%p_rtriangulation%h_IelementsAtVertexIdx,&
             p_IelementsAtVertexIdx)
         iel = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt))
       
-        CALL sortForFeastQ1 (p_IelementsAtEdge, p_IverticesAtElement, p_IedgesAtElement,&
+        call sortForFeastQ1 (p_IelementsAtEdge, p_IverticesAtElement, p_IedgesAtElement,&
             Ipermutation(1: rdiscretisation%p_rtriangulation%NVT), ivt, iel, &
             rdiscretisation%p_rtriangulation%NVT)
       
-      CASE DEFAULT
-        CALL output_line ('Element type not supported.', &
+      case DEFAULT
+        call output_line ('Element type not supported.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-        CALL sys_halt()
-      END SELECT
+        call sys_halt()
+      end select
     
-    CASE DEFAULT
-      CALL output_line ('Discretisation too complex.', &
+    case DEFAULT
+      call output_line ('Discretisation too complex.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
   
     ! Calculate the inverse permutation, that's it.
-    CALL sstrat_calcInversePermutation (Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
+    call sstrat_calcInversePermutation (Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
                                         Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
     
-  CONTAINS
+  contains
   
-    SUBROUTINE sortForFeastQ1 (IelementsAtEdge,IverticesAtElement,IedgesAtElement,&
+    subroutine sortForFeastQ1 (IelementsAtEdge,IverticesAtElement,IedgesAtElement,&
                                Ipermutation,ivt,iel,NVT)
 
     ! Calculates the rowwise sorting in a FEAST like style. 
@@ -1198,20 +1198,20 @@ CONTAINS
     ! ivt specifies the lower left corner of the macro. iel specifies
     ! the element in the lower left corner that contains ivt.
     
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IelementsAtEdge
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ipermutation
-    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivt
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
-    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
+    integer(PREC_ELEMENTIDX), dimension(:,:), intent(IN) :: IelementsAtEdge
+    integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+    integer(PREC_EDGEIDX), dimension(:,:), intent(IN) :: IedgesAtElement
+    integer(I32), dimension(:), intent(OUT) :: Ipermutation
+    integer(PREC_VERTEXIDX), intent(IN) :: ivt
+    integer(PREC_ELEMENTIDX), intent(IN) :: iel
+    integer(PREC_VERTEXIDX), intent(IN) :: NVT
 
       ! local variables
-      INTEGER(PREC_VERTEXIDX) :: icornervertex,icornerelement,ipermidx
-      INTEGER(PREC_VERTEXIDX) :: icurrentvertex,icurrentelement
-      INTEGER(PREC_EDGEIDX) :: iedgeright,iedgetop
-      INTEGER :: ilocalvertex
-      INTEGER, PARAMETER :: NVE = 4
+      integer(PREC_VERTEXIDX) :: icornervertex,icornerelement,ipermidx
+      integer(PREC_VERTEXIDX) :: icurrentvertex,icurrentelement
+      integer(PREC_EDGEIDX) :: iedgeright,iedgetop
+      integer :: ilocalvertex
+      integer, parameter :: NVE = 4
       
       ! Current position in the mesh
       icurrentvertex = ivt
@@ -1221,7 +1221,7 @@ CONTAINS
       ipermidx = 0
       
       ! Loop through the columns until we find the macro border at the top
-      DO
+      do
         
         ! icornervertex remembers the current lower left corner. icornerelement
         ! the corresponding element.
@@ -1240,9 +1240,9 @@ CONTAINS
         Ipermutation(ipermidx) = icurrentvertex
         
         ! Get the local number of the vertex in the element
-        DO ilocalvertex = 1,NVE
-          IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
-        END DO
+        do ilocalvertex = 1,NVE
+          if (IverticesAtElement(ilocalvertex,icurrentelement) .eq. icurrentvertex) exit
+        end do
         
         ! Get the edges to the neighbour elements
         !
@@ -1251,10 +1251,10 @@ CONTAINS
         !    |   X iedgeright
         !  IVT---+---
         
-        iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
+        iedgeright = IedgesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
       
         ! Loop through the macro row until we find the right border of the macro
-        DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
+        do while (IelementsAtEdge(2,iedgeright) .ne. 0) 
         
           ! Step right to the next element 
           !
@@ -1263,23 +1263,23 @@ CONTAINS
           !    |   |   |           
           !    +--IVT--+
           
-          icurrentvertex = IverticesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
+          icurrentvertex = IverticesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
           
-          IF (IelementsAtEdge(2,iedgeright) .NE. icurrentElement) THEN
+          if (IelementsAtEdge(2,iedgeright) .ne. icurrentElement) then
             icurrentElement = IelementsAtEdge(2,iedgeright)
-          ELSE
+          else
             icurrentElement = IelementsAtEdge(1,iedgeright)
-          END IF
+          end if
           
           ! Add the vertex to the permutation
           ipermidx = ipermidx+1
           Ipermutation(ipermidx) = icurrentvertex
           
           ! Get the local number of the vertex in the element
-          DO ilocalvertex = 1,NVE
-            IF (IverticesAtElement(ilocalvertex,icurrentelement) &
-                .EQ. icurrentvertex) EXIT
-          END DO
+          do ilocalvertex = 1,NVE
+            if (IverticesAtElement(ilocalvertex,icurrentelement) &
+                .eq. icurrentvertex) exit
+          end do
         
           ! Get the edges to the neighbour elements
           !
@@ -1288,9 +1288,9 @@ CONTAINS
           !    |   |   X iedgeright
           !    +--IVT--+--
           
-          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
+          iedgeright = IedgesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
           
-        END DO
+        end do
         
         ! We have reached the end of the row
         !
@@ -1301,7 +1301,7 @@ CONTAINS
         !
         ! Remember the last vertex IVT2 in the row
         
-        icurrentvertex = IverticesAtElement(MOD(ilocalvertex,NVE)+1,icurrentelement)
+        icurrentvertex = IverticesAtElement(mod(ilocalvertex,NVE)+1,icurrentelement)
         ipermidx = ipermidx+1
         Ipermutation(ipermidx) = icurrentvertex
         
@@ -1316,9 +1316,9 @@ CONTAINS
         icurrentvertex = icornervertex
         icurrentelement = icornerelement
         
-        DO ilocalvertex = 1,NVE
-          IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
-        END DO
+        do ilocalvertex = 1,NVE
+          if (IverticesAtElement(ilocalvertex,icurrentelement) .eq. icurrentvertex) exit
+        end do
         
         ! Get the edge that leads to the element row above us.
         !
@@ -1327,7 +1327,7 @@ CONTAINS
         !    |IEL|
         !  IVT---+---
         
-        iedgetop = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
+        iedgetop = IedgesAtElement(mod(ilocalvertex+1,NVE)+1,icurrentElement)
         
         ! Get the vertex and the element there. Note: If there is no neighbour
         ! element, the current element number gets =0 which is the terminal criterion.
@@ -1337,27 +1337,27 @@ CONTAINS
         !    |   |
         !    +---+---
       
-        icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentElement)
+        icurrentvertex = IverticesAtElement(mod(ilocalvertex+2,NVE)+1,icurrentElement)
       
-        IF (IelementsAtEdge(2,iedgetop) .NE. icurrentElement) THEN
+        if (IelementsAtEdge(2,iedgetop) .ne. icurrentElement) then
           icurrentElement = IelementsAtEdge(2,iedgetop)
-        ELSE
+        else
           icurrentElement = IelementsAtEdge(1,iedgetop)
-        END IF
+        end if
       
-        IF (icurrentelement .EQ. 0) THEN
-          EXIT
-        ELSE
+        if (icurrentelement .eq. 0) then
+          exit
+        else
           ! There is a neighbour element on top.
           ! Get the edge that leads to the right and continue in the new
           ! element row.
-          DO ilocalvertex = 1,NVE
-            IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
-          END DO
+          do ilocalvertex = 1,NVE
+            if (IverticesAtElement(ilocalvertex,icurrentelement) .eq. icurrentvertex) exit
+          end do
 
-          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
-        END IF
-      END DO
+          iedgeright = IedgesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
+        end if
+      end do
       
       ! Ok, we have done all element rows now.
       !
@@ -1387,14 +1387,14 @@ CONTAINS
       !   +---+-            
       !   |   |            
 
-      DO ilocalvertex = 1,NVE
-        IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
-      END DO
+      do ilocalvertex = 1,NVE
+        if (IverticesAtElement(ilocalvertex,icurrentelement) .eq. icurrentvertex) exit
+      end do
       
-      iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
+      iedgeright = IedgesAtElement(mod(ilocalvertex+1,NVE)+1,icurrentElement)
     
       ! Loop through the macro row until we find the right border of the macro
-      DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
+      do while (IelementsAtEdge(2,iedgeright) .ne. 0) 
       
         ! Step right to the next element 
         !
@@ -1403,23 +1403,23 @@ CONTAINS
         !    +---+---+
         !    |   |     
         
-        icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentElement)
+        icurrentvertex = IverticesAtElement(mod(ilocalvertex+2,NVE)+1,icurrentElement)
         
-        IF (IelementsAtEdge(2,iedgeright) .NE. icurrentElement) THEN
+        if (IelementsAtEdge(2,iedgeright) .ne. icurrentElement) then
           icurrentElement = IelementsAtEdge(2,iedgeright)
-        ELSE
+        else
           icurrentElement = IelementsAtEdge(1,iedgeright)
-        END IF
+        end if
         
         ! Add the vertex to the permutation
         ipermidx = ipermidx+1
         Ipermutation(ipermidx) = icurrentvertex
         
         ! Get the local number of the vertex in the element
-        DO ilocalvertex = 1,NVE
-          IF (IverticesAtElement(ilocalvertex,icurrentelement) &
-              .EQ. icurrentvertex) EXIT
-        END DO
+        do ilocalvertex = 1,NVE
+          if (IverticesAtElement(ilocalvertex,icurrentelement) &
+              .eq. icurrentvertex) exit
+        end do
       
         ! Get the edges to the neighbour elements
         !
@@ -1428,9 +1428,9 @@ CONTAINS
         !    +---+---+--
         !    |   |   |  
         
-        iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)
+        iedgeright = IedgesAtElement(mod(ilocalvertex+1,NVE)+1,icurrentElement)
         
-      END DO    
+      end do    
       
       ! Remember the last vertex IVT2 in the row
       !
@@ -1439,19 +1439,19 @@ CONTAINS
       !     ---+---+  
       !        |   |  
       
-      icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentelement)
+      icurrentvertex = IverticesAtElement(mod(ilocalvertex+2,NVE)+1,icurrentelement)
       ipermidx = ipermidx+1
       Ipermutation(ipermidx) = icurrentvertex
 
-    END SUBROUTINE
+    end subroutine
 
-  END SUBROUTINE     
+  end subroutine     
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sstrat_calcHierarchical (Rdiscretisation,Ipermutation)
+  subroutine sstrat_calcHierarchical (Rdiscretisation,Ipermutation)
   
 !<description>
   ! This subroutine calculates a hierarchical renumbering strategy.
@@ -1467,7 +1467,7 @@ CONTAINS
   ! 2-level refinement.
   ! The last element in this array must correspond
   ! to the permutation which is to be computed.
-  TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: Rdiscretisation
+  type(t_spatialDiscretisation), dimension(:), intent(IN) :: Rdiscretisation
   
 !</input>
     
@@ -1476,114 +1476,114 @@ CONTAINS
   ! With NEQ=NEQ(matrix):
   !   Ipermutation(1:NEQ)       = permutation,
   !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+  integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
 !</output>    
 
 !</subroutine>
   
-    INTEGER(PREC_VECIDX) :: N
+    integer(PREC_VECIDX) :: N
     
     ! Length of the permutation. Must correspond to the #DOF's
     ! on the finest level.
-    N = SIZE(Ipermutation)/2
+    N = size(Ipermutation)/2
     
-    IF (N .NE. dof_igetNDofGlob(Rdiscretisation(SIZE(Rdiscretisation)))) THEN
-      CALL output_line ('Permutation target vector has the wrong size!', &
+    if (N .ne. dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))) then
+      call output_line ('Permutation target vector has the wrong size!', &
           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
   
-    SELECT CASE (Rdiscretisation(1)%p_rtriangulation%ndim)
-    CASE (NDIM2D)
+    select case (Rdiscretisation(1)%p_rtriangulation%ndim)
+    case (NDIM2D)
       ! Regular 2-level refinement in 2D.
-      CALL calcHierarch(Rdiscretisation,Ipermutation)
+      call calcHierarch(Rdiscretisation,Ipermutation)
     
-    CASE DEFAULT
-      CALL output_line ('Invalid dimension.', &
+    case DEFAULT
+      call output_line ('Invalid dimension.', &
           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
     ! Calculate the inverse permutation, that's it.
-    CALL sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+    call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
 
-  CONTAINS
+  contains
   
-    SUBROUTINE calcHierarch(Rdiscretisation,Ipermutation)
+    subroutine calcHierarch(Rdiscretisation,Ipermutation)
   
     ! Array of discretisation structures identifying the different levels
     ! of refinement. The discretisation structures must stem from a standard
     ! 2-level refinement.
     ! The last element in this array must correspond
     ! to the permutation which is to be computed.
-    TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN), TARGET :: Rdiscretisation
+    type(t_spatialDiscretisation), dimension(:), intent(IN), target :: Rdiscretisation
   
     ! The permutation vector for sorting and its inverse.
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
 
       ! local variables      
-      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatch
-      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IrefinementPatchIdx
-      TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtria
-      INTEGER(PREC_DOFIDX) :: NEQ
-      INTEGER :: hmarker
-      INTEGER(I32), DIMENSION(:), POINTER :: p_Imarker
-      INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
-      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: IpatchIndex
-      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: ImaxIndex
-      INTEGER(PREC_DOFIDX), DIMENSION(SIZE(Rdiscretisation)) :: Ielement
-      TYPE(t_levelHirarchy), DIMENSION(SIZE(Rdiscretisation)) :: Rhierarchy
-      INTEGER :: ilev,ndof,ieldistr,idof
-      INTEGER(I32) :: ieltype
-      INTEGER(PREC_DOFIDX) :: ipos
-      INTEGER(PREC_ELEMENTIDX) :: ielcoarse
-      LOGICAL :: bisUniform
+      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatch
+      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatchIdx
+      type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
+      integer(PREC_DOFIDX) :: NEQ
+      integer :: hmarker
+      integer(I32), dimension(:), pointer :: p_Imarker
+      integer(PREC_DOFIDX), dimension(EL_MAXNBAS) :: Idofs
+      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: IpatchIndex
+      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: ImaxIndex
+      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: Ielement
+      type(t_levelHirarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
+      integer :: ilev,ndof,ieldistr,idof
+      integer(I32) :: ieltype
+      integer(PREC_DOFIDX) :: ipos
+      integer(PREC_ELEMENTIDX) :: ielcoarse
+      logical :: bisUniform
       
       ! Save pointers to the element patch arrays for all levels.
       ! We'll frequently need them.
-      DO ilev=1,SIZE(Rhierarchy)
+      do ilev=1,size(Rhierarchy)
         ! Refinement information
-        IF (ilev .GT. 1) THEN
+        if (ilev .gt. 1) then
           p_rtria => Rdiscretisation(ilev)%p_rtriangulation
-          CALL storage_getbase_int (p_rtria%h_IrefinementPatch,&
+          call storage_getbase_int (p_rtria%h_IrefinementPatch,&
               Rhierarchy(ilev)%p_IrefinementPatch)
-          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
+          call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
               Rhierarchy(ilev)%p_IrefinementPatchIdx)
-        END IF
+        end if
             
         ! Information about the discretisation: Arrays that allow
         ! to determine the type of an element.
-        bisUniform = Rdiscretisation(ilev)%ccomplexity .EQ. SPDISC_UNIFORM
+        bisUniform = Rdiscretisation(ilev)%ccomplexity .eq. SPDISC_UNIFORM
         Rhierarchy(ilev)%bisUniform = bisUniform
         
-        IF (bisUniform) THEN
+        if (bisUniform) then
           ! One element type for all elements
           Rhierarchy(ilev)%ieltype = &
               Rdiscretisation(ilev)%RelementDistr(1)%celement
-        ELSE
+        else
           ! A different element type for every element.
           ! Get a pointer to the array that defines the element distribution
           ! of the element. This allows us later to determine the element type.
-          CALL storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
+          call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
               Rhierarchy(ilev)%p_IelementDistr)
-        END IF
-      END DO
+        end if
+      end do
 
       p_rtriaCoarse => Rdiscretisation(1)%p_rtriangulation
 
       ! Get the number of DOF's on the finest level. This is the
       ! size of the permutation.          
-      NEQ = dof_igetNDofGlob(Rdiscretisation(SIZE(Rdiscretisation)))
+      NEQ = dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))
 
       ! Set up a marker array where we remember whether we processed
       ! a DOF or not. Initialise with zero; all DOF's we already
       ! processed are marked here with a 1.
-      CALL storage_new ('calcHierarch2Level2D', &
+      call storage_new ('calcHierarch2Level2D', &
           'mark', NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
-      CALL storage_getbase_int (hmarker,p_Imarker)
+      call storage_getbase_int (hmarker,p_Imarker)
 
       ipos = 0
       ilev = 1
@@ -1597,17 +1597,17 @@ CONTAINS
       ! on level i.
       !
       ! Loop through all elements on the coarse mesh
-      DO ielcoarse = 1,p_rtriaCoarse%NEL
+      do ielcoarse = 1,p_rtriaCoarse%NEL
       
         Ielement(1) = ielcoarse
       
-        patchcycle: DO
+        patchcycle: do
       
           ! From this element, figure out the DOF's of all subelements.
           ! This has to be done patchwise on the finest level.
           ! Thus, as long as we aren't on the fines level, we have to
           ! increase the current one.
-          DO WHILE (ilev .LT. SIZE(Rdiscretisation))
+          do while (ilev .lt. size(Rdiscretisation))
           
             ! Go up
             ilev = ilev + 1
@@ -1624,81 +1624,81 @@ CONTAINS
             Ielement(ilev) = &
               Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
           
-          END DO
+          end do
           
           ! We are now on the maximum level on element Ielement(max).
           ! Get the DOF's of that element.
           ! For that purpose, we need the element type.
-          IF (Rhierarchy(ilev)%bisUniform) THEN
+          if (Rhierarchy(ilev)%bisUniform) then
             ieltype = Rhierarchy(ilev)%ieltype
-          ELSE
+          else
             ! Get the element distribution and from that the element type.
             ieldistr = Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
             ieltype = Rdiscretisation(ilev)%RelementDistr(ieldistr)%celement
-          END IF
+          end if
           
           ndof = elem_igetNDofLoc(ieltype)
-          CALL dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev),  Idofs)
+          call dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev),  Idofs)
           
           ! Check the DOF's. All DOF's we don't have yet, we collect into the
           ! permutation.
-          DO idof = 1,ndof
-            IF (p_Imarker(Idofs(idof)) .EQ. 0) THEN
+          do idof = 1,ndof
+            if (p_Imarker(Idofs(idof)) .eq. 0) then
               ipos = ipos + 1
               Ipermutation(ipos) = Idofs(idof)
               
               ! Mark the DOF as being handled.
               p_Imarker(Idofs(idof)) = 1
-            END IF
-          END DO
+            end if
+          end do
         
           ! Now we have to proceed to the next element. How to do that depends
           ! on 'where we are'.
-          IF (ilev .GT. 1) THEN
+          if (ilev .gt. 1) then
           
             ! Go to the next element in the current patch.
             IpatchIndex(ilev) = IpatchIndex(ilev) + 1
           
-            DO WHILE ((ilev .GT. 1) .AND. &
-                    (IpatchIndex(ilev) .GT. ImaxIndex(ilev)))
+            do while ((ilev .gt. 1) .and. &
+                    (IpatchIndex(ilev) .gt. ImaxIndex(ilev)))
             
               ! All elements of the patch completed. Go down one level
               ! and proceed there to the next element patch.
               ilev = ilev - 1  
               IpatchIndex(ilev) = IpatchIndex(ilev) + 1
             
-            END DO
-          END IF
+            end do
+          end if
           
           ! As long as we don't reach level 1, there are elements left
           ! in the patch to proceed. So cycle the patchloop
           ! to proceed to the next element.
-          IF (ilev .EQ. 1) THEN
-            EXIT patchcycle
-          ELSE
+          if (ilev .eq. 1) then
+            exit patchcycle
+          else
             ! Get the new current element number
             Ielement(ilev) = &
               Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
-          END IF
+          end if
           
-        END DO patchcycle
+        end do patchcycle
       
-      END DO
+      end do
       
       ! Release temp memory.
-      CALL storage_free (hmarker)
+      call storage_free (hmarker)
 
       ! Calculate the inverse permutation, that's it.
-      CALL sstrat_calcInversePermutation (Ipermutation(1:NEQ), Ipermutation(NEQ+1:) )
+      call sstrat_calcInversePermutation (Ipermutation(1:NEQ), Ipermutation(NEQ+1:) )
 
-    END SUBROUTINE
+    end subroutine
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE sstrat_calcInversePermutation (IpermutationSource, IpermutationDest)
+  subroutine sstrat_calcInversePermutation (IpermutationSource, IpermutationDest)
   
   !<description>
     ! Computes the inverse of a permutation. IpermutationSource is a given
@@ -1707,22 +1707,22 @@ CONTAINS
     
   !<input>
     ! A permutation.
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IpermutationSource
+    integer(I32), dimension(:), intent(IN) :: IpermutationSource
   !</input>
     
   !<output>
     ! An array of the same size as IpermutationSource. Receives the inverse
     ! permutation.
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IpermutationDest
+    integer(I32), dimension(:), intent(OUT) :: IpermutationDest
   !</output>    
 
   !</subroutine>
   
-    INTEGER :: i
-    DO i=1,SIZE(IpermutationSource)
+    integer :: i
+    do i=1,size(IpermutationSource)
       IpermutationDest(IpermutationSource(i)) = i
-    END DO
+    end do
   
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
