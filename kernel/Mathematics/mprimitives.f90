@@ -64,36 +64,36 @@
 !# </purpose>
 !##############################################################################
 
-MODULE mprimitives
+module mprimitives
 
-  USE fsystem
-  USE genoutput
+  use fsystem
+  use genoutput
   
-  IMPLICIT NONE
+  implicit none
   
-  INTERFACE mprim_signum
-    MODULE PROCEDURE mprim_signum_dble
-    MODULE PROCEDURE mprim_signum_real
-    MODULE PROCEDURE mprim_signum_int32
-  END INTERFACE
+  interface mprim_signum
+    module procedure mprim_signum_dble
+    module procedure mprim_signum_real
+    module procedure mprim_signum_int32
+  end interface
 
-  INTERFACE mprim_SVD_backsubst
-    MODULE PROCEDURE  mprim_SVD_backsubst1
-    MODULE PROCEDURE  mprim_SVD_backsubst2
-  END INTERFACE
+  interface mprim_SVD_backsubst
+    module procedure  mprim_SVD_backsubst1
+    module procedure  mprim_SVD_backsubst2
+  end interface
 
   ! Alternative name for backward compatibility
-  INTERFACE mprim_kronecker
-    MODULE PROCEDURE kronecker
-  END INTERFACE
+  interface mprim_kronecker
+    module procedure kronecker
+  end interface
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<function>
   
-  ELEMENTAL REAL(DP) FUNCTION mprim_getParabolicProfile (dpos,dlength,dmaxvalue)
+  elemental real(DP) function mprim_getParabolicProfile (dpos,dlength,dmaxvalue)
   
 !<description>
   ! Calculates the value of a parabolic profile along a line.
@@ -104,13 +104,13 @@ CONTAINS
 !<input>
   
   ! Position on the line segment where to calculate the velocity
-  REAL(DP), INTENT(IN) :: dpos
+  real(DP), intent(IN) :: dpos
   
   ! Length of the line segment
-  REAL(DP), INTENT(IN) :: dlength
+  real(DP), intent(IN) :: dlength
   
   ! Maximum value of the profile 
-  REAL(DP), INTENT(IN) :: dmaxvalue
+  real(DP), intent(IN) :: dmaxvalue
   
 !</input>
 
@@ -122,13 +122,13 @@ CONTAINS
     ! Result: Value of the parbolic profile on position dpos on the line segment
     mprim_getParabolicProfile = 4.0_DP*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
     
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
   
-  ELEMENTAL REAL(DP) FUNCTION mprim_signum_dble (dval)
+  elemental real(DP) function mprim_signum_dble (dval)
   
 !<description>
   ! Signum function
@@ -136,7 +136,7 @@ CONTAINS
   
 !<input>
   ! Value to be checked
-  REAL(DP), INTENT(IN) :: dval
+  real(DP), intent(IN) :: dval
 !</input>
 
 !<result>
@@ -145,21 +145,21 @@ CONTAINS
 !</function>
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
-    IF (dval .LT. 0.0_DP) THEN
+    if (dval .lt. 0.0_DP) then
       mprim_signum_dble = -1.0_DP
-    ELSE IF (dval .GT. 0.0_DP) THEN
+    else if (dval .gt. 0.0_DP) then
       mprim_signum_dble = 1.0_DP
-    ELSE 
+    else 
       mprim_signum_dble = 0.0_DP
-    END IF
+    end if
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
   
-  ELEMENTAL REAL(SP) FUNCTION mprim_signum_real (fval)
+  elemental real(SP) function mprim_signum_real (fval)
   
 !<description>
   ! Signum function.
@@ -167,7 +167,7 @@ CONTAINS
   
 !<input>
   ! Value to be checked
-  REAL(SP), INTENT(IN) :: fval
+  real(SP), intent(IN) :: fval
 !</input>
 
 !<result>
@@ -176,21 +176,21 @@ CONTAINS
 !</function>
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
-    IF (fval .LT. 0.0_SP) THEN
+    if (fval .lt. 0.0_SP) then
       mprim_signum_real = -1.0_SP
-    ELSE IF (fval .GT. 0.0_SP) THEN
+    else if (fval .gt. 0.0_SP) then
       mprim_signum_real = 1.0_SP
-    ELSE 
+    else 
       mprim_signum_real = 0.0_SP
-    END IF
+    end if
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
   
-  ELEMENTAL INTEGER(I32) FUNCTION mprim_signum_int32 (ival)
+  elemental integer(I32) function mprim_signum_int32 (ival)
   
 !<description>
   ! Signum function.
@@ -198,7 +198,7 @@ CONTAINS
   
 !<input>
   ! Value to be checked
-  INTEGER(I32), INTENT(IN) :: ival
+  integer(I32), intent(IN) :: ival
 !</input>
 
 !<result>
@@ -207,22 +207,22 @@ CONTAINS
 !</function>
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
-    SELECT CASE (ival)
-      CASE (:-1)
+    select case (ival)
+      case (:-1)
         mprim_signum_int32 = -1_I32
-      CASE (0)
+      case (0)
         mprim_signum_int32 = 0_I32
-      CASE DEFAULT
+      case DEFAULT
         mprim_signum_int32 = 1_I32
-    END SELECT
+    end select
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar)
+  subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -236,10 +236,10 @@ CONTAINS
 
 !<input>
     ! dimension of the matrix
-    INTEGER, INTENT(IN) :: ndim
+    integer, intent(IN) :: ndim
 
     ! source right-hand side vector
-    REAL(DP), DIMENSION(ndim), INTENT(IN) :: Df
+    real(DP), dimension(ndim), intent(IN) :: Df
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
@@ -248,125 +248,125 @@ CONTAINS
     !            and return x = inv(A)*f
     ! IPAR = 2 : invert matrix and apply it to the right-hand side
     !            vector. Return x = inv(A)*f
-    INTEGER, INTENT(IN) :: ipar
+    integer, intent(IN) :: ipar
 !</input>
 
 !<inputoutput> 
     ! source square matrix to be inverted
-    REAL(DP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Da
+    real(DP), dimension(ndim,ndim), intent(INOUT) :: Da
 !</inputoutput>
 
 !<output>
     ! destination vector containing inverted matrix times right-hand
     ! side vector
-    REAL(DP), DIMENSION(ndim), INTENT(OUT) :: Dx
+    real(DP), dimension(ndim), intent(OUT) :: Dx
 !</output>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(ndim,ndim) :: Db
-    REAL(DP), DIMENSION(ndim) :: Dpiv
-    INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+    real(DP), dimension(ndim,ndim) :: Db
+    real(DP), dimension(ndim) :: Dpiv
+    integer, dimension(ndim) :: Kindx,Kindy
 
-    REAL(DP) :: dpivot,daux
-    INTEGER :: idim1,idim2,ix,iy,indx,indy,info
+    real(DP) :: dpivot,daux
+    integer :: idim1,idim2,ix,iy,indx,indy,info
 
-    SELECT CASE (ipar)
-    CASE (0)
+    select case (ipar)
+    case (0)
       ! Perform factorization of matrix Da
 
       ! Initialization
       Kindx=0;  Kindy=0
 
-      DO idim1=1,ndim
+      do idim1=1,ndim
 
         ! Determine pivotal element
         dpivot=0
 
-        DO iy=1,ndim
-          IF (Kindy(iy) /= 0) CYCLE
+        do iy=1,ndim
+          if (Kindy(iy) /= 0) cycle
 
-          DO ix=1,ndim
-            IF (Kindx(ix) /= 0) CYCLE
+          do ix=1,ndim
+            if (Kindx(ix) /= 0) cycle
 
-            IF (ABS(Da(ix,iy)) .LE. ABS(dpivot)) CYCLE
+            if (abs(Da(ix,iy)) .le. abs(dpivot)) cycle
             dpivot=Da(ix,iy);  indx=ix;  indy=iy
-          END DO
-        END DO
+          end do
+        end do
 
         ! Return if pivotal element is zero
-        IF (ABS(dpivot) .LE. 0._DP) RETURN
+        if (abs(dpivot) .le. 0._DP) return
 
         Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP&
             &/dpivot
 
-        DO idim2=1,ndim
-          IF (idim2 == indy) CYCLE 
+        do idim2=1,ndim
+          if (idim2 == indy) cycle 
           Da(1:indx-1,idim2)=Da(1:indx-1,idim2)-Da(1:indx-1,  &
               & indy)*Da(indx,idim2)/dpivot
           Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim&
               &,indy)*Da(indx,idim2)/dpivot
-        END DO
+        end do
 
-        DO ix=1,ndim
-          IF (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
-        END DO
+        do ix=1,ndim
+          if (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
+        end do
 
-        DO iy=1,ndim
-          IF (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
-        END DO
-      END DO
+        do iy=1,ndim
+          if (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
+        end do
+      end do
 
-      DO ix=1,ndim
-        IF (Kindx(ix) == ix) CYCLE
+      do ix=1,ndim
+        if (Kindx(ix) == ix) cycle
 
-        DO iy=1,ndim
-          IF (Kindx(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+          if (Kindx(iy) == ix) exit
+        end do
 
-        DO idim1=1,ndim
+        do idim1=1,ndim
           daux=Da(ix,idim1)
           Da(ix,idim1)=Da(iy,idim1)
           Da(iy,idim1)=daux
-        END DO
+        end do
 
         Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
-      END DO
+      end do
 
-      DO ix=1,ndim
-        IF (Kindy(ix) == ix) CYCLE
+      do ix=1,ndim
+        if (Kindy(ix) == ix) cycle
 
-        DO iy=1,ndim
-          IF (Kindy(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+          if (Kindy(iy) == ix) exit
+        end do
 
-        DO idim1=1,ndim
+        do idim1=1,ndim
           daux=Da(idim1,ix)
           Da(idim1,ix)=Da(idim1,iy)
           Da(idim1,iy)=daux
-        END DO
+        end do
         
         Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
-      END DO
+      end do
 
 
-    CASE (1)    
+    case (1)    
       ! Perform inversion of Da to solve the system Da * Dx = Df
-      DO idim1=1,ndim
+      do idim1=1,ndim
         Dx(idim1)=0
-        DO idim2=1,ndim
+        do idim2=1,ndim
           Dx(idim1)=Dx(idim1)+Da(idim1,idim2)*Df(idim2)
-        END DO
-      END DO
+        end do
+      end do
 
-    CASE (2)
+    case (2)
       ! Solve the dense linear system Ax=f calling LAPACK routine
 
-      SELECT CASE(ndim)
-      CASE (2)
-        CALL mprim_invert2x2MatrixDirectDble(Da,Db)
-        Dx=MATMUL(Db,Df)
+      select case(ndim)
+      case (2)
+        call mprim_invert2x2MatrixDirectDble(Da,Db)
+        Dx=matmul(Db,Df)
 !!$        ! Explicit formula for 2x2 system
 !!$        Db(1,1)= Da(2,2)
 !!$        Db(2,1)=-Da(2,1)
@@ -375,9 +375,9 @@ CONTAINS
 !!$        daux=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
 !!$        Dx=MATMUL(Db,Df)/daux
 
-      CASE (3)
-        CALL mprim_invert3x3MatrixDirectDble(Da,Db)
-        Dx=MATMUL(Db,Df)
+      case (3)
+        call mprim_invert3x3MatrixDirectDble(Da,Db)
+        Dx=matmul(Db,Df)
 !!$        ! Explicit formula for 3x3 system
 !!$        Db(1,1)=Da(2,2)*Da(3,3)-Da(2,3)*Da(3,2)
 !!$        Db(2,1)=Da(2,3)*Da(3,1)-Da(2,1)*Da(3,3)
@@ -393,9 +393,9 @@ CONTAINS
 !!$            &,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
 !!$        Dx=MATMUL(Db,Df)/daux
 
-      CASE (4)
-        CALL mprim_invert4x4MatrixDirectDble(Da,Db)
-        Dx=MATMUL(Db,Df)
+      case (4)
+        call mprim_invert4x4MatrixDirectDble(Da,Db)
+        Dx=matmul(Db,Df)
 !!$        ! Explicit formula for 4x4 system
 !!$        Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2&
 !!$            &,4)*Da(3,2)*Da(4,3)- Da(2,2)*Da(3,4)*Da(4,3)-Da(2,3)&
@@ -462,20 +462,20 @@ CONTAINS
 !!$            &,1)*Da(4,2)
 !!$        Dx=MATMUL(Db,Df)/daux
 
-      CASE DEFAULT
+      case DEFAULT
         ! Use LAPACK routine for general NxN system, where N>4
         Dpiv=0; Dx=Df
-        CALL DGESV(ndim,1,Da,ndim,Dpiv,Dx,ndim,info)
+        call DGESV(ndim,1,Da,ndim,Dpiv,Dx,ndim,info)
         
-      END SELECT
-    END SELECT
-  END SUBROUTINE mprim_invertMatrixDble
+      end select
+    end select
+  end subroutine mprim_invertMatrixDble
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE mprim_invert2x2MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert2x2MatrixDirectDble(Da,Db)
 
 !<description>
   ! This subroutine directly inverts a 2x2 system without any pivoting.
@@ -488,17 +488,17 @@ CONTAINS
 
 !<input>
   ! source square matrix to be inverted
-  REAL(DP), DIMENSION(2,2), INTENT(IN) :: Da
+  real(DP), dimension(2,2), intent(IN) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  REAL(DP), DIMENSION(2,2), INTENT(OUT) :: Db
+  real(DP), dimension(2,2), intent(OUT) :: Db
 !</output>
 
 !</subroutine>
 
-    REAL(DP) :: daux
+    real(DP) :: daux
     
     ! Explicit formula for 2x2 system
     Db(1,1)= Da(2,2)
@@ -508,13 +508,13 @@ CONTAINS
     daux=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
     Db=Db*(1.0_DP/daux)
     
-  END SUBROUTINE mprim_invert2x2MatrixDirectDble
+  end subroutine mprim_invert2x2MatrixDirectDble
 
     ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE mprim_invert3x3MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert3x3MatrixDirectDble(Da,Db)
 
 !<description>
   ! This subroutine directly inverts a 3x3 system without any pivoting.
@@ -527,17 +527,17 @@ CONTAINS
 
 !<input>
   ! source square matrix to be inverted
-  REAL(DP), DIMENSION(3,3), INTENT(IN) :: Da
+  real(DP), dimension(3,3), intent(IN) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  REAL(DP), DIMENSION(3,3), INTENT(OUT) :: Db
+  real(DP), dimension(3,3), intent(OUT) :: Db
 !</output>
 
 !</subroutine>
 
-    REAL(DP) :: daux
+    real(DP) :: daux
     
     ! Explicit formula for 3x3 system
     Db(1,1)=Da(2,2)*Da(3,3)-Da(2,3)*Da(3,2)
@@ -554,13 +554,13 @@ CONTAINS
         &,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
     Db=Db*(1.0_DP/daux)
     
-  END SUBROUTINE mprim_invert3x3MatrixDirectDble
+  end subroutine mprim_invert3x3MatrixDirectDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE mprim_invert4x4MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert4x4MatrixDirectDble(Da,Db)
 
 !<description>
   ! This subroutine directly inverts a 4x4 system without any pivoting.
@@ -573,17 +573,17 @@ CONTAINS
 
 !<input>
   ! source square matrix to be inverted
-  REAL(DP), DIMENSION(4,4), INTENT(IN) :: Da
+  real(DP), dimension(4,4), intent(IN) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  REAL(DP), DIMENSION(4,4), INTENT(OUT) :: Db
+  real(DP), dimension(4,4), intent(OUT) :: Db
 !</output>
 
 !</subroutine>
 
-    REAL(DP) :: daux
+    real(DP) :: daux
 
       ! Explicit formula for 4x4 system
       Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2&
@@ -651,13 +651,13 @@ CONTAINS
           &,1)*Da(4,2)
       Db=Db*(1.0_DP/daux)
 
-  END SUBROUTINE mprim_invert4x4MatrixDirectDble
+  end subroutine mprim_invert4x4MatrixDirectDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE mprim_invert6x6MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert6x6MatrixDirectDble(Da,Db)
 
 !<description>
   ! This subroutine directly inverts a 6x6 system without any pivoting.
@@ -670,20 +670,20 @@ CONTAINS
 
 !<input>
   ! source square matrix to be inverted
-  REAL(DP), DIMENSION(6,6), INTENT(IN) :: Da
+  real(DP), dimension(6,6), intent(IN) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  REAL(DP), DIMENSION(6,6), INTENT(OUT) :: Db
+  real(DP), dimension(6,6), intent(OUT) :: Db
 !</output>
 
 !</subroutine>
 
     ! auxiliary variables
-    REAL(DP) :: det
-    REAL(DP), DIMENSION(15) :: U, W
-    REAL(DP), DIMENSION(20) :: V
+    real(DP) :: det
+    real(DP), dimension(15) :: U, W
+    real(DP), dimension(20) :: V
 
     ! 2x2 determinants of rows 5-6
     U(1) = Da(5,1)*Da(6,2)-Da(5,2)*Da(6,1)
@@ -881,13 +881,13 @@ CONTAINS
     Db(5,6) = det*(-Da(5,1)*W(12)+Da(5,2)*W(8)-Da(5,3)*W(5)+Da(5,4)*W(3)-Da(5,6)*W(1))
     Db(6,6) = det*( Da(5,1)*W(11)-Da(5,2)*W(7)+Da(5,3)*W(4)-Da(5,4)*W(2)+Da(5,5)*W(1))
 
-  END SUBROUTINE mprim_invert6x6MatrixDirectDble
+  end subroutine mprim_invert6x6MatrixDirectDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE mprim_invertMatrixPivotDble(Da,ndim)
+  pure subroutine mprim_invertMatrixPivotDble(Da,ndim)
 
 !<description>
   ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
@@ -897,21 +897,21 @@ CONTAINS
 
 !<input>
   ! Dimension of the matrix Da.
-  INTEGER, INTENT(IN) :: ndim
+  integer, intent(IN) :: ndim
 !</input>
 
 !<inputoutput>
   ! source square matrix to be inverted
-  REAL(DP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Da
+  real(DP), dimension(ndim,ndim), intent(INOUT) :: Da
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+    integer, dimension(ndim) :: Kindx,Kindy
 
-    REAL(DP) :: dpivot,daux
-    INTEGER :: idim1,idim2,ix,iy,indx,indy
+    real(DP) :: dpivot,daux
+    integer :: idim1,idim2,ix,iy,indx,indy
 
     ! Perform factorization of matrix Da
 
@@ -919,84 +919,84 @@ CONTAINS
     Kindx=0
     Kindy=0
 
-    DO idim1=1,ndim
+    do idim1=1,ndim
 
       ! Determine pivotal element
       dpivot=0
 
-      DO iy=1,ndim
-        IF (Kindy(iy) /= 0) CYCLE
+      do iy=1,ndim
+        if (Kindy(iy) /= 0) cycle
 
-        DO ix=1,ndim
-          IF (Kindx(ix) /= 0) CYCLE
+        do ix=1,ndim
+          if (Kindx(ix) /= 0) cycle
 
-          IF (ABS(Da(ix,iy)) .LE. ABS(dpivot)) CYCLE
+          if (abs(Da(ix,iy)) .le. abs(dpivot)) cycle
           dpivot=Da(ix,iy);  indx=ix;  indy=iy
-        END DO
-      END DO
+        end do
+      end do
 
       ! Return if pivotal element is zero
-      IF (ABS(dpivot) .LE. 0._DP) RETURN
+      if (abs(dpivot) .le. 0._DP) return
 
       Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP&
           &/dpivot
 
-      DO idim2=1,ndim
-        IF (idim2 == indy) CYCLE 
+      do idim2=1,ndim
+        if (idim2 == indy) cycle 
         Da(1:indx-1,idim2)=Da(1:indx-1,idim2)-Da(1:indx-1,  &
             & indy)*Da(indx,idim2)/dpivot
         Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim&
             &,indy)*Da(indx,idim2)/dpivot
-      END DO
+      end do
 
-      DO ix=1,ndim
-        IF (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
-      END DO
+      do ix=1,ndim
+        if (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
+      end do
 
-      DO iy=1,ndim
-        IF (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
-      END DO
-    END DO
+      do iy=1,ndim
+        if (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
+      end do
+    end do
 
-    DO ix=1,ndim
-      IF (Kindx(ix) == ix) CYCLE
+    do ix=1,ndim
+      if (Kindx(ix) == ix) cycle
 
-      DO iy=1,ndim
-        IF (Kindx(iy) == ix) EXIT
-      END DO
+      do iy=1,ndim
+        if (Kindx(iy) == ix) exit
+      end do
 
-      DO idim1=1,ndim
+      do idim1=1,ndim
         daux=Da(ix,idim1)
         Da(ix,idim1)=Da(iy,idim1)
         Da(iy,idim1)=daux
-      END DO
+      end do
 
       Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
-    END DO
+    end do
 
-    DO ix=1,ndim
-      IF (Kindy(ix) == ix) CYCLE
+    do ix=1,ndim
+      if (Kindy(ix) == ix) cycle
 
-      DO iy=1,ndim
-        IF (Kindy(iy) == ix) EXIT
-      END DO
+      do iy=1,ndim
+        if (Kindy(iy) == ix) exit
+      end do
 
-      DO idim1=1,ndim
+      do idim1=1,ndim
         daux=Da(idim1,ix)
         Da(idim1,ix)=Da(idim1,iy)
         Da(idim1,iy)=daux
-      END DO
+      end do
       
       Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
-    END DO
+    end do
 
-  END SUBROUTINE mprim_invertMatrixPivotDble
+  end subroutine mprim_invertMatrixPivotDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar)
+  subroutine mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -1010,10 +1010,10 @@ CONTAINS
 
 !<input>
     ! dimension of the matrix
-    INTEGER, INTENT(IN) :: ndim
+    integer, intent(IN) :: ndim
 
     ! source right-hand side vector
-    REAL(SP), DIMENSION(ndim), INTENT(IN) :: Ff
+    real(SP), dimension(ndim), intent(IN) :: Ff
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
@@ -1022,131 +1022,131 @@ CONTAINS
     !            and return x = inv(A)*f
     ! IPAR = 2 : invert matrix and apply it to the right-hand side
     !            vector. Return x = inv(A)*f
-    INTEGER, INTENT(IN) :: ipar
+    integer, intent(IN) :: ipar
 !</input>
 
 !<inputoutput> 
     ! source square matrix to be inverted
-    REAL(SP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Fa
+    real(SP), dimension(ndim,ndim), intent(INOUT) :: Fa
 !</inputoutput>
 
 !<output>
     ! destination vector containing inverted matrix times right-hand
     ! side vector
-    REAL(SP), DIMENSION(ndim), INTENT(OUT) :: Fx
+    real(SP), dimension(ndim), intent(OUT) :: Fx
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(SP), DIMENSION(ndim,ndim) :: Fb
-    REAL(SP), DIMENSION(ndim) :: Fpiv
-    INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+    real(SP), dimension(ndim,ndim) :: Fb
+    real(SP), dimension(ndim) :: Fpiv
+    integer, dimension(ndim) :: Kindx,Kindy
 
-    REAL(SP) :: fpivot,faux
-    INTEGER :: idim1,idim2,ix,iy,indx,indy,info
+    real(SP) :: fpivot,faux
+    integer :: idim1,idim2,ix,iy,indx,indy,info
 
-    SELECT CASE (ipar)
-    CASE (0)
+    select case (ipar)
+    case (0)
       ! Perform factorization of matrix Da
 
       ! Initialization
       Kindx=0;  Kindy=0
 
-      DO idim1=1,ndim
+      do idim1=1,ndim
 
         ! Determine pivotal element
         fpivot=0
 
-        DO iy=1,ndim
-          IF (Kindy(iy) /= 0) CYCLE
+        do iy=1,ndim
+          if (Kindy(iy) /= 0) cycle
 
-          DO ix=1,ndim
-            IF (Kindx(ix) /= 0) CYCLE
+          do ix=1,ndim
+            if (Kindx(ix) /= 0) cycle
 
-            IF (ABS(Fa(ix,iy)) .LE. ABS(fpivot)) CYCLE
+            if (abs(Fa(ix,iy)) .le. abs(fpivot)) cycle
             fpivot=Fa(ix,iy);  indx=ix;  indy=iy
-          END DO
-        END DO
+          end do
+        end do
 
         ! Return if pivotal element is zero
-        IF (ABS(fpivot) .LE. 0._DP) RETURN
+        if (abs(fpivot) .le. 0._DP) return
 
         Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
             &/fpivot
 
-        DO idim2=1,ndim
-          IF (idim2 == indy) CYCLE 
+        do idim2=1,ndim
+          if (idim2 == indy) cycle 
           Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
               & indy)*Fa(indx,idim2)/fpivot
           Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
               &,indy)*Fa(indx,idim2)/fpivot
-        END DO
+        end do
 
-        DO ix=1,ndim
-          IF (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
-        END DO
+        do ix=1,ndim
+          if (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
+        end do
 
-        DO iy=1,ndim
-          IF (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
-        END DO
-      END DO
+        do iy=1,ndim
+          if (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
+        end do
+      end do
 
-      DO ix=1,ndim
-        IF (Kindx(ix) == ix) CYCLE
+      do ix=1,ndim
+        if (Kindx(ix) == ix) cycle
 
-        DO iy=1,ndim
-          IF (Kindx(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+          if (Kindx(iy) == ix) exit
+        end do
 
-        DO idim1=1,ndim
+        do idim1=1,ndim
           faux=Fa(ix,idim1)
           Fa(ix,idim1)=Fa(iy,idim1)
           Fa(iy,idim1)=faux
-        END DO
+        end do
 
         Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
-      END DO
+      end do
 
-      DO ix=1,ndim
-        IF (Kindy(ix) == ix) CYCLE
+      do ix=1,ndim
+        if (Kindy(ix) == ix) cycle
 
-        DO iy=1,ndim
-          IF (Kindy(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+          if (Kindy(iy) == ix) exit
+        end do
 
-        DO idim1=1,ndim
+        do idim1=1,ndim
           faux=Fa(idim1,ix)
           Fa(idim1,ix)=Fa(idim1,iy)
           Fa(idim1,iy)=faux
-        END DO
+        end do
         
         Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
-      END DO
+      end do
 
 
-    CASE (1)    
+    case (1)    
       ! Perform inversion of Da to solve the system Da * Dx = Df
-      DO idim1=1,ndim
+      do idim1=1,ndim
         Fx(idim1)=0
-        DO idim2=1,ndim
+        do idim2=1,ndim
           Fx(idim1)=Fx(idim1)+Fa(idim1,idim2)*Ff(idim2)
-        END DO
-      END DO
+        end do
+      end do
 
-    CASE (2)
+    case (2)
       ! Solve the dense linear system Ax=f calling LAPACK routine
 
-      SELECT CASE(ndim)
-      CASE (2)
+      select case(ndim)
+      case (2)
         ! Explicit formula for 2x2 system
         Fb(1,1)= Fa(2,2)
         Fb(2,1)=-Fa(2,1)
         Fb(1,2)=-Fa(1,2)
         Fb(2,2)= Fa(1,1)
         faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
-        Fx=MATMUL(Fb,Ff)/faux
+        Fx=matmul(Fb,Ff)/faux
 
-      CASE (3)
+      case (3)
         ! Explicit formula for 3x3 system
         Fb(1,1)=Fa(2,2)*Fa(3,3)-Fa(2,3)*Fa(3,2)
         Fb(2,1)=Fa(2,3)*Fa(3,1)-Fa(2,1)*Fa(3,3)
@@ -1160,9 +1160,9 @@ CONTAINS
         faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
             &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
             &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
-        Fx=MATMUL(Fb,Ff)/faux
+        Fx=matmul(Fb,Ff)/faux
 
-      CASE (4)
+      case (4)
         ! Explicit formula for 4x4 system
         Fb(1,1)=Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(2,3)*Fa(3,4)*Fa(4,2)+Fa(2&
             &,4)*Fa(3,2)*Fa(4,3)- Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(2,3)&
@@ -1227,22 +1227,22 @@ CONTAINS
             &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
             &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
             &,1)*Fa(4,2)
-        Fx=MATMUL(Fb,Ff)/faux
+        Fx=matmul(Fb,Ff)/faux
 
-      CASE DEFAULT
+      case DEFAULT
         ! Use LAPACK routine for general NxN system, where N>4
         Fpiv=0; Fx=Ff
-        CALL SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
+        call SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
         
-      END SELECT
-    END SELECT
-  END SUBROUTINE mprim_invertMatrixSngl
+      end select
+    end select
+  end subroutine mprim_invertMatrixSngl
   
   ! ***************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION kronecker(i,j) RESULT(kron)
+  elemental function kronecker(i,j) result(kron)
     
 !<description>
     ! Compute the Kronecker delta symbol 
@@ -1254,23 +1254,23 @@ CONTAINS
 
 !<input>
     ! Evaluation points I and J
-    INTEGER, INTENT(IN) :: i,j
+    integer, intent(IN) :: i,j
 !</input>
 
 !<result>
     ! Kronecker delta symbol
-    INTEGER :: kron
+    integer :: kron
 !</result>
 !</function>
 
-    kron=MERGE(1,0,i==j)
-  END FUNCTION kronecker
+    kron=merge(1,0,i==j)
+  end function kronecker
 
   !************************************************************************
 
 !<subroutine>
   
-  ELEMENTAL SUBROUTINE mprim_linearRescale(dx,da,db,dc,dd,dy)
+  elemental subroutine mprim_linearRescale(dx,da,db,dc,dd,dy)
   
 !<description>
   ! Scales a coordinate x linearly from the interval [a,b] to the
@@ -1279,32 +1279,32 @@ CONTAINS
 
 !<input>
   ! coordinate to be rescaled
-  REAL(DP), INTENT(IN) :: dx
+  real(DP), intent(IN) :: dx
   
   ! [a,b] - source interval
-  REAL(DP), INTENT(IN) :: da,db
+  real(DP), intent(IN) :: da,db
   
   ! [c,d] - destination interval
-  REAL(DP), INTENT(IN) :: dc,dd
+  real(DP), intent(IN) :: dc,dd
 !</input>
 
 !<output>
   ! Rescaled coordinate
-  REAL(DP), INTENT(OUT) :: dy
+  real(DP), intent(OUT) :: dy
 !</output>
 
 !</subroutine>
 
-    REAL(DP) :: d1,d2,d3
+    real(DP) :: d1,d2,d3
 
     ! Calculate the coefficients of the transformation 
     !    D1*A+D2 = C, D1*B+D2 = D.
     ! Use them to calculate Y=D1*X+D2.
 
-    IF (dA .EQ. db) THEN
+    if (dA .eq. db) then
       dy = dc
-      RETURN
-    END IF
+      return
+    end if
 
     d3 = 1.0_DP/(da-db)
     d1 = (dc-dd)*d3
@@ -1312,13 +1312,13 @@ CONTAINS
     
     dy = d1*dx+d2
 
-  END SUBROUTINE mprim_linearRescale
+  end subroutine mprim_linearRescale
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  ELEMENTAL SUBROUTINE mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
+  elemental subroutine mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
   
 !<description>
   ! Calculates a quadratic interpolation. dx is a value in the range $[-1,1]$.
@@ -1328,21 +1328,21 @@ CONTAINS
   
 !<input>
   ! The parameter value in the range $[-1,1]$ where the polynomial should be evaluated.
-  REAL(DP), INTENT(IN) :: dx
+  real(DP), intent(IN) :: dx
   
   ! The value $p(-1)$.
-  REAL(DP), INTENT(IN) :: d1
+  real(DP), intent(IN) :: d1
 
   ! The value $p(0)$.
-  REAL(DP), INTENT(IN) :: d2
+  real(DP), intent(IN) :: d2
 
   ! The value $p(1)$.
-  REAL(DP), INTENT(IN) :: d3
+  real(DP), intent(IN) :: d3
 !</input>
 
 !<output>
   ! The value $p(dx)$.
-  REAL(DP), INTENT(OUT) :: dy
+  real(DP), intent(OUT) :: dy
 !</output>
   
 !</subroutine>
@@ -1358,11 +1358,11 @@ CONTAINS
     
     dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d2
 
-  END SUBROUTINE mprim_quadraticInterpolation
+  end subroutine mprim_quadraticInterpolation
 
   !************************************************************************
 
-  SUBROUTINE mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
+  subroutine mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
 
 !<description>
     ! This subroutine computes the factorisation for a singular value
@@ -1382,264 +1382,264 @@ CONTAINS
 
 !<input>
     ! Dimensions of the rectangular matrix
-    INTEGER, INTENT(IN)                           :: ndim,mdim
+    integer, intent(IN)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+    logical, intent(IN), optional                 :: btransposedOpt
 !</input>
     
 !<inputoutput>
     ! Matrix that should be factorized on input.
     ! Matrix U on output.
-    REAL(DP), DIMENSION(mdim,ndim), INTENT(INOUT) :: Da
+    real(DP), dimension(mdim,ndim), intent(INOUT) :: Da
 !</inputoutput>
 
 !<output>
     ! Diagonal matrix
-    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dd
+    real(DP), dimension(:), intent(OUT)           :: Dd
 
     ! Square matrix
-    REAL(DP), DIMENSION(:,:), INTENT(OUT)         :: Db
+    real(DP), dimension(:,:), intent(OUT)         :: Db
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(SIZE(Dd)) :: rv1
-    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z
-    INTEGER  :: its, i, j, jj, k, l, nm, n, m, idot
-    INTEGER, PARAMETER :: MAX_ITS = 30
-    LOGICAL :: btransposed
+    real(DP), dimension(size(Dd)) :: rv1
+    real(DP) :: g, scale, anorm, s, f, h, c, x, y, z
+    integer  :: its, i, j, jj, k, l, nm, n, m, idot
+    integer, parameter :: MAX_ITS = 30
+    logical :: btransposed
 
     ! Do we have an optional transposed flag?
-    IF (PRESENT(btransposedOpt)) THEN
+    if (present(btransposedOpt)) then
       btransposed = btransposedOpt
-    ELSE
-      btransposed = .FALSE.
-    END IF
+    else
+      btransposed = .false.
+    end if
 
     ! Is the matrix transposed?
-    IF (btransposed) THEN
+    if (btransposed) then
       n=mdim; m=ndim
-    ELSE
+    else
       n=ndim; m=mdim
-    END IF
+    end if
 
     ! Check if number of equations is larger than number of unknowns
-    IF (m < n) THEN
-      CALL output_line('Fewer equations than unknowns!',&
+    if (m < n) then
+      call output_line('Fewer equations than unknowns!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     
-    IF (btransposed) THEN
+    if (btransposed) then
 
       ! Householder reduction to bidiagonal form
       g     = 0.0_DP
       scale = 0.0_DP
       anorm = 0.0_DP
       
-      DO i = 1, n
+      do i = 1, n
         
         l      = i+1
         rv1(i) = scale*g
         g      = 0.0_DP
         scale  = 0.0_DP
         
-        IF (i .LE. m) THEN
-          scale = SUM(ABS(Da(i,i:m)))
-          IF (scale .GT. SYS_EPSREAL) THEN
+        if (i .le. m) then
+          scale = sum(abs(Da(i,i:m)))
+          if (scale .gt. SYS_EPSREAL) then
             Da(i,i:m) = Da(i,i:m)/scale
             s = 0.0_DP
-            DO idot = i, m
+            do idot = i, m
               s = s+Da(i,idot)*Da(i,idot)
-            END DO
+            end do
             f = Da(i,i)
-            g = -SIGN(SQRT(s),f)
+            g = -sign(sqrt(s),f)
             h = f*g-s
             Da(i,i) = f-g
-            IF (i .NE. n) THEN
-              DO j = l, n
+            if (i .ne. n) then
+              do j = l, n
                 s = 0.0_DP
-                DO k = i, m
+                do k = i, m
                   s = s+Da(i,k)*Da(j,k)
-                END DO
+                end do
                 f = s/h
-                DO k = i, m
+                do k = i, m
                   Da(j,k) = Da(j,k)+f*Da(i,k)
-                END DO
-              END DO
-            END IF
-            DO k = i, m
+                end do
+              end do
+            end if
+            do k = i, m
               Da(i,k) = scale*Da(i,k)
-            END DO
-          END IF
-        END IF
+            end do
+          end if
+        end if
         
         Dd(i) = scale*g
         g     = 0.0_DP
         s     = 0.0_DP
         scale = 0.0_DP
 
-        IF ((i .LE. m) .AND. (i .NE. n)) THEN
-          scale = SUM(ABS(Da(l:n,i)))
-          IF (scale .NE. 0.0_DP) THEN
-            DO k = l, n
+        if ((i .le. m) .and. (i .ne. n)) then
+          scale = sum(abs(Da(l:n,i)))
+          if (scale .ne. 0.0_DP) then
+            do k = l, n
               Da(k,i) = Da(k,i)/scale
               s = s+Da(k,i)*Da(k,i)
-            END DO
+            end do
             f = Da(l,i)
-            g = -SIGN(SQRT(s),f)
+            g = -sign(sqrt(s),f)
             h = f*g-s
             Da(l,i) = f-g
-            DO k = l, n
+            do k = l, n
               rv1(k) = Da(k,i)/h
-            END DO
+            end do
             
-            IF (i .NE. m) THEN
-              DO j = l, m
+            if (i .ne. m) then
+              do j = l, m
                 s = 0.0_DP
-                DO k = l, n
+                do k = l, n
                   s = s+Da(k,j)*Da(k,i)
-                END DO
-                DO k = l, n
+                end do
+                do k = l, n
                   Da(k,j) = Da(k,j)+s*rv1(k)
-                END DO
-              END DO
-            END IF
+                end do
+              end do
+            end if
             
-            DO k = l, n
+            do k = l, n
               Da(k,i) = scale*Da(k,i)
-            END DO
-          END IF
-        END IF
-        anorm = MAX(anorm,(ABS(Dd(i))+ABS(rv1(i))))
-      END DO
+            end do
+          end if
+        end if
+        anorm = max(anorm,(abs(Dd(i))+abs(rv1(i))))
+      end do
       
       ! Accumulation of right-hand transformations
-      DO i = n, 1, -1
-        IF (i .LT. n) THEN
-          IF (g .NE. 0.0_DP) THEN
-            DO j = l, n
+      do i = n, 1, -1
+        if (i .lt. n) then
+          if (g .ne. 0.0_DP) then
+            do j = l, n
               Db(j,i) = (Da(j,i)/Da(l,i))/g
-            END DO
-            DO j = l, n
+            end do
+            do j = l, n
               s = 0.0_DP
-              DO k = l, n
+              do k = l, n
                 s = s+Da(k,i)*Db(k,j)
-              END DO
-              DO k = l, n
+              end do
+              do k = l, n
                 Db(k,j) = Db(k,j)+s*Db(k,i)
-              END DO
-            END DO
-          END IF
-          DO j = l, n
+              end do
+            end do
+          end if
+          do j = l, n
             Db(i,j) = 0.0_DP
             Db(j,i) = 0.0_DP
-          END DO
-        END IF
+          end do
+        end if
         Db(i,i) = 1.0_DP
         g = rv1(i)
         l = i
-      END DO
+      end do
 
       ! Accumulation of left-hand transformations
-      DO i = n, 1, -1
+      do i = n, 1, -1
         l = i+1
         g = Dd(i)
-        IF (i .LT. n) THEN
-          DO j = l, n
+        if (i .lt. n) then
+          do j = l, n
             Da(j,i) = 0.0_DP
-          END DO
-        END IF
-        IF (g .NE. 0.0_DP) THEN
+          end do
+        end if
+        if (g .ne. 0.0_DP) then
           g = 1.0_DP/g
-          IF (i .NE. n) THEN
-            DO j = l, n
+          if (i .ne. n) then
+            do j = l, n
               s = 0.0_DP
-              DO k = l, m
+              do k = l, m
                 s = s+Da(i,k)*Da(j,k)
-              END DO
+              end do
               f = (s/Da(i,i))*g
-              DO k = i, m
+              do k = i, m
                 Da(j,k) = Da(j,k)+f*Da(i,k)
-              END DO
-            END DO
-          END IF
-          DO j = i, m
+              end do
+            end do
+          end if
+          do j = i, m
             Da(i,j) = Da(i,j)*g
-          END DO
-        ELSE
-          DO j = i, m
+          end do
+        else
+          do j = i, m
             Da(i,j) = 0.0_DP
-          END DO
-        END IF
+          end do
+        end if
         Da(i,i) = Da(i,i)+1.0_DP
-      END DO
+      end do
 
       ! Diagonalization of the bidiagonal form
-      DO k = n, 1, -1
-        DO its = 1, MAX_ITS
-          DO l = k, 1, -1
+      do k = n, 1, -1
+        do its = 1, MAX_ITS
+          do l = k, 1, -1
             nm = l-1
-            IF ((ABS(rv1(l))+anorm) .EQ. anorm) GOTO 5
-            IF ((ABS(Dd(nm))+anorm) .EQ. anorm) GOTO 4
-          END DO
-4         CONTINUE
+            if ((abs(rv1(l))+anorm) .eq. anorm) goto 5
+            if ((abs(Dd(nm))+anorm) .eq. anorm) goto 4
+          end do
+4         continue
           c = 0.0_DP
           s = 1.0_DP
-          DO i = l, k
+          do i = l, k
             f = s*rv1(i)
             rv1(i) = c*rv1(i)
-            IF ((ABS(f)+anorm) .EQ. anorm) GOTO 5
+            if ((abs(f)+anorm) .eq. anorm) goto 5
             g = Dd(i)
-            h = SQRT(f*f+g*g)
+            h = sqrt(f*f+g*g)
             Dd(i) = h
             h = 1.0_DP/h
             c = g*h
             s = -(f*h)
-            DO j = 1, m
+            do j = 1, m
               y = Da(nm,j)
               z = Da(i,j)
               Da(nm,j) = (y*c)+(z*s)
               Da(i,j) = -(y*s)+(z*c)
-            END DO
-          END DO
-5         CONTINUE
+            end do
+          end do
+5         continue
           z = Dd(k)
-          IF (l .EQ. k) THEN
-            IF (z .LT. 0.0_DP) THEN
+          if (l .eq. k) then
+            if (z .lt. 0.0_DP) then
               Dd(k) = -z
-              DO j = 1, n
+              do j = 1, n
                 Db(j,k) = -Db(j,k)
-              END DO
-            END IF
-            GOTO 6
-          END IF
-          IF (its .EQ. MAX_ITS) THEN
-            CALL output_line('Convergence failed!',&
+              end do
+            end if
+            goto 6
+          end if
+          if (its .eq. MAX_ITS) then
+            call output_line('Convergence failed!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           x = Dd(l)
           nm = k-1
           y = Dd(nm)
           g = rv1(nm)
           h = rv1(k)
           f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
-          g = SQRT(f*f+1.0_DP)
-          f = ((x-z)*(x+z)+h*((y/(f+SIGN(g,f)))-h))/x
+          g = sqrt(f*f+1.0_DP)
+          f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
           
           ! Next QR transformation
           c = 1.0_DP
           s = 1.0_DP
-          DO j = l, nm
+          do j = l, nm
             i = j+1
             g = rv1(i)
             y = Dd(i)
             h = s*g
             g = c*g
-            z = SQRT(f*f+h*h)
+            z = sqrt(f*f+h*h)
             rv1(j) = z
             c = f/z
             s = h/z
@@ -1647,243 +1647,243 @@ CONTAINS
             g = -(x*s)+(g*c)
             h = y*s
             y = y*c
-            DO jj = 1, n
+            do jj = 1, n
               x = Db(jj,j)
               z = Db(jj,i)
               Db(jj,j) = (x*c)+(z*s)
               Db(jj,i) = -(x*s)+(z*c)
-            END DO
-            z = SQRT(f*f+h*h)
+            end do
+            z = sqrt(f*f+h*h)
             Dd(j) = z
-            IF (z .NE. 0.0_DP) THEN
+            if (z .ne. 0.0_DP) then
               z = 1.0_DP/z
               c = f*z
               s = h*z
-            END IF
+            end if
             f = (c*g)+(s*y)
             x = -(s*g)+(c*y)
-            DO jj = 1, m
+            do jj = 1, m
               y = Da(j,jj)
               z = Da(i,jj)
               Da(j,jj) = (y*c)+(z*s)
               Da(i,jj) = -(y*s)+(z*c)
-            END DO
-          END DO
+            end do
+          end do
           rv1(l) = 0.0_DP
           rv1(k) = f
           Dd(k) = x
-        END DO
-6       CONTINUE
-      END DO
+        end do
+6       continue
+      end do
 
-    ELSE
+    else
 
       ! Householder reduction to bidiagonal form
       g     = 0.0_DP
       scale = 0.0_DP
       anorm = 0.0_DP
       
-      DO i = 1, n
+      do i = 1, n
         
         l      = i+1
         rv1(i) = scale*g
         g      = 0.0_DP
         scale  = 0.0_DP
         
-        IF (i .LE. m) THEN
-          scale = SUM(ABS(Da(i:m,i)))
-          IF (scale .GT. SYS_EPSREAL) THEN
+        if (i .le. m) then
+          scale = sum(abs(Da(i:m,i)))
+          if (scale .gt. SYS_EPSREAL) then
             Da(i:m,i) = Da(i:m,i)/scale
             s = 0.0_DP
-            DO idot = i, m
+            do idot = i, m
               s = s+Da(idot,i)*Da(idot,i)
-            END DO
+            end do
             f = Da(i,i)
-            g = -SIGN(SQRT(s),f)
+            g = -sign(sqrt(s),f)
             h = f*g-s
             Da(i,i) = f-g
-            IF (i .NE. n) THEN
-              DO j = l, n
+            if (i .ne. n) then
+              do j = l, n
                 s = 0.0_DP
-                DO k = i, m
+                do k = i, m
                   s = s+Da(k,i)*Da(k,j)
-                END DO
+                end do
                 f = s/h
-                DO k = i, m
+                do k = i, m
                   Da(k,j) = Da(k,j)+f*Da(k,i)
-                END DO
-              END DO
-            END IF
-            DO k = i, m
+                end do
+              end do
+            end if
+            do k = i, m
               Da(k,i) = scale*Da(k,i)
-            END DO
-          END IF
-        END IF
+            end do
+          end if
+        end if
         
         Dd(i) = scale*g
         g     = 0.0_DP
         s     = 0.0_DP
         scale = 0.0_DP
         
-        IF ((i .LE. m) .AND. (i .NE. n)) THEN
-          scale = SUM(ABS(Da(i,l:n)))
-          IF (scale .NE. 0.0_DP) THEN
-            DO k = l, n
+        if ((i .le. m) .and. (i .ne. n)) then
+          scale = sum(abs(Da(i,l:n)))
+          if (scale .ne. 0.0_DP) then
+            do k = l, n
               Da(i,k) = Da(i,k)/scale
               s = s+Da(i,k)*Da(i,k)
-            END DO
+            end do
             f = Da(i,l)
-            g = -SIGN(SQRT(s),f)
+            g = -sign(sqrt(s),f)
             h = f*g-s
             Da(i,l) = f-g
-            DO k = l, n
+            do k = l, n
               rv1(k) = Da(i,k)/h
-            END DO
+            end do
             
-            IF (i .NE. m) THEN
-              DO j = l, m
+            if (i .ne. m) then
+              do j = l, m
                 s = 0.0_DP
-                DO k = l, n
+                do k = l, n
                   s = s+Da(j,k)*Da(i,k)
-                END DO
-                DO k = l, n
+                end do
+                do k = l, n
                   Da(j,k) = Da(j,k)+s*rv1(k)
-                END DO
-              END DO
-            END IF
+                end do
+              end do
+            end if
             
-            DO k = l, n
+            do k = l, n
               Da(i,k) = scale*Da(i,k)
-            END DO
-          END IF
-        END IF
-        anorm = MAX(anorm,(ABS(Dd(i))+ABS(rv1(i))))
-      END DO
+            end do
+          end if
+        end if
+        anorm = max(anorm,(abs(Dd(i))+abs(rv1(i))))
+      end do
 
       ! Accumulation of right-hand transformations
-      DO i = n, 1, -1
-        IF (i .LT. n) THEN
-          IF (g .NE. 0.0_DP) THEN
-            DO j = l, n
+      do i = n, 1, -1
+        if (i .lt. n) then
+          if (g .ne. 0.0_DP) then
+            do j = l, n
               Db(j,i) = (Da(i,j)/Da(i,l))/g
-            END DO
-            DO j = l, n
+            end do
+            do j = l, n
               s = 0.0_DP
-              DO k = l, n
+              do k = l, n
                 s = s+Da(i,k)*Db(k,j)
-              END DO
-              DO k = l, n
+              end do
+              do k = l, n
                 Db(k,j) = Db(k,j)+s*Db(k,i)
-              END DO
-            END DO
-          END IF
-          DO j = l, n
+              end do
+            end do
+          end if
+          do j = l, n
             Db(i,j) = 0.0_DP
             Db(j,i) = 0.0_DP
-          END DO
-        END IF
+          end do
+        end if
         Db(i,i) = 1.0_DP
         g = rv1(i)
         l = i
-      END DO
+      end do
 
       ! Accumulation of left-hand transformations
-      DO i = n, 1, -1
+      do i = n, 1, -1
         l = i+1
         g = Dd(i)
-        IF (i .LT. n) THEN
-          DO j = l, n
+        if (i .lt. n) then
+          do j = l, n
             Da(i,j) = 0.0_DP
-          END DO
-        END IF
-        IF (g .NE. 0.0_DP) THEN
+          end do
+        end if
+        if (g .ne. 0.0_DP) then
           g = 1.0_DP/g
-          IF (i .NE. n) THEN
-            DO j = l, n
+          if (i .ne. n) then
+            do j = l, n
               s = 0.0_DP
-              DO k = l, m
+              do k = l, m
                 s = s+Da(k,i)*Da(k,j)
-              END DO
+              end do
               f = (s/Da(i,i))*g
-              DO k = i, m
+              do k = i, m
                 Da(k,j) = Da(k,j)+f*Da(k,i)
-              END DO
-            END DO
-          END IF
-          DO j = i, m
+              end do
+            end do
+          end if
+          do j = i, m
             Da(j,i) = Da(j,i)*g
-          END DO
-        ELSE
-          DO j = i, m
+          end do
+        else
+          do j = i, m
             Da(j,i) = 0.0_DP
-          END DO
-        END IF
+          end do
+        end if
         Da(i,i) = Da(i,i)+1.0_DP
-      END DO
+      end do
 
       ! Diagonalization of the bidiagonal form
-      DO k = n, 1, -1
-        DO its = 1, MAX_ITS
-          DO l = k, 1, -1
+      do k = n, 1, -1
+        do its = 1, MAX_ITS
+          do l = k, 1, -1
             nm = l-1
-            IF ((ABS(rv1(l))+anorm) .EQ. anorm) GOTO 2
-            IF ((ABS(Dd(nm))+anorm) .EQ. anorm) GOTO 1
-          END DO
-1         CONTINUE
+            if ((abs(rv1(l))+anorm) .eq. anorm) goto 2
+            if ((abs(Dd(nm))+anorm) .eq. anorm) goto 1
+          end do
+1         continue
           c = 0.0_DP
           s = 1.0_DP
-          DO i = l, k
+          do i = l, k
             f = s*rv1(i)
             rv1(i) = c*rv1(i)
-            IF ((ABS(f)+anorm) .EQ. anorm) GOTO 2
+            if ((abs(f)+anorm) .eq. anorm) goto 2
             g = Dd(i)
-            h = SQRT(f*f+g*g)
+            h = sqrt(f*f+g*g)
             Dd(i) = h
             h = 1.0_DP/h
             c = g*h
             s = -(f*h)
-            DO j = 1, m
+            do j = 1, m
               y = Da(j,nm)
               z = Da(j,i)
               Da(j,nm) = (y*c)+(z*s)
               Da(j,i) = -(y*s)+(z*c)
-            END DO
-          END DO
-2         CONTINUE
+            end do
+          end do
+2         continue
           z = Dd(k)
-          IF (l .EQ. k) THEN
-            IF (z .LT. 0.0_DP) THEN
+          if (l .eq. k) then
+            if (z .lt. 0.0_DP) then
               Dd(k) = -z
-              DO j = 1, n
+              do j = 1, n
                 Db(j,k) = -Db(j,k)
-              END DO
-            END IF
-            GOTO 3
-          END IF
-          IF (its .EQ. MAX_ITS) THEN
-            CALL output_line('Convergence failed!',&
+              end do
+            end if
+            goto 3
+          end if
+          if (its .eq. MAX_ITS) then
+            call output_line('Convergence failed!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           x = Dd(l)
           nm = k-1
           y = Dd(nm)
           g = rv1(nm)
           h = rv1(k)
           f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
-          g = SQRT(f*f+1.0_DP)
-          f = ((x-z)*(x+z)+h*((y/(f+SIGN(g,f)))-h))/x
+          g = sqrt(f*f+1.0_DP)
+          f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
           
           ! Next QR transformation
           c = 1.0_DP
           s = 1.0_DP
-          DO j = l, nm
+          do j = l, nm
             i = j+1
             g = rv1(i)
             y = Dd(i)
             h = s*g
             g = c*g
-            z = SQRT(f*f+h*h)
+            z = sqrt(f*f+h*h)
             rv1(j) = z
             c = f/z
             s = h/z
@@ -1891,41 +1891,41 @@ CONTAINS
             g = -(x*s)+(g*c)
             h = y*s
             y = y*c
-            DO jj = 1, n
+            do jj = 1, n
               x = Db(jj,j)
               z = Db(jj,i)
               Db(jj,j) = (x*c)+(z*s)
               Db(jj,i) = -(x*s)+(z*c)
-            END DO
-            z = SQRT(f*f+h*h)
+            end do
+            z = sqrt(f*f+h*h)
             Dd(j) = z
-            IF (z .NE. 0.0_DP) THEN
+            if (z .ne. 0.0_DP) then
               z = 1.0_DP/z
               c = f*z
               s = h*z
-            END IF
+            end if
             f = (c*g)+(s*y)
             x = -(s*g)+(c*y)
-            DO jj = 1, m
+            do jj = 1, m
               y = Da(jj,j)
               z = Da(jj,i)
               Da(jj,j) = (y*c)+(z*s)
               Da(jj,i) = -(y*s)+(z*c)
-            END DO
-          END DO
+            end do
+          end do
           rv1(l) = 0.0_DP
           rv1(k) = f
           Dd(k) = x
-        END DO
-3       CONTINUE
-      END DO
+        end do
+3       continue
+      end do
       
-    END IF
-  END SUBROUTINE mprim_SVD_factorise
+    end if
+  end subroutine mprim_SVD_factorise
 
   !************************************************************************
 
-  SUBROUTINE mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+  subroutine mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
     ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
@@ -1936,78 +1936,78 @@ CONTAINS
 
 !<input>
     ! Dimensions of the rectangular matrix
-    INTEGER, INTENT(IN)                           :: ndim,mdim
+    integer, intent(IN)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+    logical, intent(IN), optional                 :: btransposedOpt
 
     ! Factorised matrix U
-    REAL(DP), DIMENSION(mdim,ndim), INTENT(IN)    :: Da
+    real(DP), dimension(mdim,ndim), intent(IN)    :: Da
 
     ! Diagonal matrix D
-    REAL(DP), DIMENSION(:), INTENT(IN)            :: Dd
+    real(DP), dimension(:), intent(IN)            :: Dd
 
     ! Square matrix B
-    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
+    real(DP), dimension(:,:), intent(IN)          :: Db
 
     ! Right-hand side vector
-    REAL(DP), DIMENSION(:), INTENT(IN)            :: Df
+    real(DP), dimension(:), intent(IN)            :: Df
 !</input>
 
 !<output>
     ! Solution vector
-    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dx
+    real(DP), dimension(:), intent(OUT)           :: Dx
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(SIZE(Dd)) :: Daux
-    INTEGER :: i,n,m
-    LOGICAL :: btransposed
+    real(DP), dimension(size(Dd)) :: Daux
+    integer :: i,n,m
+    logical :: btransposed
 
     ! Do we have an optional transposed flag?
-    IF (PRESENT(btransposedOpt)) THEN
+    if (present(btransposedOpt)) then
       btransposed = btransposedOpt
-    ELSE
-      btransposed = .FALSE.
-    END IF
+    else
+      btransposed = .false.
+    end if
 
     ! Is the matrix transposed?
-    IF (btransposed) THEN
+    if (btransposed) then
       n=mdim; m=ndim
-    ELSE
+    else
       n=ndim; m=mdim
-    END IF
+    end if
     
     ! Check if number of equations is larger than number of unknowns
-    IF (m < n) THEN
-      CALL output_line('Fewer equations than unknowns!',&
+    if (m < n) then
+      call output_line('Fewer equations than unknowns!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst1')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Compute aux = (U^T * f)/D where D_i /= 0
-    IF (btransposed) THEN
-      CALL DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
-    ELSE
-      CALL DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
-    END IF
+    if (btransposed) then
+      call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    else
+      call DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    end if
 
-    DO i =1, SIZE(Dd)
-      IF (ABS(Dd(i)) .GT. SYS_EPSREAL) THEN
+    do i =1, size(Dd)
+      if (abs(Dd(i)) .gt. SYS_EPSREAL) then
         Daux(i) = Daux(i)/Dd(i)
-      ELSE
+      else
         Daux(i) = 0.0_DP
-      END IF
-    END DO
+      end if
+    end do
     
     ! Compute x = B * aux
-    CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
-  END SUBROUTINE mprim_SVD_backsubst1
+    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+  end subroutine mprim_SVD_backsubst1
 
   !************************************************************************
 
-  SUBROUTINE mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+  subroutine mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
     ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
@@ -2023,80 +2023,80 @@ CONTAINS
 
 !<input>
     ! Dimensions of the rectangular matrix
-    INTEGER, INTENT(IN)                           :: ndim,mdim
+    integer, intent(IN)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+    logical, intent(IN), optional                 :: btransposedOpt
 
     ! Factorised matrix U
-    REAL(DP), DIMENSION(mdim,ndim), INTENT(IN)    :: Da
+    real(DP), dimension(mdim,ndim), intent(IN)    :: Da
 
     ! Diagonal matrix D
-    REAL(DP), DIMENSION(:), INTENT(IN)            :: Dd
+    real(DP), dimension(:), intent(IN)            :: Dd
 
     ! Square matrix B
-    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
+    real(DP), dimension(:,:), intent(IN)          :: Db
 
     ! Right-hand side vector
-    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Df
+    real(DP), dimension(:,:), intent(IN)          :: Df
 !</input>
 
 !<output>
     ! Solution vector
-    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dx
+    real(DP), dimension(:), intent(OUT)           :: Dx
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(SIZE(Dd)) :: Daux
-    INTEGER :: i,n,m
-    LOGICAL :: btransposed
+    real(DP), dimension(size(Dd)) :: Daux
+    integer :: i,n,m
+    logical :: btransposed
 
     ! Do we have an optional transposed flag?
-    IF (PRESENT(btransposedOpt)) THEN
+    if (present(btransposedOpt)) then
       btransposed = btransposedOpt
-    ELSE
-      btransposed = .FALSE.
-    END IF
+    else
+      btransposed = .false.
+    end if
 
     ! Is the matrix transposed?
-    IF (btransposed) THEN
+    if (btransposed) then
       n=mdim; m=ndim
-    ELSE
+    else
       n=ndim; m=mdim
-    END IF
+    end if
     
     ! Check if number of equations is larger than number of unknowns
-    IF (m < n) THEN
-      CALL output_line('Fewer equations than unknowns!',&
+    if (m < n) then
+      call output_line('Fewer equations than unknowns!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst2')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Compute aux = (U^T * f)/D where D_i /= 0
-    IF (btransposed) THEN
-      CALL DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
-    ELSE
-      CALL DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
-    END IF
+    if (btransposed) then
+      call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    else
+      call DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    end if
 
-    DO i =1, SIZE(Dd)
-      IF (ABS(Dd(i)) .GT. SYS_EPSREAL) THEN
+    do i =1, size(Dd)
+      if (abs(Dd(i)) .gt. SYS_EPSREAL) then
         Daux(i) = Daux(i)/Dd(i)
-      ELSE
+      else
         Daux(i) = 0.0_DP
-      END IF
-    END DO
+      end if
+    end do
     
     ! Compute x = B * aux
-    CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
-  END SUBROUTINE mprim_SVD_backsubst2
+    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+  end subroutine mprim_SVD_backsubst2
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_stdDeviationDble(Dval) RESULT(stdDev)
+  pure function mprim_stdDeviationDble(Dval) result(stdDev)
 
 !<description>
     ! This function calculates the standard deviation of the given data
@@ -2104,44 +2104,44 @@ CONTAINS
 
 !<input>
     ! double data
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+    real(DP), dimension(:), intent(IN) :: Dval
 !</input>
 
 !<result>
     ! standard deviation
-    REAL(DP) :: stdDev
+    real(DP) :: stdDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(DP)     :: mean
-    INTEGER(I32) :: i
+    real(DP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
     mean = Dval(1)
     
-    DO i = 2, SIZE(Dval)
+    do i = 2, size(Dval)
       mean = mean + Dval(i)
-    END DO
+    end do
     
-    mean = mean/REAL(SIZE(Dval), DP)
+    mean = mean/real(size(Dval), DP)
 
     ! Compute standard deviation
     stdDev = (Dval(1)-mean)*(Dval(1)-mean)
 
-    DO i = 2, SIZE(Dval)
+    do i = 2, size(Dval)
       stdDev = stdDev + (Dval(i)-mean)*(Dval(i)-mean)
-    END DO
+    end do
 
-    stdDev = SQRT(stdDev/REAL(SIZE(Dval), DP))
+    stdDev = sqrt(stdDev/real(size(Dval), DP))
 
-  END FUNCTION mprim_stdDeviationDble
+  end function mprim_stdDeviationDble
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_stdDeviationSngl(Fval) RESULT(stdDev)
+  pure function mprim_stdDeviationSngl(Fval) result(stdDev)
 
 !<description>
     ! This function calculates the standard deviation of the given data
@@ -2149,44 +2149,44 @@ CONTAINS
 
 !<input>
     ! single data
-    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+    real(SP), dimension(:), intent(IN) :: Fval
 !</input>
 
 !<result>
     ! standard deviation
-    REAL(SP) :: stdDev
+    real(SP) :: stdDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(SP)     :: mean
-    INTEGER(I32) :: i
+    real(SP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
     mean = Fval(1)
     
-    DO i = 2, SIZE(Fval)
+    do i = 2, size(Fval)
       mean = mean + Fval(i)
-    END DO
+    end do
     
-    mean = mean/REAL(SIZE(Fval), SP)
+    mean = mean/real(size(Fval), SP)
 
     ! Compute standard deviation
     stdDev = (Fval(1)-mean)*(Fval(1)-mean)
 
-    DO i = 2, SIZE(Fval)
+    do i = 2, size(Fval)
       stdDev = stdDev + (Fval(i)-mean)*(Fval(i)-mean)
-    END DO
+    end do
 
-    stdDev = SQRT(stdDev/REAL(SIZE(Fval), SP))
+    stdDev = sqrt(stdDev/real(size(Fval), SP))
 
-  END FUNCTION mprim_stdDeviationSngl
+  end function mprim_stdDeviationSngl
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_stdDeviationInt(Ival) RESULT(stdDev)
+  pure function mprim_stdDeviationInt(Ival) result(stdDev)
 
 !<description>
     ! This function calculates the standard deviation of the given data
@@ -2194,44 +2194,44 @@ CONTAINS
 
 !<input>
     ! integer data
-    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+    integer, dimension(:), intent(IN) :: Ival
 !</input>
 
 !<result>
     ! standard deviation
-    REAL(DP) :: stdDev
+    real(DP) :: stdDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(DP)     :: mean
-    INTEGER(I32) :: i
+    real(DP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
-    mean = REAL(Ival(1), DP)
+    mean = real(Ival(1), DP)
     
-    DO i = 2, SIZE(Ival)
-      mean = mean + REAL(Ival(i), DP)
-    END DO
+    do i = 2, size(Ival)
+      mean = mean + real(Ival(i), DP)
+    end do
     
-    mean = mean/REAL(SIZE(Ival), DP)
+    mean = mean/real(size(Ival), DP)
 
     ! Compute standard deviation
     stdDev = (Ival(1)-mean)*(Ival(1)-mean)
 
-    DO i = 2, SIZE(Ival)
+    do i = 2, size(Ival)
       stdDev = stdDev + (Ival(i)-mean)*(Ival(i)-mean)
-    END DO
+    end do
 
-    stdDev = SQRT(stdDev/REAL(SIZE(Ival), DP))
+    stdDev = sqrt(stdDev/real(size(Ival), DP))
 
-  END FUNCTION mprim_stdDeviationInt
+  end function mprim_stdDeviationInt
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_meanDeviationDble(Dval) RESULT(meanDev)
+  pure function mprim_meanDeviationDble(Dval) result(meanDev)
 
 !<description>
     ! This function calculates the mean deviation of the given data
@@ -2239,44 +2239,44 @@ CONTAINS
 
 !<input>
     ! double data
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+    real(DP), dimension(:), intent(IN) :: Dval
 !</input>
 
 !<result>
     ! mean deviation
-    REAL(DP) :: meanDev
+    real(DP) :: meanDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(DP)     :: mean
-    INTEGER(I32) :: i
+    real(DP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
     mean = Dval(1)
     
-    DO i = 2, SIZE(Dval)
+    do i = 2, size(Dval)
       mean = mean + Dval(i)
-    END DO
+    end do
     
-    mean = mean/REAL(SIZE(Dval), DP)
+    mean = mean/real(size(Dval), DP)
 
     ! Compute mean deviation
-    meanDev = ABS(Dval(1)-mean)
+    meanDev = abs(Dval(1)-mean)
 
-    DO i = 2, SIZE(Dval)
-      meanDev = meanDev + ABS(Dval(i)-mean)
-    END DO
+    do i = 2, size(Dval)
+      meanDev = meanDev + abs(Dval(i)-mean)
+    end do
 
-    meandev = meanDev/REAL(SIZE(Dval), DP)
+    meandev = meanDev/real(size(Dval), DP)
 
-  END FUNCTION mprim_meanDeviationDble
+  end function mprim_meanDeviationDble
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_meanDeviationSngl(Fval) RESULT(meanDev)
+  pure function mprim_meanDeviationSngl(Fval) result(meanDev)
 
 !<description>
     ! This function calculates the mean deviation of the given data
@@ -2284,44 +2284,44 @@ CONTAINS
 
 !<input>
     ! single data
-    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+    real(SP), dimension(:), intent(IN) :: Fval
 !</input>
 
 !<result>
     ! mean deviation
-    REAL(SP) :: meanDev
+    real(SP) :: meanDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(SP)     :: mean
-    INTEGER(I32) :: i
+    real(SP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
     mean = Fval(1)
     
-    DO i = 2, SIZE(Fval)
+    do i = 2, size(Fval)
       mean = mean + Fval(i)
-    END DO
+    end do
     
-    mean = mean/REAL(SIZE(Fval), SP)
+    mean = mean/real(size(Fval), SP)
 
     ! Compute mean deviation
-    meanDev = ABS(Fval(1)-mean)
+    meanDev = abs(Fval(1)-mean)
 
-    DO i = 2, SIZE(Fval)
-      meanDev = meanDev + ABS(Fval(i)-mean)
-    END DO
+    do i = 2, size(Fval)
+      meanDev = meanDev + abs(Fval(i)-mean)
+    end do
 
-    meanDev = meanDev/REAL(SIZE(Fval), SP)
+    meanDev = meanDev/real(size(Fval), SP)
 
-  END FUNCTION mprim_meanDeviationSngl
+  end function mprim_meanDeviationSngl
 
   !************************************************************************
   
 !<function>
 
-  PURE FUNCTION mprim_meanDeviationInt(Ival) RESULT(meanDev)
+  pure function mprim_meanDeviationInt(Ival) result(meanDev)
 
 !<description>
     ! This function calculates the mean deviation of the given data
@@ -2329,44 +2329,44 @@ CONTAINS
 
 !<input>
     ! integer data
-    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+    integer, dimension(:), intent(IN) :: Ival
 !</input>
 
 !<result>
     ! mean deviation
-    REAL(DP) :: meanDev
+    real(DP) :: meanDev
 !</result>
 !</function>
 
     ! local variable
-    REAL(DP)     :: mean
-    INTEGER(I32) :: i
+    real(DP)     :: mean
+    integer(I32) :: i
     
     ! Compute mean
-    mean = REAL(Ival(1), DP)
+    mean = real(Ival(1), DP)
     
-    DO i = 2, SIZE(Ival)
-      mean = mean + REAL(Ival(i), DP)
-    END DO
+    do i = 2, size(Ival)
+      mean = mean + real(Ival(i), DP)
+    end do
     
-    mean = mean/REAL(SIZE(Ival), DP)
+    mean = mean/real(size(Ival), DP)
 
     ! Compute mean deviation
-    meanDev = ABS(Ival(1)-mean)
+    meanDev = abs(Ival(1)-mean)
 
-    DO i = 2, SIZE(Ival)
-      meanDev = meanDev + ABS(Ival(i)-mean)
-    END DO
+    do i = 2, size(Ival)
+      meanDev = meanDev + abs(Ival(i)-mean)
+    end do
 
-    meanDev = meanDev/REAL(SIZE(Ival), DP)
+    meanDev = meanDev/real(size(Ival), DP)
 
-  END FUNCTION mprim_meanDeviationInt
+  end function mprim_meanDeviationInt
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_meanValueDble(Dval) RESULT(meanVal)
+  pure function mprim_meanValueDble(Dval) result(meanVal)
 
 !<description>
     ! This function calculates the mean value of the given data
@@ -2374,33 +2374,33 @@ CONTAINS
 
 !<input>
     ! double data
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Dval
+    real(DP), dimension(:), intent(IN) :: Dval
 !</input>
 
 !<result>
     ! mean value
-    REAL(DP) :: meanVal
+    real(DP) :: meanVal
 !</result>
 !</function>
 
     ! local variable
-    INTEGER(I32) :: i
+    integer(I32) :: i
     
     ! Compute mean value
     meanVal = Dval(1)
     
-    DO i = 2, SIZE(Dval)
+    do i = 2, size(Dval)
       meanVal = meanVal + Dval(i)
-    END DO
+    end do
     
-    meanVal = meanVal/REAL(SIZE(Dval), DP)
-  END FUNCTION mprim_meanValueDble
+    meanVal = meanVal/real(size(Dval), DP)
+  end function mprim_meanValueDble
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_meanValueSngl(Fval) RESULT(meanVal)
+  pure function mprim_meanValueSngl(Fval) result(meanVal)
 
 !<description>
     ! This function calculates the mean value of the given data
@@ -2408,33 +2408,33 @@ CONTAINS
 
 !<input>
     ! single data
-    REAL(SP), DIMENSION(:), INTENT(IN) :: Fval
+    real(SP), dimension(:), intent(IN) :: Fval
 !</input>
 
 !<result>
     ! mean value
-    REAL(SP) :: meanVal
+    real(SP) :: meanVal
 !</result>
 !</function>
 
     ! local variable
-    INTEGER(I32) :: i
+    integer(I32) :: i
     
     ! Compute mean value
     meanVal = Fval(1)
     
-    DO i = 2, SIZE(Fval)
+    do i = 2, size(Fval)
       meanVal = meanVal + Fval(i)
-    END DO
+    end do
     
-    meanVal = meanVal/REAL(SIZE(Fval), SP)
-  END FUNCTION mprim_meanValueSngl
+    meanVal = meanVal/real(size(Fval), SP)
+  end function mprim_meanValueSngl
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION mprim_meanValueInt(Ival) RESULT(meanVal)
+  pure function mprim_meanValueInt(Ival) result(meanVal)
 
 !<description>
     ! This function calculates the mean value of the given data
@@ -2442,26 +2442,26 @@ CONTAINS
 
 !<input>
     ! integer data
-    INTEGER, DIMENSION(:), INTENT(IN) :: Ival
+    integer, dimension(:), intent(IN) :: Ival
 !</input>
 
 !<result>
     ! mean value
-    INTEGER :: meanVal
+    integer :: meanVal
 !</result>
 !</function>
 
     ! local variable
-    INTEGER(I32) :: i
+    integer(I32) :: i
     
     ! Compute mean value
     meanVal = Ival(1)
     
-    DO i = 2, SIZE(Ival)
+    do i = 2, size(Ival)
       meanVal = meanVal + Ival(i)
-    END DO
+    end do
     
-    meanVal = meanVal/SIZE(Ival)
-  END FUNCTION mprim_meanValueInt
+    meanVal = meanVal/size(Ival)
+  end function mprim_meanValueInt
 
-END MODULE mprimitives
+end module mprimitives

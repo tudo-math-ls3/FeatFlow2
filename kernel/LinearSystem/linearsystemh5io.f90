@@ -36,80 +36,80 @@
 !# </purpose>
 !#########################################################################
 
-MODULE linearsystemh5io
+module linearsystemh5io
 
-  USE fsystem
-  USE storage
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE h5lite
-  USE hdf5
+  use fsystem
+  use storage
+  use linearsystemscalar
+  use linearsystemblock
+  use h5lite
+  use hdf5
 
-  IMPLICIT NONE
+  implicit none
   
-  PRIVATE
-  PUBLIC :: lsysh5io_writeMatrix
-  PUBLIC :: lsysh5io_writeBlockMatrix
-  PUBLIC :: lsysh5io_readMatrix
-  PUBLIC :: lsysh5io_readBlockMatrix
-  PUBLIC :: lsysh5io_writeVector
-  PUBLIC :: lsysh5io_writeBlockVector
-  PUBLIC :: lsysh5io_readVector
-  PUBLIC :: lsysh5io_readBlockVector
+  private
+  public :: lsysh5io_writeMatrix
+  public :: lsysh5io_writeBlockMatrix
+  public :: lsysh5io_readMatrix
+  public :: lsysh5io_readBlockMatrix
+  public :: lsysh5io_writeVector
+  public :: lsysh5io_writeBlockVector
+  public :: lsysh5io_readVector
+  public :: lsysh5io_readBlockVector
 
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
 
-  INTERFACE lsysh5io_writeMatrix
-    MODULE PROCEDURE lsysh5io_writeMatrix_Root
-    MODULE PROCEDURE lsysh5io_writeMatrix_Location
-  END INTERFACE
+  interface lsysh5io_writeMatrix
+    module procedure lsysh5io_writeMatrix_Root
+    module procedure lsysh5io_writeMatrix_Location
+  end interface
 
-  INTERFACE lsysh5io_writeBlockMatrix
-    MODULE PROCEDURE lsysh5io_writeBlockMatrix_Root
-    MODULE PROCEDURE lsysh5io_writeBlockMatrix_Location
-  END INTERFACE
+  interface lsysh5io_writeBlockMatrix
+    module procedure lsysh5io_writeBlockMatrix_Root
+    module procedure lsysh5io_writeBlockMatrix_Location
+  end interface
 
-  INTERFACE lsysh5io_readMatrix
-    MODULE PROCEDURE lsysh5io_readMatrix_RootByID
-    MODULE PROCEDURE lsysh5io_readMatrix_RootByName
-    MODULE PROCEDURE lsysh5io_readMatrix_LocationByID
-    MODULE PROCEDURE lsysh5io_readMatrix_LocationByName
-  END INTERFACE
+  interface lsysh5io_readMatrix
+    module procedure lsysh5io_readMatrix_RootByID
+    module procedure lsysh5io_readMatrix_RootByName
+    module procedure lsysh5io_readMatrix_LocationByID
+    module procedure lsysh5io_readMatrix_LocationByName
+  end interface
 
-  INTERFACE lsysh5io_readBlockMatrix
-    MODULE PROCEDURE lsysh5io_readBlockMatrix_RootByID
-    MODULE PROCEDURE lsysh5io_readBlockMatrix_RootByName
-    MODULE PROCEDURE lsysh5io_readBlockMatrix_LocationByID
-    MODULE PROCEDURE lsysh5io_readBlockMatrix_LocationByName
-  END INTERFACE
+  interface lsysh5io_readBlockMatrix
+    module procedure lsysh5io_readBlockMatrix_RootByID
+    module procedure lsysh5io_readBlockMatrix_RootByName
+    module procedure lsysh5io_readBlockMatrix_LocationByID
+    module procedure lsysh5io_readBlockMatrix_LocationByName
+  end interface
 
-  INTERFACE lsysh5io_writeVector
-    MODULE PROCEDURE lsysh5io_writeVector_Root
-    MODULE PROCEDURE lsysh5io_writeVector_Location
-  END INTERFACE
+  interface lsysh5io_writeVector
+    module procedure lsysh5io_writeVector_Root
+    module procedure lsysh5io_writeVector_Location
+  end interface
 
-  INTERFACE lsysh5io_writeBlockVector
-    MODULE PROCEDURE lsysh5io_writeBlockVector_Root
-    MODULE PROCEDURE lsysh5io_writeBlockVector_Location
-  END INTERFACE
+  interface lsysh5io_writeBlockVector
+    module procedure lsysh5io_writeBlockVector_Root
+    module procedure lsysh5io_writeBlockVector_Location
+  end interface
   
-  INTERFACE lsysh5io_readVector
-    MODULE PROCEDURE lsysh5io_readVector_RootByID
-    MODULE PROCEDURE lsysh5io_readVector_RootByName
-    MODULE PROCEDURE lsysh5io_readVector_LocationByID
-    MODULE PROCEDURE lsysh5io_readVector_LocationByName
-  END INTERFACE
+  interface lsysh5io_readVector
+    module procedure lsysh5io_readVector_RootByID
+    module procedure lsysh5io_readVector_RootByName
+    module procedure lsysh5io_readVector_LocationByID
+    module procedure lsysh5io_readVector_LocationByName
+  end interface
 
-  INTERFACE lsysh5io_readBlockVector
-    MODULE PROCEDURE lsysh5io_readBlockVector_RootByID
-    MODULE PROCEDURE lsysh5io_readBlockVector_RootByName
-    MODULE PROCEDURE lsysh5io_readBlockVector_LocationByID
-    MODULE PROCEDURE lsysh5io_readBlockVector_LocationByName
-  END INTERFACE
+  interface lsysh5io_readBlockVector
+    module procedure lsysh5io_readBlockVector_RootByID
+    module procedure lsysh5io_readBlockVector_RootByName
+    module procedure lsysh5io_readBlockVector_LocationByID
+    module procedure lsysh5io_readBlockVector_LocationByName
+  end interface
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -117,7 +117,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeMatrix_Root(rh5file,rmatrix,matrix_id,cmatrixName)
+  subroutine lsysh5io_writeMatrix_Root(rh5file,rmatrix,matrix_id,cmatrixName)
 
 !<description>
     ! This subroutine writes the matrix to the root of the hdf5 file that
@@ -130,30 +130,30 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)             :: rh5file
+    type(t_h5file), intent(IN)             :: rh5file
 
     ! The matrix to be written
-    TYPE(t_matrixScalar), INTENT(IN)       :: rmatrix
+    type(t_matrixScalar), intent(IN)       :: rmatrix
 
     ! OPTIONAL: The name to be used to identify the matrix
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cmatrixName
+    character(LEN=*), intent(IN), optional :: cmatrixName
 !</input>
 
 !<output>
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(OUT)            :: matrix_id
+    integer(HID_T), intent(OUT)            :: matrix_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_writeMatrix(rh5file%file_id,rmatrix,matrix_id,cmatrixName)
-  END SUBROUTINE lsysh5io_writeMatrix_Root
+    call lsysh5io_writeMatrix(rh5file%file_id,rmatrix,matrix_id,cmatrixName)
+  end subroutine lsysh5io_writeMatrix_Root
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeMatrix_Location(loc_id,rmatrix,matrix_id,cmatrixName)
+  subroutine lsysh5io_writeMatrix_Location(loc_id,rmatrix,matrix_id,cmatrixName)
 
 !<description>
     ! This subroutine writes the matrix to the location given by loc_id.
@@ -165,97 +165,97 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)             :: loc_id
+    integer(HID_T), intent(IN)             :: loc_id
 
     ! The matrix to be written
-    TYPE(t_matrixScalar), INTENT(IN)       :: rmatrix
+    type(t_matrixScalar), intent(IN)       :: rmatrix
 
     ! OPTIONAL: The name to be used to identify the matrix
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cmatrixName
+    character(LEN=*), intent(IN), optional :: cmatrixName
 !</input>
 
 !<output>
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(OUT)            :: matrix_id
+    integer(HID_T), intent(OUT)            :: matrix_id
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
-    INTEGER,  DIMENSION(:), POINTER :: P_Idata
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    integer,  dimension(:), pointer :: P_Idata
 
     ! Create new group for t_matrixScalar
-    IF (PRESENT(cmatrixName)) THEN
-      CALL h5lite_set_group(loc_id,cmatrixName,matrix_id)
-    ELSE
-      CALL h5lite_set_group(loc_id,"t_matrixScalar",matrix_id,.TRUE.)
-    END IF
+    if (present(cmatrixName)) then
+      call h5lite_set_group(loc_id,cmatrixName,matrix_id)
+    else
+      call h5lite_set_group(loc_id,"t_matrixScalar",matrix_id,.true.)
+    end if
 
     ! Set attributes for scalar matrix
-    CALL h5lite_set_attribute(matrix_id,"cmatrixFormat",          rmatrix%cmatrixFormat)
-    CALL h5lite_set_attribute(matrix_id,"cinterleavematrixFormat",rmatrix%cinterleavematrixFormat)
-    CALL h5lite_set_attribute(matrix_id,"imatrixSpec",            rmatrix%imatrixSpec)
-    CALL h5lite_set_attribute(matrix_id,"NA",                     rmatrix%NA)
-    CALL h5lite_set_attribute(matrix_id,"NEQ",                    rmatrix%NEQ)
-    CALL h5lite_set_attribute(matrix_id,"NCOLS",                  rmatrix%NCOLS)
-    CALL h5lite_set_attribute(matrix_id,"NVAR",                   rmatrix%NVAR)
-    CALL h5lite_set_attribute(matrix_id,"dscaleFactor",           rmatrix%dscaleFactor)
-    CALL h5lite_set_attribute(matrix_id,"isortStrategy",          rmatrix%isortStrategy)
-    CALL h5lite_set_attribute(matrix_id,"cdataType",              rmatrix%cdataType)
+    call h5lite_set_attribute(matrix_id,"cmatrixFormat",          rmatrix%cmatrixFormat)
+    call h5lite_set_attribute(matrix_id,"cinterleavematrixFormat",rmatrix%cinterleavematrixFormat)
+    call h5lite_set_attribute(matrix_id,"imatrixSpec",            rmatrix%imatrixSpec)
+    call h5lite_set_attribute(matrix_id,"NA",                     rmatrix%NA)
+    call h5lite_set_attribute(matrix_id,"NEQ",                    rmatrix%NEQ)
+    call h5lite_set_attribute(matrix_id,"NCOLS",                  rmatrix%NCOLS)
+    call h5lite_set_attribute(matrix_id,"NVAR",                   rmatrix%NVAR)
+    call h5lite_set_attribute(matrix_id,"dscaleFactor",           rmatrix%dscaleFactor)
+    call h5lite_set_attribute(matrix_id,"isortStrategy",          rmatrix%isortStrategy)
+    call h5lite_set_attribute(matrix_id,"cdataType",              rmatrix%cdataType)
 
     ! Set data for scalar matrix
-    CALL h5lite_set_data(matrix_id,"ITags",rmatrix%ITags)
-    CALL h5lite_set_data(matrix_id,"DTags",rmatrix%DTags)
+    call h5lite_set_data(matrix_id,"ITags",rmatrix%ITags)
+    call h5lite_set_data(matrix_id,"DTags",rmatrix%DTags)
     
     ! Write handle for sorting permutation
-    IF (rmatrix%h_IsortPermutation /= ST_NOHANDLE) THEN
-      CALL storage_getbase_int(rmatrix%h_IsortPermutation,p_Idata,2*rmatrix%NEQ)
-      CALL h5lite_set_data(matrix_id,"h_IsortPermutation",p_Idata)
-    END IF
+    if (rmatrix%h_IsortPermutation /= ST_NOHANDLE) then
+      call storage_getbase_int(rmatrix%h_IsortPermutation,p_Idata,2*rmatrix%NEQ)
+      call h5lite_set_data(matrix_id,"h_IsortPermutation",p_Idata)
+    end if
 
     ! Write handle for matrix data
-    IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
-      SELECT CASE(rmatrix%cdataType)
-      CASE (ST_DOUBLE)
-        CALL lsyssc_getbase_double(rmatrix,p_Ddata)
-        CALL h5lite_set_data(matrix_id,"h_DA",p_Ddata)
-      CASE (ST_SINGLE)
-        CALL lsyssc_getbase_single(rmatrix,p_Fdata)
-        CALL h5lite_set_data(matrix_id,"h_DA",p_Fdata)
-      CASE(ST_INT)
-        CALL lsyssc_getbase_int(rmatrix,p_Idata)
-        CALL h5lite_set_data(matrix_id,"h_DA",p_Idata)
-      CASE DEFAULT
-        PRINT *, "lsysh5io_writeMatrix_Location: Unsupported data format!"
-        STOP
-      END SELECT
-    END IF
+    if (rmatrix%h_DA /= ST_NOHANDLE) then
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix,p_Ddata)
+        call h5lite_set_data(matrix_id,"h_DA",p_Ddata)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix,p_Fdata)
+        call h5lite_set_data(matrix_id,"h_DA",p_Fdata)
+      case(ST_INT)
+        call lsyssc_getbase_int(rmatrix,p_Idata)
+        call h5lite_set_data(matrix_id,"h_DA",p_Idata)
+      case DEFAULT
+        print *, "lsysh5io_writeMatrix_Location: Unsupported data format!"
+        stop
+      end select
+    end if
 
     ! Write handle for column structure
-    IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
-      CALL lsyssc_getbase_Kcol(rmatrix,p_Idata)
-      CALL h5lite_set_data(matrix_id,"h_Kcol",p_Idata)
-    END IF
+    if (rmatrix%h_Kcol /= ST_NOHANDLE) then
+      call lsyssc_getbase_Kcol(rmatrix,p_Idata)
+      call h5lite_set_data(matrix_id,"h_Kcol",p_Idata)
+    end if
 
     ! Write handle for row structure
-    IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
-      CALL lsyssc_getbase_Kld(rmatrix,p_Idata)
-      CALL h5lite_set_data(matrix_id,"h_Kld",p_Idata)
-    END IF
+    if (rmatrix%h_Kld /= ST_NOHANDLE) then
+      call lsyssc_getbase_Kld(rmatrix,p_Idata)
+      call h5lite_set_data(matrix_id,"h_Kld",p_Idata)
+    end if
 
     ! Write handle for diagonal structure
-    IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Idata)
-      CALL h5lite_set_data(matrix_id,"h_Kdiagonal",p_Idata)
-    END IF
-  END SUBROUTINE lsysh5io_writeMatrix_Location
+    if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
+      call lsyssc_getbase_Kdiagonal(rmatrix,p_Idata)
+      call h5lite_set_data(matrix_id,"h_Kdiagonal",p_Idata)
+    end if
+  end subroutine lsysh5io_writeMatrix_Location
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeBlockMatrix_Root(rh5file,rmatrix,matrix_id,cmatrixName)
+  subroutine lsysh5io_writeBlockMatrix_Root(rh5file,rmatrix,matrix_id,cmatrixName)
 
 !<description>
     ! This subroutine writes the matrix to the root of the hdf5 file that
@@ -268,30 +268,30 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)             :: rh5file
+    type(t_h5file), intent(IN)             :: rh5file
 
     ! The matrix to be written
-    TYPE(t_matrixBlock), INTENT(IN)        :: rmatrix
+    type(t_matrixBlock), intent(IN)        :: rmatrix
 
     ! OPTIONAL: The name to be used to identify the matrix
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cmatrixName
+    character(LEN=*), intent(IN), optional :: cmatrixName
 !</input>
 
 !<output>
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(OUT)            :: matrix_id
+    integer(HID_T), intent(OUT)            :: matrix_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_writeBlockMatrix(rh5file%file_id,rmatrix,matrix_id,cmatrixName)
-  END SUBROUTINE lsysh5io_writeBlockMatrix_Root
+    call lsysh5io_writeBlockMatrix(rh5file%file_id,rmatrix,matrix_id,cmatrixName)
+  end subroutine lsysh5io_writeBlockMatrix_Root
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeBlockMatrix_Location(loc_id,rmatrix,matrix_id,cmatrixName)
+  subroutine lsysh5io_writeBlockMatrix_Location(loc_id,rmatrix,matrix_id,cmatrixName)
 
 !<description>
     ! This subroutine writes the matrix to the location given by loc_id.
@@ -303,59 +303,59 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)             :: loc_id
+    integer(HID_T), intent(IN)             :: loc_id
 
     ! The matrix to be written
-    TYPE(t_matrixBlock), INTENT(IN)        :: rmatrix
+    type(t_matrixBlock), intent(IN)        :: rmatrix
 
     ! OPTIONAL: The name to be used to identify the matrix
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cmatrixName
+    character(LEN=*), intent(IN), optional :: cmatrixName
 !</input>
 
 !<output>
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(OUT)            :: matrix_id
+    integer(HID_T), intent(OUT)            :: matrix_id
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: matrixScalar_id
-    INTEGER :: iblock,jblock
+    integer(HID_T) :: matrixScalar_id
+    integer :: iblock,jblock
 
     ! Create new group for t_matrixScalar
-    IF (PRESENT(cmatrixName)) THEN
-      CALL h5lite_set_group(loc_id,cmatrixName,matrix_id)
-    ELSE
-      CALL h5lite_set_group(loc_id,"t_matrixBlock",matrix_id,.TRUE.)
-    END IF
+    if (present(cmatrixName)) then
+      call h5lite_set_group(loc_id,cmatrixName,matrix_id)
+    else
+      call h5lite_set_group(loc_id,"t_matrixBlock",matrix_id,.true.)
+    end if
 
     ! Set attributes for block matrix
-    CALL h5lite_set_attribute(matrix_id,"NEQ",        rmatrix%NEQ)
-    CALL h5lite_set_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
-    CALL h5lite_set_attribute(matrix_id,"ndiagBlocks",rmatrix%ndiagBlocks)
-    CALL h5lite_set_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
-    CALL h5lite_set_attribute(matrix_id,"imatrixSpec",rmatrix%imatrixSpec)
+    call h5lite_set_attribute(matrix_id,"NEQ",        rmatrix%NEQ)
+    call h5lite_set_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
+    call h5lite_set_attribute(matrix_id,"ndiagBlocks",rmatrix%ndiagBlocks)
+    call h5lite_set_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
+    call h5lite_set_attribute(matrix_id,"imatrixSpec",rmatrix%imatrixSpec)
     
     ! Write each scalar submatrix
-    IF (ASSOCIATED(rmatrix%RmatrixBlock)) THEN
+    if (associated(rmatrix%RmatrixBlock)) then
       
       ! Loop over all blocks
-      DO iblock=LBOUND(rmatrix%RmatrixBlock,1),UBOUND(rmatrix%RmatrixBlock,1)
-        DO jblock=LBOUND(rmatrix%RmatrixBlock,2),UBOUND(rmatrix%RmatrixBlock,2)
-          CALL lsysh5io_writeMatrix(matrix_id,rmatrix%RmatrixBlock(iblock,jblock),&
-              matrixScalar_id,"RmatrixBlock("//TRIM(ADJUSTL(sys_si(iblock,6)))//","//&
-              TRIM(ADJUSTL(sys_si(jblock,6)))//")")
-        END DO
-      END DO
+      do iblock=lbound(rmatrix%RmatrixBlock,1),ubound(rmatrix%RmatrixBlock,1)
+        do jblock=lbound(rmatrix%RmatrixBlock,2),ubound(rmatrix%RmatrixBlock,2)
+          call lsysh5io_writeMatrix(matrix_id,rmatrix%RmatrixBlock(iblock,jblock),&
+              matrixScalar_id,"RmatrixBlock("//trim(adjustl(sys_si(iblock,6)))//","//&
+              trim(adjustl(sys_si(jblock,6)))//")")
+        end do
+      end do
       
-    END IF
-  END SUBROUTINE lsysh5io_writeBlockMatrix_Location
+    end if
+  end subroutine lsysh5io_writeBlockMatrix_Location
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readMatrix_RootByID(rh5file,matrix_id,rmatrix)
+  subroutine lsysh5io_readMatrix_RootByID(rh5file,matrix_id,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the root of the hdf5 file that
@@ -365,27 +365,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(IN)          :: matrix_id
+    integer(HID_T), intent(IN)          :: matrix_id
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readMatrix(rh5file%file_id,matrix_id,rmatrix)
-  END SUBROUTINE lsysh5io_readMatrix_RootByID
+    call lsysh5io_readMatrix(rh5file%file_id,matrix_id,rmatrix)
+  end subroutine lsysh5io_readMatrix_RootByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readMatrix_RootByName(rh5file,cmatrixName,rmatrix)
+  subroutine lsysh5io_readMatrix_RootByName(rh5file,cmatrixName,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the root of the hdf5 file that
@@ -395,27 +395,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Name of the matrix
-    CHARACTER(LEN=*), INTENT(IN)        :: cmatrixName
+    character(LEN=*), intent(IN)        :: cmatrixName
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readMatrix(rh5file%file_id,cmatrixName,rmatrix)
-  END SUBROUTINE lsysh5io_readMatrix_RootByName
+    call lsysh5io_readMatrix(rh5file%file_id,cmatrixName,rmatrix)
+  end subroutine lsysh5io_readMatrix_RootByName
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readMatrix_LocationByID(loc_id,matrix_id,rmatrix)
+  subroutine lsysh5io_readMatrix_LocationByID(loc_id,matrix_id,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the location given by loc_id.
@@ -424,196 +424,196 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(IN)          :: matrix_id
+    integer(HID_T), intent(IN)          :: matrix_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
-    INTEGER,  DIMENSION(:), POINTER :: p_Idata
-    INTEGER :: isize,sizeKld,sizeKdiagonal
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    integer,  dimension(:), pointer :: p_Idata
+    integer :: isize,sizeKld,sizeKdiagonal
 
     ! Get attributes
-    CALL h5lite_get_attribute(matrix_id,"cmatrixFormat",          rmatrix%cmatrixFormat)
-    CALL h5lite_get_attribute(matrix_id,"cinterleavematrixFormat",rmatrix%cinterleavematrixFormat)
-    CALL h5lite_get_attribute(matrix_id,"imatrixSpec",            rmatrix%imatrixSpec)
-    CALL h5lite_get_attribute(matrix_id,"NA",                     rmatrix%NA)
-    CALL h5lite_get_attribute(matrix_id,"NEQ",                    rmatrix%NEQ)
-    CALL h5lite_get_attribute(matrix_id,"NCOLS",                  rmatrix%NCOLS)
-    CALL h5lite_get_attribute(matrix_id,"NVAR",                   rmatrix%NVAR)
-    CALL h5lite_get_attribute(matrix_id,"dscaleFactor",           rmatrix%dscaleFactor)
-    CALL h5lite_get_attribute(matrix_id,"isortStrategy",          rmatrix%isortStrategy)
-    CALL h5lite_get_attribute(matrix_id,"cdataType",              rmatrix%cdataType)
+    call h5lite_get_attribute(matrix_id,"cmatrixFormat",          rmatrix%cmatrixFormat)
+    call h5lite_get_attribute(matrix_id,"cinterleavematrixFormat",rmatrix%cinterleavematrixFormat)
+    call h5lite_get_attribute(matrix_id,"imatrixSpec",            rmatrix%imatrixSpec)
+    call h5lite_get_attribute(matrix_id,"NA",                     rmatrix%NA)
+    call h5lite_get_attribute(matrix_id,"NEQ",                    rmatrix%NEQ)
+    call h5lite_get_attribute(matrix_id,"NCOLS",                  rmatrix%NCOLS)
+    call h5lite_get_attribute(matrix_id,"NVAR",                   rmatrix%NVAR)
+    call h5lite_get_attribute(matrix_id,"dscaleFactor",           rmatrix%dscaleFactor)
+    call h5lite_get_attribute(matrix_id,"isortStrategy",          rmatrix%isortStrategy)
+    call h5lite_get_attribute(matrix_id,"cdataType",              rmatrix%cdataType)
 
     ! Get data
-    CALL h5lite_get_data(matrix_id,"ITags",rmatrix%ITags)
-    CALL h5lite_get_data(matrix_id,"DTags",rmatrix%DTags)
+    call h5lite_get_data(matrix_id,"ITags",rmatrix%ITags)
+    call h5lite_get_data(matrix_id,"DTags",rmatrix%DTags)
 
     ! Get handle for sorting permutation
-    IF (h5lite_ispresent_data(matrix_id,"h_IsortPermutation")) THEN
+    if (h5lite_ispresent_data(matrix_id,"h_IsortPermutation")) then
       
-      IF (rmatrix%h_IsortPermutation == ST_NOHANDLE) THEN
+      if (rmatrix%h_IsortPermutation == ST_NOHANDLE) then
         ! If the permutation handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readMatrix_LocationByID','IsortPermutation',2*rmatrix%NEQ,&
+        call storage_new1d ('lsysh5io_readMatrix_LocationByID','IsortPermutation',2*rmatrix%NEQ,&
             ST_INT,rmatrix%h_IsortPermutation,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rmatrix%h_IsortPermutation,isize)
-        IF (isize /= 2*rmatrix%NEQ) THEN
-          PRINT *, "lsysh5io_readMatrix_LocationByID: Wrong size of permutation array!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rmatrix%h_IsortPermutation,isize)
+        if (isize /= 2*rmatrix%NEQ) then
+          print *, "lsysh5io_readMatrix_LocationByID: Wrong size of permutation array!"
+          stop
+        end if
+      end if
 
       ! Get permutation handle
-      CALL storage_getbase_int(rmatrix%h_IsortPermutation,p_Idata)
-      CALL h5lite_get_data(matrix_id,"h_IsortPermutation",p_Idata)
-    END IF
+      call storage_getbase_int(rmatrix%h_IsortPermutation,p_Idata)
+      call h5lite_get_data(matrix_id,"h_IsortPermutation",p_Idata)
+    end if
 
     ! Get handle for matrix data
-    IF (h5lite_ispresent_data(matrix_id,"h_DA")) THEN
+    if (h5lite_ispresent_data(matrix_id,"h_DA")) then
 
-      IF (rmatrix%h_DA == ST_NOHANDLE) THEN
+      if (rmatrix%h_DA == ST_NOHANDLE) then
         ! If the data handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readMatrix_LocationByID','h_DA',rmatrix%NA,&
+        call storage_new1d ('lsysh5io_readMatrix_LocationByID','h_DA',rmatrix%NA,&
             rmatrix%cdataType,rmatrix%h_DA,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rmatrix%h_DA,isize)
-        SELECT CASE(rmatrix%cinterleavematrixFormat)
-        CASE (LSYSSC_MATRIXUNDEFINED)
-          IF (isize < rmatrix%NA) THEN
-            PRINT *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
-            STOP
-          END IF
+        call storage_getsize(rmatrix%h_DA,isize)
+        select case(rmatrix%cinterleavematrixFormat)
+        case (LSYSSC_MATRIXUNDEFINED)
+          if (isize < rmatrix%NA) then
+            print *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
+            stop
+          end if
 
-        CASE (LSYSSC_MATRIX1)
-          IF (isize < rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR) THEN
-            PRINT *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
-            STOP
-          END IF
+        case (LSYSSC_MATRIX1)
+          if (isize < rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR) then
+            print *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
+            stop
+          end if
 
-        CASE (LSYSSC_MATRIXD)
-          IF (isize < rmatrix%NA*rmatrix%NVAR) THEN
-            PRINT *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
-            STOP
-          END IF
+        case (LSYSSC_MATRIXD)
+          if (isize < rmatrix%NA*rmatrix%NVAR) then
+            print *, "lsysh5io_readMatrix_LocationByID: Not enough memory!"
+            stop
+          end if
 
-        CASE DEFAULT
-          PRINT *, "lsysh5io_readMatrix_LocationByID: Unsupported interleave matrix format!"
-          STOP
-        END SELECT
-      END IF
+        case DEFAULT
+          print *, "lsysh5io_readMatrix_LocationByID: Unsupported interleave matrix format!"
+          stop
+        end select
+      end if
 
       ! Get data handle
-      SELECT CASE(rmatrix%cdataType)
-      CASE (ST_DOUBLE)
-        CALL lsyssc_getbase_double(rmatrix,p_Ddata)
-        CALL h5lite_get_data(matrix_id,"h_DA",p_Ddata)
-      CASE (ST_SINGLE)
-        CALL lsyssc_getbase_single(rmatrix,p_Fdata)
-        CALL h5lite_get_data(matrix_id,"h_DA",p_Fdata)
-      CASE(ST_INT)
-        CALL lsyssc_getbase_int(rmatrix,p_Idata)
-        CALL h5lite_get_data(matrix_id,"h_DA",p_Idata)
-      CASE DEFAULT
-        PRINT *, "lsysh5io_readMatrix_Location: Unsupported data format!"
-        STOP
-      END SELECT
-    END IF
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix,p_Ddata)
+        call h5lite_get_data(matrix_id,"h_DA",p_Ddata)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix,p_Fdata)
+        call h5lite_get_data(matrix_id,"h_DA",p_Fdata)
+      case(ST_INT)
+        call lsyssc_getbase_int(rmatrix,p_Idata)
+        call h5lite_get_data(matrix_id,"h_DA",p_Idata)
+      case DEFAULT
+        print *, "lsysh5io_readMatrix_Location: Unsupported data format!"
+        stop
+      end select
+    end if
 
     ! Get handle for column structure
-    IF (h5lite_ispresent_data(matrix_id,"h_Kcol")) THEN
+    if (h5lite_ispresent_data(matrix_id,"h_Kcol")) then
 
-      IF (rmatrix%h_Kcol == ST_NOHANDLE) THEN
+      if (rmatrix%h_Kcol == ST_NOHANDLE) then
         ! If the column handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kcol',rmatrix%NA,&
+        call storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kcol',rmatrix%NA,&
             ST_INT,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rmatrix%h_Kcol,isize)
-        IF (isize < rmatrix%NA) THEN
-          PRINT *, "lsysh5io_readMatrix_Location: Not enough memory!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rmatrix%h_Kcol,isize)
+        if (isize < rmatrix%NA) then
+          print *, "lsysh5io_readMatrix_Location: Not enough memory!"
+          stop
+        end if
+      end if
 
       ! Get column handle
-      CALL lsyssc_getbase_Kcol(rmatrix,p_Idata)
-      CALL h5lite_get_data(matrix_id,"h_Kcol",p_Idata)
-    END IF
+      call lsyssc_getbase_Kcol(rmatrix,p_Idata)
+      call h5lite_get_data(matrix_id,"h_Kcol",p_Idata)
+    end if
 
     ! Get handle for row structure
-    IF (h5lite_ispresent_data(matrix_id,"h_Kld")) THEN
+    if (h5lite_ispresent_data(matrix_id,"h_Kld")) then
       
       ! Is the matrix transposed or not?
-      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) then
         sizeKld=rmatrix%NCOLS+1
-      ELSE
+      else
         sizeKld=rmatrix%NEQ+1
-      END IF
+      end if
 
-      IF (rmatrix%h_Kld == ST_NOHANDLE) THEN
+      if (rmatrix%h_Kld == ST_NOHANDLE) then
         ! If the column handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kld',sizeKld,&
+        call storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kld',sizeKld,&
             ST_INT,rmatrix%h_Kld,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rmatrix%h_Kld,isize)
-        IF (isize < sizeKld) THEN
-          PRINT *, "lsysh5io_readMatrix_Location: Not enough memory!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rmatrix%h_Kld,isize)
+        if (isize < sizeKld) then
+          print *, "lsysh5io_readMatrix_Location: Not enough memory!"
+          stop
+        end if
+      end if
 
       ! Get row handle
-      CALL lsyssc_getbase_Kld(rmatrix,p_Idata)
-      CALL h5lite_get_data(matrix_id,"h_Kld",p_Idata)
-    END IF
+      call lsyssc_getbase_Kld(rmatrix,p_Idata)
+      call h5lite_get_data(matrix_id,"h_Kld",p_Idata)
+    end if
 
     ! Get handle for diagonal structure
-    IF (h5lite_ispresent_data(matrix_id,"h_Kdiagonal")) THEN
+    if (h5lite_ispresent_data(matrix_id,"h_Kdiagonal")) then
 
       ! Is the matrix transposed or not?
-      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) then
         sizeKdiagonal=rmatrix%NCOLS
-      ELSE
+      else
         sizeKdiagonal=rmatrix%NEQ
-      END IF
+      end if
 
-      IF (rmatrix%h_Kdiagonal == ST_NOHANDLE) THEN
+      if (rmatrix%h_Kdiagonal == ST_NOHANDLE) then
         ! If the column handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kdiagonal',sizeKdiagonal,&
+        call storage_new1d ('lsysh5io_readMatrix_LocationByID','h_Kdiagonal',sizeKdiagonal,&
             ST_INT,rmatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
-        IF (isize < sizeKdiagonal) THEN
-          PRINT *, "lsysh5io_readMatrix_Location: Not enough memory!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rmatrix%h_Kdiagonal,isize)
+        if (isize < sizeKdiagonal) then
+          print *, "lsysh5io_readMatrix_Location: Not enough memory!"
+          stop
+        end if
+      end if
 
       ! Get diagonal handle
-      CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Idata)
-      CALL h5lite_get_data(matrix_id,"h_Kdiagonal",p_Idata)
-    END IF
-  END SUBROUTINE lsysh5io_readMatrix_LocationByID
+      call lsyssc_getbase_Kdiagonal(rmatrix,p_Idata)
+      call h5lite_get_data(matrix_id,"h_Kdiagonal",p_Idata)
+    end if
+  end subroutine lsysh5io_readMatrix_LocationByID
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readMatrix_LocationByName(loc_id,cmatrixName,rmatrix)
+  subroutine lsysh5io_readMatrix_LocationByName(loc_id,cmatrixName,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the location given by loc_id.
@@ -622,35 +622,35 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Name of the matrix
-    CHARACTER(LEN=*), INTENT(IN)        :: cmatrixName
+    character(LEN=*), intent(IN)        :: cmatrixName
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: matrix_id
+    integer(HID_T) :: matrix_id
 
     ! Determine the matrix_id and call the working routine
-    CALL h5lite_get_group(loc_id,cmatrixName,matrix_id)
-    IF (matrix_id < 0) THEN
-      PRINT *, "lsysh5io_readMatrix_LocationByName: Unable to get matrix_id!"
-      STOP
-    END IF
-    CALL lsysh5io_readMatrix(loc_id,matrix_id,rmatrix)
-  END SUBROUTINE lsysh5io_readMatrix_LocationByName
+    call h5lite_get_group(loc_id,cmatrixName,matrix_id)
+    if (matrix_id < 0) then
+      print *, "lsysh5io_readMatrix_LocationByName: Unable to get matrix_id!"
+      stop
+    end if
+    call lsysh5io_readMatrix(loc_id,matrix_id,rmatrix)
+  end subroutine lsysh5io_readMatrix_LocationByName
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockMatrix_RootByID(rh5file,matrix_id,rmatrix)
+  subroutine lsysh5io_readBlockMatrix_RootByID(rh5file,matrix_id,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the root of the hdf5 file that
@@ -660,27 +660,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(IN)          :: matrix_id
+    integer(HID_T), intent(IN)          :: matrix_id
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readBlockMatrix(rh5file%file_id,matrix_id,rmatrix)
-  END SUBROUTINE lsysh5io_readBlockMatrix_RootByID
+    call lsysh5io_readBlockMatrix(rh5file%file_id,matrix_id,rmatrix)
+  end subroutine lsysh5io_readBlockMatrix_RootByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockMatrix_RootByName(rh5file,cmatrixName,rmatrix)
+  subroutine lsysh5io_readBlockMatrix_RootByName(rh5file,cmatrixName,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the root of the hdf5 file that
@@ -690,27 +690,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Name of the matrix
-    CHARACTER(LEN=*), INTENT(IN)        :: cmatrixName
+    character(LEN=*), intent(IN)        :: cmatrixName
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readBlockMatrix(rh5file%file_id,cmatrixName,rmatrix)
-  END SUBROUTINE lsysh5io_readBlockMatrix_RootByName
+    call lsysh5io_readBlockMatrix(rh5file%file_id,cmatrixName,rmatrix)
+  end subroutine lsysh5io_readBlockMatrix_RootByName
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockMatrix_LocationByID(loc_id,matrix_id,rmatrix)
+  subroutine lsysh5io_readBlockMatrix_LocationByID(loc_id,matrix_id,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the location given by loc_id.
@@ -719,49 +719,49 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Handle to the matrix object
-    INTEGER(HID_T), INTENT(IN)          :: matrix_id
+    integer(HID_T), intent(IN)          :: matrix_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER :: iblock,jblock
+    integer :: iblock,jblock
 
     ! Get attributes for block matrix
-    CALL h5lite_get_attribute(matrix_id,"NEQ",        rmatrix%NEQ)
-    CALL h5lite_get_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
-    CALL h5lite_get_attribute(matrix_id,"ndiagBlocks",rmatrix%ndiagBlocks)
-    CALL h5lite_get_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
-    CALL h5lite_get_attribute(matrix_id,"imatrixSpec",rmatrix%imatrixSpec)
+    call h5lite_get_attribute(matrix_id,"NEQ",        rmatrix%NEQ)
+    call h5lite_get_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
+    call h5lite_get_attribute(matrix_id,"ndiagBlocks",rmatrix%ndiagBlocks)
+    call h5lite_get_attribute(matrix_id,"NCOLS",      rmatrix%NCOLS)
+    call h5lite_get_attribute(matrix_id,"imatrixSpec",rmatrix%imatrixSpec)
     
     ! For the time being, we suppose that block matrices have quadratic shape,
     ! that is, ndiagBlocks is the maximum of column and row blocks
-    IF (rmatrix%ndiagBlocks > 0) THEN
-      ALLOCATE(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,rmatrix%ndiagBlocks))
+    if (rmatrix%ndiagBlocks > 0) then
+      allocate(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,rmatrix%ndiagBlocks))
 
       ! Loop over all blocks
-      DO iblock=1,rmatrix%ndiagBlocks
-        DO jblock=1,rmatrix%ndiagBlocks
-          CALL lsysh5io_readMatrix(matrix_id,"RmatrixBlock("//&
-              TRIM(ADJUSTL(sys_si(iblock,6)))//","//&
-              TRIM(ADJUSTL(sys_si(jblock,6)))//")",rmatrix%RmatrixBlock(iblock,jblock))
-        END DO
-      END DO
-    END IF
-  END SUBROUTINE lsysh5io_readBlockMatrix_LocationByID
+      do iblock=1,rmatrix%ndiagBlocks
+        do jblock=1,rmatrix%ndiagBlocks
+          call lsysh5io_readMatrix(matrix_id,"RmatrixBlock("//&
+              trim(adjustl(sys_si(iblock,6)))//","//&
+              trim(adjustl(sys_si(jblock,6)))//")",rmatrix%RmatrixBlock(iblock,jblock))
+        end do
+      end do
+    end if
+  end subroutine lsysh5io_readBlockMatrix_LocationByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockMatrix_LocationByName(loc_id,cmatrixName,rmatrix)
+  subroutine lsysh5io_readBlockMatrix_LocationByName(loc_id,cmatrixName,rmatrix)
 
 !<description>
     ! This subroutine reads the matrix from the location given by loc_id.
@@ -770,35 +770,35 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Name of the matrix
-    CHARACTER(LEN=*), INTENT(IN)        :: cmatrixName
+    character(LEN=*), intent(IN)        :: cmatrixName
 !</input>
 
 !<inputoutput>
     ! The matrix that should be read
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: matrix_id
+    integer(HID_T) :: matrix_id
 
     ! Determine the matrix_id and call the working routine
-    CALL h5lite_get_group(loc_id,cmatrixName,matrix_id)
-    IF (matrix_id < 0) THEN
-      PRINT *, "lsysh5io_readBlockMatrix_LocationByName: Unable to get matrix_id!"
-      STOP
-    END IF
-    CALL lsysh5io_readBlockMatrix(loc_id,matrix_id,rmatrix)
-  END SUBROUTINE lsysh5io_readBlockMatrix_LocationByName
+    call h5lite_get_group(loc_id,cmatrixName,matrix_id)
+    if (matrix_id < 0) then
+      print *, "lsysh5io_readBlockMatrix_LocationByName: Unable to get matrix_id!"
+      stop
+    end if
+    call lsysh5io_readBlockMatrix(loc_id,matrix_id,rmatrix)
+  end subroutine lsysh5io_readBlockMatrix_LocationByName
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeVector_Root(rh5file,rvector,vector_id,cvectorName)
+  subroutine lsysh5io_writeVector_Root(rh5file,rvector,vector_id,cvectorName)
 
 !<description>
     ! This subroutine writes the vector to the root of the hdf5 file that
@@ -811,30 +811,30 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)             :: rh5file
+    type(t_h5file), intent(IN)             :: rh5file
 
     ! The vector to be written
-    TYPE(t_vectorScalar), INTENT(IN)       :: rvector
+    type(t_vectorScalar), intent(IN)       :: rvector
 
     ! OPTIONAL: The name to be used to identify the vector
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cvectorName
+    character(LEN=*), intent(IN), optional :: cvectorName
 !</input>
 
 !<output>
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(OUT)            :: vector_id
+    integer(HID_T), intent(OUT)            :: vector_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_writeVector(rh5file%file_id,rvector,vector_id,cvectorName)
-  END SUBROUTINE lsysh5io_writeVector_Root
+    call lsysh5io_writeVector(rh5file%file_id,rvector,vector_id,cvectorName)
+  end subroutine lsysh5io_writeVector_Root
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeVector_Location(loc_id,rvector,vector_id,cvectorName)
+  subroutine lsysh5io_writeVector_Location(loc_id,rvector,vector_id,cvectorName)
 
 !<description>
     ! This subroutine writes the vector to the location given by loc_id.
@@ -846,75 +846,75 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)             :: loc_id
+    integer(HID_T), intent(IN)             :: loc_id
 
     ! The vector to be written
-    TYPE(t_vectorScalar), INTENT(IN)       :: rvector
+    type(t_vectorScalar), intent(IN)       :: rvector
 
     ! OPTIONAL: The name to be used to identify the vector
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cvectorName
+    character(LEN=*), intent(IN), optional :: cvectorName
 !</input>
 
 !<output>
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(OUT)            :: vector_id
+    integer(HID_T), intent(OUT)            :: vector_id
 !</output>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
-    INTEGER,  DIMENSION(:), POINTER :: P_Idata
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    integer,  dimension(:), pointer :: P_Idata
 
     ! Create new group for t_vectorScalar
-    IF (PRESENT(cvectorName)) THEN
-      CALL h5lite_set_group(loc_id,cvectorName,vector_id)
-    ELSE
-      CALL h5lite_set_group(loc_id,"t_vectorScalar",vector_id,.TRUE.)
-    END IF
+    if (present(cvectorName)) then
+      call h5lite_set_group(loc_id,cvectorName,vector_id)
+    else
+      call h5lite_set_group(loc_id,"t_vectorScalar",vector_id,.true.)
+    end if
 
     ! Set attributes for scalar vector
-    CALL h5lite_set_attribute(vector_id,"NEQ",           rvector%NEQ)
-    CALL h5lite_set_attribute(vector_id,"NVAR",          rvector%NVAR)
-    CALL h5lite_set_attribute(vector_id,"cdataType",     rvector%cdataType)
-    CALL h5lite_set_attribute(vector_id,"isortStrategy", rvector%isortStrategy)
-    CALL h5lite_set_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
-    CALL h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
+    call h5lite_set_attribute(vector_id,"NEQ",           rvector%NEQ)
+    call h5lite_set_attribute(vector_id,"NVAR",          rvector%NVAR)
+    call h5lite_set_attribute(vector_id,"cdataType",     rvector%cdataType)
+    call h5lite_set_attribute(vector_id,"isortStrategy", rvector%isortStrategy)
+    call h5lite_set_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
+    call h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
 
     ! Set data for scalar vector
-    CALL h5lite_set_data(vector_id,"ITags",rvector%ITags)
-    CALL h5lite_set_data(vector_id,"DTags",rvector%DTags)
+    call h5lite_set_data(vector_id,"ITags",rvector%ITags)
+    call h5lite_set_data(vector_id,"DTags",rvector%DTags)
 
     ! Write data of data handle
-    IF (rvector%h_Ddata /= ST_NOHANDLE) THEN
-      SELECT CASE(rvector%cdataType)
-      CASE (ST_DOUBLE)
-        CALL lsyssc_getbase_double(rvector,p_Ddata)
-        CALL h5lite_set_data(vector_id,"h_Ddata",p_Ddata)
-      CASE (ST_SINGLE)
-        CALL lsyssc_getbase_single(rvector,p_Fdata)
-        CALL h5lite_set_data(vector_id,"h_Ddata",p_Fdata)
-      CASE (ST_INT)
-        CALL lsyssc_getbase_int(rvector,p_Idata)
-        CALL h5lite_set_data(vector_id,"h_Ddata",p_Idata)
-      CASE DEFAULT
-        PRINT *, "lsysh5io_writeVector_Location: Unsupported data format!"
-        STOP
-      END SELECT
-    END IF
+    if (rvector%h_Ddata /= ST_NOHANDLE) then
+      select case(rvector%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rvector,p_Ddata)
+        call h5lite_set_data(vector_id,"h_Ddata",p_Ddata)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rvector,p_Fdata)
+        call h5lite_set_data(vector_id,"h_Ddata",p_Fdata)
+      case (ST_INT)
+        call lsyssc_getbase_int(rvector,p_Idata)
+        call h5lite_set_data(vector_id,"h_Ddata",p_Idata)
+      case DEFAULT
+        print *, "lsysh5io_writeVector_Location: Unsupported data format!"
+        stop
+      end select
+    end if
 
     ! Write data of sorting array
-    IF (rvector%h_IsortPermutation /= ST_NOHANDLE) THEN
-      CALL storage_getbase_int(rvector%h_IsortPermutation,p_Idata,2*rvector%NEQ)
-      CALL h5lite_set_data(vector_id,"h_IsortPermutation",p_Idata)
-    END IF
-  END SUBROUTINE lsysh5io_writeVector_Location
+    if (rvector%h_IsortPermutation /= ST_NOHANDLE) then
+      call storage_getbase_int(rvector%h_IsortPermutation,p_Idata,2*rvector%NEQ)
+      call h5lite_set_data(vector_id,"h_IsortPermutation",p_Idata)
+    end if
+  end subroutine lsysh5io_writeVector_Location
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeBlockVector_Root(rh5file,rvector,vector_id,cvectorName)
+  subroutine lsysh5io_writeBlockVector_Root(rh5file,rvector,vector_id,cvectorName)
 
 !<description>
     ! This subroutine writes the vector to the root of the hdf5 file that
@@ -927,30 +927,30 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)             :: rh5file
+    type(t_h5file), intent(IN)             :: rh5file
 
     ! The vector to be written
-    TYPE(t_vectorBlock), INTENT(IN)        :: rvector
+    type(t_vectorBlock), intent(IN)        :: rvector
 
     ! OPTIONAL: The name to be used to identify the vector
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cvectorName
+    character(LEN=*), intent(IN), optional :: cvectorName
 !</input>
 
 !<output>
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(OUT)            :: vector_id
+    integer(HID_T), intent(OUT)            :: vector_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_writeBlockVector(rh5file%file_id,rvector,vector_id,cvectorName)
-  END SUBROUTINE lsysh5io_writeBlockVector_Root
+    call lsysh5io_writeBlockVector(rh5file%file_id,rvector,vector_id,cvectorName)
+  end subroutine lsysh5io_writeBlockVector_Root
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_writeBlockVector_Location(loc_id,rvector,vector_id,cvectorName)
+  subroutine lsysh5io_writeBlockVector_Location(loc_id,rvector,vector_id,cvectorName)
 
 !<description>
     ! This subroutine writes the vector to the location given by loc_id.
@@ -962,56 +962,56 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)             :: loc_id
+    integer(HID_T), intent(IN)             :: loc_id
 
     ! The vector to be written
-    TYPE(t_vectorBlock), INTENT(IN)        :: rvector
+    type(t_vectorBlock), intent(IN)        :: rvector
 
     ! OPTIONAL: The name to be used to identify the vector
-    CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: cvectorName
+    character(LEN=*), intent(IN), optional :: cvectorName
 !</input>
 
 !<output>
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(OUT)            :: vector_id
+    integer(HID_T), intent(OUT)            :: vector_id
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: vectorScalar_id
-    INTEGER :: iblock
+    integer(HID_T) :: vectorScalar_id
+    integer :: iblock
 
     ! Create new group for t_vectorScalar
-    IF (PRESENT(cvectorName)) THEN
-      CALL h5lite_set_group(loc_id,cvectorName,vector_id)
-    ELSE
-      CALL h5lite_set_group(loc_id,"t_vectorBlock",vector_id,.TRUE.)
-    END IF
+    if (present(cvectorName)) then
+      call h5lite_set_group(loc_id,cvectorName,vector_id)
+    else
+      call h5lite_set_group(loc_id,"t_vectorBlock",vector_id,.true.)
+    end if
     
     ! Set attributes for block vector
-    CALL h5lite_set_attribute(vector_id,"NEQ",           rvector%NEQ)
-    CALL h5lite_set_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
-    CALL h5lite_set_attribute(vector_id,"cdataType",     rvector%cdataType)
-    CALL h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
-    CALL h5lite_set_attribute(vector_id,"nblocks",       rvector%nblocks)
+    call h5lite_set_attribute(vector_id,"NEQ",           rvector%NEQ)
+    call h5lite_set_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
+    call h5lite_set_attribute(vector_id,"cdataType",     rvector%cdataType)
+    call h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
+    call h5lite_set_attribute(vector_id,"nblocks",       rvector%nblocks)
 
     ! Write each scalar subvector
-    IF (ASSOCIATED(rvector%RvectorBlock)) THEN
+    if (associated(rvector%RvectorBlock)) then
       
       ! Loop over all vector blocks
-      DO iblock=1,rvector%nblocks
-        CALL lsysh5io_writeVector(vector_id,rvector%RvectorBlock(iblock),&
-            vectorScalar_id,"RvectorBlock("//TRIM(ADJUSTL(sys_si(iblock,6)))//")")
-      END DO
+      do iblock=1,rvector%nblocks
+        call lsysh5io_writeVector(vector_id,rvector%RvectorBlock(iblock),&
+            vectorScalar_id,"RvectorBlock("//trim(adjustl(sys_si(iblock,6)))//")")
+      end do
       
-    END IF
-  END SUBROUTINE lsysh5io_writeBlockVector_Location
+    end if
+  end subroutine lsysh5io_writeBlockVector_Location
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readVector_RootByID(rh5file,vector_id,rvector)
+  subroutine lsysh5io_readVector_RootByID(rh5file,vector_id,rvector)
 
 !<description>
     ! This subroutine reads the vector from the root of the hdf5 file that
@@ -1021,27 +1021,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(IN)          :: vector_id
+    integer(HID_T), intent(IN)          :: vector_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+    type(t_vectorScalar), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readVector(rh5file%file_id,vector_id,rvector)
-  END SUBROUTINE lsysh5io_readVector_RootByID
+    call lsysh5io_readVector(rh5file%file_id,vector_id,rvector)
+  end subroutine lsysh5io_readVector_RootByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readVector_RootByName(rh5file,cvectorName,rvector)
+  subroutine lsysh5io_readVector_RootByName(rh5file,cvectorName,rvector)
 
 !<description>
     ! This subroutine reads the vector from the root of the hdf5 file that
@@ -1051,27 +1051,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)          :: rh5file
+    type(t_h5file), intent(IN)          :: rh5file
 
     ! Name of the vector
-    CHARACTER(LEN=*), INTENT(IN)        :: cvectorName
+    character(LEN=*), intent(IN)        :: cvectorName
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+    type(t_vectorScalar), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readVector(rh5file%file_id,cvectorName,rvector)
-  END SUBROUTINE lsysh5io_readVector_RootByName
+    call lsysh5io_readVector(rh5file%file_id,cvectorName,rvector)
+  end subroutine lsysh5io_readVector_RootByName
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readVector_LocationByID(loc_id,vector_id,rvector)
+  subroutine lsysh5io_readVector_LocationByID(loc_id,vector_id,rvector)
 
 !<description>
     ! This subroutine reads the vector from the location given by loc_id.
@@ -1080,99 +1080,99 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(IN)          :: vector_id
+    integer(HID_T), intent(IN)          :: vector_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+    type(t_vectorScalar), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
-    INTEGER,  DIMENSION(:), POINTER :: p_Idata
-    INTEGER :: isize
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    integer,  dimension(:), pointer :: p_Idata
+    integer :: isize
 
     ! Get attributes
-    CALL h5lite_get_attribute(vector_id,"NEQ",           rvector%NEQ)
-    CALL h5lite_get_attribute(vector_id,"NVAR",          rvector%NVAR)
-    CALL h5lite_get_attribute(vector_id,"cdataType",     rvector%cdataType)
-    CALL h5lite_get_attribute(vector_id,"isortStrategy", rvector%isortStrategy)
-    CALL h5lite_get_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
-    CALL h5lite_get_attribute(vector_id,"bisCopy",       rvector%bisCopy)
+    call h5lite_get_attribute(vector_id,"NEQ",           rvector%NEQ)
+    call h5lite_get_attribute(vector_id,"NVAR",          rvector%NVAR)
+    call h5lite_get_attribute(vector_id,"cdataType",     rvector%cdataType)
+    call h5lite_get_attribute(vector_id,"isortStrategy", rvector%isortStrategy)
+    call h5lite_get_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
+    call h5lite_get_attribute(vector_id,"bisCopy",       rvector%bisCopy)
 
     ! Get data
-    CALL h5lite_get_data(vector_id,"ITags",rvector%ITags)
-    CALL h5lite_get_data(vector_id,"DTags",rvector%DTags)
+    call h5lite_get_data(vector_id,"ITags",rvector%ITags)
+    call h5lite_get_data(vector_id,"DTags",rvector%DTags)
 
     ! Get data if present
-    IF (h5lite_ispresent_data(vector_id,"h_Ddata")) THEN
+    if (h5lite_ispresent_data(vector_id,"h_Ddata")) then
 
-      IF (rvector%h_Ddata == ST_NOHANDLE) THEN
+      if (rvector%h_Ddata == ST_NOHANDLE) then
         ! If the data handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readVector_LocationByID','Vector',rvector%NEQ,&
+        call storage_new1d ('lsysh5io_readVector_LocationByID','Vector',rvector%NEQ,&
             rvector%cdataType,rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rvector%h_Ddata,isize)
-        IF (isize < rvector%iidxFirstEntry+rvector%NEQ-1) THEN
-          PRINT *, "lsysh5io_readVector_LocationByID: Not enought memory!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rvector%h_Ddata,isize)
+        if (isize < rvector%iidxFirstEntry+rvector%NEQ-1) then
+          print *, "lsysh5io_readVector_LocationByID: Not enought memory!"
+          stop
+        end if
+      end if
       
       ! Get data handle
-      SELECT CASE(rvector%cdataType)
-      CASE (ST_DOUBLE)
-        CALL lsyssc_getbase_double(rvector,p_Ddata)
-        CALL h5lite_get_data(vector_id,"h_Ddata",p_Ddata)
+      select case(rvector%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rvector,p_Ddata)
+        call h5lite_get_data(vector_id,"h_Ddata",p_Ddata)
         
-      CASE (ST_SINGLE)
-        CALL lsyssc_getbase_single(rvector,p_Fdata)
-        CALL h5lite_get_data(vector_id,"h_Ddata",p_Fdata)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rvector,p_Fdata)
+        call h5lite_get_data(vector_id,"h_Ddata",p_Fdata)
         
-      CASE (ST_INT)
-        CALL lsyssc_getbase_int(rvector,p_Idata)
-        CALL h5lite_get_data(vector_id,"h_Ddata",p_Idata)
+      case (ST_INT)
+        call lsyssc_getbase_int(rvector,p_Idata)
+        call h5lite_get_data(vector_id,"h_Ddata",p_Idata)
         
-      CASE DEFAULT
-        PRINT *, "lsysh5io_readVector_LocationByID: Invalid data type!"
-        STOP
-      END SELECT
-    END IF
+      case DEFAULT
+        print *, "lsysh5io_readVector_LocationByID: Invalid data type!"
+        stop
+      end select
+    end if
 
     ! Get permutation array for sorting if present
-    IF (h5lite_ispresent_data(vector_id,"h_IsortPermutation")) THEN
+    if (h5lite_ispresent_data(vector_id,"h_IsortPermutation")) then
 
-      IF (rvector%h_IsortPermutation == ST_NOHANDLE) THEN
+      if (rvector%h_IsortPermutation == ST_NOHANDLE) then
         ! If the permutation handle is not associated to some memory block, allocate new memory
-        CALL storage_new1d ('lsysh5io_readVector_LocationByID','IsortPermutation',2*rvector%NEQ,&
+        call storage_new1d ('lsysh5io_readVector_LocationByID','IsortPermutation',2*rvector%NEQ,&
             ST_INT,rvector%h_IsortPermutation,ST_NEWBLOCK_NOINIT)
-      ELSE
+      else
         ! Otherwise, check that the provided memory is sufficient
-        CALL storage_getsize(rvector%h_IsortPermutation,isize)
-        IF (isize /= 2*rvector%NEQ) THEN
-          PRINT *, "lsysh5io_readVector_LocationByID: Wrong size of permutation array!"
-          STOP
-        END IF
-      END IF
+        call storage_getsize(rvector%h_IsortPermutation,isize)
+        if (isize /= 2*rvector%NEQ) then
+          print *, "lsysh5io_readVector_LocationByID: Wrong size of permutation array!"
+          stop
+        end if
+      end if
 
       ! Get permutation handle
-      CALL storage_getbase_int(rvector%h_IsortPermutation,p_Idata)
-      CALL h5lite_get_data(vector_id,"h_IsortPermutation",p_Idata)
-    END IF
-  END SUBROUTINE lsysh5io_readVector_LocationByID
+      call storage_getbase_int(rvector%h_IsortPermutation,p_Idata)
+      call h5lite_get_data(vector_id,"h_IsortPermutation",p_Idata)
+    end if
+  end subroutine lsysh5io_readVector_LocationByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readVector_LocationByName(loc_id,cvectorName,rvector)
+  subroutine lsysh5io_readVector_LocationByName(loc_id,cvectorName,rvector)
 
 !<description>
     ! This subroutine reads the vector from the location given by loc_id.
@@ -1181,35 +1181,35 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)          :: loc_id
+    integer(HID_T), intent(IN)          :: loc_id
 
     ! Name of the vector
-    CHARACTER(LEN=*), INTENT(IN)        :: cvectorName
+    character(LEN=*), intent(IN)        :: cvectorName
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+    type(t_vectorScalar), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: vector_id
+    integer(HID_T) :: vector_id
 
     ! Determine the vector_id and call the working routine
-    CALL h5lite_get_group(loc_id,cvectorName,vector_id)
-    IF (vector_id < 0) THEN
-      PRINT *, "lsysh5io_readVector_LocationByName: Unable to get vector_id!"
-      STOP
-    END IF
-    CALL lsysh5io_readVector(loc_id,vector_id,rvector)
-  END SUBROUTINE lsysh5io_readVector_LocationByName
+    call h5lite_get_group(loc_id,cvectorName,vector_id)
+    if (vector_id < 0) then
+      print *, "lsysh5io_readVector_LocationByName: Unable to get vector_id!"
+      stop
+    end if
+    call lsysh5io_readVector(loc_id,vector_id,rvector)
+  end subroutine lsysh5io_readVector_LocationByName
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockVector_RootByID(rh5file,vector_id,rvector)
+  subroutine lsysh5io_readBlockVector_RootByID(rh5file,vector_id,rvector)
 
 !<description>
     ! This subroutine reads the vector from the root of the hdf5 file that
@@ -1219,27 +1219,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)         :: rh5file
+    type(t_h5file), intent(IN)         :: rh5file
 
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(IN)         :: vector_id
+    integer(HID_T), intent(IN)         :: vector_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readBlockVector(rh5file%file_id,vector_id,rvector)
-  END SUBROUTINE lsysh5io_readBlockVector_RootByID
+    call lsysh5io_readBlockVector(rh5file%file_id,vector_id,rvector)
+  end subroutine lsysh5io_readBlockVector_RootByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockVector_RootByName(rh5file,cvectorName,rvector)
+  subroutine lsysh5io_readBlockVector_RootByName(rh5file,cvectorName,rvector)
 
 !<description>
     ! This subroutine reads the vector from the root of the hdf5 file that
@@ -1249,27 +1249,27 @@ CONTAINS
 
 !<input>
     ! The hdf file descriptor
-    TYPE(t_h5file), INTENT(IN)         :: rh5file
+    type(t_h5file), intent(IN)         :: rh5file
 
     ! Name of the vector
-    CHARACTER(LEN=*), INTENT(IN)       :: cvectorName
+    character(LEN=*), intent(IN)       :: cvectorName
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL lsysh5io_readBlockVector(rh5file%file_id,cvectorName,rvector)
-  END SUBROUTINE lsysh5io_readBlockVector_RootByName
+    call lsysh5io_readBlockVector(rh5file%file_id,cvectorName,rvector)
+  end subroutine lsysh5io_readBlockVector_RootByName
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockVector_LocationByID(loc_id,vector_id,rvector)
+  subroutine lsysh5io_readBlockVector_LocationByID(loc_id,vector_id,rvector)
 
 !<description>
     ! This subroutine reads the vector from the location given by loc_id.
@@ -1278,53 +1278,53 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)         :: loc_id
+    integer(HID_T), intent(IN)         :: loc_id
 
     ! Handle to the vector object
-    INTEGER(HID_T), INTENT(IN)         :: vector_id
+    integer(HID_T), intent(IN)         :: vector_id
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER :: iblock
+    integer :: iblock
 
     ! Get attributes
-    CALL h5lite_get_attribute(vector_id,"NEQ",           rvector%NEQ)
-    CALL h5lite_get_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
-    CALL h5lite_get_attribute(vector_id,"cdataType",     rvector%cdataType)
-    CALL h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
-    CALL h5lite_get_attribute(vector_id,"nblocks",       rvector%nblocks)
+    call h5lite_get_attribute(vector_id,"NEQ",           rvector%NEQ)
+    call h5lite_get_attribute(vector_id,"iidxFirstEntry",rvector%iidxFirstEntry)
+    call h5lite_get_attribute(vector_id,"cdataType",     rvector%cdataType)
+    call h5lite_set_attribute(vector_id,"bisCopy",       rvector%bisCopy)
+    call h5lite_get_attribute(vector_id,"nblocks",       rvector%nblocks)
     
     ! If the data handle is not associated to some memory block, allocate new memory
-    IF (rvector%h_Ddata == ST_NOHANDLE) &
-        CALL storage_new1d ('lsysh5io_readBlockVector_LocationByID','Vector',rvector%NEQ,&
+    if (rvector%h_Ddata == ST_NOHANDLE) &
+        call storage_new1d ('lsysh5io_readBlockVector_LocationByID','Vector',rvector%NEQ,&
         rvector%cdataType,rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
 
     ! Allocate 1D array  with scalar vectors
-    ALLOCATE(rvector%RvectorBlock(rvector%nblocks))
+    allocate(rvector%RvectorBlock(rvector%nblocks))
     
     ! Read in scalar subvectors
-    DO iblock=1,rvector%nblocks
+    do iblock=1,rvector%nblocks
       
       ! Set the handle for the scalar subvector
       rvector%RvectorBlock(iblock)%h_Ddata = rvector%h_Ddata
       
       ! Read in the scalar subvector
-      CALL lsysh5io_readVector(vector_id,"RvectorBlock("//TRIM(ADJUSTL(sys_si(iblock,6)))//")",&
+      call lsysh5io_readVector(vector_id,"RvectorBlock("//trim(adjustl(sys_si(iblock,6)))//")",&
           rvector%RvectorBlock(iblock))
-    END DO
-  END SUBROUTINE lsysh5io_readBlockVector_LocationByID
+    end do
+  end subroutine lsysh5io_readBlockVector_LocationByID
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE lsysh5io_readBlockVector_LocationByName(loc_id,cvectorName,rvector)
+  subroutine lsysh5io_readBlockVector_LocationByName(loc_id,cvectorName,rvector)
 
 !<description>
     ! This subroutine reads the vector from the location given by loc_id.
@@ -1333,27 +1333,27 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)         :: loc_id
+    integer(HID_T), intent(IN)         :: loc_id
 
     ! Name of the vector
-    CHARACTER(LEN=*), INTENT(IN)       :: cvectorName
+    character(LEN=*), intent(IN)       :: cvectorName
 !</input>
 
 !<inputoutput>
     ! The vector that should be read
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: vector_id
+    integer(HID_T) :: vector_id
 
     ! Determine the vector_id and call the working routine
-    CALL h5lite_get_group(loc_id,cvectorName,vector_id)
-    IF (vector_id < 0) THEN
-      PRINT *, "lsysh5io_readBlockVector_LocationByName: Unable to get vector_id!"
-      STOP
-    END IF
-    CALL lsysh5io_readBlockVector(loc_id,vector_id,rvector)
-  END SUBROUTINE lsysh5io_readBlockVector_LocationByName
-END MODULE linearsystemh5io
+    call h5lite_get_group(loc_id,cvectorName,vector_id)
+    if (vector_id < 0) then
+      print *, "lsysh5io_readBlockVector_LocationByName: Unable to get vector_id!"
+      stop
+    end if
+    call lsysh5io_readBlockVector(loc_id,vector_id,rvector)
+  end subroutine lsysh5io_readBlockVector_LocationByName
+end module linearsystemh5io
