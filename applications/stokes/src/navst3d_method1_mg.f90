@@ -7,7 +7,7 @@
 !# This module is a demonstation program how to solve a (Navier-)Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses the simple-VANCA smoother for 3D saddle point problems,
+!# The routine uses the simple-VANKA smoother for 3D saddle point problems,
 !# Jacobi-Type, for a multigrid solver.
 !#
 !# This module is based on the stokes3d_method1_mg example, but in contrast
@@ -658,8 +658,8 @@ CONTAINS
     ! Set the output level of multigrid to 2 for some output
     p_rsolverNode%ioutputLevel = 2
     
-    ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-    CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DNAVST)
+    ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
+    CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
     CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the coarse grid solver to -1, so that it
@@ -673,8 +673,8 @@ CONTAINS
     ! Now set up the other levels...
     DO i = NLMIN+1, NLMAX
     
-      ! Set up the 3D diagonal VANCA smoother.
-      CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DNAVST)
+      ! Set up the 3D diagonal VANKA smoother.
+      CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DNAVST)
       
       ! We will use 4 smoothing steps with damping parameter 1.0.
       CALL linsol_convertToSmoother(p_rsmoother, 4, 1.0_DP)

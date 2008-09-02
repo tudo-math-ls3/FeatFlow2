@@ -14,7 +14,7 @@
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#
-!# In contrast to stokes2d_method2_sv, this routine uses the general VANCA
+!# In contrast to stokes2d_method2_sv, this routine uses the general VANKA
 !# for smoothing/preconditioning.
 !# </purpose>
 !##############################################################################
@@ -819,8 +819,8 @@ CONTAINS
       NULLIFY(p_rsmoother)
       NULLIFY(p_rcoarseGridSolver)
       IF (i .EQ. ilvmin) THEN
-        ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-        CALL linsol_initVANCA (p_rpreconditioner)
+        ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
+        CALL linsol_initVANKA (p_rpreconditioner)
         CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
         !p_rcoarseGridSolver%ioutputLevel = 2
         
@@ -828,9 +828,9 @@ CONTAINS
         ! CALL linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
       ELSE
-        ! Set up the VANCA smoother for multigrid with damping parameter 0.7,
+        ! Set up the VANKA smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        CALL linsol_initVANCA (p_rsmoother)
+        CALL linsol_initVANKA (p_rsmoother)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     

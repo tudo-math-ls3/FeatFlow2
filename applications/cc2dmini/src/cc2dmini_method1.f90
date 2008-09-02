@@ -21,7 +21,7 @@
 !#
 !# For the nonlinearity, the nonlinear solver is invoked. The
 !# defect that is setted up there is preconditioned by a linear Multigrid
-!# solver with a simple-VANCA smoother/preconditioner for
+!# solver with a simple-VANKA smoother/preconditioner for
 !# 2D saddle point problems, Jacobi-Type. As coarse grid solver,
 !# UMFPACK is used.
 !# </purpose>
@@ -1509,8 +1509,8 @@ CONTAINS
       NULLIFY(p_rsmoother)
       NULLIFY(p_rcoarseGridSolver)
       IF (i .EQ. ilvmin) THEN
-        ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-        !CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DSPQ1TQ0)
+        ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
+        !CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DSPQ1TQ0)
         !CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
         !p_rcoarseGridSolver%ioutputLevel = 2
         
@@ -1518,9 +1518,9 @@ CONTAINS
         CALL linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
       ELSE
-        ! Set up the VANCA smoother for multigrid with damping parameter 0.7,
+        ! Set up the VANKA smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVST)
+        CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     

@@ -71,8 +71,8 @@ dalphaMax          = 10.0
 # Both names can be identical, then the same configuration is used
 # as pre- and postsmoother.
 
-spreSmootherName   = 'CC-VANCA2DQ1TP0'
-spostSmootherName  = 'CC-VANCA2DQ1TP0'
+spreSmootherName   = 'CC-VANKA2DQ1TP0'
+spostSmootherName  = 'CC-VANKA2DQ1TP0'
 
 # Name of the coarse grid solver. This is the name of another 
 # subsection in this file which describes the actual smoother.
@@ -80,11 +80,11 @@ spostSmootherName  = 'CC-VANCA2DQ1TP0'
 scoarseGridSolver  = 'CC-UMFPACK'
 
 # ========================================================================
-# The following section describes the parameters of the VANCA smoother.
+# The following section describes the parameters of the VANKA smoother.
 # When a parameter is deleted or commented out, the standard value is used.
 
 #################
-[CC-VANCA2DQ1TP0]
+[CC-VANKA2DQ1TP0]
 #################
 
 # Type identifier of the solver that should be used as smoother.
@@ -95,19 +95,19 @@ isolverType        = 54
 # Subtype identifier of the smoother.
 # Note: Usually, the best variants are 0 (completely general), 3 or 5.
 # Standard value for Navier-Stokes is = 3.
-# 0=general VANCA (slow, but independent of the discretisation and of the problem)
-# 1=general VANCA; 'direct' method, bypassing the defect correction approach.
+# 0=general VANKA (slow, but independent of the discretisation and of the problem)
+# 1=general VANKA; 'direct' method, bypassing the defect correction approach.
 #   (-> specialised variant of 0, but slightly faster)
-# 2=Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-# 3=Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
+# 2=Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
+#   (i.e. automatically chooses the best suitable VANKA variant).
+# 3=Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
+#   (i.e. automatically chooses the best suitable VANKA variant).
 #   'direct' method, bypassing the defect correction approach.
 #   (-> specialised variant of 8, but faster)
-# 4=Full VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
-# 5=Full VANCA, 2D Navier Stokes problem, general discretisation
-#   (i.e. automatically chooses the best suitable VANCA variant).
+# 4=Full VANKA, 2D Navier Stokes problem, general discretisation
+#   (i.e. automatically chooses the best suitable VANKA variant).
+# 5=Full VANKA, 2D Navier Stokes problem, general discretisation
+#   (i.e. automatically chooses the best suitable VANKA variant).
 #   'direct' method, bypassing the defect correction approach.
 #   (-> specialised variant of 10, but faster)
 

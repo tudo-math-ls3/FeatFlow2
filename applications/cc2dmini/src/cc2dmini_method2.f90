@@ -23,7 +23,7 @@
 !#
 !# For the nonlinearity, the nonlinear solver is invoked. The
 !# defect that is setted up there is preconditioned by a linear Multigrid
-!# solver with a simple-VANCA smoother/preconditioner for
+!# solver with a simple-VANKA smoother/preconditioner for
 !# 2D saddle point problems, Jacobi-Type. As coarse grid solver,
 !# UMFPACK is used.
 !# </purpose>

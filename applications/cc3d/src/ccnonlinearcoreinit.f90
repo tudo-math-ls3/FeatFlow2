@@ -508,14 +508,14 @@ CONTAINS
         CALL linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
         
       CASE (1,2)
-        ! Defect correction with VANCA preconditioning.
+        ! Defect correction with VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
+        ! Create VANKA and initialise it with the parameters from the DAT file.
         SELECT CASE (icoarseGridSolverType)
         CASE (1)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DNAVST)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
         CASE (2)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DFNAVST)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DFNAVST)
         END SELECT
         
         CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
@@ -526,7 +526,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rnonlinearIteration%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -535,14 +535,14 @@ CONTAINS
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
       CASE (3,4)
-        ! BiCGSTab with VANCA preconditioning.
+        ! BiCGSTab with VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
+        ! Create VANKA and initialise it with the parameters from the DAT file.
         SELECT CASE (icoarseGridSolverType)
         CASE (3)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DNAVST)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
         CASE (4)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DFNAVST)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DFNAVST)
         END SELECT
         
         CALL parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
@@ -553,7 +553,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rnonlinearIteration%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -576,20 +576,20 @@ CONTAINS
 
           NULLIFY(p_rsmoother)
         
-          ! This is some kind of VANCA smoother. Initialise the correct one.
+          ! This is some kind of VANKA smoother. Initialise the correct one.
           SELECT CASE (ismootherType)
           CASE (0)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
           CASE (1)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
           CASE (2)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DNAVST)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DNAVST)
           CASE (3)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DNAVSTDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DNAVSTDIRECT)
           CASE (4)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DFNAVST)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DFNAVST)
           CASE (5)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_3DFNAVSTDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DFNAVSTDIRECT)
           END SELECT
           
           ! Initialise the parameters -- if there are any.
@@ -625,12 +625,12 @@ CONTAINS
           'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
 
     CASE (2)
-      ! BiCGStab with full VANCA preconditioning.
+      ! BiCGStab with full VANKA preconditioning.
       !
-      ! Create full VANCA preconditioner
-      CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_3DFNAVST)
+      ! Create full VANKA preconditioner
+      CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DFNAVST)
       
-      ! Create the BiCGStab solver, attach VANCA as preconditioner.
+      ! Create the BiCGStab solver, attach VANKA as preconditioner.
       CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,&
           rnonlinearIteration%p_RfilterChain)
 
@@ -979,7 +979,7 @@ CONTAINS
         ! Under certain circumstances, the linear solver needs B^T-matrices.
         ! This is the case if
         ! - a direct solver (UMFPACK) is used on a level or
-        ! - if the general VANCA preconditioner is used.
+        ! - if the general VANKA preconditioner is used.
         ! In these cases, we create a separate copy of B1 and B2 and transpose them.
         ! Note that we do this only in that case when there is a 'structural update'
         ! (which means that the structure of the matrices have changed). Otherwise,
@@ -1029,7 +1029,7 @@ CONTAINS
               
             ELSE
             
-              ! On the other levels, tweak the matrix if the general VANCA is
+              ! On the other levels, tweak the matrix if the general VANKA is
               ! chosen as smoother; it needs transposed matrices.
               IF ((rnonlinearIteration%rprecSpecials%ismootherType .EQ. 0) .OR. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .EQ. 1)) THEN

@@ -7,7 +7,7 @@
 !# This module is a demonstation program how to solve a Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses the simple-VANCA smoother for 2D saddle point problems,
+!# The routine uses the simple-VANKA smoother for 2D saddle point problems,
 !# Jacobi-Type, for a multigrid solver.
 !# </purpose>
 !##############################################################################
@@ -546,8 +546,8 @@ CONTAINS
     p_RfilterChain => RfilterChain
     CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
-    ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-    CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+    ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
+    CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
     CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     
     ! Add the coarse grid level.
@@ -557,8 +557,8 @@ CONTAINS
     ! Now set up the other levels...
     DO i = NLMIN+1, NLMAX
     
-      ! Set up the VANCA smoother.
-      CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVST)
+      ! Set up the VANKA smoother.
+      CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
       
       ! We will use 4 smoothing steps with damping parameter 0.7
       CALL linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)

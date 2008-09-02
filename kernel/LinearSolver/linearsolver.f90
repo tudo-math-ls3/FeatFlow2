@@ -360,8 +360,8 @@
 !#           -> see [http://www.netlib.org/linalg/html_templates/Templates.html],
 !#                  [http://mathworld.wolfram.com/SuccessiveOverrelaxationMethod.html]
 !#
-!#       6.) linsol_initVANCA
-!#           -> VANCA preconditioner; multiple versions
+!#       6.) linsol_initVANKA
+!#           -> VANKA preconditioner; multiple versions
 !#
 !#       7.) linsol_initUMFPACK4
 !#           -> UMFPACK preconditioner
@@ -403,7 +403,7 @@
 !#     matrix format, being transposed,... do not fit) an error code is
 !#     returned -- as this set of matrices would lead the solver to an
 !#     immediate program stop if they are factorised with linsol_initStructure!
-!#     It may be used for special solvers like VANCA to check, if the solver
+!#     It may be used for special solvers like VANKA to check, if the solver
 !#     can handle what is set up in the discretisation.
 !#
 !# </purpose>
@@ -417,7 +417,7 @@ module linearsolver
   use multilevelprojection
   use filtersupport
   use coarsegridcorrection
-  use vanca
+  use vanka
   use globalsystem
   use genoutput
   use iluk
@@ -489,8 +489,8 @@ module linearsolver
   ! SPAI(k) iteration (scalar system)
   integer, parameter :: LINSOL_ALG_SPAIK1x1      = 53
   
-  ! VANCA iteration
-  integer, parameter :: LINSOL_ALG_VANCA         = 54
+  ! VANKA iteration
+  integer, parameter :: LINSOL_ALG_VANKA         = 54
   
 !</constantblock>
 
@@ -509,7 +509,7 @@ module linearsolver
   integer, parameter :: LINSOL_COMP_ERRTRANSPOSED    = 2
 
   ! Some of the submatrices are not saved transposed although
-  ! they have to be. (Usual error for special VANCA solvers.)
+  ! they have to be. (Usual error for special VANKA solvers.)
   integer, parameter :: LINSOL_COMP_ERRNOTTRANSPOSED = 3
 
   ! One of the submatrices is a block matrix,
@@ -592,80 +592,80 @@ module linearsolver
 
 ! *****************************************************************************
 
-!<constantblock description="Variants of the VANCA solver">
+!<constantblock description="Variants of the VANKA solver">
 
-  ! General VANCA solver
-  integer, parameter :: LINSOL_VANCA_GENERAL           = 0   
+  ! General VANKA solver
+  integer, parameter :: LINSOL_VANKA_GENERAL           = 0   
   
-  ! General VANCA solver. Specialised 'direct' version, i.e. when 
+  ! General VANKA solver. Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_GENERALDIRECT     = 1
+  integer, parameter :: LINSOL_VANKA_GENERALDIRECT     = 1
 
-  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANCA_2DNAVST           = 2
+  ! Simple VANKA, 2D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_2DNAVST           = 2
 
-  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation.
+  ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_2DNAVSTDIRECT     = 3
+  integer, parameter :: LINSOL_VANKA_2DNAVSTDIRECT     = 3
 
-  ! Full VANCA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANCA_2DFNAVST          = 4
+  ! Full VANKA, 2D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_2DFNAVST          = 4
 
-  ! Full VANCA, 2D Navier-Stokes problem, general discretisation.
+  ! Full VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_2DFNAVSTDIRECT    = 5
+  integer, parameter :: LINSOL_VANKA_2DFNAVSTDIRECT    = 5
 
-  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation,
+  ! Simple VANKA, 2D Navier-Stokes problem, general discretisation,
   ! Solution-based variant.
-  integer, parameter :: LINSOL_VANCA_2DNAVSTSB         = 6
+  integer, parameter :: LINSOL_VANKA_2DNAVSTSB         = 6
 
-  ! Simple VANCA, 2D Navier-Stokes problem, general discretisation.
+  ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
   ! Solution-based variant.
-  integer, parameter :: LINSOL_VANCA_2DNAVSTDIRECTSB   = 7
+  integer, parameter :: LINSOL_VANKA_2DNAVSTDIRECTSB   = 7
 
-  ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
-  integer, parameter :: LINSOL_VANCA_2DFNAVSTOC        = 20
+  ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
+  integer, parameter :: LINSOL_VANKA_2DFNAVSTOC        = 20
 
-  ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
+  ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_2DFNAVSTOCDIRECT  = 21
+  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIRECT  = 21
 
-  ! Diagonal VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
-  integer, parameter :: LINSOL_VANCA_2DFNAVSTOCDIAG    = 22
+  ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
+  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIAG    = 22
 
-  ! Diagonal VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
+  ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_2DFNAVSTOCDIAGDIR = 23
+  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR = 23
 
-  ! Simple VANCA, 3D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANCA_3DNAVST           = 30
+  ! Simple VANKA, 3D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_3DNAVST           = 30
 
-  ! Simple VANCA, 3D Navier-Stokes problem, general discretisation.
+  ! Simple VANKA, 3D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_3DNAVSTDIRECT     = 31
+  integer, parameter :: LINSOL_VANKA_3DNAVSTDIRECT     = 31
 
-  ! Full VANCA, 3D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANCA_3DFNAVST          = 32
+  ! Full VANKA, 3D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_3DFNAVST          = 32
 
-  ! Full VANCA, 3D Navier-Stokes problem, general discretisation.
+  ! Full VANKA, 3D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANCA_3DFNAVSTDIRECT    = 33
+  integer, parameter :: LINSOL_VANKA_3DFNAVSTDIRECT    = 33
 
 !</constantblock>
 
@@ -697,11 +697,11 @@ module linearsolver
   ! Dummy command, do-nothing.
   integer, parameter :: LINSOL_ALTER_NOTHING                   = 0
   
-  ! Change VANCA subtype.
+  ! Change VANKA subtype.
   ! In the configuration block, there must be specified:
-  ! Iconfig(1) = identifier for VANCA subtype to be changed.
-  ! Iconfig(2) = destination subtype of VANCA solver
-  integer, parameter :: LINSOL_ALTER_CHANGEVANCA               = 1
+  ! Iconfig(1) = identifier for VANKA subtype to be changed.
+  ! Iconfig(2) = destination subtype of VANKA solver
+  integer, parameter :: LINSOL_ALTER_CHANGEVANKA               = 1
     
 !</constantblock>
 
@@ -921,8 +921,8 @@ module linearsolver
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     integer                    :: icurrentIteration
 
-    ! Pointer to a structure for the VANCA solver; NULL() if not set
-    type (t_linsolSubnodeVANCA), pointer          :: p_rsubnodeVANCA       => null()
+    ! Pointer to a structure for the VANKA solver; NULL() if not set
+    type (t_linsolSubnodeVANKA), pointer          :: p_rsubnodeVANKA       => null()
     
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     type (t_linsolSubnodeDefCorr), pointer        :: p_rsubnodeDefCorr     => null()
@@ -1052,17 +1052,17 @@ module linearsolver
 
 !<typeblock>
   
-  ! This structure realises the subnode for the VANCA solver.
+  ! This structure realises the subnode for the VANKA solver.
   
-  type t_linsolSubnodeVANCA
+  type t_linsolSubnodeVANKA
   
-    ! Type of VANCA subsolver. One of the LINSOL_VANCA_xxxx constants.
-    ! Specifies either thge general VANCA solver or a specialised version
+    ! Type of VANKA subsolver. One of the LINSOL_VANKA_xxxx constants.
+    ! Specifies either thge general VANKA solver or a specialised version
     ! for improved speed.
-    integer             :: csubtypeVANCA
+    integer             :: csubtypeVANKA
   
     ! For general 2D/3D Navier-Stokes problem
-    type(t_vanca)       :: rvanca
+    type(t_vanka)       :: rvanka
   
     ! Temporary vector to use during the solution process
     type(t_vectorBlock) :: rtempVector
@@ -1693,8 +1693,8 @@ contains
     ! UMFPACK needs no matrix initialisation routine, as it does not
     ! contain subsolvers. An attached matrix is processed in the 
     ! symbolical/numerical factorisation.
-  case (LINSOL_ALG_VANCA)
-    ! VANCA needs no matrix initialisation routine, as it does not
+  case (LINSOL_ALG_VANKA)
+    ! VANKA needs no matrix initialisation routine, as it does not
     ! contain subsolvers. An attached matrix is processed in the 
     ! symbolical/numerical factorisation.
   case (LINSOL_ALG_CG)
@@ -1746,7 +1746,7 @@ contains
   ! flag that tells whether the matrix on that level is compatible
   ! or not.
   ! Note that it is possible to create cases where this routine ALWAYS
-  ! fails, e.g. if two incompatible VANCA solvers are used as pre- and
+  ! fails, e.g. if two incompatible VANKA solvers are used as pre- and
   ! postsmoother, resp., on one leve in multigrid! But at least if pre- and
   ! postsmoother on each MG level are identical, this routine will
   ! successfully determine (and return in CcompatibleDetail) if 
@@ -1779,9 +1779,9 @@ contains
   ! or return the corresponding matrix compatibility flag directly.
   
   select case(rsolverNode%calgorithm)
-  case (LINSOL_ALG_VANCA)
-    ! Ask VANCA if the matrices are ok.
-    call linsol_matCompatVANCA (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+  case (LINSOL_ALG_VANKA)
+    ! Ask VANKA if the matrices are ok.
+    call linsol_matCompatVANKA (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   case (LINSOL_ALG_JACOBI)
     ! Ask Jacobi if the matrices are ok.
@@ -1804,7 +1804,7 @@ contains
     call linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   case (LINSOL_ALG_UMFPACK4)
-    ! Ask VANCA if the matrices are ok.
+    ! Ask VANKA if the matrices are ok.
     call linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
   
   case (LINSOL_ALG_CG)
@@ -1937,8 +1937,8 @@ contains
     ! Call the structure-init routine of the specific solver
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_initStructureVANCA (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_VANKA)
+      call linsol_initStructureVANKA (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_initStructureDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2015,8 +2015,8 @@ contains
     ! Call the data-init routine of the specific solver
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_initDataVANCA (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_VANKA)
+      call linsol_initDataVANKA (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_initDataDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2188,8 +2188,8 @@ contains
     ! Call the data-done routine of the specific solver
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_doneDataVANCA (rsolverNode,isubgroup)
+    case (LINSOL_ALG_VANKA)
+      call linsol_doneDataVANKA (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_doneDataDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2249,8 +2249,8 @@ contains
     ! Call the data-done routine of the specific solver
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_doneStructureVANCA (rsolverNode,isubgroup)
+    case (LINSOL_ALG_VANKA)
+      call linsol_doneStructureVANKA (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_doneStructureDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2312,8 +2312,8 @@ contains
 
     ! Depending on the solver type, call the corresponding done-routine
     select case(p_rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_doneVANCA (p_rsolverNode)
+    case (LINSOL_ALG_VANKA)
+      call linsol_doneVANKA (p_rsolverNode)
     case (LINSOL_ALG_SSOR)
       call linsol_doneSSOR (p_rsolverNode)
     case (LINSOL_ALG_DEFCORR)
@@ -2377,7 +2377,7 @@ contains
   ! Each subsolver then decides on it's own what to do with the configuration,
   ! depending on the command ralterConfig%ccommand.
   ! 
-  ! Example: If ralterConfig%ccommand=LINSOL_ALTER_CHANGEVANCA, all VANCA
+  ! Example: If ralterConfig%ccommand=LINSOL_ALTER_CHANGEVANKA, all VANKA
   !  solvers and smoothers in the solver will react to the configuration
   !  block and change their type, depending on ralterConfig%Iconfig.
 !</description>
@@ -2396,8 +2396,8 @@ contains
     ! Call the alterConfig-routine of the actual solver
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_alterVANCA (rsolverNode, ralterConfig)
+    case (LINSOL_ALG_VANKA)
+      call linsol_alterVANKA (rsolverNode, ralterConfig)
     case (LINSOL_ALG_DEFCORR)
       call linsol_alterDefCorr (rsolverNode, ralterConfig)
     case (LINSOL_ALG_UMFPACK4)
@@ -2628,8 +2628,8 @@ contains
     ! the actual preconditioning task.
     
     select case(rsolverNode%calgorithm)
-    case (LINSOL_ALG_VANCA)
-      call linsol_precVANCA (rsolverNode,rd)
+    case (LINSOL_ALG_VANKA)
+      call linsol_precVANKA (rsolverNode,rd)
     case (LINSOL_ALG_DEFCORR)
       call linsol_precDefCorr (rsolverNode,rd)
     case (LINSOL_ALG_JACOBI)
@@ -5322,26 +5322,26 @@ contains
   end subroutine
   
 ! *****************************************************************************
-! Routines for the VANCA CC2D/CC3D solver
+! Routines for the VANKA CC2D/CC3D solver
 ! *****************************************************************************
 
 !<subroutine>
   
-  subroutine linsol_initVANCA (p_rsolverNode,domega,csubtypeVANCA)
+  subroutine linsol_initVANKA (p_rsolverNode,domega,csubtypeVANKA)
   
 !<description>
-  ! Creates a t_linsolNode solver structure for the VANCA solver. The node
+  ! Creates a t_linsolNode solver structure for the VANKA solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
   !
-  ! VANCA is somehow a special type of solver. There is one general VANCA
+  ! VANKA is somehow a special type of solver. There is one general VANKA
   ! solver, which applies to many situations, but which is quite slow.
-  ! For higher performance, system-specific VANCA subsolvers must be created
+  ! For higher performance, system-specific VANKA subsolvers must be created
   ! with hardcoded treatment of matrices/vectors!
   !
-  ! For this purpose, there's the csubtypeVANCA flag. If this flag is present,
-  ! it indicates a special VANCA variant for a special type of situation.
+  ! For this purpose, there's the csubtypeVANKA flag. If this flag is present,
+  ! it indicates a special VANKA variant for a special type of situation.
   ! the application must ensure then that the correct matrix/vector structure
   ! is used when solving the system with this special subtype, as each subtype
   ! implements a hardwired processing of matrix/vector data!
@@ -5351,11 +5351,11 @@ contains
   ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
   real(DP), optional :: domega
   
-  ! OPTIONAL: VANCA subtype.
-  ! If not present, the standard VANCA solver is used.
-  ! If present, this is one of the LINSOL_VANCA_xxxx flags that indicate a 
-  ! special VANCA variant for higher performance.
-  integer, intent(IN), optional       :: csubtypeVANCA
+  ! OPTIONAL: VANKA subtype.
+  ! If not present, the standard VANKA solver is used.
+  ! If present, this is one of the LINSOL_VANKA_xxxx flags that indicate a 
+  ! special VANKA variant for higher performance.
+  integer, intent(IN), optional       :: csubtypeVANKA
 !</input>  
   
 !<output>
@@ -5371,21 +5371,21 @@ contains
   call linsol_initSolverGeneral(p_rsolverNode)
   
   ! Initialise the type of the solver
-  p_rsolverNode%calgorithm = LINSOL_ALG_VANCA
+  p_rsolverNode%calgorithm = LINSOL_ALG_VANKA
   
   ! Initialise the ability bitfield with the ability of this solver:
   p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
                               LINSOL_ABIL_DIRECT
   
-  ! Allocate the subnode for VANCA.
+  ! Allocate the subnode for VANKA.
   ! This initialises most of the variables with default values appropriate
   ! to this solver.
-  allocate(p_rsolverNode%p_rsubnodeVANCA)
+  allocate(p_rsolverNode%p_rsubnodeVANKA)
   
-  ! Initialise the VANCA subtype.
-  p_rsolverNode%p_rsubnodeVANCA%csubtypeVANCA = LINSOL_VANCA_GENERAL
-  if (present(csubtypeVANCA)) then
-    p_rsolverNode%p_rsubnodeVANCA%csubtypeVANCA = csubtypeVANCA
+  ! Initialise the VANKA subtype.
+  p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = LINSOL_VANKA_GENERAL
+  if (present(csubtypeVANKA)) then
+    p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = csubtypeVANKA
   end if
   
   if (present(domega)) p_rsolverNode%domega = domega
@@ -5396,10 +5396,10 @@ contains
   
 !<subroutine>
   
-  recursive subroutine linsol_alterVANCA (rsolverNode, ralterConfig)
+  recursive subroutine linsol_alterVANKA (rsolverNode, ralterConfig)
   
 !<description>
-  ! This routine allows on-line modification of the VANCA solver.
+  ! This routine allows on-line modification of the VANKA solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration 
   ! in this structure, the solver reacts.
 !</description>
@@ -5416,15 +5416,15 @@ contains
 !</subroutine>
 
     ! Check the command.
-    if (ralterConfig%ccommand .eq. LINSOL_ALTER_CHANGEVANCA) then
+    if (ralterConfig%ccommand .eq. LINSOL_ALTER_CHANGEVANKA) then
     
-      ! That's a command to all VANCA solvers. Are we meant?
-      ! Check Iconfig(1) which specifies the VANCA subsolver group
+      ! That's a command to all VANKA solvers. Are we meant?
+      ! Check Iconfig(1) which specifies the VANKA subsolver group
       ! to be changed.
-      if (ralterConfig%Iconfig(1) .eq. rsolverNode%p_rsubnodeVANCA%rvanca%csubtype) then
+      if (ralterConfig%Iconfig(1) .eq. rsolverNode%p_rsubnodeVANKA%rvanka%csubtype) then
       
-        ! Oops, we are meant. Set the VANCA variant as specified in Iconfig(2).
-        rsolverNode%p_rsubnodeVANCA%rvanca%csubtype = ralterConfig%Iconfig(2)
+        ! Oops, we are meant. Set the VANKA variant as specified in Iconfig(2).
+        rsolverNode%p_rsubnodeVANKA%rvanka%csubtype = ralterConfig%Iconfig(2)
       
       end if
     
@@ -5436,7 +5436,7 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_matCompatVANCA (rsolverNode,Rmatrices,&
+  recursive subroutine linsol_matCompatVANKA (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
   
 !<description>
@@ -5473,13 +5473,13 @@ contains
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
 
-    ! VANCA is a bit tricky. Loop through all scalar submatrices and
-    ! check them. The VANCA subtype decides on whether it can use that or not!
+    ! VANKA is a bit tricky. Loop through all scalar submatrices and
+    ! check them. The VANKA subtype decides on whether it can use that or not!
     
     p_rmat => Rmatrices(ubound(Rmatrices,1))
-    ! VANCA subtype?
-    select case (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    case (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
+    ! VANKA subtype?
+    select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+    case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
       
       ! Check all sub-matrices
       do jblock = 1,p_rmat%ndiagblocks
@@ -5494,9 +5494,9 @@ contains
         end do
       end do
 
-    case (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  ,&
-          LINSOL_VANCA_2DNAVSTSB, LINSOL_VANCA_2DNAVSTDIRECTSB,&
-          LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
+    case (LINSOL_VANKA_2DNAVST  , LINSOL_VANKA_2DNAVSTDIRECT  ,&
+          LINSOL_VANKA_2DNAVSTSB, LINSOL_VANKA_2DNAVSTDIRECTSB,&
+          LINSOL_VANKA_2DFNAVST , LINSOL_VANKA_2DFNAVSTDIRECT )
       ! Blocks (3,1) and (3,2) must be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
@@ -5505,8 +5505,8 @@ contains
         ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
       end if
 
-    case (LINSOL_VANCA_3DNAVST  , LINSOL_VANCA_3DNAVSTDIRECT  ,&
-          LINSOL_VANCA_3DFNAVST , LINSOL_VANCA_3DFNAVSTDIRECT )
+    case (LINSOL_VANKA_3DNAVST  , LINSOL_VANKA_3DNAVSTDIRECT  ,&
+          LINSOL_VANKA_3DFNAVST , LINSOL_VANKA_3DFNAVSTDIRECT )
       ! Blocks (4,1), (4,2) and (4,3) must be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(4,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
@@ -5530,14 +5530,14 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_initStructureVANCA (rsolverNode,ierror,isolverSubgroup)
+  recursive subroutine linsol_initStructureVANKA (rsolverNode,ierror,isolverSubgroup)
   
 !<description>
-  ! Memory allocation for the VANCA solver.
+  ! Memory allocation for the VANKA solver.
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the VANCA solver
+  ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(INOUT),target  :: rsolverNode
 !</inputoutput>
   
@@ -5583,7 +5583,7 @@ contains
 
   ! Allocate a temporary vector
   call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-        rsolverNode%p_rsubnodeVANCA%rtempVector,.false.,.false.,&
+        rsolverNode%p_rsubnodeVANKA%rtempVector,.false.,.false.,&
         rsolverNode%cdefaultDataType)
         
   end subroutine
@@ -5592,14 +5592,14 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_initDataVANCA (rsolverNode, ierror,isolverSubgroup)
+  recursive subroutine linsol_initDataVANKA (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
-  ! Performs final preparation of the VANCA solver subtype.
+  ! Performs final preparation of the VANKA solver subtype.
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the VANCA solver
+  ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(INOUT), target :: rsolverNode
 !</inputoutput>
 
@@ -5640,55 +5640,55 @@ contains
       call sys_halt()
     end if
     
-    ! Which VANCA solver do we actually have?
-    select case (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    case (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
-      ! General VANCA for everything
-      call vanca_initConformal(rsolverNode%rsystemMatrix,&
-                              rsolverNode%p_rsubnodeVANCA%rvanca,&
-                              VANCAPC_GENERAL,VANCATP_STANDARD)
+    ! Which VANKA solver do we actually have?
+    select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+    case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
+      ! General VANKA for everything
+      call vanka_initConformal(rsolverNode%rsystemMatrix,&
+                              rsolverNode%p_rsubnodeVANKA%rvanka,&
+                              VANKAPC_GENERAL,VANKATP_STANDARD)
                                
-    case (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  )
-      ! Diagonal-type VANCA for Navier-Stokes
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_2DNAVIERSTOKES,VANCATP_DIAGONAL)
+    case (LINSOL_VANKA_2DNAVST  , LINSOL_VANKA_2DNAVSTDIRECT  )
+      ! Diagonal-type VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_2DNAVIERSTOKES,VANKATP_DIAGONAL)
 
-    case (LINSOL_VANCA_2DNAVSTSB, LINSOL_VANCA_2DNAVSTDIRECTSB)
-      ! Diagonal-type VANCA for Navier-Stokes
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_2DNAVIERSTOKES,VANCATP_DIAGONAL_SOLBASED)
+    case (LINSOL_VANKA_2DNAVSTSB, LINSOL_VANKA_2DNAVSTDIRECTSB)
+      ! Diagonal-type VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_2DNAVIERSTOKES,VANKATP_DIAGONAL_SOLBASED)
                                 
-    case (LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
-      ! Full VANCA for Navier-Stokes
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_2DNAVIERSTOKES,VANCATP_FULL)
+    case (LINSOL_VANKA_2DFNAVST , LINSOL_VANKA_2DFNAVSTDIRECT )
+      ! Full VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_2DNAVIERSTOKES,VANKATP_FULL)
 
-    case (LINSOL_VANCA_2DFNAVSTOC,LINSOL_VANCA_2DFNAVSTOCDIRECT )
-      ! Full VANCA for Navier-Stokes optimal control
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_2DNAVIERSTOKESOPTC,VANCATP_FULL)
+    case (LINSOL_VANKA_2DFNAVSTOC,LINSOL_VANKA_2DFNAVSTOCDIRECT )
+      ! Full VANKA for Navier-Stokes optimal control
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_2DNAVIERSTOKESOPTC,VANKATP_FULL)
 
-    case (LINSOL_VANCA_2DFNAVSTOCDIAG,LINSOL_VANCA_2DFNAVSTOCDIAGDIR )
-      ! Full VANCA for Navier-Stokes optimal control
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_2DNAVIERSTOKESOPTC,VANCATP_DIAGOPTC)
+    case (LINSOL_VANKA_2DFNAVSTOCDIAG,LINSOL_VANKA_2DFNAVSTOCDIAGDIR )
+      ! Full VANKA for Navier-Stokes optimal control
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_2DNAVIERSTOKESOPTC,VANKATP_DIAGOPTC)
 
-    case (LINSOL_VANCA_3DNAVST  , LINSOL_VANCA_3DNAVSTDIRECT  )
-      ! Diagonal-type VANCA for Navier-Stokes
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_3DNAVIERSTOKES,VANCATP_DIAGONAL)
+    case (LINSOL_VANKA_3DNAVST  , LINSOL_VANKA_3DNAVSTDIRECT  )
+      ! Diagonal-type VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_3DNAVIERSTOKES,VANKATP_DIAGONAL)
                                 
-    case (LINSOL_VANCA_3DFNAVST , LINSOL_VANCA_3DFNAVSTDIRECT )
-      ! Full VANCA for Navier-Stokes
-      call vanca_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvanca,&
-                                VANCAPC_3DNAVIERSTOKES,VANCATP_FULL)
+    case (LINSOL_VANKA_3DFNAVST , LINSOL_VANKA_3DFNAVSTDIRECT )
+      ! Full VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_3DNAVIERSTOKES,VANKATP_FULL)
                                 
     end select
       
@@ -5698,15 +5698,15 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_doneDataVANCA (rsolverNode, isolverSubgroup)
+  recursive subroutine linsol_doneDataVANKA (rsolverNode, isolverSubgroup)
   
 !<description>
-  ! Releases temporary memory of the VANCA solver allocated in 
-  ! linsol_initDataVANCA
+  ! Releases temporary memory of the VANKA solver allocated in 
+  ! linsol_initDataVANKA
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the VANCA solver
+  ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(INOUT)         :: rsolverNode
 !</inputoutput>
   
@@ -5733,8 +5733,8 @@ contains
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
     
-    ! Release VANCA.
-    call vanca_doneConformal (rsolverNode%p_rsubnodeVANCA%rvanca)
+    ! Release VANKA.
+    call vanka_doneConformal (rsolverNode%p_rsubnodeVANKA%rvanka)
 
   end subroutine
   
@@ -5742,15 +5742,15 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_doneStructureVANCA (rsolverNode, isolverSubgroup)
+  recursive subroutine linsol_doneStructureVANKA (rsolverNode, isolverSubgroup)
   
 !<description>
-  ! Releases temporary memory of the VANCA solver allocated in
-  ! linsol_initStrutureVANCA.
+  ! Releases temporary memory of the VANKA solver allocated in
+  ! linsol_initStrutureVANKA.
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the VANCA solver
+  ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(INOUT)         :: rsolverNode
 !</inputoutput>
   
@@ -5778,8 +5778,8 @@ contains
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
     
     ! Release the temp vector and associated data if associated
-    if (rsolverNode%p_rsubnodeVANCA%rtempVector%NEQ .ne. 0) then
-      call lsysbl_releaseVector(rsolverNode%p_rsubnodeVANCA%rtempVector)
+    if (rsolverNode%p_rsubnodeVANKA%rtempVector%NEQ .ne. 0) then
+      call lsysbl_releaseVector(rsolverNode%p_rsubnodeVANKA%rtempVector)
     end if
     
   end subroutine
@@ -5788,15 +5788,15 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_doneVANCA (rsolverNode)
+  recursive subroutine linsol_doneVANKA (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the VANCA solver from
+  ! This routine releases all temporary memory for the VANKA solver from
   ! the heap.
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of VANCA which is to be cleaned up.
+  ! The t_linsolNode structure of VANKA which is to be cleaned up.
   type(t_linsolNode), intent(INOUT)         :: rsolverNode
 !</inputoutput>
   
@@ -5809,9 +5809,9 @@ contains
   isubgroup = rsolverNode%isolverSubgroup
 
   ! Release temporary data.
-  call linsol_doneDataVANCA (rsolverNode, isubgroup)
+  call linsol_doneDataVANKA (rsolverNode, isubgroup)
   
-  deallocate(rsolverNode%p_rsubnodeVANCA)
+  deallocate(rsolverNode%p_rsubnodeVANKA)
   
   end subroutine
 
@@ -5819,10 +5819,10 @@ contains
   
 !<subroutine>
   
-  recursive subroutine linsol_precVANCA (rsolverNode,rd)
+  recursive subroutine linsol_precVANKA (rsolverNode,rd)
   
 !<description>
-  ! Applies the VANCA preconditioner $P \approx A$ to the defect 
+  ! Applies the VANKA preconditioner $P \approx A$ to the defect 
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -5833,7 +5833,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the VANCA solver
+  ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(INOUT), target :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
@@ -5867,7 +5867,7 @@ contains
     domega = rsolverNode%domega
       
     ! Get our temporary vector.
-    p_rvector => rsolverNode%p_rsubnodeVANCA%rtempVector
+    p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
 
     ! The vector share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
@@ -5877,8 +5877,8 @@ contains
     ! Clear our solution vector
     call lsysbl_clearVector (p_rvector)
     
-    ! Execute VANCA
-    call vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
+    ! Execute VANKA
+    call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
         p_rvector, rd, domega)
 
     ! Copy the solution vector to rd - it's our preconditioned defect now.
@@ -11986,7 +11986,7 @@ contains
       ! We are in a case where we can apply an adaptive 1-step defect-correction
       ! type preconditioner as smoother. This is a very special case and applies
       ! only to some special algorithms, which work directly with a solution-
-      ! and RHS vector, like special VANCA variants. 
+      ! and RHS vector, like special VANKA variants. 
       !
       ! The nice thing: This saves one matrix-vector multiplication and 
       ! a lot of time (about 30-40%)!!!
@@ -12000,7 +12000,7 @@ contains
       ! Or the algorithm filters internally, so we don't have to take into
       ! account the filtering at all.
     
-    case (LINSOL_ALG_VANCA) 
+    case (LINSOL_ALG_VANKA) 
       ! The basic proceeding is like below: Apply the corresponding solver multiple
       ! times to the solution- and RHS-vector to improve the solution. Let's see
       ! which solver we have. 
@@ -12010,15 +12010,15 @@ contains
       !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
       !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
           
-      select case (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-      case (LINSOL_VANCA_GENERALDIRECT,&
-            LINSOL_VANCA_2DNAVSTDIRECT,&
-            LINSOL_VANCA_2DNAVSTDIRECTSB,&
-            LINSOL_VANCA_2DFNAVSTDIRECT,&
-            LINSOL_VANCA_2DFNAVSTOCDIRECT,&
-            LINSOL_VANCA_2DFNAVSTOCDIAGDIR,&
-            LINSOL_VANCA_3DNAVSTDIRECT,&
-            LINSOL_VANCA_3DFNAVSTDIRECT)
+      select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+      case (LINSOL_VANKA_GENERALDIRECT,&
+            LINSOL_VANKA_2DNAVSTDIRECT,&
+            LINSOL_VANKA_2DNAVSTDIRECTSB,&
+            LINSOL_VANKA_2DFNAVSTDIRECT,&
+            LINSOL_VANKA_2DFNAVSTOCDIRECT,&
+            LINSOL_VANKA_2DFNAVSTOCDIAGDIR,&
+            LINSOL_VANKA_3DNAVSTDIRECT,&
+            LINSOL_VANKA_3DFNAVSTDIRECT)
         ! Yes, this solver can be applied to a given solution/rhs vector directly.
         ! Call it nmaxIterations times to perform the smoothing.
         do i=1,rsolverNode%nmaxIterations
@@ -12037,7 +12037,7 @@ contains
         
           ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
           ! without explicitly calculating (b-Ax_n) like below.
-          call vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
+          call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
                                 rx, rb, rsolverNode%domega)
                                 
         end do

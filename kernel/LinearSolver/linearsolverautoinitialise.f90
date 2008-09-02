@@ -47,9 +47,9 @@ contains
   
   ! This routine builds a solver node for the linear solver for CC2D-like
   ! applications. The following combinations are supported:
-  ! 1.) Multigrid solver, VANCA smoother, VANCA coarse grid solver
+  ! 1.) Multigrid solver, VANKA smoother, VANKA coarse grid solver
   ! 2.) BiCGStab-solver, Multigrid preconditioner, 
-  !     VANCA smoother, VANCA coarse grid solver
+  !     VANKA smoother, VANKA coarse grid solver
   ! The caller must attach the matrices of all levels to the solver manually
   ! by calling linsol_setMatrices. Afterwards the linear solver can be started.
   
@@ -58,9 +58,9 @@ contains
   !<input>
   
   ! Type of solver structure which should be build up.
-  ! 1 = Multigrid solver, VANCA smoother, VANCA coarse grid solver
-  ! 2 = BiCGStab-solver, Multigrid preconditioner, VANCA smoother,
-  !     VANCA coarse grid solver
+  ! 1 = Multigrid solver, VANKA smoother, VANKA coarse grid solver
+  ! 2 = BiCGStab-solver, Multigrid preconditioner, VANKA smoother,
+  !     VANKA coarse grid solver
   integer, intent(IN)               :: isolverType
 
   ! Number of levels
@@ -160,7 +160,7 @@ contains
   
     ! On the lowest level create a coarse grid solver structure
     if (ilevel .eq. 1) then
-      call linsol_initVANCA (p_rcoarseGridSolver)
+      call linsol_initVANKA (p_rcoarseGridSolver)
       p_rcoarseGridSolver%depsRel = dcoarseGridAccuracyRel
       p_rcoarseGridSolver%depsAbs = dcoarseGridAccuracyAbs
       p_rcoarseGridSolver%nmaxIterations = nmaxCoarseGridSteps
@@ -169,8 +169,8 @@ contains
     end if
     
     ! Create pre- and postsmoother structure on the current level
-    call linsol_initVANCA (p_rpreSmoother)
-    call linsol_initVANCA (p_rpostSmoother)
+    call linsol_initVANKA (p_rpreSmoother)
+    call linsol_initVANKA (p_rpostSmoother)
     
     ! Configure the structures to form a smoother. A smoother is a solver
     ! that iterates a finite number of times without respecting the
@@ -285,7 +285,7 @@ contains
 
     ! Try to get the solver subtype from the parameter list.
     ! This allows switching between different variants of the same
-    ! basic algorithm (e.g. VANCA)
+    ! basic algorithm (e.g. VANKA)
     call parlst_getvalue_int (p_rsection, 'isolverSubtype', isolverSubtype,0)
 
     ! Many solvers support preconditioners - we try to fetch the
@@ -401,11 +401,11 @@ contains
       ! Init the solver node
       call linsol_initMILUs1x1 (p_rsolverNode,i1,d1)
       
-    case (LINSOL_ALG_VANCA)
-      ! VANCA solver
+    case (LINSOL_ALG_VANKA)
+      ! VANKA solver
       !
       ! Init the solver node
-      call linsol_initVANCA (p_rsolverNode,1.0_DP,isolverSubtype)
+      call linsol_initVANKA (p_rsolverNode,1.0_DP,isolverSubtype)
     
     case (LINSOL_ALG_MULTIGRID)
       ! Multigrid solver

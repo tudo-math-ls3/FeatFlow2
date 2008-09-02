@@ -7,7 +7,7 @@
 !# This module is a demonstation program how to solve a Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses the BiCGStab solver with a simple-VANCA preconditioner
+!# The routine uses the BiCGStab solver with a simple-VANKA preconditioner
 !# for 2D saddle point problems, Jacobi-Type.
 !# </purpose>
 !##############################################################################
@@ -458,7 +458,7 @@ CONTAINS
     ! automatically filters the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
-    CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+    CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
     ! Set the output level of the solver to 2 for some output
