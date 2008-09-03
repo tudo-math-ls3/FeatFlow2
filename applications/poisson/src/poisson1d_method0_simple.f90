@@ -124,7 +124,7 @@ CONTAINS
     
     ! As the tria_createRawTria1D routine always generates a grid
     ! with sub-intervals of equal length, we can optionally disturb
-    ! the mesh. This will result in an unsymmetric matrix.
+    ! the mesh.
     !CALL meshmod_disturbMesh(rtriangulation, 0.2_DP)
 
     ! And create information about adjacencies and everything one needs from
@@ -154,13 +154,6 @@ CONTAINS
     ! Setting up a cubic spline element and 4-point Gauss rule would be...
                                    !EL_S31_1D,CUB_G4_1D,rtriangulation)
                                    
-                 
-    ! We will set the evaluation cubature formula to 3-point Gauss.
-    ! If we don't do this, then the L2-error, which is calculated in the
-    ! post-processing phase would be beyond machine exactness...
-    rdiscretisation%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval = &
-      CUB_G6_1D
-
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -311,9 +304,7 @@ CONTAINS
     ! --------------
     ! Please keep in mind that the CG solver needs a symmetric preconditioner
     ! and will (most probably) not work with unsymmetric preconditioners as
-    ! SOR or (M)ILU(s)
-    ! Also remember that the CG solver might diverge if the grid was disturbed
-    ! using the 'meshmod_disturbMesh' routine.
+    ! SOR or (M)ILU(s).
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Setting up a Defect-Correction-Solver would be...
     !CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
