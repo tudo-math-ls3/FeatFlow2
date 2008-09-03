@@ -757,6 +757,11 @@ CONTAINS
       ! Check the solver result
       IF (p_rsolverNode%iresult .NE. 0) THEN
       
+        ! Release the solver data in case of a Navier-Stokes system.
+        IF (bNavier) THEN
+          CALL linsol_doneData(p_rsolverNode)
+        END IF
+
         ! Print an error
         PRINT *, '-----------------------------------------------------------'
         PRINT *, 'NL-Iteration: ERROR: linear solver broke down'
