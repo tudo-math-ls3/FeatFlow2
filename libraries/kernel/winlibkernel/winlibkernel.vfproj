@@ -109,7 +109,7 @@
 		<File RelativePath="..\..\..\kernel\LinearSolver\iluk.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
-		<File RelativePath="..\..\..\kernel\LinearSolver\vanka.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\LinearSolver\vanka.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanka_aux.f90"/></Filter>
 		<Filter Name="LinearSystem">
 		<File RelativePath="..\..\..\kernel\LinearSystem\globalsystem.f90"/>
