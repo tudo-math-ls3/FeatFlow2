@@ -157,7 +157,7 @@ module hadaptaux
     ! and must be deleted in hadapt_releaseAdaptation.
     integer(I32) :: iduplicationFlag                 = 0
 
-    ! Tag: Specified the strategy for grid refinement and coarsening
+    ! Tag: Specifies the strategy for grid refinement and coarsening
     integer :: iadaptationStrategy                   = HADAPT_NOADAPTATION
 
     ! Maximum number of subdivisions from the original mesh
