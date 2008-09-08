@@ -22,49 +22,45 @@ contains
 
 !<subroutine>
 
-  pure subroutine vanka_aux_solve_BS2D_js_414(Du,Df,Da1,Da2,Db1,Db2,&
-                                              Dd1,Dd2,Dc,Dm1,Dm2,Dm3,Dn)
+  pure subroutine vanka_aux_solve_NS2D_js_41(Du,Df,Da1,Da2,Db1,Db2,&
+                                              Dd1,Dd2,Dc)
   
 !<description>
-! Solves a local 2D Boussinesq system, Jacobi-Style version:
+! Solves a local 2D Navier-Stokes system, Jacobi-Style version:
 ! 4 DOFs per velocity
 ! 1 DOF per pressure
-! 4 DOFs per temperature
 !
-! / A1 0  B1 M1 \
-! | 0  A2 B2 M2 | * u = f
-! | D1 D2 C  M3 |
-! \ 0  0  0  N  /
+! / A1 0  B1 \
+! | 0  A2 B2 | * u = f
+! \ D1 D2 C  /
 !
 ! Where:
-! A1/A2/N is a 4x4 diagonal matrix
+! A1/A2 is a 4x4 diagonal matrix
 ! B1/B2 is a 4x1 matrix
-! D1/D2/M3 is a 1x4 matrix
-! M1/M2 is a 4x4 matrix
+! D1/D2 is a 1x4 matrix
 ! C is a 1x1 diagonal matrix
 !
 !</description>
   
 !<input>
   ! The local matrices.
-  real(DP), dimension(4), intent(IN) :: Da1,Da2,Dn
+  real(DP), dimension(4), intent(IN) :: Da1,Da2
   real(DP), dimension(4,1), intent(IN) :: Db1,Db2
-  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2,Dm3
-  real(DP), dimension(4,4), intent(IN) :: Dm1,Dm2
+  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2
   real(DP), dimension(1), intent(IN) :: Dc
   
   ! The local RHS vector.
-  real(DP), dimension(13), intent(IN) :: Df
+  real(DP), dimension(9), intent(IN) :: Df
 !</input>
   
 !<output>
   ! The local solution vector.
-  real(DP), dimension(13), intent(OUT) :: Du
+  real(DP), dimension(9), intent(OUT) :: Du
 !</output>
 !</subroutine>
 
   ! local variables
-  real(DP), dimension(4) :: Di1, Di2, Dt1, Dt2, Dg1, Dg2
+  real(DP), dimension(4) :: Di1, Di2, Dt1, Dt2
   real(DP) :: dS
   
     ! Invert A1 and A2
@@ -76,25 +72,7 @@ contains
     Di2(2) = 1.0_DP / Da2(2)
     Di2(3) = 1.0_DP / Da2(3)
     Di2(4) = 1.0_DP / Da2(4)
-
-    ! Calculate temperature
-    ! t := N^-1 * f_t
-    Du(10) = Df(10) / Dn(1)
-    Du(11) = Df(11) / Dn(2)
-    Du(12) = Df(12) / Dn(3)
-    Du(13) = Df(13) / Dn(4)
-    
-    ! Calculate new RHS 
-    ! g_u := f_u - M*t
-    Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-    Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-    Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-    Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-    Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-    Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-    Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-    Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
-    
+  
     ! Precalculate D * A^-1
     Dt1(1) = Dd1(1,1)*Di1(1)
     Dt1(2) = Dd1(1,2)*Di1(2)
@@ -112,23 +90,21 @@ contains
        + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
     
     ! Calculate pressure
-    ! p := D * A^-1 * g_u + M3 * t - f_p
+    ! p := D * A^-1 * f_u - f_p
     Du(9) = (-Df(9) &
-       + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-       + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13) &
-       + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-       + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
+       + Dt1(1)*Df(1)+Dt1(2)*Df(2)+Dt1(3)*Df(3)+Dt1(4)*Df(4) &
+       + Dt2(1)*Df(5)+Dt2(2)*Df(6)+Dt2(3)*Df(7)+Dt2(4)*Df(8)) / dS
     
     ! Calculate X- and Y-velocity
-    ! u := A^-1 * (g_u - B * p)
-    Du(1) = di1(1)*(Dg1(1) - Db1(1,1)*Du(9))
-    Du(2) = di1(2)*(Dg1(2) - Db1(2,1)*Du(9))
-    Du(3) = di1(3)*(Dg1(3) - Db1(3,1)*Du(9))
-    Du(4) = di1(4)*(Dg1(4) - Db1(4,1)*Du(9))
-    Du(5) = di2(1)*(Dg2(1) - Db2(1,1)*Du(9))
-    Du(6) = di2(2)*(Dg2(2) - Db2(2,1)*Du(9))
-    Du(7) = di2(3)*(Dg2(3) - Db2(3,1)*Du(9))
-    Du(8) = di2(4)*(Dg2(4) - Db2(4,1)*Du(9))
+    ! u := A^-1 * (f_u - B * p)
+    Du(1) = di1(1)*(Df(1) - Db1(1,1)*Du(9))
+    Du(2) = di1(2)*(Df(2) - Db1(2,1)*Du(9))
+    Du(3) = di1(3)*(Df(3) - Db1(3,1)*Du(9))
+    Du(4) = di1(4)*(Df(4) - Db1(4,1)*Du(9))
+    Du(5) = di2(1)*(Df(5) - Db2(1,1)*Du(9))
+    Du(6) = di2(2)*(Df(6) - Db2(2,1)*Du(9))
+    Du(7) = di2(3)*(Df(7) - Db2(3,1)*Du(9))
+    Du(8) = di2(4)*(Df(8) - Db2(4,1)*Du(9))
     
     ! That's it
   
@@ -138,69 +114,53 @@ contains
 
 !<subroutine>
 
-  pure subroutine vanka_aux_solve_BS2D_bd_414(Du,Df,Da1,Da2,Db1,Db2,&
-                                              Dd1,Dd2,Dc,Dm1,Dm2,Dm3,Dn)
+  pure subroutine vanka_aux_solve_NS2D_bd_41(Du,Df,Da1,Da2,Db1,Db2,&
+                                              Dd1,Dd2,Dc)
   
 !<description>
-! Solves a local 2D Boussinesq system, Block-Diagonal version:
+! Solves a local 2D Navier-Stokes system, Block-Diagonal version:
 ! 4 DOFs per velocity
 ! 1 DOF per pressure
-! 4 DOFs per temperature
 !
-! / A1 0  B1 M1 \
-! | 0  A2 B2 M2 | * u = f
-! | D1 D2 C  M3 |
-! \ 0  0  0  N  /
+! / A1 0  B1 \
+! | 0  A2 B2 | * u = f
+! \ D1 D2 C  /
 !
 ! Where:
-! A1/A2/N/M1/M2 is a 4x4 matrix
+! A1/A2 is a 4x4 matrix
 ! B1/B2 is a 4x1 matrix
-! D1/D2/M3 is a 1x4 matrix
+! D1/D2 is a 1x4 matrix
 ! C is a 1x1 matrix
 !
 !</description>
   
 !<input>
+  ! The local matrices.
   real(DP), dimension(4,1), intent(IN) :: Db1,Db2
-  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2,Dm3
-  real(DP), dimension(4,4), intent(IN) :: Da1,Da2,Dm1,Dm2,Dn
-  real(DP), dimension(13), intent(IN) :: Df
+  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2
+  real(DP), dimension(4,4), intent(IN) :: Da1,Da2
   real(DP), dimension(1,1), intent(IN) :: Dc
+
+  ! The local RHS vector.
+  real(DP), dimension(9), intent(IN) :: Df
 !</input>
   
 !<output>
-  real(DP), dimension(13), intent(OUT) :: Du
+  ! The local solution vector.
+  real(DP), dimension(9), intent(OUT) :: Du
 !</output>
+
 !</subroutine>
 
   ! local variables
-  real(DP), dimension(4,4) :: Di1, Di2, Dj
+  real(DP), dimension(4,4) :: Di1, Di2
   real(DP), dimension(4) :: Dt1,Dt2,Dg1,Dg2
   real(DP) :: dS
   
     ! Invert A1, A2 and N
     call mprim_invert4x4MatrixDirectDble(Da1, Di1)
     call mprim_invert4x4MatrixDirectDble(Da2, Di2)
-    call mprim_invert4x4MatrixDirectDble(Dn, Dj)
 
-    ! Calculate temperature
-    ! t := N^-1 * f_t
-    Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
-    Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
-    Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
-    Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
-    
-    ! Calculate new RHS
-    ! g_u := f_u - M*t
-    Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-    Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-    Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-    Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-    Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-    Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-    Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-    Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
-    
     ! Precalculate D * A^-1
     Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
     Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
@@ -217,23 +177,21 @@ contains
                  +Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
     
     ! Calculate pressure
-    ! p := D * A^-1 * g_u + M3 * t - f_p
+    ! p := D * A^-1 * g_u - f_p
     Du(9) = (-Df(9) &
-          + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-          + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4) &
-          + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-          + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13)) / dS
+          + Dt1(1)*Df(1)+Dt1(2)*Df(2)+Dt1(3)*Df(3)+Dt1(4)*Df(4) &
+          + Dt2(1)*Df(5)+Dt2(2)*Df(6)+Dt2(3)*Df(7)+Dt2(4)*Df(8)) / dS
 
     ! Update RHS
-    ! g_u := g_u - B * p
-    Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
-    Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
-    Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
-    Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
-    Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
-    Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
-    Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
-    Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
+    ! g_u := f_u - B * p
+    Dg1(1) = Df(1) - Db1(1,1)*Du(9)
+    Dg1(2) = Df(2) - Db1(2,1)*Du(9)
+    Dg1(3) = Df(3) - Db1(3,1)*Du(9)
+    Dg1(4) = Df(4) - Db1(4,1)*Du(9)
+    Dg2(1) = Df(5) - Db2(1,1)*Du(9)
+    Dg2(2) = Df(6) - Db2(2,1)*Du(9)
+    Dg2(3) = Df(7) - Db2(3,1)*Du(9)
+    Dg2(4) = Df(8) - Db2(4,1)*Du(9)
     
     ! Calculate X- and Y-velocity
     ! u := A^-1 * g_u
@@ -546,6 +504,238 @@ contains
            + Di3(5,4)*Dg3(4)+Di3(5,5)*Dg3(5)+Di3(5,6)*Dg3(6)
     Du(18) = Di3(6,1)*Dg3(1)+Di3(6,2)*Dg3(2)+Di3(6,3)*Dg3(3)&
            + Di3(6,4)*Dg3(4)+Di3(6,5)*Dg3(5)+Di3(6,6)*Dg3(6)
+    
+    ! That's it
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine vanka_aux_solve_BS2D_js_414(Du,Df,Da1,Da2,Db1,Db2,&
+                                              Dd1,Dd2,Dc,Dm1,Dm2,Dm3,Dn)
+  
+!<description>
+! Solves a local 2D Boussinesq system, Jacobi-Style version:
+! 4 DOFs per velocity
+! 1 DOF per pressure
+! 4 DOFs per temperature
+!
+! / A1 0  B1 M1 \
+! | 0  A2 B2 M2 | * u = f
+! | D1 D2 C  M3 |
+! \ 0  0  0  N  /
+!
+! Where:
+! A1/A2/N is a 4x4 diagonal matrix
+! B1/B2 is a 4x1 matrix
+! D1/D2/M3 is a 1x4 matrix
+! M1/M2 is a 4x4 matrix
+! C is a 1x1 diagonal matrix
+!
+!</description>
+  
+!<input>
+  ! The local matrices.
+  real(DP), dimension(4), intent(IN) :: Da1,Da2,Dn
+  real(DP), dimension(4,1), intent(IN) :: Db1,Db2
+  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2,Dm3
+  real(DP), dimension(4,4), intent(IN) :: Dm1,Dm2
+  real(DP), dimension(1), intent(IN) :: Dc
+  
+  ! The local RHS vector.
+  real(DP), dimension(13), intent(IN) :: Df
+!</input>
+  
+!<output>
+  ! The local solution vector.
+  real(DP), dimension(13), intent(OUT) :: Du
+!</output>
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(4) :: Di1, Di2, Dt1, Dt2, Dg1, Dg2
+  real(DP) :: dS
+  
+    ! Invert A1 and A2
+    Di1(1) = 1.0_DP / Da1(1)
+    Di1(2) = 1.0_DP / Da1(2)
+    Di1(3) = 1.0_DP / Da1(3)
+    Di1(4) = 1.0_DP / Da1(4)
+    Di2(1) = 1.0_DP / Da2(1)
+    Di2(2) = 1.0_DP / Da2(2)
+    Di2(3) = 1.0_DP / Da2(3)
+    Di2(4) = 1.0_DP / Da2(4)
+
+    ! Calculate temperature
+    ! t := N^-1 * f_t
+    Du(10) = Df(10) / Dn(1)
+    Du(11) = Df(11) / Dn(2)
+    Du(12) = Df(12) / Dn(3)
+    Du(13) = Df(13) / Dn(4)
+    
+    ! Calculate new RHS 
+    ! g_u := f_u - M*t
+    Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
+    Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
+    Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
+    Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
+    Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
+    Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
+    Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
+    Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
+    
+    ! Precalculate D * A^-1
+    Dt1(1) = Dd1(1,1)*Di1(1)
+    Dt1(2) = Dd1(1,2)*Di1(2)
+    Dt1(3) = Dd1(1,3)*Di1(3)
+    Dt1(4) = Dd1(1,4)*Di1(4)
+    Dt2(1) = Dd2(1,1)*Di2(1)
+    Dt2(2) = Dd2(1,2)*Di2(2)
+    Dt2(3) = Dd2(1,3)*Di2(3)
+    Dt2(4) = Dd2(1,4)*Di2(4)
+
+    ! Calculate Schur-Complement of A
+    ! S := -C + D * A^-1 * B 
+    dS = -Dc(1) &
+       + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1) &
+       + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+    
+    ! Calculate pressure
+    ! p := D * A^-1 * g_u + M3 * t - f_p
+    Du(9) = (-Df(9) &
+       + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
+       + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13) &
+       + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
+       + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
+    
+    ! Calculate X- and Y-velocity
+    ! u := A^-1 * (g_u - B * p)
+    Du(1) = di1(1)*(Dg1(1) - Db1(1,1)*Du(9))
+    Du(2) = di1(2)*(Dg1(2) - Db1(2,1)*Du(9))
+    Du(3) = di1(3)*(Dg1(3) - Db1(3,1)*Du(9))
+    Du(4) = di1(4)*(Dg1(4) - Db1(4,1)*Du(9))
+    Du(5) = di2(1)*(Dg2(1) - Db2(1,1)*Du(9))
+    Du(6) = di2(2)*(Dg2(2) - Db2(2,1)*Du(9))
+    Du(7) = di2(3)*(Dg2(3) - Db2(3,1)*Du(9))
+    Du(8) = di2(4)*(Dg2(4) - Db2(4,1)*Du(9))
+    
+    ! That's it
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine vanka_aux_solve_BS2D_bd_414(Du,Df,Da1,Da2,Db1,Db2,&
+                                              Dd1,Dd2,Dc,Dm1,Dm2,Dm3,Dn)
+  
+!<description>
+! Solves a local 2D Boussinesq system, Block-Diagonal version:
+! 4 DOFs per velocity
+! 1 DOF per pressure
+! 4 DOFs per temperature
+!
+! / A1 0  B1 M1 \
+! | 0  A2 B2 M2 | * u = f
+! | D1 D2 C  M3 |
+! \ 0  0  0  N  /
+!
+! Where:
+! A1/A2/N/M1/M2 is a 4x4 matrix
+! B1/B2 is a 4x1 matrix
+! D1/D2/M3 is a 1x4 matrix
+! C is a 1x1 matrix
+!
+!</description>
+  
+!<input>
+  real(DP), dimension(4,1), intent(IN) :: Db1,Db2
+  real(DP), dimension(1,4), intent(IN) :: Dd1,Dd2,Dm3
+  real(DP), dimension(4,4), intent(IN) :: Da1,Da2,Dm1,Dm2,Dn
+  real(DP), dimension(13), intent(IN) :: Df
+  real(DP), dimension(1,1), intent(IN) :: Dc
+!</input>
+  
+!<output>
+  real(DP), dimension(13), intent(OUT) :: Du
+!</output>
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(4,4) :: Di1, Di2, Dj
+  real(DP), dimension(4) :: Dt1,Dt2,Dg1,Dg2
+  real(DP) :: dS
+  
+    ! Invert A1, A2 and N
+    call mprim_invert4x4MatrixDirectDble(Da1, Di1)
+    call mprim_invert4x4MatrixDirectDble(Da2, Di2)
+    call mprim_invert4x4MatrixDirectDble(Dn, Dj)
+
+    ! Calculate temperature
+    ! t := N^-1 * f_t
+    Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
+    Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
+    Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
+    Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
+    
+    ! Calculate new RHS
+    ! g_u := f_u - M*t
+    Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
+    Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
+    Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
+    Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
+    Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
+    Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
+    Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
+    Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
+    
+    ! Precalculate D * A^-1
+    Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
+    Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
+    Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
+    Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
+    Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
+    Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
+    Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
+    Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+    
+    ! Calculate Schur-Complement of A
+    ! S := -C + D * A^-1 * B 
+    dS = -Dc(1,1)+Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
+                 +Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+    
+    ! Calculate pressure
+    ! p := D * A^-1 * g_u + M3 * t - f_p
+    Du(9) = (-Df(9) &
+          + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
+          + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4) &
+          + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
+          + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13)) / dS
+
+    ! Update RHS
+    ! g_u := g_u - B * p
+    Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
+    Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
+    Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
+    Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
+    Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
+    Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
+    Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
+    Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
+    
+    ! Calculate X- and Y-velocity
+    ! u := A^-1 * g_u
+    Du(1) = Di1(1,1)*Dg1(1)+Di1(1,2)*Dg1(2)+Di1(1,3)*Dg1(3)+Di1(1,4)*Dg1(4)
+    Du(2) = Di1(2,1)*Dg1(1)+Di1(2,2)*Dg1(2)+Di1(2,3)*Dg1(3)+Di1(2,4)*Dg1(4)
+    Du(3) = Di1(3,1)*Dg1(1)+Di1(3,2)*Dg1(2)+Di1(3,3)*Dg1(3)+Di1(3,4)*Dg1(4)
+    Du(4) = Di1(4,1)*Dg1(1)+Di1(4,2)*Dg1(2)+Di1(4,3)*Dg1(3)+Di1(4,4)*Dg1(4)
+    Du(5) = Di2(1,1)*Dg2(1)+Di2(1,2)*Dg2(2)+Di2(1,3)*Dg2(3)+Di2(1,4)*Dg2(4)
+    Du(6) = Di2(2,1)*Dg2(1)+Di2(2,2)*Dg2(2)+Di2(2,3)*Dg2(3)+Di2(2,4)*Dg2(4)
+    Du(7) = Di2(3,1)*Dg2(1)+Di2(3,2)*Dg2(2)+Di2(3,3)*Dg2(3)+Di2(3,4)*Dg2(4)
+    Du(8) = Di2(4,1)*Dg2(1)+Di2(4,2)*Dg2(2)+Di2(4,3)*Dg2(3)+Di2(4,4)*Dg2(4)
     
     ! That's it
   

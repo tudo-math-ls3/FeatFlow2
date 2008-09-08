@@ -667,23 +667,18 @@ module linearsolver
   ! correction approach to give an additional speedup. 
   integer, parameter :: LINSOL_VANKA_3DFNAVSTDIRECT    = 33
 
-  ! Simple VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_2DBOUSS           = 40
 
-  ! Simple VANKA, 2D Boussinesq problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when 
-  ! used as a smoother in multigrid, this bypasses the usual defect
-  ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DBOUSSDIRECT     = 41
+  ! Simple VANKA, 2D Boussinesq problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_BOUSS2D_DIAG          = 101
 
   ! Full VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_2DFBOUSS          = 42
+  integer, parameter :: LINSOL_VANKA_BOUSS2D_FULL          = 102
 
-  ! Full VANKA, 2D Boussinesq problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when 
-  ! used as a smoother in multigrid, this bypasses the usual defect
-  ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DFBOUSSDIRECT    = 43
+  ! Simple VANKA, 2D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_NAVST2D_DIAG          = 111
+
+  ! Full VANKA, 2D Navier-Stokes problem, general discretisation
+  integer, parameter :: LINSOL_VANKA_NAVST2D_FULL          = 112
 
 !</constantblock>
 
@@ -5534,9 +5529,19 @@ contains
             LSYSSC_MSPEC_TRANSPOSED) .eq. 0)) then
         ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
       end if
+    
+    !  ---------------- NEW IMPLEMENTATION ----------------
 
-    case (LINSOL_VANKA_2DBOUSS  , LINSOL_VANKA_2DBOUSSDIRECT  ,&
-          LINSOL_VANKA_2DFBOUSS , LINSOL_VANKA_2DFBOUSSDIRECT )
+    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL)
+      ! Blocks (3,1) and (3,2) must be virtually transposed
+      if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
+            LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
+          (iand(p_rmat%RmatrixBlock(3,2)%imatrixSpec, &
+            LSYSSC_MSPEC_TRANSPOSED) .eq. 0)) then
+        ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
+      end if
+
+    case (LINSOL_VANKA_BOUSS2D_DIAG, LINSOL_VANKA_BOUSS2D_FULL)
       ! Blocks (3,1) and (3,2) must be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
@@ -5717,19 +5722,33 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_3DNAVIERSTOKES,VANKATP_FULL)
+    
+    ! ------------------------- NEW IMPLEMENTATIONS -------------------------
                                
-    case (LINSOL_VANKA_2DBOUSS  , LINSOL_VANKA_2DBOUSSDIRECT  )
+    case (LINSOL_VANKA_NAVST2D_DIAG)
+      ! Diagonal-type VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_DIAG)
+
+    case (LINSOL_VANKA_NAVST2D_FULL)
+      ! Full VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_FULL)
+
+    case (LINSOL_VANKA_BOUSS2D_DIAG)
       ! Diagonal-type VANKA for Boussinesq
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_2DBOUSSINESQ,VANKATP_DIAGONAL)
+                                VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_DIAG)
                                
-    case (LINSOL_VANKA_2DFBOUSS  , LINSOL_VANKA_2DFBOUSSDIRECT  )
+    case (LINSOL_VANKA_BOUSS2D_FULL)
       ! Full VANKA for Boussinesq
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_2DBOUSSINESQ,VANKATP_FULL)
-                                
+                                VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_FULL)
+
     end select
       
   end subroutine
@@ -12059,8 +12078,11 @@ contains
             LINSOL_VANKA_2DFNAVSTOCDIAGDIR,&
             LINSOL_VANKA_3DNAVSTDIRECT,&
             LINSOL_VANKA_3DFNAVSTDIRECT,&
-            LINSOL_VANKA_2DBOUSSDIRECT,&
-            LINSOL_VANKA_2DFBOUSSDIRECT&
+            ! --------------- NEW IMPLEMENTATION ---------------
+            LINSOL_VANKA_NAVST2D_DIAG,&
+            LINSOL_VANKA_NAVST2D_FULL,&
+            LINSOL_VANKA_BOUSS2D_DIAG,&
+            LINSOL_VANKA_BOUSS2D_FULL&
             )
         ! Yes, this solver can be applied to a given solution/rhs vector directly.
         ! Call it nmaxIterations times to perform the smoothing.
