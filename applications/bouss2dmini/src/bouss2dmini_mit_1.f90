@@ -503,7 +503,7 @@ CONTAINS
     CALL linsol_initMultigrid (p_rsolver,p_RfilterChain)
     
     ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
-    !CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DBOUSS)
+    !CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_BOUSS2D_DIAG)
     !CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     CALL linsol_initUMFPACK4(p_rcoarseGridSolver)
     
@@ -515,7 +515,7 @@ CONTAINS
     DO i = NLMIN+1, NLMAX
     
       ! Set up the VANKA smoother.
-      CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DBOUSS)
+      CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_BOUSS2D_DIAG)
       
       ! We will use 4 smoothing steps with damping parameter 1.0
       CALL linsol_convertToSmoother(p_rsmoother, 4, 1.0_DP)
@@ -700,8 +700,8 @@ CONTAINS
 
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,'gmv/u_mit_1.gmv')
+    CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
+        Rlevels(NLMAX)%rtriangulation,'gmv/u_mit_1.vtk')
     
     ! Project X- and Y-velocity to the vertices of the mesh.
     NULLIFY(p_Ddata)
