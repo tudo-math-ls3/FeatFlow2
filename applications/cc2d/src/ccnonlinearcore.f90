@@ -774,10 +774,7 @@ CONTAINS
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
       ! conditions into a defect vector.
-      !
-      ! Note: implementation commented out!
-      ! Seems to work better without!
-      ! CALL vecfil_discreteNLSlipBCdef (rtemp2)
+      CALL vecfil_discreteNLSlipBCdef (rtemp2)
       
       ! ==================================================================
       ! For all terms in the fraction:
@@ -792,17 +789,14 @@ CONTAINS
         CALL filter_applyFilterChainVec (rtemp1, p_RfilterChain)
       END IF
       
-      ! Release the matrix again
-      CALL lsysbl_releaseMatrix (rmatrix)
-      
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
       ! conditions into a defect vector.
-      !
-      ! Note: implementation commented out!
-      ! Seems to work better without!
-      ! CALL vecfil_discreteNLSlipBCdef (rtemp1)
+      CALL vecfil_discreteNLSlipBCdef (rtemp1)
 
+      ! Release the matrix again
+      CALL lsysbl_releaseMatrix (rmatrix)
+      
       ! ==================================================================
       ! Calculation of the fraction terms.
       ! Calculate nominator:    dskv1:= (T*Y,D)   = (rtemp1,rtemp2)
