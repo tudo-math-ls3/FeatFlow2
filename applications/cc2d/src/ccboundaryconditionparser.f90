@@ -103,7 +103,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE cc_assembleBDconditions (rproblem,rdiscretisation,rdiscreteBC,rcollection)
+  SUBROUTINE cc_assembleBDconditions (rproblem,rdiscretisation,rdiscreteBC,&
+    rcollection,bforPostprocessing)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -120,6 +121,11 @@ CONTAINS
   ! A discretisation structure defining the discretisation of the current
   ! level.
   TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  
+  ! OPTIONAL: If this flag ist set to TRUE, the boundary conditions are 
+  ! assembled for postprocessing of a solution vector. When being set to FALSE
+  ! or not present, the boundary condition are assembled for computation.
+  LOGICAL, INTENT(IN), OPTIONAL :: bforPostprocessing
 !</input>
 
 !<inputoutput>
@@ -142,12 +148,12 @@ CONTAINS
     INTEGER :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds
     INTEGER :: ibctyp,icount,iexptyp
     INTEGER, DIMENSION(2) :: IminIndex,imaxIndex
-    INTEGER, DIMENSION(NDIM2D) :: IvelComp
     REAL(DP) :: dvalue,dpar1,dpar2
     CHARACTER(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
     CHARACTER(LEN=PARLST_MLNAME) :: cname
     INTEGER, DIMENSION(NDIM2D) :: IvelEqns
     TYPE(t_collection) :: rlocalCollection
+    INTEGER(I32) :: casmComplexity
     
     ! A local collection we use for storing named parameters during the
     ! parsing process.
@@ -167,6 +173,13 @@ CONTAINS
     
     ! A compiled expression for evaluation at runtime
     TYPE(t_fparser), TARGET :: rparser
+    
+    ! Determine what to assemble
+    casmComplexity = BCASM_DISCFORALL
+    IF (PRESENT(bforPostprocessing)) THEN
+      ! Assemble only for the solution vector
+      IF (bforPostprocessing) casmComplexity = BCASM_DISCFORSOL
+    ENDIF
     
     ! Get the domain from the problem structure
     p_rboundary => rproblem%rboundary
@@ -384,7 +397,7 @@ CONTAINS
                 ! Assemble the BC's.
                 CALL bcasm_newDirichletBConRealBD (&
                     rdiscretisation,1,rboundaryRegion,rdiscreteBC,&
-                    cc_getBDconditions,rcoll)
+                    cc_getBDconditions,rcoll,casmComplexity)
                     
               END IF
               
@@ -420,7 +433,7 @@ CONTAINS
                 ! Assemble the BC's.
                 CALL bcasm_newDirichletBConRealBD (&
                     rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
-                    cc_getBDconditions,rcoll)
+                    cc_getBDconditions,rcoll,casmComplexity)
 
               END IF
               
@@ -469,16 +482,17 @@ CONTAINS
                 IvelEqns = (/1,2/)
                 CALL bcasm_newPdropBConRealBd (&
                     rdiscretisation,IvelEqns,rboundaryRegion,rdiscreteBC,&
-                    cc_getBDconditions,rcoll)     
+                    cc_getBDconditions,rcoll,casmComplexity)     
               END IF
               
               
             CASE (3)
               
               ! Nonlinear slip boundary conditions.
-              IvelComp = (/1,2/)
+              IvelEqns = (/1,2/)
               CALL bcasm_newSlipBConRealBd (&
-                  rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,rdiscreteBC)     
+                  rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,&
+                  rdiscreteBC,casmComplexity)
             
             CASE DEFAULT
               CALL output_line ('Unknown boundary condition!', &

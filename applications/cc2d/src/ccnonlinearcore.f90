@@ -1108,8 +1108,9 @@ CONTAINS
         ! Filter the final defect
         p_RfilterChain => rnonlinearIteration%p_RfilterChain
         CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+        CALL vecfil_discreteNLSlipBCdef (rd)
       END IF
-
+      
     CONTAINS
     
       SUBROUTINE assembleLinsolMatrices (rnonlinearIteration,rcollection,&

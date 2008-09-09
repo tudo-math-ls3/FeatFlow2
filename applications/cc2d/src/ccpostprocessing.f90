@@ -599,7 +599,7 @@ CONTAINS
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
-        rdiscreteBC,rproblem%rcollection)
+        rdiscreteBC,rproblem%rcollection,.true.)
                             
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => rdiscreteBC
