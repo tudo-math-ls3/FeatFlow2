@@ -7,8 +7,11 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with nonconstant coefficients on a simple domain.
 !#
-!# The coefficients for the laplace matrices are given by a powerlaw
-!# equation
+!# The coefficients for the laplace matrix in the equation
+!#
+!#   -nu Laplace(u) = f
+!#
+!# is given by a powerlaw equation
 !#
 !#     nu = c * T(x,y)^n
 !#
