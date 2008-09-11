@@ -261,6 +261,10 @@ ifeq ($(call match,$(FFARCH),(power|ppc)),yes)
 include $(FEATFLOW)/Globals.power
 endif
 
+ifeq ($(call match,$(FFARCH),i386),yes)
+include $(FEATFLOW)/Globals.mac
+endif
+
 ########################################################################
 # If no matching section could be found which matches the overwritten
 # ID string then the original ID is adopted

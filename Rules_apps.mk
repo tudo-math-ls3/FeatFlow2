@@ -101,8 +101,8 @@ purge: clean clean_exec
 purge_all: purge
 	@(for i in *-*-*-* ; do if [ -x $$i ] ; then echo rm $$i ; rm -f $$i ; fi ; done )
 	-rm -f -r obj/*
-	-rm -f -r \#gmv/* \#avs/* \#points/* \#ns/* \#film/* \#data/\#DX*
-	-rm -f -r \#data/*.ERR \#data/*.PRT \#data/*.SYS \#data/*.TRC 
+	-rm -f -r gmv/* avs/* points/* ns/* film/* data/DX* log/*
+	-rm -f -r data/*.ERR data/*.PRT data/*.SYS data/*.TRC 
 
 .NOTPARALLEL: clean purge run
 
