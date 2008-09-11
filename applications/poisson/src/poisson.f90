@@ -43,6 +43,7 @@ PROGRAM poisson
   USE poisson3d_method0_simple
   USE poisson3d_method1_mg
   USE poisson3d_method1_em30
+  USE poisson2d_method1_ncc
   
   IMPLICIT NONE
   
@@ -76,6 +77,12 @@ PROGRAM poisson
   CALL output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
   CALL output_line ('-----------------------------------------------------')
   CALL poisson2d_0_simple
+
+  ! Call the problem to solve. Poisson 2D method 1 - nonconstant coefficients:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - ncc')
+  CALL output_line ('--------------------------------------------------')
+  CALL poisson2d_1_ncc
   
   ! Call the problem to solve. Poisson 2D method 1 - multigrid:
   CALL output_lbrk ()

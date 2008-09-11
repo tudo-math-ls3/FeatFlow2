@@ -18,7 +18,7 @@ SRC =   poisson1d_callback.f90 poisson2d_callback.f90 \
         poisson2d_method0_simple.f90 poisson2d_method1_mg.f90 \
         poisson2d_method1_em30.f90 poisson2d_method1_hadapt.f90 \
         poisson2d_method1_fbc.f90 poisson2d_method1_l2prj.f90 \
-        poisson2d_method2_collect.f90 \
+        poisson2d_method2_collect.f90 poisson2d_method1_ncc.f90 \
         poisson2d_method2.f90 \
         poisson2d_method2_cmsort.f90 poisson2d_method2_mg.f90 \
         poisson3d_method0_simple.f90 poisson3d_method1_mg.f90 \
