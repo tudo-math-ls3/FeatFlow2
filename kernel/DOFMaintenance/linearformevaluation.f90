@@ -1281,6 +1281,7 @@ contains
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
   type(t_domainIntSubset) :: rintSubset
+  type(t_evalElementSet) :: revalElementSet
   logical :: bcubPtsInitialised
   
   !REAL(DP), DIMENSION(11) :: DT
@@ -1393,7 +1394,7 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, &
+    !$OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
     !$OMP   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
     !$OMP   IdofsTest,&
     !$OMP   Dcoefficients, &
@@ -1428,7 +1429,7 @@ contains
     allocate(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
   
     ! Initialisation of the element set.
-    call elprep_init(rintSubset%revalElementSet)
+    call elprep_init(revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -1498,28 +1499,32 @@ contains
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      call elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
           
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Now it's time to call our coefficient function to calculate the
       ! function values in the cubature points:
-      
+      call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
       rintSubset%ielementDistribution = icurrentElementDistr
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+      rintSubset%p_IdofsTrial => IdofsTest
       
       call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
-                IELmax-IELset+1_I32,ncubp,rintSubset%revalElementSet%p_DpointsReal, &
+                IELmax-IELset+1_I32,ncubp,revalElementSet%p_DpointsReal, &
                 IdofsTest,rintSubset, &
                 Dcoefficients(:,:,1:IELmax-IELset+1_I32),rcollection)
+      
+      ! Release the domain integratino subset again
+      call domint_doneIntegration(rintSubset)
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (p_elementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, DbasTest)
+          revalElementSet, Bder, DbasTest)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -1617,7 +1622,7 @@ contains
     deallocate(IdofsTest)
     deallocate(DbasTest)
 
-    call elprep_releaseElementSet(rintSubset%revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
     
     !$OMP END PARALLEL
 

@@ -3797,6 +3797,7 @@ contains
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines as well as element evaluation routines.
   type(t_domainIntSubset) :: rintSubset
+  type(t_evalElementSet) :: revalElementSet
   logical :: bcubPtsInitialised
   
   ! The discretisation - for easier access
@@ -3949,7 +3950,7 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, &
+    !$OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
     !$OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
     !$OMP   IdofsTest,IdofsTrial,p_Ddetj,&
     !$OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
@@ -4005,7 +4006,7 @@ contains
     allocate(Dentry(indofTrial,indofTest))
     
     ! Initialisation of the element set.
-    call elprep_init(rintSubset%revalElementSet)
+    call elprep_init(revalElementSet)
     
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -4238,31 +4239,34 @@ contains
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      call elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rform%ballCoeffConstant) then
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => p_IdofsTrial
         call fcoeff_buildMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1_I32,ncubp,&
-                  rintSubset%revalElementSet%p_DpointsReal,&
+                  revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
+        call domint_doneIntegration (rintSubset)
       end if
       
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (p_relementDistrTest%celement, &
-          rintSubset%revalElementSet, BderTest, DbasTest)
+          revalElementSet, BderTest, DbasTest)
       
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       if (.not. bidenticalTrialAndTest) then
         call elem_generic_sim2 (p_relementDistrTrial%celement, &
-            rintSubset%revalElementSet, BderTrial, DbasTrial)
+            revalElementSet, BderTrial, DbasTrial)
       end if
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -4494,7 +4498,7 @@ contains
     !$OMP END DO
     
     ! Release memory
-    call elprep_releaseElementSet(rintSubset%revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
     if (.not. rform%ballCoeffConstant) then
       deallocate(Dcoefficients)

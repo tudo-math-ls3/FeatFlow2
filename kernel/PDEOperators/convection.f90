@@ -1607,8 +1607,8 @@ CONTAINS
   ! number of cubature points on the reference element
   INTEGER :: ncubp
 
-  ! A t_domainIntSubset structure for integrating over the domain.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
@@ -1755,7 +1755,7 @@ CONTAINS
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    CALL elprep_init(revalElementSet)
 
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
@@ -1976,14 +1976,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, Dbas)
+          revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -2106,7 +2106,7 @@ CONTAINS
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
         CALL elem_generic_sim2 (EL_Q1, &
-            rintSubset%revalElementSet, Bder, DbasALE)
+            revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -2372,7 +2372,7 @@ CONTAINS
     END DO ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
 
     DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DlocalDelta)
@@ -2586,8 +2586,8 @@ CONTAINS
   ! number of cubature points on the reference element
   INTEGER :: ncubp
 
-  ! A t_domainIntSubset structure for integrating over the domain.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
@@ -2735,7 +2735,7 @@ CONTAINS
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    CALL elprep_init(revalElementSet)
 
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
@@ -2956,14 +2956,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, Dbas)
+          revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -3086,7 +3086,7 @@ CONTAINS
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
         CALL elem_generic_sim2 (EL_Q1, &
-            rintSubset%revalElementSet, Bder, DbasALE)
+            revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -3353,7 +3353,7 @@ CONTAINS
     END DO ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
 
     DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DlocalDelta)
@@ -3872,8 +3872,8 @@ CONTAINS
   ! number of cubature points on the reference element
   INTEGER :: ncubp
 
-  ! A t_domainIntSubset structure for integrating over the domain.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
   LOGICAL :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
@@ -4031,7 +4031,7 @@ CONTAINS
     !$OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
     !$OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,& 
     !$OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !$OMP AH22,IELmax,rintSubset,dny)
+    !$OMP AH22,IELmax,revalElementSet,dny)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -4090,7 +4090,7 @@ CONTAINS
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    CALL elprep_init(revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -4415,10 +4415,10 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
@@ -4426,7 +4426,7 @@ CONTAINS
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, Dbas)
+          revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -4638,7 +4638,7 @@ CONTAINS
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
         CALL elem_generic_sim2 (EL_Q1, &
-            rintSubset%revalElementSet, Bder, DbasALE)
+            revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -5239,7 +5239,7 @@ CONTAINS
     !$OMP END DO 
     
     ! Release memory
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
 
     DEALLOCATE(DlocalDelta)
     IF (dnewton .NE. 0.0_DP) THEN
@@ -6085,8 +6085,8 @@ CONTAINS
   ! number of cubature points on the reference element
   INTEGER :: ncubp
 
-  ! A t_domainIntSubset structure for integrating over the domain.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
   REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
@@ -6236,7 +6236,7 @@ CONTAINS
     ALLOCATE(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
 
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    CALL elprep_init(revalElementSet)
     
     ! What is the reciprocal of nu? We need it later.
     IF (dnu .NE. 0.0_DP) THEN
@@ -6472,14 +6472,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, Dbas)
+          revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -6608,7 +6608,7 @@ CONTAINS
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
         CALL elem_generic_sim2 (EL_Q1_3D, &
-            rintSubset%revalElementSet, Bder, DbasALE)
+            revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -6879,7 +6879,7 @@ CONTAINS
     END DO ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
 
     DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DlocalDelta)
@@ -7457,8 +7457,8 @@ CONTAINS
   ! number of cubature points on the reference element
   INTEGER :: ncubp
 
-  ! A t_domainIntSubset structure for integrating over the domain.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
   LOGICAL :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
@@ -7618,7 +7618,7 @@ CONTAINS
     !別MP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
     !別MP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,& 
     !別MP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !別MP AH22,IELmax,rintSubset,dny,p_DcubPts)
+    !別MP AH22,IELmax,revalElementSet,dny,p_DcubPts)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -7681,7 +7681,7 @@ CONTAINS
     END IF
     
     ! Initialisation of the element set.
-    CALL elprep_init(rintSubset%revalElementSet)
+    CALL elprep_init(revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -7940,10 +7940,10 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
@@ -7951,7 +7951,7 @@ CONTAINS
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, Bder, Dbas)
+          revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -8200,7 +8200,7 @@ CONTAINS
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
         CALL elem_generic_sim2 (EL_Q1_3D, &
-            rintSubset%revalElementSet, Bder, DbasALE)
+            revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -8868,7 +8868,7 @@ CONTAINS
     !別MP END DO 
     
     ! Release memory
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
 
     DEALLOCATE(DlocalDelta)
     IF (dnewton .NE. 0.0_DP) THEN
@@ -9519,9 +9519,8 @@ CONTAINS
   INTEGER(PREC_DOFIDX), DIMENSION(:), ALLOCATABLE :: Kentry
   REAL(DP), DIMENSION(:), ALLOCATABLE :: Dentry
 
-  ! A t_domainIntSubset structure that is used for storing information
-  ! and passing it to callback routines.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
@@ -9885,14 +9884,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
           ctrafoType,DpointsRef=p_DcubPtsRef)
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, BderTest, DbasTest)
+          revalElementSet, BderTest, DbasTest)
 
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -9933,7 +9932,7 @@ CONTAINS
       IF (.NOT. bidenticalTrialAndTest) THEN
       
         CALL elem_generic_sim2 (p_relementDistribution%celement, &
-            rintSubset%revalElementSet, BderTrial, DbasTrial)
+            revalElementSet, BderTrial, DbasTrial)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          
@@ -10041,7 +10040,7 @@ CONTAINS
     END DO ! IMT
 
     ! Clean up allocated arrays and memory.
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
     DEALLOCATE(p_DcubPtsRef)
     DEALLOCATE(DcubPtsRefOnAllEdges)
     
@@ -10391,9 +10390,8 @@ CONTAINS
   INTEGER(PREC_DOFIDX), DIMENSION(:), ALLOCATABLE :: Kentry
   REAL(DP), DIMENSION(:), ALLOCATABLE :: Dentry
 
-  ! A t_domainIntSubset structure that is used for storing information
-  ! and passing it to callback routines.
-  TYPE(t_domainIntSubset) :: rintSubset
+  ! An element evaluation set for evaluating elements.
+  type(t_evalElementSet) :: revalElementSet
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
@@ -10767,14 +10765,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
           ctrafoType,DpointsRef=p_DcubPtsRef)
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, BderTest, DbasTest)
+          revalElementSet, BderTest, DbasTest)
       
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -10814,7 +10812,7 @@ CONTAINS
       ! are identical to the test function values.
       IF (.NOT. bidenticalTrialAndTest) THEN
         CALL elem_generic_sim2 (p_relementDistribution%celement, &
-            rintSubset%revalElementSet, BderTrial, DbasTrial)
+            revalElementSet, BderTrial, DbasTrial)
 
         ! Apply the renumbering for the 2nd element, store the result in the
         ! space of the 3rd element.          
@@ -10960,7 +10958,7 @@ CONTAINS
     ! Clean up allocated arrays and memory.
     DEALLOCATE(DcubPtsRefOnAllEdges)
     
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
     DEALLOCATE(p_DcubPtsRef)
     
     DEALLOCATE(DbasTest)

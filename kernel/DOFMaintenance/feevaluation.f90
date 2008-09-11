@@ -1085,15 +1085,15 @@ contains
     allocate(Idofs(indof,size(Ielements)))
     call dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
         Ielements, Idofs)
-        
-    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-    ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(ieltype)
     
-    ! Don't create coordinates on the reference element; we do this manually!
-    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
-                    
+    ! Initialisation of the element set.    
+    call elprep_init(revalElementSet)   
+        
+    ! Get the coordinates of the corners of the elements
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        EL_EVLTAG_COORDS, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=DpointsRef,DpointsReal=Dpoints)
+
     ! Get the coordinates of all points on the reference element
     if (present(DpointsRef)) then
       p_DpointsRef => DpointsRef
@@ -1108,13 +1108,28 @@ contains
         end do
       end do
     end if
+
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = elem_getEvaluationTag(ieltype)
     
+    ! Don't create coordinates on the reference/real element; we do this manually!
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REALPOINTS))
+
+    ! Don't calculate element shape information, we have that already.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_COORDS))
+                    
     ! Calculate all information that is necessary to evaluate the finite element
     ! on all cells of our subset. This includes the coordinates of the points
     ! on the cells.
-    call elprep_prepareSetForEvaluation (revalElementSet,&
-        cevaluationTag, p_rtriangulation, Ielements, ctrafoType,DpointsRef=p_DpointsRef)
 
+    ! Prepare the element set for the evaluation
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        cevaluationTag, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=p_DpointsRef,DpointsReal=Dpoints)
+    
     ! Calculate the values of the basis functions in the given points.
     allocate(Dbas(indof,&
              elem_getMaxDerivative(ieltype),&
@@ -1169,15 +1184,7 @@ contains
     ! Remove the reference to DpointsRef again
     deallocate(Dbas)
 
-    if (.not. present(DpointsRef)) then
-      deallocate(revalElementSet%p_DpointsRef)
-    end if
-  
     call elprep_releaseElementSet(revalElementSet)
-    
-    if (.not. present(DpointsRef)) then
-      deallocate(p_DpointsRef)
-    end if
     deallocate(Idofs)
 
   end subroutine

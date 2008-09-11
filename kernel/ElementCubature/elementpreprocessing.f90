@@ -199,6 +199,7 @@ contains
     else
       call output_line ('Cannot determine npointsPerElement!', &
           OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+      call sys_halt()
     end if
     
     ! Probably save pointers to DpointsRef/DpointsReal.

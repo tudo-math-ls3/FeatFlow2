@@ -333,6 +333,7 @@ CONTAINS
     ! A t_domainIntSubset structure that is used for storing information
     ! and passing it to callback routines.
     TYPE(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
     
     ! Type of transformation from the reference to the real element 
     INTEGER :: ctrafoType
@@ -415,7 +416,7 @@ CONTAINS
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,2))
     
       ! Initialisation of the element set.
-      CALL elprep_init(rintSubset%revalElementSet)
+      CALL elprep_init(revalElementSet)
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -456,17 +457,19 @@ CONTAINS
                                      IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
     
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
-        CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+        CALL elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
-        p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+        p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
@@ -487,7 +490,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC1D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp, &
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset, &
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -498,7 +501,7 @@ CONTAINS
           ! cubature points: u_h(x).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
                   
@@ -542,7 +545,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC1D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -553,7 +556,7 @@ CONTAINS
           ! cubature points: u_h(x).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
@@ -597,7 +600,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV1D_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
@@ -609,7 +612,7 @@ CONTAINS
           ! cubature points: u_h(x,y).
           ! Save the result to Dcoefficients(:,:,3)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
@@ -648,11 +651,14 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar1d_conf')
           CALL sys_halt()
         END SELECT
+        
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
     
       END DO ! IELset
       
       ! Release memory
-      CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+      CALL elprep_releaseElementSet(revalElementSet)
 
       DEALLOCATE(p_DcubPtsRef)
       DEALLOCATE(Dcoefficients)
@@ -761,6 +767,7 @@ CONTAINS
     ! A t_domainIntSubset structure that is used for storing information
     ! and passing it to callback routines.
     TYPE(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
@@ -844,7 +851,7 @@ CONTAINS
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,4))
     
       ! Initialisation of the element set.
-      CALL elprep_init(rintSubset%revalElementSet)
+      CALL elprep_init(revalElementSet)
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -885,17 +892,19 @@ CONTAINS
                                      IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
     
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
-        CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+        CALL elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
-        p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+        p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
@@ -916,7 +925,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -927,7 +936,7 @@ CONTAINS
           ! cubature points: u_h(x,y).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
@@ -971,7 +980,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -982,7 +991,7 @@ CONTAINS
           ! cubature points: u_h(x,y).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
@@ -1022,7 +1031,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
@@ -1030,7 +1039,7 @@ CONTAINS
 
             CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
           ELSE
@@ -1041,11 +1050,11 @@ CONTAINS
           ! cubature points: u_h(x,y).
           ! Save the result to Dcoefficients(:,:,3..4)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,3))
 
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
@@ -1085,11 +1094,14 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
           CALL sys_halt()
         END SELECT
+        
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
     
       END DO ! IELset
       
       ! Release memory
-      CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+      CALL elprep_releaseElementSet(revalElementSet)
 
       DEALLOCATE(p_DcubPtsRef)
       DEALLOCATE(Dcoefficients)
@@ -1198,6 +1210,7 @@ CONTAINS
     ! A t_domainIntSubset structure that is used for storing information
     ! and passing it to callback routines.
     TYPE(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
@@ -1282,7 +1295,7 @@ CONTAINS
       ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,6))
     
       ! Initialisation of the element set.
-      CALL elprep_init(rintSubset%revalElementSet)
+      CALL elprep_init(revalElementSet)
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -1323,17 +1336,19 @@ CONTAINS
                                      IdofsTrial)
                                      
         ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
     
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
-        CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+        CALL elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
-        p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+        p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we don't have to evaluate the coordinates
         ! on the reference elements anymore.
@@ -1354,7 +1369,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC3D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -1365,7 +1380,7 @@ CONTAINS
           ! cubature points: u_h(x,y,z).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
@@ -1409,7 +1424,7 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_FUNC3D,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
           ELSE
@@ -1420,7 +1435,7 @@ CONTAINS
           ! cubature points: u_h(x,y,z).
           ! Save the result to Dcoefficients(:,:,2)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
@@ -1464,21 +1479,21 @@ CONTAINS
             ! The result is saved in Dcoefficients(:,:,1)
             CALL ffunctionReference (DER_DERIV3D_X,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
             CALL ffunctionReference (DER_DERIV3D_Y,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
 
             ! Calculate the Z-derivative to Dcoefficients(:,:,3)
             CALL ffunctionReference (DER_DERIV3D_Z,rdiscretisation, &
                         INT(IELmax-IELset+1),ncubp,&
-                        rintSubset%revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset, &
                         Dcoefficients(:,1:IELmax-IELset+1_I32,3),rcollection)
           ELSE
@@ -1489,15 +1504,15 @@ CONTAINS
           ! cubature points: u_h(x,y,z).
           ! Save the result to Dcoefficients(:,:,4..6)
           
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,5))
 
-          CALL fevl_evaluate_sim3 (rvectorScalar, rintSubset%revalElementSet,&
+          CALL fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
                   Dcoefficients(:,1:IELmax-IELset+1_I32,6))
 
@@ -1539,10 +1554,13 @@ CONTAINS
           CALL sys_halt()
         END SELECT
     
+        ! Release again the temporary domain integration subset
+        call domint_doneIntegration (rintSubset)
+    
       END DO ! IELset
       
       ! Release memory
-      CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+      CALL elprep_releaseElementSet(revalElementSet)
 
       DEALLOCATE(p_DcubPtsRef)
       DEALLOCATE(Dcoefficients)

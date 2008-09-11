@@ -1086,9 +1086,8 @@ contains
   ! Two arrays for the refinement-patch arrays of the coarse triangulation
   integer(I32), dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
   
-  ! A t_domainIntSubset structure that is used for storing information
-  ! and passing it to callback routines as well as element evaluation routines.
-  type(t_domainIntSubset) :: rintSubsetCoarse, rintSubsetFine
+  ! Element evaluation structures for evaluation of finite elements
+  type(t_evalElementSet) :: relementSetCoarse, relementSetFine
 
     ! We only need the function values as we want to assemble a mass matrix.
     Bder = .false.
@@ -1390,21 +1389,21 @@ contains
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      call elprep_prepareSetForEvaluation (rintSubsetCoarse%revalElementSet,&
+      call elprep_prepareSetForEvaluation (relementSetCoarse,&
           cevalTagCoarse, p_rtriaCoarse, &
           p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
           ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpc))
 
-      call elprep_prepareSetForEvaluation (rintSubsetFine%revalElementSet,&
+      call elprep_prepareSetForEvaluation (relementSetFine,&
           cevalTagFine, p_rtriaFine, p_IelementRef(1:NELF), &
           ctrafoFine, p_DcubPtsRefFine(:,1:ncubp))
-      p_Ddetj => rintSubsetFine%revalElementSet%p_Ddetj
+      p_Ddetj => relementSetFine%p_Ddetj
       
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (p_relemDistCoarse%celement, &
-          rintSubsetCoarse%revalElementSet, Bder, DbasCoarse)
+          relementSetCoarse, Bder, DbasCoarse)
       call elem_generic_sim2 (p_relemDistFine%celement, &
-          rintSubsetFine%revalElementSet, Bder, DbasFine)
+          relementSetFine, Bder, DbasFine)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -1481,8 +1480,8 @@ contains
       end do
 
       ! Release the element sets here
-      call elprep_releaseElementSet(rintSubsetFine%revalElementSet)
-      call elprep_releaseElementSet(rintSubsetCoarse%revalElementSet)
+      call elprep_releaseElementSet(relementSetFine)
+      call elprep_releaseElementSet(relementSetCoarse)
       
       ! Increase the number of done elements
       nelementsDone = nelementsDone + nelementsToDo

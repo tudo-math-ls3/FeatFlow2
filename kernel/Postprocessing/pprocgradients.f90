@@ -1292,7 +1292,7 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-            ncubp, icoordSystem, p_rtriangulation%ndim, NVE,.FALSE.)
+            ncubp, icoordSystem, p_rtriangulation%ndim, NVE)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
@@ -1474,7 +1474,7 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the destination FE space.
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE,.FALSE.)
+            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE)
           p_DcubPtsRef =>  rintSubsetDest%p_DcubPtsRef
           p_DcubPtsReal => rintSubsetDest%p_DcubPtsReal
           p_Djac =>        rintSubsetDest%p_Djac
@@ -1750,7 +1750,7 @@ CONTAINS
           ! Allocate memory and get local references to it. This domain integration 
           ! structure stores all information of the source FE space. 
           CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
-              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax,.FALSE.)
+              ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
           p_DcubPtsReal => rintSubset%p_DcubPtsReal
           p_Djac =>        rintSubset%p_Djac
@@ -1767,7 +1767,7 @@ CONTAINS
           ! Allocate memory. This domain integration structure stores 
           ! all information of the destination FE space. 
           CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
-              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax, .FALSE.)
+              nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
           
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
@@ -3501,7 +3501,7 @@ CONTAINS
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
       CALL domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,j,&
-        p_rtriangulation%ndim,NVE,.FALSE.)
+        p_rtriangulation%ndim,NVE)
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac

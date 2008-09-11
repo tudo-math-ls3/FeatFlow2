@@ -12,7 +12,11 @@
 !# 1.) domint_initIntegration
 !#     -> Initialises a domain integration structure.
 !#
-!# 2.) domint_doneIntegration
+!# 2.) domint_initIntegrationByEvalSet
+!#     -> Initialises a domain integration structures based on an
+!#        element evaluation set.
+!#
+!# 3.) domint_doneIntegration
 !#     -> Releases a domain integration structure.
 !# </purpose>
 !##############################################################################
@@ -57,6 +61,20 @@ module domainintegration
     ! routine.
     integer(I32), dimension(:), pointer           :: p_Ielements => null()
     
+    ! An array containing the the degrees of freedom on all the
+    ! elements. For multilinear forms (bilinear, trilinear), this is a pointer
+    ! to the DOF's of the trial space.
+    ! DIMENSION(#dofPerElement,nelements)
+    integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial => null()
+    
+    ! An element evaluation set structure that contains all information
+    ! needed to evaluate the finite element on all elements in p_Ielements.
+    type(t_evalElementSet), POINTER :: p_revalElementSet => null()
+
+    !<!--
+    ! Information which may be shared with the element evaluation set
+    ! -->
+    
     ! A list of the corner vertices of all elements in progress.
     ! array [1..dimension,1..#vertices per element,1..Number of elements] of double
     real(DP), dimension(:,:,:), pointer           :: p_Dcoords => null()
@@ -85,17 +103,6 @@ module domainintegration
     ! array [1..npointsPerElement,1..Number of elements]
     real(DP), dimension(:,:), pointer             :: p_Ddetj => null()
     
-    ! Twist index array to define the orientation of edges.
-    ! May point to NULL() if the element does not need twist indices.
-    ! array [1..NVE/NVA,1..Number of elements]
-    integer(I32), dimension(:), pointer         :: p_ItwistIndex => null()
-
-
-
-    ! An element evaluation set structure that contains all information
-    ! needed to evaluate the finite element on all elements in p_Ielements.
-    type(t_evalElementSet) :: revalElementSet
-
   end type
   
 !</typeblock>
@@ -109,8 +116,7 @@ contains
 !<subroutine>
 
   subroutine domint_initIntegration (rintSubset,nelements,npointsPerElement,&
-                                     icoordSystem,ndimSpace,nverticesPerElement,&
-                                     btwistIndicesEdges)
+                                     icoordSystem,ndimSpace,nverticesPerElement)
   
 !<description>
   ! This routine initialises a t_domainIntSubset structure. Memory is allocated
@@ -138,9 +144,6 @@ contains
   ! Number of vertices per element that are necessary to specify the 
   ! transformation from the reference to the real element
   integer, intent(IN) :: nverticesPerElement
-  
-  ! Whether to allocate the twist index array for edges or not.
-  logical, intent(IN) :: btwistIndicesEdges
 !</input>
 
 !<output>
@@ -197,12 +200,51 @@ contains
     ! Allocate an array saving the coordinates of corner vertices of elements
     allocate(rintSubset%p_Ddetj(npointsPerElement,nelements))
 
-    ! Allocate memory for the twist index array.
-    if (btwistIndicesEdges) then
-      allocate(rintSubset%p_ItwistIndex(nelements))
-    else
-      nullify(rintSubset%p_ItwistIndex)
-    end if
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+  
+!<description>
+  ! This routine initialises a t_domainIntSubset structure based on an
+  ! element evaluation set. revalElementSet defines all arrays (Jacobian
+  ! determinants, coordinates of points,...) where to evaluate.
+  ! The routine will prepare the integration subset to fit to the
+  ! element evaluation set. A pointer to the set is saved to rintSubset.
+!</description>
+
+!<input>
+  ! Element evaluation set, the integration structure should be based on.
+  type(t_evalElementSet), target :: revalElementSet
+!</input>
+
+!<output>
+  ! An integration subset structure, initialised according to the parameters.
+  type(t_domainIntSubset), intent(OUT) :: rintSubset
+!</output>
+
+!</subroutine>
+
+    ! Initialise constants in the structure
+    rintSubset%nelements            = revalElementSet%nelements
+    rintSubset%npointsPerElement    = revalElementSet%npointsPerElement
+    rintSubset%ielementDistribution = 1
+    rintSubset%ielementStartIdx     = 1
+    
+    ! Let the pointers of the integration structure point to
+    ! the structures of the evaluation set. We don't need the same arrays twice.
+    rintSubset%p_Dcoords => revalElementSet%p_Dcoords
+    rintSubset%p_DcubPtsRef => revalElementSet%p_DpointsRef
+    rintSubset%p_DcubPtsReal => revalElementSet%p_DpointsReal
+    rintSubset%p_Djac => revalElementSet%p_Djac
+    rintSubset%p_Ddetj => revalElementSet%p_Ddetj
+    
+    ! Remember the evaluation set. This will prevent the DONE-routine from
+    ! releasing the above pointers.
+    rintSubset%p_revalElementSet => revalElementSet
 
   end subroutine
 
@@ -223,19 +265,25 @@ contains
 
 !</subroutine>
 
-    ! Deallocate the twist index array
-    if (associated(rintSubset%p_ItwistIndex)) deallocate(rintSubset%p_ItwistIndex)
+    if (.not. associated(rintSubset%p_revalElementSet)) then
+      ! Deallocate an array saving the coordinates of corner vertices of elements
+      deallocate(rintSubset%p_Ddetj)
+      if (associated(rintSubset%p_Djac)) deallocate(rintSubset%p_Djac)
 
-    ! Deallocate an array saving the coordinates of corner vertices of elements
-    deallocate(rintSubset%p_Ddetj)
-    if (associated(rintSubset%p_Djac)) deallocate(rintSubset%p_Djac)
+      ! Deallocate arrays accepting cubature point coordinates.
+      deallocate(rintSubset%p_DcubPtsReal)
+      if (associated(rintSubset%p_DcubPtsRef)) deallocate(rintSubset%p_DcubPtsRef)
 
-    ! Deallocate arrays accepting cubature point coordinates.
-    deallocate(rintSubset%p_DcubPtsReal)
-    if (associated(rintSubset%p_DcubPtsRef)) deallocate(rintSubset%p_DcubPtsRef)
-
-    ! Deallocate memory for corner coordinates
-    deallocate(rintSubset%p_DCoords)
+      ! Deallocate memory for corner coordinates
+      deallocate(rintSubset%p_DCoords)
+    else
+      ! The pointers belong to the evaluation set, so we mustn't deallocate here!
+      nullify(rintSubset%p_Ddetj)
+      nullify(rintSubset%p_Djac)
+      nullify(rintSubset%p_DcubPtsReal)
+      nullify(rintSubset%p_DcubPtsRef)
+      nullify(rintSubset%p_DCoords)
+    end if
 
   end subroutine
 

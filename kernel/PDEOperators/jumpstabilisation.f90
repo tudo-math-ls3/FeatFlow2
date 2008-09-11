@@ -220,7 +220,7 @@ CONTAINS
   
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
-  TYPE(t_domainIntSubset) :: rintSubset
+  type(t_evalElementSet) :: revalElementSet
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
@@ -370,7 +370,6 @@ CONTAINS
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
-
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
     BderTrial = .FALSE.
@@ -599,14 +598,14 @@ CONTAINS
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (rintSubset%revalElementSet,&
+      CALL elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
           ctrafoType,DpointsRef=p_DcubPtsRef)
-      p_Ddetj => rintSubset%revalElementSet%p_Ddetj
+      p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
       CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          rintSubset%revalElementSet, BderTest, DbasTest)
+          revalElementSet, BderTest, DbasTest)
 
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
@@ -765,7 +764,7 @@ CONTAINS
     ! Clean up allocated arrays and memory.
     DEALLOCATE(DcubPtsRefOnAllEdges)
 
-    CALL elprep_releaseElementSet(rintSubset%revalElementSet)
+    CALL elprep_releaseElementSet(revalElementSet)
     DEALLOCATE(p_DcubPtsRef)
     
     DEALLOCATE(DbasTest)
