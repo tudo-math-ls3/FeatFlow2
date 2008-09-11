@@ -207,7 +207,8 @@ contains
     ! uninitialised structure.
     if (present(DpointsRef)) then
       ! Save a pointer to DpointRef
-      if (.not. revalElementSet%bforeignPointsRef) then
+      if (.not. revalElementSet%bforeignPointsRef .and. &
+          associated(revalElementSet%p_DpointsRef)) then
         deallocate(revalElementSet%p_DpointsRef)
       end if
       revalElementSet%p_DpointsRef => DpointsRef
@@ -216,7 +217,8 @@ contains
 
     if (present(DpointsReal)) then
       ! Save a pointer to DpointReal
-      if (.not. revalElementSet%bforeignPointsReal) then
+      if (.not. revalElementSet%bforeignPointsReal .and. &
+          associated(revalElementSet%p_DpointsReal)) then
         deallocate(revalElementSet%p_DpointsReal)
       end if
       revalElementSet%p_DpointsReal => DpointsReal

@@ -1095,7 +1095,7 @@ contains
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
                     
     ! Get the coordinates of all points on the reference element
-    if (.not. present(DpointsRef)) then
+    if (present(DpointsRef)) then
       p_DpointsRef => DpointsRef
     else
       allocate(p_DpointsRef(ubound(Dpoints,1),ubound(Dpoints,2),&
@@ -1118,12 +1118,12 @@ contains
     ! Calculate the values of the basis functions in the given points.
     allocate(Dbas(indof,&
              elem_getMaxDerivative(ieltype),&
-             ubound(Dpoints,2), ubound(Dpoints,3)))
+             ubound(Dpoints,2), size(Ielements)))
     call elem_generic_sim2 (ieltype, revalElementSet, Bder, Dbas)
              
     ! Calculate the desired values. We loop over all points and all elements
     if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
-      do iel = 1, ubound(Dpoints,3)
+      do iel = 1, size(Ielements)
         do ipoint = 1,ubound(Dpoints,2)
       
           dval = 0.0_DP
@@ -1145,7 +1145,7 @@ contains
 
     else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
     
-      do iel = 1, ubound(Dpoints,3)
+      do iel = 1, size(Ielements)
         do ipoint = 1,ubound(Dpoints,2)
           
           ! Now that we have the basis functions, we want to have the function values.
