@@ -315,7 +315,7 @@ CONTAINS
     
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF ((rsolution%p_rblockDiscretisation%RspatialDiscr(1)% &
          ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
         (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
 
@@ -368,11 +368,11 @@ CONTAINS
     TYPE(t_matrixScalar) :: rBmatrix
     TYPE(t_vectorScalar), TARGET :: rtempVector
     
-    IF (rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF (rsolution%p_rblockDiscretisation%RspatialDiscr(1)% &
         ccomplexity .EQ. SPDISC_UNIFORM) THEN
         
-      ieltype = rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
+      ieltype = rsolution%p_rblockDiscretisation%RspatialDiscr(1)% &
+                RelementDistr(1)%itrialElement
                 
       IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
       
@@ -516,14 +516,14 @@ CONTAINS
     CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscretisation,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 rvector%p_rblockDiscretisation%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(1))
+                 rprjDiscretisation%RspatialDiscr(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 rvector%p_rblockDiscretisation%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscretisation(2))
+                 rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -635,11 +635,11 @@ CONTAINS
         p_Ddata(1:p_rtriangulation%NEL))
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+    IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
         ccomplexity .EQ. SPDISC_UNIFORM) THEN
         
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
+                RelementDistr(1)%itrialElement
                 
       IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
           
@@ -857,19 +857,19 @@ CONTAINS
 
     ! Piecewise constant space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q0, CUB_G1X1, &
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rdiscr%RspatialDiscretisation(1), &
+                 p_rdiscr%RspatialDiscr(1), &
                  EL_Q2, CUB_G3X3, &
                  rpostprocessing%rdiscrQuadratic)
   
@@ -1283,8 +1283,8 @@ CONTAINS
 !  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
 !
 !    ! Get the element distribution structure of that FE-space comination
-!    p_relemDistrU => p_rdiscrU%RelementDistribution(RelementDistribution)
-!    p_relemDistrP => p_rdiscrP%RelementDistribution(RelementDistribution)
+!    p_relemDistrU => p_rdiscrU%RelementDistr(RelementDistr)
+!    p_relemDistrP => p_rdiscrP%RelementDistr(RelementDistr)
 !    
 !    ! By that we know
 !    ! - what's the element

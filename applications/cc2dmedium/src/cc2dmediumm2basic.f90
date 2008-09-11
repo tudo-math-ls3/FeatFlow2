@@ -201,9 +201,6 @@ MODULE cc2dmediumm2basic
     !     prssure drop and/or Neumann boundary parts
     INTEGER :: iboundary
 
-    ! A variable describing the analytic boundary conditions.    
-    TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions
-
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER           :: p_rsolverNode
 

@@ -92,18 +92,6 @@ CONTAINS
     ! Initialise the boundary conditions of fictitious boundary components
     CALL c2d2_parseFBDconditions (rproblem)    
 
-    ! Install the analytic boundary conditions into all discretisation
-    ! structures on all levels.
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-      
-      ! Ask the problem structure to give us the discretisation structure...
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-      
-      ! and inform the discretisation which analytic boundary conditions to use:
-      p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
-
-    END DO
-    
   END SUBROUTINE
 
   ! ***************************************************************************

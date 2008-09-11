@@ -1184,7 +1184,7 @@ CONTAINS
     IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
     
       ! Get the triangulation array for the point coordinates
-      p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+      p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
       CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoordinates)
       CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
