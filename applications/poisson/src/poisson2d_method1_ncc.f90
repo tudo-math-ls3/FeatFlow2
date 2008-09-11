@@ -456,8 +456,11 @@ CONTAINS
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
+    ! As this example is a bit harder than the other ones, we will set up
+    ! a SSOR[1.3] preconditioner for BiCGStab to improve the convergence.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
+    CALL linsol_initSSOR(p_rpreconditioner,1.3_DP)
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
