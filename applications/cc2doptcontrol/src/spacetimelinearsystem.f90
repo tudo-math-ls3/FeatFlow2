@@ -380,7 +380,7 @@ CONTAINS
         rmatrixComponents%dalpha1 = 0.0_DP
         rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%dtheta1 = 0.0_DP
+        rmatrixComponents%dtheta1 = 0.0_DP !dtheta*dtstep
         rmatrixComponents%dtheta2 = dtheta
         
         IF (.NOT. bconvectionExplicit) THEN
@@ -456,7 +456,6 @@ CONTAINS
 
         END IF
           
-                    
       ELSE IF (irelpos .EQ. 1) THEN
       
         ! Offdiagonal matrix on the right of the diagonal.

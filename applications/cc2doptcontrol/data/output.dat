@@ -24,4 +24,4 @@ smsgLog = 'log/output.log'
 # Log file for error messages; usually coincides with smsgLog to print
 # errors into the same log file as standard messages.
 # ='': Use log file.
-serrorLog = 'log/output.log'
+serrorLog = ''

@@ -114,19 +114,19 @@ dUpsam2            = 0.0
 
 # cubature formula for Mass matrix
 
-scubMass           = G4X4
+scubMass           = G3X3
 
 # cubature formula for Stokes/Laplacian matrix
 
-scubStokes         = G4X4
+scubStokes         = G3X3
 
 # cubature formula for Pressure matrices B
 
-scubB              = G4X4
+scubB              = G3X3
 
 # cubature formula for RHS F
 
-scubF              = G4X4
+scubF              = G3X3
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.

@@ -25,17 +25,17 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
-# 0=General VANCA.
-# 1=General VANCA. 'Direct' method.
+# 0=General VANKA.
+# 1=General VANKA. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 2=Full VANCA for 2D Navier-Stokes optimal control problem.
-# 3=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+# 2=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 4=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
-# 5=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+# 4=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 5=Diagonal VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 6=BiCGStab with Full VANCA preconditioning
-# 7=BiCGStab with Diagonal VANCA preconditioning
+# 6=BiCGStab with Full VANKA preconditioning
+# 7=BiCGStab with Diagonal VANKA preconditioning
 
 ismootherType = 7
 
@@ -45,10 +45,10 @@ ssmootherSection = 'CC-SMOOTHER'
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
-# =1: Defect correction with diagonal VANCA preconditioning.
-# =2: Defect correction with full VANCA preconditioning.
-# =3: BiCGStab with diagonal VANCA preconditioning
-# =4: BiCGStab with full VANCA preconditioning
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
 
 icoarseGridSolverType = 0
 
@@ -66,11 +66,11 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
 # Minimum number of steps
 
-nminIterations     = 2
+nminIterations     = 1
 
 # Maximum number of steps
 
-nmaxIterations     = 10
+nmaxIterations     = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -100,7 +100,7 @@ domega             = 1.0
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 
-ioutputLevel       = 0 -1
+ioutputLevel       = 0 # -1
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -121,7 +121,7 @@ icycle             = 0
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
 
-ccorrectionTypeAlpha = 0
+ccorrectionTypeAlpha = 1
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -147,7 +147,7 @@ nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.9
+domega             = 1.0
 
 # Output level of the solver
 # = 2:extended output
@@ -226,14 +226,14 @@ domega             = 1.0
 # solver.
 
 ####################
-[CC-PUREVANCASOLVER]
+[CC-PUREVANKASOLVER]
 ####################
 
 # Type of the solver that is used for preconditioning.
 # =0: Gauss elimination (UMFPACK)
 # =1: Multigrid solver
-# =2: Defect correction with VANCA preconditioner
-# =3: BiCGStab with VANCA preconditioner
+# =2: Defect correction with VANKA preconditioner
+# =3: BiCGStab with VANKA preconditioner
 
 isolverType = 3
 
@@ -243,17 +243,17 @@ ssolverSection = 'CC-PUREDEFCORR'
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
-# 0=General VANCA.
-# 1=General VANCA. 'Direct' method.
+# 0=General VANKA.
+# 1=General VANKA. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 2=Full VANCA for 2D Navier-Stokes optimal control problem.
-# 3=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+# 2=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 4=Diagonal VANCA for 2D Navier-Stokes optimal control problem.
-# 5=Diagonal VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
+# 4=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 5=Diagonal VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 #   Note: This doesn't seem to work!?!
-# 6=BiCGStab with Full VANCA preconditioning
-# 7=BiCGStab with Diagonal VANCA preconditioning
+# 6=BiCGStab with Full VANKA preconditioning
+# 7=BiCGStab with Diagonal VANKA preconditioning
 
 ismootherType = 2
 
@@ -263,9 +263,9 @@ ssmootherSection = 'CC-PURESMOOTHER'
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
-# =1: Defect correction with diagonal VANCA preconditioning.
-# =2: BiCGStab with diagonal VANCA preconditioning
-# =3: BiCGStab with full VANCA preconditioning
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: BiCGStab with diagonal VANKA preconditioning
+# =3: BiCGStab with full VANKA preconditioning
 
 icoarseGridSolverType = 0
 

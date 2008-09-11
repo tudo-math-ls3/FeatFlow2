@@ -116,7 +116,7 @@ ioutputLevel       = 2 # 3
 # Filename prefix for GMV output.
 # ='': Disable GMV output
 
-sgmvFileName = './gmv/u3_4.gmv'
+sgmvFileName = ''
 
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
@@ -187,12 +187,12 @@ dspacetimeRefFactor = 1.0
 nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
-nmaxIterations = 10 # 0 00
+nmaxIterations = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 # 8 1E-2
+depsRel            = 1E-2 #6 # 2 # 8 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -222,13 +222,13 @@ icycle = 1
 # Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
 # Standard = 1.0
 
-dalphamin = 1.0
+dalphamin = 1.0 #1.0
 
 # Minimum value for the adaptive coarse grid correction.
 # Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
 # Standard = 1.0
 
-dalphamax = 1.0
+dalphamax = 1.0 #1.0
 
 ###############
 [TIME-SMOOTHER]
@@ -245,14 +245,14 @@ dalphamax = 1.0
 cspaceTimeSmoother = 2 # 2 0 6
 
 # Damping parameter
-domega = 0.7 # 0.5 0.7
+domega = 0.9 # 0.5 0.7
 
 # Damping parameter of a precondirtioner; only used for cascaded solvers
 # (e.g. CG(...)) or SOR
 domegaPrecond = 1.0
 
 # Number of smoothing steps
-nsmSteps = 2
+nsmSteps = 1
 
 # Switch smoothing on/off.
 # =1: do smoothing as pre- and/or postsmoother, respectively.
@@ -278,14 +278,14 @@ istoppingCriterion = 1
 
 # Output level of the smoother
 
-ioutputLevel = 1 2
+ioutputLevel = 2 2
 
 # If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
 slinearSolver        = 'CC-LINEARSOLVER'
-#slinearSolver        = 'CC-PUREVANCASOLVER'
+#slinearSolver        = 'CC-PUREVANKASOLVER'
 
 
 #######################
@@ -302,7 +302,7 @@ slinearSolver        = 'CC-LINEARSOLVER'
 # =6: Defect correction with UMFPACK preconditioning
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-COARSEPRECOND] below!
-ctypeCoarseGridSolver = 2 # 5 4 0 2 5 4
+ctypeCoarseGridSolver = 5 #5 # 5 4 0 2 5 4
 
 # Minimum number of time-iterations on the coarsest time-mesh
 nminIterations = 1 3
@@ -311,12 +311,12 @@ nminIterations = 1 3
 nmaxIterations = 100 20
 
 # Damping parameter
-domega = 0.7 # 1.0 1.0 1.0 1.0
+domega = 1.0 # 1.0 1.0 1.0 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2 # 6 13 13 3 1E-10 
+depsRel            = 1E-6 # 6 13 13 3 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
