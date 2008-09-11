@@ -488,7 +488,7 @@ CONTAINS
   
   SUBROUTINE ccopt_precSpaceTimeVanca (rproblem,rmatrix,rx,rb,domega,nchunkSize,niterations)
   
-  ! Performs niterations VANCA iterations to enhance the vector rx.
+  ! Performs niterations VANKA iterations to enhance the vector rx.
   ! nchunkSize specifies the number of timesteps that are collected
   ! to a local system.
   
@@ -504,13 +504,13 @@ CONTAINS
   ! Damping parameter
   REAL(DP), INTENT(IN) :: domega
   
-  ! Chunk size. >= 0. A chunk size >= #timesteps will apply VANCA 
+  ! Chunk size. >= 0. A chunk size >= #timesteps will apply VANKA 
   ! to all timesteps simultaneously, which is VERY memory and hard disc
-  ! intensive! A chunk size of 0 will apply the standard VANCA for
+  ! intensive! A chunk size of 0 will apply the standard VANKA for
   ! optimal control problems that does not combine multiple time steps.
   INTEGER, INTENT(IN) :: nchunksize
   
-  ! Number of VANCA iterations to apply.
+  ! Number of VANKA iterations to apply.
   INTEGER, INTENT(IN) :: niterations
   
   ! Solution vector to be updated

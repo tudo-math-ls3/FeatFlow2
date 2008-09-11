@@ -605,7 +605,7 @@ CONTAINS
       ! (in total the BC's are then implemented 2x into the same matrices
       ! which needs a little bit more time but not much).
       !
-      ! Furthermore, the VANCA preconditioner can only handle the
+      ! Furthermore, the VANKA preconditioner can only handle the
       ! situation where the B/B^T matrices of the dual equation share their
       ! data with that of the primal one...
       CALL lsyssc_duplicateMatrix ( &

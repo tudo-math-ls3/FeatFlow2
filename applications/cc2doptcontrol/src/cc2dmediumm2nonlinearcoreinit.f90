@@ -321,10 +321,10 @@ CONTAINS
         CALL linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
         
       CASE (1)
-        ! Defect correction with diagonal VANCA preconditioning.
+        ! Defect correction with diagonal VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
         
         CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
@@ -334,7 +334,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rpreconditioner%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -343,10 +343,10 @@ CONTAINS
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
       CASE (2)
-        ! Defect correction with full VANCA preconditioning.
+        ! Defect correction with full VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         
         CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
@@ -356,7 +356,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rpreconditioner%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -365,10 +365,10 @@ CONTAINS
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
       CASE (3)
-        ! BiCGSTab with diagonal VANCA preconditioning.
+        ! BiCGSTab with diagonal VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
         
         CALL parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
            'spreconditionerSection', sstring, '')
@@ -378,7 +378,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rpreconditioner%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -387,10 +387,10 @@ CONTAINS
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
       CASE (4)
-        ! BiCGSTab with full VANCA preconditioning.
+        ! BiCGSTab with full VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         
         CALL parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
            'spreconditionerSection', sstring, '')
@@ -400,7 +400,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rpreconditioner%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -430,26 +430,26 @@ CONTAINS
 
           NULLIFY(p_rsmoother)
         
-          ! This is some kind of VANCA smoother. Initialise the correct one.
+          ! This is some kind of VANKA smoother. Initialise the correct one.
           SELECT CASE (ismootherType)
           CASE (0)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
           CASE (1)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
           CASE (2)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
           CASE (3)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIRECT)
           CASE (4)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
           CASE (5)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAGDIR)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
           CASE (6)
-            CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+            CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
             CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                 rpreconditioner%p_RfilterChain)
           CASE (7)
-            CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+            CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
             CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                 rpreconditioner%p_RfilterChain)
           END SELECT
@@ -494,7 +494,7 @@ CONTAINS
 
     CASE (2:3)
     
-      ! VANCA smoother: 1 step defect correction with nmaxIterations steps VANCA.
+      ! VANKA smoother: 1 step defect correction with nmaxIterations steps VANKA.
       ! ismootherType defines the type of smoother to use.
       SELECT CASE (ismootherType)
       
@@ -502,26 +502,26 @@ CONTAINS
 
         NULLIFY(p_rsmoother)
       
-        ! This is some kind of VANCA smoother. Initialise the correct one.
+        ! This is some kind of VANKA smoother. Initialise the correct one.
         SELECT CASE (ismootherType)
         CASE (0)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
         CASE (1)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
         CASE (2)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         CASE (3)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIRECT)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIRECT)
         CASE (4)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
         CASE (5)
-          CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAGDIR)
+          CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
         CASE (6)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOC)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
           CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
               rpreconditioner%p_RfilterChain)
         CASE (7)
-          CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DFNAVSTOCDIAG)
+          CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
           CALL linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
               rpreconditioner%p_RfilterChain)
         END SELECT
@@ -1124,7 +1124,7 @@ CONTAINS
         ! Under certain circumstances, the linear solver needs B^T-matrices.
         ! This is the case if
         ! - a direct solver (UMFPACK) is used on a level or
-        ! - if the general VANCA preconditioner is used.
+        ! - if the general VANKA preconditioner is used.
         ! In these cases, we create a separate copy of B1 and B2 and transpose them.
         ! Note that we do this only in that case when there is a 'structural update'
         ! (which means that the structure of the matrices have changed). Otherwise,
@@ -1175,7 +1175,7 @@ CONTAINS
               
             ELSE
             
-              ! On the other levels, tweak the matrix if the general VANCA is
+              ! On the other levels, tweak the matrix if the general VANKA is
               ! chosen as smoother; it needs transposed matrices.
               IF ((rpreconditioner%rprecSpecials%ismootherType .EQ. 0) .OR. &
                   (rpreconditioner%rprecSpecials%ismootherType .EQ. 1)) THEN

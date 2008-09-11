@@ -165,19 +165,19 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! If the preconditioner is the linear multigrid solver:
     ! Type of smoother.
-    ! =0: general VANCA (slow, but independent of the discretisation and of the problem)
-    ! =1: general VANCA; 'direct' method, bypassing the defect correction approach.
+    ! =0: general VANKA (slow, but independent of the discretisation and of the problem)
+    ! =1: general VANKA; 'direct' method, bypassing the defect correction approach.
     !     (-> specialised variant of 0, but slightly faster)
-    ! =2: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-    !     (i.e. automatically chooses the best suitable VANCA variant).
-    ! =3: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
-    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =2: Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANKA variant).
+    ! =3: Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANKA variant).
     !     'direct' method, bypassing the defect correction approach.
     !     (-> specialised variant of 8, but faster)
-    ! =4: Full VANCA, 2D Navier Stokes problem, general discretisation
-    !     (i.e. automatically chooses the best suitable VANCA variant).
-    ! =5: Full VANCA, 2D Navier Stokes problem, general discretisation
-    !     (i.e. automatically chooses the best suitable VANCA variant).
+    ! =4: Full VANKA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANKA variant).
+    ! =5: Full VANKA, 2D Navier Stokes problem, general discretisation
+    !     (i.e. automatically chooses the best suitable VANKA variant).
     !     'direct' method, bypassing the defect correction approach.
     !     (-> specialised variant of 10, but faster)
     INTEGER :: ismootherType = 3
@@ -185,8 +185,8 @@ MODULE cc2dmediumm2nonlinearcore
     ! If the preconditioner is the linear multigrid solver:
     ! Type of coarse grid solver.    
     ! =0: Gauss elimination (UMFPACK)
-    ! =1: Defect correction with diagonal VANCA preconditioning.
-    ! =2: BiCGStab with diagonal VANCA preconditioning
+    ! =1: Defect correction with diagonal VANKA preconditioning.
+    ! =2: BiCGStab with diagonal VANKA preconditioning
     INTEGER :: icoarseGridSolverType = 1
         
     ! This flag is set to .TRUE. if there are no Neumann boundary
