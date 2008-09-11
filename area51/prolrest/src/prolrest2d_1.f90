@@ -113,9 +113,9 @@ CONTAINS
     CALL spdiscr_initBlockDiscr2D (rdiscrC,1,rtriaC, rboundary)
     CALL spdiscr_initBlockDiscr2D (rdiscrF,1,rtriaF, rboundary)
 
-    CALL spdiscr_initDiscr_simple (rdiscrC%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (rdiscrC%RspatialDiscr(1), &
                                    EL_Q1,CUB_G5X5,rtriaC, rboundary)
-    CALL spdiscr_initDiscr_simple (rdiscrF%RspatialDiscretisation(1), &
+    CALL spdiscr_initDiscr_simple (rdiscrF%RspatialDiscr(1), &
                                    EL_Q1,CUB_G5X5,rtriaF, rboundary)
 
     ! Allocate two block matrices
@@ -123,9 +123,9 @@ CONTAINS
     CALL lsysbl_createMatBlockByDiscr (rdiscrF,rmatrixF)
     
     ! And create the matrix structures
-    CALL bilf_createMatrixStructure (rdiscrC%RspatialDiscretisation(1),&
+    CALL bilf_createMatrixStructure (rdiscrC%RspatialDiscr(1),&
                               LSYSSC_MATRIX9,rmatrixC%RmatrixBlock(1,1))
-    CALL bilf_createMatrixStructure (rdiscrF%RspatialDiscretisation(1),&
+    CALL bilf_createMatrixStructure (rdiscrF%RspatialDiscr(1),&
                               LSYSSC_MATRIX9,rmatrixF%RmatrixBlock(1,1))
     
     ! Update the block matrices
@@ -154,9 +154,9 @@ CONTAINS
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! Build the two RHS vectors
-    CALL linf_buildVectorScalar (rdiscrC%RspatialDiscretisation(1),&
+    CALL linf_buildVectorScalar (rdiscrC%RspatialDiscr(1),&
                  rlinform,.TRUE.,rrhsC%rvectorBlock(1),procRHS_Q2_2D)
-    CALL linf_buildVectorScalar (rdiscrF%RspatialDiscretisation(1),&
+    CALL linf_buildVectorScalar (rdiscrF%RspatialDiscr(1),&
                  rlinform,.TRUE.,rrhsF%rvectorBlock(1),procRHS_Q2_2D)
     
     ! Allocate solution and temporary vectors
