@@ -134,8 +134,8 @@ CONTAINS
     ! first quick-access vector pointer in the collection.
     p_rvector => rcollection%p_rvectorQuickAccess1
 
-    ! Allocate memory for the x- and y-derivative we want to compute from
-    ! the solution:
+    ! Allocate memory for the function values in the cubature points 
+    ! we want to compute from the solution:
     allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
     
     ! Calculate the function value of the solution vector in all
