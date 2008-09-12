@@ -134,8 +134,7 @@ CONTAINS
     ! first quick-access vector pointer in the collection.
     p_rvector => rcollection%p_rvectorQuickAccess1
 
-    ! Allocate memory for the function values in the cubature points 
-    ! we want to compute from the solution:
+    ! Allocate memory for the function values in the cubature points:
     allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
     
     ! Calculate the function value of the solution vector in all
