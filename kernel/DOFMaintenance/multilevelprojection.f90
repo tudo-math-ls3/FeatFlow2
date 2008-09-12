@@ -4378,8 +4378,8 @@ contains
              DUcoarse(IverticesAtElementCoarse(i,iel)) &
              +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(i))+NVTfine) &
              +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(i))+NVTfine) &
-             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(mod(i,4)+1)+NVTfine)) &
-             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(mod(i+2,4)+1)+NVTfine)) &
+             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(mod(i,4)+1))+NVTfine) &
+             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(mod(i+2,4)+1))+NVTfine) &
              +(9.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(i)) &
              -(3.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(mod(i,4)+1)) &
              +(1.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(mod(i+1,4)+1)) &
