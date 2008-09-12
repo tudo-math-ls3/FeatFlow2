@@ -127,8 +127,12 @@ CONTAINS
   !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the cubature
-  ! formula to use for each element distribution.
+  ! element distributions in the discretisation structure specifies the
+  ! cubature formula to use for each element distribution.
+  !
+  ! If the H1-error is desired and the element does not provide first
+  ! derivatives, then this routine sets derror to -1 to indicate that the
+  ! calculation of the H1-error is not available.
 !</description>
 
 !<input>
@@ -167,6 +171,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    integer :: i, imaxder
+    integer(I32) :: celement
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     
     ! Get the correct discretisation structure and check if we can use it.
@@ -183,19 +189,40 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-!    IF ((p_rdiscretisation%ndimension .NE. NDIM1D) .AND. &
-!        (p_rdiscretisation%ndimension .NE. NDIM2D)) THEN
-!      CALL output_line('3D discretisation currently not supported!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-!      CALL sys_halt()
-!    END IF
-
     ! The vector must be unsorted, otherwise we can't set up the vector.
     IF (rvectorScalar%isortStrategy .GT. 0) THEN
       CALL output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
       CALL sys_halt()
     END IF
+    
+    ! There is one thing we need to assure: If the user wants to calculate
+    ! an H1-error, the corresponding element must have first derivatives!
+    if(cerrortype .eq. PPERR_H1ERROR) then
+      
+      ! So, let's loop through all element distributions of the spatial
+      ! discretisation structure.
+      do i = 1, p_rdiscretisation%inumFESpaces
+        
+        ! Get the element of the FE space
+        celement = p_rdiscretisation%RelementDistr(i)%celement
+        
+        ! Get the maximum derivative of the element
+        imaxder = elem_getMaxDerivative(celement)
+        
+        ! If the maximum derivate is 1 then the element's derivatives can
+        ! not be evaluated (since they are zero). We will simply return
+        ! an error of -1 to indicate that the H1-error cannot be computed.
+        if(imaxder .le. 1) then
+          derror = -1.0_DP
+          return
+        end if
+      end do
+      
+      ! If we come out here, then the element provides first derivatives, and
+      ! we are ready to calculate the H1-error.
+    
+    end if
   
     ! Do we have a uniform triangulation? Would simplify a lot...
     IF (p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN 
