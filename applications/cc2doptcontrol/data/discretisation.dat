@@ -43,11 +43,11 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 3
+NLMAX              = 2
 
 # ------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 400 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
+RE                 = 400 #1000 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
 
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
@@ -233,24 +233,27 @@ itypeTargetFlow = 4
 # a target flow on a level higher than NLMAX!
 # Only valid if itypeTargetFlow =3 or =4.
 
-ilevelTargetFlow = 6
+ilevelTargetFlow = 7
 
 # Name and path to the TRI file containing the mesh that corresponds to the
 # reference solution. ='': Use the same TRI file as for the computation of the
 # solution.
 # Only valid if itypeTargetFlow =3 or =4.
 
-smeshTargetFlow = ''
+smeshTargetFlow = './pre/QUAD.tri'
 
 # If itypeTargetFlow = 1, this is the filename of a file on disc containing
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
+stargetFlow = 'ns/drivencavity_stokes_lv7_re400/drivencavstlv77re400sol'
+#stargetFlow = 'ns/bench1lv5re1000t0-1/solution'
 #stargetFlow = 'ns/bench1lv4stokes/solution'
 #stargetFlow = 'ns/lv6re0.025fromtoptoright/solution'
-stargetFlow = './ns/lv6re0.025steps80/solution'
+#stargetFlow = './ns/lv6re0.025steps80/solution'
 #stargetFlow = 'ns/drivencavity_stokes_lv7_re1000_dt0.1_10sek/solution'
 #stargetFlow = 'ns/bench1lv1stokes/solution'
+#stargetFlow = '../cc2d_paper16/ns/drivencavstlv77re400sol'
 
 # Granularity parameter for the filenames of the target flow.
 # =1 will read '.00000', '.00001', '.00002', etc.
@@ -264,7 +267,7 @@ itargetFlowDelta = 1
 # files with file extension '.00000', '.00001', '.00002',...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
-itargetFlowTimesteps = 80 # 80 80 100 10 100 80 10 100
+itargetFlowTimesteps = 64 # 80 80 100 10 100 80 10 100
 
 # Formulation of the Space-time problem.
 # =0: usual formulation as specified in the DFG applicance
@@ -286,3 +289,16 @@ iconvectionExplicit = 0
 #     Vectors are not filtered but the matrix contains some identity operators.
 #     Not advisable.
 itypeTerminalCondition = 0
+
+# Type of constraints to apply to the control u.
+# =0: No constraints.
+# =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
+ccontrolContraints = 0
+
+# Constraints on u_1
+dumin1 = -1.0E10
+dumax1 = 1.0E10
+
+# Constraints in u_2
+dumin2 = -1.0E10
+dumax2 = 1.0E10
