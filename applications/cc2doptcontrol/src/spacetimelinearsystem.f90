@@ -1093,6 +1093,16 @@ CONTAINS
     ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
     ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
     CALL sptivec_getTimestepData(rx, 1+0, rtempVector(2))
+    
+    ! If constraints on u are active, restrict u.
+    if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+      call cc_projectcontrol (rtempVector(2)%RvectorBlock(4),&
+          rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
+          rproblem%roptcontrol%dumax1)
+      call cc_projectcontrol (rtempVector(2)%RvectorBlock(5),&
+          rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
+          rproblem%roptcontrol%dumax2)
+    end if
       
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
     ! account as the actual matrix multiplication routine cc_assembleDefect
@@ -1126,6 +1136,15 @@ CONTAINS
     IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
           1+0, rtempVectorEval(2))
+      ! If constraints on u are active, restrict u.
+      if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+        call cc_projectcontrol (rtempVectorEval(2)%RvectorBlock(4),&
+            rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
+            rproblem%roptcontrol%dumax1)
+        call cc_projectcontrol (rtempVectorEval(2)%RvectorBlock(5),&
+            rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
+            rproblem%roptcontrol%dumax2)
+      end if
     END IF
     
     ! DEBUG!!!
@@ -1199,6 +1218,16 @@ CONTAINS
         ! point.
 
         CALL sptivec_getTimestepData(rx, 1+ieqTime+1, rtempVector(3))
+
+        ! If constraints on u are active, restrict u.
+        if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+          call cc_projectcontrol (rtempVector(3)%RvectorBlock(4),&
+              rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
+              rproblem%roptcontrol%dumax1)
+          call cc_projectcontrol (rtempVector(3)%RvectorBlock(5),&
+              rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
+              rproblem%roptcontrol%dumax2)
+        end if
           
         ! If necesary, multiply the rtempVectorX. We have to take a -1 into
         ! account as the actual matrix multiplication routine cc_assembleDefect
@@ -1210,6 +1239,17 @@ CONTAINS
         IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
           CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
               1+ieqTime+1, rtempVectorEval(3))
+
+          ! If constraints on u are active, restrict u.
+          if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+            call cc_projectcontrol (rtempVectorEval(3)%RvectorBlock(4),&
+                rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
+                rproblem%roptcontrol%dumax1)
+            call cc_projectcontrol (rtempVectorEval(3)%RvectorBlock(5),&
+                rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
+                rproblem%roptcontrol%dumax2)
+          end if
+
         END IF
 
       END IF
@@ -1443,6 +1483,54 @@ CONTAINS
     
   END SUBROUTINE 
    
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine cc_projectcontrol (rdualSolution,dalpha,dumin,dumax)
+
+!<description>
+  ! Projects a dual solution vector lambda in such a way, that
+  ! dumin <= 1/alpha * lambda = u <= dumax holds.
+!</description>
+
+!<input>
+  ! Alpha value from the discretisation
+  real(DP), intent(in) :: dalpha
+  
+  ! Minimum value for u
+  real(DP), intent(in) :: dumin
+
+  ! Maximum value for u
+  real(DP), intent(in) :: dumax
+!</input>
+
+!<inputoutput>
+  ! Vector to be restricted
+  type(t_vectorScalar), intent(inout) :: rdualSolution
+!</inputoutput>
+
+!</subroutine>
+ 
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: i
+    real(dp) :: dactmin,dactmax
+    
+    ! Get the vector array
+    call lsyssc_getbase_double (rdualSolution,p_Ddata)
+    
+    ! Get the actual bounds -- they depend on alpha
+    dactmin = dalpha*dumin
+    dactmax = dalpha*dumax
+    
+    ! Restrict the vector
+    do i=1,rdualSolution%NEQ
+      p_Ddata(i) = min(max(p_Ddata(i),dactmin),dactmax)
+    end do
+
+  end subroutine   
+  
 !  ! ***************************************************************************
 !  
 !!<subroutine>

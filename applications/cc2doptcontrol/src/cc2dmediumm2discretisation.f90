@@ -1325,6 +1325,21 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itypeTerminalCondition',rproblem%roptcontrol%itypeTerminalCondition,0)
 
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'ccontrolContraints',rproblem%roptcontrol%ccontrolContraints,0)
+
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dumin1',rproblem%roptcontrol%dumin1,-1.0E10_DP)
+
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dumax1',rproblem%roptcontrol%dumax1,1.0E10_DP)
+
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dumin2',rproblem%roptcontrol%dumin2,-1.0E10_DP)
+
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dumax2',rproblem%roptcontrol%dumax2,1.0E10_DP)
+
   END SUBROUTINE
 
   ! ***************************************************************************

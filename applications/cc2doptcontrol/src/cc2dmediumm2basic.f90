@@ -216,6 +216,20 @@ MODULE cc2dmediumm2basic
     ! -1=As many files as there are solution vectors on the finest time level.
     INTEGER :: itargetFlowTimesteps = -1
   
+    ! Type of constraints to apply to the control u.
+    ! =0: No constraints.
+    ! =1: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
+    INTEGER :: ccontrolContraints = 0
+
+    ! Constraints on u_1
+    real(DP) :: dumin1 = -1.0E10
+    real(DP) :: dumax1 = 1.0E10
+
+    ! Constraints in u_2
+    real(DP) :: dumin2 = -1.0E10
+    real(DP) :: dumax2 = 1.0E10
+  
   END TYPE
 
 !</typeblock>
