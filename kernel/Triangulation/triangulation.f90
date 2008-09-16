@@ -19,94 +19,98 @@
 !#      -> Wrapper. Create a FEAT 2.0 triangulation structure from a
 !#         FEAT 1.x triangulation structure.
 !#
-!#  2.) tria_readTriFile2D
+!#  2.) tria_createRawTria1D
+!#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
+!#         of the same length
+!#
+!#  3.) tria_readTriFile1D
+!#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic 
+!#         information.
+!#
+!#  4.) tria_readTriFile2D
 !#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
 !#         information.
 !#
-!#  3.) tria_readTriFile3D
+!#  5.) tria_readTriFile3D
 !#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
 !#         information.
 !#
-!#  4.) tria_initStandardMeshFromRaw
+!#  6.) tria_initStandardMeshFromRaw
 !#      -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
 !#         (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!#  5.) tria_refine2LevelOrdering
+!#  7.) tria_refine2LevelOrdering
 !#      -> Refines a mesh according to the 2-level ordering algorithm.
 !#         Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
-!#  6.) tria_compress2LevelOrdHierarchy
+!#  8.) tria_compress2LevelOrdHierarchy
 !#      -> Can be used to compress a mesh hierarchy created with the 2-level
 !#         ordering. Saves memory. Shares vertex coordinates between fine
 !#         and coarse mesh.
 !#
-!#  7.) tria_quickRefine2LevelOrdering
+!#  9.) tria_quickRefine2LevelOrdering
 !#      -> Refines a mesh multiple times according to the 2-level ordering 
 !#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
 !#         coarse mesh.
 !#
-!#  8.) tria_done
+!# 10.) tria_done
 !#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!#  9.) tria_rawGridToTri
+!# 11.) tria_rawGridToTri
 !#      -> Converts a raw mesh into a triangular mesh.
 !#
-!# 10.) tria_duplicate
+!# 12.) tria_duplicate
 !#      -> Creates a duplicate / backup of a triangulation.
 !#         Some information may be shared between two triangulation structures.
 !#
-!# 11.) tria_restore
+!# 13.) tria_restore
 !#      -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 12.) tria_searchBoundaryNode
+!# 14.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 13.) tria_getPointsOnEdge
+!# 15.) tria_getPointsOnEdge
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
-!# 14.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
+!# 16.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
-!# 15.) tria_createRawTria1D
-!#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
-!#         of the same length
-!#
-!# 16.) tria_infoStatistics
+!# 17.) tria_infoStatistics
 !#      -> Prints out statistics about a mesh.
 !#
-!# 17.) tria_exportTriFile
+!# 18.) tria_exportTriFile
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
-!# 18.) tria_getNeighbourVertex
+!# 19.) tria_getNeighbourVertex
 !#      -> Calculates the vertex number of the neighbour vertex of a 
 !#         vertex on an edge.
 !#
-!# 19.) tria_generateSubdomain
+!# 20.) tria_generateSubdomain
 !#      -> Extract cells from a mesh and generate a subdomain from them
 !#
-!# 20.) tria_attachCells
+!# 21.) tria_attachCells
 !#      -> Attaches a set of cells to an existing triangulation
 !#
-!# 21.) tria_cellGroupGreedy
+!# 22.) tria_cellGroupGreedy
 !#      -> Combines the cells of a mesh into simply connected sets of 
 !#         similar size by a greedy algorithm
 !#
-!# 22.) tria_initMacroNodalProperty
+!# 23.) tria_initMacroNodalProperty
 !#      -> Attaches a macro nodal property array to an extended raw mesh.
 !#
-!# 23.) tria_getSubmeshNeighbourhood
+!# 24.) tria_getSubmeshNeighbourhood
 !#      -> Calculate a list of cells in the neighbourhood of a cell set
 !#
-!# 24.) tria_getElementsAtMacroEdge
+!# 25.) tria_getElementsAtMacroEdge
 !#      -> Calculate a list of all elements adjacent to a macro edge
 !#         inside of a macro cell.
 !#
-!# 25.) tria_getElementsAtMacroVertex
+!# 26.) tria_getElementsAtMacroVertex
 !#      -> Calculate a list of all elements adjacent to a vertex
 !#         inside of a macro cell.
 !#
-!# 26.) tria_resetToRaw
+!# 27.) tria_resetToRaw
 !#      -> Resets a mesh to a raw mesh.
 !#
 !# Auxiliary routines:
@@ -114,7 +118,7 @@
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
 !#      -> Reads basic data from a TRI file.
 !#
-!#  2.) tria_genRawBoundary2D
+!#  2.) tria_genRawBoundary1D / tria_genRawBoundary2D
 !#     -> Generates basic information about boundary vertices.
 !#
 !#  3.) tria_sortBoundaryVertices2D
@@ -3261,7 +3265,7 @@ contains
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,int(rtriangulation%NVT,I32)/)
-    call storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+    call storage_new2D ('tria_readRawTriangulation2D', 'DCORVG', Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
@@ -3282,7 +3286,7 @@ contains
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/nve,int(rtriangulation%NEL,I32)/)
-    call storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+    call storage_new2D ('tria_readRawTriangulation2D', 'KVERT', Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
@@ -3309,7 +3313,7 @@ contains
     read (iunit,*)
 
     ! Allocate memory for InodalProperty 
-    call storage_new ('tria_read_tri2D', 'KNPR', &
+    call storage_new ('tria_readRawTriangulation2D', 'KNPR', &
         int(rtriangulation%NVT,I32), ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
@@ -3395,13 +3399,13 @@ contains
     rtriangulation%NVBD = ivbd
 
     ! Allocate memory for IverticesAtBoundary.
-    call storage_new ('tria_generateBasicBoundary', &
+    call storage_new ('tria_genRawBoundary2D', &
         'KVBD', int(rtriangulation%NVBD,I32), &
         ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
-    call storage_new ('tria_generateBasicBoundary', &
+    call storage_new ('tria_genRawBoundary2D', &
         'KBCT', int(rtriangulation%NBCT+1,I32), &
         ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
@@ -3479,7 +3483,7 @@ contains
     if (present(rboundary)) then
 
       ! Allocate memory for  and DvertexParameterValue
-      call storage_new ('tria_generateBasicBoundary', &
+      call storage_new ('tria_genRawBoundary2D', &
           'DVBDP', int(rtriangulation%NVBD,I32), &
           ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
       
@@ -3586,8 +3590,9 @@ contains
     
     ! Check parameters
     if (dleft .ge. dright) then
-      print *, "tria_createRawTria1D: dleft must be less than dright!"
-      stop
+      call output_line ('dleft must be less than dright!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'tria_createRawTria1D')
+      call sys_halt()
     end if
     
     ! Set number of intervals
@@ -3670,6 +3675,433 @@ contains
 
     ! That's it
       
+  end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tria_readTriFile1D(rtriangulation, sfilename, rboundary, &
+      bnoExtendedRaw)
+
+!<description>
+  ! This routine reads a .TRI file of a 1D triangulation into memory
+  ! and creates a 'raw' triangulation (i.e. a triangulation that contains
+  ! only basic information, see below). 
+  !
+  ! The triangulation structure rtriangulation is initialised with the data 
+  ! from the file. The parameter sfilename gives the name of the .tri 
+  ! file to read.
+  !
+  ! This reads only the very basic information that is needed to create
+  ! the coarse grid. No information about boundary points, subdivisions
+  ! or whatever is created.
+  ! The following arrays / information tags will be initialised:
+  !
+  ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
+  ! DvertexCoords, IverticesAtElement, InodalProperty, 
+  ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
+  ! The nodal property array InodalProperty contains only the data for the
+  ! vertices of the triangulation.
+  ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
+  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the parameter value.
+  !
+  ! If bnoExtendedRaw is not specified or set to .FALSE., an extended
+  ! raw mesh is generated that provides also a proper numbering for edges.
+  ! In that case, the following arrays are initialised as well:
+  !
+  ! IelementsAtVertexIdx,IelementsAtVertexIdx,IneighboursAtElement,
+  ! IedgesAtElement,IfacesAtElement
+  !
+  ! The triangulation structure rtriangulation must be empty. All previous
+  ! information in this structure (if there is any) is lost!
+!</description>
+
+!<input>
+  ! The name of the .tri file to read.
+  character(LEN=*), intent(IN) :: sfilename
+
+  ! OPTIONAL: An rboundary object specifying the underlying domain.
+  ! If not specified, the routine assumes that the TRI file does not specify
+  ! boundary parameter values, i.e. the point coordinates in the TRI file
+  ! are all real coordinates. The array DvertexParameterValue is not
+  ! generated in this case.
+  type(t_boundary), intent(IN), optional :: rboundary
+  
+  ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
+  ! an 'extended raw' mesh will be created that provides a proper numbering
+  ! for edges (standard). If set to '.true', the result will be a 'really raw'
+  ! raw mesh with minimum information and no numbering for edges.
+  logical, intent(in), optional :: bnoExtendedRaw
+! </input>
+  
+!<output>
+  ! Triangulation structure, to be filled with data
+  type(t_triangulation), intent(OUT) :: rtriangulation
+!</output>
+  
+!</subroutine>
+
+    ! Input channel for reading
+    integer :: iunit
+    
+    ! Open the file
+    call io_openFileForReading(sfilename, iunit)
+
+    ! We create a 1D triangulation here.
+    rtriangulation%ndim = NDIM1D
+
+    ! Read the basic mesh
+    call tria_readRawTriangulation1D (iunit,rtriangulation)
+
+    ! Create the basic boundary information
+    call tria_genRawBoundary1D (rtriangulation,rboundary)
+
+    ! Extend the raw mesh by basic edge numbering,
+    ! initialise an extended raw mesh.
+    if (.not.present(bnoExtendedRaw)) then
+      call tria_initExtendedRawMesh (rtriangulation)
+    else
+      if (.not.bnoExtendedRaw) then
+        call tria_initExtendedRawMesh (rtriangulation)
+      end if
+    end if
+
+    ! Close the file, finish
+    close(iunit)
+
+  end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tria_readRawTriangulation1D (iunit,rtriangulation)
+
+!<description>  
+  ! Auxiliary routine of tria_readTriFile1D.
+  ! Reads basic information from a triangulation file into rtriangulation.
+  ! That means, the following information arrays / tags are initialised:
+  ! NEL,NVT,NMT,NBCT,NNEE,InelOfType,
+  ! DvertexCoords, IverticesAtElement and InodalProperty.
+  ! The data is read from the file without being changed!
+!</description>
+  
+!<input>
+  ! Unit number of the file to be read
+  integer, intent(IN) :: iunit
+!</input>
+  
+!<inputoutput> 
+  ! Triangulation to be initialised with basic data.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+
+    ! Local variables
+    real(DP), dimension(:,:), pointer :: p_Ddata2D
+    integer(I32), dimension(:,:), pointer :: p_Idata2D
+    integer(I32), dimension(:), pointer :: p_Idata
+    integer(I32) :: ivt, iel
+    integer :: idim, ive
+    integer(I32), dimension(2) :: Isize
+    
+    ! The first two lines in the file are comments.
+    read(iunit,*)
+    read(iunit,*)
+    
+    ! Read NEL,NVT,NMT,NVE,NBCT from the file
+    ! and store this information in the structure.
+    read (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
+        rtriangulation%NNVE,rtriangulation%NBCT
+       
+    ! Check consistency: NEL+1 = NVT
+    if (rtriangulation%NEL+1 .ne. rtriangulation%NVT) then
+      call output_line ('Triangulation structure is invalid NEL+1 does not match NVT!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
+      call sys_halt()
+    end if
+
+    ! Check consistency: NNVE = 2
+    if (rtriangulation%NNVE .ne. 2) then
+      call output_line ('Triangulation structure is invalid: NNVE does not match 2!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
+      call sys_halt()
+    end if
+    
+    ! Comment: 'DCORVG'
+    read (iunit,*)
+
+    ! Allocate memory for the basic arrays on the heap
+    ! 2d array of size(NDIM2D, NVT)
+    Isize = (/NDIM1D,int(rtriangulation%NVT,I32)/)
+    call storage_new2D ('tria_readRawTriangulation1D', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointers to the coordinate array
+    ! p_Ddata2D is the pointer to the coordinate array
+    call storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+        
+    ! Read the data from the file, store it in the array.
+    ! read data into p_Ddata:
+    ! read nvt x-coordinates into p_Ddata(1,ivt)
+    read (iunit,*) (p_Ddata2D(NDIM1D,ivt), ivt=1,rtriangulation%NVT)
+
+    ! Comment: 'KVERT'
+    read (iunit,*)
+
+    ! Allocate memory for IverticesAtElement
+    ! build the old KVERT...
+    ! 2d array of size(2, NEL)
+    Isize = (/2,int(rtriangulation%NEL,I32)/)
+    call storage_new2D ('tria_readRawTriangulation1D', 'KVERT', Isize, ST_INT, &
+        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the IverticesAtElement array and read the array
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_Idata2D)
+
+    ! read ive=1 indices to 2 into p_Idata2D(ive,iel) where iel=1 to NEL
+    read (iunit,*) ((p_Idata2D(ive,iel),ive=1,2), iel=1,rtriangulation%NEL)
+
+    ! We have only 1D elements
+    rtriangulation%InelOfType(:) = 0
+    rtriangulation%InelOfType(TRIA_NVELINE1D) = rtriangulation%NEL
+    
+    ! Comment: 'KNPR'
+    read (iunit,*)
+
+    ! Allocate memory for InodalProperty 
+    call storage_new ('tria_readRawTriangulation1D', 'KNPR', &
+        int(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+    
+    ! Get the pointer to the InodalProperty array
+    call storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_Idata)
+
+    ! Read the data
+    read (iunit,*) (p_Idata(ivt),ivt=1,rtriangulation%NVT)
+
+  end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tria_genRawBoundary1D (rtriangulation,rboundary)
+
+!<description>  
+  ! Auxiliary routine of tria_readTriFile1D.
+  ! This routine initialises basic boundary arrays and cleans up 
+  ! a basic triangulation. That means:
+  ! -> NVBD is calculated
+  ! -> IboundaryCpIdx is created and generated
+  ! -> IverticesAtBoundary is created and generated.
+  !    The vertices are ordered for the boundary component according
+  !    to IboundaryCpIdx but not ordered for their parameter value.
+  ! -> If rboundary is specified,
+  !    DvertexParameterValue is created and generated.
+  !    The parameter values are ordered for the boundary component 
+  !    according to IboundaryCpIdx but not ordered for the parameter value.
+  ! -> If rboundary is specified,
+  !    the parameter values of the boundary vertices are extracted
+  !    from the first coordinate in DvertexCoords and put into
+  !    the DvertexParameterValue array.
+  ! -> If rboundary is specified,
+  !    based on the parameter value of each boundary vertex, the 
+  !    DvertexCoords array receives the actual coordinates of 
+  !    the boundary vertices.
+  !    If not specified, the routine assumes that DvertexCoords
+  !    already contains the real point coordinates.
+!</description>
+  
+!<input>
+  ! OPTIONAL: The parametrisation that specifies the coordinates of the 
+  ! boundary points.
+  ! If specified, DvertexParameterValue is generated from DvertexCoords
+  ! and the coordinates of boundary vertices are (re-)generated
+  ! by DvertexParameterValue.
+  type(t_boundary), intent(IN), optional :: rboundary
+!</input>
+  
+!<inputoutput>
+  ! Triangulation to be initialised with basic data.
+  type(t_triangulation), intent(INOUT) :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    real(DP) :: dy
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IboundaryCpIdx
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary
+    integer(I32), dimension(:), pointer :: p_InodalProperty
+    integer(PREC_VERTEXIDX) :: ivbd,ivt
+    integer :: ibct
+
+    ! Get the pointer to the InodalProperty array
+    call storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_InodalProperty)
+
+    ! There are two end points, hence NVBD=2
+    rtriangulation%NVBD = 2
+
+    ! Allocate memory for IverticesAtBoundary.
+    call storage_new ('tria_genRawBoundary1D', &
+        'KVBD', int(rtriangulation%NVBD,I32), &
+        ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        
+    ! Allocate memory for the boundary component index vector.
+    ! Initialise that with zero!
+    call storage_new ('tria_genRawBoundary1D', &
+        'KBCT', int(rtriangulation%NBCT+1,I32), &
+        ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    
+    ! Get pointers to the arrays
+    call storage_getbase_int (&
+        rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+        
+    call storage_getbase_double2D (&
+        rtriangulation%h_DvertexCoords,p_DvertexCoords)
+        
+    call storage_getbase_int (&
+        rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! The first element in p_IboundaryCpIdx is (as the head) always =1.
+    p_IboundaryCpIdx(1) = 1
+
+    ! Perform a first loop over all vertices to check which are on the
+    ! boundary. Count them. This way, we at first set up the boundary
+    ! component index vector p_IboundaryCpIdx.
+    ! In this first step, we save the number of vertices on each 
+    ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
+    do ivt=1,rtriangulation%NVT
+      if (p_InodalProperty(ivt) .gt. 0) then
+        ibct = p_InodalProperty(ivt)
+        
+        ! Increase the number of vertices in that boundary component by 1.
+        ! The number of vertices on boundary component i is saved here
+        ! at p_IboundaryCpIdx(i+1) for later.
+        ! Note that the array was initialised with zero during the creation
+        ! process!
+        p_IboundaryCpIdx(ibct+1) = p_IboundaryCpIdx(ibct+1)+1
+      end if
+    end do
+    
+    ! Sum up the number of vertices on each boundary component to get the
+    ! actual index vector.
+    do ibct = 2,rtriangulation%NBCT+1
+      p_IboundaryCpIdx(ibct) = p_IboundaryCpIdx(ibct)+p_IboundaryCpIdx(ibct-1)
+    end do
+    
+    ! Shift the p_IboundaryCpIdx array by one position. That's a little trick in
+    ! the use of p_IboundaryCpIdx!
+    ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+    ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   8   6   4
+    !
+    ! Summing that up gave the actual indices:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   9  15  19
+    !
+    ! which is already the correct index array.
+    ! Shifting p_IboundaryCpIdx by 1 will give:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   1   9  15
+    
+    p_IboundaryCpIdx(2:rtriangulation%NBCT+1) = p_IboundaryCpIdx(1:rtriangulation%NBCT)
+    
+    ! Then, we again loop through all vertices and collect those on the
+    ! boundary. In that loop, we use p_IboundaryCpIdx(2:NBCT+1) as pointer and
+    ! increase them for every point we find. The loop will behave like
+    ! the first one, i.e. we'll again find 8,6 and 4 vertices on the boundary components
+    ! 1,2 and 3. Increasing the p_IboundaryCpIdx(2:NBCT+1) for boundary components
+    ! 1..NBCT the same way as done in the first loop will therefore again lead to
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   9  15  19
+    !
+    ! Ok, let's catch the actual vertices.
+    !
+    ! The loop must be slightly modified if rboundary is not present!
+    if (present(rboundary)) then
+
+      ! Allocate memory for  and DvertexParameterValue
+      call storage_new ('tria_genRawBoundary1D', &
+          'DVBDP', int(rtriangulation%NVBD,I32), &
+          ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+      
+      ! Get the array where to store boundary parameter values.
+      call storage_getbase_double (&
+          rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+          
+      ! Check all vertices to find out, which vertices are on the boundary.
+      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      do ivt=1,rtriangulation%NVT
+        if (p_InodalProperty(ivt) .gt. 0) then
+          ibct = p_InodalProperty(ivt)
+          
+          ! Create a new point on that boundary component 
+          ! and get the number, the point will have.
+          ! Note that the array was initialised with zero during the creation
+          ! process!
+          ivbd = p_IboundaryCpIdx(ibct+1)
+          p_IboundaryCpIdx(ibct+1) = ivbd+1
+          
+          ! Store the vertex as boundary vertex
+          p_IverticesAtBoundary (ivbd) = ivt
+          
+          ! Store the parameter value; it's saved in DvertexCoords(1,.)
+          p_DvertexParameterValue (ivbd) = p_DvertexCoords(1,ivt)
+          
+          ! Replace the coordinates in DvertexCoords by those
+          ! given by the parametrisation.
+          call boundary_getCoords(rboundary, ibct, p_DvertexParameterValue (ivbd), &
+              p_DvertexCoords(1,ivt), dy)
+          
+        end if
+      end do
+      !$OMP END PARALLEL DO
+      
+    else
+    
+      ! No parametrisation available, the array with boundary parameter values 
+      ! is not generaterd.
+      !
+      ! Check all vertices to find out, which vertices are on the boundary.
+      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      do ivt=1,rtriangulation%NVT
+        if (p_InodalProperty(ivt) .gt. 0) then
+          ! id of the boundary component
+          ibct = p_InodalProperty(ivt)
+          
+          ! set ivbd to the number of vertices on that boundary component
+          ! thus ivbd holds the current number of vertices found for
+          ! boundary component ibct and ivbd represents the current
+          ! position in the p_IverticesAtBoundary array
+          ivbd = p_IboundaryCpIdx(ibct+1)
+          ! we have found a new point on that boundary component
+          ! so increase the number of points by one
+          p_IboundaryCpIdx(ibct+1) = ivbd+1
+          
+          ! Store the vertex as boundary vertex
+          p_IverticesAtBoundary (ivbd) = ivt
+        end if
+      end do
+      !$OMP END PARALLEL DO
+      
+    end if
+    
   end subroutine
 
 !************************************************************************
@@ -7655,24 +8087,60 @@ contains
 !</subroutine>
 
     select case (rtriangulation%NDIM)
+    case (NDIM1D)
+      if (present(bheadline)) then
+        if (bheadline) then
+          ! Print a headline
+          if (present(ilevel)) then
+            call output_line(&
+              'Lv. dim.        NVT        NMT        NEL    NBCT' &
+            //'  NblindBCT    NVBD     #lines')
+            call output_line(&
+              '--------------------------------------------' &
+            //'------------------------------------')
+          else
+            call output_line(&
+              'dim.        NVT        NMT        NEL    NBCT' &
+            //'  NblindBCT    NVBD     #lines')
+            call output_line(&
+              '--------------------------------------------' &
+            //'-------------------------------')
+          end if
+        end if
+      end if
+
+      ! Print out the statistics
+      if (present(ilevel)) call output_line (trim(sys_si(ilevel,3))//' ',&
+          bnolinebreak=.true.)
+      
+      call output_line (&
+          trim(sys_si(rtriangulation%NDIM,4)) &
+        //trim(sys_si(rtriangulation%NVT,11)) &
+        //trim(sys_si(rtriangulation%NMT,11)) &
+        //trim(sys_si(rtriangulation%NEL,11)) &
+        //trim(sys_si(rtriangulation%NBCT,8)) &
+        //trim(sys_si(rtriangulation%NblindBCT,11)) &
+        //trim(sys_si(rtriangulation%NVBD,8)) &
+        //trim(sys_si(rtriangulation%InelOfType(TRIA_NVELINE1D),11)) )
+
     case (NDIM2D)
       if (present(bheadline)) then
         if (bheadline) then
           ! Print a headline
           if (present(ilevel)) then
             call output_line(&
-              'Lv. dim.       NVT        NMT        NEL    NBCT' &
-            //'    NblindBCT  NVBD     #trias      #quads')
-            call output_line(&
-              '------------------------------------------------' &
-            //'-------------------------------')
-          else
-            call output_line(&
-              'dim.       NVT        NMT        NEL    NBCT' &
-            //'    NblindBCT  NVBD     #trias      #quads')
+              'Lv. dim.        NVT        NMT        NEL    NBCT' &
+            //'  NblindBCT    NVBD     #trias     #quads')
             call output_line(&
               '--------------------------------------------' &
-            //'-------------------------------')
+            //'----------------------------------------------')
+          else
+            call output_line(&
+              'dim.        NVT        NMT        NEL    NBCT' &
+            //'  NblindBCT    NVBD     #trias     #quads')
+            call output_line(&
+              '--------------------------------------------' &
+            //'------------------------------------------')
           end if
         end if
       end if
