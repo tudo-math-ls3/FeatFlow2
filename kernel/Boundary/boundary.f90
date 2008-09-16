@@ -26,7 +26,7 @@
 !#     -> Return the maximum parameter value of a boundary component
 !#
 !# 6.) boundary_getCoords
-!#     -> Calculate the coordinatex of a point given by its parameter value
+!#     -> Calculate the coordinates of a point given by its parameter value
 !#
 !# 7.) boundary_createRegion
 !#     -> Get the characteristics of a boundary segment and create
