@@ -12,35 +12,32 @@
 !#
 !# The following routines can be found here
 !#
-!#  1.) system_init = system_init_simple /
-!#                    system_init_ext
-!#      -> Initialise system-wide settings
+!#  1.) sys_initClock
+!#      -> Initialise the time measurement
 !#
-!#  2.) sys_version
-!#      -> Get kernal version number
+!#  2.) sys_doneClock
+!#      -> Finalise the time measurement
 !#
-!#  3.) sys_toupper = sys_toupper_replace /
-!#                    sys_toupper_copy
-!#      -> Convert a string to uppercase
+!#  3.) sys_setClock
+!#      -> Set clock for time measurement
 !#
-!#  4.) sys_tolower = sys_tolower_replace /
-!#                    sys_tolower_copy
-!#      -> Convert a string to lowercase
+!#  4.) sys_setEncompClock
+!#      -> Set encompassing clock for time measurement
 !#
-!#  5.) sys_upcase
-!#      -> Convert a string to uppercase, function version
+!#  5.) sys_startClock
+!#      -> Start clock for time measurement
 !#
-!#  6.) sys_lowcase
-!#      -> Convert a string to lowercase, function version
+!#  6.) sys_stopClock
+!#      -> Stop clock for time measurement
 !#
-!#  7.) sys_charreplace
-!#      -> Replaces characters in a string
+!#  7.) sys_stopClockAll
+!#      -> Stop all clocks for time measurement
 !#
-!#  8.) sys_throwFPE
-!#      -> Throw a floating point exception
+!#  8.) sys_infoClock
+!#      -> Output information about time measurement
 !#
-!#  9.) sys_getFreeUnit
-!#      -> Determine a free file handle for use in an OPEN() command
+!#   9.) sys_permute
+!#      -> Compute a random permutation of a given sequence
 !#
 !# 10.) sys_halt
 !#      -> Halts the application. Replacement for CALL sys_halt() in F90.
@@ -48,11 +45,49 @@
 !#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROFPE,
 !#         this routine will stop the program by a floating point exception,
 !#         which prints the stack trace to the terminal on some compilers.
-!# 
-!# 11.) sys_permute
-!#      -> Compute a random permutation of a given sequence
 !#
-!#  ... (documentation incomplete)
+!# 11.) sys_throwFPE
+!#      -> Throw a floating point exception
+!#
+!# 12.) system_init = system_init_simple /
+!#                    system_init_ext
+!#      -> Initialise system-wide settings
+!#
+!# 13.) sys_version
+!#      -> Get kernal version number
+!#
+!# 14.) sys_toupper = sys_toupper_replace /
+!#                    sys_toupper_copy
+!#      -> Convert a string to uppercase
+!#
+!# 15.) sys_tolower = sys_tolower_replace /
+!#                    sys_tolower_copy
+!#      -> Convert a string to lowercase
+!#
+!# 16.) sys_upcase
+!#      -> Convert a string to uppercase, function version
+!#
+!# 17.) sys_lowcase
+!#      -> Convert a string to lowercase, function version
+!#
+!# 18.) sys_charreplace
+!#      -> Replaces characters in a string
+!#
+!# 19.) sys_getFreeUnit
+!#      -> Determine a free file handle for use in an OPEN() command
+!#
+!# 20.) sys_fileExists
+!#      -> Check if file with a given name exists
+!#
+!# 21.) sys_flush
+!#      -> Flush file (if available)
+!#
+!# 22.) sys_str2Double
+!#      -> Convert string to double value
+!#
+!# 23.) sys_str2Single
+!#      -> Convert string to single value
+!#
 !# </purpose>
 !##############################################################################
 
@@ -62,7 +97,7 @@ module fsystem
 
 !<constants>
 
-  !<constantblock description="constants for logical values">
+!<constantblock description="constants for logical values">
 
   ! logical value 'true'
   integer, parameter :: YES = 0
@@ -70,12 +105,12 @@ module fsystem
   ! logical value 'false'
   integer, parameter :: NO = 1
 
-  !</constantblock>
+!</constantblock>
   
   integer, parameter :: DP = selected_real_kind(15,307)
   integer, parameter :: SP = selected_real_kind(6,37)
 
-  !<constantblock description="Kind values for integers">
+!<constantblock description="Kind values for integers">
 
   ! kind value for 32Bit integer
   integer, parameter :: I32 = selected_int_kind(8)
@@ -83,7 +118,7 @@ module fsystem
   ! kind value for 64Bit integer
   integer, parameter :: I64 = selected_int_kind(10)
 
-  !</constantblock>
+!</constantblock>
 
 !<constantblock description="system flags">
 
@@ -153,6 +188,8 @@ module fsystem
 !</constantblock>
 
 !</constants>
+
+!************************************************************************
 
 !<types>
 
@@ -263,6 +300,8 @@ module fsystem
 
 !</types>
 
+!************************************************************************
+
 !<globals>
   ! Global time measurement structure
   type(t_clock), dimension(:), allocatable, target, save :: rclock
@@ -277,6 +316,8 @@ module fsystem
   ! One of the SYS_HALT_xxxx constants.
   integer :: sys_haltmode = SYS_HALT_STOP
 !</globals>
+
+!************************************************************************
 
   interface system_init
     module procedure system_init_simple
@@ -751,10 +792,10 @@ contains
   subroutine sys_halt()
   
 !<description>
-  ! This routine halts the application like the CALL sys_halt() command in
-  ! Fortran 90. The routine can be configured how to halt the application.
-  ! For this purpose, the main program can set the global variable
-  ! sys_haltmode to one of the SYS_HALT_xxxx constants.
+    ! This routine halts the application like the CALL sys_halt() command in
+    ! Fortran 90. The routine can be configured how to halt the application.
+    ! For this purpose, the main program can set the global variable
+    ! sys_haltmode to one of the SYS_HALT_xxxx constants.
 !</description>
     
 !</subroutine>
@@ -774,13 +815,14 @@ contains
 
   pure subroutine sys_throwFPE()
   
-    !<description>
-    !This routine throws a floating point exception for debugging purposes
-    !to prevent the debugger to exit the program.
-    !</description>
+!<description>
+    ! This routine throws a floating point exception for debugging
+    ! purposes to prevent the debugger to exit the program.
+!</description>
     
 !</subroutine>
-
+    
+    ! local variables
     integer :: i1,i2
 
     i1=1
@@ -796,15 +838,15 @@ contains
   subroutine system_init_simple()
 
 !<description>
-  ! This subroutine initialises internal data structures with standard
-  ! values.
+    ! This subroutine initialises internal data structures 
+    ! with standard values.
 !</description>
 
 !</subroutine>
 
     call system_init_ext("","")
-
-  end subroutine 
+    
+  end subroutine system_init_simple
 
 !************************************************************************
 
@@ -813,22 +855,23 @@ contains
   subroutine system_init_ext(sprojectID,sprojectDir)
 
 !<description>
-  ! Extended initialisation.
-  ! This subroutine initialises internal data structures.
-  ! The value of the project name and directory are set according to the
-  ! parameters.
+    ! Extended initialisation.
+    ! This subroutine initialises internal data structures.
+    ! The value of the project name and directory are set according to the
+    ! parameters.
 !</description>
 
 !<input>
-  ! An ID string of the project.
-  character(LEN=*), intent(IN) :: sprojectID
-
-  ! The directory of the project. "" means 'current directory'.
-  character(LEN=*), intent(IN) :: sprojectDir
+    ! An ID string of the project.
+    character(LEN=*), intent(IN) :: sprojectID
+    
+    ! The directory of the project. "" means 'current directory'.
+    character(LEN=*), intent(IN) :: sprojectDir
 !</input>
 
 !</subroutine>
 
+    ! local variables
     integer :: icount ! current system time
     integer :: irate  ! approx. number of system clock ticks per second
     integer :: icmax  ! largest possible value of icount
@@ -849,33 +892,34 @@ contains
 
     ! Set value of Pi = 3.14..
     SYS_PI=asin(1.0_DP)*2.0_DP
-
-  end subroutine
+    
+  end subroutine system_init_ext
 
 !************************************************************************************
 
 
 !<subroutine>
+
   subroutine sys_version(ifeastVersionHigh, ifeastVersionMiddle, ifeastVersionLow, &
                          sreldate)
 
 !<description>
-  ! This subroutine returns the library version information.
+    ! This subroutine returns the library version information.
 !</description>
 
 !<output>
 
-  ! high version number
-  integer :: ifeastVersionHigh
-
-  ! middle version number
-  integer :: ifeastVersionMiddle
-
-  ! low version number
-  integer :: ifeastVersionLow
-
-  ! release date
-  character(LEN=*) :: sreldate
+    ! high version number
+    integer :: ifeastVersionHigh
+    
+    ! middle version number
+    integer :: ifeastVersionMiddle
+    
+    ! low version number
+    integer :: ifeastVersionLow
+    
+    ! release date
+    character(LEN=*) :: sreldate
 
 !</output>
 
@@ -884,9 +928,9 @@ contains
     ifeastVersionHigh=0
     ifeastVersionMiddle=0
     ifeastVersionLow=1
-
+    
     sreldate="01.01.2007 RC0"
-
+    
   end subroutine sys_version
 
 !************************************************************************
@@ -896,32 +940,32 @@ contains
   subroutine sys_toupper_replace (str)
 
 !<description>
-  ! Convert a string to upper case. 
-  ! The given string is replaced by its uppercase version.
+    ! Convert a string to upper case. 
+    ! The given string is replaced by its uppercase version.
 !</description>
 
 !<inputoutput>
   
-  ! The string that is to make uppercase
-  character(LEN=*), intent(INOUT) :: str
+    ! The string that is to make uppercase
+    character(LEN=*), intent(INOUT) :: str
   
 !</inputoutput>
   
 !</subroutine>
   
-  ! local variables
-  
-  integer, parameter :: up2low = iachar("a") - iachar("A")
-  integer :: i
-  character    :: c
-      
-  do i=1,len(str)
-    c = str(i:i)
-    if ((c .ge. "a") .and. (c .le. "z")) then
-      str(i:i) = achar (iachar(c) - up2low)
-    end if
-  end do
-  end subroutine
+    ! local variables
+    integer, parameter :: up2low = iachar("a") - iachar("A")
+    integer :: i
+    character    :: c
+    
+    do i=1,len(str)
+      c = str(i:i)
+      if ((c .ge. "a") .and. (c .le. "z")) then
+        str(i:i) = achar (iachar(c) - up2low)
+      end if
+    end do
+    
+  end subroutine sys_toupper_replace
 
 !************************************************************************
 
@@ -930,48 +974,48 @@ contains
   subroutine sys_toupper_copy (str,strUpper) 
 
 !<description>
-  ! Convert a string to upper case.
+    ! Convert a string to upper case.
 !</description>
 
 !<input>
   
-  ! The string that is to make uppercase
-  character(LEN=*), intent(IN) :: str
+    ! The string that is to make uppercase
+    character(LEN=*), intent(IN) :: str
 
 !</input>
 
 !<output>
 
-  ! Uppercase version of the given string
-  character(LEN=*), intent(OUT) :: strUpper
+    ! Uppercase version of the given string
+    character(LEN=*), intent(OUT) :: strUpper
   
 !</output>
   
 !</subroutine>
   
-  ! local variables
-  
-  integer, parameter :: up2low = iachar("a") - iachar("A")
-  integer :: i
-  character    :: c
-
-  if (len(str) > len(strUpper)) then
-    print *, "sys_toupper_copy: target string is too short"
-    call sys_halt()
-  end if
-  
-  ! Initialize string
-  strUpper = ''
-  
-  do i=1,len(str)
-    c = str(i:i)
-    if ((c .ge. "a") .and. (c .le. "z")) then
-      strUpper(i:i) = achar (iachar(c) - up2low)
-    else
-      strUpper(i:i) = c
+    ! local variables
+    integer, parameter :: up2low = iachar("a") - iachar("A")
+    integer :: i
+    character    :: c
+    
+    if (len(str) > len(strUpper)) then
+      print *, "sys_toupper_copy: target string is too short"
+      call sys_halt()
     end if
-  end do
-  end subroutine
+    
+    ! Initialize string
+    strUpper = ''
+    
+    do i=1,len(str)
+      c = str(i:i)
+      if ((c .ge. "a") .and. (c .le. "z")) then
+        strUpper(i:i) = achar (iachar(c) - up2low)
+      else
+        strUpper(i:i) = c
+      end if
+    end do
+    
+  end subroutine sys_toupper_copy
 
 !************************************************************************
 
@@ -980,32 +1024,32 @@ contains
   subroutine sys_tolower_replace (str) 
 
 !<description>
-  ! Convert a string to lower case.
-  ! The given string is replaced by its lowercase version.
+    ! Convert a string to lower case.
+    ! The given string is replaced by its lowercase version.
 !</description>
 
 !<inputoutput>
   
-  ! The string that is to make lowercase
-  character(LEN=*), intent(INOUT) :: str
+    ! The string that is to make lowercase
+    character(LEN=*), intent(INOUT) :: str
 
 !</inputoutput>
   
 !</subroutine>
   
-  ! local variables
-  
-  integer, parameter :: up2low = iachar("a") - iachar("A")
-  integer :: i
-  character    :: c
-  
-  do i=1,len(str)
-    c = str(i:i)
-    if ((c .ge. "A") .and. (c .le. "Z")) then
-      str(i:i) = achar (iachar(c) + up2low)
-    end if
-  end do
-  end subroutine
+    ! local variables
+    integer, parameter :: up2low = iachar("a") - iachar("A")
+    integer :: i
+    character    :: c
+    
+    do i=1,len(str)
+      c = str(i:i)
+      if ((c .ge. "A") .and. (c .le. "Z")) then
+        str(i:i) = achar (iachar(c) + up2low)
+      end if
+    end do
+    
+  end subroutine sys_tolower_replace
   
 !************************************************************************
 
@@ -1014,184 +1058,191 @@ contains
   subroutine sys_tolower_copy (str,strLower) 
 
 !<description>
-  ! Convert a string to lower case.
+    ! Convert a string to lower case.
 !</description>
 
 !<input>
   
-  ! The string that is to make lowercase
-  character(LEN=*), intent(IN) :: str
+    ! The string that is to make lowercase
+    character(LEN=*), intent(IN) :: str
 
 !</input>
 
 !<output>
 
-  ! Lowercase version of the given string
-  character(LEN=*), intent(OUT) :: strLower
+    ! Lowercase version of the given string
+    character(LEN=*), intent(OUT) :: strLower
   
 !</output>
   
 !</subroutine>
   
-  ! local variables
-  
-  integer, parameter :: up2low = iachar("a") - iachar("A")
-  integer :: i
-  character    :: c
-
-  if (len(str) > len(strLower)) then
-    print *, "sys_tolower_copy: target string is too short"
-    call sys_halt()
-  end if
-  
-  ! Initialize string
-  strLower = ''
-  
-  do i=1,len(str)
-    c = str(i:i)
-    if ((c .ge. "A") .and. (c .le. "Z")) then
-      strLower(i:i) = achar (iachar(c) + up2low)
-    else
-      strLower(i:i) = c
+    ! local variables
+    
+    integer, parameter :: up2low = iachar("a") - iachar("A")
+    integer :: i
+    character    :: c
+    
+    if (len(str) > len(strLower)) then
+      print *, "sys_tolower_copy: target string is too short"
+      call sys_halt()
     end if
-  end do
-  end subroutine
-
+    
+    ! Initialize string
+    strLower = ''
+    
+    do i=1,len(str)
+      c = str(i:i)
+      if ((c .ge. "A") .and. (c .le. "Z")) then
+        strLower(i:i) = achar (iachar(c) + up2low)
+      else
+        strLower(i:i) = c
+      end if
+    end do
+    
+  end subroutine sys_tolower_copy
+  
 !******************************************************************************
 
 !<function>
+
   pure function sys_upcase(sinput) result(soutput)
   
-  !<description>
-  ! This routine converts a given string to its uppercase version.
-  !</description>
+!<description>
+    ! This routine converts a given string to its uppercase version.
+!</description>
 
-  !<input>
+!<input>
 
-  !input string
-  character(len=*), intent(in) :: sinput
-  !</input>
+    ! input string
+    character(len=*), intent(in) :: sinput
 
-  !<output>
+!</input>
 
-  !output string
-  character(len=len(sinput)) :: soutput
+!<output>
 
-  !</output>
+    ! output string
+    character(len=len(sinput)) :: soutput
+
+!</output>
 !</function>
 
-  !index variable
-  integer :: i
-
-  soutput = " "   !initialise string
-  do I = 1,len(sinput)
-     if(sinput(i:i) .ge. "a" .and. sinput(i:i) .le. "z") then
+    ! index variable
+    integer :: i
+    
+    soutput = " "   ! initialise string
+    do I = 1,len(sinput)
+      if(sinput(i:i) .ge. "a" .and. sinput(i:i) .le. "z") then
         soutput(i:i) = achar(iachar(sinput(i:i)) - 32)
-     else
+      else
         soutput(i:i) = sinput(i:i)
-     end if
-  end do
-  
+      end if
+    end do
+    
   end function sys_upcase
 
 !******************************************************************************
 
 !<function>
+
   pure function sys_lowcase(sinput) result(soutput)
   
-  !<description>
-  ! This routine converts a given string to its uppercase version.
-  !</description>
+!<description>
+    ! This routine converts a given string to its uppercase version.
+!</description>
 
-  !<input>
+!<input>
 
-  !input string
-  character(len=*), intent(in) :: sinput
-  !</input>
+    ! input string
+    character(len=*), intent(in) :: sinput
 
-  !<output>
+!</input>
 
-  !output string
-  character(len=len(sinput)) :: soutput
+!<output>
 
-  !</output>
+    ! output string
+    character(len=len(sinput)) :: soutput
+
+!</output>
 !</function>
 
-  !index variable
-  integer :: i
-
-  soutput = " "   !initialise string
-  do I = 1,len(sinput)
-     if(sinput(i:i) .ge. "A" .and. sinput(i:i) .le. "Z") then
+    ! index variable
+    integer :: i
+    
+    soutput = " "   ! initialise string
+    do i = 1,len(sinput)
+      if(sinput(i:i) .ge. "A" .and. sinput(i:i) .le. "Z") then
         soutput(i:i) = achar(iachar(sinput(i:i)) + 32)
-     else
+      else
         soutput(i:i) = sinput(i:i)
-     end if
-  end do
-  
+      end if
+    end do
+    
   end function sys_lowcase
 
 !******************************************************************************
 
 !<function>
+
   pure function sys_charreplace(sinput,scharsource,schardest) result(soutput)
   
 !<description>
-  ! Replaces all characers scharsource in sinput by schardest.
-  ! Case sensitive.
+    ! Replaces all characers scharsource in sinput by schardest.
+    ! Case sensitive.
 !</description>
 
 !<input>
-  ! input string
-  character(LEN=*), intent(IN) :: sinput
-  
-  ! Character to be searched for.
-  character, intent(IN) :: scharsource
-  
-  ! Detinatiion character, all scarsource characters in sinput should be
-  ! replaced by.
-  character, intent(IN) :: schardest
+    ! input string
+    character(LEN=*), intent(IN) :: sinput
+    
+    ! Character to be searched for.
+    character, intent(IN) :: scharsource
+    
+    ! Detinatiion character, all scarsource characters in sinput should be
+    ! replaced by.
+    character, intent(IN) :: schardest
 !</input>
 
 !<output>
-  ! output string
-  character(LEN=len(sinput)) :: soutput
+    ! output string
+    character(LEN=len(sinput)) :: soutput
 !</output>
 !</function>
 
-  !index variable
-  integer :: i
-
-  soutput = " "   !initialise string
-  do I = 1,len(sinput)
-     if(sinput(i:i) .eq. scharsource) then
+    !index variable
+    integer :: i
+    
+    soutput = " "   !initialise string
+    do I = 1,len(sinput)
+      if(sinput(i:i) .eq. scharsource) then
         soutput(i:i) = schardest
-     else
+      else
         soutput(i:i) = sinput(i:i)
-     end if
-  end do
-  
-  end function 
+      end if
+    end do
+    
+  end function sys_charreplace
 
 !************************************************************************
 
 !<function>
+
   integer function sys_getFreeUnit()
 
-    !<description>
+!<description>
     !This routine tries to find a free unit (for file input/output). If a free unit is
     !found, it is returned, otherwise -1 is returned.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     !number of free unit (-1 if no free unit available)
-    !</result>
+!</result>
 
 !</function>
 
     logical :: bexists, bopened!flags indicating errors
     integer :: itry !free unit candidate
-
+    
     sys_getFreeUnit = -1
     do itry = 20,10000
       !does unit exist?
@@ -1210,38 +1261,39 @@ contains
     if (sys_getFreeUnit .eq. -1) then
       write (6,*) "*** WARNING! No free unit between 1 and 10000 found! ***"
     endif
-
+    
   end function sys_getFreeUnit
 
 
 !************************************************************************
 
 !<function>
+
   logical function sys_fileExists(iunit,sname)
 
-    !<description>
+!<description>
     !This function checks if there is a file connected to unit iunit, which we
     !can access for reading.
-    !</description>
+!</description>
 
-    !<input>
-
+!<input>
+    
     !unit the file shall be attached to
     integer :: iunit
-
+    
     !name of the file to look at
     character (len=*):: sname
+    
+!</input>
 
-    !</input>
-
-    !<result>
+!<result>
     !  .TRUE. if the file is accessable for reading,
     !  .FALSE. otherwise
-    !</result>
+!</result>
 !</function>
 
     integer :: iostat !status variable for opening procedure
-
+    
     open(iunit,FILE=sname,IOSTAT=iostat,STATUS='OLD',ACTION='READ')
     sys_fileExists=(iostat .eq. 0)
     close(iunit)
@@ -1253,20 +1305,20 @@ contains
 
 !<subroutine>
   subroutine sys_flush(iunit)
-
-    !<description>
+    
+!<description>
     ! This routine flushes the buffers associated with an open output unit.
     ! This normally happens when the file is closed or the program ends, 
     ! but this routine ensures the buffers are flushed before any other 
     ! processing occurs.
-    !</description>
+!</description>
 
-    !<input>
+!<input>
 
     !unit connected to the file to write to
     integer :: iunit
 
-    !</input>
+!</input>
 !</subroutine>
 
 !#ifdef HAS_FLUSH
@@ -1281,12 +1333,12 @@ contains
 
   function sys_str2Double(svalue,sformat) result(dvalue)
 
-    !<description>
+!<description>
     ! This routine converts a given string that provides a valid
     ! IEEE 745 representation of a real number into a double value.
-    !</description>
+!</description>
 
-    !<input>
+!<input>
 
     ! string containing the real number
     character(LEN=*), intent(IN) :: svalue
@@ -1294,14 +1346,14 @@ contains
     ! format description to use for conversion
     character(LEN=*), intent(IN) :: sformat
 
-    !</input>
+!</input>
 
-    !<result>
+!<result>
 
     ! double precision value
     real(DP) :: dvalue
 
-    !</result>
+!</result>
 !</function>
     
     ! local variables
@@ -1342,12 +1394,12 @@ contains
 
   function sys_str2Single(svalue,sformat) result(fvalue)
 
-    !<description>
+!<description>
     ! This routine converts a given string that provides a valid
     ! IEEE 745 representation of a real number into a single value.
-    !</description>
+!</description>
 
-    !<input>
+!<input>
 
     ! string containing the real number
     character(LEN=*), intent(IN) :: svalue
@@ -1355,14 +1407,14 @@ contains
     ! format description to use for conversion
     character(LEN=*), intent(IN) :: sformat
 
-    !</input>
+!</input>
 
-    !<result>
+!<result>
 
     ! single precision value
     real(SP) :: fvalue
 
-    !</result>
+!</result>
 !</function>
     
     ! local variables
@@ -1396,7 +1448,7 @@ contains
     end if
     
   end function sys_str2Single
-  
+
 
 !************************************************************************
 ! Main conversion routines:
@@ -1421,6 +1473,7 @@ contains
 !************************************************************************
 
 !<function>
+  
   character (len=32) function sys_sl(lvalue) result(soutput)
 
 !<description>
@@ -1442,26 +1495,27 @@ contains
   end function sys_sl
 
 !<function>
+
   character (len=32) function sys_sd(dvalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with idigits
     ! decimal places.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
 
     !number of decimals
     integer, intent(in)  :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1479,7 +1533,7 @@ contains
     else
       write(saux, '(i2)') idigits
     endif
-
+    
     sformat = "(f32." // trim(saux) // ")"
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sd
@@ -1487,19 +1541,20 @@ contains
 !************************************************************************
 
 !<function>
+
   character (len=32) function sys_sdP(dvalue, ipositions, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with length
     ! iposition and idigits decimal places.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
@@ -1509,7 +1564,7 @@ contains
 
     ! number of decimals
     integer, intent(in)  :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1544,26 +1599,27 @@ contains
 
 
 !<function>
+
   character (len=24) function sys_sdE(dvalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with idigits
     ! decimal places in scientific notation.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 24 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
 
     !number of decimals
     integer, intent(in)  :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1590,19 +1646,20 @@ contains
 !************************************************************************
 
 !<function>
+
   character (len=32) function sys_sdEP(dvalue, ipositions, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with length
     ! iposition and idigits decimal places in scientific notation.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
@@ -1613,7 +1670,7 @@ contains
     ! number of decimals
     integer, intent(in)  :: idigits
     
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1647,25 +1704,26 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_si(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts an integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer, intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in) :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1695,25 +1753,26 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_si0(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts an integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with zeros.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer, intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in) :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1741,25 +1800,26 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_sli(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a long integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with white spaces.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1787,25 +1847,26 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_sli0(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a long integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value, filled with zeros.
     ! At most 32 characters supported.
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
-    !</input>
+!</input>
 !</function>
 
     character (len=16) :: sformat
@@ -1839,26 +1900,27 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_sdL(dvalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with idigits
     ! decimal places.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of 32 characters
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
 
     !number of decimals
     integer, intent(in)  :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_sd(dvalue, idigits))
@@ -1869,26 +1931,27 @@ contains
 
 
 !<function>
+
   character (len=32) function sys_sdEL(dvalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a double value to a string with idigits
     ! decimal places in scientific notation.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of 32 characters
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     real(DP), intent(in) :: dvalue
 
     !number of decimals
     integer, intent(in)  :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_sdE(dvalue, idigits))
@@ -1899,27 +1962,28 @@ contains
 
 
 !<function>
+
   function sys_siL(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts an integer value to a string of length idigits,
     ! filled up with white spaces.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
     character (len=idigits) :: soutput
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer, intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in) :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_si(ivalue, idigits))
@@ -1930,27 +1994,28 @@ contains
 
 
 !<function>
+
   function sys_si0L(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts an integer value to a string of length idigits,
     ! filled up with zeros.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
     character (len=idigits) :: soutput
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer, intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in) :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_si0(ivalue, idigits))
@@ -1961,26 +2026,27 @@ contains
 
 
 !<function>
+
   function sys_sliL(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a long integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
     character (len=idigits) :: soutput
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_sli(ivalue, idigits))
@@ -1991,26 +2057,27 @@ contains
 
 
 !<function>
+
   function sys_sli0L(ivalue, idigits) result(soutput)
 
-    !<description>
+!<description>
     ! This routine converts a long integer value to a string of length idigits.
-    !</description>
+!</description>
 
-    !<result>
+!<result>
     ! String representation of the value (left-aligned),
     ! fixed length of idigits characters
     character (len=idigits) :: soutput
-    !</result>
+!</result>
 
-    !<input>
+!<input>
 
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
-    !</input>
+!</input>
 !</function>
 
     soutput = adjustl(sys_sli0(ivalue, idigits))
@@ -2185,4 +2252,4 @@ contains
     sys_s10E = trim(sys_sdEL(dvalue, 2))
   end function sys_s10E
 
-end module
+end module fsystem
