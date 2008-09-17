@@ -4931,8 +4931,8 @@ contains
 
     case (2)
       ! 2D storage block
-      call storage_getsize (istoragehandle,Isize)
-      if (ANY(p_rnode%Isize .ne. Isize)) then
+      call storage_getsize (istoragehandle,Isize2D)
+      if (ANY(p_rnode%Isize .ne. Isize2D)) then
         call output_line ('Data array has the wrong size!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
         call sys_halt()
@@ -4962,7 +4962,7 @@ contains
       end select
 
     case DEFAULT
-      call output_line ('Handle '//sys_sli(ihandle, 11)//&
+      call output_line ('Handle '//sys_siL(ihandle, 11)//&
                         ' is neither 1- nor 2- dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
     end select
