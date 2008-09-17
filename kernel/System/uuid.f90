@@ -18,7 +18,22 @@
 !#  3.) uuid_isNil
 !#      -> Check if UUID equals the nil UUID
 !#
-!#  4.) uuid_conv2String
+!#  4.) uuid_isGreater
+!#      -> Check if one UUID is greater than another
+!#
+!#  5.) uuid_isGreaterEqual
+!#      -> Check if one UUID is greater or equal than another
+!#
+!#  6.) uuid_isSmaller
+!#      -> Check if one UUID is smaller than another
+!#
+!#  7.) uuid_isSmallerEqual
+!#      -> Check if one UUID is smaller or equal than another
+!#
+!#  8.) uuid_isEqual
+!#      -> Check if two UUIDs are equal
+!#
+!#  9.) uuid_conv2String
 !#      -> Convert UUID to string representation
 !#
 !# </purpose>
@@ -58,6 +73,34 @@ module uuid
     module procedure uuid_createUUID_indirectly
   end interface
   
+!************************************************************************
+!************************************************************************
+!************************************************************************
+
+  interface operator(.eq.)
+    module procedure uuid_isEqual
+  end interface
+
+  interface operator(.gt.)
+    module procedure uuid_isGreater
+  end interface
+
+  interface operator(.ge.)
+    module procedure uuid_isGreaterEqual
+  end interface
+
+  interface operator(.lt.)
+    module procedure uuid_isSmaller
+  end interface
+  
+  interface operator(.le.)
+    module procedure uuid_isSmallerEqual
+  end interface
+
+  interface operator(.ne.)
+    module procedure uuid_isNotEqual
+  end interface
+
 contains
 
 !************************************************************************
@@ -266,6 +309,174 @@ contains
     bisNil = uuid_isEqual(ruuid, ruuidTmp)
 
   end function uuid_isNil
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isGreater(ruuid1, ruuid2) result (bisGreater)
+
+!<description>
+    ! This function compares two UUIDs and returns .TRUE.
+    ! if the first one is greater than the second one.
+!</description>
+
+!<input>
+    ! the first UUID
+    type(t_uuid), intent(in) :: ruuid1
+
+    ! the second UUID
+    type(t_uuid), intent(in) :: ruuid2
+!</input>
+
+!<result>
+    logical :: bisGreater
+!</result>
+
+!</function>
+
+    ! local variable
+    integer :: i
+    
+    bisGreater = .true.
+
+    do i = 1, 16
+      bisGreater = bisGreater .and. (ruuid1%data(i) .gt. ruuid2%data(i))
+    end do
+  end function uuid_isGreater
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isGreaterEqual(ruuid1, ruuid2) result (bisGreaterEqual)
+
+!<description>
+    ! This function compares two UUIDs and returns .TRUE.
+    ! if the first one is greater or equal than the second one.
+!</description>
+
+!<input>
+    ! the first UUID
+    type(t_uuid), intent(in) :: ruuid1
+
+    ! the second UUID
+    type(t_uuid), intent(in) :: ruuid2
+!</input>
+
+!<result>
+    logical :: bisGreaterEqual
+!</result>
+
+!</function>
+
+    ! local variable
+    integer :: i
+    
+    bisGreaterEqual = .true.
+
+    do i = 1, 16
+      bisGreaterEqual = bisGreaterEqual .and. (ruuid1%data(i) .ge. ruuid2%data(i))
+    end do
+  end function uuid_isGreaterEqual
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isSmaller(ruuid1, ruuid2) result (bisSmaller)
+
+!<description>
+    ! This function compares two UUIDs and returns .TRUE.
+    ! if the first one is smaller than the second one.
+!</description>
+
+!<input>
+    ! the first UUID
+    type(t_uuid), intent(in) :: ruuid1
+
+    ! the second UUID
+    type(t_uuid), intent(in) :: ruuid2
+!</input>
+
+!<result>
+    logical :: bisSmaller
+!</result>
+
+!</function>
+
+    ! local variable
+    integer :: i
+    
+    bisSmaller = .true.
+
+    do i = 1, 16
+      bisSmaller = bisSmaller .and. (ruuid1%data(i) .lt. ruuid2%data(i))
+    end do
+  end function uuid_isSmaller
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isSmallerEqual(ruuid1, ruuid2) result (bisSmallerEqual)
+
+!<description>
+    ! This function compares two UUIDs and returns .TRUE.
+    ! if the first one is smaller or equal than the second one.
+!</description>
+
+!<input>
+    ! the first UUID
+    type(t_uuid), intent(in) :: ruuid1
+
+    ! the second UUID
+    type(t_uuid), intent(in) :: ruuid2
+!</input>
+
+!<result>
+    logical :: bisSmallerEqual
+!</result>
+
+!</function>
+
+    ! local variable
+    integer :: i
+    
+    bisSmallerEqual = .true.
+
+    do i = 1, 16
+      bisSmallerEqual = bisSmallerEqual .and. (ruuid1%data(i) .le. ruuid2%data(i))
+    end do
+  end function uuid_isSmallerEqual
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isNotEqual(ruuid1, ruuid2) result (bisNotEqual)
+
+!<description>
+    ! This function compares two UUIDs and returns .TRUE.
+    ! if they are note equal, otherwise .FALSE. is returned
+!</description>
+
+!<input>
+    ! the first UUID
+    type(t_uuid), intent(in) :: ruuid1
+
+    ! the second UUID
+    type(t_uuid), intent(in) :: ruuid2
+!</input>
+
+!<result>
+    logical :: bisNotEqual
+!</result>
+
+!</function>
+
+    bisNotEqual = .not.uuid_isEqual(ruuid1, ruuid2)
+  end function uuid_isNotEqual
 
 !************************************************************************
 
