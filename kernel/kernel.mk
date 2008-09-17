@@ -36,7 +36,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	hadaptaux.f90 hadaptaux2d.f90 hadaptaux3d.f90 groupfemsystem.f90 \
 	meshregion.f90 pprocsolution.f90 elementpreprocessing.f90 iluk.f90 \
 	gmvwritef.c multileveloperators.f90 adjacency.f90 meshadjacency.f90 \
-	vanka_aux.f90 vanka_navst2d.f90 vanka_bouss2d.f90
+	vanka_aux.f90 vanka_navst2d.f90 vanka_bouss2d.f90 uuid.f90
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
