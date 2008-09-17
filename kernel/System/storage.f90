@@ -215,7 +215,7 @@ module storage
 
   !<typeblock>
 
-  ! This block represents a heap that maintains singole, double precision
+  ! This block represents a heap that maintains single, double precision
   ! and integer data. It contains a list of t_storageNode elements for all
   ! the handles.
   ! There's one global object of this type for the global storage management,
