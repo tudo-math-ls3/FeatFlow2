@@ -322,34 +322,34 @@
 !# </purpose>
 !##############################################################################
 
-MODULE fparser
-  USE fsystem
-  USE storage
-  USE stack
+module fparser
+  use fsystem
+  use storage
+  use stack
   
-  IMPLICIT NONE
+  implicit none
   
-  PRIVATE
-  PUBLIC :: t_fparser
-  PUBLIC :: fparser_init
-  PUBLIC :: fparser_done
-  PUBLIC :: fparser_defineConstant
-  PUBLIC :: fparser_defineExpression
-  PUBLIC :: fparser_create
-  PUBLIC :: fparser_release
-  PUBLIC :: fparser_parseFunction
-  PUBLIC :: fparser_evalFunction
-  PUBLIC :: fparser_ErrorMsg
-  PUBLIC :: fparser_PrintByteCode
+  private
+  public :: t_fparser
+  public :: fparser_init
+  public :: fparser_done
+  public :: fparser_defineConstant
+  public :: fparser_defineExpression
+  public :: fparser_create
+  public :: fparser_release
+  public :: fparser_parseFunction
+  public :: fparser_evalFunction
+  public :: fparser_ErrorMsg
+  public :: fparser_PrintByteCode
   
   !****************************************************************************
   !****************************************************************************
   !****************************************************************************
   
-  INTERFACE fparser_evalFunction
-    MODULE PROCEDURE fparser_evalFunctionScalar
-    MODULE PROCEDURE fparser_evalFunctionBlock
-  END INTERFACE
+  interface fparser_evalFunction
+    module procedure fparser_evalFunctionScalar
+    module procedure fparser_evalFunctionBlock
+  end interface
 
   !****************************************************************************
   !****************************************************************************
@@ -361,33 +361,33 @@ MODULE fparser
   ! Maximum stack size
   ! The stack is used for all instances of function parsers. During initialization
   ! a smaller size can be specified. This is only the maximum size of the stack.
-  INTEGER, PARAMETER :: FPAR_MAXSTACKSIZE   = 1024*1024 ! this is 8 MByte
+  integer, parameter :: FPAR_MAXSTACKSIZE   = 1024*1024 ! this is 8 MByte
 
   ! Lenght of string
-  INTEGER, PARAMETER :: FPAR_STRLEN         = 2048
+  integer, parameter :: FPAR_STRLEN         = 2048
 
   ! Maximum number of predefined/user-defined constants
-  INTEGER, PARAMETER :: FPAR_MAXCONSTS      = 128
+  integer, parameter :: FPAR_MAXCONSTS      = 128
 
   ! Maximum number of predefined/user-defined expressions
-  INTEGER, PARAMETER :: FPAR_MAXEXPRESSIONS = 128
+  integer, parameter :: FPAR_MAXEXPRESSIONS = 128
 
   ! Length of constant name
-  INTEGER, PARAMETER :: FPAR_CONSTLEN       = 12
+  integer, parameter :: FPAR_CONSTLEN       = 12
 
   ! Length of expression name
-  INTEGER, PARAMETER :: FPAR_EXPRLEN        = 12
+  integer, parameter :: FPAR_EXPRLEN        = 12
 !</constantblock>
 
 
 !<constantblock description="data type for parser bytecode">
   ! Data type of bytecode
-  INTEGER, PARAMETER :: is = SELECTED_INT_KIND(1)
+  integer, parameter :: is = selected_int_kind(1)
 !</constantblock>
 
 
 !<constantblock description="keywords for parser">
-  INTEGER(is), PARAMETER :: cImmed       =  1, &
+  integer(is), parameter :: cImmed       =  1, &
                             cJump        =  2, &
                             cNeg         =  3, &
                             cDeg         =  4, &
@@ -397,7 +397,7 @@ MODULE fparser
                             cMul         =  8, &
                             cDiv         =  9, &
                             cMod         = 10
-  INTEGER(is), PARAMETER :: cPow         = 11, &
+  integer(is), parameter :: cPow         = 11, &
                             cNEqual      = 12, & ! NOTE: != must be prior to =
                             cEqual       = 13, &
                             cLessOrEq    = 14, & ! NOTE: <= must be prior to < 
@@ -407,7 +407,7 @@ MODULE fparser
                             cNot         = 18, &
                             cAnd         = 19, &
                             cOr          = 20    ! --> last dyadic operator: A.OP. B
-  INTEGER(is), PARAMETER :: cIf          = 21, & ! <-- if-then-else
+  integer(is), parameter :: cIf          = 21, & ! <-- if-then-else
                             cMin         = 22, & ! <-- first dyadic operator: .OP.(A,B)
                             cMax         = 23, &
                             cAtan2       = 24, & ! --> last dyadic operator: .OP.(A,B)
@@ -417,7 +417,7 @@ MODULE fparser
                             cExp         = 28, &
                             cLog10       = 29, &
                             cLog         = 30
-  INTEGER(is), PARAMETER :: cSqrt        = 31, &
+  integer(is), parameter :: cSqrt        = 31, &
                             cSinh        = 32, &
                             cCosh        = 33, &
                             cTanh        = 34, &
@@ -427,7 +427,7 @@ MODULE fparser
                             cCot         = 38, &
                             cAsinh       = 39, &
                             cAsin        = 40
-  INTEGER(is), PARAMETER :: cAcosh       = 41, &
+  integer(is), parameter :: cAcosh       = 41, &
                             cAcos        = 42, &
                             cAtanh       = 43, &
                             cAtan        = 44, &
@@ -440,7 +440,7 @@ MODULE fparser
 
 
 !<constantblock description="symbols for parser operands">
-  CHARACTER (LEN=2), DIMENSION(cAdd:cOr), PARAMETER :: Ops = (/ '+ ', &
+  character (LEN=2), dimension(cAdd:cOr), parameter :: Ops = (/ '+ ', &
                                                                 '- ', &
                                                                 '* ', &
                                                                 '/ ', &
@@ -459,7 +459,7 @@ MODULE fparser
 
 
 !<constantblock description="function names for parser">
-  CHARACTER (LEN=5), DIMENSION(cIf:cSec), PARAMETER :: Funcs = (/ 'if   ', &
+  character (LEN=5), dimension(cIf:cSec), parameter :: Funcs = (/ 'if   ', &
                                                                   'min  ', &
                                                                   'max  ', &
                                                                   'atan2', &
@@ -491,14 +491,14 @@ MODULE fparser
 
 
 !<constantblock description="predefined constant names for parser; an underscore '_' is automatically added">
-  CHARACTER(LEN=FPAR_CONSTLEN), DIMENSION(3) :: PredefinedConsts = (/ 'pi        ', &
+  character(LEN=FPAR_CONSTLEN), dimension(3) :: PredefinedConsts = (/ 'pi        ', &
                                                                       'exp       ', &
                                                                       'infty     ' /)
 !</constantblock>
 
 
 !<constantblock description="predefined constant values for parser">
-  REAL(DP), DIMENSION(3), PARAMETER :: PredefinedConstvals = (/&
+  real(DP), dimension(3), parameter :: PredefinedConstvals = (/&
       3.141592653589793115997963468544185161590576171875_DP, &
       2.718281828459045090795598298427648842334747314453125_DP, &
       SYS_INFINITY/)
@@ -513,28 +513,28 @@ MODULE fparser
 !<globals>
 
   ! Global handle to stack memory
-  INTEGER, SAVE                                                    :: h_Stack = ST_NOHANDLE
+  integer, save                                                    :: h_Stack = ST_NOHANDLE
   
   ! Global pointer to stack memory
-  REAL(DP), DIMENSION(:), POINTER, SAVE                            :: p_Stack => NULL()
+  real(DP), dimension(:), pointer, save                            :: p_Stack => null()
 
   ! Global number of predefined/user-defined constants
-  INTEGER, SAVE                                                    :: nConsts = 0 
+  integer, save                                                    :: nConsts = 0 
 
   ! Global constant names for parser
-  CHARACTER(LEN=FPAR_CONSTLEN), DIMENSION(FPAR_MAXCONSTS), SAVE    :: Consts  = '     '
+  character(LEN=FPAR_CONSTLEN), dimension(FPAR_MAXCONSTS), save    :: Consts  = '     '
 
   ! Global constant values for parser
-  REAL(DP), DIMENSION(FPAR_MAXCONSTS), SAVE                        :: ConstVals = 0
+  real(DP), dimension(FPAR_MAXCONSTS), save                        :: ConstVals = 0
 
   ! Global number of predefined/user-defined expressions
-  INTEGER, SAVE                                                    :: nExpressions = 0
+  integer, save                                                    :: nExpressions = 0
 
   ! Global expression name for parser
-  CHARACTER(LEN=FPAR_EXPRLEN), DIMENSION(FPAR_MAXCONSTS), SAVE     :: Expressions = ''
+  character(LEN=FPAR_EXPRLEN), dimension(FPAR_MAXCONSTS), save     :: Expressions = ''
 
   ! Global expression string for parser
-  CHARACTER(LEN=FPAR_STRLEN), DIMENSION(FPAR_MAXEXPRESSIONS), SAVE :: ExpressionStrings
+  character(LEN=FPAR_STRLEN), dimension(FPAR_MAXEXPRESSIONS), save :: ExpressionStrings
 !</globals>
 
   !****************************************************************************
@@ -546,60 +546,60 @@ MODULE fparser
 !<typeblock>
   
   ! Type block for storing all information of the function parser
-  TYPE t_fparser
-    PRIVATE
+  type t_fparser
+    private
     
     ! Array of function parser components. Each component is used to
     ! handle one function string at a time
-    TYPE(t_fparserComponent), DIMENSION(:), POINTER :: Comp => NULL()
+    type(t_fparserComponent), dimension(:), pointer :: Comp => null()
     
     ! Number of parser components
-    INTEGER :: nComp                                        = 0
-  END TYPE t_fparser
+    integer :: nComp                                        = 0
+  end type t_fparser
 
 !</typeblock>
 
 !<typeblock>
 
   ! Type block for storing the bytecode of the function parser for one component
-  TYPE t_fparserComponent
-    PRIVATE
+  type t_fparserComponent
+    private
 
     ! Size of bytecode
-    INTEGER :: ByteCodeSize                                 = 0
+    integer :: ByteCodeSize                                 = 0
 
     ! Size of immediates
-    INTEGER :: ImmedSize                                    = 0
+    integer :: ImmedSize                                    = 0
 
     ! Stack size
-    INTEGER :: StackSize                                    = 0
+    integer :: StackSize                                    = 0
 
     ! Stack pointer
-    INTEGER :: StackPtr                                     = 0
+    integer :: StackPtr                                     = 0
 
     ! Use degree conversion DEG <-> RAD for some functions
-    LOGICAL :: useDegreeConversion                          = .FALSE.
+    logical :: useDegreeConversion                          = .false.
 
     ! Is vectorizable
-    LOGICAL :: isVectorizable                               = .TRUE.
+    logical :: isVectorizable                               = .true.
     
     ! Bytecode
-    INTEGER(is), DIMENSION(:), POINTER :: ByteCode          => NULL()
+    integer(is), dimension(:), pointer :: ByteCode          => null()
     
     ! Immediates
-    REAL(DP), DIMENSION(:), POINTER :: Immed                => NULL()
-  END TYPE t_fparserComponent
+    real(DP), dimension(:), pointer :: Immed                => null()
+  end type t_fparserComponent
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   ! *****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE fparser_init (iStackSize)
+  subroutine fparser_init (iStackSize)
 
 !<description>
     ! Initialize function parser
@@ -607,33 +607,33 @@ CONTAINS
 
 !<input>
     ! OPTIONAL: initial size of the stack memory
-    INTEGER, INTENT(IN), OPTIONAL :: iStackSize
+    integer, intent(IN), optional :: iStackSize
 !</input>
 !</subroutine>
 
-    INTEGER :: iSize,iConst
+    integer :: iSize,iConst
 
-    IF (PRESENT(iStackSize)) THEN
-      iSize=MIN(iStackSize,FPAR_MAXSTACKSIZE)
-    ELSE
+    if (present(iStackSize)) then
+      iSize=min(iStackSize,FPAR_MAXSTACKSIZE)
+    else
       iSize=FPAR_MAXSTACKSIZE
-    END IF
+    end if
     
     ! Allocate memory for global stack and set pointer
-    CALL storage_new('fparser_init','p_Stack',iSize,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_double(h_Stack,p_Stack)
+    call storage_new('fparser_init','p_Stack',iSize,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+    call storage_getbase_double(h_Stack,p_Stack)
     
     ! Initialize predefined constants
-    DO iConst=LBOUND(PredefinedConsts,1),UBOUND(PredefinedConsts,1)
-      CALL fparser_defineConstant(PredefinedConsts(iConst),PredefinedConstvals(iConst))
-    END DO
-  END SUBROUTINE fparser_init
+    do iConst=lbound(PredefinedConsts,1),ubound(PredefinedConsts,1)
+      call fparser_defineConstant(PredefinedConsts(iConst),PredefinedConstvals(iConst))
+    end do
+  end subroutine fparser_init
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_done
+  subroutine fparser_done
 
 !<description>
     ! Release function parser
@@ -651,15 +651,15 @@ CONTAINS
     ExpressionStrings = ''
 
     ! Free memory
-    IF (h_Stack  /= ST_NOHANDLE) CALL storage_free(h_Stack)
-    NULLIFY(p_Stack)
-  END SUBROUTINE fparser_done
+    if (h_Stack  /= ST_NOHANDLE) call storage_free(h_Stack)
+    nullify(p_Stack)
+  end subroutine fparser_done
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_defineConstant(constant,constantValue)
+  subroutine fparser_defineConstant(constant,constantValue)
 
 !<description>
     ! Define a new constant for the function parser.
@@ -668,52 +668,52 @@ CONTAINS
 
 !<input>
     ! Name of the constant
-    CHARACTER(LEN=FPAR_CONSTLEN), INTENT(IN) :: constant
+    character(LEN=FPAR_CONSTLEN), intent(IN) :: constant
 
     ! Value of the constant
-    REAL(DP), INTENT(IN) :: constantValue
+    real(DP), intent(IN) :: constantValue
 !</input>
 !</subroutine>
 
     ! local variables
-    CHARACTER(LEN=LEN(constant)) :: const
-    INTEGER :: iConst
+    character(LEN=len(constant)) :: const
+    integer :: iConst
 
     ! Check if there is enough space
-    IF (nConsts < FPAR_MAXCONSTS) THEN
+    if (nConsts < FPAR_MAXCONSTS) then
       nConsts = nConsts+1
-    ELSE
-      PRINT *, "*** Parser error: no space left for definition of constant"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "*** Parser error: no space left for definition of constant"
+      call sys_halt()
+    end if
 
     ! Prepare constant
-    CALL sys_tolower(constant,const)
+    call sys_tolower(constant,const)
 
     ! Check if constant is already defined
-    DO iConst=1,nConsts-1
-      IF (Consts(iConst) == const) THEN
+    do iConst=1,nConsts-1
+      if (Consts(iConst) == const) then
         ! If it is already defined, then it must not have a different value
-        IF(ConstVals(iConst) /= constantValue) THEN
-          PRINT *, "*** Parser error: constant is already defined with different value"
-          CALL sys_halt()
-        ELSE
+        if(ConstVals(iConst) /= constantValue) then
+          print *, "*** Parser error: constant is already defined with different value"
+          call sys_halt()
+        else
           nConsts = nConsts-1
-          RETURN
-        END IF
-      END IF
-    END DO
+          return
+        end if
+      end if
+    end do
 
     ! Apply constant value and constant name
     Consts(nConsts)    = const
     ConstVals(nConsts) = constantValue
-  END SUBROUTINE fparser_defineConstant
+  end subroutine fparser_defineConstant
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_defineExpression(expression,expressionString)
+  subroutine fparser_defineExpression(expression,expressionString)
 
 !<description>
     ! Define a new expression for the function parser.
@@ -722,64 +722,64 @@ CONTAINS
 
 !<input>
     ! Name of the expression
-    CHARACTER(LEN=FPAR_EXPRLEN), INTENT(IN) :: expression
+    character(LEN=FPAR_EXPRLEN), intent(IN) :: expression
 
     ! String of the expression
-    CHARACTER(LEN=*), INTENT(IN) :: expressionString
+    character(LEN=*), intent(IN) :: expressionString
 !</input>
 !</subroutine>
 
     ! local variables
-    CHARACTER(LEN=LEN(expression))       :: expr
-    CHARACTER(LEN=LEN(expressionString)) :: str
-    INTEGER :: iExpression
+    character(LEN=len(expression))       :: expr
+    character(LEN=len(expressionString)) :: str
+    integer :: iExpression
 
     ! Check if there is enough space
-    IF (nExpressions < FPAR_MAXEXPRESSIONS) THEN
+    if (nExpressions < FPAR_MAXEXPRESSIONS) then
       nExpressions = nExpressions+1
-    ELSE
-      PRINT *, "*** Parser error: no space left for definition of expression"
-      CALL sys_halt()
-    END IF
+    else
+      print *, "*** Parser error: no space left for definition of expression"
+      call sys_halt()
+    end if
 
     ! Prepare expression string
-    CALL sys_tolower(expression,expr)
-    CALL sys_tolower(expressionString,str)
+    call sys_tolower(expression,expr)
+    call sys_tolower(expressionString,str)
 
     ! Replace human readable function names by 1-Char. format
-    CALL Replace ('**','^ ',str)
-    CALL Replace ('[','(',  str)
-    CALL Replace (']',')',  str)
-    CALL Replace ('{','(',  str)
-    CALL Replace ('}',')',  str)
+    call Replace ('**','^ ',str)
+    call Replace ('[','(',  str)
+    call Replace (']',')',  str)
+    call Replace ('{','(',  str)
+    call Replace ('}',')',  str)
     
     ! Condense function string
-    CALL RemoveSpaces (str)
+    call RemoveSpaces (str)
 
     ! Check if expressions is already defined
-    DO iExpression=1,nExpressions-1
-      IF (Expressions(iExpression) == expr) THEN
+    do iExpression=1,nExpressions-1
+      if (Expressions(iExpression) == expr) then
         ! If it is already defined, then it must not have a different value
-        IF(ExpressionStrings(iExpression) /= str) THEN
-          PRINT *, "*** Parser error: expression is already defined with different string"
-          CALL sys_halt()
-        ELSE
+        if(ExpressionStrings(iExpression) /= str) then
+          print *, "*** Parser error: expression is already defined with different string"
+          call sys_halt()
+        else
           nExpressions = nExpressions-1
-          RETURN
-        END IF
-      END IF
-    END DO
+          return
+        end if
+      end if
+    end do
 
     ! Apply expressions string and expression name
     Expressions(nExpressions)       = expr
     ExpressionStrings(nExpressions) = str
-  END SUBROUTINE fparser_defineExpression
+  end subroutine fparser_defineExpression
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE fparser_create (rparser,nComp)
+  subroutine fparser_create (rparser,nComp)
 
 !<description>
     ! Initialize function parser for nComp functions
@@ -787,27 +787,27 @@ CONTAINS
 
 !<input>
     ! Number of functions
-    INTEGER, INTENT(IN) :: nComp
+    integer, intent(IN) :: nComp
 !</input>
 
 !<inputoutput>
     ! Function parser object
-    TYPE(t_fparser), INTENT(INOUT) :: rparser
+    type(t_fparser), intent(INOUT) :: rparser
 !</inputoutput>
 !</subroutine>
     
     ! Set number of components
     rparser%nComp=nComp
     
-    IF (ASSOCIATED(rparser%Comp)) DEALLOCATE(rparser%Comp)
-    ALLOCATE (rparser%Comp(nComp))
-  END SUBROUTINE fparser_create
+    if (associated(rparser%Comp)) deallocate(rparser%Comp)
+    allocate (rparser%Comp(nComp))
+  end subroutine fparser_create
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_release (rparser)
+  subroutine fparser_release (rparser)
 
 !<description>
     ! Release function parser and all of its coponents
@@ -815,30 +815,30 @@ CONTAINS
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparser), INTENT(INOUT) :: rparser
+    type(t_fparser), intent(INOUT) :: rparser
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER :: iComp
+    integer :: iComp
     
     ! Check that pointer is associated and return otherwise
-    IF (.NOT.ASSOCIATED(rparser%Comp)) RETURN
+    if (.not.associated(rparser%Comp)) return
 
     ! Loop over all components
-    DO iComp=1,rparser%nComp
-      IF (ASSOCIATED(rparser%Comp(iComp)%ByteCode)) DEALLOCATE(rparser%Comp(iComp)%ByteCode)
-      IF (ASSOCIATED(rparser%Comp(iComp)%Immed))    DEALLOCATE(rparser%Comp(iComp)%Immed)
-    END DO
-    DEALLOCATE(rparser%Comp)
+    do iComp=1,rparser%nComp
+      if (associated(rparser%Comp(iComp)%ByteCode)) deallocate(rparser%Comp(iComp)%ByteCode)
+      if (associated(rparser%Comp(iComp)%Immed))    deallocate(rparser%Comp(iComp)%Immed)
+    end do
+    deallocate(rparser%Comp)
     rparser%nComp=0
-  END SUBROUTINE fparser_release
+  end subroutine fparser_release
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE fparser_parseFunction (rparser, iComp, FuncStr, Var, useDegrees)
+  subroutine fparser_parseFunction (rparser, iComp, FuncStr, Var, useDegrees)
 
 !<description>
     ! Parse ith function string FuncStr and compile it into bytecode
@@ -846,61 +846,61 @@ CONTAINS
     
 !<input>
     ! Function identifier
-    INTEGER, INTENT(IN) :: iComp
+    integer, intent(IN) :: iComp
 
     ! Function string
-    CHARACTER (LEN=*), INTENT(IN) :: FuncStr
+    character (LEN=*), intent(IN) :: FuncStr
 
     ! Array with variable names
-    CHARACTER (LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character (LEN=*), dimension(:), intent(IN) :: Var
 
     ! OPTIONAL
-    LOGICAL, INTENT(IN), OPTIONAL :: useDegrees
+    logical, intent(IN), optional :: useDegrees
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE (t_fparser), INTENT(INOUT) :: rparser
+    type (t_fparser), intent(INOUT) :: rparser
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    CHARACTER (LEN=LEN(FuncStr)) :: Func
+    character (LEN=len(FuncStr)) :: Func
     
-    IF (iComp < 1 .OR. iComp > rparser%nComp) THEN
-      WRITE(*,*) '*** Parser error: Function number ',iComp,' out of range'
-      CALL sys_halt()
-    END IF
+    if (iComp < 1 .or. iComp > rparser%nComp) then
+      write(*,*) '*** Parser error: Function number ',iComp,' out of range'
+      call sys_halt()
+    end if
     
     ! Local copy of function string
     Func = FuncStr
 
     ! Replace human readable function names by 1-Char. format
-    CALL Replace ('**','^ ',Func)
-    CALL Replace ('[','(',Func)
-    CALL Replace (']',')',Func)
-    CALL Replace ('{','(',Func)
-    CALL Replace ('}',')',Func)
+    call Replace ('**','^ ',Func)
+    call Replace ('[','(',Func)
+    call Replace (']',')',Func)
+    call Replace ('{','(',Func)
+    call Replace ('}',')',Func)
 
     ! Condense function string
-    CALL RemoveSpaces (Func)
+    call RemoveSpaces (Func)
 
     ! Check for valid syntax; this prevents the bytecode compiler
     ! from running into endless loops or other problems
-    CALL CheckSyntax (Func,Var)
+    call CheckSyntax (Func,Var)
     
     ! If syntax is correct, then compile into bytecode
-    IF (PRESENT(useDegrees))&
+    if (present(useDegrees))&
         rparser%Comp(iComp)%useDegreeConversion = useDegrees
 
-    CALL Compile (rparser%Comp(iComp),Func,Var)
-  END SUBROUTINE fparser_parseFunction
+    call Compile (rparser%Comp(iComp),Func,Var)
+  end subroutine fparser_parseFunction
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE fparser_evalFunctionScalar (rparser, iComp, Val, Res)
+  subroutine fparser_evalFunctionScalar (rparser, iComp, Val, Res)
 
 !<description>
     ! Evaluate bytecode of component iComp for the values passed in array 
@@ -911,58 +911,58 @@ CONTAINS
 
 !<input>
     ! Function identifier
-    INTEGER, INTENT(IN) :: iComp
+    integer, intent(IN) :: iComp
 
     ! Variable values
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Val
+    real(DP), dimension(:), intent(IN) :: Val
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE (t_fparser),  INTENT(IN) :: rparser
+    type (t_fparser),  intent(IN) :: rparser
 !</inputoutput>
 
 !<output>
     ! Evaluated function
-    REAL(DP), INTENT(OUT)  :: Res
+    real(DP), intent(OUT)  :: Res
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER :: EvalErrType
+    integer :: EvalErrType
 
-    IF (h_Stack .EQ. ST_NOHANDLE) THEN
-      PRINT *, "*** Parser error: Parser not initialised!"
-      CALL sys_halt()
-    END IF
+    if (h_Stack .eq. ST_NOHANDLE) then
+      print *, "*** Parser error: Parser not initialised!"
+      call sys_halt()
+    end if
     
     ! Check if memory of global stack is sufficient
-    IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN
-      IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
-        CALL storage_realloc('fparser_evalFunctionScalar',&
-            rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
-        CALL storage_getbase_double(h_Stack,p_Stack)
-      ELSE
-        PRINT *, "*** Parser error: stack size exceeds memory!"
-        CALL sys_halt()
-      END IF
-    END IF
+    if (size(p_Stack) < rparser%Comp(iComp)%StackSize+1) then
+      if (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) then
+        call storage_realloc('fparser_evalFunctionScalar',&
+            rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
+        call storage_getbase_double(h_Stack,p_Stack)
+      else
+        print *, "*** Parser error: stack size exceeds memory!"
+        call sys_halt()
+      end if
+    end if
     
     ! Invoke working routine
-    CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val,EvalErrType,Res)
+    call evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val,EvalErrType,Res)
 
     ! Check if evaluation was successful
-    IF (EvalErrType .NE. 0) THEN
-      PRINT *, "*** Parser error: An error occured during function evaluation!"
-      CALL sys_halt()
-    END IF
-  END SUBROUTINE fparser_evalFunctionScalar
+    if (EvalErrType .ne. 0) then
+      print *, "*** Parser error: An error occured during function evaluation!"
+      call sys_halt()
+    end if
+  end subroutine fparser_evalFunctionScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_evalFunctionBlock (rparser, iComp, iDim, ValBlock, Res, ValScalar)
+  subroutine fparser_evalFunctionBlock (rparser, iComp, iDim, ValBlock, Res, ValScalar)
 
 !<description>
     ! Evaluate bytecode of component iComp for the array of values passed in 
@@ -990,172 +990,172 @@ CONTAINS
 
 !<input>
     ! Function identifier
-    INTEGER, INTENT(IN) :: iComp
+    integer, intent(IN) :: iComp
 
     ! Orientation of the stored values
     ! iDim =1 : ValBlock is organized as (x1:xN),(y1:yN),...
     ! iDim =2 : ValBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
-    INTEGER, INTENT(IN) :: iDim
+    integer, intent(IN) :: iDim
 
     ! Variable values (must have the same dimension as Res)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: ValBlock
+    real(DP), dimension(:,:), intent(IN) :: ValBlock
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE (t_fparser),  INTENT(INOUT) :: rparser
+    type (t_fparser),  intent(INOUT) :: rparser
 
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
-    REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: ValScalar
+    real(DP), dimension(:), intent(IN), optional :: ValScalar
 !</inputoutput>
 
 !<output>
     ! Evaluated function
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: Res
+    real(DP), dimension(:), intent(OUT) :: Res
 !</output>
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: ValTemp
-    INTEGER :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock,sizeValBlock,sizeValScalar
-    INTEGER :: EvalErrType
+    real(DP), dimension(:), allocatable :: ValTemp
+    integer :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock,sizeValBlock,sizeValScalar
+    integer :: EvalErrType
 
     ! Get total number of variable sets
-    nVal=SIZE(ValBlock,iDim)
+    nVal=size(ValBlock,iDim)
 
     ! Check if the compiled function is vectorizable
-    IF (rparser%Comp(iComp)%isVectorizable) THEN
+    if (rparser%Comp(iComp)%isVectorizable) then
       ! ...ok, vectorization of the bytecode is admissible.
 
       ! Guess required memory
       iMemory=(rparser%Comp(iComp)%StackSize+1)*nVal
-      iMemory=MIN(iMemory,FPAR_MAXSTACKSIZE)
+      iMemory=min(iMemory,FPAR_MAXSTACKSIZE)
       
       ! Check if memory of global stack is sufficient for complete set of variables
-      IF (SIZE(p_Stack) < iMemory) THEN
-        IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
-          CALL storage_realloc('fparser_evalFunctionBlock',&
-              iMemory,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
-          CALL storage_getbase_double(h_Stack,p_Stack)
-        ELSE
-          PRINT *, "*** Parser error: stack size exceeds memory!"
-          CALL sys_halt()
-        END IF
-      END IF
+      if (size(p_Stack) < iMemory) then
+        if (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) then
+          call storage_realloc('fparser_evalFunctionBlock',&
+              iMemory,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
+          call storage_getbase_double(h_Stack,p_Stack)
+        else
+          print *, "*** Parser error: stack size exceeds memory!"
+          call sys_halt()
+        end if
+      end if
       
       ! Compute size of blocks that can be vectorized
-      iBlockSize = FLOOR(REAL(iMemory)/REAL(rparser%Comp(iComp)%StackSize+1))
+      iBlockSize = floor(real(iMemory)/real(rparser%Comp(iComp)%StackSize+1))
       
       ! What is the organization of ValBlock(:,:)
-      IF (iDim == 1) THEN
-        DO iVal=1,nVal,iBlockSize
+      if (iDim == 1) then
+        do iVal=1,nVal,iBlockSize
           
           ! Initialization
-          jVal     = MIN(iVal+iBlockSize,nVal)
+          jVal     = min(iVal+iBlockSize,nVal)
           iBlock   = jVal-iVal+1
           
           ! Invoke working routine
-          CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
+          call evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
               ValBlock(iVal:jVal,:),iDim,EvalErrType,Res(iVal:jVal),ValScalar)
-        END DO
-      ELSE
-        DO iVal=1,nVal,iBlockSize
+        end do
+      else
+        do iVal=1,nVal,iBlockSize
           
           ! Initialization
-          jVal     = MIN(iVal+iBlockSize,nVal)
+          jVal     = min(iVal+iBlockSize,nVal)
           iBlock   = jVal-iVal+1
           
           ! Invoke working routine
-          CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
+          call evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
               ValBlock(:,iVal:jVal),iDim,EvalErrType,Res(iVal:jVal),ValScalar)
-        END DO
-      END IF
+        end do
+      end if
       
-    ELSE   ! The compiled function cannot be vectorized
+    else   ! The compiled function cannot be vectorized
 
       ! Check if memory of global stack is sufficient for one set of variables
-      IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN
-        IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
-          CALL storage_realloc('fparser_evalFunctionBlock',&
-              rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
-          CALL storage_getbase_double(h_Stack,p_Stack)
-        ELSE
-          PRINT *, "*** Parser error: stack size exceeds memory!"
-          CALL sys_halt()
-        END IF
-      END IF
+      if (size(p_Stack) < rparser%Comp(iComp)%StackSize+1) then
+        if (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) then
+          call storage_realloc('fparser_evalFunctionBlock',&
+              rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
+          call storage_getbase_double(h_Stack,p_Stack)
+        else
+          print *, "*** Parser error: stack size exceeds memory!"
+          call sys_halt()
+        end if
+      end if
 
       ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
       ! separately for each set of variables. Here, the organization of the array
       ! VAL(:,:) is important. Moreover, if the optional parameter ValScalar is
       ! given, then we have to combine those variables from ValBlock and ValScalar.
 
-      IF (PRESENT(ValScalar)) THEN
+      if (present(ValScalar)) then
 
         ! Allocate auxiliary array
-        sizeValBlock = SIZE(ValBlock,3-iDim)
-        sizeValScalar= SIZE(ValScalar)
-        ALLOCATE(ValTemp(sizeValBlock+sizeValScalar))
+        sizeValBlock = size(ValBlock,3-iDim)
+        sizeValScalar= size(ValScalar)
+        allocate(ValTemp(sizeValBlock+sizeValScalar))
 
-        IF (iDim == 1) THEN
-          DO iVal=1,nVal
+        if (iDim == 1) then
+          do iVal=1,nVal
             
             ValTemp(1:sizeValBlock) = ValBlock(iVal,:)
             ValTemp(sizeValBlock+1:)= ValScalar
 
             ! Invoke working routine
-            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
+            call evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
                 EvalErrType,Res(iVal))
-          END DO
-        ELSE
-          DO iVal=1,nVal
+          end do
+        else
+          do iVal=1,nVal
             
             ValTemp(1:sizeValBlock) = ValBlock(:,iVal)
             ValTemp(sizeValBlock+1:)= ValScalar
             
             ! Invoke working routine
-            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
+            call evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
                 EvalErrType,Res(iVal))
-          END DO
-        END IF
+          end do
+        end if
 
         ! Deallocate auxiliary array
-        DEALLOCATE(ValTemp)
+        deallocate(ValTemp)
 
-      ELSE
+      else
         
-        IF (iDim == 1) THEN
-          DO iVal=1,nVal
+        if (iDim == 1) then
+          do iVal=1,nVal
             
             ! Invoke working routine
-            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(iVal,:),&
+            call evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(iVal,:),&
                 EvalErrType,Res(iVal))
-          END DO
-        ELSE
-          DO iVal=1,nVal
+          end do
+        else
+          do iVal=1,nVal
             
             ! Invoke working routine
-            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(:,iVal),&
+            call evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(:,iVal),&
                 EvalErrType,Res(iVal))
-          END DO
-        END IF
+          end do
+        end if
 
-      END IF
-    END IF
+      end if
+    end if
 
     ! Check if evaluation was successful
-    IF (EvalErrType .NE. 0) THEN
-      PRINT *, "*** Parser error: An error occured during function evaluation!"
-      CALL sys_halt()
-    END IF
-  END SUBROUTINE fparser_evalFunctionBlock
+    if (EvalErrType .ne. 0) then
+      print *, "*** Parser error: An error occured during function evaluation!"
+      call sys_halt()
+    end if
+  end subroutine fparser_evalFunctionBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE evalFunctionScalar (Stack, Comp, Val, EvalErrType, res)
+  subroutine evalFunctionScalar (Stack, Comp, Val, EvalErrType, res)
 
 !<description>
     ! Evaluate bytecode for the values passed in array Val(:). Note, this subroutine
@@ -1165,33 +1165,33 @@ CONTAINS
 
 !<input>
     ! Component of function parser
-    TYPE(t_fparserComponent), INTENT(IN) :: Comp
+    type(t_fparserComponent), intent(IN) :: Comp
 
     ! Variable values
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Val
+    real(DP), dimension(:), intent(IN) :: Val
 !</input>
 
 !<inputoutput>
     ! Stack memory
-    REAL(DP), DIMENSION(*), INTENT(INOUT) :: Stack
+    real(DP), dimension(*), intent(INOUT) :: Stack
 !</inputoutput>
 
 !<output>
     ! Error code for function evaluation
-    INTEGER, INTENT(OUT) :: EvalErrType
+    integer, intent(OUT) :: EvalErrType
 
     ! Evaluated function
-    REAL(DP), INTENT(OUT) :: res
+    real(DP), intent(OUT) :: res
 !</output>
 !</subroutine>
 
     ! local parameters
-    REAL(DP), PARAMETER :: Zero = 0._DP
+    real(DP), parameter :: Zero = 0._DP
     
     ! local variables
-    INTEGER  :: InstPtr,StackPtr,DataPtr
-    INTEGER  :: jumpAddr,immedAddr
-    REAL(DP) :: daux
+    integer  :: InstPtr,StackPtr,DataPtr
+    integer  :: jumpAddr,immedAddr
+    real(DP) :: daux
     
     ! Initialization
     DataPtr  = 1
@@ -1199,288 +1199,288 @@ CONTAINS
     InstPtr  = 0
     
     ! Repeat until complete bytecode has been processed
-    DO WHILE(InstPtr < Comp%ByteCodeSize)
+    do while(InstPtr < Comp%ByteCodeSize)
       InstPtr=InstPtr+1
 
       ! What kind of bytecode are we?
-      SELECT CASE (Comp%ByteCode(InstPtr))
+      select case (Comp%ByteCode(InstPtr))
         !------------------------------------------------------------
         ! Functions
         !------------------------------------------------------------
-      CASE (cAbs)
-        Stack(StackPtr)=ABS(Stack(StackPtr))
+      case (cAbs)
+        Stack(StackPtr)=abs(Stack(StackPtr))
         
-      CASE (cAcos)
-        IF ((Stack(StackPtr) < -1._DP) .OR. &
-            (Stack(StackPtr) >  1._DP)) THEN
+      case (cAcos)
+        if ((Stack(StackPtr) < -1._DP) .or. &
+            (Stack(StackPtr) >  1._DP)) then
           EvalErrType = 4
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr)=ACOS(Stack(StackPtr))
+          return
+        endif
+        Stack(StackPtr)=acos(Stack(StackPtr))
         
-      CASE (cAsin)
-        IF ((Stack(StackPtr) < -1._DP) .OR. &
-            (Stack(StackPtr) >  1._DP)) THEN
+      case (cAsin)
+        if ((Stack(StackPtr) < -1._DP) .or. &
+            (Stack(StackPtr) >  1._DP)) then
           EvalErrType = 4
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr)=ASIN(Stack(StackPtr))
+          return
+        endif
+        Stack(StackPtr)=asin(Stack(StackPtr))
         
-      CASE (cAtan)
-        Stack(StackPtr)=ATAN(Stack(StackPtr))
+      case (cAtan)
+        Stack(StackPtr)=atan(Stack(StackPtr))
 
-      CASE (cAtan2)
-        Stack(StackPtr-1)=ATAN2(Stack(StackPtr -1),Stack(StackPtr))
+      case (cAtan2)
+        Stack(StackPtr-1)=atan2(Stack(StackPtr -1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cAcosh)
-        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2-1)
-        IF (daux <= 0._DP) THEN
+      case (cAcosh)
+        daux=Stack(StackPtr)+sqrt(Stack(StackPtr)**2-1)
+        if (daux <= 0._DP) then
           EvalErrType = 5
           res         = zero
-          RETURN
-        END IF
-        Stack(StackPtr)=LOG(daux)
+          return
+        end if
+        Stack(StackPtr)=log(daux)
         
-      CASE (cAnint)
-        Stack(StackPtr)=ANINT(Stack(StackPtr))
+      case (cAnint)
+        Stack(StackPtr)=anint(Stack(StackPtr))
 
-      CASE (cAint)
-        Stack(StackPtr)=AINT(Stack(StackPtr))
+      case (cAint)
+        Stack(StackPtr)=aint(Stack(StackPtr))
 
-      CASE (cAsinh)
-        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2+1)
-        IF (daux <= 0._DP) THEN
+      case (cAsinh)
+        daux=Stack(StackPtr)+sqrt(Stack(StackPtr)**2+1)
+        if (daux <= 0._DP) then
           EvalErrType = 5
           res         = zero
-          RETURN
-        END IF
-        Stack(StackPtr)=LOG(daux)
+          return
+        end if
+        Stack(StackPtr)=log(daux)
         
-      CASE (cAtanh)
-        IF (Stack(StackPtr) == -1._DP) THEN
+      case (cAtanh)
+        if (Stack(StackPtr) == -1._DP) then
           EvalErrType = 6
           res         = zero
-          RETURN
-        END IF
+          return
+        end if
         daux=(1+Stack(StackPtr))/(1-Stack(StackPtr))
-        IF (daux <= 0._DP) THEN
+        if (daux <= 0._DP) then
           EvalErrType = 3
           res         = zero
-          RETURN
-        END IF
-        Stack(StackPtr)=LOG(daux)/2._DP
+          return
+        end if
+        Stack(StackPtr)=log(daux)/2._DP
         
-      CASE (cCeil)
-        Stack(StackPtr)=CEILING(Stack(StackPtr))
+      case (cCeil)
+        Stack(StackPtr)=ceiling(Stack(StackPtr))
         
-      CASE (cCos)
-        Stack(StackPtr)=COS(Stack(StackPtr)) 
+      case (cCos)
+        Stack(StackPtr)=cos(Stack(StackPtr)) 
         
-      CASE (cCosh)
-        Stack(StackPtr)=COSH(Stack(StackPtr))
+      case (cCosh)
+        Stack(StackPtr)=cosh(Stack(StackPtr))
 
-      CASE (cCot)
-        daux=TAN(Stack(StackPtr))
-        IF (daux == 0._DP) THEN 
+      case (cCot)
+        daux=tan(Stack(StackPtr))
+        if (daux == 0._DP) then 
           EvalErrType = 1
           res         = zero
-          RETURN
-        END IF
+          return
+        end if
         Stack(StackPtr)=1._DP/daux
 
-      CASE (cCsc)
-        daux=SIN(Stack(StackPtr))
-        IF (daux == 0._DP) THEN
+      case (cCsc)
+        daux=sin(Stack(StackPtr))
+        if (daux == 0._DP) then
           EvalErrType = 1
           res         = zero
-          RETURN
-        ENDIF
+          return
+        endif
         Stack(StackPtr)=1._DP/daux
         
-      CASE (cExp)
-        Stack(StackPtr)=EXP(Stack(StackPtr))
+      case (cExp)
+        Stack(StackPtr)=exp(Stack(StackPtr))
 
-      CASE (cFloor)
-        Stack(StackPtr)=FLOOR(Stack(StackPtr))
+      case (cFloor)
+        Stack(StackPtr)=floor(Stack(StackPtr))
 
-      CASE (cIf)
+      case (cIf)
         InstPtr=InstPtr+1; jumpAddr  = Comp%ByteCode(InstPtr)
         InstPtr=InstPtr+1; immedAddr = Comp%ByteCode(InstPtr)
-        IF (.NOT.DbleToLogc(Stack(StackPtr))) THEN
+        if (.not.DbleToLogc(Stack(StackPtr))) then
           InstPtr = jumpAddr
           DataPtr = immedAddr
-        END IF
+        end if
         StackPtr=StackPtr-1
         
-      CASE (cLog)
-        IF (Stack(StackPtr) <= 0._DP) THEN
+      case (cLog)
+        if (Stack(StackPtr) <= 0._DP) then
           EvalErrType = 3
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr)=LOG(Stack(StackPtr)) 
+          return
+        endif
+        Stack(StackPtr)=log(Stack(StackPtr)) 
         
-      CASE (cLog10)
-        IF (Stack(StackPtr) <= 0._DP) THEN
+      case (cLog10)
+        if (Stack(StackPtr) <= 0._DP) then
           EvalErrType = 3
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr)=LOG10(Stack(StackPtr))
+          return
+        endif
+        Stack(StackPtr)=log10(Stack(StackPtr))
         
-      CASE (cMax)
-        Stack(StackPtr-1)=MAX(Stack(StackPtr-1),Stack(StackPtr))
+      case (cMax)
+        Stack(StackPtr-1)=max(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cMin)
-        Stack(StackPtr-1)=MIN(Stack(StackPtr-1),Stack(StackPtr))
+      case (cMin)
+        Stack(StackPtr-1)=min(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cSec)
-        daux=COS(Stack(StackPtr))
-        IF (daux == 0._DP) THEN
+      case (cSec)
+        daux=cos(Stack(StackPtr))
+        if (daux == 0._DP) then
           EvalErrType = 1
           res         = zero
-          RETURN
-        ENDIF
+          return
+        endif
         Stack(StackPtr)=1._DP/daux
         
-      CASE (cSin)
-        Stack(StackPtr)=SIN(Stack(StackPtr))
+      case (cSin)
+        Stack(StackPtr)=sin(Stack(StackPtr))
         
-      CASE(cSinh)
-        Stack(StackPtr)=SINH(Stack(StackPtr))
+      case(cSinh)
+        Stack(StackPtr)=sinh(Stack(StackPtr))
       
-      CASE(cSqrt)
-        IF (Stack(StackPtr) < 0._DP) THEN
+      case(cSqrt)
+        if (Stack(StackPtr) < 0._DP) then
           EvalErrType = 3
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr)=SQRT(Stack(StackPtr))
+          return
+        endif
+        Stack(StackPtr)=sqrt(Stack(StackPtr))
 
-      CASE (cTan)
-        Stack(StackPtr)=TAN(Stack(StackPtr))
+      case (cTan)
+        Stack(StackPtr)=tan(Stack(StackPtr))
         
-      CASE (cTanh)
-        Stack(StackPtr)=TANH(Stack(StackPtr))
+      case (cTanh)
+        Stack(StackPtr)=tanh(Stack(StackPtr))
         
         !------------------------------------------------------------
         ! Misc
         !------------------------------------------------------------
-      CASE (cImmed)
+      case (cImmed)
         StackPtr        = StackPtr+1
         Stack(StackPtr) = Comp%Immed(DataPtr)
         DataPtr         = DataPtr+1
         
-      CASE (cJump)
+      case (cJump)
         DataPtr=Comp%ByteCode(InstPtr+2)
         InstPtr=Comp%ByteCode(InstPtr+1)
 
         !------------------------------------------------------------
         ! Operators
         !------------------------------------------------------------
-      CASE (cNeg)
+      case (cNeg)
         Stack(StackPtr)=-Stack(StackPtr)
         
-      CASE (cAdd)
+      case (cAdd)
         Stack(StackPtr-1)=Stack(StackPtr-1)+Stack(StackPtr)
         StackPtr=StackPtr-1
         
-      CASE (cSub)
+      case (cSub)
         Stack(StackPtr-1)=Stack(StackPtr-1)-Stack(StackPtr)
         StackPtr=StackPtr-1
 
-      CASE (cMul)
+      case (cMul)
         Stack(StackPtr-1)=Stack(StackPtr-1)*Stack(StackPtr)
         StackPtr=StackPtr-1
         
-      CASE (cDiv)
-        IF (Stack(StackPtr) == 0._DP) THEN
+      case (cDiv)
+        if (Stack(StackPtr) == 0._DP) then
           EvalErrType = 1
           res         = zero
-          RETURN
-        ENDIF
+          return
+        endif
         Stack(StackPtr-1)=Stack(StackPtr-1)/Stack(StackPtr)
         StackPtr=StackPtr-1
         
-      CASE (cMod)
-        IF (Stack(StackPtr) == 0._DP) THEN
+      case (cMod)
+        if (Stack(StackPtr) == 0._DP) then
           EvalErrType = 1
           res         = zero
-          RETURN
-        ENDIF
-        Stack(StackPtr-1)=MOD(Stack(StackPtr-1),Stack(StackPtr))
+          return
+        endif
+        Stack(StackPtr-1)=mod(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
 
-      CASE (cPow)
+      case (cPow)
         Stack(StackPtr-1)=Stack(StackPtr-1)**Stack(StackPtr)
         StackPtr=StackPtr-1
         
-      CASE (cEqual)
+      case (cEqual)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) == Stack(StackPtr))
         StackPtr=StackPtr-1
 
-      CASE (cNEqual)
+      case (cNEqual)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) /= Stack(StackPtr))
         StackPtr=StackPtr-1
 
-      CASE (cLess)
+      case (cLess)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) < Stack(StackPtr))
         StackPtr=StackPtr-1
 
-      CASE (cLessOrEq)
+      case (cLessOrEq)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) <= Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cGreater)
+      case (cGreater)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) > Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cGreaterOrEq)
+      case (cGreaterOrEq)
         Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) >= Stack(StackPtr))
         StackPtr=StackPtr-1
         
-      CASE (cAnd)
-        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .AND. &
+      case (cAnd)
+        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .and. &
             DbleToLogc(Stack(StackPtr)) )
         StackPtr=StackPtr-1
 
-      CASE (cOr)
-        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .OR. &
+      case (cOr)
+        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .or. &
             DbleToLogc(Stack(StackPtr)) )
         StackPtr=StackPtr-1
 
-      CASE (cNot)
-        Stack(StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(StackPtr)) )
+      case (cNot)
+        Stack(StackPtr)=LogcToDble( .not. DbleToLogc(Stack(StackPtr)) )
         
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
-      CASE (cDeg)
+      case (cDeg)
         Stack(StackPtr)=RadToDeg(Stack(StackPtr))
         
-      CASE (cRad)
+      case (cRad)
         Stack(StackPtr)=DegToRad(Stack(StackPtr))
         
-      CASE DEFAULT
+      case DEFAULT
         StackPtr=StackPtr+1
         Stack(StackPtr)=Val(Comp%ByteCode(InstPtr)-VarBegin+1)
-      END SELECT
-    END DO
+      end select
+    end do
     
     EvalErrType = 0
     Res = Stack(StackPtr)
-  END SUBROUTINE evalFunctionScalar
+  end subroutine evalFunctionScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE evalFunctionBlock (BlockSize, Stack, Comp, ValBlock, iDim, EvalErrType, Res, ValScalar)
+  subroutine evalFunctionBlock (BlockSize, Stack, Comp, ValBlock, iDim, EvalErrType, Res, ValScalar)
 
 !<description>
     ! Evaluate bytecode for an array of values passed in ValBlock(:,:).
@@ -1490,43 +1490,43 @@ CONTAINS
 
 !<input>
     ! Component of function parser
-    TYPE(t_fparserComponent), INTENT(IN) :: Comp
+    type(t_fparserComponent), intent(IN) :: Comp
     
     ! Variable values
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: ValBlock
+    real(DP), dimension(:,:), intent(IN) :: ValBlock
 
     ! Size of the vector block
-    INTEGER, INTENT(IN) :: BlockSize
+    integer, intent(IN) :: BlockSize
 
     ! Orientation of the stored values
     ! iDim =1 : ValBlock is organized as (x1:xN),(y1:yN),...
     ! iDim =2 : ValBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
-    INTEGER, INTENT(IN) :: iDim
+    integer, intent(IN) :: iDim
 
     ! Vector of scalar variable values
-    REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: ValScalar
+    real(DP), dimension(:), intent(IN), optional :: ValScalar
 !</input>
 
 !<inputoutput>
     ! Stack memory
-    REAL(DP), DIMENSION(BlockSize,*), INTENT(INOUT) :: Stack
+    real(DP), dimension(BlockSize,*), intent(INOUT) :: Stack
 !</inputoutput>
 
 !<output>
     ! Error code for function evaluation
-    INTEGER, INTENT(OUT) :: EvalErrType
+    integer, intent(OUT) :: EvalErrType
 
     ! Evaluated function
-    REAL(DP), DIMENSION(:) :: Res
+    real(DP), dimension(:) :: Res
 !</output>
 !</subroutine>
 
     ! local parameters
-    REAL(DP), PARAMETER :: Zero = 0._DP
+    real(DP), parameter :: Zero = 0._DP
     
     ! local variables
-    INTEGER  :: InstPtr,DataPtr,StackPtr,iBlock,istartValScalar,iVariable
-    REAL(DP) :: daux
+    integer  :: InstPtr,DataPtr,StackPtr,iBlock,istartValScalar,iVariable
+    real(DP) :: daux
     
     ! Initialization
     DataPtr  = 1
@@ -1537,324 +1537,324 @@ CONTAINS
     ! variable which is passed as scalar. Hence, if the optional parameter
     ! ValScalar is missing, then istartValScalar pointers to SIZE(ValBlock)+1.
     ! Obviously, no variable beyond this value is addressed.
-    istartValScalar=SIZE(ValBlock,3-iDim)+1
+    istartValScalar=size(ValBlock,3-iDim)+1
     
     ! Repeat until complete bytecode has been processed
-    DO WHILE(InstPtr < Comp%ByteCodeSize)
+    do while(InstPtr < Comp%ByteCodeSize)
       InstPtr=InstPtr+1
       
-      SELECT CASE (Comp%ByteCode(InstPtr))
+      select case (Comp%ByteCode(InstPtr))
         !------------------------------------------------------------
         ! Functions
         !------------------------------------------------------------
-      CASE (cAbs)
+      case (cAbs)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=ABS(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=abs(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
         
 
-      CASE (cAcos)
+      case (cAcos)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF ((Stack(iBlock,StackPtr) < -1._DP) .OR.&
-              (Stack(iBlock,StackPtr) >  1._DP)) THEN
+        do iBlock=1,BlockSize
+          if ((Stack(iBlock,StackPtr) < -1._DP) .or.&
+              (Stack(iBlock,StackPtr) >  1._DP)) then
             EvalErrType=4
             Res(iBlock)=Zero
-          ELSE
-            Stack(iBlock,StackPtr)=ACOS(Stack(iBlock,StackPtr))
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=acos(Stack(iBlock,StackPtr))
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cAsin)
+      case (cAsin)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF ((Stack(iBlock,StackPtr) < -1._DP) .OR.&
-              (Stack(iBlock,StackPtr) >  1._DP)) THEN
+        do iBlock=1,BlockSize
+          if ((Stack(iBlock,StackPtr) < -1._DP) .or.&
+              (Stack(iBlock,StackPtr) >  1._DP)) then
             EvalErrType=4
             Res(iBlock)=zero
-          ELSE
-            Stack(iBlock,StackPtr)=ASIN(Stack(iBlock,StackPtr))
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=asin(Stack(iBlock,StackPtr))
+          end if
+        end do
 !$omp end parallel do
 
         
-      CASE (cAtan)
+      case (cAtan)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=ATAN(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=atan(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cAtan2)
+      case (cAtan2)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr-1)=ATAN2(Stack(iBlock,StackPtr -1),Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=atan2(Stack(iBlock,StackPtr -1),Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
         
-      CASE (cAcosh)
+      case (cAcosh)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          daux=Stack(iBlock,StackPtr)+SQRT(Stack(iBlock,StackPtr)**2-1)
-          IF (daux <= 0._DP) THEN
+        do iBlock=1,BlockSize
+          daux=Stack(iBlock,StackPtr)+sqrt(Stack(iBlock,StackPtr)**2-1)
+          if (daux <= 0._DP) then
             EvalErrType=5
             Res(iBlock)=zero
-          ELSE
-            Stack(iBlock,StackPtr)=LOG(daux)
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=log(daux)
+          end if
+        end do
 !$omp end parallel do
         
 
-      CASE (cAnint)
+      case (cAnint)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=ANINT(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=anint(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cAint)
+      case (cAint)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=AINT(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=aint(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cAsinh)
+      case (cAsinh)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          daux=Stack(iBlock,StackPtr)+SQRT(Stack(iBlock,StackPtr)**2+1)
-          IF (daux <= 0._DP) THEN
+        do iBlock=1,BlockSize
+          daux=Stack(iBlock,StackPtr)+sqrt(Stack(iBlock,StackPtr)**2+1)
+          if (daux <= 0._DP) then
             EvalErrType=5
             Res(iBlock)=zero
-          ELSE
-            Stack(iBlock,StackPtr)=LOG(daux)
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=log(daux)
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cAtanh)
+      case (cAtanh)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) == -1._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) == -1._DP) then
             EvalErrType=6
             Res(iBlock)=Zero
-          END IF
+          end if
           daux=(1+Stack(iBlock,StackPtr))/(1-Stack(iBlock,StackPtr))
-          IF (daux <= 0._DP) THEN
+          if (daux <= 0._DP) then
             EvalErrType=3
             Res(iBlock)=zero
-          ELSE
-            Stack(iBlock,StackPtr) = LOG(daux)/2._DP
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr) = log(daux)/2._DP
+          end if
+        end do
 !$omp end parallel do
 
         
-      CASE (cCeil)
+      case (cCeil)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=CEILING(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=ceiling(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cCos)
+      case (cCos)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=COS(Stack(iBlock,StackPtr)) 
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=cos(Stack(iBlock,StackPtr)) 
+        end do
 !$omp end parallel do
         
 
-      CASE (cCosh)
+      case (cCosh)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=COSH(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=cosh(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cCot)
+      case (cCot)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          daux=TAN(Stack(iBlock,StackPtr))
-          IF (daux == 0) THEN 
+        do iBlock=1,BlockSize
+          daux=tan(Stack(iBlock,StackPtr))
+          if (daux == 0) then 
             EvalErrType=1
             Res(iBlock)=Zero
-          ELSE
+          else
             Stack(iBlock,StackPtr)=1._DP/daux
-          END IF
-        END DO
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cCsc)
+      case (cCsc)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          daux=SIN(Stack(iBlock,StackPtr))
-          IF (daux==0._DP) THEN
+        do iBlock=1,BlockSize
+          daux=sin(Stack(iBlock,StackPtr))
+          if (daux==0._DP) then
             EvalErrType=1
             Res(iBlock)=Zero
-          ELSE
+          else
             Stack(iBlock,StackPtr)=1._DP/daux
-          END IF
-        END DO
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cExp)
+      case (cExp)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=EXP(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=exp(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cFloor)
+      case (cFloor)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=FLOOR(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=floor(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
 
-      CASE (cIf)
+      case (cIf)
         ! IF-THEN-ELSE cannot be vectorized which should be noted during
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
-        PRINT *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
-        CALL sys_halt()
+        print *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
+        call sys_halt()
         
 
-      CASE (cLog)
+      case (cLog)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) <= 0._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) <= 0._DP) then
             EvalErrType=3
             Res(iBlock)=Zero
-          ELSE
-            Stack(iBlock,StackPtr)=LOG(Stack(iBlock,StackPtr)) 
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=log(Stack(iBlock,StackPtr)) 
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cLog10)
+      case (cLog10)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) <= 0._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) <= 0._DP) then
             EvalErrType=3
             Res(iBlock)=Zero
-          ELSE
-            Stack(iBlock,StackPtr)=LOG10(Stack(iBlock,StackPtr))
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=log10(Stack(iBlock,StackPtr))
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cMax)
+      case (cMax)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr-1)=MAX(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=max(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
         
 
-      CASE (cMin)
+      case (cMin)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr-1)=MIN(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=min(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
         
 
-      CASE (cSec)
+      case (cSec)
 !$omp parallel do default(shared) private(iBlock,daux)
-        DO iBlock=1,BlockSize
-          daux=COS(Stack(iBlock,StackPtr))
-          IF (daux == 0._DP) THEN
+        do iBlock=1,BlockSize
+          daux=cos(Stack(iBlock,StackPtr))
+          if (daux == 0._DP) then
             EvalErrType=1
             Res(iBlock)=Zero
-          ELSE
+          else
             Stack(iBlock,StackPtr)=1._DP/daux
-          END IF
-        END DO
+          end if
+        end do
 !$omp end parallel do
 
         
-      CASE (cSin)
+      case (cSin)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=SIN(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=sin(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
         
-      CASE(cSinh)
+      case(cSinh)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=SINH(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=sinh(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
       
 
-      CASE(cSqrt)
+      case(cSqrt)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) < 0._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) < 0._DP) then
             EvalErrType=3
             Res(iBlock)=Zero
-          ELSE
-            Stack(iBlock,StackPtr)=SQRT(Stack(iBlock,StackPtr))
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr)=sqrt(Stack(iBlock,StackPtr))
+          end if
+        end do
 !$omp end parallel do
 
 
-      CASE (cTan)
+      case (cTan)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=TAN(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=tan(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
 
         
-      CASE (cTanh)
+      case (cTanh)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=TANH(Stack(iBlock,StackPtr))
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=tanh(Stack(iBlock,StackPtr))
+        end do
 !$omp end parallel do
         
 
         !------------------------------------------------------------
         ! Misc
         !------------------------------------------------------------
-      CASE (cImmed)
+      case (cImmed)
         StackPtr=StackPtr+1
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr)=Comp%Immed(DataPtr)
-        END DO
+        end do
 !$omp end parallel do
         DataPtr=DataPtr+1
 
 
-      CASE (cJump)
+      case (cJump)
         DataPtr=Comp%ByteCode(InstPtr+2)
         InstPtr=Comp%ByteCode(InstPtr+1)
 
@@ -1862,228 +1862,228 @@ CONTAINS
         !------------------------------------------------------------
         ! Operators
         !------------------------------------------------------------
-      CASE (cNeg)
+      case (cNeg)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr)=-Stack(iBlock,StackPtr)
-        END DO
+        end do
 !$omp end parallel do
 
 
-      CASE (cAdd)
+      case (cAdd)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)+Stack(iBlock,StackPtr)
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
         
 
-      CASE (cSub)
+      case (cSub)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)-Stack(iBlock,StackPtr)
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cMul)
+      case (cMul)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)*Stack(iBlock,StackPtr)
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
         
 
-      CASE (cDiv)
+      case (cDiv)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) == 0._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) == 0._DP) then
             EvalErrType=1
             Res(iBlock)=zero
-          ELSE
+          else
             Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)/Stack(iBlock,StackPtr)
-          END IF
-        END DO
+          end if
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
         
 
-      CASE (cMod)
+      case (cMod)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-          IF (Stack(iBlock,StackPtr) == 0._DP) THEN
+        do iBlock=1,BlockSize
+          if (Stack(iBlock,StackPtr) == 0._DP) then
             EvalErrType=1
             Res(iBlock)=Zero
-          ELSE
-            Stack(iBlock,StackPtr-1)=MOD(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
-          END IF
-        END DO
+          else
+            Stack(iBlock,StackPtr-1)=mod(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
+          end if
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cPow)
+      case (cPow)
 !$omp parallel do default(shared) private(iBlock)
-        DO  iBlock=1,BlockSize
+        do  iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)**Stack(iBlock,StackPtr)
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
         
-      CASE (cEqual)
+      case (cEqual)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) == Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cNEqual)
+      case (cNEqual)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) /= Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cLess)
+      case (cLess)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) < Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cLessOrEq)
+      case (cLessOrEq)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) <= Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
         
-      CASE (cGreater)
+      case (cGreater)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) > Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
         
-      CASE (cGreaterOrEq)
+      case (cGreaterOrEq)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr-1)=LogcToDble(Stack(iBlock,StackPtr-1) >= Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
         
-      CASE (cAnd)
+      case (cAnd)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .AND. &
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .and. &
                 DbleToLogc(Stack(iBlock,StackPtr)) )
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cOr)
+      case (cOr)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .OR. &
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr-1)=LogcToDble(DbleToLogc(Stack(iBlock,StackPtr-1)) .or. &
                 DbleToLogc(Stack(iBlock,StackPtr)) )
-        END DO
+        end do
 !$omp end parallel do
         StackPtr=StackPtr-1
 
 
-      CASE (cNot)
+      case (cNot)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
-           Stack(iBlock,StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(iBlock,StackPtr)) )
-        END DO
+        do iBlock=1,BlockSize
+           Stack(iBlock,StackPtr)=LogcToDble( .not. DbleToLogc(Stack(iBlock,StackPtr)) )
+        end do
 !$omp end parallel do
 
         
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
-      CASE (cDeg)
+      case (cDeg)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr)=RadToDeg(Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
 
         
-      CASE (cRad)
+      case (cRad)
 !$omp parallel do default(shared) private(iBlock)
-        DO iBlock=1,BlockSize
+        do iBlock=1,BlockSize
            Stack(iBlock,StackPtr)=DegToRad(Stack(iBlock,StackPtr))
-        END DO
+        end do
 !$omp end parallel do
         
 
-      CASE DEFAULT
+      case DEFAULT
         StackPtr  = StackPtr+1
         iVariable = Comp%ByteCode(InstPtr)-VarBegin+1
 
         ! Do we have to process one of the scalar variables of one of the block variables
-        IF (iVariable >= istartValScalar) THEN
+        if (iVariable >= istartValScalar) then
 !$omp parallel do default(shared) private(iBlock)
-          DO iBlock=1,BlockSize
+          do iBlock=1,BlockSize
              Stack(iBlock,StackPtr)=ValScalar(iVariable-istartValScalar+1)
-          END DO
+          end do
 !$omp end parallel do
-        ELSE
-          IF (iDim == 1) THEN
+        else
+          if (iDim == 1) then
 !$omp parallel do default(shared) private(iBlock)
-            DO iBlock=1,BlockSize
+            do iBlock=1,BlockSize
                Stack(iBlock,StackPtr)=ValBlock(iBlock,iVariable)
-            END DO
+            end do
 !$omp end parallel do
-          ELSE
+          else
 !$omp parallel do default(shared) private(iBlock)
-            DO iBlock=1,BlockSize
+            do iBlock=1,BlockSize
                Stack(iBlock,StackPtr)=ValBlock(iVariable,iBlock)
-            END DO
+            end do
 !$omp end parallel do
-          END IF
-        END IF
-      END SELECT
-    END DO
+          end if
+        end if
+      end select
+    end do
     
     EvalErrType = 0
 !$omp parallel do default(shared) private(iBlock)
-    DO iBlock=1,BlockSize
+    do iBlock=1,BlockSize
        Res(iBlock) = Stack(iBlock,StackPtr)
-    END DO
+    end do
 !$omp end parallel do
-  END SUBROUTINE evalFunctionBlock
+  end subroutine evalFunctionBlock
   
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION fparser_ErrorMsg (EvalErrType) RESULT (msg)
+  function fparser_ErrorMsg (EvalErrType) result (msg)
 
 !<description>
     ! Return error message of function parser
 !</description>
 
     ! local constants
-    CHARACTER (LEN=*), DIMENSION(6), PARAMETER :: m = (/ 'Division by zero                  ', &
+    character (LEN=*), dimension(6), parameter :: m = (/ 'Division by zero                  ', &
                                                          'Argument of SQRT negative         ', &
                                                          'Argument of LOG negative          ', &
                                                          'Argument of ASIN or ACOS illegal  ', &
@@ -2092,27 +2092,27 @@ CONTAINS
 
 !<input>
     ! Error identifier
-    INTEGER, INTENT(IN) :: EvalErrType
+    integer, intent(IN) :: EvalErrType
 !</input>   
     
 !<result>
     ! Error messages
-    CHARACTER (LEN=LEN(m)) :: msg
+    character (LEN=len(m)) :: msg
 !</result>
 !</function>
 
-    IF (EvalErrType < 1 .OR. EvalErrType > SIZE(m)) THEN
+    if (EvalErrType < 1 .or. EvalErrType > size(m)) then
       msg = ''
-    ELSE
+    else
       msg = m(EvalErrType)
-    ENDIF
-  END FUNCTION fparser_ErrorMsg
+    endif
+  end function fparser_ErrorMsg
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE fparser_PrintByteCode(rparser, iComp)
+  subroutine fparser_PrintByteCode(rparser, iComp)
 
 !<description>
     ! Print the compiled bytecode stack
@@ -2120,18 +2120,18 @@ CONTAINS
 
 !<input>
     ! Function parser
-    TYPE(t_fparser), INTENT(IN) :: rparser
+    type(t_fparser), intent(IN) :: rparser
 
     ! Function identifier
-    INTEGER, INTENT(IN) :: iComp
+    integer, intent(IN) :: iComp
 !</input>
 !</subroutine>
 
     ! local variables
-    TYPE(t_fparserComponent), POINTER :: Comp
-    CHARACTER(LEN=5) :: n
-    INTEGER :: InstPtr, DataPtr, StackPtr,nparams
-    INTEGER(is) :: opCode
+    type(t_fparserComponent), pointer :: Comp
+    character(LEN=5) :: n
+    integer :: InstPtr, DataPtr, StackPtr,nparams
+    integer(is) :: opCode
     
     nparams  = 1
     DataPtr  = 1
@@ -2139,61 +2139,61 @@ CONTAINS
     InstPtr  = 0
     Comp     => rparser%Comp(iComp)
 
-    DO WHILE(InstPtr < Comp%ByteCodeSize)
+    do while(InstPtr < Comp%ByteCodeSize)
       InstPtr=InstPtr+1
       
-      WRITE(*,FMT='(I8.8,1X,":",1X)',ADVANCE="NO") InstPtr
+      write(*,FMT='(I8.8,1X,":",1X)',ADVANCE="NO") InstPtr
       
       opCode=Comp%ByteCode(InstPtr)
-      SELECT CASE(opCode)
+      select case(opCode)
         
-      CASE(cIf)
-        WRITE(*,FMT='(A,1X,T10,I8.8)') "jz",Comp%ByteCode(InstPtr+1)+1
+      case(cIf)
+        write(*,FMT='(A,1X,T10,I8.8)') "jz",Comp%ByteCode(InstPtr+1)+1
         InstPtr=InstPtr+2
 
-      CASE(cJump)
-        WRITE(*,FMT='(A,1X,T10,I8.8)') "jump",Comp%ByteCode(InstPtr+1)+1
+      case(cJump)
+        write(*,FMT='(A,1X,T10,I8.8)') "jump",Comp%ByteCode(InstPtr+1)+1
         InstPtr=InstPtr+2
 
-      CASE(cImmed)
-        WRITE(*,FMT='(A,1X,T10,G8.2)') "push",Comp%Immed(DataPtr)
+      case(cImmed)
+        write(*,FMT='(A,1X,T10,G8.2)') "push",Comp%Immed(DataPtr)
         DataPtr=DataPtr+1
 
-      CASE DEFAULT
-        IF (opCode < VarBegin) THEN
-          SELECT CASE(opCode)
-          CASE(cNEG); n="neg"
-          CASE(cADD); n="add"
-          CASE(cSUB); n="sub"
-          CASE(cMUL); n="mul"
-          CASE(cDIV); n="div"
-          CASE(cMOD); n="mod"
-          CASE(cPOW); n="pow"
-          CASE(cEqual); n="eq"
-          CASE(cNEqual); n="ne"
-          CASE(cLess); n="lt"
-          CASE(cLessOrEq); n="le"
-          CASE(cGreater); n="gt"
-          CASE(cGreaterOrEq); n="ge"
-          CASE(cAND); n="and"
-          CASE (cOR); n="or"
-          CASE(cNOT); n="not"
-          CASE(cDEG); n="deg"
-          CASE(cRAD); n="rad"
+      case DEFAULT
+        if (opCode < VarBegin) then
+          select case(opCode)
+          case(cNEG); n="neg"
+          case(cADD); n="add"
+          case(cSUB); n="sub"
+          case(cMUL); n="mul"
+          case(cDIV); n="div"
+          case(cMOD); n="mod"
+          case(cPOW); n="pow"
+          case(cEqual); n="eq"
+          case(cNEqual); n="ne"
+          case(cLess); n="lt"
+          case(cLessOrEq); n="le"
+          case(cGreater); n="gt"
+          case(cGreaterOrEq); n="ge"
+          case(cAND); n="and"
+          case (cOR); n="or"
+          case(cNOT); n="not"
+          case(cDEG); n="deg"
+          case(cRAD); n="rad"
 
-          CASE DEFAULT
+          case DEFAULT
             n       = Funcs(opCode)
             nparams = MathFunctionParameters(opCode)
-          END SELECT
-          WRITE(*,FMT='(A,T10,A,"  (",I1,") ")') TRIM(n),"Par",nparams
+          end select
+          write(*,FMT='(A,T10,A,"  (",I1,") ")') trim(n),"Par",nparams
           
-        ELSE
-          WRITE(*,FMT='(A,T10,A,1X,I4.4)') "push","Var",opCode-VarBegin+1
-        END IF
+        else
+          write(*,FMT='(A,T10,A,1X,I4.4)') "push","Var",opCode-VarBegin+1
+        end if
         
-      END SELECT
-    END DO
-  END SUBROUTINE fparser_PrintByteCode
+      end select
+    end do
+  end subroutine fparser_PrintByteCode
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -2201,7 +2201,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE CheckSyntax (Func,Var)
+  recursive subroutine CheckSyntax (Func,Var)
 
 !<description>
     ! Check syntax of function string, returns 0 if syntax is ok
@@ -2209,196 +2209,196 @@ CONTAINS
     
 !<input>
     ! Function string without spaces
-    CHARACTER (LEN=*), INTENT(in) :: Func
+    character (LEN=*), intent(in) :: Func
 
     ! Array with variable names
-    CHARACTER (LEN=*), DIMENSION(:), INTENT(in) :: Var
+    character (LEN=*), dimension(:), intent(in) :: Var
 !</input>
 !</subroutine>
     
     ! local avriables
-    TYPE(t_stack) :: functionParenthDepth
-    INTEGER(is) :: n,opSize
-    CHARACTER (LEN=1) :: c
-    REAL(DP) :: r
-    LOGICAL :: err
-    INTEGER :: FuncIndex,FuncIndex2
-    INTEGER :: ParCnt,ib,in,FuncLength,idummy
+    type(t_stack) :: functionParenthDepth
+    integer(is) :: n,opSize
+    character (LEN=1) :: c
+    real(DP) :: r
+    logical :: err
+    integer :: FuncIndex,FuncIndex2
+    integer :: ParCnt,ib,in,FuncLength,idummy
     
     ! Initialization
     FuncIndex = 1
     ParCnt = 0
-    FuncLength = LEN_TRIM(Func)
-    CALL stack_create(functionParenthDepth,MAX(5,INT(FuncLength/4._DP)),ST_INT)
+    FuncLength = len_trim(Func)
+    call stack_create(functionParenthDepth,max(5,int(FuncLength/4._DP)),ST_INT)
 
-    DO
-      IF (FuncIndex > FuncLength) THEN
-        PRINT *, "CheckSyntax: invalid function string!"
-        CALL sys_halt()
-      END IF
+    do
+      if (FuncIndex > FuncLength) then
+        print *, "CheckSyntax: invalid function string!"
+        call sys_halt()
+      end if
       c = Func(FuncIndex:FuncIndex)
 
       ! Check for valid operand (must appear)
 
       ! Check for leading - or !
-      IF (c == '-' .OR. c == '!') THEN                      
+      if (c == '-' .or. c == '!') then                      
         FuncIndex = FuncIndex+1
-        IF (FuncIndex > FuncLength) THEN
-          PRINT *, "CheckSyntax: Premature end of string!"
-          CALL sys_halt()
-        END IF
+        if (FuncIndex > FuncLength) then
+          print *, "CheckSyntax: Premature end of string!"
+          call sys_halt()
+        end if
         c = Func(FuncIndex:FuncIndex)
-      END IF
+      end if
             
       ! Check for math function
       n = MathFunctionIndex (Func(FuncIndex:))
-      IF (n > 0) THEN
+      if (n > 0) then
         ! Math function found
-        FuncIndex = FuncIndex+LEN_TRIM(Funcs(n))
-        IF (FuncIndex > FuncLength) THEN
-          PRINT *, "CheckSyntax: Premature end of string!"
-          CALL sys_halt()
-        END IF
+        FuncIndex = FuncIndex+len_trim(Funcs(n))
+        if (FuncIndex > FuncLength) then
+          print *, "CheckSyntax: Premature end of string!"
+          call sys_halt()
+        end if
         c = Func(FuncIndex:FuncIndex)
-        IF (c /= '(') THEN
-          PRINT *, "CheckSyntax: Expecting ( after function!",Func(FuncIndex:)
-          CALL sys_halt()
-        END IF
+        if (c /= '(') then
+          print *, "CheckSyntax: Expecting ( after function!",Func(FuncIndex:)
+          call sys_halt()
+        end if
         FuncIndex2=FuncIndex+1
-        IF (FuncIndex2 > FuncLength) THEN
-          PRINT *, "CheckSyntax: Premature end of string!"
-          CALL sys_halt()
-        END IF
-        IF (Func(FuncIndex2:FuncIndex2) == ')') THEN
+        if (FuncIndex2 > FuncLength) then
+          print *, "CheckSyntax: Premature end of string!"
+          call sys_halt()
+        end if
+        if (Func(FuncIndex2:FuncIndex2) == ')') then
           FuncIndex=FuncIndex2+1
-          IF (FuncIndex > FuncLength) THEN
-            PRINT *, "CheckSyntax: Premature end of string!"
-            CALL sys_halt()
-          END IF
+          if (FuncIndex > FuncLength) then
+            print *, "CheckSyntax: Premature end of string!"
+            call sys_halt()
+          end if
           c = Func(FuncIndex:FuncIndex)
           
           ! Ugly, but other methods would just be uglier ...
-          GOTO 999
-        END IF
+          goto 999
+        end if
         
         ! Push counter for parenthesss to stack
-        CALL stack_pushback(functionParenthDepth,ParCnt+1)
-      END IF
+        call stack_pushback(functionParenthDepth,ParCnt+1)
+      end if
       
       ! Check for opening parenthesis
-      IF (c == '(') THEN
+      if (c == '(') then
         ParCnt = ParCnt+1
         FuncIndex = FuncIndex+1
-        IF (FuncIndex > FuncLength) THEN
-          PRINT *, "CheckSyntax: Premature end of string!"
-          CALL sys_halt()
-        END IF
-        IF (Func(FuncIndex:FuncIndex) == ')') THEN
-          PRINT *, "CheckSyntax: Empty parantheses!"
-          CALL sys_halt()
-        END IF
-        CYCLE
-      END IF
+        if (FuncIndex > FuncLength) then
+          print *, "CheckSyntax: Premature end of string!"
+          call sys_halt()
+        end if
+        if (Func(FuncIndex:FuncIndex) == ')') then
+          print *, "CheckSyntax: Empty parantheses!"
+          call sys_halt()
+        end if
+        cycle
+      end if
 
       ! Check for number
-      IF (SCAN(c,'0123456789.') > 0) THEN
+      if (scan(c,'0123456789.') > 0) then
         r = RealNum (Func(FuncIndex:),ib,in,err)
-        IF (err) THEN
-          PRINT *, "CheckSyntax: Invalid number format!"
-          CALL sys_halt()
-        END IF
+        if (err) then
+          print *, "CheckSyntax: Invalid number format!"
+          call sys_halt()
+        end if
         FuncIndex = FuncIndex+in-1
-        IF (FuncIndex > FuncLength) EXIT
+        if (FuncIndex > FuncLength) exit
         c = Func(FuncIndex:FuncIndex)
-      ELSEIF (c == '_') THEN
+      elseif (c == '_') then
         ! Check for constant
         n = ConstantIndex (Func(FuncIndex:))
-        IF (n == 0) THEN
-          PRINT *, "CheckSyntax: Invalid constant!"
-          CALL sys_halt()
-        END IF
-        FuncIndex = FuncIndex+LEN_TRIM(Consts(n))+1
-        IF (FuncIndex > FuncLength) EXIT
+        if (n == 0) then
+          print *, "CheckSyntax: Invalid constant!"
+          call sys_halt()
+        end if
+        FuncIndex = FuncIndex+len_trim(Consts(n))+1
+        if (FuncIndex > FuncLength) exit
         c=Func(FuncIndex:FuncIndex)
-      ELSEIF (c == '@') THEN
+      elseif (c == '@') then
         ! Check for expression
         n = ExpressionIndex (Func(FuncIndex:))
-        IF (n == 0) THEN
-          PRINT *, "CheckSyntax: Invalid expression!"
-          CALL sys_halt()
-        END IF
-        CALL CheckSyntax(ExpressionStrings(n), Var)
-        FuncIndex = FuncIndex+LEN_TRIM(Expressions(n))+1
-        IF (FuncIndex > FuncLength) EXIT
+        if (n == 0) then
+          print *, "CheckSyntax: Invalid expression!"
+          call sys_halt()
+        end if
+        call CheckSyntax(ExpressionStrings(n), Var)
+        FuncIndex = FuncIndex+len_trim(Expressions(n))+1
+        if (FuncIndex > FuncLength) exit
         c=Func(FuncIndex:FuncIndex)
-      ELSE
+      else
         ! Check for variable
         n = VariableIndex (Func(FuncIndex:),Var,ib,in)
-        IF (n == 0) THEN
-          PRINT *, "CheckSyntax: Invalid element!"
-          CALL sys_halt()
-        END IF
+        if (n == 0) then
+          print *, "CheckSyntax: Invalid element!"
+          call sys_halt()
+        end if
         FuncIndex = FuncIndex+in-1
-        IF (FuncIndex > FuncLength) EXIT
+        if (FuncIndex > FuncLength) exit
         c = Func(FuncIndex:FuncIndex)
-      END IF
+      end if
 
       ! Check for closing parenthesis
-      DO WHILE (c == ')')
-        IF (.NOT.stack_isempty(functionParenthDepth)) THEN
-          IF(stack_backInt(functionParenthDepth) == ParCnt) &
+      do while (c == ')')
+        if (.not.stack_isempty(functionParenthDepth)) then
+          if(stack_backInt(functionParenthDepth) == ParCnt) &
               idummy=stack_popbackInt(functionParenthDepth)
-        END IF
+        end if
         ParCnt = ParCnt-1
-        IF (ParCnt < 0) THEN
-          PRINT *, "CheckSyntax: Mismatched parenthesis!"
-          CALL sys_halt()
-        END IF
-        IF (Func(FuncIndex-1:FuncIndex-1) == '(') THEN
-          PRINT *, "CheckSyntax: Empty parentheses!"
-          CALL sys_halt()
-        END IF
+        if (ParCnt < 0) then
+          print *, "CheckSyntax: Mismatched parenthesis!"
+          call sys_halt()
+        end if
+        if (Func(FuncIndex-1:FuncIndex-1) == '(') then
+          print *, "CheckSyntax: Empty parentheses!"
+          call sys_halt()
+        end if
         FuncIndex = FuncIndex+1
-        IF (FuncIndex > FuncLength) EXIT
+        if (FuncIndex > FuncLength) exit
         c = Func(FuncIndex:FuncIndex)
-      END DO
+      end do
 
       ! Now, we have a legal operand: A legal operator or end of string must follow
-999   IF (FuncIndex > FuncLength) EXIT
+999   if (FuncIndex > FuncLength) exit
       
       ! Check operators
       opSize = 0
-      IF (.NOT.stack_isempty(functionParenthDepth)) THEN
-        IF (c == ',' .AND. &
-            stack_backInt(functionParenthDepth) == parCnt) THEN
+      if (.not.stack_isempty(functionParenthDepth)) then
+        if (c == ',' .and. &
+            stack_backInt(functionParenthDepth) == parCnt) then
           opSize = 1
-        ELSE
+        else
           opSize = isOperator(Func(FuncIndex:))
-        END IF
-      ELSE
+        end if
+      else
         opSize = isOperator(Func(FuncIndex:))
-      END IF
-      IF (opSize == 0) THEN
-        PRINT *, "CheckSyntax: Operator expected!"
-        CALL sys_halt()
-      END IF
+      end if
+      if (opSize == 0) then
+        print *, "CheckSyntax: Operator expected!"
+        call sys_halt()
+      end if
       
       ! Now, we have an operand and an operator: the next loop will check for another 
       ! operand (must appear)
       FuncIndex = FuncIndex+opSize
-    END DO
-    IF (ParCnt > 0) THEN
-      PRINT *, "CheckSyntax: Missing )!"
-      CALL sys_halt()
-    END IF
-    CALL stack_release(functionParenthDepth)
-  END SUBROUTINE CheckSyntax
+    end do
+    if (ParCnt > 0) then
+      print *, "CheckSyntax: Missing )!"
+      call sys_halt()
+    end if
+    call stack_release(functionParenthDepth)
+  end subroutine CheckSyntax
 
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION isOperator (str) RESULT (n)
+  function isOperator (str) result (n)
 
 !<description>
     ! Return 0 if given string is not an operator, else the size of the
@@ -2407,34 +2407,34 @@ CONTAINS
     
 !<input>
     ! Operator string
-    CHARACTER(LEN=*), INTENT(IN) :: str    
+    character(LEN=*), intent(IN) :: str    
 !</input>
 
 !<result>
     ! Length of operator, 0 if string is no operator
-    INTEGER(is) :: n
+    integer(is) :: n
 !</result>
 !</function>
 
     ! local variables
-    INTEGER(is) :: j,m
+    integer(is) :: j,m
 
     n = 0
-    DO j=cAdd,cOr
-      m = LEN_TRIM(Ops(j))
-      IF (str(1:m) == TRIM(Ops(j))) THEN
+    do j=cAdd,cOr
+      m = len_trim(Ops(j))
+      if (str(1:m) == trim(Ops(j))) then
         n = m
-        EXIT
-      END IF
-    END DO
+        exit
+      end if
+    end do
     
-  END FUNCTION isOperator
+  end function isOperator
 
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION MathFunctionIndex (str) RESULT (n)
+  function MathFunctionIndex (str) result (n)
 
 !<description>
     ! Return index of math function beginnig at 1st position of string str
@@ -2442,40 +2442,40 @@ CONTAINS
 
 !<input>
     ! Math function string
-    CHARACTER (LEN=*), INTENT(in) :: str
+    character (LEN=*), intent(in) :: str
 !</input>
 
 !<result>
     ! Index of math function
-    INTEGER(is) :: n
+    integer(is) :: n
 !</result>
 !</function>
 
     ! local variables
-    INTEGER(is) :: j
-    INTEGER k
-    CHARACTER (LEN=LEN(Funcs)) :: fun
+    integer(is) :: j
+    integer k
+    character (LEN=len(Funcs)) :: fun
     
     ! Check all math functions
     n = 0
-    DO j=cIf,cSec
-      k = MIN(LEN_TRIM(Funcs(j)), LEN(str))
+    do j=cIf,cSec
+      k = min(len_trim(Funcs(j)), len(str))
 
       ! Compare lower case letters
-      CALL sys_tolower(str(1:k), fun)
-      IF (fun == Funcs(j)) THEN
+      call sys_tolower(str(1:k), fun)
+      if (fun == Funcs(j)) then
         ! Found a matching function
         n = j
-        RETURN
-      END IF
-    END DO
-  END FUNCTION MathFunctionIndex
+        return
+      end if
+    end do
+  end function MathFunctionIndex
 
   ! *****************************************************************************
   
 !<function>
 
-  FUNCTION MathFunctionParameters (FuncIndex) RESULT (nparameters)
+  function MathFunctionParameters (FuncIndex) result (nparameters)
 
 !<description>
     ! Return number of required parameters
@@ -2483,33 +2483,33 @@ CONTAINS
 
 !<input>
     ! Index of function
-    INTEGER(is) :: FuncIndex
+    integer(is) :: FuncIndex
 !</input>
 
 !<result>
     ! Number if required parameters
-    INTEGER :: nparameters
+    integer :: nparameters
 !</result>
 !</function>
 
-    SELECT CASE(FuncIndex)
-    CASE(cIf)
+    select case(FuncIndex)
+    case(cIf)
       nparameters = 3
-    CASE(cMin:cAtan2)
+    case(cMin:cAtan2)
       nparameters = 2
-    CASE(cAbs:cSec)
+    case(cAbs:cSec)
       nparameters = 1
-    CASE DEFAULT
+    case DEFAULT
       nparameters=0
-      PRINT *, "*** MathFunctionParamters: Not a function"
-    END SELECT
-  END FUNCTION MathFunctionParameters
+      print *, "*** MathFunctionParamters: Not a function"
+    end select
+  end function MathFunctionParameters
 
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION ConstantIndex (str) RESULT (n)
+  function ConstantIndex (str) result (n)
 
 !<description>
     ! Return index of predefined constants beginnig at 1st position of string str
@@ -2517,40 +2517,40 @@ CONTAINS
 
 !<input>
     ! Math function string
-    CHARACTER (LEN=*), INTENT(in) :: str
+    character (LEN=*), intent(in) :: str
 !</input>
 
 !<result>
     ! Index of math function
-    INTEGER(is) :: n
+    integer(is) :: n
 !</result>
 !</function>
 
     ! local variables
-    INTEGER(is) :: j
-    INTEGER k
-    CHARACTER (LEN=LEN(Consts)) :: con
+    integer(is) :: j
+    integer k
+    character (LEN=len(Consts)) :: con
     
     ! Check all predefined constants
     n = 0
-    DO j=1,nConsts
-      k = MIN(LEN_TRIM(Consts(j)), LEN(str(2:)))
+    do j=1,nConsts
+      k = min(len_trim(Consts(j)), len(str(2:)))
 
       ! Compare lower case letters
-      CALL sys_tolower(str(2:k+1),con)
-      IF (con == Consts(j)) THEN
+      call sys_tolower(str(2:k+1),con)
+      if (con == Consts(j)) then
         ! Found a matching constant
         n = j
-        RETURN
-      END IF
-    END DO
-  END FUNCTION ConstantIndex
+        return
+      end if
+    end do
+  end function ConstantIndex
 
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION ExpressionIndex (str) RESULT (n)
+  function ExpressionIndex (str) result (n)
 
 !<description>
     ! Return index of predefined expression beginnig at 1st position of string str
@@ -2558,41 +2558,41 @@ CONTAINS
 
 !<input>
     ! Math function string
-    CHARACTER (LEN=*), INTENT(in) :: str
+    character (LEN=*), intent(in) :: str
 !</input>
 
 !<result>
     ! Index of math function
-    INTEGER(is) :: n
+    integer(is) :: n
 !</result>
 !</function>
 
     ! local variables
-    INTEGER(is) :: j
-    INTEGER k
-    CHARACTER (LEN=LEN(Expressions)) :: expression
+    integer(is) :: j
+    integer k
+    character (LEN=len(Expressions)) :: expression
 
     ! Check all predefined expressions
     n = 0
-    DO j=1,nExpressions
-      k = MIN(LEN_TRIM(Expressions(j)), LEN(str(2:)))
+    do j=1,nExpressions
+      k = min(len_trim(Expressions(j)), len(str(2:)))
 
       ! Compare lower case letters
-      CALL sys_tolower(str(2:k+1),expression)
+      call sys_tolower(str(2:k+1),expression)
 
-      IF (expression == Expressions(j)) THEN
+      if (expression == Expressions(j)) then
         ! Found a matching expression
         n = j
-        RETURN
-      END IF
-    END DO
-  END FUNCTION ExpressionIndex
+        return
+      end if
+    end do
+  end function ExpressionIndex
 
   ! *****************************************************************************
 
 !<function>
   
-  FUNCTION VariableIndex (str, Var, ibegin, inext) RESULT (n)
+  function VariableIndex (str, Var, ibegin, inext) result (n)
 
 !<description>
     ! Return index of variable at begin of string str (returns 0 if no variable found)
@@ -2600,60 +2600,60 @@ CONTAINS
 
 !<input>
     ! String
-    CHARACTER (LEN=*), INTENT(in) :: str
+    character (LEN=*), intent(in) :: str
 
     ! Array with variable names
-    CHARACTER (LEN=*), DIMENSION(:), INTENT(in) :: Var
+    character (LEN=*), dimension(:), intent(in) :: Var
 !</input>
 
 !<output>
     ! OPTIONAL: Start position of variable name
-    INTEGER, OPTIONAL, INTENT(out) :: ibegin
+    integer, optional, intent(out) :: ibegin
 
     ! OPTIONAL: Position of character after name
-    INTEGER, OPTIONAL, INTENT(out) :: inext
+    integer, optional, intent(out) :: inext
 !</output>
 
 !<result>
     ! Index of variable
-    INTEGER(is) :: n
+    integer(is) :: n
 !</result>
 !</function>
 
     ! local variables    
-    INTEGER :: j,ib,in,lstr
+    integer :: j,ib,in,lstr
     
     n = 0
-    lstr = LEN_TRIM(str)
-    IF (lstr > 0) THEN
+    lstr = len_trim(str)
+    if (lstr > 0) then
       ! Search for first character in str
-      DO ib=1,lstr
+      do ib=1,lstr
         ! When lstr>0 at least 1 char in str
-        IF (str(ib:ib) /= ' ') EXIT
-      END DO
+        if (str(ib:ib) /= ' ') exit
+      end do
       
       ! Search for name terminators
-      DO in=ib,lstr
-        IF (SCAN(str(in:in),'+-*/%^),&|<>=! ') > 0) EXIT
-      END DO
-      DO j=1,SIZE(Var)
-        IF (str(ib:in-1) == Var(j)) THEN
+      do in=ib,lstr
+        if (scan(str(in:in),'+-*/%^),&|<>=! ') > 0) exit
+      end do
+      do j=1,size(Var)
+        if (str(ib:in-1) == Var(j)) then
           ! Variable name found
           n = j
-          EXIT
-        END IF
-      END DO
-    END IF
+          exit
+        end if
+      end do
+    end if
 
-    IF (PRESENT(ibegin)) ibegin = ib
-    IF (PRESENT(inext))  inext  = in
-  END FUNCTION VariableIndex
+    if (present(ibegin)) ibegin = ib
+    if (present(inext))  inext  = in
+  end function VariableIndex
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE RemoveSpaces (str)
+  subroutine RemoveSpaces (str)
 
 !<description>
     ! Remove Spaces from string, remember positions of characters in
@@ -2662,29 +2662,29 @@ CONTAINS
    
 !<inputoutput>
     ! String from which spaces should be removed
-    CHARACTER (LEN=*), INTENT(inout) :: str
+    character (LEN=*), intent(inout) :: str
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER :: k,lstr
+    integer :: k,lstr
     
-    lstr = LEN_TRIM(str)
+    lstr = len_trim(str)
     k = 1
-    DO WHILE (str(k:lstr) /= ' ')                             
-      IF (str(k:k) == ' ') THEN
+    do while (str(k:lstr) /= ' ')                             
+      if (str(k:k) == ' ') then
         str(k:lstr)  = str(k+1:lstr)//' '                  ! Move 1 character to left
         k = k-1
-      END IF
+      end if
       k = k+1
-    END DO
-  END SUBROUTINE RemoveSpaces
+    end do
+  end subroutine RemoveSpaces
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE Replace (ca,cb,str)
+  subroutine Replace (ca,cb,str)
 
 !<description>
     ! Replace ALL appearances of character set ca in string str by character set cb
@@ -2692,32 +2692,32 @@ CONTAINS
 
 !<input>
     ! Source characters
-    CHARACTER (LEN=*), INTENT(in) :: ca
+    character (LEN=*), intent(in) :: ca
     
     ! Destination characters
-    CHARACTER (LEN=LEN(ca)), INTENT(in) :: cb
+    character (LEN=len(ca)), intent(in) :: cb
 !</input>
 
 !<inputoutput>
     ! String
-    CHARACTER (LEN=*), INTENT(inout) :: str
+    character (LEN=*), intent(inout) :: str
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    INTEGER :: j,lca
+    integer :: j,lca
     
-    lca = LEN(ca)
-    DO j=1,LEN_TRIM(str)-lca+1
-      IF (str(j:j+lca-1) == ca) str(j:j+lca-1) = cb
-    END DO
-  END SUBROUTINE Replace
+    lca = len(ca)
+    do j=1,len_trim(str)-lca+1
+      if (str(j:j+lca-1) == ca) str(j:j+lca-1) = cb
+    end do
+  end subroutine Replace
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE Compile (Comp, Func, Var)
+  subroutine Compile (Comp, Func, Var)
 
 !<description>
     ! Compile i-th function string Func into bytecode
@@ -2725,81 +2725,81 @@ CONTAINS
 
 !<input>
     ! Function string
-    CHARACTER (LEN=*), INTENT(in) :: Func
+    character (LEN=*), intent(in) :: Func
 
     ! Array with variable names
-    CHARACTER (LEN=*), DIMENSION(:), INTENT(in) :: Var
+    character (LEN=*), dimension(:), intent(in) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser component
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
-    REAL(DP), DIMENSION(:), POINTER :: Immed
-    INTEGER :: ind,isize
+    integer(is), dimension(:), pointer :: ByteCode
+    real(DP), dimension(:), pointer :: Immed
+    integer :: ind,isize
     
     ! (Re-)initialize the bytecode structure (if required)
-    IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
-    IF (ASSOCIATED(Comp%Immed))    DEALLOCATE (Comp%Immed)
+    if (associated(Comp%ByteCode)) deallocate (Comp%ByteCode)
+    if (associated(Comp%Immed))    deallocate (Comp%Immed)
     Comp%ByteCodeSize = 0
     Comp%ImmedSize    = 0
     Comp%StackSize    = 0
     Comp%StackPtr     = 0
-    Comp%isVectorizable = .TRUE.
+    Comp%isVectorizable = .true.
 
     ! Neither the stack for the bytecode nor the stack for the immediate expressions
     ! can exceed the size of the function string. Hence, allocate some initial memory
     isize=FunctionSize(Func)
-    ALLOCATE(Comp%ByteCode(isize),Comp%Immed(isize))
+    allocate(Comp%ByteCode(isize),Comp%Immed(isize))
 
     ! Compile function string into bytecode
     ind = CompileExpression(Comp,Func,1,Var)
     
     ! Adjust memory size of bytecode stack
-    ALLOCATE(ByteCode(Comp%ByteCodeSize))
+    allocate(ByteCode(Comp%ByteCodeSize))
     ByteCode=Comp%ByteCode
-    DEALLOCATE(Comp%ByteCode)
-    ALLOCATE(Comp%ByteCode(Comp%ByteCodeSize))
+    deallocate(Comp%ByteCode)
+    allocate(Comp%ByteCode(Comp%ByteCodeSize))
     Comp%ByteCode=ByteCode
-    DEALLOCATE(ByteCode)
+    deallocate(ByteCode)
     
     ! Adjust memory size of immediate stack
-    ALLOCATE(Immed(Comp%ImmedSize))
+    allocate(Immed(Comp%ImmedSize))
     Immed=Comp%Immed
-    DEALLOCATE(Comp%Immed)
-    ALLOCATE(Comp%Immed(Comp%ImmedSize))
+    deallocate(Comp%Immed)
+    allocate(Comp%Immed(Comp%ImmedSize))
     Comp%Immed=Immed
-    DEALLOCATE(Immed)
-  END SUBROUTINE Compile
+    deallocate(Immed)
+  end subroutine Compile
 
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE incStackPtr (Comp)
+  subroutine incStackPtr (Comp)
 
 !<description>
     ! Increase stack pointer
 !</description>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
 
     Comp%StackPtr=Comp%StackPtr+1
-    IF (Comp%StackPtr > Comp%StackSize) Comp%StackSize=Comp%StackSize+1
-  END SUBROUTINE incStackPtr
+    if (Comp%StackPtr > Comp%StackSize) Comp%StackSize=Comp%StackSize+1
+  end subroutine incStackPtr
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE AddCompiledByte (Comp, byte)
+  subroutine AddCompiledByte (Comp, byte)
 
 !<description>
     ! Add compiled byte to bytecode
@@ -2807,454 +2807,454 @@ CONTAINS
 
 !<input>
     ! Value of byte to be added
-    INTEGER(is), INTENT(in) :: byte
+    integer(is), intent(in) :: byte
 !</input>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: daux
+    real(DP) :: daux
 
     Comp%ByteCodeSize = Comp%ByteCodeSize + 1    
     Comp%ByteCode(Comp%ByteCodeSize) = byte
 
     ! Try to optimize the compiled bytecode. Check the bytecode instruction and
     ! compute some values on-the-fly of this is possible
-    SELECT CASE(byte)
+    select case(byte)
       !------------------------------------------------------------
       ! Functions
       !------------------------------------------------------------
-    CASE (cAbs)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=ABS(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAbs)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=abs(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAcos)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
-            Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for ACOS!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=ACOS(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAcos)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) < -1._DP .or. &
+            Comp%Immed(Comp%ImmedSize) >  1._DP) then
+          print *, "*** Parser error: invalid argument for ACOS!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=acos(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cAsin)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
-            Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for ACOS!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=ASIN(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAsin)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) < -1._DP .or. &
+            Comp%Immed(Comp%ImmedSize) >  1._DP) then
+          print *, "*** Parser error: invalid argument for ACOS!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=asin(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cAtan)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=ATAN(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAtan)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=atan(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAtan2)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize-1)=ATAN2(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAtan2)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        Comp%Immed(Comp%ImmedSize-1)=atan2(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAcosh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
-        IF (daux <= 0) THEN
-          PRINT *, "*** Parser error: invalid argument for ACOSH!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=LOG(daux)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAcosh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        daux=Comp%Immed(Comp%ImmedSize)+sqrt(Comp%Immed(Comp%ImmedSize)**2-1)
+        if (daux <= 0) then
+          print *, "*** Parser error: invalid argument for ACOSH!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=log(daux)
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cAnint)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=ANINT(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAnint)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=anint(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAint)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=AINT(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAint)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=aint(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAsinh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
-        IF (daux <= 0) THEN
-          PRINT *, "*** Parser error: invalid argument for ASINH!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=LOG(daux)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cAsinh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        daux=Comp%Immed(Comp%ImmedSize)+sqrt(Comp%Immed(Comp%ImmedSize)**2-1)
+        if (daux <= 0) then
+          print *, "*** Parser error: invalid argument for ASINH!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=log(daux)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAtanh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) == -1._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for ATANH!"
-          CALL sys_halt()
-        END IF
+    case (cAtanh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) == -1._DP) then
+          print *, "*** Parser error: invalid argument for ATANH!"
+          call sys_halt()
+        end if
         daux=(1+Comp%Immed(Comp%ImmedSize))/(1-Comp%Immed(Comp%ImmedSize))
-        IF (daux <= 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for ATANH!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=LOG(daux)/2._DP
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        if (daux <= 0._DP) then
+          print *, "*** Parser error: invalid argument for ATANH!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=log(daux)/2._DP
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cCeil)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=CEILING(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cCeil)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=ceiling(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cCos)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=COS(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cCos)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=cos(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cCosh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=COSH(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cCosh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=cosh(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cCot)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        daux=TAN(Comp%Immed(Comp%ImmedSize))
-        IF (daux == 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for COT!"
-          CALL sys_halt()
-        END IF
+    case (cCot)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        daux=tan(Comp%Immed(Comp%ImmedSize))
+        if (daux == 0._DP) then
+          print *, "*** Parser error: invalid argument for COT!"
+          call sys_halt()
+        end if
         Comp%Immed(Comp%ImmedSize)=1/daux
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cCsc)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        daux=SIN(Comp%Immed(Comp%ImmedSize))
-        IF (daux == 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for CSC!"
-          CALL sys_halt()
-        END IF
+    case (cCsc)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        daux=sin(Comp%Immed(Comp%ImmedSize))
+        if (daux == 0._DP) then
+          print *, "*** Parser error: invalid argument for CSC!"
+          call sys_halt()
+        end if
         Comp%Immed(Comp%ImmedSize)=1/daux
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cExp)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=EXP(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cExp)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=exp(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cFloor)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=FLOOR(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cFloor)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=floor(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cIf)
+    case (cIf)
       ! No optimization possible
 
-    CASE (cLog)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for LOG!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=LOG(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cLog)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) <= 0._DP) then
+          print *, "*** Parser error: invalid argument for LOG!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=log(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cLog10)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for LOG!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=LOG10(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cLog10)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) <= 0._DP) then
+          print *, "*** Parser error: invalid argument for LOG!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=log10(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cMax)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize-1)=MAX(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cMax)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        Comp%Immed(Comp%ImmedSize-1)=max(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cMin)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize-1)=MIN(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cMin)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        Comp%Immed(Comp%ImmedSize-1)=min(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cSec)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        daux=COS(Comp%Immed(Comp%ImmedSize))
-        IF (daux == 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for SEC!"
-          CALL sys_halt()
-        END IF
+    case (cSec)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        daux=cos(Comp%Immed(Comp%ImmedSize))
+        if (daux == 0._DP) then
+          print *, "*** Parser error: invalid argument for SEC!"
+          call sys_halt()
+        end if
         Comp%Immed(Comp%ImmedSize)=1/daux
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cSin)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=SIN(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cSin)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=sin(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cSinh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=SINH(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cSinh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=sinh(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cSqrt)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) < 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for SQRT!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize)=SQRT(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cSqrt)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) < 0._DP) then
+          print *, "*** Parser error: invalid argument for SQRT!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize)=sqrt(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cTan)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=TAN(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cTan)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=tan(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cTanh)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=TANH(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cTanh)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=tanh(Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledByte(Comp)
+      end if
 
       !------------------------------------------------------------
       ! Misc
       !------------------------------------------------------------
-    CASE (cImmed,cJump)
+    case (cImmed,cJump)
       ! No optimization needed
 
       !------------------------------------------------------------
       ! Operators
       !------------------------------------------------------------
-    CASE (cNeg)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+    case (cNeg)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         Comp%Immed(Comp%ImmedSize)=-(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cAdd)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cAdd)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)+Comp%Immed(Comp%ImmedSize)
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cSub)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cSub)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)-Comp%Immed(Comp%ImmedSize)
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cMul)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cMul)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)*Comp%Immed(Comp%ImmedSize)
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cDiv)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for DIV!"
-          CALL sys_halt()
-        END IF
+    case (cDiv)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) == 0._DP) then
+          print *, "*** Parser error: invalid argument for DIV!"
+          call sys_halt()
+        end if
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)/Comp%Immed(Comp%ImmedSize)
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cMod)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
-          PRINT *, "*** Parser error: invalid argument for MOD!"
-          CALL sys_halt()
-        END IF
-        Comp%Immed(Comp%ImmedSize-1)=MOD(Comp%Immed(Comp%ImmedSize-1),Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cMod)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        if (Comp%Immed(Comp%ImmedSize) == 0._DP) then
+          print *, "*** Parser error: invalid argument for MOD!"
+          call sys_halt()
+        end if
+        Comp%Immed(Comp%ImmedSize-1)=mod(Comp%Immed(Comp%ImmedSize-1),Comp%Immed(Comp%ImmedSize))
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cPow)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cPow)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)**Comp%Immed(Comp%ImmedSize)
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cEqual)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cEqual)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) == Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cNEqual)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cNEqual)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) /= Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cLess)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cLess)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) < Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cLessOrEq)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cLessOrEq)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) <= Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cGreater)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cGreater)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) > Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cGreaterOrEq)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+    case (cGreaterOrEq)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) >= Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
       
-    CASE (cAnd)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .AND.&
+    case (cAnd)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .and.&
             DbleToLogc(Comp%Immed(Comp%ImmedSize)))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cOr)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
-          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .OR.&
+    case (cOr)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .or.&
             DbleToLogc(Comp%Immed(Comp%ImmedSize)))
-        CALL RemoveCompiledImmediate(Comp)
-        CALL RemoveCompiledByte(Comp)
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledImmediate(Comp)
+        call RemoveCompiledByte(Comp)
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cNot)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
-        Comp%Immed(Comp%ImmedSize)=LogcToDble(.NOT.DbleToLogc(Comp%Immed(Comp%ImmedSize)))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+    case (cNot)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
+        Comp%Immed(Comp%ImmedSize)=LogcToDble(.not.DbleToLogc(Comp%Immed(Comp%ImmedSize)))
+        call RemoveCompiledByte(Comp)
+      end if
 
       !------------------------------------------------------------
       ! Degrees-radians conversion
       !------------------------------------------------------------
-    CASE (cDeg)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+    case (cDeg)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         Comp%Immed(Comp%ImmedSize)=RadToDeg(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF
+        call RemoveCompiledByte(Comp)
+      end if
 
-    CASE (cRad)
-      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+    case (cRad)
+      if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         Comp%Immed(Comp%ImmedSize)=DegToRad(Comp%Immed(Comp%ImmedSize))
-        CALL RemoveCompiledByte(Comp)
-      END IF      
-    END SELECT
-  END SUBROUTINE AddCompiledByte
+        call RemoveCompiledByte(Comp)
+      end if      
+    end select
+  end subroutine AddCompiledByte
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE RemoveCompiledByte (Comp)
+  subroutine RemoveCompiledByte (Comp)
 
 !<description>
     ! Remove last compiled byte from bytecode
 !</description>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
    
     Comp%ByteCode(Comp%ByteCodeSize) = 0
     Comp%ByteCodeSize = Comp%ByteCodeSize - 1
-  END SUBROUTINE RemoveCompiledByte
+  end subroutine RemoveCompiledByte
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE AddImmediate (Comp, immediate)
+  subroutine AddImmediate (Comp, immediate)
 
 !<description>
     ! Add immediate
@@ -3262,42 +3262,42 @@ CONTAINS
 
 !<input>
     ! Value of byte to be added
-    REAL(DP), INTENT(in) :: immediate
+    real(DP), intent(in) :: immediate
 !</input>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
        
     Comp%ImmedSize = Comp%ImmedSize + 1
     Comp%Immed(Comp%ImmedSize) = immediate
-  END SUBROUTINE AddImmediate
+  end subroutine AddImmediate
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE RemoveCompiledImmediate (Comp)
+  subroutine RemoveCompiledImmediate (Comp)
 
 !<description>
     ! Remove last compiled immediate from immediate stack
 !</description>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
 
     Comp%Immed(Comp%ImmedSize) = 0
     Comp%ImmedSize = Comp%ImmedSize - 1
-  END SUBROUTINE RemoveCompiledImmediate
+  end subroutine RemoveCompiledImmediate
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE AddFunctionOpcode (Comp, opcode)
+  subroutine AddFunctionOpcode (Comp, opcode)
 
 !<description>
     ! Add compiled byte to bytecode
@@ -3305,36 +3305,36 @@ CONTAINS
 
 !<input>
     ! Value of opcode to be added
-    INTEGER(is), INTENT(in) :: opcode
+    integer(is), intent(in) :: opcode
 !</input>
 
 !<inputoutput>
-    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+    type (t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
     
-    IF (Comp%useDegreeConversion) THEN
-      SELECT CASE(opCode)
-      CASE(cCos,Ccosh,cCot,cCsc,cSec,cSin,cSinh,cTan,cTanh)
-        CALL AddCompiledByte(Comp,cRad)
-      END SELECT
-    END IF
+    if (Comp%useDegreeConversion) then
+      select case(opCode)
+      case(cCos,Ccosh,cCot,cCsc,cSec,cSin,cSinh,cTan,cTanh)
+        call AddCompiledByte(Comp,cRad)
+      end select
+    end if
     
-    CALL AddCompiledByte(Comp,opcode)
+    call AddCompiledByte(Comp,opcode)
     
-    IF (Comp%useDegreeConversion) THEN
-      SELECT CASE(opCode)
-      CASE(cAcos,cAcosh,cAsinh,cAtanh,cAsin,cAtan,cAtan2)
-        CALL AddCompiledByte(Comp, cDeg)
-      END SELECT
-    END IF
-  END SUBROUTINE AddFunctionOpcode
+    if (Comp%useDegreeConversion) then
+      select case(opCode)
+      case(cAcos,cAcosh,cAsinh,cAtanh,cAsin,cAtan,cAtan2)
+        call AddCompiledByte(Comp, cDeg)
+      end select
+    end if
+  end subroutine AddFunctionOpcode
 
   ! *****************************************************************************
 
 !<function>
 
-  FUNCTION RealNum (str, ibegin, inext, error) RESULT (res)
+  function RealNum (str, ibegin, inext, error) result (res)
 
 !<description>
     ! Get real number from string
@@ -3343,29 +3343,29 @@ CONTAINS
 
 !<input>
     ! String
-    CHARACTER (LEN=*), INTENT(in) :: str
+    character (LEN=*), intent(in) :: str
 !</input>
 
 !<output>
     ! OPTIONAL: Start position of real number
-    INTEGER, OPTIONAL, INTENT(out) :: ibegin
+    integer, optional, intent(out) :: ibegin
     
     ! OPTIONAL: 1st character after real number
-    INTEGER, OPTIONAL, INTENT(out) :: inext
+    integer, optional, intent(out) :: inext
 
     ! OPTIONAL: Error flag
-    LOGICAL, OPTIONAL, INTENT(out) :: error
+    logical, optional, intent(out) :: error
 !</output>
 
 !<result>
     ! Real number
-    REAL(DP) :: res
+    real(DP) :: res
 !</result>
 !</function>
  
     ! local variables
-    INTEGER :: ib,in,istat
-    LOGICAL :: Bflag,               & ! .T. at begin of number in str
+    integer :: ib,in,istat
+    logical :: Bflag,               & ! .T. at begin of number in str
                InMan,               & ! .T. in mantissa of number
                Pflag,               & ! .T. after 1st '.' encountered
                Eflag,               & ! .T. at exponent identifier 'eEdD'
@@ -3379,65 +3379,65 @@ CONTAINS
     DInMan=.false.; DInExp=.false.
     ib   = 1
     in   = 1
-    DO WHILE (in <= LEN_TRIM(str))
-      SELECT CASE (str(in:in))
-      CASE (' ') ! Only leading blanks permitted
+    do while (in <= len_trim(str))
+      select case (str(in:in))
+      case (' ') ! Only leading blanks permitted
         ib = ib+1
-        IF (InMan .OR. Eflag .OR. InExp) EXIT
-      CASE ('+','-') ! Permitted only
-        IF     (Bflag) THEN           
+        if (InMan .or. Eflag .or. InExp) exit
+      case ('+','-') ! Permitted only
+        if     (Bflag) then           
           InMan=.true.; Bflag=.false. ! - at beginning of mantissa
-        ELSEIF (Eflag) THEN               
+        elseif (Eflag) then               
           InExp=.true.; Eflag=.false. ! - at beginning of exponent
-        ELSE
-          EXIT ! - otherwise CALL sys_halt()
-        ENDIF
-      CASE ('0':'9') ! Mark
-        IF     (Bflag) THEN           
+        else
+          exit ! - otherwise CALL sys_halt()
+        endif
+      case ('0':'9') ! Mark
+        if     (Bflag) then           
           InMan=.true.; Bflag=.false. ! - beginning of mantissa
-        ELSEIF (Eflag) THEN               
+        elseif (Eflag) then               
           InExp=.true.; Eflag=.false. ! - beginning of exponent
-        ENDIF
-        IF (InMan) DInMan=.true. ! Mantissa contains digit
-        IF (InExp) DInExp=.true. ! Exponent contains digit
-      CASE ('.')
-        IF     (Bflag) THEN
+        endif
+        if (InMan) DInMan=.true. ! Mantissa contains digit
+        if (InExp) DInExp=.true. ! Exponent contains digit
+      case ('.')
+        if     (Bflag) then
           Pflag=.true. ! - mark 1st appearance of '.'
           InMan=.true.; Bflag=.false. !   mark beginning of mantissa
-        ELSEIF (InMan .AND..NOT.Pflag) THEN
+        elseif (InMan .and..not.Pflag) then
           Pflag=.true. ! - mark 1st appearance of '.'
-        ELSE
-          EXIT ! - otherwise CALL sys_halt()
-        END IF
-      CASE ('e','E','d','D') ! Permitted only
-        IF (InMan) THEN
+        else
+          exit ! - otherwise CALL sys_halt()
+        end if
+      case ('e','E','d','D') ! Permitted only
+        if (InMan) then
           Eflag=.true.; InMan=.false. ! - following mantissa
-        ELSE
-          EXIT ! - otherwise CALL sys_halt()
-        ENDIF
-      CASE DEFAULT
-        EXIT ! CALL sys_halt() at all other characters
-      END SELECT
+        else
+          exit ! - otherwise CALL sys_halt()
+        endif
+      case DEFAULT
+        exit ! CALL sys_halt() at all other characters
+      end select
       in = in+1
-    END DO
-    err = (ib > in-1) .OR. (.NOT.DInMan) .OR.&
-        &((Eflag.OR.InExp).AND..NOT.DInExp)
-    IF (err) THEN
+    end do
+    err = (ib > in-1) .or. (.not.DInMan) .or.&
+        &((Eflag.or.InExp).and..not.DInExp)
+    if (err) then
       res = 0.0_DP
-    ELSE
-      READ(str(ib:in-1),*,IOSTAT=istat) res
+    else
+      read(str(ib:in-1),*,IOSTAT=istat) res
       err = istat /= 0
-    END IF
-    IF (PRESENT(ibegin)) ibegin = ib
-    IF (PRESENT(inext))  inext  = in
-    IF (PRESENT(error))  error  = err
-  END FUNCTION RealNum
+    end if
+    if (present(ibegin)) ibegin = ib
+    if (present(inext))  inext  = in
+    if (present(error))  error  = err
+  end function RealNum
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION FunctionSize (Func) RESULT (fsize)
+  recursive function FunctionSize (Func) result (fsize)
 
 !<description>
     ! Return the size of the total function including external expressions
@@ -3445,41 +3445,41 @@ CONTAINS
     
 !<input>
     ! Function string
-    CHARACTER (LEN=*),  INTENT(in) :: Func
+    character (LEN=*),  intent(in) :: Func
 !</input>
 
 !<result>
     ! Size of function string
-    INTEGER :: fsize
+    integer :: fsize
 !</result>
 !</function>
     
     ! local variables
-    INTEGER :: ind,n
-    CHARACTER(LEN=1) :: c
+    integer :: ind,n
+    character(LEN=1) :: c
 
     ! Determine size of given expression
-    fsize=LEN_TRIM(Func)
+    fsize=len_trim(Func)
 
     ! "Parse" string for externally defined expressions
-    DO ind=1,fsize
+    do ind=1,fsize
       c = Func(ind:ind)
-      IF (c == '@') THEN
+      if (c == '@') then
         n = ExpressionIndex (Func(ind:))
-        IF (n == 0) THEN
-          PRINT *, "FunctionSize: Invalid expression!"
-          CALL sys_halt()
-        END IF
+        if (n == 0) then
+          print *, "FunctionSize: Invalid expression!"
+          call sys_halt()
+        end if
         fsize = fsize+FunctionSize(ExpressionStrings(n))
-      END IF
-    END DO
-  END FUNCTION FunctionSize
+      end if
+    end do
+  end function FunctionSize
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileExpression(Comp, Func, ind, Var, stopAtComma) RESULT(ind2)
+  recursive function CompileExpression(Comp, Func, ind, Var, stopAtComma) result(ind2)
 
 !<description>
     ! Compiles ','
@@ -3487,51 +3487,51 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 
     ! OPTIONAL: stop at comma
-    LOGICAL, INTENT(IN), OPTIONAL :: stopAtComma
+    logical, intent(IN), optional :: stopAtComma
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: FuncLength
+    integer :: FuncLength
     
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
     
     ind2 = CompileOr(Comp,Func, ind, Var)
-    IF(ind2 > FuncLength) RETURN
+    if(ind2 > FuncLength) return
 
-    IF (PRESENT(stopAtComma)) THEN
-      IF (stopAtComma) RETURN
-    END IF
+    if (present(stopAtComma)) then
+      if (stopAtComma) return
+    end if
     
-    DO WHILE (Func(ind2:ind2) == ',')
+    do while (Func(ind2:ind2) == ',')
       ind2 = CompileOr(Comp, Func, ind2+1, Var)
-      IF (ind2 > FuncLength) RETURN
-    END DO
-  END FUNCTION CompileExpression
+      if (ind2 > FuncLength) return
+    end do
+  end function CompileExpression
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileOr(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileOr(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '|'
@@ -3539,47 +3539,47 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: FuncLength
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
 
     ind2 = CompileAnd(Comp, Func, ind, Var)
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
 
-    DO WHILE(Func(ind2:ind2) == '|')
+    do while(Func(ind2:ind2) == '|')
       ind2 = CompileAnd(Comp, Func, ind2+1, Var)
 
-      CALL AddCompiledByte(Comp, cOr)
+      call AddCompiledByte(Comp, cOr)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > FuncLength) RETURN
-    END DO
-  END FUNCTION CompileOr
+      if (ind2 > FuncLength) return
+    end do
+  end function CompileOr
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileAnd(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileAnd(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '&'
@@ -3587,47 +3587,47 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: FuncLength
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
     
     ind2 = CompileComparison(Comp, Func, ind, Var)
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
     
-    DO WHILE(Func(ind2:ind2) == '&')
+    do while(Func(ind2:ind2) == '&')
       ind2 = CompileComparison(Comp, Func, ind2+1, Var)
 
-      CALL AddCompiledByte(Comp, cAnd)
+      call AddCompiledByte(Comp, cAnd)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > FuncLength) RETURN
-    END DO
-  END FUNCTION CompileAnd
+      if (ind2 > FuncLength) return
+    end do
+  end function CompileAnd
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileComparison(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileComparison(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '=', '<' and '>'
@@ -3635,65 +3635,65 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(LEN=1) :: c
-    INTEGER(is) :: opSize
-    INTEGER :: FuncLength
+    character(LEN=1) :: c
+    integer(is) :: opSize
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
     
     ind2 = CompileAddition(Comp, Func, ind, Var)
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
     
     c=Func(ind2:ind2)
-    DO WHILE(c == '=' .OR. c == '<' .OR. c == '>' .OR. c == '!')
-      opSize = MERGE(2,1,Func(ind2+1:ind2+1) == '=')
+    do while(c == '=' .or. c == '<' .or. c == '>' .or. c == '!')
+      opSize = merge(2,1,Func(ind2+1:ind2+1) == '=')
       ind2 = CompileAddition(Comp, Func, ind2+opSize, Var)
 
-      SELECT CASE(c)
-      CASE('=')
-        CALL AddCompiledByte(Comp, cEqual)
+      select case(c)
+      case('=')
+        call AddCompiledByte(Comp, cEqual)
 
-      CASE('<')
-        CALL AddCompiledByte(Comp, MERGE(cLess,cLessOrEq,opSize==1))
+      case('<')
+        call AddCompiledByte(Comp, merge(cLess,cLessOrEq,opSize==1))
         
-      CASE('>')
-        CALL AddCompiledByte(Comp, MERGE(cGreater,cGreaterOrEq,opSize==1))
+      case('>')
+        call AddCompiledByte(Comp, merge(cGreater,cGreaterOrEq,opSize==1))
         
-      CASE('!')
-        CALL AddCompiledByte(Comp, cNEqual)
-      END SELECT
+      case('!')
+        call AddCompiledByte(Comp, cNEqual)
+      end select
       Comp%StackPtr = Comp%StackPtr-1
       
-      IF (ind2 > FuncLength) RETURN
+      if (ind2 > FuncLength) return
       c=Func(ind2:ind2)
-    END DO
-  END FUNCTION CompileComparison
+    end do
+  end function CompileComparison
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileAddition(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileAddition(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '+' and '-'
@@ -3701,51 +3701,51 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(LEN=1) :: c
-    INTEGER :: FuncLength
+    character(LEN=1) :: c
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
     
     ind2 = CompileMult(Comp, Func, ind, Var)
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
     
     c=Func(ind2:ind2)
-    DO WHILE(c == '+' .OR. c == '-')
+    do while(c == '+' .or. c == '-')
       ind2 = CompileMult(Comp, Func, ind2+1, Var)
 
-      CALL AddCompiledByte(Comp, MERGE(cAdd,cSub,c == '+'))
+      call AddCompiledByte(Comp, merge(cAdd,cSub,c == '+'))
       Comp%StackPtr = Comp%StackPtr-1
       
-      IF (ind2 > FuncLength) RETURN
+      if (ind2 > FuncLength) return
       c=Func(ind2:ind2)
-    END DO
-  END FUNCTION CompileAddition
+    end do
+  end function CompileAddition
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileMult(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileMult(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '*', '/' and '%'
@@ -3753,61 +3753,61 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(LEN=1) :: c
-    INTEGER :: FuncLength
+    character(LEN=1) :: c
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
     
     ind2 = CompileUnaryMinus(Comp, Func, ind, Var)
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
     
     c=Func(ind2:ind2)
-    DO WHILE(c == '*' .OR. c == '/' .OR. c == '%')
+    do while(c == '*' .or. c == '/' .or. c == '%')
       ind2 = CompileUnaryMinus(Comp, Func, ind2+1, Var)
 
-      SELECT CASE(c)
-      CASE('*')
-        CALL AddCompiledByte(Comp, cMul)
+      select case(c)
+      case('*')
+        call AddCompiledByte(Comp, cMul)
         
-      CASE('/')
-        CALL AddCompiledByte(Comp, cDiv)
+      case('/')
+        call AddCompiledByte(Comp, cDiv)
         
-      CASE('%')
-        CALL AddCompiledByte(Comp, cMod)
+      case('%')
+        call AddCompiledByte(Comp, cMod)
         
-      END SELECT
+      end select
       Comp%StackPtr = Comp%StackPtr-1
 
-      IF (ind2 > FuncLength) RETURN
+      if (ind2 > FuncLength) return
       c=Func(ind2:ind2)
-    END DO
-  END FUNCTION CompileMult
+    end do
+  end function CompileMult
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileUnaryMinus(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileUnaryMinus(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles unary '-'
@@ -3815,60 +3815,60 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(LEN=1) :: c
-    INTEGER :: FuncLength
+    character(LEN=1) :: c
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
 
     c = Func(ind:ind)
-    IF (c == '-' .OR. c == '!') THEN
+    if (c == '-' .or. c == '!') then
       ind2 = ind+1
-      IF (ind2 > FuncLength) RETURN
+      if (ind2 > FuncLength) return
       ind2 = CompilePow(Comp, Func, ind2, Var)
 
       ! If we are negating a constant, negate the constant itself
-      IF (c == '-' .AND. Comp%ByteCode(Comp%ByteCodeSize) == cImmed) THEN
+      if (c == '-' .and. Comp%ByteCode(Comp%ByteCodeSize) == cImmed) then
         Comp%Immed(Comp%ImmedSize) = -Comp%Immed(Comp%ImmedSize)
         
         ! If we are negating a negation, we can remove both
-      ELSEIF (c == '-' .AND. Comp%ByteCode(Comp%ByteCodeSize) == cNeg) THEN
-        CALL RemoveCompiledByte(Comp)
+      elseif (c == '-' .and. Comp%ByteCode(Comp%ByteCodeSize) == cNeg) then
+        call RemoveCompiledByte(Comp)
         
-      ELSE
-        CALL AddCompiledByte(Comp, MERGE(cNeg,cNot,c == '-'))
+      else
+        call AddCompiledByte(Comp, merge(cNeg,cNot,c == '-'))
 
-      END IF
-      RETURN
-    END IF
+      end if
+      return
+    end if
     
     ind2 = CompilePow(Comp, Func, ind, Var)
-  END FUNCTION CompileUnaryMinus
+  end function CompileUnaryMinus
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompilePow(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompilePow(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles '^'
@@ -3876,48 +3876,48 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: FuncLength
+    integer :: FuncLength
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
 
     ind2 = CompileElement(Comp, Func, ind, Var)
 
-    IF (ind2 > FuncLength) RETURN
+    if (ind2 > FuncLength) return
 
-    DO WHILE(Func(ind2:ind2) == '^')
+    do while(Func(ind2:ind2) == '^')
       ind2 = CompileUnaryMinus(Comp, Func, ind2+1, Var)
 
-      CALL AddCompiledByte(Comp, cPow)
+      call AddCompiledByte(Comp, cPow)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > FuncLength) RETURN
-    END DO
-  END FUNCTION CompilePow
+      if (ind2 > FuncLength) return
+    end do
+  end function CompilePow
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileElement(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileElement(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles element
@@ -3925,115 +3925,115 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(LEN=1) :: c
-    REAL(DP) :: rnum
-    INTEGER(is) :: n
-    INTEGER :: ind1,ind0,ib,in,requiredParams
-    LOGICAL :: err
+    character(LEN=1) :: c
+    real(DP) :: rnum
+    integer(is) :: n
+    integer :: ind1,ind0,ib,in,requiredParams
+    logical :: err
 
     ind1=ind; c=Func(ind1:ind1)
-    IF (c == '(') THEN
-      ind1 = CompileExpression(Comp, Func, ind1+1, Var, .FALSE.)
+    if (c == '(') then
+      ind1 = CompileExpression(Comp, Func, ind1+1, Var, .false.)
       ind2 = ind1+1   ! Func(ind1:ind1) is ')'
-      RETURN
-    END IF
+      return
+    end if
 
     ! Check for numbers
-    IF (SCAN(c,'0123456789,') > 0) THEN
+    if (scan(c,'0123456789,') > 0) then
       rnum = RealNum (Func(ind1:),ib,in,err)
-      IF (err) THEN
-        PRINT *, "CompileElement: Invalid number format!"
-        CALL sys_halt()
-      END IF
-      CALL AddImmediate(Comp, rnum)
-      CALL AddCompiledByte(Comp, cImmed)
-      CALL incStackPtr(Comp)
+      if (err) then
+        print *, "CompileElement: Invalid number format!"
+        call sys_halt()
+      end if
+      call AddImmediate(Comp, rnum)
+      call AddCompiledByte(Comp, cImmed)
+      call incStackPtr(Comp)
       ind2 = ind1+in-1
-      RETURN
+      return
       
-    ELSE
+    else
       ! Then string must be function, variable or constant
       
       ! Check for mathematical functions
       n = MathFunctionIndex(Func(ind1:))
-      IF (n > 0) THEN
-        ind2 = ind1+LEN_TRIM(Funcs(n))
+      if (n > 0) then
+        ind2 = ind1+len_trim(Funcs(n))
 
         ! Check for IF-THEN-ELSE
-        IF (n == cIf) THEN
+        if (n == cIf) then
           ind2 = CompileIf(Comp, Func, ind2+1, Var)
           ! IF-THEN-ELSE cannot be vectorized, note that!
-          Comp%isVectorizable = .FALSE.
-          RETURN        
-        END IF
+          Comp%isVectorizable = .false.
+          return        
+        end if
 
         requiredParams=MathFunctionParameters(n)        
         ind2 = CompileFunctionParameters(Comp, Func, ind2+1, Var, requiredParams)
-        CALL AddFunctionOpcode(Comp, n)
-        RETURN
-      END IF
+        call AddFunctionOpcode(Comp, n)
+        return
+      end if
       
       ! Check for predefined constant
       n = ConstantIndex(Func(ind1:))
-      IF (n > 0) THEN
-        ind2 = ind1+LEN_TRIM(Consts(n))+1
-        CALL AddImmediate(Comp, Constvals(n))
-        CALL AddCompiledByte(Comp, cImmed)
-        CALL incStackPtr(Comp)
-        RETURN
-      END IF
+      if (n > 0) then
+        ind2 = ind1+len_trim(Consts(n))+1
+        call AddImmediate(Comp, Constvals(n))
+        call AddCompiledByte(Comp, cImmed)
+        call incStackPtr(Comp)
+        return
+      end if
 
       ! Check for predefined expressions
       n = ExpressionIndex(Func(ind1:))
-      IF (n > 0) THEN
-        ind2 = ind1+LEN_TRIM(Expressions(n))+1
+      if (n > 0) then
+        ind2 = ind1+len_trim(Expressions(n))+1
 
         ! Recursively compile the given expression
         ind0 = CompileExpression(Comp,ExpressionStrings(n), 1, Var)
         
         ! Proceed with compilation of mathematical function Func afterwards
-        RETURN
-      END IF
+        return
+      end if
 
       ! Check for variables
       n = VariableIndex(Func(ind1:), Var, ib, in)
-      IF (n > 0) n = VarBegin+n-1
-      CALL AddCompiledByte(Comp, n)
-      CALL incStackPtr(Comp)
+      if (n > 0) n = VarBegin+n-1
+      call AddCompiledByte(Comp, n)
+      call incStackPtr(Comp)
       ind2 = ind1+in-1
-      RETURN
-    END IF
+      return
+    end if
 
-    PRINT *, "CompileElement: An unexpected error occured."
-    CALL sys_halt()
-  END FUNCTION CompileElement
+    print *, "CompileElement: An unexpected error occured."
+    call sys_halt()
+  end function CompileElement
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileFunctionParameters(Comp, Func, ind, Var,&
-      & requiredParams) RESULT(ind2)
+  recursive function CompileFunctionParameters(Comp, Func, ind, Var,&
+      & requiredParams) result(ind2)
 
 !<description>
     ! Compiles function parameters
@@ -4041,57 +4041,57 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 
     ! Number of required parameters
-    INTEGER, INTENT(IN) :: requiredParams
+    integer, intent(IN) :: requiredParams
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: curStackPtr
+    integer :: curStackPtr
 
     ind2 = ind
-    IF (requiredParams > 0) THEN
+    if (requiredParams > 0) then
       
       curStackPtr = Comp%StackPtr
-      ind2 = CompileExpression(Comp, Func, ind, Var, .FALSE.)
+      ind2 = CompileExpression(Comp, Func, ind, Var, .false.)
 
-      IF (Comp%StackPtr /= curStackPtr+requiredParams) THEN
-        PRINT *, "CompileFunctionParameters: Illegal number of parameters to function!"
-        CALL sys_halt()
-      END IF
+      if (Comp%StackPtr /= curStackPtr+requiredParams) then
+        print *, "CompileFunctionParameters: Illegal number of parameters to function!"
+        call sys_halt()
+      end if
 
       Comp%StackPtr = Comp%StackPtr-(requiredParams-1)
 
-    ELSE
+    else
       
-      CALL incStackPtr(Comp)
+      call incStackPtr(Comp)
       
-    END IF
+    end if
     ind2=ind2+1
-  END FUNCTION CompileFunctionParameters
+  end function CompileFunctionParameters
 
   ! *****************************************************************************
 
 !<function>
 
-  RECURSIVE FUNCTION CompileIf(Comp, Func, ind, Var) RESULT(ind2)
+  recursive function CompileIf(Comp, Func, ind, Var) result(ind2)
 
 !<description>
     ! Compiles if()
@@ -4099,81 +4099,81 @@ CONTAINS
 
 !<input>
     ! Function substring
-    CHARACTER(LEN=*), INTENT(IN) :: Func
+    character(LEN=*), intent(IN) :: Func
 
     ! Begin position substring
-    INTEGER, INTENT(IN) :: ind
+    integer, intent(IN) :: ind
 
     ! Array with variable names
-    CHARACTER(LEN=*), DIMENSION(:), INTENT(IN) :: Var
+    character(LEN=*), dimension(:), intent(IN) :: Var
 !</input>
 
 !<inputoutput>
     ! Function parser
-    TYPE(t_fparserComponent), INTENT(INOUT) :: Comp
+    type(t_fparserComponent), intent(INOUT) :: Comp
 !</inputoutput>
 
 !<result>
-    INTEGER :: ind2
+    integer :: ind2
 !</result>
 !</function>
 
     ! local variables
-    INTEGER :: FuncLength,curByteCodeSize,curByteCodeSize2,curImmedSize2
+    integer :: FuncLength,curByteCodeSize,curByteCodeSize2,curImmedSize2
 
-    FuncLength=LEN_TRIM(Func)
+    FuncLength=len_trim(Func)
 
-    ind2 = CompileExpression(Comp, Func, ind, Var, .TRUE.) ! Condition branch
-    IF (ind2 > FuncLength) RETURN
+    ind2 = CompileExpression(Comp, Func, ind, Var, .true.) ! Condition branch
+    if (ind2 > FuncLength) return
 
-    IF (Func(ind2:ind2) /= ',') THEN
-      PRINT *, "CompileIf: Illegal number of parameters to function!"
-      CALL sys_halt()
-    END IF
-    CALL AddCompiledByte(Comp, cIf)
+    if (Func(ind2:ind2) /= ',') then
+      print *, "CompileIf: Illegal number of parameters to function!"
+      call sys_halt()
+    end if
+    call AddCompiledByte(Comp, cIf)
     curByteCodeSize = Comp%ByteCodeSize
-    CALL AddCompiledByte(Comp, 0_is) ! Jump index will be set below
-    CALL AddCompiledByte(Comp, 0_is) ! Immed jump index will be set below
+    call AddCompiledByte(Comp, 0_is) ! Jump index will be set below
+    call AddCompiledByte(Comp, 0_is) ! Immed jump index will be set below
     Comp%StackPtr = Comp%StackPtr-1
 
-    ind2 = CompileExpression(Comp, Func, ind2+1, Var, .TRUE.) ! Then branch
-    IF (ind2 > FuncLength) RETURN
+    ind2 = CompileExpression(Comp, Func, ind2+1, Var, .true.) ! Then branch
+    if (ind2 > FuncLength) return
 
-    IF (Func(ind2:ind2) /= ',') THEN
-      PRINT *, "CompileIf: Illegal number of parameters to function!"
-      CALL sys_halt()
-    END IF
-    CALL AddCompiledByte(Comp, cJump)
+    if (Func(ind2:ind2) /= ',') then
+      print *, "CompileIf: Illegal number of parameters to function!"
+      call sys_halt()
+    end if
+    call AddCompiledByte(Comp, cJump)
     curByteCodeSize2 = Comp%ByteCodeSize
     curImmedSize2 = Comp%ImmedSize
-    CALL AddCompiledByte(Comp, 0_is) ! Jump index will be set below
-    CALL AddCompiledByte(Comp, 0_is) ! Immed jump index will be set below
+    call AddCompiledByte(Comp, 0_is) ! Jump index will be set below
+    call AddCompiledByte(Comp, 0_is) ! Immed jump index will be set below
     Comp%StackPtr = Comp%StackPtr-1
 
-    ind2 = CompileExpression(Comp, Func, ind2+1, Var, .TRUE.) ! Else branch
-    IF (ind2 > FuncLength) RETURN
+    ind2 = CompileExpression(Comp, Func, ind2+1, Var, .true.) ! Else branch
+    if (ind2 > FuncLength) return
 
-    IF (Func(ind2:ind2) /= ')') THEN
-      PRINT *, "CompileIf: Illegal number of parameters to function!"
-      CALL sys_halt()
-    END IF
+    if (Func(ind2:ind2) /= ')') then
+      print *, "CompileIf: Illegal number of parameters to function!"
+      call sys_halt()
+    end if
     
     ! Set jump indices
-    IF (ASSOCIATED(Comp%ByteCode)) THEN
+    if (associated(Comp%ByteCode)) then
       Comp%ByteCode(curByteCodeSize+1)  = curByteCodeSize2+2
       Comp%ByteCode(curByteCodeSize+2)  = curImmedSize2+1
       Comp%ByteCode(curByteCodeSize2+1) = Comp%ByteCodeSize
       Comp%ByteCode(curByteCodeSize2+2) = Comp%ImmedSize+1
-    END IF
+    end if
     
     ind2=ind2+1
-  END FUNCTION CompileIf
+  end function CompileIf
 
   ! *****************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION DbleTOLogc(d) RESULT(l)
+  elemental function DbleTOLogc(d) result(l)
 
 !<description>
     ! This function transforms a Double into a Logical
@@ -4181,23 +4181,23 @@ CONTAINS
 
 !<input>
     ! Double variable
-    REAL(DP), INTENT(IN) :: d
+    real(DP), intent(IN) :: d
 !</input>
 
 !<result>
     ! Logical variable
-    LOGICAL :: l
+    logical :: l
 !</result>
 !</function>
     
-    l=MERGE(.TRUE.,.FALSE.,ABS(1-d)<=1e-12)
-  END FUNCTION DbleTOLogc
+    l=merge(.true.,.false.,abs(1-d)<=1e-12)
+  end function DbleTOLogc
 
   ! *****************************************************************************
 
 !<function>
   
-  ELEMENTAL FUNCTION LogcToDble(l) RESULT(d)
+  elemental function LogcToDble(l) result(d)
 
 !<description>
     ! This function transforms a Logical into a Double
@@ -4205,23 +4205,23 @@ CONTAINS
 
 !<input>
     ! Logical variable
-    LOGICAL, INTENT(IN) :: l
+    logical, intent(IN) :: l
 !</input>
 
 !<result>
     ! Double variable
-    REAL(DP) :: d
+    real(DP) :: d
 !</result>
 !</function>
       
-    d=MERGE(1._DP,0._DP,l)
-  END FUNCTION LogcToDble
+    d=merge(1._DP,0._DP,l)
+  end function LogcToDble
 
   ! *****************************************************************************
 
 !<function>
   
-  ELEMENTAL FUNCTION DegToRad(d) RESULT(r)
+  elemental function DegToRad(d) result(r)
 
 !<description>
     ! This function converts DEG to RAD
@@ -4229,23 +4229,23 @@ CONTAINS
 
 !<input>
     ! DEG
-    REAL(DP), INTENT(IN) :: d
+    real(DP), intent(IN) :: d
 !</input>
 
 !<result>
     ! RAD
-    REAL(DP) :: r
+    real(DP) :: r
 !</result>
 !</function>
       
     r=d*(3.141592653589793115997963468544185161590576171875_DP/180._DP)
-  END FUNCTION DegToRad
+  end function DegToRad
 
   ! *****************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION RadToDeg(r) RESULT(d)
+  elemental function RadToDeg(r) result(d)
     
 !<description>
     ! This function converts RAD to DEG
@@ -4253,15 +4253,15 @@ CONTAINS
 
 !<input>
     ! RAD
-    REAL(DP), INTENT(IN) :: r
+    real(DP), intent(IN) :: r
 !</input>
 
 !<result>
     ! DEG
-    REAL(DP) :: d
+    real(DP) :: d
 !</result>
 !</function>
     
     d=r*(180._DP/3.141592653589793115997963468544185161590576171875_DP)
-  END FUNCTION RadToDeg
-END MODULE fparser
+  end function RadToDeg
+end module fparser

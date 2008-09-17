@@ -43,30 +43,30 @@
 !# </purpose>
 !##############################################################################
 
-MODULE sort
+module sort
 
-  USE fsystem
-  USE error
-  USE genoutput
-  USE storage
+  use fsystem
+  use error
+  use genoutput
+  use storage
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 ! <constantblock description="sort algorithms">
   
   ! heap sort (default); reliable allrounder
-  INTEGER, PARAMETER :: SORT_HEAP       = 0
+  integer, parameter :: SORT_HEAP       = 0
 
   ! quicksort, then insertsort
-  INTEGER, PARAMETER :: SORT_QUICK      = 1
+  integer, parameter :: SORT_QUICK      = 1
 
   ! insertsort; for small arrays (stable)
-  INTEGER, PARAMETER :: SORT_INSERT     = 2
+  integer, parameter :: SORT_INSERT     = 2
 
   ! bubblesort; for very small arrays
-  INTEGER, PARAMETER :: SORT_BUBBLE     = 3
+  integer, parameter :: SORT_BUBBLE     = 3
 
   ! mergesort; stable, n*log(n) complexity, log(n)*c stack memory consumption
   ! A modification of an algorithm by Jason Harrison, University of British Columbia.
@@ -74,11 +74,11 @@ MODULE sort
   ! Further modified and turned into a stable algorithm by Jens F. Acker, University
   ! of Dortmund.
   ! For small field sizes, insertsort is used
-  INTEGER, PARAMETER :: SORT_MERGE      = 4
+  integer, parameter :: SORT_MERGE      = 4
   
   ! Stable sorting algorithm
   ! Defaults to mergesort, but this can change in the future
-  INTEGER, PARAMETER :: SORT_STABLE = 10
+  integer, parameter :: SORT_STABLE = 10
     
 !</constantblock>
 
@@ -87,13 +87,13 @@ MODULE sort
   ! cutoff value for hybridized sorting
   ! insert best value for your computer here or
   ! leave the original guesstimated value
-  INTEGER, PARAMETER :: SORT_CUTOFF     = 35
+  integer, parameter :: SORT_CUTOFF     = 35
   
 ! </constantblock>
 
 !</constants>
 
-CONTAINS
+contains
 
 !<subroutine>
   subroutine sort_int(Iarray, csortMethod, Imapping, Itemp)
@@ -116,7 +116,7 @@ CONTAINS
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    INTEGER, DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
+    integer, dimension(:), intent(INOUT), target, optional :: Itemp
 
     !</input>
 
@@ -131,7 +131,7 @@ CONTAINS
     !</inoutput>
 !</subroutine>
 
-    INTEGER, DIMENSION(:), POINTER :: p_Itemp,p_Itemp2
+    integer, dimension(:), pointer :: p_Itemp,p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -146,31 +146,31 @@ CONTAINS
         call insertsort(Iarray, Imapping)
       case(SORT_INSERT)
         call insertsort(Iarray, Imapping)
-      CASE (SORT_MERGE,SORT_STABLE)
+      case (SORT_MERGE,SORT_STABLE)
 
         ! We need temporary storage, that algorithm is not in-situ!
-        IF (PRESENT(Imapping)) THEN
-          ALLOCATE(p_Itemp2(SIZE(Iarray)))
-        ELSE
+        if (present(Imapping)) then
+          allocate(p_Itemp2(size(Iarray)))
+        else
           ! Dummy
-          NULLIFY(p_Itemp2)
-        END IF
+          nullify(p_Itemp2)
+        end if
 
-        IF (PRESENT(Itemp)) THEN
+        if (present(Itemp)) then
           p_Itemp => Itemp
           call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
-        ELSE
-          ALLOCATE(p_Itemp(SIZE(Iarray)))
+        else
+          allocate(p_Itemp(size(Iarray)))
           call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
-          DEALLOCATE(p_Itemp)
-        END IF
+          deallocate(p_Itemp)
+        end if
 
-        IF (PRESENT(Imapping)) DEALLOCATE(p_Itemp2)
+        if (present(Imapping)) deallocate(p_Itemp2)
 
       case default
-        CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
+        call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
-        CALL sys_halt()
+        call sys_halt()
       end select
     else
       call heapsort(Iarray, Imapping)
@@ -500,7 +500,7 @@ CONTAINS
       integer, dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
-      INTEGER :: idest
+      integer :: idest
 
       ilen = ubound(Iarray,1)
       ! Nothing to sort
@@ -536,72 +536,72 @@ CONTAINS
       ! for performance reasons
       if (present(Imapping)) then
       
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Itemp(idest) = Iarray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Itemp(idest) = Iarray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Itemp(idest) = Iarray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Iarray(idest) = Itemp(idest)
           Imapping(idest) = ImappingTemp(idest)
-        END DO
+        end do
       
       else
 
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Itemp(idest) = Iarray(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Itemp(idest) = Iarray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Iarray(idest) = Itemp(idest)
-        END DO
+        end do
 
       endif
     end subroutine mergesort
@@ -635,7 +635,7 @@ CONTAINS
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    INTEGER(I32), DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
+    integer(I32), dimension(:), intent(INOUT), target, optional :: Itemp
 
     !</input>
 
@@ -649,8 +649,8 @@ CONTAINS
     !</inoutput>
 !</subroutine>
 
-    INTEGER :: hhandle,hhandle2
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Itemp,p_Itemp2
+    integer :: hhandle,hhandle2
+    integer(I32), dimension(:), pointer :: p_Itemp,p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -663,35 +663,35 @@ CONTAINS
         call insertsort(Iarray, Imapping)
       case(SORT_INSERT)
         call insertsort(Iarray, Imapping)
-      CASE (SORT_MERGE,SORT_STABLE)
+      case (SORT_MERGE,SORT_STABLE)
 
         ! We need temporary storage, that algorithm is not in-situ!
-        IF (PRESENT(Imapping)) THEN
-          CALL storage_new ('sort_i32', 'temp', SIZE(Iarray), ST_INT, hhandle2, &
+        if (present(Imapping)) then
+          call storage_new ('sort_i32', 'temp', size(Iarray), ST_INT, hhandle2, &
               ST_NEWBLOCK_NOINIT)
-          CALL storage_getbase_int (hhandle2,p_Itemp2)
-        ELSE
+          call storage_getbase_int (hhandle2,p_Itemp2)
+        else
           ! Dummy
           hhandle2 = ST_NOHANDLE
-          NULLIFY(p_Itemp2)
-        END IF
+          nullify(p_Itemp2)
+        end if
 
-        IF (PRESENT(Itemp)) THEN
+        if (present(Itemp)) then
           p_Itemp => Itemp
           call mergesort(Iarray, p_Itemp, Imapping,p_Itemp2)
-        ELSE
-          CALL storage_new ('sort_i32', 'temp', SIZE(Iarray), ST_INT, hhandle, &
+        else
+          call storage_new ('sort_i32', 'temp', size(Iarray), ST_INT, hhandle, &
               ST_NEWBLOCK_NOINIT)
           ! Probably allocate memory for shifting the Imapping array
-          CALL storage_getbase_int (hhandle,p_Itemp)
+          call storage_getbase_int (hhandle,p_Itemp)
           call mergesort(Iarray, p_Itemp, Imapping, p_Itemp2)
-          CALL storage_free (hhandle)
-        END IF
+          call storage_free (hhandle)
+        end if
 
-        IF (PRESENT(Imapping)) CALL storage_free (hhandle2)
+        if (present(Imapping)) call storage_free (hhandle2)
 
       case default
-        CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
+        call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
       end select
     else
@@ -978,7 +978,7 @@ CONTAINS
       integer(I32), dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
-      INTEGER :: idest
+      integer :: idest
 
       ilen = ubound(Iarray,1)
       ! Nothing to sort
@@ -1014,72 +1014,72 @@ CONTAINS
       ! for performance reasons
       if (present(Imapping)) then
       
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Itemp(idest) = Iarray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Itemp(idest) = Iarray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Itemp(idest) = Iarray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Iarray(idest) = Itemp(idest)
           Imapping(idest) = ImappingTemp(idest)
-        END DO
+        end do
       
       else
 
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Iarray(ilo) .le. Iarray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Itemp(idest) = Iarray(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Itemp(idest) = Iarray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Iarray(idest) = Itemp(idest)
-        END DO
+        end do
 
       endif
     end subroutine mergesort
@@ -1125,7 +1125,7 @@ CONTAINS
        case(SORT_MERGE)
           call mergesort(Darray)
        case default
-        CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
+        call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
       end select
     else
@@ -1328,22 +1328,22 @@ CONTAINS
     !<inputoutput>
 
     ! double precision array to be sorted
-    real(dp), dimension(:), INTENT(INOUT) :: Darray
+    real(dp), dimension(:), intent(INOUT) :: Darray
 
     !optional mapping vector (if more than 1 vector may be sorted)
-    integer(i32), dimension(:), INTENT(INOUT), optional :: Imapping
+    integer(i32), dimension(:), intent(INOUT), optional :: Imapping
 
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    REAL(DP), DIMENSION(:), INTENT(INOUT), TARGET, OPTIONAL :: Dtemp
+    real(DP), dimension(:), intent(INOUT), target, optional :: Dtemp
 
     !</inputoutput>
 !</subroutine>
 
-    INTEGER :: hhandle,hhandle2
-    REAL(DP), DIMENSION(:), POINTER :: p_Dtemp
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Itemp2
+    integer :: hhandle,hhandle2
+    real(DP), dimension(:), pointer :: p_Dtemp
+    integer(I32), dimension(:), pointer :: p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -1360,34 +1360,34 @@ CONTAINS
 
         call insertsort(Darray, Imapping)
 
-      CASE (SORT_MERGE,SORT_STABLE)
+      case (SORT_MERGE,SORT_STABLE)
 
         ! We need temporary storage, that algorithm is not in-situ!
-        IF (PRESENT(Imapping)) THEN
-          CALL storage_new ('sort_dp', 'temp', SIZE(Darray), ST_INT, hhandle2, &
+        if (present(Imapping)) then
+          call storage_new ('sort_dp', 'temp', size(Darray), ST_INT, hhandle2, &
               ST_NEWBLOCK_NOINIT)
-          CALL storage_getbase_int (hhandle2,p_Itemp2)
-        ELSE
+          call storage_getbase_int (hhandle2,p_Itemp2)
+        else
           ! Dummy
           hhandle2 = ST_NOHANDLE
-          NULLIFY(p_Itemp2)
-        END IF
+          nullify(p_Itemp2)
+        end if
 
-        IF (PRESENT(Dtemp)) THEN
+        if (present(Dtemp)) then
           p_Dtemp => Dtemp
           call mergesort(Darray, p_Dtemp, Imapping,p_Itemp2)
-        ELSE
-          CALL storage_new ('sort_dp', 'temp', SIZE(Darray), ST_DOUBLE, hhandle, &
+        else
+          call storage_new ('sort_dp', 'temp', size(Darray), ST_DOUBLE, hhandle, &
               ST_NEWBLOCK_NOINIT)
           ! Probably allocate memory for shifting the Imapping array
-          CALL storage_getbase_double (hhandle,p_Dtemp)
+          call storage_getbase_double (hhandle,p_Dtemp)
           call mergesort(Darray, p_Dtemp, Imapping, p_Itemp2)
-          CALL storage_free (hhandle)
-        END IF
-        IF (PRESENT(Imapping)) CALL storage_free (hhandle2)
+          call storage_free (hhandle)
+        end if
+        if (present(Imapping)) call storage_free (hhandle2)
 
       case default
-        CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
+        call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_dp')        
       end select
     else
@@ -1670,12 +1670,12 @@ CONTAINS
 
 
     recursive subroutine mergesort(Darray, Dtemp, Imapping, ImappingTemp)
-      REAL(DP),dimension(:)::Darray
-      REAL(DP),dimension(:)::Dtemp
+      real(DP),dimension(:)::Darray
+      real(DP),dimension(:)::Dtemp
       integer(i32), dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
-      INTEGER :: idest
+      integer :: idest
 
       ilen = ubound(Darray,1)
       ! Nothing to sort
@@ -1711,72 +1711,72 @@ CONTAINS
       ! for performance reasons
       if (present(Imapping)) then
       
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Darray(ilo) .le. Darray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Darray(ilo) .le. Darray(istart_hi)) then
             Dtemp(idest) = Darray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Dtemp(idest) = Darray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Dtemp(idest) = Darray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Dtemp(idest) = Darray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Darray(idest) = Dtemp(idest)
           Imapping(idest) = ImappingTemp(idest)
-        END DO
+        end do
       
       else
 
-        DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ilen))
-          IF (Darray(ilo) .le. Darray(istart_hi)) THEN
+        do while ((ilo .le. imid) .and. (istart_hi .le. ilen))
+          if (Darray(ilo) .le. Darray(istart_hi)) then
             Dtemp(idest) = Darray(ilo)
             ilo = ilo+1
-          ELSE        
+          else        
             Dtemp(idest) = Darray(istart_hi)
             istart_hi = istart_hi+1
-          END IF
+          end if
           idest = idest+1
-        END DO
+        end do
         
         ! Copy the rest of the array. Only one of them may still 
         ! contain data!
-        DO WHILE (ilo .LE. imid) 
+        do while (ilo .le. imid) 
           Dtemp(idest) = Darray(ilo)
           ilo = ilo+1
           idest = idest+1
-        END DO  
+        end do  
         
-        DO WHILE (istart_hi .LE. ilen) 
+        do while (istart_hi .le. ilen) 
           Dtemp(idest) = Darray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
-        END DO
+        end do
         
         ! Copy back from the temp array.
-        DO idest = 1,ilen
+        do idest = 1,ilen
           Darray(idest) = Dtemp(idest)
-        END DO
+        end do
 
       endif
     end subroutine mergesort
@@ -1798,11 +1798,11 @@ CONTAINS
     ! the random number generator is only initialised when needed.
     !</description>
 !</subroutine>
-    logical, save :: bnotUsed = .TRUE.
+    logical, save :: bnotUsed = .true.
 !    print *, "START: bnotUsed=", bnotUsed
     if (bnotUsed) then
       call random_seed
-      bnotUsed = .FALSE.
+      bnotUsed = .false.
     endif
 !    print *, "END: bnotUsed=", bnotUsed
   end subroutine sort_randomSeedOnce
@@ -1810,9 +1810,9 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_int (Ielem, iindex, cmethod, Itemp)
+  subroutine arraySort_sortByIndex_int (Ielem, iindex, cmethod, Itemp)
     
-    IMPLICIT NONE
+    implicit none
     
   !<description>
     ! Sorting routine for a 2D array Ielem(1..nindex,1..nnode) by
@@ -1823,203 +1823,203 @@ CONTAINS
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    INTEGER, INTENT(IN) :: iindex
+    integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    integer(I32), optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    INTEGER(I32), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Itemp
+    integer(I32), dimension(:,:), intent(INOUT), target, optional :: Itemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Ielem(1..nindex,inode)
-    INTEGER(I32), DIMENSION(:,:), INTENT(INOUT) :: Ielem
+    integer(I32), dimension(:,:), intent(INOUT) :: Ielem
   !</inputoutput>
 !</subroutine>
 
-    INTEGER(I32) :: nindex,nnode
-    INTEGER, DIMENSION(2) :: Isize
-    INTEGER :: hhandle
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Itemp
+    integer(I32) :: nindex,nnode
+    integer, dimension(2) :: Isize
+    integer :: hhandle
+    integer(I32), dimension(:,:), pointer :: p_Itemp
         
-    nindex = UBOUND(Ielem,1)
-    nnode = UBOUND(Ielem,2)
+    nindex = ubound(Ielem,1)
+    nnode = ubound(Ielem,2)
         
-    IF (PRESENT(cmethod)) THEN
-      SELECT CASE (cmethod)
-        CASE (SORT_HEAP)
-          CALL heapSort
-        CASE (SORT_QUICK)
-          CALL RANDOM_SEED
-          CALL quickSort(1,nnode)
-          CALL insertSort(1,nnode)
-        CASE (SORT_INSERT)
-          CALL insertSort(1,nnode)
-        CASE (SORT_MERGE,SORT_STABLE)
+    if (present(cmethod)) then
+      select case (cmethod)
+        case (SORT_HEAP)
+          call heapSort
+        case (SORT_QUICK)
+          call RANDOM_SEED
+          call quickSort(1,nnode)
+          call insertSort(1,nnode)
+        case (SORT_INSERT)
+          call insertSort(1,nnode)
+        case (SORT_MERGE,SORT_STABLE)
           ! We need temporary storage, that algorithm is not in-situ!
-          IF (PRESENT(Itemp)) THEN
+          if (present(Itemp)) then
             p_Itemp => Itemp
-            CALL mergeSort(1,nnode)
-          ELSE
-            Isize = UBOUND(Ielem)
-            CALL storage_new2D ('arraySort_sortByIndex_int', &
+            call mergeSort(1,nnode)
+          else
+            Isize = ubound(Ielem)
+            call storage_new2D ('arraySort_sortByIndex_int', &
                 'Itemp', Isize, ST_INT, hhandle, &
                 ST_NEWBLOCK_NOINIT)
-            CALL storage_getbase_int2d (hhandle,p_Itemp)
-            CALL mergeSort(1,nnode) 
-            CALL storage_free (hhandle)
-          END IF
-        CASE DEFAULT
-          CALL output_line('unknown Method:' // sys_i6(cmethod),&
+            call storage_getbase_int2d (hhandle,p_Itemp)
+            call mergeSort(1,nnode) 
+            call storage_free (hhandle)
+          end if
+        case DEFAULT
+          call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          CALL sys_halt() 
-      END SELECT
-    ELSE
-      CALL heapSort
-    END IF
+          call sys_halt() 
+      end select
+    else
+      call heapSort
+    end if
     
-    CONTAINS
+    contains
 
-    SUBROUTINE reheap(istart, istop)
-      INTEGER(I32), INTENT(IN) :: istart, istop
-      INTEGER(I32)::ielem1, ielem2
-      INTEGER(I32)::i,j, k, idx
+    subroutine reheap(istart, istop)
+      integer(I32), intent(IN) :: istart, istop
+      integer(I32)::ielem1, ielem2
+      integer(I32)::i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
-      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+      do while ((j .le. istop) .and. (j .gt. 0))
         ! Go one level up
         i = j
         ! Sole child => exit loop
-        IF(i .EQ. istop) EXIT
+        if(i .eq. istop) exit
         ! Path of bigger child
-        if(Ielem(iindex,i+1) .GT. Ielem(iindex,i)) i=i+1
+        if(Ielem(iindex,i+1) .gt. Ielem(iindex,i)) i=i+1
         j=ishft(i,1)
-      END DO
+      end do
       ! Search for the correct position along the path
-      DO WHILE ((i .GT. istart) .AND. &
-                (Ielem(iindex,i) .LT. Ielem(iindex,istart)))
+      do while ((i .gt. istart) .and. &
+                (Ielem(iindex,i) .lt. Ielem(iindex,istart)))
         i=ishft(i,-1)
-      END DO
+      end do
       ! Move the nodes
       k=i
-      DO idx=1, nindex
+      do idx=1, nindex
         ielem1=Ielem(idx,istart)
-        DO WHILE (i .GE. istart)
+        do while (i .ge. istart)
           ielem2=Ielem(idx,i)
           Ielem(idx,i)=ielem1
           ielem1=ielem2
           i=ishft(i,-1)
-        END DO
+        end do
         i=k
-      END DO
-    END SUBROUTINE reheap
+      end do
+    end subroutine reheap
 
-    SUBROUTINE heapsort()
+    subroutine heapsort()
     
-      INTEGER(I32) :: i, t
+      integer(I32) :: i, t
       
       ! Heap creation phase (Maxheap)
-      DO i=ishft(nnode,-1), 1, -1
-         CALL reheap(i,nnode)
-      END DO
+      do i=ishft(nnode,-1), 1, -1
+         call reheap(i,nnode)
+      end do
       ! Selection phase
-      DO i=nnode, 2, -1
-        CALL swapNode(1,i)
+      do i=nnode, 2, -1
+        call swapNode(1,i)
         call reheap(1,i-1)
-      END DO
+      end do
     
-    END SUBROUTINE heapsort
+    end subroutine heapsort
     
-    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    recursive subroutine quicksort (ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: l, u, i, j, t
-      REAL(DP) :: r
+      integer(I32) :: l, u, i, j, t
+      real(DP) :: r
       
       l = ilower
       u = iupper
       
-      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+      do while ((u-l) .ge. SORT_CUTOFF)
         ! 1.) Choose pivot
-        CALL RANDOM_NUMBER(r)
-        i = l+FLOOR(r*(u-l+1))
+        call random_number(r)
+        i = l+floor(r*(u-l+1))
         t = Ielem(iindex,i)
-        CALL swapNode(l,i)
+        call swapNode(l,i)
         ! 2.) Partition the field and reposition pivot at index j
         i = l
         j = u
-        DO
+        do
           i = i+1
-          DO WHILE ((i .LT. u) .AND. (Ielem(iindex,i) .LT. t))
+          do while ((i .lt. u) .and. (Ielem(iindex,i) .lt. t))
             i = i+1
-          END DO
-          DO WHILE (Ielem(iindex,j) .GT. t)
+          end do
+          do while (Ielem(iindex,j) .gt. t)
             j = j-1
-          END DO
-          IF (i .GE. j) EXIT
-          CALL swapNode(i,j)
+          end do
+          if (i .ge. j) exit
+          call swapNode(i,j)
           j = j-1
-        END DO
-        CALL swapNode(l,j)
+        end do
+        call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
-        IF ((j-l) .GT. (u-j)) THEN
-          CALL quicksort(j+1,u)
+        if ((j-l) .gt. (u-j)) then
+          call quicksort(j+1,u)
           u = j-1
-        ELSE
-          CALL quicksort(l,j-1)
+        else
+          call quicksort(l,j-1)
           l = j+1
-        END IF
-      END DO
+        end if
+      end do
       
-    END SUBROUTINE quicksort
+    end subroutine quicksort
     
-    SUBROUTINE insertSort(ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    subroutine insertSort(ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: i, j, k, idx, t, istop
+      integer(I32) :: i, j, k, idx, t, istop
       
       istop = ilower-1
-      DO i=ilower+1, iupper
+      do i=ilower+1, iupper
         t = Ielem(iindex,i)
         j = i-1
-        DO WHILE (Ielem(iindex,j) .GT. t)
+        do while (Ielem(iindex,j) .gt. t)
           j = j-1
-          IF (j .EQ. istop) EXIT
-        END DO
+          if (j .eq. istop) exit
+        end do
         j = j+1
         ! Ringshift of Ielem(:,j:i) to the right
-        CALL circShiftRight(j,i)
+        call circShiftRight(j,i)
         
-      END DO
+      end do
     
-    END SUBROUTINE insertSort
+    end subroutine insertSort
     
-    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    recursive subroutine mergesort(ilow, ihigh)
     
       ! A modification of an algorithm by
       ! Jason Harrison, University of
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      integer(I32), intent(IN) :: ilow, ihigh
       
-      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      INTEGER(I32) :: idx,idest
+      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      integer(I32) :: idx,idest
       
       ! Nothing to sort
-      IF (ilow .GE. ihigh) RETURN
+      if (ilow .ge. ihigh) return
       
-      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+      if ((ihigh-ilow) .lt. SORT_CUTOFF) then
         call insertsort(ilow, ihigh)
-        RETURN
-      ENDIF
+        return
+      endif
       
       ilo = ilow
       ihi = ihigh
@@ -2028,95 +2028,95 @@ CONTAINS
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,   imid)
-      CALL mergesort(imid+1, ihigh )
+      call mergesort(ilow,   imid)
+      call mergesort(imid+1, ihigh )
       
       ! Merge the two sorted lists in a stable way.
       ! Put the result in the temp array, copy back later to the
       ! original array.
       istart_hi = imid+1
       idest = ilow
-      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
-        IF (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) THEN
-          DO idx = 1,UBOUND(Ielem,1)
+      do while ((ilo .le. imid) .and. (istart_hi .le. ihigh))
+        if (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) then
+          do idx = 1,ubound(Ielem,1)
             p_Itemp(idx,idest) = Ielem(idx,ilo)
-          END DO
+          end do
           ilo = ilo+1
-        ELSE        
-          DO idx = 1,UBOUND(Ielem,1)
+        else        
+          do idx = 1,ubound(Ielem,1)
             p_Itemp(idx,idest) = Ielem(idx,istart_hi)
-          END DO
+          end do
           istart_hi = istart_hi+1
-        END IF
+        end if
         idest = idest+1
-      END DO
+      end do
       
       ! Copy the rest of the array. Only one of them may still 
       ! contain data!
-      DO WHILE (ilo .LE. imid) 
-        DO idx = 1,UBOUND(Ielem,1)
+      do while (ilo .le. imid) 
+        do idx = 1,ubound(Ielem,1)
           p_Itemp(idx,idest) = Ielem(idx,ilo)
-        END DO
+        end do
         ilo = ilo+1
         idest = idest+1
-      END DO  
+      end do  
       
-      DO WHILE (istart_hi .LE. ihigh) 
-        DO idx = 1,UBOUND(Ielem,1)
+      do while (istart_hi .le. ihigh) 
+        do idx = 1,ubound(Ielem,1)
           p_Itemp(idx,idest) = Ielem(idx,istart_hi)
-        END DO
+        end do
         istart_hi = istart_hi+1
         idest = idest+1
-      END DO
+      end do
       
       ! Copy back from the temp array.
-      DO idest = ilow,ihigh
-        DO idx = 1,UBOUND(Ielem,1)
+      do idest = ilow,ihigh
+        do idx = 1,ubound(Ielem,1)
           Ielem(idx,idest) = p_Itemp(idx,idest)
-        END DO
-      END DO
+        end do
+      end do
     
-    END SUBROUTINE mergesort
+    end subroutine mergesort
 
-    SUBROUTINE swapNode(i,j)
+    subroutine swapNode(i,j)
       ! Swaps node Ielem(:,i) and Ielem(:,j)
       
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: idx, t
+      integer(I32) :: idx, t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t            = Ielem(idx,i)
         Ielem(idx,i) = Ielem(idx,j)
         Ielem(idx,j) = t
-      END DO
+      end do
       
-    END SUBROUTINE swapNode
+    end subroutine swapNode
 
-    SUBROUTINE circShiftRight(j,i)
+    subroutine circShiftRight(j,i)
       ! Circular shift of Ielem(:,j:i) one to the right
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: k, t, idx
+      integer(I32) :: k, t, idx
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t = Ielem(idx,i)
-        DO k=i, j+1, -1
+        do k=i, j+1, -1
           Ielem(idx,k) = Ielem(idx,k-1)
-        END DO
+        end do
         Ielem(idx,j) = t
-      END DO 
+      end do 
       
-    END SUBROUTINE circShiftRight
+    end subroutine circShiftRight
 
-  END SUBROUTINE arraySort_sortByIndex_int
+  end subroutine arraySort_sortByIndex_int
 
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_dp (Delem, iindex, cmethod, Dtemp)
+  subroutine arraySort_sortByIndex_dp (Delem, iindex, cmethod, Dtemp)
     
-    IMPLICIT NONE
+    implicit none
     
   !<description>
     ! Sorting routine for a 2D array Delem(1..nindex,1..nnode) by
@@ -2127,206 +2127,206 @@ CONTAINS
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    INTEGER, INTENT(IN) :: iindex
+    integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    integer(I32), optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    REAL(DP), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Dtemp
+    real(DP), dimension(:,:), intent(INOUT), target, optional :: Dtemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Delem(1..nindex,inode)
-    REAL(DP), DIMENSION(:,:), INTENT(INOUT) :: Delem
+    real(DP), dimension(:,:), intent(INOUT) :: Delem
   !</inputoutput>
 !</subroutine>
 
-    INTEGER(I32) :: nindex,nnode
-    INTEGER, DIMENSION(2) :: Isize
-    INTEGER :: hhandle
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dtemp
+    integer(I32) :: nindex,nnode
+    integer, dimension(2) :: Isize
+    integer :: hhandle
+    real(DP), dimension(:,:), pointer :: p_Dtemp
         
-    nindex = UBOUND(Delem,1)
-    nnode = UBOUND(Delem,2)
+    nindex = ubound(Delem,1)
+    nnode = ubound(Delem,2)
         
-    IF (PRESENT(cmethod)) THEN
-      SELECT CASE (cmethod)
-        CASE (SORT_HEAP)
-          CALL heapSort
-        CASE (SORT_QUICK)
-          CALL RANDOM_SEED
-          CALL quickSort(1,nnode)
-          CALL insertSort(1,nnode)
-        CASE (SORT_INSERT)
-          CALL insertSort(1,nnode)
-        CASE (SORT_MERGE,SORT_STABLE)
+    if (present(cmethod)) then
+      select case (cmethod)
+        case (SORT_HEAP)
+          call heapSort
+        case (SORT_QUICK)
+          call RANDOM_SEED
+          call quickSort(1,nnode)
+          call insertSort(1,nnode)
+        case (SORT_INSERT)
+          call insertSort(1,nnode)
+        case (SORT_MERGE,SORT_STABLE)
           ! We need temporary storage, that algorithm is not in-situ!
-          IF (PRESENT(Dtemp)) THEN
+          if (present(Dtemp)) then
             p_Dtemp => Dtemp
-            CALL mergeSort(1,nnode)
-          ELSE
-            Isize = UBOUND(Delem)
-            CALL storage_new2D ('arraySort_sortByIndex_dp', &
+            call mergeSort(1,nnode)
+          else
+            Isize = ubound(Delem)
+            call storage_new2D ('arraySort_sortByIndex_dp', &
                 'Dtemp', Isize, ST_DOUBLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
-            CALL storage_getbase_double2d (hhandle,p_Dtemp)
-            CALL mergeSort(1,nnode) 
-            CALL storage_free (hhandle)
-          END IF
+            call storage_getbase_double2d (hhandle,p_Dtemp)
+            call mergeSort(1,nnode) 
+            call storage_free (hhandle)
+          end if
             
-        CASE DEFAULT
-          CALL output_line('unknown Method:' // sys_i6(cmethod),&
+        case DEFAULT
+          call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          CALL sys_halt() 
-      END SELECT
-    ELSE
-      CALL heapSort
-    END IF
+          call sys_halt() 
+      end select
+    else
+      call heapSort
+    end if
     
-    CONTAINS
+    contains
 
-    SUBROUTINE reheap(istart, istop)
-      INTEGER(I32), INTENT(IN) :: istart, istop
-      REAL(DP) :: delem1, delem2
-      INTEGER(I32) :: i,j, k, idx
+    subroutine reheap(istart, istop)
+      integer(I32), intent(IN) :: istart, istop
+      real(DP) :: delem1, delem2
+      integer(I32) :: i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
-      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+      do while ((j .le. istop) .and. (j .gt. 0))
         ! Go one level up
         i = j
         ! Sole child => exit loop
-        IF(i .EQ. istop) EXIT
+        if(i .eq. istop) exit
         ! Path of bigger child
-        if(Delem(iindex,i+1) .GT. Delem(iindex,i)) i=i+1
+        if(Delem(iindex,i+1) .gt. Delem(iindex,i)) i=i+1
         j=ishft(i,1)
-      END DO
+      end do
       ! Search for the correct position along the path
-      DO WHILE ((i .GT. istart) .AND. &
-                (Delem(iindex,i) .LT. Delem(iindex,istart)))
+      do while ((i .gt. istart) .and. &
+                (Delem(iindex,i) .lt. Delem(iindex,istart)))
         i=ishft(i,-1)
-      END DO
+      end do
       ! Move the nodes
       k=i
-      DO idx=1, nindex
+      do idx=1, nindex
         delem1=Delem(idx,istart)
-        DO WHILE (i .GE. istart)
+        do while (i .ge. istart)
           delem2=Delem(idx,i)
           Delem(idx,i)=delem1
           delem1=delem2
           i=ishft(i,-1)
-        END DO
+        end do
         i=k
-      END DO
-    END SUBROUTINE reheap
+      end do
+    end subroutine reheap
 
-    SUBROUTINE heapsort()
+    subroutine heapsort()
     
-      INTEGER(I32) :: i, t
+      integer(I32) :: i, t
       
       ! Heap creation phase (Maxheap)
-      DO i=ishft(nnode,-1), 1, -1
-         CALL reheap(i,nnode)
-      END DO
+      do i=ishft(nnode,-1), 1, -1
+         call reheap(i,nnode)
+      end do
       ! Selection phase
-      DO i=nnode, 2, -1
-        CALL swapNode(1,i)
+      do i=nnode, 2, -1
+        call swapNode(1,i)
         call reheap(1,i-1)
-      END DO
+      end do
     
-    END SUBROUTINE heapsort
+    end subroutine heapsort
     
-    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    recursive subroutine quicksort (ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: l, u, i, j
-      REAL(DP) :: t
-      REAL(DP) :: r
+      integer(I32) :: l, u, i, j
+      real(DP) :: t
+      real(DP) :: r
       
       l = ilower
       u = iupper
       
-      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+      do while ((u-l) .ge. SORT_CUTOFF)
         ! 1.) Choose pivot
-        CALL RANDOM_NUMBER(r)
-        i = l+FLOOR(r*(u-l+1))
+        call random_number(r)
+        i = l+floor(r*(u-l+1))
         t = Delem(iindex,i)
-        CALL swapNode(l,i)
+        call swapNode(l,i)
         ! 2.) Partition the field and reposition pivot at index j
         i = l
         j = u
-        DO
+        do
           i = i+1
-          DO WHILE ((i .LT. u) .AND. (Delem(iindex,i) .LT. t))
+          do while ((i .lt. u) .and. (Delem(iindex,i) .lt. t))
             i = i+1
-          END DO
-          DO WHILE (Delem(iindex,j) .GT. t)
+          end do
+          do while (Delem(iindex,j) .gt. t)
             j = j-1
-          END DO
-          IF (i .GE. j) EXIT
-          CALL swapNode(i,j)
+          end do
+          if (i .ge. j) exit
+          call swapNode(i,j)
           j = j-1
-        END DO
-        CALL swapNode(l,j)
+        end do
+        call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
-        IF ((j-l) .GT. (u-j)) THEN
-          CALL quicksort(j+1,u)
+        if ((j-l) .gt. (u-j)) then
+          call quicksort(j+1,u)
           u = j-1
-        ELSE
-          CALL quicksort(l,j-1)
+        else
+          call quicksort(l,j-1)
           l = j+1
-        END IF
-      END DO
+        end if
+      end do
       
-    END SUBROUTINE quicksort
+    end subroutine quicksort
     
-    SUBROUTINE insertSort(ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    subroutine insertSort(ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: i, j, k, idx, istop
-      REAL(DP) :: t
+      integer(I32) :: i, j, k, idx, istop
+      real(DP) :: t
       
       istop = ilower-1
-      DO i=ilower+1, iupper
+      do i=ilower+1, iupper
         t = Delem(iindex,i)
         j = i-1
-        DO WHILE (Delem(iindex,j) .GT. t)
+        do while (Delem(iindex,j) .gt. t)
           j = j-1
-          IF (j .EQ. istop) EXIT
-        END DO
+          if (j .eq. istop) exit
+        end do
         j = j+1
         ! Ringshift of Delem(:,j:i) to the right
-        CALL circShiftRight(j,i)
+        call circShiftRight(j,i)
         
-      END DO
+      end do
     
-    END SUBROUTINE insertSort
+    end subroutine insertSort
     
-    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    recursive subroutine mergesort(ilow, ihigh)
     
       ! A modification of an algorithm by
       ! Jason Harrison, University of
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      integer(I32), intent(IN) :: ilow, ihigh
       
-      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      INTEGER(I32) :: idx,idest
+      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      integer(I32) :: idx,idest
       
       ! Nothing to sort
-      IF (ilow .GE. ihigh) RETURN
+      if (ilow .ge. ihigh) return
       
-      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+      if ((ihigh-ilow) .lt. SORT_CUTOFF) then
         call insertsort(ilow, ihigh)
-        RETURN
-      ENDIF
+        return
+      endif
       
       ilo = ilow
       ihi = ihigh
@@ -2335,97 +2335,97 @@ CONTAINS
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,   imid)
-      CALL mergesort(imid+1, ihigh )
+      call mergesort(ilow,   imid)
+      call mergesort(imid+1, ihigh )
       
       ! Merge the two sorted lists in a stable way.
       ! Put the result in the temp array, copy back later to the
       ! original array.
       istart_hi = imid+1
       idest = ilow
-      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
-        IF (Delem(iindex,ilo) .le. Delem(iindex,istart_hi)) THEN
-          DO idx = 1,UBOUND(Delem,1)
+      do while ((ilo .le. imid) .and. (istart_hi .le. ihigh))
+        if (Delem(iindex,ilo) .le. Delem(iindex,istart_hi)) then
+          do idx = 1,ubound(Delem,1)
             p_Dtemp(idx,idest) = Delem(idx,ilo)
-          END DO
+          end do
           ilo = ilo+1
-        ELSE        
-          DO idx = 1,UBOUND(Delem,1)
+        else        
+          do idx = 1,ubound(Delem,1)
             p_Dtemp(idx,idest) = Delem(idx,istart_hi)
-          END DO
+          end do
           istart_hi = istart_hi+1
-        END IF
+        end if
         idest = idest+1
-      END DO
+      end do
       
       ! Copy the rest of the array. Only one of them may still 
       ! contain data!
-      DO WHILE (ilo .LE. imid) 
-        DO idx = 1,UBOUND(Delem,1)
+      do while (ilo .le. imid) 
+        do idx = 1,ubound(Delem,1)
           p_Dtemp(idx,idest) = Delem(idx,ilo)
-        END DO
+        end do
         ilo = ilo+1
         idest = idest+1
-      END DO  
+      end do  
       
-      DO WHILE (istart_hi .LE. ihigh) 
-        DO idx = 1,UBOUND(Delem,1)
+      do while (istart_hi .le. ihigh) 
+        do idx = 1,ubound(Delem,1)
           p_Dtemp(idx,idest) = Delem(idx,istart_hi)
-        END DO
+        end do
         istart_hi = istart_hi+1
         idest = idest+1
-      END DO
+      end do
       
       ! Copy back from the temp array.
-      DO idest = ilow,ihigh
-        DO idx = 1,UBOUND(Delem,1)
+      do idest = ilow,ihigh
+        do idx = 1,ubound(Delem,1)
           Delem(idx,idest) = p_Dtemp(idx,idest)
-        END DO
-      END DO
+        end do
+      end do
     
-    END SUBROUTINE mergesort
+    end subroutine mergesort
 
-    SUBROUTINE swapNode(i,j)
+    subroutine swapNode(i,j)
       ! Swaps node Delem(:,i) and Delem(:,j)
       
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: idx
-      REAL(DP) :: t
+      integer(I32) :: idx
+      real(DP) :: t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t            = Delem(idx,i)
         Delem(idx,i) = Delem(idx,j)
         Delem(idx,j) = t
-      END DO
+      end do
       
-    END SUBROUTINE swapNode
+    end subroutine swapNode
 
-    SUBROUTINE circShiftRight(j,i)
+    subroutine circShiftRight(j,i)
       ! Circular shift of Delem(:,j:i) one to the right
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: k, idx
-      REAL(DP) :: t
+      integer(I32) :: k, idx
+      real(DP) :: t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t = Delem(idx,i)
-        DO k=i, j+1, -1
+        do k=i, j+1, -1
           Delem(idx,k) = Delem(idx,k-1)
-        END DO
+        end do
         Delem(idx,j) = t
-      END DO 
+      end do 
       
-    END SUBROUTINE circShiftRight
+    end subroutine circShiftRight
 
-  END SUBROUTINE arraySort_sortByIndex_dp
+  end subroutine arraySort_sortByIndex_dp
 
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex_sp (Selem, iindex, cmethod, Stemp)
+  subroutine arraySort_sortByIndex_sp (Selem, iindex, cmethod, Stemp)
     
-    IMPLICIT NONE
+    implicit none
     
   !<description>
     ! Sorting routine for a 2D array Selem(1..nindex,1..nnode) by
@@ -2436,205 +2436,205 @@ CONTAINS
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    INTEGER, INTENT(IN) :: iindex
+    integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    integer(I32), optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    REAL(SP), DIMENSION(:,:), INTENT(INOUT), TARGET, OPTIONAL :: Stemp
+    real(SP), dimension(:,:), intent(INOUT), target, optional :: Stemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Delem(1..nindex,inode)
-    REAL(SP), DIMENSION(:,:), INTENT(INOUT) :: Selem
+    real(SP), dimension(:,:), intent(INOUT) :: Selem
   !</inputoutput>
 !</subroutine>
 
-    INTEGER(I32) :: nindex,nnode
-    INTEGER, DIMENSION(2) :: Isize
-    INTEGER :: hhandle
-    REAL(SP), DIMENSION(:,:), POINTER :: p_Stemp
+    integer(I32) :: nindex,nnode
+    integer, dimension(2) :: Isize
+    integer :: hhandle
+    real(SP), dimension(:,:), pointer :: p_Stemp
         
-    nindex = UBOUND(Selem,1)
-    nnode = UBOUND(Selem,2)
+    nindex = ubound(Selem,1)
+    nnode = ubound(Selem,2)
         
-    IF (PRESENT(cmethod)) THEN
-      SELECT CASE (cmethod)
-        CASE (SORT_HEAP)
-          CALL heapSort
-        CASE (SORT_QUICK)
-          CALL RANDOM_SEED
-          CALL quickSort(1,nnode)
-          CALL insertSort(1,nnode)
-        CASE (SORT_INSERT)
-          CALL insertSort(1,nnode)
-        CASE (SORT_MERGE,SORT_STABLE)
+    if (present(cmethod)) then
+      select case (cmethod)
+        case (SORT_HEAP)
+          call heapSort
+        case (SORT_QUICK)
+          call RANDOM_SEED
+          call quickSort(1,nnode)
+          call insertSort(1,nnode)
+        case (SORT_INSERT)
+          call insertSort(1,nnode)
+        case (SORT_MERGE,SORT_STABLE)
           ! We need temporary storage, that algorithm is not in-situ!
-          IF (PRESENT(Stemp)) THEN
+          if (present(Stemp)) then
             p_Stemp => Stemp
-            CALL mergeSort(1,nnode)
-          ELSE
-            Isize = UBOUND(Selem)
-            CALL storage_new2D ('arraySort_sortByIndex_sp', &
+            call mergeSort(1,nnode)
+          else
+            Isize = ubound(Selem)
+            call storage_new2D ('arraySort_sortByIndex_sp', &
                 'Stemp', Isize, ST_SINGLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
-            CALL storage_getbase_single2d (hhandle,p_Stemp)
-            CALL mergeSort(1,nnode) 
-            CALL storage_free (hhandle)
-          END IF
-        CASE DEFAULT
-          CALL output_line('unknown Method:' // sys_i6(cmethod),&
+            call storage_getbase_single2d (hhandle,p_Stemp)
+            call mergeSort(1,nnode) 
+            call storage_free (hhandle)
+          end if
+        case DEFAULT
+          call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          CALL sys_halt() 
-      END SELECT
-    ELSE
-      CALL heapSort
-    END IF
+          call sys_halt() 
+      end select
+    else
+      call heapSort
+    end if
     
-    CONTAINS
+    contains
 
-    SUBROUTINE reheap(istart, istop)
-      INTEGER(I32), INTENT(IN) :: istart, istop
-      REAL(SP) :: selem1, selem2
-      INTEGER(I32) :: i,j, k, idx
+    subroutine reheap(istart, istop)
+      integer(I32), intent(IN) :: istart, istop
+      real(SP) :: selem1, selem2
+      integer(I32) :: i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
-      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+      do while ((j .le. istop) .and. (j .gt. 0))
         ! Go one level up
         i = j
         ! Sole child => exit loop
-        IF(i .EQ. istop) EXIT
+        if(i .eq. istop) exit
         ! Path of bigger child
-        if(Selem(iindex,i+1) .GT. Selem(iindex,i)) i=i+1
+        if(Selem(iindex,i+1) .gt. Selem(iindex,i)) i=i+1
         j=ishft(i,1)
-      END DO
+      end do
       ! Search for the correct position along the path
-      DO WHILE ((i .GT. istart) .AND. &
-                (Selem(iindex,i) .LT. Selem(iindex,istart)))
+      do while ((i .gt. istart) .and. &
+                (Selem(iindex,i) .lt. Selem(iindex,istart)))
         i=ishft(i,-1)
-      END DO
+      end do
       ! Move the nodes
       k=i
-      DO idx=1, nindex
+      do idx=1, nindex
         selem1=Selem(idx,istart)
-        DO WHILE (i .GE. istart)
+        do while (i .ge. istart)
           selem2=Selem(idx,i)
           Selem(idx,i)=selem1
           selem1=selem2
           i=ishft(i,-1)
-        END DO
+        end do
         i=k
-      END DO
-    END SUBROUTINE reheap
+      end do
+    end subroutine reheap
 
-    SUBROUTINE heapsort()
+    subroutine heapsort()
     
-      INTEGER(I32) :: i, t
+      integer(I32) :: i, t
       
       ! Heap creation phase (Maxheap)
-      DO i=ishft(nnode,-1), 1, -1
-         CALL reheap(i,nnode)
-      END DO
+      do i=ishft(nnode,-1), 1, -1
+         call reheap(i,nnode)
+      end do
       ! Selection phase
-      DO i=nnode, 2, -1
-        CALL swapNode(1,i)
+      do i=nnode, 2, -1
+        call swapNode(1,i)
         call reheap(1,i-1)
-      END DO
+      end do
     
-    END SUBROUTINE heapsort
+    end subroutine heapsort
     
-    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    recursive subroutine quicksort (ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: l, u, i, j
-      REAL(SP) :: t
-      REAL(DP) :: r
+      integer(I32) :: l, u, i, j
+      real(SP) :: t
+      real(DP) :: r
       
       l = ilower
       u = iupper
       
-      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+      do while ((u-l) .ge. SORT_CUTOFF)
         ! 1.) Choose pivot
-        CALL RANDOM_NUMBER(r)
-        i = l+FLOOR(r*(u-l+1))
+        call random_number(r)
+        i = l+floor(r*(u-l+1))
         t = Selem(iindex,i)
-        CALL swapNode(l,i)
+        call swapNode(l,i)
         ! 2.) Partition the field and reposition pivot at index j
         i = l
         j = u
-        DO
+        do
           i = i+1
-          DO WHILE ((i .LT. u) .AND. (Selem(iindex,i) .LT. t))
+          do while ((i .lt. u) .and. (Selem(iindex,i) .lt. t))
             i = i+1
-          END DO
-          DO WHILE (Selem(iindex,j) .GT. t)
+          end do
+          do while (Selem(iindex,j) .gt. t)
             j = j-1
-          END DO
-          IF (i .GE. j) EXIT
-          CALL swapNode(i,j)
+          end do
+          if (i .ge. j) exit
+          call swapNode(i,j)
           j = j-1
-        END DO
-        CALL swapNode(l,j)
+        end do
+        call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
-        IF ((j-l) .GT. (u-j)) THEN
-          CALL quicksort(j+1,u)
+        if ((j-l) .gt. (u-j)) then
+          call quicksort(j+1,u)
           u = j-1
-        ELSE
-          CALL quicksort(l,j-1)
+        else
+          call quicksort(l,j-1)
           l = j+1
-        END IF
-      END DO
+        end if
+      end do
       
-    END SUBROUTINE quicksort
+    end subroutine quicksort
     
-    SUBROUTINE insertSort(ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    subroutine insertSort(ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: i, j, k, idx, istop
-      REAL(SP) :: t
+      integer(I32) :: i, j, k, idx, istop
+      real(SP) :: t
       
       istop = ilower-1
-      DO i=ilower+1, iupper
+      do i=ilower+1, iupper
         t = Selem(iindex,i)
         j = i-1
-        DO WHILE (Selem(iindex,j) .GT. t)
+        do while (Selem(iindex,j) .gt. t)
           j = j-1
-          IF (j .EQ. istop) EXIT
-        END DO
+          if (j .eq. istop) exit
+        end do
         j = j+1
         ! Ringshift of Selem(:,j:i) to the right
-        CALL circShiftRight(j,i)
+        call circShiftRight(j,i)
         
-      END DO
+      end do
     
-    END SUBROUTINE insertSort
+    end subroutine insertSort
     
-    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    recursive subroutine mergesort(ilow, ihigh)
     
       ! A modification of an algorithm by
       ! Jason Harrison, University of
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      integer(I32), intent(IN) :: ilow, ihigh
       
-      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      INTEGER(I32) :: idx,idest
+      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      integer(I32) :: idx,idest
       
       ! Nothing to sort
-      IF (ilow .GE. ihigh) RETURN
+      if (ilow .ge. ihigh) return
       
-      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+      if ((ihigh-ilow) .lt. SORT_CUTOFF) then
         call insertsort(ilow, ihigh)
-        RETURN
-      ENDIF
+        return
+      endif
       
       ilo = ilow
       ihi = ihigh
@@ -2643,90 +2643,90 @@ CONTAINS
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,      imid)
-      CALL mergesort(imid+1, ihigh )
+      call mergesort(ilow,      imid)
+      call mergesort(imid+1, ihigh )
       
       ! Merge the two sorted lists in a stable way.
       ! Put the result in the temp array, copy back later to the
       ! original array.
       istart_hi = imid+1
       idest = ilow
-      DO WHILE ((ilo .LE. imid) .AND. (istart_hi .LE. ihigh))
-        IF (Selem(iindex,ilo) .le. Selem(iindex,istart_hi)) THEN
-          DO idx = 1,UBOUND(Selem,1)
+      do while ((ilo .le. imid) .and. (istart_hi .le. ihigh))
+        if (Selem(iindex,ilo) .le. Selem(iindex,istart_hi)) then
+          do idx = 1,ubound(Selem,1)
             p_Stemp(idx,idest) = Selem(idx,ilo)
-          END DO
+          end do
           ilo = ilo+1
-        ELSE        
-          DO idx = 1,UBOUND(Selem,1)
+        else        
+          do idx = 1,ubound(Selem,1)
             p_Stemp(idx,idest) = Selem(idx,istart_hi)
-          END DO
+          end do
           istart_hi = istart_hi+1
-        END IF
+        end if
         idest = idest+1
-      END DO
+      end do
       
       ! Copy the rest of the array. Only one of them may still 
       ! contain data!
-      DO WHILE (ilo .LE. imid) 
-        DO idx = 1,UBOUND(Selem,1)
+      do while (ilo .le. imid) 
+        do idx = 1,ubound(Selem,1)
           p_Stemp(idx,idest) = Selem(idx,ilo)
-        END DO
+        end do
         ilo = ilo+1
         idest = idest+1
-      END DO  
+      end do  
       
-      DO WHILE (istart_hi .LE. ihigh) 
-        DO idx = 1,UBOUND(Selem,1)
+      do while (istart_hi .le. ihigh) 
+        do idx = 1,ubound(Selem,1)
           p_Stemp(idx,idest) = Selem(idx,istart_hi)
-        END DO
+        end do
         istart_hi = istart_hi+1
         idest = idest+1
-      END DO
+      end do
       
       ! Copy back from the temp array.
-      DO idest = ilow,ihigh
-        DO idx = 1,UBOUND(Selem,1)
+      do idest = ilow,ihigh
+        do idx = 1,ubound(Selem,1)
           Selem(idx,idest) = p_Stemp(idx,idest)
-        END DO
-      END DO
+        end do
+      end do
           
-    END SUBROUTINE mergesort
+    end subroutine mergesort
 
-    SUBROUTINE swapNode(i,j)
+    subroutine swapNode(i,j)
       ! Swaps node Selem(:,i) and Selem(:,j)
       
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: idx
-      REAL(SP) :: t
+      integer(I32) :: idx
+      real(SP) :: t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t            = Selem(idx,i)
         Selem(idx,i) = Selem(idx,j)
         Selem(idx,j) = t
-      END DO
+      end do
       
-    END SUBROUTINE swapNode
+    end subroutine swapNode
 
-    SUBROUTINE circShiftRight(j,i)
+    subroutine circShiftRight(j,i)
       ! Circular shift of Selem(:,j:i) one to the right
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: k, idx
-      REAL(SP) :: t
+      integer(I32) :: k, idx
+      real(SP) :: t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t = Selem(idx,i)
-        DO k=i, j+1, -1
+        do k=i, j+1, -1
           Selem(idx,k) = Selem(idx,k-1)
-        END DO
+        end do
         Selem(idx,j) = t
-      END DO 
+      end do 
       
-    END SUBROUTINE circShiftRight
+    end subroutine circShiftRight
 
-  END SUBROUTINE arraySort_sortByIndex_sp
+  end subroutine arraySort_sortByIndex_sp
 
-END MODULE sort
+end module sort
 

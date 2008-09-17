@@ -102,45 +102,45 @@
 !# </purpose>
 !##############################################################################
 
-MODULE paramlist
+module paramlist
 
-  USE fsystem
-  USE io
-  USE genoutput
+  use fsystem
+  use io
+  use genoutput
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
   !<constantblock>
   
   ! Maximum length of a section name.
-  INTEGER, PARAMETER :: PARLST_MLSECTION = 64
+  integer, parameter :: PARLST_MLSECTION = 64
 
   ! Maximum length of parameter names: 32 characters
-  INTEGER, PARAMETER :: PARLST_MLNAME = 32
+  integer, parameter :: PARLST_MLNAME = 32
 
   ! Maximum length of parameter data: 256 characters
-  INTEGER, PARAMETER :: PARLST_MLDATA = 256
+  integer, parameter :: PARLST_MLDATA = 256
   
   ! Minimum number of free parameter 'slots' per parameter section.
   ! If there are too many parameters in a parameter section, the
   ! structure is dynamically extended in terms of PARLST_NPARSPERBLOCK
   ! entries.
-  INTEGER, PARAMETER :: PARLST_NPARSPERBLOCK = 32
+  integer, parameter :: PARLST_NPARSPERBLOCK = 32
 
   ! Minimum number of parameter sections.
   ! If there are too many parameter sections in a parameter block, the
   ! structure is dynamically extended in terms of PARLST_NSECTIONS
   ! entries.
-  INTEGER, PARAMETER :: PARLST_NSECTIONS = 8
+  integer, parameter :: PARLST_NSECTIONS = 8
 
   ! Maximum length of a line in a INI file. Lines longer than this
   ! are truncated.
-  INTEGER, PARAMETER :: PARLST_LENLINEBUF = 1024
+  integer, parameter :: PARLST_LENLINEBUF = 1024
   
   ! Comment character
-  CHARACTER, PARAMETER :: PARLST_COMMENT = "#"
+  character, parameter :: PARLST_COMMENT = "#"
 
   !</constantblock>
 
@@ -153,22 +153,22 @@ MODULE paramlist
   ! This structure realises a value associated to a parameter name.
   ! A value consists of one string or an array of strings.
   
-  TYPE t_parlstValue
+  type t_parlstValue
   
-    PRIVATE
+    private
     
     ! Number of strings. If set to 0, the value consists of one
     ! string, to be found in svalue. If > 0, there are nsize
     ! strings to be found in p_Sentry.
-    INTEGER :: nsize = 0
+    integer :: nsize = 0
     
     ! Single string; contains the value in case nsize=0
-    CHARACTER(LEN=PARLST_MLDATA) :: sentry = ''
+    character(LEN=PARLST_MLDATA) :: sentry = ''
     
     ! Array of strings in case nsize>0
-    CHARACTER(LEN=PARLST_MLDATA), DIMENSION(:), POINTER :: p_Sentry => NULL()
+    character(LEN=PARLST_MLDATA), dimension(:), pointer :: p_Sentry => null()
   
-  END TYPE
+  end type
   
   !</typeblock>
   
@@ -178,25 +178,25 @@ MODULE paramlist
   ! array with parameter names and an array with parameter values
   ! to these names. The arrays are dynamically allocated. 
   
-  TYPE t_parlstSection
+  type t_parlstSection
   
-    PRIVATE
+    private
   
     ! The name of the section.
-    CHARACTER(LEN=PARLST_MLSECTION) :: ssectionName = ''
+    character(LEN=PARLST_MLSECTION) :: ssectionName = ''
     
     ! Actual number of parameters in this section.
-    INTEGER :: iparamCount = 0
+    integer :: iparamCount = 0
     
     ! A list of parameter names. Each name contains PARLST_MLNAME
     ! characters.
-    CHARACTER(LEN=PARLST_MLNAME), DIMENSION(:), POINTER :: p_Sparameters => NULL()
+    character(LEN=PARLST_MLNAME), dimension(:), pointer :: p_Sparameters => null()
     
     ! A list of t_parlstValue structures corresponding to the parameters
     ! in p_Sparameters.
-    TYPE(t_parlstValue), DIMENSION(:), POINTER :: p_Rvalues
+    type(t_parlstValue), dimension(:), pointer :: p_Rvalues
     
-  END TYPE
+  end type
   
   !</typeblock>
   
@@ -206,91 +206,91 @@ MODULE paramlist
   ! it from a file. Parameters can be obtained from the structure using
   ! the query/get routines.
   
-  TYPE t_parlist
+  type t_parlist
   
-    PRIVATE
+    private
   
     ! Actual number of sections in the parameter list. There's at least
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is not initialised.
-    INTEGER :: isectionCount = 0
+    integer :: isectionCount = 0
     
     ! A list of sections. The first section is always the unnamed section.
-    TYPE(t_parlstSection), DIMENSION(:), POINTER :: p_Rsections => NULL()
+    type(t_parlstSection), dimension(:), pointer :: p_Rsections => null()
     
-  END TYPE
+  end type
   
   !</typeblock>
 
 !</types>
 
-  PRIVATE :: parlst_initsection, parlst_reallocsection, parlst_realloclist
-  PRIVATE :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
+  private :: parlst_initsection, parlst_reallocsection, parlst_realloclist
+  private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
   
-  INTERFACE parlst_queryvalue
-    MODULE PROCEDURE parlst_queryvalue_direct
-    MODULE PROCEDURE parlst_queryvalue_indir
-  END INTERFACE
+  interface parlst_queryvalue
+    module procedure parlst_queryvalue_direct
+    module procedure parlst_queryvalue_indir
+  end interface
 
-  INTERFACE parlst_querysubstrings
-    MODULE PROCEDURE parlst_querysubstrings_direct
-    MODULE PROCEDURE parlst_querysubstrings_indir
-  END INTERFACE
+  interface parlst_querysubstrings
+    module procedure parlst_querysubstrings_direct
+    module procedure parlst_querysubstrings_indir
+  end interface
 
-  INTERFACE parlst_addvalue
-    MODULE PROCEDURE parlst_addvalue_direct
-    MODULE PROCEDURE parlst_addvalue_indir
-  END INTERFACE
+  interface parlst_addvalue
+    module procedure parlst_addvalue_direct
+    module procedure parlst_addvalue_indir
+  end interface
 
-  INTERFACE parlst_setvalue
-    MODULE PROCEDURE parlst_setvalue_fetch
-    MODULE PROCEDURE parlst_setvalue_indir
-    MODULE PROCEDURE parlst_setvalue_direct
-  END INTERFACE
+  interface parlst_setvalue
+    module procedure parlst_setvalue_fetch
+    module procedure parlst_setvalue_indir
+    module procedure parlst_setvalue_direct
+  end interface
 
-  INTERFACE parlst_getvalue_string
-    MODULE PROCEDURE parlst_getvalue_string_fetch
-    MODULE PROCEDURE parlst_getvalue_string_indir
-    MODULE PROCEDURE parlst_getvalue_string_direct
-  END INTERFACE
+  interface parlst_getvalue_string
+    module procedure parlst_getvalue_string_fetch
+    module procedure parlst_getvalue_string_indir
+    module procedure parlst_getvalue_string_direct
+  end interface
 
-  INTERFACE parlst_getvalue_int
-    MODULE PROCEDURE parlst_getvalue_int_fetch
-    MODULE PROCEDURE parlst_getvalue_int_indir
-    MODULE PROCEDURE parlst_getvalue_int_direct
-  END INTERFACE
+  interface parlst_getvalue_int
+    module procedure parlst_getvalue_int_fetch
+    module procedure parlst_getvalue_int_indir
+    module procedure parlst_getvalue_int_direct
+  end interface
 
-  INTERFACE parlst_getvalue_single
-    MODULE PROCEDURE parlst_getvalue_single_fetch
-    MODULE PROCEDURE parlst_getvalue_single_indir
-    MODULE PROCEDURE parlst_getvalue_single_direct
-  END INTERFACE
+  interface parlst_getvalue_single
+    module procedure parlst_getvalue_single_fetch
+    module procedure parlst_getvalue_single_indir
+    module procedure parlst_getvalue_single_direct
+  end interface
 
-  INTERFACE parlst_getvalue_double
-    MODULE PROCEDURE parlst_getvalue_double_fetch
-    MODULE PROCEDURE parlst_getvalue_double_indir
-    MODULE PROCEDURE parlst_getvalue_double_direct
-  END INTERFACE
+  interface parlst_getvalue_double
+    module procedure parlst_getvalue_double_fetch
+    module procedure parlst_getvalue_double_indir
+    module procedure parlst_getvalue_double_direct
+  end interface
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
   ! Internal subroutine: Initialise a newly created parameter section.
   
-  SUBROUTINE parlst_initsection (rparlstSection,sname)
+  subroutine parlst_initsection (rparlstSection,sname)
   
-  TYPE(t_parlstSection), INTENT(INOUT) :: rparlstSection
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  type(t_parlstSection), intent(INOUT) :: rparlstSection
+  character(LEN=*), intent(IN) :: sname
   
   ! Simply allocate the pointers with an empty list
-  ALLOCATE(rparlstSection%p_Sparameters(PARLST_NPARSPERBLOCK))
-  ALLOCATE(rparlstSection%p_Rvalues(PARLST_NPARSPERBLOCK))
+  allocate(rparlstSection%p_Sparameters(PARLST_NPARSPERBLOCK))
+  allocate(rparlstSection%p_Rvalues(PARLST_NPARSPERBLOCK))
   
   ! and set the section name
   rparlstSection%ssectionName = sname
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -298,72 +298,72 @@ CONTAINS
   ! This increases the size of a parameter section by reallocation of the
   ! arrays.
   
-  SUBROUTINE parlst_reallocsection (rparlstSection, inewsize)
+  subroutine parlst_reallocsection (rparlstSection, inewsize)
   
   ! The section to reallocate.
-  TYPE(t_parlstSection), INTENT(INOUT) :: rparlstSection
+  type(t_parlstSection), intent(INOUT) :: rparlstSection
   
   ! The new 'size' of the section, i.e. the new number of parameters,
   ! the section should be able to handle.
-  INTEGER, INTENT(IN) :: inewsize
+  integer, intent(IN) :: inewsize
   
   ! local variables
   
-  INTEGER :: sz,oldsize
+  integer :: sz,oldsize
 
   ! Pointers to new lists for replacing the old.
-  CHARACTER(LEN=PARLST_MLNAME), DIMENSION(:), POINTER :: p_Sparameters 
-  TYPE(t_parlstValue), DIMENSION(:), POINTER :: p_Rvalues
+  character(LEN=PARLST_MLNAME), dimension(:), pointer :: p_Sparameters 
+  type(t_parlstValue), dimension(:), pointer :: p_Rvalues
   
-  oldsize = SIZE(rparlstSection%p_Sparameters)
-  sz = MAX(oldsize,inewsize)
+  oldsize = size(rparlstSection%p_Sparameters)
+  sz = max(oldsize,inewsize)
   
-  IF (SIZE(rparlstSection%p_Sparameters) .EQ. sz) RETURN ! nothing to do
+  if (size(rparlstSection%p_Sparameters) .eq. sz) return ! nothing to do
   
   ! Allocate the pointers for the new lists
-  ALLOCATE(p_Sparameters(sz))
-  ALLOCATE(p_Rvalues(sz))
+  allocate(p_Sparameters(sz))
+  allocate(p_Rvalues(sz))
   
   ! Copy the content of the old ones
   p_Sparameters(1:oldsize) = rparlstSection%p_Sparameters (1:oldsize)
   p_Rvalues(1:oldsize) = rparlstSection%p_Rvalues (1:oldsize)
   
   ! Throw away the old arrays, replace by the new ones
-  DEALLOCATE(rparlstSection%p_Rvalues)
-  DEALLOCATE(rparlstSection%p_Sparameters)
+  deallocate(rparlstSection%p_Rvalues)
+  deallocate(rparlstSection%p_Sparameters)
   
   rparlstSection%p_Sparameters => p_Sparameters
   rparlstSection%p_Rvalues => p_Rvalues
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
   ! Internal subroutine: Release a section.
   ! Removes all temporary memory that is allocated by a section.
   
-  SUBROUTINE parlst_releasesection (rparlstSection)
+  subroutine parlst_releasesection (rparlstSection)
   
   ! The section to release.
-  TYPE(t_parlstSection), INTENT(INOUT) :: rparlstSection
+  type(t_parlstSection), intent(INOUT) :: rparlstSection
   
   ! local variables
-  INTEGER :: i
+  integer :: i
   
   ! Loop through all values in the current section if there is
   ! an array-value. Release them.
-  DO i=SIZE(rparlstSection%p_Rvalues),1,-1
-    IF (rparlstSection%p_Rvalues(i)%nsize .GT. 0) THEN
-      DEALLOCATE(rparlstSection%p_Rvalues(i)%p_Sentry)
-    END IF
-  END DO
+  do i=size(rparlstSection%p_Rvalues),1,-1
+    if (rparlstSection%p_Rvalues(i)%nsize .gt. 0) then
+      deallocate(rparlstSection%p_Rvalues(i)%p_Sentry)
+    end if
+  end do
   
   ! Remove the content of the section.
-  DEALLOCATE(rparlstSection%p_Rvalues)
-  DEALLOCATE(rparlstSection%p_Sparameters)
+  deallocate(rparlstSection%p_Rvalues)
+  deallocate(rparlstSection%p_Sparameters)
   rparlstSection%iparamCount = 0
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -371,45 +371,45 @@ CONTAINS
   ! This increases the size of a section list by reallocation of the
   ! arrays.
   
-  SUBROUTINE parlst_realloclist (rparlist, inewsize)
+  subroutine parlst_realloclist (rparlist, inewsize)
   
   ! The section list to reallocate.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
   ! The new 'size' of the section, i.e. the new number of parameters,
   ! the section should be able to handle.
-  INTEGER, INTENT(IN) :: inewsize
+  integer, intent(IN) :: inewsize
   
   ! local variables
   
-  INTEGER :: sz
+  integer :: sz
 
   ! Pointers to new lists for replacing the old.
-  TYPE(t_parlstSection), DIMENSION(:), POINTER :: p_Rsections
+  type(t_parlstSection), dimension(:), pointer :: p_Rsections
   
   ! Allocate the pointers for the new lists
-  ALLOCATE(p_Rsections(inewsize))
+  allocate(p_Rsections(inewsize))
   
-  sz = MIN(SIZE(rparlist%p_Rsections),inewsize)
+  sz = min(size(rparlist%p_Rsections),inewsize)
   
   ! Copy the content of the old ones
   p_Rsections(1:sz) = rparlist%p_Rsections (1:sz)
   
   ! Throw away the old arrays, replace by the new ones
-  DEALLOCATE(rparlist%p_Rsections)
+  deallocate(rparlist%p_Rsections)
   
   rparlist%p_Rsections => p_Rsections
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
   ! Internal subroutine: Convert a character to upper case.
   
-  SUBROUTINE parlst_toupper (str) 
+  subroutine parlst_toupper (str) 
   
   ! The string that is to make uppercase
-  CHARACTER(LEN=*), INTENT(INOUT) :: str
+  character(LEN=*), intent(INOUT) :: str
   
 !  CHARACTER(LEN=26), PARAMETER :: lowc = 'abcdefghijklmnopqrstuvwxyz'
 !  CHARACTER(LEN=26), PARAMETER :: upc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -421,58 +421,58 @@ CONTAINS
 !    c = upc(i:i)
 !  END IF
 
-  INTEGER, PARAMETER :: up2low = IACHAR("a") - IACHAR("A")
-  INTEGER :: i
-  CHARACTER    :: c
+  integer, parameter :: up2low = iachar("a") - iachar("A")
+  integer :: i
+  character    :: c
   
-  DO i=1,LEN(str)
+  do i=1,len(str)
     c = str(i:i)
-    IF ((c .GE. "a") .AND. (c .LE. "z")) THEN
-      str(i:i) = ACHAR (IACHAR(c) - up2low)
-    END IF
-  END DO
+    if ((c .ge. "a") .and. (c .le. "z")) then
+      str(i:i) = achar (iachar(c) - up2low)
+    end if
+  end do
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
   ! Internal subroutine: Search in a section for a parameter
   ! and return the index - or 0 if the parameter does not exist.
 
-  SUBROUTINE parlst_fetchparameter(rsection, sname, iparamnum) 
+  subroutine parlst_fetchparameter(rsection, sname, iparamnum) 
 
   ! The section.
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
   
   ! The parameter name to look for. Must be uppercase.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
   
   ! The number of the parameter in the list or 0 if it does not exist.
-  INTEGER, INTENT(OUT) :: iparamnum
+  integer, intent(OUT) :: iparamnum
   
   ! local variables
-  INTEGER :: i
+  integer :: i
   
   iparamnum = 0
   
   ! If the parameter list is empty, the section does not exist for sure
-  IF (rsection%iparamCount .EQ. 0) RETURN
+  if (rsection%iparamCount .eq. 0) return
   
   ! Loop through all sections to see if the section exists
-  DO i=1,rsection%iparamCount
-    IF (rsection%p_Sparameters(i) .EQ. sname) THEN
+  do i=1,rsection%iparamCount
+    if (rsection%p_Sparameters(i) .eq. sname) then
       iparamnum = i
-      RETURN
-    END IF
-  END DO
+      return
+    end if
+  end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_init (rparlist)
+  subroutine parlst_init (rparlist)
   
 !<description>
   
@@ -484,7 +484,7 @@ CONTAINS
 !<inputoutput>
   
   ! The parameter list to initialise.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
   
@@ -494,18 +494,18 @@ CONTAINS
   rparlist%isectionCount = 1
   
   ! Allocate a first set of sections
-  ALLOCATE(rparlist%p_Rsections(PARLST_NSECTIONS))
+  allocate(rparlist%p_Rsections(PARLST_NSECTIONS))
   
   ! Initialise the first section - it's the unnamed one.
-  CALL parlst_initsection (rparlist%p_Rsections(1),'')
+  call parlst_initsection (rparlist%p_Rsections(1),'')
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_clear (rparlist)
+  subroutine parlst_clear (rparlist)
   
 !<description>
   ! This routine cleans up a parameter list. All parameters in rparlist are
@@ -514,22 +514,22 @@ CONTAINS
   
 !<inputoutput>
   ! The parameter list to clean up.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
 !</inputoutput>
   
 !</subroutine>
 
     ! Clean up = done+reinit. We make that simple here...
-    CALL parlst_done (rparlist)
-    CALL parlst_init (rparlist)
+    call parlst_done (rparlist)
+    call parlst_init (rparlist)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_done (rparlist)
+  subroutine parlst_done (rparlist)
   
 !<description>
   
@@ -541,36 +541,36 @@ CONTAINS
 !<inputoutput>
   
   ! The parameter list to release.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
   ! Probably nothing to do
-  IF (rparlist%isectionCount .EQ. 0) RETURN
+  if (rparlist%isectionCount .eq. 0) return
 
   ! Loop through the parameter lists and release the content
-  DO i=rparlist%isectionCount,1,-1
-    CALL parlst_releasesection (rparlist%p_Rsections(i))
-  END DO
+  do i=rparlist%isectionCount,1,-1
+    call parlst_releasesection (rparlist%p_Rsections(i))
+  end do
 
   ! Release all sections
-  DEALLOCATE(rparlist%p_Rsections)
+  deallocate(rparlist%p_Rsections)
   
   ! Mark the structure as 'empty', finish
   rparlist%isectionCount = 0
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE parlst_querysection(rparlist, sname, p_rsection) 
+  subroutine parlst_querysection(rparlist, sname, p_rsection) 
 
 !<description>
 
@@ -582,56 +582,56 @@ CONTAINS
 !<input>
 
   ! The parameter list to scan for the section.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name to look for. 
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
   
 !</input>
   
 !<output>
   
   ! A pointer to the section.
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  type(t_parlstSection), pointer :: p_rsection
   
 !</output>
   
 !</subroutine>
   
   ! local variables
-  INTEGER :: i
-  CHARACTER(LEN=PARLST_MLSECTION) :: sectionname
+  integer :: i
+  character(LEN=PARLST_MLSECTION) :: sectionname
   
-  NULLIFY(p_rsection)
+  nullify(p_rsection)
   
   ! If the parameter list is empty, the section does not exist for sure
-  IF (rparlist%isectionCount .EQ. 0) RETURN
+  if (rparlist%isectionCount .eq. 0) return
   
   ! If the section name is '', return a pointer to the first section.
-  IF (sname .EQ. '') THEN
+  if (sname .eq. '') then
     p_rsection => rparlist%p_Rsections(1)
-    RETURN
-  END IF
+    return
+  end if
   
   ! Create the upper-case section name
-  sectionname = ADJUSTL(sname)
-  CALL parlst_toupper (sectionname)
+  sectionname = adjustl(sname)
+  call parlst_toupper (sectionname)
 
   ! Loop through all sections to see if the section exists
-  DO i=1,rparlist%isectionCount
-    IF (rparlist%p_Rsections(i)%ssectionName .EQ. sectionname) THEN
+  do i=1,rparlist%isectionCount
+    if (rparlist%p_Rsections(i)%ssectionName .eq. sectionname) then
       p_rsection => rparlist%p_Rsections(i)
-      RETURN
-    END IF
-  END DO
+      return
+    end if
+  end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE parlst_addsection (rparlist, sname)
+  subroutine parlst_addsection (rparlist, sname)
   
 !<description>
   
@@ -644,49 +644,49 @@ CONTAINS
 !<inputoutput>
   
   ! The parameter list where to add the section.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
 
 !<input>
   
   ! The section name to add - without brackets in front and at the end!
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
   
 !</input>
   
 !</subroutine>
 
   ! local variables
-  CHARACTER(LEN=PARLST_MLSECTION) :: sectionname
+  character(LEN=PARLST_MLSECTION) :: sectionname
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Create the upper-case section name
-  sectionname = ADJUSTL(sname)
-  CALL parlst_toupper (sectionname)
+  sectionname = adjustl(sname)
+  call parlst_toupper (sectionname)
   
   ! Add a new section - reallocate the section list if necessary
-  IF (rparlist%isectionCount .EQ. SIZE(rparlist%p_Rsections)) THEN
-    CALL parlst_realloclist (rparlist, SIZE(rparlist%p_Rsections)+PARLST_NSECTIONS)
-  END IF
+  if (rparlist%isectionCount .eq. size(rparlist%p_Rsections)) then
+    call parlst_realloclist (rparlist, size(rparlist%p_Rsections)+PARLST_NSECTIONS)
+  end if
   rparlist%isectionCount = rparlist%isectionCount + 1
   
   ! Initialise the new section.
-  CALL parlst_initsection(rparlist%p_Rsections(rparlist%isectionCount),sectionname)
+  call parlst_initsection(rparlist%p_Rsections(rparlist%isectionCount),sectionname)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<function>
 
-  INTEGER FUNCTION parlst_queryvalue_indir (rsection, sparameter) &
-               RESULT (exists)
+  integer function parlst_queryvalue_indir (rsection, sparameter) &
+               result (exists)
           
 !<description>
   ! Checks whether a parameter sparameter exists in the section rsection.
@@ -700,40 +700,40 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name to search for.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
   
 !</input>
   
 !</function>
 
   ! local variables
-  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  character(LEN=PARLST_MLNAME) :: paramname
   
   exists = 0
   
-  IF (sparameter .EQ. '') THEN
-    PRINT *,'Empty parameter name!'
-    CALL sys_halt()
-  END IF
+  if (sparameter .eq. '') then
+    print *,'Empty parameter name!'
+    call sys_halt()
+  end if
   
   ! Create the upper-case parameter name
-  paramname = ADJUSTL(sparameter)
-  CALL parlst_toupper (paramname)
+  paramname = adjustl(sparameter)
+  call parlst_toupper (paramname)
   
   ! Get the parameter index into 'exists', finish.
-  CALL parlst_fetchparameter(rsection, paramname, exists)
+  call parlst_fetchparameter(rsection, paramname, exists)
   
-  END FUNCTION
+  end function
   
   ! ***************************************************************************
   
 !<function>
 
-  INTEGER FUNCTION parlst_queryvalue_direct (rparlist, ssectionName, sparameter) &
-               RESULT (exists)
+  integer function parlst_queryvalue_direct (rparlist, ssectionName, sparameter) &
+               result (exists)
           
 !<description>
   ! Checks whether a parameter sparameter exists in the section ssectionname
@@ -748,47 +748,47 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name to search for.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
   
 !</input>
   
 !</function>
 
   ! local variables
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  type(t_parlstSection), pointer :: p_rsection
   
   exists = 0
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Get the section
-  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
-  IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    PRINT *,'Section not found'
-    RETURN
-  END IF
+  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  if (.not. associated(p_rsection)) then
+    print *,'Section not found'
+    return
+  end if
   
   ! Search for the parameter
   exists = parlst_queryvalue_indir (p_rsection, sparameter)
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
   
 !<function>
 
-  INTEGER FUNCTION parlst_querysubstrings_indir (rsection, sparameter) &
-               RESULT (iresult)
+  integer function parlst_querysubstrings_indir (rsection, sparameter) &
+               result (iresult)
           
 !<description>
   ! Returns the number of substrings of a parameter.
@@ -801,42 +801,42 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name to search for.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
   
 !</input>
   
 !</function>
 
   ! local variables
-  INTEGER :: idx
-  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  integer :: idx
+  character(LEN=PARLST_MLNAME) :: paramname
   
-  IF (sparameter .EQ. '') THEN
-    PRINT *,'Empty parameter name!'
-    CALL sys_halt()
-  END IF
+  if (sparameter .eq. '') then
+    print *,'Empty parameter name!'
+    call sys_halt()
+  end if
   
   ! Create the upper-case parameter name
-  paramname = ADJUSTL(sparameter)
-  CALL parlst_toupper (paramname)
+  paramname = adjustl(sparameter)
+  call parlst_toupper (paramname)
   
   ! Get the parameter index into 'idx', finish.
-  CALL parlst_fetchparameter(rsection, paramname, idx)
+  call parlst_fetchparameter(rsection, paramname, idx)
   
   ! Return number of substrings
   iresult = rsection%p_Rvalues(idx)%nsize
   
-  END FUNCTION
+  end function
   
   ! ***************************************************************************
   
 !<function>
 
-  INTEGER FUNCTION parlst_querysubstrings_direct (rparlist, ssectionName, sparameter) &
-               RESULT (iresult)
+  integer function parlst_querysubstrings_direct (rparlist, ssectionName, sparameter) &
+               result (iresult)
           
 !<description>
   ! Checks whether a parameter sparameter exists in the section ssectionname
@@ -851,34 +851,34 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name to search for.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
   
 !</input>
   
 !</function>
 
   ! local variables
-  INTEGER :: idx
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  integer :: idx
+  type(t_parlstSection), pointer :: p_rsection
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Get the section
-  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
-  IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    PRINT *,'Section not found'
-    RETURN
-  END IF
+  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  if (.not. associated(p_rsection)) then
+    print *,'Section not found'
+    return
+  end if
   
   ! Get the parameter index
   idx = parlst_queryvalue_indir (p_rsection, sparameter)
@@ -886,12 +886,12 @@ CONTAINS
   ! Return number of substrings
   iresult = p_rsection%p_Rvalues(idx)%nsize
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_string_indir (rsection, &
+  subroutine parlst_getvalue_string_indir (rsection, &
                                            sparameter, svalue, sdefault, &
                                            isubstring)
 !<description>
@@ -914,73 +914,73 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
+  character(LEN=*), intent(IN), optional :: sdefault
   
   ! Optional: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  CHARACTER(LEN=*), INTENT(OUT) :: svalue
+  character(LEN=*), intent(OUT) :: svalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,isub
-  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  integer :: i,isub
+  character(LEN=PARLST_MLNAME) :: paramname
   
-  IF (sparameter .EQ. '') THEN
-    PRINT *,'Empty parameter name!'
-    CALL sys_halt()
-  END IF
+  if (sparameter .eq. '') then
+    print *,'Empty parameter name!'
+    call sys_halt()
+  end if
 
   ! Create the upper-case parameter name
-  paramname = ADJUSTL(sparameter)
-  CALL parlst_toupper (paramname)
+  paramname = adjustl(sparameter)
+  call parlst_toupper (paramname)
   
   ! Get the parameter index into 'exists', finish.
-  CALL parlst_fetchparameter(rsection, paramname, i)
+  call parlst_fetchparameter(rsection, paramname, i)
   
-  IF (i .EQ. 0) THEN
-    IF (PRESENT(sdefault)) THEN
+  if (i .eq. 0) then
+    if (present(sdefault)) then
       svalue = sdefault
-    ELSE
-      PRINT *,'Parameter ',TRIM(paramname),' does not exist!'
-      CALL sys_halt()
-    END IF
-  ELSE
+    else
+      print *,'Parameter ',trim(paramname),' does not exist!'
+      call sys_halt()
+    end if
+  else
     ! Depending on isubstring, return either the 'headline' or one
     ! of the substrings.
     isub = 0
-    IF (PRESENT(isubstring)) isub = isubstring
+    if (present(isubstring)) isub = isubstring
   
-    IF ((isub .LE. 0) .OR. (isub .GT. rsection%p_Rvalues(i)%nsize)) THEN
+    if ((isub .le. 0) .or. (isub .gt. rsection%p_Rvalues(i)%nsize)) then
       svalue = rsection%p_Rvalues(i)%sentry
-    ELSE
+    else
       svalue = rsection%p_Rvalues(i)%p_Sentry(isub)
-    END IF
-  END IF
+    end if
+  end if
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_string_fetch (rsection, &
+  subroutine parlst_getvalue_string_fetch (rsection, &
                                            iparameter, svalue, bexists,&
                                            isubstring)
 !<description>
@@ -1006,71 +1006,71 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The number of the parameter.
-  INTEGER, INTENT(IN) :: iparameter
+  integer, intent(IN) :: iparameter
 
   ! Optional: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  CHARACTER(LEN=*), INTENT(OUT) :: svalue
+  character(LEN=*), intent(OUT) :: svalue
   
   ! Optional: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  logical, intent(OUT), optional :: bexists
   
 !</output>
 
 !</subroutine>
 
-  INTEGER :: isub
+  integer :: isub
 
   ! Check if iparameter is out of bounds. If yes, probably
   ! throw an error.
   
-  IF ((iparameter .LT. 0) .OR. (iparameter .GT. rsection%iparamCount)) THEN
+  if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
-    IF (.NOT. PRESENT(bexists)) THEN 
-      PRINT *,'Error. Parameter ',iparameter,' does not exist!'
-      CALL sys_halt()
-    ELSE
+    if (.not. present(bexists)) then 
+      print *,'Error. Parameter ',iparameter,' does not exist!'
+      call sys_halt()
+    else
       svalue = ''
-      bexists = .FALSE.
-      RETURN
-    END IF
+      bexists = .false.
+      return
+    end if
   
-  END IF
+  end if
   
   ! Get the parameter value.
   ! Depending on isubstring, return either the 'headline' or one
   ! of the substrings.
   isub = 0
-  IF (PRESENT(isubstring)) isub = isubstring
+  if (present(isubstring)) isub = isubstring
 
-  IF ((isub .LE. 0) .OR. &
-      (isub .GT. rsection%p_Rvalues(iparameter)%nsize)) THEN
+  if ((isub .le. 0) .or. &
+      (isub .gt. rsection%p_Rvalues(iparameter)%nsize)) then
     svalue = rsection%p_Rvalues(iparameter)%sentry
-  ELSE
+  else
     svalue = rsection%p_Rvalues(iparameter)%p_Sentry(isub)
-  END IF
+  end if
   
-  IF (PRESENT(bexists)) bexists = .TRUE.
+  if (present(bexists)) bexists = .true.
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_string_direct (rparlist, ssectionName, &
+  subroutine parlst_getvalue_string_direct (rparlist, ssectionName, &
                                             sparameter, svalue, sdefault,&
                                             isubstring)
 !<description>
@@ -1093,65 +1093,65 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
+  character(LEN=*), intent(IN), optional :: sdefault
   
   ! Optional: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  CHARACTER(LEN=*), INTENT(OUT) :: svalue
+  character(LEN=*), intent(OUT) :: svalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  type(t_parlstSection), pointer :: p_rsection
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Get the section
-  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
-  IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    IF (PRESENT(sdefault)) THEN
+  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  if (.not. associated(p_rsection)) then
+    if (present(sdefault)) then
       svalue = sdefault
-      RETURN
-    ELSE
-      PRINT *,'Section not found'
-      CALL sys_halt()
-    END IF
-  END IF
+      return
+    else
+      print *,'Section not found'
+      call sys_halt()
+    end if
+  end if
 
   ! Get the value
-  CALL parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
+  call parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
                                      isubstring)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_single_indir (rsection, sparameter, fvalue, fdefault)
+  subroutine parlst_getvalue_single_indir (rsection, sparameter, fvalue, fdefault)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -1163,45 +1163,45 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  REAL(SP), INTENT(IN), OPTIONAL :: fdefault
+  real(SP), intent(IN), optional :: fdefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(SP), INTENT(OUT) :: fvalue
+  real(SP), intent(OUT) :: fvalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(fdefault)) THEN
-    WRITE (sdefault,'(E17.10E2)') fdefault
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
-  END IF
+  if (present(fdefault)) then
+    write (sdefault,'(E17.10E2)') fdefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  end if
 
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE parlst_getvalue_single_fetch (rsection, iparameter, fvalue, bexists)
+  subroutine parlst_getvalue_single_fetch (rsection, iparameter, fvalue, bexists)
 
 !<description>
   
@@ -1217,41 +1217,41 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The number of the parameter.
-  INTEGER, INTENT(IN) :: iparameter
+  integer, intent(IN) :: iparameter
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(SP), INTENT(OUT) :: fvalue
+  real(SP), intent(OUT) :: fvalue
   
   ! Optional: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  logical, intent(OUT), optional :: bexists
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0.0E0'
-  CALL parlst_getvalue_string_fetch (rsection, &
+  call parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
   
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_single_direct (rparlist, ssectionName, &
+  subroutine parlst_getvalue_single_direct (rparlist, ssectionName, &
                                             sparameter, fvalue, fdefault)
 !<description>
   
@@ -1264,49 +1264,49 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  REAL(SP), INTENT(IN), OPTIONAL :: fdefault
+  real(SP), intent(IN), optional :: fdefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(SP), INTENT(OUT) :: fvalue
+  real(SP), intent(OUT) :: fvalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(fdefault)) THEN
-    WRITE (sdefault,'(E17.10E2)') fdefault
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  if (present(fdefault)) then
+    write (sdefault,'(E17.10E2)') fdefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue)
-  END IF
+  end if
   
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_double_indir (rsection, sparameter, dvalue, ddefault)
+  subroutine parlst_getvalue_double_indir (rsection, sparameter, dvalue, ddefault)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -1318,45 +1318,45 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  REAL(DP), INTENT(IN), OPTIONAL :: ddefault
+  real(DP), intent(IN), optional :: ddefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,'(E27.19E3)') ddefault
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
-  END IF
+  if (present(ddefault)) then
+    write (sdefault,'(E27.19E3)') ddefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  end if
 
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE parlst_getvalue_double_fetch (rsection, iparameter, dvalue, bexists)
+  subroutine parlst_getvalue_double_fetch (rsection, iparameter, dvalue, bexists)
 
 !<description>
   
@@ -1372,41 +1372,41 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The number of the parameter.
-  INTEGER, INTENT(IN) :: iparameter
+  integer, intent(IN) :: iparameter
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
   
   ! Optional: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  logical, intent(OUT), optional :: bexists
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0.0E0'
-  CALL parlst_getvalue_string_fetch (rsection, &
+  call parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
   
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_double_direct (rparlist, ssectionName, &
+  subroutine parlst_getvalue_double_direct (rparlist, ssectionName, &
                                             sparameter, dvalue, ddefault)
 !<description>
   
@@ -1419,49 +1419,49 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  REAL(DP), INTENT(IN), OPTIONAL :: ddefault
+  real(DP), intent(IN), optional :: ddefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(ddefault)) THEN
-    WRITE (sdefault,'(E27.19E3)') ddefault
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  if (present(ddefault)) then
+    write (sdefault,'(E27.19E3)') ddefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue)
-  END IF
+  end if
   
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_int_indir (rsection, sparameter, ivalue, idefault)
+  subroutine parlst_getvalue_int_indir (rsection, sparameter, ivalue, idefault)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -1473,44 +1473,44 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
- INTEGER, INTENT(IN), OPTIONAL :: idefault
+ integer, intent(IN), optional :: idefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  INTEGER, INTENT(OUT) :: ivalue
+  integer, intent(OUT) :: ivalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(idefault)) THEN
-    WRITE (sdefault,*) idefault
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
-  END IF
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  end if
   
-  READ(svalue,*) ivalue
+  read(svalue,*) ivalue
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_int_fetch (rsection, iparameter, ivalue, bexists)
+  subroutine parlst_getvalue_int_fetch (rsection, iparameter, ivalue, bexists)
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
@@ -1525,40 +1525,40 @@ CONTAINS
 !<input>
     
   ! The section where to search for the parameter
-  TYPE(t_parlstSection), INTENT(IN) :: rsection
+  type(t_parlstSection), intent(IN) :: rsection
 
   ! The number of the parameter.
-  INTEGER, INTENT(IN) :: iparameter
+  integer, intent(IN) :: iparameter
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  INTEGER, INTENT(OUT) :: ivalue
+  integer, intent(OUT) :: ivalue
   
   ! Optional: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  logical, intent(OUT), optional :: bexists
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0'
-  CALL parlst_getvalue_string_fetch (rsection, &
+  call parlst_getvalue_string_fetch (rsection, &
                                      iparameter, svalue, bexists)
-  READ(svalue,*) ivalue
+  read(svalue,*) ivalue
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_getvalue_int_direct (rparlist, ssectionName, &
+  subroutine parlst_getvalue_int_direct (rparlist, ssectionName, &
                                          sparameter, ivalue, idefault)
 !<description>
   
@@ -1571,50 +1571,50 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! Optional: A default value
-  INTEGER, INTENT(IN), OPTIONAL :: idefault
+  integer, intent(IN), optional :: idefault
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  INTEGER, INTENT(OUT) :: ivalue
+  integer, intent(OUT) :: ivalue
   
 !</output>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_MLDATA) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
-  IF (PRESENT(idefault)) THEN
-    WRITE (sdefault,*) idefault
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
                                         sparameter, svalue)
-  END IF
+  end if
   
-  READ(svalue,*) ivalue
+  read(svalue,*) ivalue
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE parlst_addvalue_indir (rsection, sparameter, svalue, nsubstrings)
+  subroutine parlst_addvalue_indir (rsection, sparameter, svalue, nsubstrings)
   
 !<description>
   ! Adds a parameter to a section rsection.
@@ -1623,38 +1623,38 @@ CONTAINS
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  TYPE(t_parlstSection), INTENT(INOUT) :: rsection
+  type(t_parlstSection), intent(INOUT) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! The value of the parameter
-  CHARACTER(LEN=*), INTENT(IN) :: svalue
+  character(LEN=*), intent(IN) :: svalue
   
   ! Optional: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
-  INTEGER, INTENT(IN), OPTIONAL :: nsubstrings
+  integer, intent(IN), optional :: nsubstrings
   
 !</input>
 
 !</subroutine>
 
   ! local variables
-  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  character(LEN=PARLST_MLNAME) :: paramname
   
   ! Create the upper-case parameter name
-  paramname = ADJUSTL(sparameter)
-  CALL parlst_toupper (paramname)
+  paramname = adjustl(sparameter)
+  call parlst_toupper (paramname)
 
   ! Enough space free? Otherwise reallocate the parameter list
-  IF (rsection%iparamCount .EQ. SIZE(rsection%p_Sparameters)) THEN
-    CALL parlst_reallocsection (rsection, SIZE(rsection%p_Sparameters)+PARLST_NPARSPERBLOCK)
-  END IF
+  if (rsection%iparamCount .eq. size(rsection%p_Sparameters)) then
+    call parlst_reallocsection (rsection, size(rsection%p_Sparameters)+PARLST_NPARSPERBLOCK)
+  end if
 
   ! Add the parameter - without any adjustment of the 'value' string
   rsection%iparamCount = rsection%iparamCount + 1  
@@ -1663,19 +1663,19 @@ CONTAINS
   rsection%p_Rvalues(rsection%iparamCount)%sentry = svalue
   
   ! Add a list for the substrings if the parameter should have substrings.
-  IF (PRESENT(nsubstrings)) THEN
-    IF (nsubstrings .GT. 0) THEN
-      ALLOCATE(rsection%p_Rvalues(rsection%iparamCount)%p_Sentry(nsubstrings))
+  if (present(nsubstrings)) then
+    if (nsubstrings .gt. 0) then
+      allocate(rsection%p_Rvalues(rsection%iparamCount)%p_Sentry(nsubstrings))
       rsection%p_Rvalues(rsection%iparamCount)%nsize = nsubstrings
-    END IF
-  END IF
+    end if
+  end if
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_addvalue_direct (rparlist, ssectionName, sparameter, svalue,&
+  subroutine parlst_addvalue_direct (rparlist, ssectionName, sparameter, svalue,&
                                      nsubstrings)
 !<description>
   
@@ -1688,57 +1688,57 @@ CONTAINS
 !<inputoutput> 
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
 
 !<input>
 
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! The value of the parameter
-  CHARACTER(LEN=*), INTENT(IN) :: svalue
+  character(LEN=*), intent(IN) :: svalue
   
   ! Optional: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
-  INTEGER, INTENT(IN), OPTIONAL :: nsubstrings
+  integer, intent(IN), optional :: nsubstrings
 
 !</input>
 
 !</subroutine>
 
   ! local variables
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  type(t_parlstSection), pointer :: p_rsection
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Get the section
-  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
-  IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    PRINT *,'Section not found'
-    RETURN
-  END IF
+  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  if (.not. associated(p_rsection)) then
+    print *,'Section not found'
+    return
+  end if
 
   ! Add the parameter 
   
-  CALL parlst_addvalue_indir (p_rsection, sparameter, svalue, nsubstrings)
+  call parlst_addvalue_indir (p_rsection, sparameter, svalue, nsubstrings)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE parlst_setvalue_fetch (rsection, iparameter, svalue, iexists,&
+  subroutine parlst_setvalue_fetch (rsection, iparameter, svalue, iexists,&
                                     isubstring)
   
 !<description>
@@ -1760,23 +1760,23 @@ CONTAINS
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  TYPE(t_parlstSection), INTENT(INOUT) :: rsection
+  type(t_parlstSection), intent(INOUT) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  INTEGER, INTENT(IN) :: iparameter
+  integer, intent(IN) :: iparameter
 
   ! The new value of the parameter
-  CHARACTER(LEN=*), INTENT(IN) :: svalue
+  character(LEN=*), intent(IN) :: svalue
   
   ! Optional: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
 
 !</input>
 
@@ -1784,50 +1784,50 @@ CONTAINS
 
   ! Optional parameter. Is set to YES/NO, depending on whether
   ! the parameter exists.
-  INTEGER, INTENT(OUT), OPTIONAL :: iexists
+  integer, intent(OUT), optional :: iexists
 
 !</output>
 
 !</subroutine>
 
-  INTEGER :: isub
+  integer :: isub
 
   ! Check if iparameter is out of bounds. If yes, probably
   ! throw an error.
   
-  IF ((iparameter .LT. 0) .OR. (iparameter .GT. rsection%iparamCount)) THEN
+  if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
-    IF (.NOT. PRESENT(iexists)) THEN 
-      PRINT *,'Error. Parameter ',iparameter,' does not exist!'
-      CALL sys_halt()
-    ELSE
+    if (.not. present(iexists)) then 
+      print *,'Error. Parameter ',iparameter,' does not exist!'
+      call sys_halt()
+    else
       iexists = NO
-      RETURN
-    END IF
+      return
+    end if
   
-  END IF
+  end if
 
   ! Depending on isubstring, change either the 'headline' or one
   ! of the substrings.
   isub = 0
-  IF (PRESENT(isubstring)) isub = isubstring
+  if (present(isubstring)) isub = isubstring
 
-  IF ((isub .LE. 0) .OR. &
-      (isub .GT. rsection%p_Rvalues(iparameter)%nsize)) THEN
+  if ((isub .le. 0) .or. &
+      (isub .gt. rsection%p_Rvalues(iparameter)%nsize)) then
     rsection%p_Rvalues(iparameter)%sentry = svalue
-  ELSE
+  else
     rsection%p_Rvalues(iparameter)%p_Sentry(isub) = svalue
-  END IF
+  end if
 
-  IF (PRESENT(iexists)) iexists = YES
+  if (present(iexists)) iexists = YES
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE parlst_setvalue_indir (rsection, sparameter, svalue, isubstring)
+  subroutine parlst_setvalue_indir (rsection, sparameter, svalue, isubstring)
   
 !<description>
   
@@ -1844,63 +1844,63 @@ CONTAINS
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  TYPE(t_parlstSection), INTENT(INOUT) :: rsection
+  type(t_parlstSection), intent(INOUT) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! The new value of the parameter
-  CHARACTER(LEN=*), INTENT(IN) :: svalue
+  character(LEN=*), intent(IN) :: svalue
   
   ! Optional: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
 
 !</input>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,isub
-  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  integer :: i,isub
+  character(LEN=PARLST_MLNAME) :: paramname
   
   ! Create the upper-case parameter name
-  paramname = ADJUSTL(sparameter)
-  CALL parlst_toupper (paramname)
+  paramname = adjustl(sparameter)
+  call parlst_toupper (paramname)
 
   ! Get the parameter position
   i = parlst_queryvalue_indir (rsection, paramname)
   
-  IF (i .EQ. 0) THEN
-    PRINT *,'Parameter ',paramname,' does not exist, cannot be modified!'
-    CALL sys_halt()
-  ELSE 
+  if (i .eq. 0) then
+    print *,'Parameter ',paramname,' does not exist, cannot be modified!'
+    call sys_halt()
+  else 
   
     ! Depending on isubstring, change either the 'headline' or one
     ! of the substrings.
     isub = 0
-    IF (PRESENT(isubstring)) isub = isubstring
+    if (present(isubstring)) isub = isubstring
 
-    IF ((isub .LE. 0) .OR. (isub .GT. rsection%p_Rvalues(i)%nsize)) THEN
+    if ((isub .le. 0) .or. (isub .gt. rsection%p_Rvalues(i)%nsize)) then
       rsection%p_Rvalues(i)%sentry = svalue
-    ELSE
+    else
       rsection%p_Rvalues(i)%p_Sentry(isub) = svalue
-    END IF
+    end if
   
-  END IF
+  end if
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_setvalue_direct (rparlist, ssectionName, sparameter, svalue,&
+  subroutine parlst_setvalue_direct (rparlist, ssectionName, sparameter, svalue,&
                                      isubstring)
 !<description>
   
@@ -1918,75 +1918,75 @@ CONTAINS
 !<inputoutput> 
     
   ! The parameter list.
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
 
 !<input>
 
   ! The section name - '' identifies the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  character(LEN=*), intent(IN) :: ssectionName
 
   ! The parameter name.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  character(LEN=*), intent(IN) :: sparameter
 
   ! The new value of the parameter
-  CHARACTER(LEN=*), INTENT(IN) :: svalue
+  character(LEN=*), intent(IN) :: svalue
   
   ! Optional: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  integer, intent(IN), optional :: isubstring
 
 !</input>
 
 !</subroutine>
 
   ! local variables
-  TYPE(t_parlstSection), POINTER :: p_rsection
+  type(t_parlstSection), pointer :: p_rsection
   
   ! Cancel if the list is not initialised.
-  IF (rparlist%isectionCount .EQ. 0) THEN
-    PRINT *,'Parameter list not initialised!'
-    CALL sys_halt()
-  END IF
+  if (rparlist%isectionCount .eq. 0) then
+    print *,'Parameter list not initialised!'
+    call sys_halt()
+  end if
   
   ! Get the section
-  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
-  IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    PRINT *,'Section not found'
-    RETURN
-  END IF
+  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  if (.not. associated(p_rsection)) then
+    print *,'Section not found'
+    return
+  end if
 
   ! Set the parameter 
   
-  CALL parlst_setvalue_indir (p_rsection, sparameter, svalue, isubstring)
+  call parlst_setvalue_indir (p_rsection, sparameter, svalue, isubstring)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
   ! Internal subroutine: Read a line from a text file.
   
-  SUBROUTINE parlst_readlinefromfile (iunit, sdata, ilinelen, ios)
+  subroutine parlst_readlinefromfile (iunit, sdata, ilinelen, ios)
   
   ! The unit where to read from; must be connected to a file.
-  INTEGER, INTENT(IN) :: iunit
+  integer, intent(IN) :: iunit
   
   ! The string where to write data to
-  CHARACTER(LEN=*), INTENT(OUT) :: sdata
+  character(LEN=*), intent(OUT) :: sdata
   
   ! Length of the output
-  INTEGER, INTENT(OUT) :: ilinelen
+  integer, intent(OUT) :: ilinelen
   
   ! Status of the reading process. Set to a value <> 0 if the end
   ! of the file is reached.
-  INTEGER, INTENT(OUT) :: ios
+  integer, intent(OUT) :: ios
   
   ! local variables
-  INTEGER :: eol
-  CHARACTER :: c
+  integer :: eol
+  character :: c
   
   sdata = ''
   ilinelen = 0
@@ -1994,39 +1994,39 @@ CONTAINS
   ! Read the data - as long as the line/file does not end.
   eol = NO
   ios = 0
-  DO WHILE ((ios .EQ. 0) .AND. (eol .EQ. NO))
+  do while ((ios .eq. 0) .and. (eol .eq. NO))
     
     ! Read a character.
     ! Unfortunately, Fortran forces me to use this dirty GOTO
     ! to decide processor-independently whether the line or
     ! the record ends.
-    READ (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
-    GOTO 30
+    read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
+    goto 30
     
-10  CONTINUE
+10  continue
     ! End of file. 
     ios = -1
-    GOTO 30
+    goto 30
     
-20  CONTINUE
+20  continue
     ! End of record = END OF LINE.
     eol = YES
 
     ! Set error flag back to 0.
     ios = 0
     
-30  CONTINUE    
+30  continue    
     ! Don't do anything in case of an error
-    IF (ios .EQ. 0) THEN
+    if (ios .eq. 0) then
     
       ilinelen = ilinelen + 1
       sdata (ilinelen:ilinelen) = c
     
-    END IF
+    end if
   
-  END DO
+  end do
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -2043,14 +2043,14 @@ CONTAINS
   !              The next isubstring lines contain additional substrings.
   !  ityp = 4 -> Line is a substring of a multi-valued parameter.
   
-  SUBROUTINE parlst_parseline (sdata, ityp, isubstring, ilinenum, &
+  subroutine parlst_parseline (sdata, ityp, isubstring, ilinenum, &
                                ssecname, sparamname, svalue)
   
   ! The line to be parsed
-  CHARACTER(LEN=*), INTENT(IN) :: sdata
+  character(LEN=*), intent(IN) :: sdata
   
   ! The typ of the line
-  INTEGER, INTENT(OUT) :: ityp
+  integer, intent(OUT) :: ityp
 
   ! input: =0: parse line as parameter. isubstring is changed to a value > 0
   !            is the parameter has multiple values attached.
@@ -2059,203 +2059,203 @@ CONTAINS
   ! output: If the 'headline' of a multi-valued parameter is read, isubstring is
   !         changed to the number of substrings (the k in 'name(k)=...').
   !         Otherwise unchanged.
-  INTEGER, INTENT(INOUT) :: isubstring
+  integer, intent(INOUT) :: isubstring
 
   ! Line number
-  INTEGER, INTENT(IN) :: ilinenum
+  integer, intent(IN) :: ilinenum
   
   ! Section name, if it's a section
-  CHARACTER(LEN=*), INTENT(INOUT) :: ssecname
+  character(LEN=*), intent(INOUT) :: ssecname
   
   ! Parameter name, if it's a parameter
-  CHARACTER(LEN=*), INTENT(INOUT) :: sparamname
+  character(LEN=*), intent(INOUT) :: sparamname
   
   ! Parameter value, if it's a parameter
-  CHARACTER(LEN=*), INTENT(INOUT) :: svalue
+  character(LEN=*), intent(INOUT) :: svalue
   
   ! local variables
-  INTEGER :: i,j1,j2,ltr
-  CHARACTER(LEN=PARLST_LENLINEBUF) :: sbuf,slen
+  integer :: i,j1,j2,ltr
+  character(LEN=PARLST_LENLINEBUF) :: sbuf,slen
   
     ityp = 0
     
     ! Do we have data in sdata?
-    IF (sdata .EQ. '') RETURN
+    if (sdata .eq. '') return
     
     ! Copy the input string - left adjusted - and get the string length
-    sbuf = ADJUSTL(sdata)
+    sbuf = adjustl(sdata)
     
     ! Should we parse the line as first line of a parameter or as substring
     ! of a multi-valued parameter?
-    IF (isubstring .EQ. 0) THEN
+    if (isubstring .eq. 0) then
     
       ! Standard parameter or section header.
       !    
       ! Do we start with '[' and end with ']'?
-      IF (sbuf(1:1) .EQ. "[") THEN
+      if (sbuf(1:1) .eq. "[") then
       
         ! Find the final ']'.
-        DO ltr = 1,LEN(sbuf)
-          IF (sbuf(ltr:ltr) .EQ. "]") EXIT
-        END DO
+        do ltr = 1,len(sbuf)
+          if (sbuf(ltr:ltr) .eq. "]") exit
+        end do
         
-        IF (sbuf(ltr:ltr) .NE. ']') THEN
-          PRINT *,'Wrong syntax of section name. Line ',ilinenum,':'
-          PRINT *,sbuf
-          CALL sys_halt()
-        END IF
+        if (sbuf(ltr:ltr) .ne. ']') then
+          print *,'Wrong syntax of section name. Line ',ilinenum,':'
+          print *,sbuf
+          call sys_halt()
+        end if
         
         ! Get the section name
         ssecname = sbuf(2:ltr-1)
         ityp = 1
-        RETURN
+        return
         
-      ELSE IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
+      else if (sbuf(1:1) .eq. PARLST_COMMENT) then
       
         ! Comment sign
-        RETURN
+        return
         
-      ELSE
+      else
       
         ! Must be a parameter. Get the length of the string without comment
         ! at the end.
-        CALL linelength(sbuf, ltr)
+        call linelength(sbuf, ltr)
         
         ! ltr=0 means: empty line. Ignore that.
-        IF (ltr .EQ. 0) RETURN
+        if (ltr .eq. 0) return
         
         ! Is there a '(..)' that is indicating a multi-valued parameter?
-        j1 = INDEX(sbuf(1:ltr),'(')
-        j2 = INDEX(sbuf(1:ltr),')')
+        j1 = index(sbuf(1:ltr),'(')
+        j2 = index(sbuf(1:ltr),')')
 
         ! Is there a '=' sign?
-        i = INDEX(sbuf(1:ltr),'=')
+        i = index(sbuf(1:ltr),'=')
 
-        IF (i .EQ. 0) THEN
-          PRINT *,'Invalid parameter syntax. Line ',ilinenum,':'
-          CALL sys_halt()
-        END IF
+        if (i .eq. 0) then
+          print *,'Invalid parameter syntax. Line ',ilinenum,':'
+          call sys_halt()
+        end if
       
-        IF ((j1 .EQ. 0) .OR. (j2 .LE. j1)) THEN
+        if ((j1 .eq. 0) .or. (j2 .le. j1)) then
         
           ityp = 2
           
           ! Get the name of the parameter
-          sparamname = ADJUSTL(sbuf(1:i-1))
+          sparamname = adjustl(sbuf(1:i-1))
           
           ! Get the parameter value
-          svalue = ADJUSTL(sbuf(i+1:ltr))
+          svalue = adjustl(sbuf(i+1:ltr))
           
-        ELSE
+        else
         
           ! Probably multi-valued parameter with substrings in the 
           ! following lines.
 
           ! Get the name of the parameter
-          sparamname = ADJUSTL(sbuf(1:j1-1))
+          sparamname = adjustl(sbuf(1:j1-1))
 
           ! Get the parameter value
-          svalue = ADJUSTL(sbuf(i+1:ltr))
+          svalue = adjustl(sbuf(i+1:ltr))
 
           ! Get the length of the parameter list.
-          slen = sbuf (j1+1:MIN(j2-1,LEN(slen)))
+          slen = sbuf (j1+1:min(j2-1,len(slen)))
 
           isubstring = 0
-          READ(slen,*) isubstring
+          read(slen,*) isubstring
           
-          IF (isubstring .LE. 0) THEN
+          if (isubstring .le. 0) then
             ! Oh, only one line. User want's to cheat :-)
             isubstring = 0
             
             ityp = 2
-          ELSE
+          else
             ! Real multi-valued parameter.
             ityp = 3
-          END IF
+          end if
         
-        END IF
+        end if
       
-      END IF
+      end if
       
-    ELSE
+    else
       
       ! Substring of a multi-valued parameter.
-      IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
+      if (sbuf(1:1) .eq. PARLST_COMMENT) then
       
         ! Comment sign
-        RETURN
+        return
         
-      ELSE
+      else
        
         ! Must be a parameter. Get the length of the string without comment
         ! at the end.
-        CALL linelength(sbuf, ltr)
+        call linelength(sbuf, ltr)
         
         ! ltr=0 means: empty line. Ignore that.
-        IF (ltr .EQ. 0) RETURN
+        if (ltr .eq. 0) return
         
         ityp = 4
         
         ! Get the parameter value. Don't get a parameter name; there is none.
-        svalue = ADJUSTL(sbuf(1:ltr))
+        svalue = adjustl(sbuf(1:ltr))
        
-      END IF
+      end if
     
-    END IF
+    end if
   
-  CONTAINS
+  contains
     
     ! Sub-subroutine: find the length of the line, removing comments
     ! at the end.
     
-    SUBROUTINE linelength (sdata, l)
+    subroutine linelength (sdata, l)
     
     ! The string to parse. Must not be ''!
-    CHARACTER(LEN=*), INTENT(IN) :: sdata
+    character(LEN=*), intent(IN) :: sdata
     
     ! The index of the last character without any comment at the end.
-    INTEGER, INTENT(OUT) :: l
+    integer, intent(OUT) :: l
     
     ! local variables
-    LOGICAL :: bflag   ! Set to true if we are in apostroph mode
-    INTEGER :: lsdata
+    logical :: bflag   ! Set to true if we are in apostroph mode
+    integer :: lsdata
     
-    bflag = .FALSE.
+    bflag = .false.
     
     ! Go through all characters
     l = 0
-    lsdata = LEN(sdata)
-    DO WHILE (l .LT. lsdata)
+    lsdata = len(sdata)
+    do while (l .lt. lsdata)
       
       ! next character
       l = l+1
 
       ! A comment character while we are not in apostroph mode? Stop.
-      IF ((.NOT. bflag) .AND. (sdata(l:l) .EQ. PARLST_COMMENT)) THEN
+      if ((.not. bflag) .and. (sdata(l:l) .eq. PARLST_COMMENT)) then
         l = l-1
-        EXIT
-      END IF
+        exit
+      end if
       
       ! An apostroph? 
-      IF (sdata(l:l) .EQ. "'") THEN
+      if (sdata(l:l) .eq. "'") then
       
         ! Switch the apostroph mode.
         ! Btw.: Two subsequent apostrophes will switch the mode off and on again.
-        bflag = .NOT. bflag
+        bflag = .not. bflag
       
-      END IF
+      end if
 
-    END DO
+    end do
     
-    END SUBROUTINE
+    end subroutine
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_readfromfile (rparlist, sfilename)
+  subroutine parlst_readfromfile (rparlist, sfilename)
   
 !<description>
   
@@ -2276,35 +2276,35 @@ CONTAINS
 !<inputoutput> 
     
   ! The parameter list which is filled with data from the file
-  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+  type(t_parlist), intent(INOUT) :: rparlist
   
 !</inputoutput>
   
 !<input>
   
   ! The filename of the file to read.
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  character(LEN=*), intent(IN) :: sfilename
   
 !</input>
   
 !</subroutine>
 
   ! local variables
-  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,nsubstrings,iparpos
-  TYPE(t_parlstSection), POINTER :: p_currentsection
-  CHARACTER(LEN=PARLST_LENLINEBUF) :: sdata
-  CHARACTER(LEN=PARLST_MLSECTION) :: ssectionname
-  CHARACTER(LEN=PARLST_MLNAME) :: sparname
-  CHARACTER(LEN=PARLST_MLDATA) :: svalue
+  integer :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,nsubstrings,iparpos
+  type(t_parlstSection), pointer :: p_currentsection
+  character(LEN=PARLST_LENLINEBUF) :: sdata
+  character(LEN=PARLST_MLSECTION) :: ssectionname
+  character(LEN=PARLST_MLNAME) :: sparname
+  character(LEN=PARLST_MLDATA) :: svalue
   
   ! Try to open the file
-  CALL io_openFileForReading(sfilename, iunit)
+  call io_openFileForReading(sfilename, iunit)
   
   ! Oops...
-  IF (iunit .EQ. -1) THEN
-    PRINT *,'Error opening .INI file.' 
-    CALL sys_halt()
-  END IF
+  if (iunit .eq. -1) then
+    print *,'Error opening .INI file.' 
+    call sys_halt()
+  end if
   
   ! Start adding parameters to the unnamed section
   p_currentsection => rparlist%p_Rsections(1)
@@ -2314,33 +2314,33 @@ CONTAINS
   ilinenum = 0
   isubstring = 0
   nsubstrings = 0
-  DO WHILE (ios .EQ. 0) 
+  do while (ios .eq. 0) 
     
     ! Read a line from the file into sbuf
-    CALL parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
+    call parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
     ilinenum = ilinenum + 1
     
-    IF (isbuflen .NE. 0) THEN
+    if (isbuflen .ne. 0) then
     
       ! Parse the line
-      CALL parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
+      call parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
                              sparname, svalue)  
       
-      SELECT CASE (ityp)
-      CASE (1)
+      select case (ityp)
+      case (1)
         ! A new section name. Add a section, set the current section
         ! to the new one.
-        CALL parlst_addsection (rparlist, ssectionname)
+        call parlst_addsection (rparlist, ssectionname)
         p_currentsection => rparlist%p_Rsections(rparlist%isectionCount)
         
-      CASE (2)
+      case (2)
         ! A new parameter. Add it to the current section.
-        CALL parlst_addvalue (p_currentsection, sparname, svalue)
+        call parlst_addvalue (p_currentsection, sparname, svalue)
         
-      CASE (3)
+      case (3)
         ! 'Headline' of a multi-valued parameter. Add the parameter with
         ! isubstring subvalues
-        CALL parlst_addvalue (p_currentsection, sparname, svalue, nsubstrings)
+        call parlst_addvalue (p_currentsection, sparname, svalue, nsubstrings)
         
         ! Fetch the parameter for later adding of subvalues.
         iparpos = parlst_queryvalue(p_currentsection, sparname)
@@ -2349,13 +2349,13 @@ CONTAINS
         ! Set it to 0, it will be increased up to nsubstrings in 'case 4'.
         isubstring = 0
         
-      CASE (4)
+      case (4)
         ! Increase number of current substring
         isubstring = isubstring + 1
         
         ! Sub-parameter of a multi-valued parameter. Add the value to
         ! the last parameter that was added in case 3.
-        CALL parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
+        call parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
                                     isubstring=isubstring)
                                     
         ! Decrement the substring counter. If we reach 0, parlst_parseline
@@ -2363,22 +2363,22 @@ CONTAINS
         nsubstrings = nsubstrings - 1
         
       ! Other cases: comment.
-      END SELECT
+      end select
     
-    END IF
+    end if
   
-  END DO
+  end do
   
   ! Close the file, finish.
-  CLOSE (iunit)
+  close (iunit)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_getStringRepresentation (rparlist, p_sconfiguration)
+  subroutine parlst_getStringRepresentation (rparlist, p_sconfiguration)
   
 !<description>
   ! Creates a string representation of the given parameter list rparlist.
@@ -2390,7 +2390,7 @@ CONTAINS
   
 !<input> 
   ! The parameter list which is filled with data from the file
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
 !</input>
 
 !<output>
@@ -2399,145 +2399,145 @@ CONTAINS
   ! Each line is terminated by NEWLINE.
   ! If there is data, a new pointer is allocated for this on the heap. 
   ! The user must manually release the memory when finished using it.
-  CHARACTER, DIMENSION(:), POINTER :: p_sconfiguration
+  character, dimension(:), pointer :: p_sconfiguration
 !</output>
 
 !</subroutine>
 
-  INTEGER :: ilength,isection,ivalue,ientry,icount
-  CHARACTER, DIMENSION(:), POINTER :: p_sbuf
+  integer :: ilength,isection,ivalue,ientry,icount
+  character, dimension(:), pointer :: p_sbuf
   
-    IF (rparlist%isectionCount .EQ. 0) THEN
-      PRINT *,'parlst_getStringRepresentation: Parameter list not initialised!'
-      CALL sys_halt()
-    END IF
+    if (rparlist%isectionCount .eq. 0) then
+      print *,'parlst_getStringRepresentation: Parameter list not initialised!'
+      call sys_halt()
+    end if
   
-    NULLIFY(p_sbuf)
+    nullify(p_sbuf)
     
     ! Number of characters in the buffer
     ilength = 0
     
     ! Loop through all sections
-    DO isection = 1,rparlist%isectionCount
+    do isection = 1,rparlist%isectionCount
     
       ! Append the section name. May be empty for the unnamed section,
       ! which is always the first one.
-      IF (isection .GT. 1) THEN
+      if (isection .gt. 1) then
         ! Empty line before
-        IF (ilength .GT. 0) CALL appendString(p_sbuf,ilength,'')
-        CALL appendString(p_sbuf,ilength,&
-          '['//TRIM(rparlist%p_Rsections(isection)%ssectionName)//']')
-      END IF
+        if (ilength .gt. 0) call appendString(p_sbuf,ilength,'')
+        call appendString(p_sbuf,ilength,&
+          '['//trim(rparlist%p_Rsections(isection)%ssectionName)//']')
+      end if
         
       ! Loop through the values in the section
-      DO ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+      do ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
         
         ! Do we have one or multiple entries to that parameter?
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
-        IF (icount .EQ. 0) THEN
+        if (icount .eq. 0) then
           ! Write "name=value"
-          CALL appendString(p_sbuf,ilength,&
-            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+          call appendString(p_sbuf,ilength,&
+            trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
             //"="// &
-            TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
-        ELSE
+            trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+        else
           ! Write "name(icount)="
-          CALL appendString(p_sbuf,ilength,&
-            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
-            //"("//TRIM(sys_siL(icount, 10))//")=")
+          call appendString(p_sbuf,ilength,&
+            trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"("//trim(sys_siL(icount, 10))//")=")
           ! Write all the entries of that value, one each line.
-          DO ientry = 1,icount
-            CALL appendString(p_sbuf,ilength,&
-              TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+          do ientry = 1,icount
+            call appendString(p_sbuf,ilength,&
+              trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
                    p_Sentry(ientry)))
-          END DO
-        END IF
+          end do
+        end if
       
-      END DO ! ivalue
+      end do ! ivalue
     
-    END DO ! isection
+    end do ! isection
     
     ! Allocate a new character array with the correct size, copy p_sbuf to
     ! that ald release the old p_sbuf.
     ! Return NULL() if there is no data.
-    NULLIFY(p_sconfiguration)
-    IF (ilength .GT. 0) THEN
-      ALLOCATE(p_sconfiguration(ilength))
+    nullify(p_sconfiguration)
+    if (ilength .gt. 0) then
+      allocate(p_sconfiguration(ilength))
       p_sconfiguration = p_sbuf(1:ilength)
-    END IF
+    end if
     
     ! Release our temp buffer
-    IF (ASSOCIATED(p_sbuf)) DEALLOCATE(p_sbuf)
+    if (associated(p_sbuf)) deallocate(p_sbuf)
 
-  CONTAINS
+  contains
   
     ! Makes sure, the character buffer points to a character memory block of
     ! size nsize. If not, the block is reallocated to have that size.
-    SUBROUTINE assumeBufSize(p_sconfig,nsize)
+    subroutine assumeBufSize(p_sconfig,nsize)
     
-    CHARACTER, DIMENSION(:), POINTER :: p_sconfig
-    INTEGER, INTENT(IN) :: nsize
+    character, dimension(:), pointer :: p_sconfig
+    integer, intent(IN) :: nsize
     
-    CHARACTER, DIMENSION(:), POINTER :: p_sconfignew
+    character, dimension(:), pointer :: p_sconfignew
     
-      IF (.NOT. ASSOCIATED(p_sconfig)) THEN
-        ALLOCATE(p_sconfig(nsize))
-      ELSE IF (SIZE(p_sconfig) .LT. nsize) THEN
-        ALLOCATE(p_sconfignew(nsize))
-        p_sconfignew(1:SIZE(p_sconfig)) = p_sconfig
-        DEALLOCATE(p_sconfig)
+      if (.not. associated(p_sconfig)) then
+        allocate(p_sconfig(nsize))
+      else if (size(p_sconfig) .lt. nsize) then
+        allocate(p_sconfignew(nsize))
+        p_sconfignew(1:size(p_sconfig)) = p_sconfig
+        deallocate(p_sconfig)
         p_sconfig => p_sconfignew
-      END IF
+      end if
     
-    END SUBROUTINE
+    end subroutine
     
     ! Appends sstring to the buffer p_sconfig, followed by a NEWLINE
     ! character. Reallocates memory if necessary.
-    SUBROUTINE appendString(p_sconfig,iconfigLength,sstring)
+    subroutine appendString(p_sconfig,iconfigLength,sstring)
     
     ! Pointer to character data
-    CHARACTER, DIMENSION(:), POINTER :: p_sconfig
+    character, dimension(:), pointer :: p_sconfig
     
     ! In: Current length of data stream in p_sconfig.
     ! Out: New length of data stream in p_sconfig
-    INTEGER, INTENT(INOUT) :: iconfigLength
+    integer, intent(INOUT) :: iconfigLength
     
     ! The string to be added.
-    CHARACTER(LEN=*), INTENT(IN) :: sstring
+    character(LEN=*), intent(IN) :: sstring
     
-      INTEGER :: nblocks,nblocksneeded,i
+      integer :: nblocks,nblocksneeded,i
     
       ! How many memory blocks do we need for the current configuration?
       ! We work block-wise to prevent too often reallocation.
-      IF (.NOT. ASSOCIATED(p_sconfig)) THEN
+      if (.not. associated(p_sconfig)) then
         nblocks = 0
-      ELSE
-        nblocks = SIZE(p_sconfig) / SYS_STRLEN
-      END IF
-      nblocksneeded = 1 + (iconfigLength+LEN(sstring)+1) / SYS_STRLEN
-      IF (nblocksneeded .GT. nblocks) THEN
-        CALL assumeBufSize(p_sconfig,nblocksneeded*SYS_STRLEN)
-      END IF
+      else
+        nblocks = size(p_sconfig) / SYS_STRLEN
+      end if
+      nblocksneeded = 1 + (iconfigLength+len(sstring)+1) / SYS_STRLEN
+      if (nblocksneeded .gt. nblocks) then
+        call assumeBufSize(p_sconfig,nblocksneeded*SYS_STRLEN)
+      end if
       
       ! Append the data
-      DO i=1,LEN(sstring)
+      do i=1,len(sstring)
         iconfigLength = iconfigLength+1
         p_sconfig(iconfigLength) = sstring(i:i)
-      END DO
+      end do
       
       ! Append NEWLINE as line-end character
       iconfigLength = iconfigLength+1
       p_sconfig(iconfigLength) = NEWLINE
     
-    END SUBROUTINE
+    end subroutine
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE parlst_info (rparlist)
+  subroutine parlst_info (rparlist)
   
 !<description>
   ! Prints the parameter list rparlist to the terminal.
@@ -2545,58 +2545,58 @@ CONTAINS
   
 !<input> 
   ! The parameter list which is to be printed to the terminal.
-  TYPE(t_parlist), INTENT(IN) :: rparlist
+  type(t_parlist), intent(IN) :: rparlist
 !</input>
 
 !</subroutine>
 
 
-  INTEGER :: isection,ivalue,ientry,icount
+  integer :: isection,ivalue,ientry,icount
   
-    IF (rparlist%isectionCount .EQ. 0) THEN
-      PRINT *,'parlst_info: Parameter list not initialised!'
-      CALL sys_halt()
-    END IF
+    if (rparlist%isectionCount .eq. 0) then
+      print *,'parlst_info: Parameter list not initialised!'
+      call sys_halt()
+    end if
   
     ! Loop through all sections
-    DO isection = 1,rparlist%isectionCount
+    do isection = 1,rparlist%isectionCount
     
       ! Append the section name. May be empty for the unnamed section,
       ! which is always the first one.
-      IF (isection .GT. 1) THEN
+      if (isection .gt. 1) then
         ! Empty line before
-        CALL output_lbrk()
-        CALL output_line('['//TRIM(rparlist%p_Rsections(isection)%ssectionName)//']')
-      END IF
+        call output_lbrk()
+        call output_line('['//trim(rparlist%p_Rsections(isection)%ssectionName)//']')
+      end if
         
       ! Loop through the values in the section
-      DO ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+      do ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
         
         ! Do we have one or multiple entries to that parameter?
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
-        IF (icount .EQ. 0) THEN
+        if (icount .eq. 0) then
           ! Write "name=value"
-          CALL output_line(&
-            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+          call output_line(&
+            trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
             //"="// &
-            TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
-        ELSE
+            trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+        else
           ! Write "name(icount)="
-          CALL output_line(&
-            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
-            //"("//TRIM(sys_siL(icount, 10))//")=")
+          call output_line(&
+            trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"("//trim(sys_siL(icount, 10))//")=")
           ! Write all the entries of that value, one each line.
-          DO ientry = 1,icount
-            CALL output_line(&
-              TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+          do ientry = 1,icount
+            call output_line(&
+              trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
                    p_Sentry(ientry)))
-          END DO
-        END IF
+          end do
+        end if
       
-      END DO ! ivalue
+      end do ! ivalue
     
-    END DO ! isection
+    end do ! isection
     
-  END SUBROUTINE
+  end subroutine
   
-END MODULE
+end module

@@ -11,8 +11,8 @@
 !# are used as wrapper for the underlying C routines.
 !# </purpose>
 !##############################################################################
-MODULE signal
-  IMPLICIT NONE
+module signal
+  implicit none
   
   ! *****************************************************************************
   ! *****************************************************************************
@@ -21,41 +21,41 @@ MODULE signal
 !<constants>
 !<constantblock description="Types of signals">
 
-  INTEGER, PARAMETER :: SIGHUP    =  1   ! Hangup (POSIX).
-  INTEGER, PARAMETER :: SIGINT    =  2   ! Interrupt (ANSI).
-  INTEGER, PARAMETER :: SIGQUIT   =  3   ! Quit (POSIX).
-  INTEGER, PARAMETER :: SIGILL    =  4   ! Illegal instruction (ANSI).
-  INTEGER, PARAMETER :: SIGTRAP   =  5   ! Trace trap (POSIX).
-  INTEGER, PARAMETER :: SIGABRT   =  6   ! Abort (ANSI).
-  INTEGER, PARAMETER :: SIGIOT    =  6   ! IOT trap (4.2 BSD).
-  INTEGER, PARAMETER :: SIGBUS    =  7   ! BUS error (4.2 BSD).
-  INTEGER, PARAMETER :: SIGFPE    =  8   ! Floating-point exception (ANSI).
-  INTEGER, PARAMETER :: SIGKILL   =  9   ! Kill, unblockable (POSIX).
-  INTEGER, PARAMETER :: SIGUSR1   = 10   ! User-defined signal 1 (POSIX).
-  INTEGER, PARAMETER :: SIGSEGV   = 11   ! Segmentation violation (ANSI).
-  INTEGER, PARAMETER :: SIGUSR2   = 12   ! User-defined signal 2 (POSIX).
-  INTEGER, PARAMETER :: SIGPIPE   = 13   ! Broken pipe (POSIX).
-  INTEGER, PARAMETER :: SIGALRM   = 14   ! Alarm clock (POSIX).
-  INTEGER, PARAMETER :: SIGTERM   = 15   ! Termination (ANSI).
-  INTEGER, PARAMETER :: SIGSTKFLT = 16   ! Stack fault.
-  INTEGER, PARAMETER :: SIGCLD    = 17   ! Same as SIGCHLD (System V).
-  INTEGER, PARAMETER :: SIGCHLD   = 17   ! Child status has changed (POSIX).
-  INTEGER, PARAMETER :: SIGCONT   = 18   ! Continue (POSIX).
-  INTEGER, PARAMETER :: SIGSTOP   = 19   ! Stop, unblockable (POSIX).
-  INTEGER, PARAMETER :: SIGTSTP   = 20   ! Keyboard stop (POSIX).
-  INTEGER, PARAMETER :: SIGTTIN   = 21   ! Background read from tty (POSIX).
-  INTEGER, PARAMETER :: SIGTTOU   = 22   ! Background write to tty (POSIX).
-  INTEGER, PARAMETER :: SIGURG    = 23   ! Urgent condition on socket (4.2 BSD).
-  INTEGER, PARAMETER :: SIGXCPU   = 24   ! CPU limit exceeded (4.2 BSD).
-  INTEGER, PARAMETER :: SIGXFSZ   = 25   ! File size limit exceeded (4.2 BSD).
-  INTEGER, PARAMETER :: SIGVTALRM = 26   ! Virtual alarm clock (4.2 BSD).
-  INTEGER, PARAMETER :: SIGPROF   = 27   ! Profiling alarm clock (4.2 BSD).
-  INTEGER, PARAMETER :: SIGWINCH  = 28   ! Window size change (4.3 BSD, Sun).
-  INTEGER, PARAMETER :: SIGPOLL   = 29   ! Pollable event occurred (System V).
-  INTEGER, PARAMETER :: SIGIO     = 29   ! I/O now possible (4.2 BSD).
-  INTEGER, PARAMETER :: SIGPWR    = 30   ! Power failure restart (System V).
-  INTEGER, PARAMETER :: SIGSYS    = 31   ! Bad system call.
-  INTEGER, PARAMETER :: SIGUNUSED = 31
+  integer, parameter :: SIGHUP    =  1   ! Hangup (POSIX).
+  integer, parameter :: SIGINT    =  2   ! Interrupt (ANSI).
+  integer, parameter :: SIGQUIT   =  3   ! Quit (POSIX).
+  integer, parameter :: SIGILL    =  4   ! Illegal instruction (ANSI).
+  integer, parameter :: SIGTRAP   =  5   ! Trace trap (POSIX).
+  integer, parameter :: SIGABRT   =  6   ! Abort (ANSI).
+  integer, parameter :: SIGIOT    =  6   ! IOT trap (4.2 BSD).
+  integer, parameter :: SIGBUS    =  7   ! BUS error (4.2 BSD).
+  integer, parameter :: SIGFPE    =  8   ! Floating-point exception (ANSI).
+  integer, parameter :: SIGKILL   =  9   ! Kill, unblockable (POSIX).
+  integer, parameter :: SIGUSR1   = 10   ! User-defined signal 1 (POSIX).
+  integer, parameter :: SIGSEGV   = 11   ! Segmentation violation (ANSI).
+  integer, parameter :: SIGUSR2   = 12   ! User-defined signal 2 (POSIX).
+  integer, parameter :: SIGPIPE   = 13   ! Broken pipe (POSIX).
+  integer, parameter :: SIGALRM   = 14   ! Alarm clock (POSIX).
+  integer, parameter :: SIGTERM   = 15   ! Termination (ANSI).
+  integer, parameter :: SIGSTKFLT = 16   ! Stack fault.
+  integer, parameter :: SIGCLD    = 17   ! Same as SIGCHLD (System V).
+  integer, parameter :: SIGCHLD   = 17   ! Child status has changed (POSIX).
+  integer, parameter :: SIGCONT   = 18   ! Continue (POSIX).
+  integer, parameter :: SIGSTOP   = 19   ! Stop, unblockable (POSIX).
+  integer, parameter :: SIGTSTP   = 20   ! Keyboard stop (POSIX).
+  integer, parameter :: SIGTTIN   = 21   ! Background read from tty (POSIX).
+  integer, parameter :: SIGTTOU   = 22   ! Background write to tty (POSIX).
+  integer, parameter :: SIGURG    = 23   ! Urgent condition on socket (4.2 BSD).
+  integer, parameter :: SIGXCPU   = 24   ! CPU limit exceeded (4.2 BSD).
+  integer, parameter :: SIGXFSZ   = 25   ! File size limit exceeded (4.2 BSD).
+  integer, parameter :: SIGVTALRM = 26   ! Virtual alarm clock (4.2 BSD).
+  integer, parameter :: SIGPROF   = 27   ! Profiling alarm clock (4.2 BSD).
+  integer, parameter :: SIGWINCH  = 28   ! Window size change (4.3 BSD, Sun).
+  integer, parameter :: SIGPOLL   = 29   ! Pollable event occurred (System V).
+  integer, parameter :: SIGIO     = 29   ! I/O now possible (4.2 BSD).
+  integer, parameter :: SIGPWR    = 30   ! Power failure restart (System V).
+  integer, parameter :: SIGSYS    = 31   ! Bad system call.
+  integer, parameter :: SIGUNUSED = 31
 
 !</constantblock>
 !</constants>  
@@ -64,11 +64,11 @@ MODULE signal
   ! *****************************************************************************
   ! *****************************************************************************
 
-CONTAINS
+contains
   
 !<subroutine>
   
-  SUBROUTINE fsignal(sig,func)
+  subroutine fsignal(sig,func)
 
 !<description>
     ! This subroutine registers a signal handler with a signal. The
@@ -78,30 +78,30 @@ CONTAINS
 
 !<input>
     ! signal number
-    INTEGER, INTENT(IN) :: sig
+    integer, intent(IN) :: sig
     
     ! signal handler
-    INTERFACE 
-      FUNCTION func(sig)
-        INTEGER, INTENT(IN) :: sig
-        INTEGER :: func
+    interface 
+      function func(sig)
+        integer, intent(IN) :: sig
+        integer :: func
         
-      END FUNCTION func
-    END INTERFACE
-    OPTIONAL :: func
+      end function func
+    end interface
+    optional :: func
 !</input>
 !</subroutine>
     
     ! external subroutines written in C
-    EXTERNAL :: signal_register
-    EXTERNAL :: signal_deregister
+    external :: signal_register
+    external :: signal_deregister
     
     ! (De-)register handler
-    IF (PRESENT(func)) THEN
-      CALL signal_register(sig,func)
-    ELSE
-      CALL signal_deregister(sig)
-    END IF
+    if (present(func)) then
+      call signal_register(sig,func)
+    else
+      call signal_deregister(sig)
+    end if
     
-  END SUBROUTINE fsignal
-END MODULE signal
+  end subroutine fsignal
+end module signal

@@ -139,11 +139,11 @@
 !# </purpose>
 !##############################################################################
 
-MODULE genoutput
+module genoutput
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
@@ -151,13 +151,13 @@ MODULE genoutput
 
   ! Output mode: Write to main log file / error log file (depending on whether
   ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
-  INTEGER, PARAMETER :: OU_MODE_LOG      = 2**0
+  integer, parameter :: OU_MODE_LOG      = 2**0
   
   ! Output mode: Write to terminal
-  INTEGER, PARAMETER :: OU_MODE_TERM     = 2**1
+  integer, parameter :: OU_MODE_TERM     = 2**1
 
   ! Output mode: Write to both, log file and terminal
-  INTEGER, PARAMETER :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
+  integer, parameter :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
   
 !</constantblock>
   
@@ -165,47 +165,47 @@ MODULE genoutput
 !                            when writing a string to a log file / terminal">
 
   ! Output classification: Standard message
-  INTEGER, PARAMETER :: OU_CLASS_MSG      = 0
+  integer, parameter :: OU_CLASS_MSG      = 0
   
   ! Output classification: Trace information, level 1
-  INTEGER, PARAMETER :: OU_CLASS_TRACE1   = 1
+  integer, parameter :: OU_CLASS_TRACE1   = 1
 
   ! Output classification: Trace information, level 2
-  INTEGER, PARAMETER :: OU_CLASS_TRACE2   = 2
+  integer, parameter :: OU_CLASS_TRACE2   = 2
 
   ! Output classification: Trace information, level 3
-  INTEGER, PARAMETER :: OU_CLASS_TRACE3   = 3
+  integer, parameter :: OU_CLASS_TRACE3   = 3
 
   ! Output classification: System/Timer message
-  INTEGER, PARAMETER :: OU_CLASS_SYSTEM   = 4
+  integer, parameter :: OU_CLASS_SYSTEM   = 4
   
   ! Output classification: Error message.
-  INTEGER, PARAMETER :: OU_CLASS_ERROR    = 5
+  integer, parameter :: OU_CLASS_ERROR    = 5
 
   ! Output classification: Warning message.
-  INTEGER, PARAMETER :: OU_CLASS_WARNING  = 6
+  integer, parameter :: OU_CLASS_WARNING  = 6
 
 !</constantblock>
 
 !<constantblock description="Type of separator line">
 
   ! Separator line: MINUS character
-  INTEGER, PARAMETER :: OU_SEP_MINUS  = 0
+  integer, parameter :: OU_SEP_MINUS  = 0
 
   ! Separator line: STAR character 
-  INTEGER, PARAMETER :: OU_SEP_STAR   = 1
+  integer, parameter :: OU_SEP_STAR   = 1
 
   ! Separator line: EQUAL character
-  INTEGER, PARAMETER :: OU_SEP_EQUAL  = 2
+  integer, parameter :: OU_SEP_EQUAL  = 2
 
   ! Separator line: DOLLAR character
-  INTEGER, PARAMETER :: OU_SEP_DOLLAR = 3
+  integer, parameter :: OU_SEP_DOLLAR = 3
 
   ! Separator line: @ character
-  INTEGER, PARAMETER :: OU_SEP_AT     = 4
+  integer, parameter :: OU_SEP_AT     = 4
 
   ! Separator line: + character
-  INTEGER, PARAMETER :: OU_SEP_PLUS   = 5
+  integer, parameter :: OU_SEP_PLUS   = 5
 
 !</constantblock>
 
@@ -213,47 +213,47 @@ MODULE genoutput
 
   ! Length of a line on the terminal / in the log file.
   ! Standard value = 80 characters
-  INTEGER :: OU_LINE_LENGTH         = 80
+  integer :: OU_LINE_LENGTH         = 80
 
   ! Global device number for terminal output
-  INTEGER :: OU_TERMINAL            = 6
+  integer :: OU_TERMINAL            = 6
 
   ! Global device number for terminal input
-  INTEGER :: IN_TERMINAL            = 5
+  integer :: IN_TERMINAL            = 5
 
   ! Global device number for errors on terminal
-  INTEGER :: OU_ERROR               = 6
+  integer :: OU_ERROR               = 6
   
   ! Global device number for log file. The log file is opened in output_init.
   ! <=0: no log file output.
-  INTEGER :: OU_LOG                 = 0
+  integer :: OU_LOG                 = 0
   
   ! Global device number for error log file. The error log file is opened 
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
-  INTEGER :: OU_ERRORLOG            = 0
+  integer :: OU_ERRORLOG            = 0
 
 !</constantblock>
 
 !</constants>  
 
-  INTERFACE output_line
-    MODULE PROCEDURE output_line_std
-    MODULE PROCEDURE output_line_feast
-  END INTERFACE
+  interface output_line
+    module procedure output_line_std
+    module procedure output_line_feast
+  end interface
   
-  INTERFACE output_init
-    MODULE PROCEDURE output_init_simple
-    MODULE PROCEDURE output_init_logfile
-    MODULE PROCEDURE output_init_standard
-  END INTERFACE
+  interface output_init
+    module procedure output_init_simple
+    module procedure output_init_logfile
+    module procedure output_init_standard
+  end interface
 
-CONTAINS
+contains
 
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE output_openLogfile(sfilename, iunit)
+  subroutine output_openLogfile(sfilename, iunit)
 
   !<description>
     ! This routine opens a file sfilename for writing. This is 
@@ -268,46 +268,46 @@ CONTAINS
   !<input>
 
     ! Name of the file to overwrite.
-    CHARACTER(*), INTENT(IN) :: sfilename
+    character(*), intent(IN) :: sfilename
 
   !</input>
 
   !<output>
     !unit of the opened file
-    INTEGER, INTENT(OUT) :: iunit
+    integer, intent(OUT) :: iunit
   !</output>
   
 !</subroutine>
 
-    INTEGER :: istatus ! status variable for opening procedure
+    integer :: istatus ! status variable for opening procedure
 
-    IF (trim(sfilename) .eq. "") THEN 
-      WRITE (*,'(A)') 'Error: io_openFileForWriting. sfilename undefined!'
-      RETURN
-    ENDIF
+    if (trim(sfilename) .eq. "") then 
+      write (*,'(A)') 'Error: io_openFileForWriting. sfilename undefined!'
+      return
+    endif
 
     iunit = sys_getFreeUnit()
-    IF (iunit .eq. -1) THEN
-      WRITE (*,'(A)') 'Error: io_openFileForWriting. No output channel available!'
-      RETURN
-    ENDIF
+    if (iunit .eq. -1) then
+      write (*,'(A)') 'Error: io_openFileForWriting. No output channel available!'
+      return
+    endif
 
-    OPEN(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
+    open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
           action="write")
 
-    IF (istatus .ne. 0) THEN
-      WRITE(unit=*,fmt=*) 'Error: io_openFileForWriting. &
+    if (istatus .ne. 0) then
+      write(unit=*,fmt=*) 'Error: io_openFileForWriting. &
                           &Error while opening file "', trim(sfilename), '". ***'
       iunit = -1
-    ENDIF
+    endif
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_init_simple ()
+  subroutine output_init_simple ()
 
 !<description>
   ! Initialises the output system. The output system is configured to show all
@@ -316,15 +316,15 @@ CONTAINS
   
 !</subroutine>
 
-    CALL output_init_standard ("","")
+    call output_init_standard ("","")
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_init_logfile (slogFilename)
+  subroutine output_init_logfile (slogFilename)
 
 !<description>
   ! Initialises the output system. 
@@ -337,21 +337,21 @@ CONTAINS
 
   ! Name of a log file for standard messages. If "" is specified, 
   ! output messages are written to the standard output.
-  CHARACTER(LEN=*), INTENT(IN) :: slogFilename
+  character(LEN=*), intent(IN) :: slogFilename
   
 !</input>
 
 !</subroutine>
 
-    CALL output_init_standard (slogFilename,"")
+    call output_init_standard (slogFilename,"")
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_init_standard (slogFilename,serrorFilename)
+  subroutine output_init_standard (slogFilename,serrorFilename)
 
 !<description>
   ! Initialises the output system. 
@@ -368,68 +368,68 @@ CONTAINS
 
   ! Name of a log file for standard messages. If ""
   ! is specified, output messages are written to the standard output.
-  CHARACTER(LEN=*), INTENT(IN) :: slogFilename
+  character(LEN=*), intent(IN) :: slogFilename
   
   ! Name of an log file for error messages. If ""
   ! is specified, errors are written to the standard log file. The name of 
   ! the file may also coincide with slogFilename.
-  CHARACTER(LEN=*), INTENT(IN) :: serrorFilename
+  character(LEN=*), intent(IN) :: serrorFilename
   
 !</input>
 
 !</subroutine>
 
   ! Both filenames given?
-  IF ((slogFilename .NE. "") .AND. (serrorFilename .NE. "")) THEN
+  if ((slogFilename .ne. "") .and. (serrorFilename .ne. "")) then
   
     ! Both filenames the same=
-    IF (slogFilename .EQ. serrorFilename) THEN
+    if (slogFilename .eq. serrorFilename) then
     
       ! Only open one log file for both.
-      CALL output_openLogfile(slogFilename, OU_LOG)
+      call output_openLogfile(slogFilename, OU_LOG)
       OU_ERRORLOG = OU_LOG
     
-    ELSE
+    else
     
       ! Open two separate log files
-      CALL output_openLogfile(slogFilename, OU_LOG)
-      CALL output_openLogfile(serrorFilename, OU_ERRORLOG)
+      call output_openLogfile(slogFilename, OU_LOG)
+      call output_openLogfile(serrorFilename, OU_ERRORLOG)
     
-    END IF
+    end if
   
-  ELSE 
+  else 
   
     ! Close previously opened log files.
-    CALL output_done ()    
+    call output_done ()    
     
-    IF (slogFilename .NE. "") THEN
+    if (slogFilename .ne. "") then
     
       ! Open a log file
-      CALL output_openLogfile(slogFilename, OU_LOG)
+      call output_openLogfile(slogFilename, OU_LOG)
     
-    END IF
+    end if
   
-    IF (serrorFilename .NE. "") THEN
+    if (serrorFilename .ne. "") then
     
       ! Open an error log file
-      CALL output_openLogfile(serrorFilename, OU_ERRORLOG)
+      call output_openLogfile(serrorFilename, OU_ERRORLOG)
       
-    ELSE
+    else
     
       ! Write error messages to standard log file.
       OU_ERRORLOG = OU_LOG
     
-    END IF
+    end if
   
-  END IF
+  end if
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_done ()
+  subroutine output_done ()
 
 !<description>
   ! Closes all log files, cleans up output system.
@@ -438,16 +438,16 @@ CONTAINS
 !</subroutine>
   
     ! Close all open channels.
-    IF (OU_LOG .GT. 0) CLOSE(OU_LOG)
-    IF (OU_ERRORLOG .GT. 0) CLOSE(OU_ERRORLOG)
+    if (OU_LOG .gt. 0) close(OU_LOG)
+    if (OU_ERRORLOG .gt. 0) close(OU_ERRORLOG)
     
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  FUNCTION output_reformatMsg (smessage, coutputClass, ssubroutine) RESULT (s)
+  function output_reformatMsg (smessage, coutputClass, ssubroutine) result (s)
 
 !<description>
   ! Reformats an output message according to an output class.
@@ -455,83 +455,83 @@ CONTAINS
 
 !<input>
   ! The message to reformat.
-  CHARACTER(LEN=*), INTENT(IN) :: smessage
+  character(LEN=*), intent(IN) :: smessage
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
 
   ! OPTIONAL: Name of a subroutine to include in the message; may be "".
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
 !</input>
 
 !<result>
   ! Reformatted string
 !</result>
 
-  CHARACTER(LEN=LEN(smessage)+20+SYS_NAMELEN) :: s
+  character(LEN=len(smessage)+20+SYS_NAMELEN) :: s
 
 !</subroutine>
 
-    LOGICAL :: bsub
-    INTEGER :: ioc
+    logical :: bsub
+    integer :: ioc
     
-    bsub = .FALSE.
-    IF (PRESENT (ssubroutine)) THEN
-      bsub = (ssubroutine .NE. '')
-    END IF
+    bsub = .false.
+    if (present (ssubroutine)) then
+      bsub = (ssubroutine .ne. '')
+    end if
     
     ioc = OU_CLASS_MSG
-    IF (PRESENT(coutputClass)) ioc = coutputClass
+    if (present(coutputClass)) ioc = coutputClass
       
-    IF (.NOT. bsub) THEN
+    if (.not. bsub) then
 
-      SELECT CASE (ioc)
-      CASE (OU_CLASS_TRACE1)
+      select case (ioc)
+      case (OU_CLASS_TRACE1)
         s = '*** '//smessage
-      CASE (OU_CLASS_TRACE2)
+      case (OU_CLASS_TRACE2)
         s = '***** '//smessage
-      CASE (OU_CLASS_TRACE3)
+      case (OU_CLASS_TRACE3)
         s = '******* '//smessage
-      CASE (OU_CLASS_SYSTEM)
+      case (OU_CLASS_SYSTEM)
         s = '* System: '//smessage
-      CASE (OU_CLASS_ERROR)
+      case (OU_CLASS_ERROR)
         s = '* Error: '//smessage
-      CASE (OU_CLASS_WARNING)
+      case (OU_CLASS_WARNING)
         s = '* Warning: '//smessage
-      CASE DEFAULT
+      case DEFAULT
         s = smessage
-      END SELECT
+      end select
     
-    ELSE
+    else
 
-      SELECT CASE (ioc)
-      CASE (OU_CLASS_TRACE1)
+      select case (ioc)
+      case (OU_CLASS_TRACE1)
         s = '*** '//trim(ssubroutine)//': '//smessage
-      CASE (OU_CLASS_TRACE2)
+      case (OU_CLASS_TRACE2)
         s = '***** '//trim(ssubroutine)//': '//smessage
-      CASE (OU_CLASS_TRACE3)
+      case (OU_CLASS_TRACE3)
         s = '******* '//trim(ssubroutine)//': '//smessage
-      CASE (OU_CLASS_SYSTEM)
+      case (OU_CLASS_SYSTEM)
         s = '* System ('//trim(ssubroutine)//'): '//smessage
-      CASE (OU_CLASS_ERROR)
+      case (OU_CLASS_ERROR)
         s = '* Error ('//trim(ssubroutine)//'): '//smessage
-      CASE (OU_CLASS_WARNING)
+      case (OU_CLASS_WARNING)
         s = '* Warning ('//trim(ssubroutine)//'): '//smessage
-      CASE DEFAULT
+      case DEFAULT
         s = smessage
-      END SELECT
+      end select
 
-    END IF
+    end if
 
-  END FUNCTION
+  end function
 
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_line_std (smessage, &
+  subroutine output_line_std (smessage, &
                               coutputClass, coutputMode, ssubroutine, &
                               bnolinebreak,bnotrim)
 
@@ -547,112 +547,112 @@ CONTAINS
 
 !<input>
   ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smessage
+  character(LEN=*), intent(IN) :: smessage
   
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
+  integer, intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
   
   ! OPTIONAL: When specifying bnolinebreak=TRUE, the output routine will
   ! not perform a line break after printing.
-  LOGICAL, INTENT(IN), OPTIONAL :: bnolinebreak
+  logical, intent(IN), optional :: bnolinebreak
 
   ! OPTIONAL: When specifying bnotrim=TRUE, the output routine will
   ! not trim the string when printing. This does only work for 
   ! coutputClass=OU_CLASS_MSG and coutputClass=OU_CLASS_ERROR
   ! (or if coutputClass is not specified)!
-  LOGICAL, INTENT(IN), OPTIONAL :: bnotrim
+  logical, intent(IN), optional :: bnotrim
 !</input>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: coMode, coClass, iofChannel, iotChannel
-  LOGICAL :: bntrim, bnnewline
-  CHARACTER(LEN=LEN(smessage)+20+SYS_NAMELEN) :: smsg
+  integer :: coMode, coClass, iofChannel, iotChannel
+  logical :: bntrim, bnnewline
+  character(LEN=len(smessage)+20+SYS_NAMELEN) :: smsg
   
     ! Get the actual parameters.
     
     coMode = OU_MODE_STD
     coClass = OU_CLASS_MSG
-    bntrim = .FALSE.
-    bnnewline = .FALSE.
+    bntrim = .false.
+    bnnewline = .false.
     
-    IF (PRESENT(coutputMode))  coMode = coutputMode
-    IF (PRESENT(coutputClass)) coClass = coutputClass
-    IF (PRESENT(bnotrim))      bntrim = bnotrim
-    IF (PRESENT(bnolinebreak)) bnnewline = bnolinebreak
+    if (present(coutputMode))  coMode = coutputMode
+    if (present(coutputClass)) coClass = coutputClass
+    if (present(bnotrim))      bntrim = bnotrim
+    if (present(bnolinebreak)) bnnewline = bnolinebreak
     
     ! Get the file and terminal output channel
     iotChannel = OU_TERMINAL
-    IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
-        (coClass .EQ. OU_CLASS_WARNING)) iotChannel = OU_ERROR
+    if ((coClass .eq. OU_CLASS_ERROR) .or. &
+        (coClass .eq. OU_CLASS_WARNING)) iotChannel = OU_ERROR
 
     iofChannel = OU_LOG
-    IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
-        (coClass .EQ. OU_CLASS_WARNING)) iofChannel = OU_ERRORLOG
+    if ((coClass .eq. OU_CLASS_ERROR) .or. &
+        (coClass .eq. OU_CLASS_WARNING)) iofChannel = OU_ERRORLOG
     
-    IF (bntrim .AND. &
-        ((coClass .EQ. OU_CLASS_MSG) .OR. &
-         (coClass .EQ. OU_CLASS_WARNING) .OR. &
-         (coClass .EQ. OU_CLASS_ERROR)) ) THEN
+    if (bntrim .and. &
+        ((coClass .eq. OU_CLASS_MSG) .or. &
+         (coClass .eq. OU_CLASS_WARNING) .or. &
+         (coClass .eq. OU_CLASS_ERROR)) ) then
          
       ! Where to write the message to?
-      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .GT. 0)) THEN
-        IF (bnnewline) THEN
-          WRITE (iotChannel,'(A)',ADVANCE='NO') smessage
-        ELSE
-          WRITE (iotChannel,'(A)') smessage
-        END IF
-      END IF
+      if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iotChannel,'(A)',ADVANCE='NO') smessage
+        else
+          write (iotChannel,'(A)') smessage
+        end if
+      end if
       
       ! Output to log file?
-      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .GT. 0)) THEN
-        IF (bnnewline) THEN
-          WRITE (iofChannel,'(A)',ADVANCE='NO') smessage
-        ELSE
-          WRITE (iofChannel,'(A)') smessage
-        END IF
-      END IF
+      if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iofChannel,'(A)',ADVANCE='NO') smessage
+        else
+          write (iofChannel,'(A)') smessage
+        end if
+      end if
       
-    ELSE
+    else
     
       ! Build the actual error message
       smsg = output_reformatMsg (smessage, coutputClass, ssubroutine) 
       
       ! Where to write the message to?
-      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .GT. 0)) THEN
-        IF (bnnewline) THEN
-          WRITE (iotChannel,'(A)',ADVANCE='NO') TRIM(smsg)
-        ELSE
-          WRITE (iotChannel,'(A)') TRIM(smsg)
-        END IF
-      END IF
+      if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iotChannel,'(A)',ADVANCE='NO') trim(smsg)
+        else
+          write (iotChannel,'(A)') trim(smsg)
+        end if
+      end if
       
       ! Output to log file?
-      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .GT. 0)) THEN
-        IF (bnnewline) THEN
-          WRITE (iofChannel,'(A)',ADVANCE='NO') TRIM(smsg)
-        ELSE
-          WRITE (iofChannel,'(A)') TRIM(smsg)
-        END IF
-      END IF
-    END IF
+      if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iofChannel,'(A)',ADVANCE='NO') trim(smsg)
+        else
+          write (iofChannel,'(A)') trim(smsg)
+        end if
+      end if
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_line_feast (coutputClass, ssubroutine, smsg)
+  subroutine output_line_feast (coutputClass, ssubroutine, smsg)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
@@ -669,13 +669,13 @@ CONTAINS
 !<input>
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN) :: coutputClass
+  integer, intent(IN) :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN) :: ssubroutine
+  character(LEN=*), intent(IN) :: ssubroutine
   
   ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smsg
+  character(LEN=*), intent(IN) :: smsg
   
 !</input>
 
@@ -687,15 +687,15 @@ CONTAINS
     ! and output_line_feast anymore in that case! (as all parameter names
     ! are the same).
 
-    CALL output_line_std (smsg, coutputClass, OU_MODE_STD, ssubroutine)
+    call output_line_std (smsg, coutputClass, OU_MODE_STD, ssubroutine)
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_lbrk (coutputClass, coutputMode, ssubroutine)
+  subroutine output_lbrk (coutputClass, coutputMode, ssubroutine)
 
 !<description>
   ! Writes a line break to the terminal, log file or error log file,
@@ -709,29 +709,29 @@ CONTAINS
 !<input>
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
+  integer, intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
   
   ! OPTIONAL: Name
 !</input>
 
 !</subroutine>
 
-    CALL output_line_std ('', coutputClass, coutputMode, ssubroutine)
+    call output_line_std ('', coutputClass, coutputMode, ssubroutine)
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_separator (csepType, coutputClass, coutputMode, ssubroutine)
+  subroutine output_separator (csepType, coutputClass, coutputMode, ssubroutine)
 
 !<description>
   ! Writes a separator line to the terminal, log file or error log file,
@@ -746,18 +746,18 @@ CONTAINS
 !<input>
   ! Type of the separator line. One of the OU_SEP_xxxx constants
   ! (OU_SEP_MINUS, OU_SEP_STAR, OU_SEP_EQUAL,...).
-  INTEGER, INTENT(IN) :: csepType
+  integer, intent(IN) :: csepType
 
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
+  integer, intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
   
   ! OPTIONAL: Name
 !</input>
@@ -765,39 +765,39 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    CHARACTER(LEN=MAX(1,OU_LINE_LENGTH-1)) :: cstr
-    CHARACTER(LEN=20) :: saux
+    character(LEN=max(1,OU_LINE_LENGTH-1)) :: cstr
+    character(LEN=20) :: saux
 
     ! Create the separator line
-    SELECT CASE (csepType)
-    CASE (OU_SEP_MINUS)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''-''))'
-    CASE (OU_SEP_PLUS)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''+''))'
-    CASE (OU_SEP_STAR)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''*''))'
-    CASE (OU_SEP_EQUAL)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''=''))'
-    CASE (OU_SEP_DOLLAR)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''$''))'
-    CASE (OU_SEP_AT)
-      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''@''))'
-    CASE DEFAULT
-      PRINT *,'output_separator: Unknown separator type: ',csepType
-      CALL sys_halt()
-    END SELECT
+    select case (csepType)
+    case (OU_SEP_MINUS)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''-''))'
+    case (OU_SEP_PLUS)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''+''))'
+    case (OU_SEP_STAR)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''*''))'
+    case (OU_SEP_EQUAL)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''=''))'
+    case (OU_SEP_DOLLAR)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''$''))'
+    case (OU_SEP_AT)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''@''))'
+    case DEFAULT
+      print *,'output_separator: Unknown separator type: ',csepType
+      call sys_halt()
+    end select
     
-    WRITE (cstr,saux)
+    write (cstr,saux)
 
-    CALL output_line_std (cstr, coutputClass, coutputMode, ssubroutine)
+    call output_line_std (cstr, coutputClass, coutputMode, ssubroutine)
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_simple (ioutputLevel, smsg, coutputClass, ssubroutine)
+  subroutine output_simple (ioutputLevel, smsg, coutputClass, ssubroutine)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
@@ -814,46 +814,46 @@ CONTAINS
   ! <=0: No output,
   !  =1: write to log file.
   ! >=2: write to log file and terminal.
-  INTEGER, INTENT(IN) :: ioutputLevel
+  integer, intent(IN) :: ioutputLevel
 
   ! OPTIONAL: The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: smsg
+  character(LEN=*), intent(IN), optional :: smsg
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
   
 !</input>
 
 !</subroutine>
 
-  INTEGER :: coMode
+  integer :: coMode
   
-    SELECT CASE (ioutputLevel)
-    CASE (:0)
+    select case (ioutputLevel)
+    case (:0)
       coMode = 0
-    CASE (1)
+    case (1)
       coMode = OU_MODE_LOG
-    CASE (2:)
+    case (2:)
       coMode = OU_MODE_LOG+OU_MODE_TERM
-    END SELECT
+    end select
 
-    IF (PRESENT(smsg)) THEN
-      CALL output_line_std (smsg, coMode, coutputClass, ssubroutine)
-    ELSE
-      CALL output_line_std ('', coMode, coutputClass, ssubroutine)
-    END IF
+    if (present(smsg)) then
+      call output_line_std (smsg, coMode, coutputClass, ssubroutine)
+    else
+      call output_line_std ('', coMode, coutputClass, ssubroutine)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE output_simple_sep (ioutputLevel, csepType, coutputClass, ssubroutine)
+  subroutine output_simple_sep (ioutputLevel, csepType, coutputClass, ssubroutine)
 
 !<description>
   ! Writes a separator line to the terminal, log file or error log file,
@@ -870,36 +870,36 @@ CONTAINS
   ! <=0: No output,
   !  =1: write to log file.
   ! >=2: write to log file and terminal.
-  INTEGER, INTENT(IN) :: ioutputLevel
+  integer, intent(IN) :: ioutputLevel
 
   ! Type of the separator line. One of the OU_SEP_xxxx constants
   ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
-  INTEGER, INTENT(IN) :: csepType
+  integer, intent(IN) :: csepType
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  integer, intent(IN), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  character(LEN=*), intent(IN), optional :: ssubroutine
   
 !</input>
 
 !</subroutine>
 
-  INTEGER :: coMode
+  integer :: coMode
   
-    SELECT CASE (ioutputLevel)
-    CASE (:0)
+    select case (ioutputLevel)
+    case (:0)
       coMode = 0
-    CASE (1)
+    case (1)
       coMode = OU_MODE_LOG
-    CASE (2:)
+    case (2:)
       coMode = OU_MODE_LOG+OU_MODE_TERM
-    END SELECT
+    end select
 
-    CALL output_separator (csepType, coMode, coutputClass, ssubroutine)
+    call output_separator (csepType, coMode, coutputClass, ssubroutine)
 
-  END SUBROUTINE
+  end subroutine
   
-END MODULE
+end module

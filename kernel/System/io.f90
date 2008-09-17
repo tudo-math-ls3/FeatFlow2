@@ -246,7 +246,7 @@ contains
     ! Close the file and delete it.
     close (iunit, STATUS='DELETE')
 
-  end subroutine 
+  end subroutine io_deleteFile
 
 ! ***************************************************************************
 
@@ -318,6 +318,6 @@ contains
       
     end do
     
-  end subroutine
+  end subroutine io_readlinefromfile
 
-end module
+end module io

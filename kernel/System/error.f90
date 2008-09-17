@@ -32,8 +32,8 @@ module error
 
   !constants to use for subroutine error_print(...) indicating if the
   !error is critical (causing program exit).
-  logical, parameter :: ERR_CRITICAL     = .TRUE.
-  logical, parameter :: ERR_NOT_CRITICAL = .FALSE.
+  logical, parameter :: ERR_CRITICAL     = .true.
+  logical, parameter :: ERR_NOT_CRITICAL = .false.
 
 !********************************* 00 global ************************************
   ! No error

@@ -70,65 +70,65 @@
 !# </purpose>
 !##############################################################################
 
-MODULE statistics
+module statistics
 
-  USE fsystem
-  USE genoutput
+  use fsystem
+  use genoutput
 
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
   
 !<constantblock description="constants for special timer values">
   
-  REAL(DP), PARAMETER :: STAT_TIMER_NOT_RUNNING = -1.0d0
+  real(DP), parameter :: STAT_TIMER_NOT_RUNNING = -1.0d0
   
-  INTEGER, PARAMETER :: STAT_MAXPERFCOUNTERTYPES = 100
+  integer, parameter :: STAT_MAXPERFCOUNTERTYPES = 100
   
-  INTEGER, PARAMETER :: STAT_MAXPERFCOUNTERS = 100
+  integer, parameter :: STAT_MAXPERFCOUNTERS = 100
   
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_DYN = 100
+  integer, parameter :: STAT_PERFCOUNTER_SCARC_DYN = 100
   
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MULTIDIM_DYN = 200
+  integer, parameter :: STAT_PERFCOUNTER_MULTIDIM_DYN = 200
   
-  INTEGER, PARAMETER :: STAT_SCARCPERFCOUNTERS = 2
+  integer, parameter :: STAT_SCARCPERFCOUNTERS = 2
   
-  INTEGER, PARAMETER :: STAT_MULTIDIMPERFCOUNTERS = 3
+  integer, parameter :: STAT_MULTIDIMPERFCOUNTERS = 3
   
-  INTEGER, PARAMETER :: STAT_STATICPERFCOUNTERS = 1
+  integer, parameter :: STAT_STATICPERFCOUNTERS = 1
   
-  INTEGER, PARAMETER :: STAT_SETINSITU = 0
+  integer, parameter :: STAT_SETINSITU = 0
   
-  INTEGER, PARAMETER :: STAT_COPY =       1
-  INTEGER, PARAMETER :: STAT_SCALEDCOPY = 2
-  INTEGER, PARAMETER :: STAT_XPY =        3
-  INTEGER, PARAMETER :: STAT_NXPY =       4
-  INTEGER, PARAMETER :: STAT_AXPY =       5
-  INTEGER, PARAMETER :: STAT_AXPYV =      6
-  INTEGER, PARAMETER :: STAT_AXPBY =      7
-  INTEGER, PARAMETER :: STAT_DOT =        8
-  INTEGER, PARAMETER :: STAT_L1NORM =     9
-  INTEGER, PARAMETER :: STAT_L2NORM =     10
-  INTEGER, PARAMETER :: STAT_L2NORMSQUARED = 11
-  INTEGER, PARAMETER :: STAT_MV_BAND_Q1_2D = 12
+  integer, parameter :: STAT_COPY =       1
+  integer, parameter :: STAT_SCALEDCOPY = 2
+  integer, parameter :: STAT_XPY =        3
+  integer, parameter :: STAT_NXPY =       4
+  integer, parameter :: STAT_AXPY =       5
+  integer, parameter :: STAT_AXPYV =      6
+  integer, parameter :: STAT_AXPBY =      7
+  integer, parameter :: STAT_DOT =        8
+  integer, parameter :: STAT_L1NORM =     9
+  integer, parameter :: STAT_L2NORM =     10
+  integer, parameter :: STAT_L2NORMSQUARED = 11
+  integer, parameter :: STAT_MV_BAND_Q1_2D = 12
   
-  INTEGER, PARAMETER :: STAT_MVONLY_BAND_Q1_2D=13
-  INTEGER, PARAMETER :: STAT_MV_BAND_GENERIC_SBAND_2D=14
-  INTEGER, PARAMETER :: STAT_PRECJAC_Q1_2D=15
-  INTEGER, PARAMETER :: STAT_PRECGS_BAND_Q1_2D=16
-  INTEGER, PARAMETER :: STAT_PRECTRIDI_BAND_Q1_2D=17
-  INTEGER, PARAMETER :: STAT_PRECTRIGS_BAND_Q1_2D=18
-  INTEGER, PARAMETER :: STAT_PRECILU_BAND_Q1_2D=19
-  INTEGER, PARAMETER :: STAT_UMFPACK_2D=20
-  INTEGER, PARAMETER :: STAT_PROLONGATE_Q1_2D=21
-  INTEGER, PARAMETER :: STAT_RESTRICT_Q1_2D=22
-  INTEGER, PARAMETER :: STAT_PROLONGATE_Q2_2D=23
-  INTEGER, PARAMETER :: STAT_RESTRICT_Q2_2D=24
-  INTEGER, PARAMETER :: STAT_PROLONGATE_Q2L_2D=25
-  INTEGER, PARAMETER :: STAT_RESTRICT_Q2L_2D=26    
-  INTEGER, PARAMETER :: STAT_NONTRIVIALFLOP=16
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_SCARC_COMPLETE=1
-  INTEGER, PARAMETER :: STAT_PERFCOUNTER_MDIM_COMPLETE=2
+  integer, parameter :: STAT_MVONLY_BAND_Q1_2D=13
+  integer, parameter :: STAT_MV_BAND_GENERIC_SBAND_2D=14
+  integer, parameter :: STAT_PRECJAC_Q1_2D=15
+  integer, parameter :: STAT_PRECGS_BAND_Q1_2D=16
+  integer, parameter :: STAT_PRECTRIDI_BAND_Q1_2D=17
+  integer, parameter :: STAT_PRECTRIGS_BAND_Q1_2D=18
+  integer, parameter :: STAT_PRECILU_BAND_Q1_2D=19
+  integer, parameter :: STAT_UMFPACK_2D=20
+  integer, parameter :: STAT_PROLONGATE_Q1_2D=21
+  integer, parameter :: STAT_RESTRICT_Q1_2D=22
+  integer, parameter :: STAT_PROLONGATE_Q2_2D=23
+  integer, parameter :: STAT_RESTRICT_Q2_2D=24
+  integer, parameter :: STAT_PROLONGATE_Q2L_2D=25
+  integer, parameter :: STAT_RESTRICT_Q2L_2D=26    
+  integer, parameter :: STAT_NONTRIVIALFLOP=16
+  integer, parameter :: STAT_PERFCOUNTER_SCARC_COMPLETE=1
+  integer, parameter :: STAT_PERFCOUNTER_MDIM_COMPLETE=2
 
 !</constantblock>
   
@@ -162,7 +162,7 @@ MODULE statistics
 
 !<type>
   ! Timer object
-  TYPE t_timer
+  type t_timer
     ! elapsed CPU time (clock cycles / frequency)
     ! warning: might be inaccurate for GPU code or
     ! parallel code
@@ -179,7 +179,7 @@ MODULE statistics
     ! value of sysclock counter during last call to stat_startTimer
     !  (to avoid floating point cancellation effects
     integer :: istartCount
-  END TYPE t_timer
+  end type t_timer
 !</type>
 
 !<type>
@@ -1240,7 +1240,7 @@ MODULE statistics
     if (present(bconst)) then
       call stat_getCost(ctype, n, cprec, bconst, nflops, nloads, nstores)
     else
-      call stat_getCost(ctype, n, cprec, .FALSE., nflops, nloads, nstores)
+      call stat_getCost(ctype, n, cprec, .false., nflops, nloads, nstores)
     endif
 
     call stat_logOperation_direct(nflops, nloads, nstores)

@@ -83,7 +83,7 @@ module textstream
     integer :: icurrentLine = 0
     
     ! Buffer of characters. The lines are divided by CHAR(11) characters.
-    character, dimension(:), pointer :: p_Sbuf => NULL()
+    character, dimension(:), pointer :: p_Sbuf => null()
     
   end type
 
@@ -140,7 +140,7 @@ contains
 !</subroutine>
 
     ! local variables
-    character, dimension(:), pointer :: p_Sbuf => NULL()
+    character, dimension(:), pointer :: p_Sbuf => null()
     integer :: ilen
 
     ! Allocate, copy, release, replace... as usual.
@@ -312,12 +312,12 @@ contains
     
     ! Don't use .OR. with PRESENT() !
     if (.not. present(btrim)) then
-      ilen = LEN(TRIM(sstring))
+      ilen = len(trim(sstring))
     else
       if (btrim) then
-        ilen = LEN(TRIM(sstring))
+        ilen = len(trim(sstring))
       else
-        ilen = LEN(sstring)
+        ilen = len(sstring)
       end if
     end if
     
@@ -334,7 +334,7 @@ contains
       rtextstream%ipositionWrite = rtextstream%ipositionWrite + 1
     end do
 
-    rtextstream%p_Sbuf(rtextstream%ipositionWrite) = CHAR(11)
+    rtextstream%p_Sbuf(rtextstream%ipositionWrite) = char(11)
     rtextstream%ipositionWrite = rtextstream%ipositionWrite + 1
     
     rtextstream%ilineCount = rtextstream%ilineCount + 1
@@ -371,7 +371,7 @@ contains
     character :: c
     
     ! Maximum length of the string
-    ilen = LEN(sstring)
+    ilen = len(sstring)
   
     sstring = ""
     
@@ -385,7 +385,7 @@ contains
       c = rtextstream%p_Sbuf(rtextstream%ipositionRead)
       rtextstream%ipositionRead = rtextstream%ipositionRead + 1
 
-      if (c .eq. CHAR(11)) then
+      if (c .eq. char(11)) then
         rtextstream%ipositionRead = rtextstream%ipositionRead + 1
         rtextstream%icurrentLine = rtextstream%icurrentLine + 1
 
@@ -550,7 +550,7 @@ contains
     call io_openFileForReading(sfilename, iunit)
     
     ! Oops...
-    if (iunit .EQ. -1) then
+    if (iunit .eq. -1) then
       if (present(ilinecount)) ilinecount = -1
       return
     end if
@@ -670,8 +670,8 @@ contains
     call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
     
     ! Oops...
-    if (iunit .EQ. -1) then
-      call output_line ('Cannot open file for writing: '//TRIM(sfilename), &
+    if (iunit .eq. -1) then
+      call output_line ('Cannot open file for writing: '//trim(sfilename), &
                         OU_CLASS_ERROR,OU_MODE_STD,'tstream_writeToFile')
       call sys_halt()
     end if
@@ -684,7 +684,7 @@ contains
     do 
       if (tstream_eof(rtextstream)) exit
       call tstream_readLine(rtextstream,sdata)
-      write (iunit,'(A)') TRIM(sdata)
+      write (iunit,'(A)') trim(sdata)
     end do
     rtextstream%ipositionRead = ioldpos
     rtextstream%icurrentLine = ioldpos2

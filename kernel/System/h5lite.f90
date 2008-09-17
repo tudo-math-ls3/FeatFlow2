@@ -64,27 +64,27 @@
 !#
 !# </purpose>
 !##############################################################################
-MODULE h5lite
-  USE fsystem
-  USE storage
-  USE hdf5
+module h5lite
+  use fsystem
+  use storage
+  use hdf5
 
-  IMPLICIT NONE
+  implicit none
 
-  PRIVATE
-  PUBLIC :: t_h5file
-  PUBLIC :: h5lite_init
-  PUBLIC :: h5lite_done
-  PUBLIC :: h5lite_create
-  PUBLIC :: h5lite_release
-  PUBLIC :: h5lite_set_group
-  PUBLIC :: h5lite_get_group
-  PUBLIC :: h5lite_ispresent_attribute
-  PUBLIC :: h5lite_set_attribute
-  PUBLIC :: h5lite_get_attribute
-  PUBLIC :: h5lite_ispresent_data
-  PUBLIC :: h5lite_set_data
-  PUBLIC :: h5lite_get_data
+  private
+  public :: t_h5file
+  public :: h5lite_init
+  public :: h5lite_done
+  public :: h5lite_create
+  public :: h5lite_release
+  public :: h5lite_set_group
+  public :: h5lite_get_group
+  public :: h5lite_ispresent_attribute
+  public :: h5lite_set_attribute
+  public :: h5lite_get_attribute
+  public :: h5lite_ispresent_data
+  public :: h5lite_set_data
+  public :: h5lite_get_data
   
   ! *****************************************************************************
   ! *****************************************************************************
@@ -95,71 +95,71 @@ MODULE h5lite
 !<constantblock description="Global file operations">
 
   ! Open an existing file readonly
-  INTEGER, PARAMETER, PUBLIC :: H5LITE_OPEN_READONLY    = 1
+  integer, parameter, public :: H5LITE_OPEN_READONLY    = 1
 
   ! Open an existing file 
-  INTEGER, PARAMETER, PUBLIC :: H5LITE_OPEN_READWRITE   = 2
+  integer, parameter, public :: H5LITE_OPEN_READWRITE   = 2
 
   ! Create a new file which must not exist
-  INTEGER, PARAMETER, PUBLIC :: H5LITE_CREATE_NEW       = 3
+  integer, parameter, public :: H5LITE_CREATE_NEW       = 3
 
   ! Create a new file and overwrite existing file
-  INTEGER, PARAMETER, PUBLIC :: H5LITE_CREATE_OVERWRITE = 4
+  integer, parameter, public :: H5LITE_CREATE_OVERWRITE = 4
 !</constantblock>
 
 !</constants>
 
-  INTEGER, PARAMETER :: idcl=1
+  integer, parameter :: idcl=1
 
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
 
-  INTERFACE h5lite_set_group
-    MODULE PROCEDURE h5lite_set_group_Root
-    MODULE PROCEDURE h5lite_set_group_Location
-  END INTERFACE
+  interface h5lite_set_group
+    module procedure h5lite_set_group_Root
+    module procedure h5lite_set_group_Location
+  end interface
 
-  INTERFACE h5lite_get_group
-    MODULE PROCEDURE h5lite_get_group_Root
-    MODULE PROCEDURE h5lite_get_group_Location
-  END INTERFACE
+  interface h5lite_get_group
+    module procedure h5lite_get_group_Root
+    module procedure h5lite_get_group_Location
+  end interface
 
-  INTERFACE h5lite_set_attribute
-    MODULE PROCEDURE h5lite_set_attribute_int
-    MODULE PROCEDURE h5lite_set_attribute_single
-    MODULE PROCEDURE h5lite_set_attribute_double
-    MODULE PROCEDURE h5lite_set_attribute_char
-    MODULE PROCEDURE h5lite_set_attribute_logical
-  END INTERFACE
+  interface h5lite_set_attribute
+    module procedure h5lite_set_attribute_int
+    module procedure h5lite_set_attribute_single
+    module procedure h5lite_set_attribute_double
+    module procedure h5lite_set_attribute_char
+    module procedure h5lite_set_attribute_logical
+  end interface
 
-  INTERFACE h5lite_get_attribute
-    MODULE PROCEDURE h5lite_get_attribute_int
-    MODULE PROCEDURE h5lite_get_attribute_single
-    MODULE PROCEDURE h5lite_get_attribute_double
-    MODULE PROCEDURE h5lite_get_attribute_char
-    MODULE PROCEDURE h5lite_get_attribute_logical
-  END INTERFACE
+  interface h5lite_get_attribute
+    module procedure h5lite_get_attribute_int
+    module procedure h5lite_get_attribute_single
+    module procedure h5lite_get_attribute_double
+    module procedure h5lite_get_attribute_char
+    module procedure h5lite_get_attribute_logical
+  end interface
 
-  INTERFACE h5lite_set_data
-    MODULE PROCEDURE h5lite_set_data_handle
-    MODULE PROCEDURE h5lite_set_data_int
-    MODULE PROCEDURE h5lite_set_data_int2D
-    MODULE PROCEDURE h5lite_set_data_single
-    MODULE PROCEDURE h5lite_set_data_single2D
-    MODULE PROCEDURE h5lite_set_data_double
-    MODULE PROCEDURE h5lite_set_data_double2D
-  END INTERFACE
+  interface h5lite_set_data
+    module procedure h5lite_set_data_handle
+    module procedure h5lite_set_data_int
+    module procedure h5lite_set_data_int2D
+    module procedure h5lite_set_data_single
+    module procedure h5lite_set_data_single2D
+    module procedure h5lite_set_data_double
+    module procedure h5lite_set_data_double2D
+  end interface
 
-  INTERFACE h5lite_get_data
-    MODULE PROCEDURE h5lite_get_data_handle
-    MODULE PROCEDURE h5lite_get_data_int
-    MODULE PROCEDURE h5lite_get_data_int2D
-    MODULE PROCEDURE h5lite_get_data_single
-    MODULE PROCEDURE h5lite_get_data_single2D
-    MODULE PROCEDURE h5lite_get_data_double
-    MODULE PROCEDURE h5lite_get_data_double2D
-  END INTERFACE
+  interface h5lite_get_data
+    module procedure h5lite_get_data_handle
+    module procedure h5lite_get_data_int
+    module procedure h5lite_get_data_int2D
+    module procedure h5lite_get_data_single
+    module procedure h5lite_get_data_single2D
+    module procedure h5lite_get_data_double
+    module procedure h5lite_get_data_double2D
+  end interface
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -171,13 +171,13 @@ MODULE h5lite
 
   ! This data structure contains settings/parameters for h5 file handling.
   
-  TYPE t_h5file
+  type t_h5file
 
     ! Name of H5-file
-    CHARACTER(SYS_STRLEN) :: filename
+    character(SYS_STRLEN) :: filename
 
     ! File identifier 
-    INTEGER(HID_T)        :: file_id
+    integer(HID_T)        :: file_id
 
     ! File access mode
     ! Valid values are: 
@@ -185,22 +185,22 @@ MODULE h5lite
     !   H5F_ACC_RDONLY_F - allow read-only access to file
     !   H5F_ACC_TRUNC_F  - overwrite existing file on creating 
     !   H5F_ACC_EXCL_F   - fail if file exists on creation
-    INTEGER               :: access_mode
+    integer               :: access_mode
 
     ! File access property list identifier
-    INTEGER(HID_T)        :: access_plist
+    integer(HID_T)        :: access_plist
 
     ! File creation property list identifier
-    INTEGER(HID_T)        :: creation_plist    
-  END TYPE t_h5file
+    integer(HID_T)        :: creation_plist    
+  end type t_h5file
 
-CONTAINS
+contains
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_init()
+  subroutine h5lite_init()
 
 !<description>
   ! This subroutine initializes the HDF subsystem
@@ -208,21 +208,21 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: hdferr
+    integer :: hdferr
 
     ! Open HDF subsystem
-    CALL h5open_f(hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_init: Unable to open HDF subsystem!"
-      STOP
-    END IF
-  END SUBROUTINE h5lite_init
+    call h5open_f(hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_init: Unable to open HDF subsystem!"
+      stop
+    end if
+  end subroutine h5lite_init
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_done()
+  subroutine h5lite_done()
 
 !<description>
   ! This subroutine finalizes the HDF subsystem
@@ -230,21 +230,21 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: hdferr
+    integer :: hdferr
 
     ! Close HDF subsystem
-    CALL h5close_f(hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_done: Unable to close HDF subsystem!"
-      STOP
-    END IF
-  END SUBROUTINE h5lite_done
+    call h5close_f(hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_done: Unable to close HDF subsystem!"
+      stop
+    end if
+  end subroutine h5lite_done
 
   !*****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE h5lite_create(rh5file,filename,fileaccess)
+  subroutine h5lite_create(rh5file,filename,fileaccess)
 
 !<description>
   ! This subroutine creates a new h5file object and attaches a physical
@@ -254,7 +254,7 @@ CONTAINS
 
 !<input>
     ! name of the physical HDF5 file without suffix '.h5'
-    CHARACTER(LEN=*), INTENT(IN) :: filename
+    character(LEN=*), intent(IN) :: filename
   
     ! OPTIONAL: file access. If this parameter is not given, then the value
     ! H5LITE_CREATE_OVERWRITE is adopted.
@@ -269,94 +269,94 @@ CONTAINS
     !                           with an error.
     ! =H5LITE_CREATE_OVERWRITE: Create a new file and overwrite any existing
     !                           file with the same filename.
-    INTEGER, INTENT(IN), OPTIONAL :: fileaccess
+    integer, intent(IN), optional :: fileaccess
 !</input>
 
 !<output>
     ! h5file descriptor
-    TYPE(t_h5file), INTENT(OUT) :: rh5file
+    type(t_h5file), intent(OUT) :: rh5file
 !</output>
 !</subroutine>
   
     ! local variables
-    INTEGER :: fileacc,hdferr
-    LOGICAL :: bisHdf5
+    integer :: fileacc,hdferr
+    logical :: bisHdf5
     
     ! Set file access
-    IF (PRESENT(fileaccess)) THEN
+    if (present(fileaccess)) then
       fileacc = fileaccess
-    ELSE
+    else
       fileacc = H5LITE_CREATE_OVERWRITE
-    END IF
+    end if
 
     ! What kind of file access should be used
-    SELECT CASE(fileacc)
-    CASE (H5LITE_OPEN_READONLY,H5LITE_OPEN_READWRITE)
+    select case(fileacc)
+    case (H5LITE_OPEN_READONLY,H5LITE_OPEN_READWRITE)
 
       ! Check if file exists and is HDF5 file
-      CALL h5fis_hdf5_f(TRIM(ADJUSTL(filename))//'.h5',bisHdf5,hdferr)
-      IF (.NOT.bisHdf5) THEN
-        PRINT *, "h5lite_create: Unable to find HDF5 file with given filename!"
-        STOP
-      END IF
+      call h5fis_hdf5_f(trim(adjustl(filename))//'.h5',bisHdf5,hdferr)
+      if (.not.bisHdf5) then
+        print *, "h5lite_create: Unable to find HDF5 file with given filename!"
+        stop
+      end if
 
       ! Initialize file descriptor
-      rh5file%filename = TRIM(ADJUSTL(filename))//'.h5'
-      IF (fileacc == H5LITE_OPEN_READONLY) THEN
+      rh5file%filename = trim(adjustl(filename))//'.h5'
+      if (fileacc == H5LITE_OPEN_READONLY) then
         rh5file%access_mode = H5F_ACC_RDONLY_F
-      ELSE
+      else
         rh5file%access_mode = H5F_ACC_RDWR_F
-      END IF
+      end if
       
       ! Open the file
-      CALL h5fopen_f(TRIM(ADJUSTL(rh5file%filename)),rh5file%access_mode,rh5file%file_id,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_create: Unable to open HDF5 file!"
-        STOP
-      END IF
+      call h5fopen_f(trim(adjustl(rh5file%filename)),rh5file%access_mode,rh5file%file_id,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_create: Unable to open HDF5 file!"
+        stop
+      end if
 
       ! Get file creation and access property lists
-      CALL h5fget_access_plist_f(rh5file%file_id,rh5file%access_plist,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_create: An error occured while getting the accesss property list!"
-        STOP
-      END IF
-      CALL h5fget_create_plist_f(rh5file%file_id,rh5file%creation_plist,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_create: An error occured while getting the creation property list!"
-        STOP
-      END IF
+      call h5fget_access_plist_f(rh5file%file_id,rh5file%access_plist,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_create: An error occured while getting the accesss property list!"
+        stop
+      end if
+      call h5fget_create_plist_f(rh5file%file_id,rh5file%creation_plist,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_create: An error occured while getting the creation property list!"
+        stop
+      end if
 
-    CASE (H5LITE_CREATE_NEW,H5LITE_CREATE_OVERWRITE)
+    case (H5LITE_CREATE_NEW,H5LITE_CREATE_OVERWRITE)
 
       ! Initialize file descriptor
-      rh5file%filename       = TRIM(ADJUSTL(filename))//'.h5'
+      rh5file%filename       = trim(adjustl(filename))//'.h5'
       rh5file%creation_plist = H5P_DEFAULT_F
       rh5file%access_plist   = H5P_DEFAULT_F
-      IF (fileacc == H5LITE_CREATE_NEW) THEN
+      if (fileacc == H5LITE_CREATE_NEW) then
         rh5file%access_mode = H5F_ACC_EXCL_F
-      ELSE
+      else
         rh5file%access_mode = H5F_ACC_TRUNC_F
-      END IF
+      end if
       
       ! Create file
-      CALL h5fcreate_f(TRIM(ADJUSTL(rh5file%filename)),rh5file%access_mode,rh5file%file_id,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_create: Unable to create new HDF5 file!"
-        STOP
-      END IF
+      call h5fcreate_f(trim(adjustl(rh5file%filename)),rh5file%access_mode,rh5file%file_id,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_create: Unable to create new HDF5 file!"
+        stop
+      end if
 
-    CASE DEFAULT
-      PRINT *, "h5lite_create: Unsupported file operation!"
-      STOP      
-    END SELECT
-  END SUBROUTINE h5lite_create
+    case DEFAULT
+      print *, "h5lite_create: Unsupported file operation!"
+      stop      
+    end select
+  end subroutine h5lite_create
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_release(rh5file)
+  subroutine h5lite_release(rh5file)
 
 !<description>
     ! This subroutine closes an existing h5file object
@@ -364,26 +364,26 @@ CONTAINS
 
 !<inputoutput>
     ! h5file descriptor
-    TYPE(t_h5file), INTENT(INOUT) :: rh5file
+    type(t_h5file), intent(INOUT) :: rh5file
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER :: hdferr
+    integer :: hdferr
     
     ! Close file
-    CALL h5fclose_f(rh5file%file_id,hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_done: Unable to close HDF5 file!"
-      STOP
-    END IF
-  END SUBROUTINE h5lite_release
+    call h5fclose_f(rh5file%file_id,hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_done: Unable to close HDF5 file!"
+      stop
+    end if
+  end subroutine h5lite_release
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_group_Root(rh5file,group_name,group_id,bappendNumber)
+  subroutine h5lite_set_group_Root(rh5file,group_name,group_id,bappendNumber)
 
 !<description>
     ! This subroutine creates a new group with a given name and returns
@@ -394,30 +394,30 @@ CONTAINS
 
 !<input>
     ! h5file descriptor
-    TYPE(t_h5file), INTENT(IN) :: rh5file
+    type(t_h5file), intent(IN) :: rh5file
 
     ! group name
-    CHARACTER(LEN=*), INTENT(IN) :: group_name
+    character(LEN=*), intent(IN) :: group_name
 
     ! OPTIONAL: append number to name if already present
-    LOGICAL, INTENT(IN), OPTIONAL :: bappendNumber
+    logical, intent(IN), optional :: bappendNumber
 !</input>
 
 !<output>
     ! group id
-    INTEGER(HID_T), INTENT(OUT) :: group_id
+    integer(HID_T), intent(OUT) :: group_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL h5lite_set_group(rh5file%file_id,group_name,group_id,bappendNumber)
-  END SUBROUTINE h5lite_set_group_Root
+    call h5lite_set_group(rh5file%file_id,group_name,group_id,bappendNumber)
+  end subroutine h5lite_set_group_Root
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_group_Location(loc_id,group_name,group_id,bappendNumber)
+  subroutine h5lite_set_group_Location(loc_id,group_name,group_id,bappendNumber)
 
 !<description>
     ! This subroutine creates a new group with a given name and returns
@@ -429,78 +429,78 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T) :: loc_id
+    integer(HID_T) :: loc_id
 
     ! group name
-    CHARACTER(LEN=*), INTENT(IN) :: group_name
+    character(LEN=*), intent(IN) :: group_name
 
     ! OPTIONAL: append number to name if already present
-    LOGICAL, INTENT(IN), OPTIONAL :: bappendNumber
+    logical, intent(IN), optional :: bappendNumber
 !</input>
 
 !<output>
     ! group id
-    INTEGER(HID_T), INTENT(OUT) :: group_id
+    integer(HID_T), intent(OUT) :: group_id
 !</output>
 !</subroutine>
 
     ! local variable
-    INTEGER :: hdferr,iappend
-    LOGICAL :: bappend
+    integer :: hdferr,iappend
+    logical :: bappend
 
     ! Initialize appending of numbers
-    bappend = .FALSE.
-    IF (PRESENT(bappendNumber)) bappend=bappendNumber
+    bappend = .false.
+    if (present(bappendNumber)) bappend=bappendNumber
 
-    IF (bappend) THEN
+    if (bappend) then
 
       ! Check if the name is already present
-      CALL h5lite_get_group(loc_id,group_name,group_id)
+      call h5lite_get_group(loc_id,group_name,group_id)
       
-      IF (group_id < 0) THEN
+      if (group_id < 0) then
         ! If it does not exist, then create it
-        CALL h5gcreate_f(loc_id,group_name,group_id,hdferr)
-        IF (hdferr /= 0) THEN
-          PRINT *, "h5lite_set_group_Location: Unable to create group!"
-          STOP
-        END IF
+        call h5gcreate_f(loc_id,group_name,group_id,hdferr)
+        if (hdferr /= 0) then
+          print *, "h5lite_set_group_Location: Unable to create group!"
+          stop
+        end if
 
-      ELSE
+      else
         
         ! If it does exist, then append '.XXXXXX'
-        DO iappend=1,999999
+        do iappend=1,999999
 
           ! Check if the new name is already present
-          CALL h5lite_get_group(loc_id,group_name//'.'//sys_si0(iappend,6),group_id)
+          call h5lite_get_group(loc_id,group_name//'.'//sys_si0(iappend,6),group_id)
           
           ! ... and create it, if it does not exist
-          IF (group_id < 0) THEN
-            CALL h5gcreate_f(loc_id,group_name//'.'//sys_si0(iappend,6),group_id,hdferr)
-            IF (hdferr /= 0) THEN
-              PRINT *, "h5lite_set_group_Location: Unable to create group!"
-              STOP
-            END IF
-            EXIT
-          END IF
-        END DO
-      END IF
+          if (group_id < 0) then
+            call h5gcreate_f(loc_id,group_name//'.'//sys_si0(iappend,6),group_id,hdferr)
+            if (hdferr /= 0) then
+              print *, "h5lite_set_group_Location: Unable to create group!"
+              stop
+            end if
+            exit
+          end if
+        end do
+      end if
 
-    ELSE
+    else
 
       ! Create new group without checking if name exists
-      CALL h5gcreate_f(loc_id,group_name,group_id,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_set_group_Location: Unable to create group!"
-        STOP
-      END IF
-    END IF
-  END SUBROUTINE h5lite_set_group_Location
+      call h5gcreate_f(loc_id,group_name,group_id,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_set_group_Location: Unable to create group!"
+        stop
+      end if
+    end if
+  end subroutine h5lite_set_group_Location
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_group_Root(rh5file,group_name,group_id)
+  subroutine h5lite_get_group_Root(rh5file,group_name,group_id)
 
 !<description>
     ! This subroutine determines the group_id of an existing group at
@@ -510,27 +510,27 @@ CONTAINS
 
 !<input>
     ! h5file descriptor
-    TYPE(t_h5file), INTENT(IN) :: rh5file
+    type(t_h5file), intent(IN) :: rh5file
 
     ! group name
-    CHARACTER(LEN=*), INTENT(IN) :: group_name
+    character(LEN=*), intent(IN) :: group_name
 !</input>
 
 !<output>
     ! group id
-    INTEGER(HID_T), INTENT(OUT) :: group_id
+    integer(HID_T), intent(OUT) :: group_id
 !</output>
 !</subroutine>
 
     ! Call the working routine for the top-level
-    CALL h5lite_get_group(rh5file%file_id,group_name,group_id)
-  END SUBROUTINE h5lite_get_group_Root
+    call h5lite_get_group(rh5file%file_id,group_name,group_id)
+  end subroutine h5lite_get_group_Root
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_group_Location(loc_id,group_name,group_id)
+  subroutine h5lite_get_group_Location(loc_id,group_name,group_id)
 
 !<description>
     ! This subroutine determines the group_id of an existing group at
@@ -540,83 +540,83 @@ CONTAINS
 
 !<input>
     ! location id
-    INTEGER(HID_T), INTENT(IN)   :: loc_id
+    integer(HID_T), intent(IN)   :: loc_id
 
     ! group name
-    CHARACTER(LEN=*), INTENT(IN) :: group_name
+    character(LEN=*), intent(IN) :: group_name
 !</input>
 
 !<output>
     ! group id
-    INTEGER(HID_T), INTENT(OUT)  :: group_id
+    integer(HID_T), intent(OUT)  :: group_id
 !</output>
 !</subroutine>
 
     ! local variables
-    CHARACTER(SYS_STRLEN) :: root_name,obj_name
-    INTEGER(SIZE_T) :: name_size
-    INTEGER :: obj_type,hdferr,imember,nmembers
+    character(SYS_STRLEN) :: root_name,obj_name
+    integer(SIZE_T) :: name_size
+    integer :: obj_type,hdferr,imember,nmembers
 
     ! Initialize the group_id with negative value
     group_id = -1
 
     ! What type of object is loc_id?
-    CALL h5iget_type_f(loc_id, obj_type, hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_get_group_Location: Unable to determine type!"
-      STOP
-    END IF
+    call h5iget_type_f(loc_id, obj_type, hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_get_group_Location: Unable to determine type!"
+      stop
+    end if
 
     ! Determine name of location
-    IF (obj_type == H5I_FILE_F) THEN
+    if (obj_type == H5I_FILE_F) then
       root_name="/"
-    ELSEIF (obj_type == H5I_GROUP_F) THEN
-      CALL h5iget_name_f(loc_id,root_name,INT(SYS_STRLEN,SIZE_T),name_size,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_get_group_Location: Unable to determine name!"
-        STOP
-      END IF
-    ELSE
-      PRINT *, "h5lite_get_group_Location: Invalid object ID passed!"
-      STOP
-    END IF
+    elseif (obj_type == H5I_GROUP_F) then
+      call h5iget_name_f(loc_id,root_name,int(SYS_STRLEN,SIZE_T),name_size,hdferr)
+      if (hdferr /= 0) then
+        print *, "h5lite_get_group_Location: Unable to determine name!"
+        stop
+      end if
+    else
+      print *, "h5lite_get_group_Location: Invalid object ID passed!"
+      stop
+    end if
     
     ! Ok, we are now able to determine the number of objects stores in root
-    CALL h5gn_members_f(loc_id,TRIM(ADJUSTL(root_name)),nmembers,hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_get_group_Location: Unable to determine number of objects!"
-      STOP
-    END IF
+    call h5gn_members_f(loc_id,trim(adjustl(root_name)),nmembers,hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_get_group_Location: Unable to determine number of objects!"
+      stop
+    end if
 
     ! Loop over all members (recall, HDF5 is written in C) 
-    DO imember=0,nmembers-1
+    do imember=0,nmembers-1
       
       ! Retrieve information about current member
-      CALL h5gget_obj_info_idx_f(loc_id,TRIM(ADJUSTL(root_name)),imember,&
+      call h5gget_obj_info_idx_f(loc_id,trim(adjustl(root_name)),imember,&
           obj_name,obj_type,hdferr)
-      IF (hdferr /= 0) THEN
-        PRINT *, "h5lite_get_group_Location: Unable to retrieve information!"
-        STOP
-      END IF
+      if (hdferr /= 0) then
+        print *, "h5lite_get_group_Location: Unable to retrieve information!"
+        stop
+      end if
 
       ! Check if current object corresponds to a group object with correct name
-      IF (obj_type == H5G_GROUP_F .AND. TRIM(ADJUSTL(obj_name)) == group_name) THEN
+      if (obj_type == H5G_GROUP_F .and. trim(adjustl(obj_name)) == group_name) then
         
         ! The desired group exists an can be opened
-        CALL h5gopen_f(loc_id,group_name,group_id,hdferr)
-        IF (hdferr /= 0) THEN
-          PRINT *, "h5lite_get_group_Location: Unable to open group!"
-          STOP
-        END IF
-      END IF
-    END DO
-  END SUBROUTINE h5lite_get_group_Location
+        call h5gopen_f(loc_id,group_name,group_id,hdferr)
+        if (hdferr /= 0) then
+          print *, "h5lite_get_group_Location: Unable to open group!"
+          stop
+        end if
+      end if
+    end do
+  end subroutine h5lite_get_group_Location
 
   !*****************************************************************************
 
 !<function>
 
-  FUNCTION h5lite_ispresent_attribute(set_id,attr_name) RESULT(ispresent)
+  function h5lite_ispresent_attribute(set_id,attr_name) result(ispresent)
 
 !<description>
     ! This function tests if a given attribute is present at the data set
@@ -626,56 +626,56 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
     
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<result>
 
     ! presence of the attribute
-    LOGICAL :: ispresent
+    logical :: ispresent
 !</result>
 !</function>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
 
     ! Initialization
-    ispresent=.FALSE.
+    ispresent=.false.
     
     ! Get number of attributes
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
-    IF (hdferr /= 0) THEN
-      PRINT *, "h5lite_ispresent_attribute: Unable to determine number of arguments!"
-      STOP
-    END IF
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    if (hdferr /= 0) then
+      print *, "h5lite_ispresent_attribute: Unable to determine number of arguments!"
+      stop
+    end if
 
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
 
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf)) == TRIM(ADJUSTL(attr_name))) THEN
-        ispresent=.TRUE.
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf)) == trim(adjustl(attr_name))) then
+        ispresent=.true.
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
 
       ! Close attribute
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
-  END FUNCTION h5lite_ispresent_attribute
+      call h5aclose_f(attr_id,hdferr)
+    end do
+  end function h5lite_ispresent_attribute
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_attribute_int(set_id,attr_name,attr_val)
+  subroutine h5lite_set_attribute_int(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine sets an integer attribute to a given data set
@@ -684,53 +684,53 @@ CONTAINS
 !<input>
     
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 
     ! value of attribut
-    INTEGER, INTENT(IN) :: attr_val
+    integer, intent(IN) :: attr_val
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id,space_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id,space_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
     
     ! Check if attribute already exists
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
     
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
       
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf))==TRIM(ADJUSTL(attr_name))) THEN
-        CALL h5awrite_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr)
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf))==trim(adjustl(attr_name))) then
+        call h5awrite_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr)
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
       
       ! Close attribute at index
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
+      call h5aclose_f(attr_id,hdferr)
+    end do
     
     ! Create new attribute
-    CALL h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
-    CALL h5acreate_f(set_id,attr_name,H5T_NATIVE_INTEGER,space_id,attr_id,hdferr)
-    CALL h5awrite_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr)
-    CALL h5aclose_f(attr_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)
-  END SUBROUTINE h5lite_set_attribute_int
+    call h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
+    call h5acreate_f(set_id,attr_name,H5T_NATIVE_INTEGER,space_id,attr_id,hdferr)
+    call h5awrite_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr)
+    call h5aclose_f(attr_id,hdferr)
+    call h5sclose_f(space_id,hdferr)
+  end subroutine h5lite_set_attribute_int
 
   !*****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE h5lite_set_attribute_single(set_id,attr_name,attr_val)
+  subroutine h5lite_set_attribute_single(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine sets a single attribute to a given data set
@@ -739,53 +739,53 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 
     ! value of attribute
-    REAL(SP), INTENT(IN) :: attr_val
+    real(SP), intent(IN) :: attr_val
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id,space_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id,space_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
     
     ! Check if attribute already exists
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
 
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
       
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf))==TRIM(ADJUSTL(attr_name))) THEN
-        CALL h5awrite_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr)
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf))==trim(adjustl(attr_name))) then
+        call h5awrite_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr)
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
 
       ! Close attribute at index
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
+      call h5aclose_f(attr_id,hdferr)
+    end do
 
     ! Create new attribute
-    CALL h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
-    CALL h5acreate_f(set_id,attr_name,H5T_NATIVE_REAL,space_id,attr_id,hdferr)
-    CALL h5awrite_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr)
-    CALL h5aclose_f(attr_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)
-  END SUBROUTINE h5lite_set_attribute_single
+    call h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
+    call h5acreate_f(set_id,attr_name,H5T_NATIVE_REAL,space_id,attr_id,hdferr)
+    call h5awrite_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr)
+    call h5aclose_f(attr_id,hdferr)
+    call h5sclose_f(space_id,hdferr)
+  end subroutine h5lite_set_attribute_single
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_attribute_double(set_id,attr_name,attr_val)
+  subroutine h5lite_set_attribute_double(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine sets a double attribute to a given data set
@@ -794,53 +794,53 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
     
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 
     ! value of attribute
-    REAL(DP), INTENT(IN) :: attr_val
+    real(DP), intent(IN) :: attr_val
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id,space_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id,space_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
     
     ! Check if attribute already exists
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
 
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
 
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf))==TRIM(ADJUSTL(attr_name))) THEN
-        CALL h5awrite_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr)
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf))==trim(adjustl(attr_name))) then
+        call h5awrite_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr)
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
 
       ! Close attribute at index
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
+      call h5aclose_f(attr_id,hdferr)
+    end do
     
     ! Create new attribute
-    CALL h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
-    CALL h5acreate_f(set_id,attr_name,H5T_NATIVE_DOUBLE,space_id,attr_id,hdferr)
-    CALL h5awrite_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr)
-    CALL h5aclose_f(attr_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)
-  END SUBROUTINE h5lite_set_attribute_double
+    call h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
+    call h5acreate_f(set_id,attr_name,H5T_NATIVE_DOUBLE,space_id,attr_id,hdferr)
+    call h5awrite_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr)
+    call h5aclose_f(attr_id,hdferr)
+    call h5sclose_f(space_id,hdferr)
+  end subroutine h5lite_set_attribute_double
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_attribute_char(set_id,attr_name,attr_val)
+  subroutine h5lite_set_attribute_char(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine sets a character attribute to a given data set
@@ -849,57 +849,57 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 
     ! value of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_val
+    character(LEN=*), intent(IN) :: attr_val
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id,space_id,atype_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id,space_id,atype_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
     
     ! Check if attribute already exists
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
 
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
       
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf))==TRIM(ADJUSTL(attr_name))) THEN
-        CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-        CALL h5tset_size_f(atype_id,LEN(attr_val),hdferr)
-        CALL h5awrite_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr)
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf))==trim(adjustl(attr_name))) then
+        call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+        call h5tset_size_f(atype_id,len(attr_val),hdferr)
+        call h5awrite_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr)
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
 
       ! Close attribute at index
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
+      call h5aclose_f(attr_id,hdferr)
+    end do
     
     ! Create new attribute
-    CALL h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-    CALL h5tset_size_f(atype_id,LEN(attr_val),hdferr)
-    CALL h5acreate_f(set_id,attr_name,atype_id,space_id,attr_id,hdferr)
-    CALL h5awrite_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr)
-    CALL h5aclose_f(attr_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)
-  END SUBROUTINE h5lite_set_attribute_char
+    call h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
+    call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+    call h5tset_size_f(atype_id,len(attr_val),hdferr)
+    call h5acreate_f(set_id,attr_name,atype_id,space_id,attr_id,hdferr)
+    call h5awrite_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr)
+    call h5aclose_f(attr_id,hdferr)
+    call h5sclose_f(space_id,hdferr)
+  end subroutine h5lite_set_attribute_char
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_attribute_logical(set_id,attr_name,attr_val)
+  subroutine h5lite_set_attribute_logical(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine sets a logical attribute to a given data set.
@@ -910,65 +910,65 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 
     ! value of attribute
-    LOGICAL, INTENT(IN) :: attr_val
+    logical, intent(IN) :: attr_val
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id,space_id,atype_id
-    INTEGER :: iattr,nattrs,hdferr
-    CHARACTER(LEN=SYS_STRLEN) :: buf
+    integer(HID_T) :: attr_id,space_id,atype_id
+    integer :: iattr,nattrs,hdferr
+    character(LEN=SYS_STRLEN) :: buf
     
     ! Check if attribute already exists
-    CALL h5aget_num_attrs_f(set_id,nattrs,hdferr)
+    call h5aget_num_attrs_f(set_id,nattrs,hdferr)
 
     ! Iterate over attributes
-    DO iattr=0,nattrs-1
-      CALL h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
-      CALL h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
+    do iattr=0,nattrs-1
+      call h5aopen_idx_f(set_id,iattr,attr_id,hdferr)
+      call h5aget_name_f(attr_id,SYS_STRLEN,buf,hdferr)
 
       ! Check if attribute is the desired one
-      IF (TRIM(ADJUSTL(buf))==TRIM(ADJUSTL(attr_name))) THEN
-        CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-        CALL h5tset_size_f(atype_id,1,hdferr)
-        IF (attr_val) THEN
-          CALL h5awrite_f(attr_id,atype_id,"T",(/1_HSIZE_T/),hdferr)
-        ELSE
-          CALL h5awrite_f(attr_id,atype_id,"F",(/1_HSIZE_T/),hdferr)
-        END IF
-        CALL h5aclose_f(attr_id,hdferr)
-        RETURN
-      END IF
+      if (trim(adjustl(buf))==trim(adjustl(attr_name))) then
+        call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+        call h5tset_size_f(atype_id,1,hdferr)
+        if (attr_val) then
+          call h5awrite_f(attr_id,atype_id,"T",(/1_HSIZE_T/),hdferr)
+        else
+          call h5awrite_f(attr_id,atype_id,"F",(/1_HSIZE_T/),hdferr)
+        end if
+        call h5aclose_f(attr_id,hdferr)
+        return
+      end if
 
       ! Close attribute at index
-      CALL h5aclose_f(attr_id,hdferr)
-    END DO
+      call h5aclose_f(attr_id,hdferr)
+    end do
     
     ! Create new attribute
-    CALL h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-    CALL h5tset_size_f(atype_id,1,hdferr)
-    CALL h5acreate_f(set_id,attr_name,atype_id,space_id,attr_id,hdferr)
-    IF (attr_val) THEN
-      CALL h5awrite_f(attr_id,atype_id,"T",(/1_HSIZE_T/),hdferr)
-    ELSE
-      CALL h5awrite_f(attr_id,atype_id,"F",(/1_HSIZE_T/),hdferr)
-    END IF
-    CALL h5aclose_f(attr_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)
-  END SUBROUTINE h5lite_set_attribute_logical
+    call h5screate_simple_f(1,(/1_HSIZE_T/),space_id,hdferr)
+    call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+    call h5tset_size_f(atype_id,1,hdferr)
+    call h5acreate_f(set_id,attr_name,atype_id,space_id,attr_id,hdferr)
+    if (attr_val) then
+      call h5awrite_f(attr_id,atype_id,"T",(/1_HSIZE_T/),hdferr)
+    else
+      call h5awrite_f(attr_id,atype_id,"F",(/1_HSIZE_T/),hdferr)
+    end if
+    call h5aclose_f(attr_id,hdferr)
+    call h5sclose_f(space_id,hdferr)
+  end subroutine h5lite_set_attribute_logical
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_attribute_int(set_id,attr_name,attr_val)
+  subroutine h5lite_get_attribute_int(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine gets an integer attribute from a given data set
@@ -977,33 +977,33 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
     
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<output>
 
     ! value of attribute
-    INTEGER, INTENT(OUT) :: attr_val
+    integer, intent(OUT) :: attr_val
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id
-    INTEGER :: hdferr
+    integer(HID_T) :: attr_id
+    integer :: hdferr
     
-    CALL h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
-    CALL h5aread_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr) 
-    CALL h5aclose_f(attr_id,hdferr)
-  END SUBROUTINE h5lite_get_attribute_int
+    call h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
+    call h5aread_f(attr_id,H5T_NATIVE_INTEGER,attr_val,(/1_HSIZE_T/),hdferr) 
+    call h5aclose_f(attr_id,hdferr)
+  end subroutine h5lite_get_attribute_int
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_attribute_single(set_id,attr_name,attr_val)
+  subroutine h5lite_get_attribute_single(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine gets a single attribute from a given data set
@@ -1012,33 +1012,33 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<output>
 
     ! value of attribute
-    REAL(SP), INTENT(OUT) :: attr_val
+    real(SP), intent(OUT) :: attr_val
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id
-    INTEGER :: hdferr
+    integer(HID_T) :: attr_id
+    integer :: hdferr
     
-    CALL h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
-    CALL h5aread_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr) 
-    CALL h5aclose_f(attr_id,hdferr)
-  END SUBROUTINE h5lite_get_attribute_single
+    call h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
+    call h5aread_f(attr_id,H5T_NATIVE_REAL,attr_val,(/1_HSIZE_T/),hdferr) 
+    call h5aclose_f(attr_id,hdferr)
+  end subroutine h5lite_get_attribute_single
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_attribute_double(set_id,attr_name,attr_val)
+  subroutine h5lite_get_attribute_double(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine gets a double attribute from a given data set
@@ -1047,33 +1047,33 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<output>
 
     ! value of attribute
-    REAL(DP), INTENT(OUT) :: attr_val
+    real(DP), intent(OUT) :: attr_val
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: attr_id
-    INTEGER :: hdferr
+    integer(HID_T) :: attr_id
+    integer :: hdferr
     
-    CALL h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
-    CALL h5aread_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr) 
-    CALL h5aclose_f(attr_id,hdferr)
-  END SUBROUTINE h5lite_get_attribute_double
+    call h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
+    call h5aread_f(attr_id,H5T_NATIVE_DOUBLE,attr_val,(/1_HSIZE_T/),hdferr) 
+    call h5aclose_f(attr_id,hdferr)
+  end subroutine h5lite_get_attribute_double
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_attribute_char(set_id,attr_name,attr_val)
+  subroutine h5lite_get_attribute_char(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine gets a character attribute from a given data set
@@ -1082,35 +1082,35 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<output>
 
     ! value of attribute
-    CHARACTER(LEN=*), INTENT(OUT) :: attr_val
+    character(LEN=*), intent(OUT) :: attr_val
 !</output>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: attr_id,atype_id
-    INTEGER :: hdferr
+    integer(HID_T) :: attr_id,atype_id
+    integer :: hdferr
     
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-    CALL h5tset_size_f(atype_id,LEN(attr_val),hdferr)
-    CALL h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
-    CALL h5aread_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr) 
-    CALL h5aclose_f(attr_id,hdferr)
-  END SUBROUTINE h5lite_get_attribute_char
+    call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+    call h5tset_size_f(atype_id,len(attr_val),hdferr)
+    call h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
+    call h5aread_f(attr_id,atype_id,attr_val,(/1_HSIZE_T/),hdferr) 
+    call h5aclose_f(attr_id,hdferr)
+  end subroutine h5lite_get_attribute_char
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_attribute_logical(set_id,attr_name,attr_val)
+  subroutine h5lite_get_attribute_logical(set_id,attr_name,attr_val)
 
 !<description>
     ! This subroutine gets a logical attribute from a given data set.
@@ -1121,46 +1121,46 @@ CONTAINS
 !<input>
 
     ! data set
-    INTEGER(HID_T), INTENT(IN) :: set_id
+    integer(HID_T), intent(IN) :: set_id
 
     ! name of attribute
-    CHARACTER(LEN=*), INTENT(IN) :: attr_name
+    character(LEN=*), intent(IN) :: attr_name
 !</input>
 
 !<output>
 
     ! value of attribute
-    LOGICAL, INTENT(OUT) :: attr_val
+    logical, intent(OUT) :: attr_val
 !</output>
 !</subroutine>
     
     ! local variables
-    CHARACTER(LEN=1) :: tmp_val
-    INTEGER(HID_T) :: attr_id,atype_id
-    INTEGER :: hdferr
+    character(LEN=1) :: tmp_val
+    integer(HID_T) :: attr_id,atype_id
+    integer :: hdferr
     
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
-    CALL h5tset_size_f(atype_id,1,hdferr)
-    CALL h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
-    CALL h5aread_f(attr_id,atype_id,tmp_val,(/1_HSIZE_T/),hdferr) 
-    CALL h5aclose_f(attr_id,hdferr)
+    call h5tcopy_f(H5T_NATIVE_CHARACTER,atype_id,hdferr)
+    call h5tset_size_f(atype_id,1,hdferr)
+    call h5aopen_name_f(set_id,attr_name,attr_id,hdferr)
+    call h5aread_f(attr_id,atype_id,tmp_val,(/1_HSIZE_T/),hdferr) 
+    call h5aclose_f(attr_id,hdferr)
     
-    SELECT CASE(tmp_val)
-    CASE("T","t")
-      attr_val=.TRUE.
-    CASE("F","f")
-      attr_val=.FALSE.
-    CASE DEFAULT
-      PRINT *, "h5lite_get_attribute_logical: Invalid attribute value!"
-      STOP
-    END SELECT
-  END SUBROUTINE h5lite_get_attribute_logical
+    select case(tmp_val)
+    case("T","t")
+      attr_val=.true.
+    case("F","f")
+      attr_val=.false.
+    case DEFAULT
+      print *, "h5lite_get_attribute_logical: Invalid attribute value!"
+      stop
+    end select
+  end subroutine h5lite_get_attribute_logical
 
   !*****************************************************************************
 
 !<function>
 
-  FUNCTION h5lite_ispresent_data(loc_id,name) RESULT(ispresent)
+  function h5lite_ispresent_data(loc_id,name) result(ispresent)
 
 !<description>
     ! This function tests if a given data set is present at location
@@ -1170,49 +1170,49 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
     
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<result>
 
     ! presence of data
-    LOGICAL :: ispresent
+    logical :: ispresent
 !</result>
 !</function>
 
     ! local variables
-    CHARACTER(SYS_STRLEN) :: root_name,obj_name
-    INTEGER(HID_T) :: dataset_id,name_size
-    INTEGER :: obj_type,imember,nmembers,hdferr
+    character(SYS_STRLEN) :: root_name,obj_name
+    integer(HID_T) :: dataset_id,name_size
+    integer :: obj_type,imember,nmembers,hdferr
 
     ! Initialization
-    ispresent=.FALSE.
+    ispresent=.false.
 
     ! Determine name of location and number of members
-    CALL h5iget_name_f(loc_id,root_name,INT(SYS_STRLEN,SIZE_T),name_size,hdferr)
-    CALL h5gn_members_f(loc_id,TRIM(ADJUSTL(root_name)),nmembers,hdferr)
+    call h5iget_name_f(loc_id,root_name,int(SYS_STRLEN,SIZE_T),name_size,hdferr)
+    call h5gn_members_f(loc_id,trim(adjustl(root_name)),nmembers,hdferr)
 
     ! Loop over members
-    DO imember=0,nmembers-1
-      CALL h5gget_obj_info_idx_f(loc_id,TRIM(ADJUSTL(root_name)),imember,&
+    do imember=0,nmembers-1
+      call h5gget_obj_info_idx_f(loc_id,trim(adjustl(root_name)),imember,&
           obj_name,obj_type,hdferr)
       
-      IF ((obj_type == H5G_DATASET_F .OR. obj_type == H5G_LINK_F) .AND.&
-          TRIM(ADJUSTL(obj_name)) == TRIM(ADJUSTL(name))) THEN
-        ispresent=.TRUE.
-        RETURN
-      END IF
-    END DO
-  END FUNCTION h5lite_ispresent_data
+      if ((obj_type == H5G_DATASET_F .or. obj_type == H5G_LINK_F) .and.&
+          trim(adjustl(obj_name)) == trim(adjustl(name))) then
+        ispresent=.true.
+        return
+      end if
+    end do
+  end function h5lite_ispresent_data
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_handle(loc_id,name,ihandle)
+  subroutine h5lite_set_data_handle(loc_id,name,ihandle)
 
 !<description>
     ! This subroutine sets the data associated to a handle to a given group
@@ -1221,85 +1221,85 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! handle to data
-    INTEGER, INTENT(IN) :: ihandle
+    integer, intent(IN) :: ihandle
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER :: idatatype
-    INTEGER :: idimension
-    INTEGER, DIMENSION(:,:), POINTER  :: data_int2D
-    INTEGER, DIMENSION(:), POINTER    :: data_int
-    REAL(DP), DIMENSION(:,:), POINTER :: data_double2D
-    REAL(DP), DIMENSION(:), POINTER   :: data_double
-    REAL(SP), DIMENSION(:,:), POINTER :: data_single2D
-    REAL(SP), DIMENSION(:), POINTER   :: data_single
+    integer :: idatatype
+    integer :: idimension
+    integer, dimension(:,:), pointer  :: data_int2D
+    integer, dimension(:), pointer    :: data_int
+    real(DP), dimension(:,:), pointer :: data_double2D
+    real(DP), dimension(:), pointer   :: data_double
+    real(SP), dimension(:,:), pointer :: data_single2D
+    real(SP), dimension(:), pointer   :: data_single
     
     ! Get dimension and type of data
-    CALL storage_getdatatype(ihandle,idatatype)
-    CALL storage_getdimension(ihandle,idimension)
+    call storage_getdatatype(ihandle,idatatype)
+    call storage_getdimension(ihandle,idimension)
 
     ! Which dimension are we?
-    SELECT CASE(idimension)
-    CASE (1)
+    select case(idimension)
+    case (1)
        
        ! Which datatype are we?
-       SELECT CASE (idatatype)
-       CASE (ST_INT)
-          CALL storage_getbase_int(ihandle,data_int)
-          CALL h5lite_set_data_int(loc_id,name,data_int)
+       select case (idatatype)
+       case (ST_INT)
+          call storage_getbase_int(ihandle,data_int)
+          call h5lite_set_data_int(loc_id,name,data_int)
 
-       CASE (ST_SINGLE)
-          CALL storage_getbase_single(ihandle,data_single)
-          CALL h5lite_set_data_single(loc_id,name,data_single)
+       case (ST_SINGLE)
+          call storage_getbase_single(ihandle,data_single)
+          call h5lite_set_data_single(loc_id,name,data_single)
 
-       CASE (ST_DOUBLE)
-          CALL storage_getbase_double(ihandle,data_double)
-          CALL h5lite_set_data_double(loc_id,name,data_double)
+       case (ST_DOUBLE)
+          call storage_getbase_double(ihandle,data_double)
+          call h5lite_set_data_double(loc_id,name,data_double)
 
-       CASE DEFAULT
-          PRINT *, "(EE) h5lite_set_data_handle: invalid data type"
-          STOP
-       END SELECT
+       case DEFAULT
+          print *, "(EE) h5lite_set_data_handle: invalid data type"
+          stop
+       end select
 
-    CASE (2)
+    case (2)
 
        ! Which datatype are we?
-       SELECT CASE (idatatype)
-       CASE (ST_INT)
-          CALL storage_getbase_int2D(ihandle,data_int2D)
-          CALL h5lite_set_data_int2D(loc_id,name,data_int2D)
+       select case (idatatype)
+       case (ST_INT)
+          call storage_getbase_int2D(ihandle,data_int2D)
+          call h5lite_set_data_int2D(loc_id,name,data_int2D)
 
-       CASE (ST_SINGLE)
-          CALL storage_getbase_single2D(ihandle,data_single2D)
-          CALL h5lite_set_data_single2D(loc_id,name,data_single2D)
+       case (ST_SINGLE)
+          call storage_getbase_single2D(ihandle,data_single2D)
+          call h5lite_set_data_single2D(loc_id,name,data_single2D)
 
-       CASE (ST_DOUBLE)
-          CALL storage_getbase_double2D(ihandle,data_double2D)
-          CALL h5lite_set_data_double2D(loc_id,name,data_double2D)
+       case (ST_DOUBLE)
+          call storage_getbase_double2D(ihandle,data_double2D)
+          call h5lite_set_data_double2D(loc_id,name,data_double2D)
 
-       CASE DEFAULT
-          PRINT *, "(EE) h5lite_set_data_handle: invalid data type"
-          STOP
-       END SELECT
+       case DEFAULT
+          print *, "(EE) h5lite_set_data_handle: invalid data type"
+          stop
+       end select
 
-    CASE DEFAULT
-       PRINT *, "(EE) h5lite_set_data_handle: dimension exceeds 2"
-       STOP
-    END SELECT
-  END SUBROUTINE h5lite_set_data_handle
+    case DEFAULT
+       print *, "(EE) h5lite_set_data_handle: dimension exceeds 2"
+       stop
+    end select
+  end subroutine h5lite_set_data_handle
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_int(loc_id,name,data)
+  subroutine h5lite_set_data_int(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 1D integer array to a given group
@@ -1308,40 +1308,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
     
     ! 1D integer array
-    INTEGER, DIMENSION(:), INTENT(IN) :: data
+    integer, dimension(:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
     
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
     
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,1,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_INTEGER,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_int
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,1,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_INTEGER,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_int
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_int2D(loc_id,name,data)
+  subroutine h5lite_set_data_int2D(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 2D integer array to a given group
@@ -1350,40 +1350,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! 2D integer array
-    INTEGER, DIMENSION(:,:), INTENT(IN) :: data
+    integer, dimension(:,:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
 
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
     
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,2,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_INTEGER,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_int2D
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,2,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_INTEGER,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_int2D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_single(loc_id,name,data)
+  subroutine h5lite_set_data_single(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 1D single array to a given group
@@ -1392,40 +1392,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! 1D single array
-    REAL(SP), DIMENSION(:), INTENT(IN) :: data
+    real(SP), dimension(:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
     
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
     
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,1,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_REAL,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_single
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,1,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_REAL,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_single
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_single2D(loc_id,name,data)
+  subroutine h5lite_set_data_single2D(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 2D single array to a given group
@@ -1434,40 +1434,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! 2D single array
-    REAL(SP), DIMENSION(:,:), INTENT(IN) :: data
+    real(SP), dimension(:,:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
 
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
 
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,2,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_REAL,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_single2D
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,2,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_REAL,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_single2D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_double(loc_id,name,data)
+  subroutine h5lite_set_data_double(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 1D double array to a given group
@@ -1476,40 +1476,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! 1D double array
-    REAL(DP), DIMENSION(:), INTENT(IN) :: data
+    real(DP), dimension(:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
 
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
 
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,1,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_DOUBLE,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_double
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,1,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,1,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_DOUBLE,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_double
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_set_data_double2D(loc_id,name,data)
+  subroutine h5lite_set_data_double2D(loc_id,name,data)
 
 !<description>
     ! This subroutine sets a 2D double array to a given group
@@ -1518,40 +1518,40 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! 2D double array
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: data
+    real(DP), dimension(:,:), intent(IN) :: data
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id,space_id,cpl
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id,space_id,cpl
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
     
-    dim=SHAPE(data); IF (SUM(dim) == 0) RETURN
+    dim=shape(data); if (sum(dim) == 0) return
     
-    CALL h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
-    CALL h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
-    CALL h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
-    CALL h5pset_chunk_f(cpl,2,dim,hdferr)
-    CALL h5pset_deflate_f(cpl,idcl,hdferr)
-    CALL h5dcreate_f(loc_id,name,H5T_NATIVE_DOUBLE,space_id,set_id,hdferr,cpl)
-    CALL h5dwrite_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
-    CALL h5pclose_f(cpl,hdferr)
-    CALL h5dclose_f(set_id,hdferr)
-    CALL h5sclose_f(space_id,hdferr)   
-  END SUBROUTINE h5lite_set_data_double2D
+    call h5screate_f(H5S_SIMPLE_F,space_id,hdferr)
+    call h5sset_extent_simple_f(space_id,2,dim,dim,hdferr)
+    call h5pcreate_f(H5P_DATASET_CREATE_F,cpl,hdferr)
+    call h5pset_chunk_f(cpl,2,dim,hdferr)
+    call h5pset_deflate_f(cpl,idcl,hdferr)
+    call h5dcreate_f(loc_id,name,H5T_NATIVE_DOUBLE,space_id,set_id,hdferr,cpl)
+    call h5dwrite_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
+    call h5pclose_f(cpl,hdferr)
+    call h5dclose_f(set_id,hdferr)
+    call h5sclose_f(space_id,hdferr)   
+  end subroutine h5lite_set_data_double2D
 
   !*****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE h5lite_get_data_handle(loc_id,name,ihandle)
+  subroutine h5lite_get_data_handle(loc_id,name,ihandle)
 
 !<description>
     ! This subroutine gets a stored data and associates it to a handle
@@ -1560,139 +1560,139 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
     
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
     
     ! handle to data
-    INTEGER, INTENT(OUT) :: ihandle
+    integer, intent(OUT) :: ihandle
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER, DIMENSION(:), POINTER :: idata
-    REAL(SP), DIMENSION(:), POINTER :: sdata
-    REAL(DP), DIMENSION(:), POINTER :: ddata
-    INTEGER, DIMENSION(:,:), POINTER :: idata2D
-    REAL(SP), DIMENSION(:,:), POINTER :: sdata2D
-    REAL(DP), DIMENSION(:,:), POINTER :: ddata2D
+    integer, dimension(:), pointer :: idata
+    real(SP), dimension(:), pointer :: sdata
+    real(DP), dimension(:), pointer :: ddata
+    integer, dimension(:,:), pointer :: idata2D
+    real(SP), dimension(:,:), pointer :: sdata2D
+    real(DP), dimension(:,:), pointer :: ddata2D
     
-    INTEGER(HID_T) :: dataset_id,datatype_id,dataspace_id
-    INTEGER(HSIZE_T), DIMENSION(1) :: dim1D,maxdim1D
-    INTEGER(HSIZE_T), DIMENSION(2) :: dim2D,maxdim2D
-    INTEGER :: ndims,hdferr
-    LOGICAL :: istype
+    integer(HID_T) :: dataset_id,datatype_id,dataspace_id
+    integer(HSIZE_T), dimension(1) :: dim1D,maxdim1D
+    integer(HSIZE_T), dimension(2) :: dim2D,maxdim2D
+    integer :: ndims,hdferr
+    logical :: istype
     
     ! Get the data set
-    CALL h5dopen_f(loc_id,name,dataset_id,hdferr)
+    call h5dopen_f(loc_id,name,dataset_id,hdferr)
     
     ! Get the data type
-    CALL h5dget_type_f(dataset_id,datatype_id,hdferr)
+    call h5dget_type_f(dataset_id,datatype_id,hdferr)
     
     ! Get the dataspace
-    CALL h5dget_space_f(dataset_id,dataspace_id,hdferr)
+    call h5dget_space_f(dataset_id,dataspace_id,hdferr)
     
     ! Get number of dimensions
-    CALL h5sget_simple_extent_ndims_f(dataspace_id,ndims,hdferr)
+    call h5sget_simple_extent_ndims_f(dataspace_id,ndims,hdferr)
     
-    SELECT CASE(ndims)
-    CASE (1)
+    select case(ndims)
+    case (1)
       ! Get dimensions
-      CALL h5sget_simple_extent_dims_f(dataspace_id,dim1D,maxdim1D,hdferr)
+      call h5sget_simple_extent_dims_f(dataspace_id,dim1D,maxdim1D,hdferr)
 
       ! Are we integer?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_INTEGER,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim1D(1)),ST_INT,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_int(ihandle,idata)
-        CALL h5lite_get_data_int(loc_id,name,idata)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_INTEGER,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim1D(1)),ST_INT,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int(ihandle,idata)
+        call h5lite_get_data_int(loc_id,name,idata)
+        return
+      end if
       
       ! Are we single?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_REAL,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim1D(1)),ST_SINGLE,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_single(ihandle,sdata)
-        CALL h5lite_get_data_single(loc_id,name,sdata)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_REAL,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim1D(1)),ST_SINGLE,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_single(ihandle,sdata)
+        call h5lite_get_data_single(loc_id,name,sdata)
+        return
+      end if
       
       ! Are we double?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_DOUBLE,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim1D(1)),ST_DOUBLE,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_double(ihandle,ddata)
-        CALL h5lite_get_data_double(loc_id,name,ddata)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_DOUBLE,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim1D(1)),ST_DOUBLE,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_double(ihandle,ddata)
+        call h5lite_get_data_double(loc_id,name,ddata)
+        return
+      end if
       
       ! We are the wrong datatype
-      PRINT *, "(EE) h5lite_get_data_handle: unknown datatype"
-      STOP
+      print *, "(EE) h5lite_get_data_handle: unknown datatype"
+      stop
       
-    CASE (2)
+    case (2)
       ! Get dimensions
-      CALL h5sget_simple_extent_dims_f(dataspace_id,dim2D,maxdim2D,hdferr)
+      call h5sget_simple_extent_dims_f(dataspace_id,dim2D,maxdim2D,hdferr)
 
       ! Are we integer?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_INTEGER,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim2D),ST_INT,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_int2D(ihandle,idata2D)
-        CALL h5lite_get_data_int2D(loc_id,name,idata2D)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_INTEGER,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim2D),ST_INT,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int2D(ihandle,idata2D)
+        call h5lite_get_data_int2D(loc_id,name,idata2D)
+        return
+      end if
       
       ! Are we single?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_REAL,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim2D),ST_SINGLE,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_single2D(ihandle,sdata2D)
-        CALL h5lite_get_data_single2D(loc_id,name,sdata2D)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_REAL,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim2D),ST_SINGLE,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_single2D(ihandle,sdata2D)
+        call h5lite_get_data_single2D(loc_id,name,sdata2D)
+        return
+      end if
       
       ! Are we double?
-      CALL h5tequal_f(datatype_id,H5T_NATIVE_DOUBLE,istype,hdferr)
-      IF (istype) THEN
-        CALL h5dclose_f(dataset_id,hdferr)
-        CALL storage_new('h5lite_get_data_handle',TRIM(ADJUSTL(name)), &
-             INT(dim2D),ST_DOUBLE,ihandle,ST_NEWBLOCK_NOINIT)
-        CALL storage_getbase_double2D(ihandle,ddata2D)
-        CALL h5lite_get_data_double2D(loc_id,name,ddata2D)
-        RETURN
-      END IF
+      call h5tequal_f(datatype_id,H5T_NATIVE_DOUBLE,istype,hdferr)
+      if (istype) then
+        call h5dclose_f(dataset_id,hdferr)
+        call storage_new('h5lite_get_data_handle',trim(adjustl(name)), &
+             int(dim2D),ST_DOUBLE,ihandle,ST_NEWBLOCK_NOINIT)
+        call storage_getbase_double2D(ihandle,ddata2D)
+        call h5lite_get_data_double2D(loc_id,name,ddata2D)
+        return
+      end if
       
       ! We are the wrong datatype
-      PRINT *, "(EE) h5lite_get_data_handle: unknown datatype"
-      STOP
+      print *, "(EE) h5lite_get_data_handle: unknown datatype"
+      stop
       
-    CASE DEFAULT
-      PRINT *, "(EE) h5lite_get_data_handle: number of dimensions exceeds 2"
-      STOP
-    END SELECT
-  END SUBROUTINE h5lite_get_data_handle
+    case DEFAULT
+      print *, "(EE) h5lite_get_data_handle: number of dimensions exceeds 2"
+      stop
+    end select
+  end subroutine h5lite_get_data_handle
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_data_int(loc_id,name,data)
+  subroutine h5lite_get_data_int(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 1D integer array
@@ -1701,36 +1701,36 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
     ! 1D integer array
-    INTEGER, DIMENSION(:), INTENT(OUT) :: data
+    integer, dimension(:), intent(OUT) :: data
 !</output>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_int
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_int
   
   !*****************************************************************************
 
 !<subroutine>
 
-   SUBROUTINE h5lite_get_data_int2D(loc_id,name,data)
+   subroutine h5lite_get_data_int2D(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 2D integer array
@@ -1739,36 +1739,36 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
     
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
     ! 2D integer array
-    INTEGER, DIMENSION(:,:), INTENT(OUT) :: data
+    integer, dimension(:,:), intent(OUT) :: data
 !</output>
 !</subroutine>
     
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_int2D
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_INTEGER,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_int2D
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_data_single(loc_id,name,data)
+  subroutine h5lite_get_data_single(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 1D single array
@@ -1777,36 +1777,36 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
     ! 1D single array
-    REAL(SP), DIMENSION(:), INTENT(OUT) :: data
+    real(SP), dimension(:), intent(OUT) :: data
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_single
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_single
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_data_single2D(loc_id,name,data)
+  subroutine h5lite_get_data_single2D(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 2D single array
@@ -1815,36 +1815,36 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
     ! 2D single array
-    REAL(SP), DIMENSION(:,:), INTENT(OUT) :: data
+    real(SP), dimension(:,:), intent(OUT) :: data
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_single2D
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_REAL,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_single2D
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_data_double(loc_id,name,data)
+  subroutine h5lite_get_data_double(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 1D double array
@@ -1853,35 +1853,35 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: data
+    real(DP), dimension(:), intent(OUT) :: data
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(1)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(1)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_double
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_double
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE h5lite_get_data_double2D(loc_id,name,data)
+  subroutine h5lite_get_data_double2D(loc_id,name,data)
 
 !<description>
     ! This subroutine gets a 2D double array
@@ -1890,27 +1890,27 @@ CONTAINS
 !<input>
 
     ! location identifier
-    INTEGER(HID_T), INTENT(IN) :: loc_id
+    integer(HID_T), intent(IN) :: loc_id
 
     ! name of data
-    CHARACTER(LEN=*), INTENT(IN) :: name
+    character(LEN=*), intent(IN) :: name
 !</input>
 
 !<output>
-    REAL(DP), DIMENSION(:,:), INTENT(OUT) :: data
+    real(DP), dimension(:,:), intent(OUT) :: data
 !</output>
 !</subroutine>
 
     ! local variables
-    INTEGER(HID_T) :: set_id
-    INTEGER(HSIZE_T) :: dim(2)
-    INTEGER :: hdferr
+    integer(HID_T) :: set_id
+    integer(HSIZE_T) :: dim(2)
+    integer :: hdferr
     
-    dim=SHAPE(data)
-    CALL h5dopen_f(loc_id,name,set_id,hdferr)
-    IF (hdferr == 0) THEN
-      CALL h5dread_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
-      CALL h5dclose_f(set_id,hdferr)
-    END IF
-  END SUBROUTINE h5lite_get_data_double2D
-END MODULE h5lite
+    dim=shape(data)
+    call h5dopen_f(loc_id,name,set_id,hdferr)
+    if (hdferr == 0) then
+      call h5dread_f(set_id,H5T_NATIVE_DOUBLE,data,dim,hdferr)
+      call h5dclose_f(set_id,hdferr)
+    end if
+  end subroutine h5lite_get_data_double2D
+end module h5lite
