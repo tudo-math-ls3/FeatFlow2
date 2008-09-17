@@ -330,6 +330,56 @@ module externalstorage
     module procedure exstor_getsize2D
   end interface
   
+  interface exstor_getdata_int
+    module procedure exstor_getdata_int1D
+    module procedure exstor_getdata_int2D
+  end interface
+
+  interface exstor_setdata_int
+    module procedure exstor_setdata_int1D
+    module procedure exstor_setdata_int2D
+  end interface
+
+  interface exstor_getdata_single
+    module procedure exstor_getdata_single1D
+    module procedure exstor_getdata_single2D
+  end interface
+
+  interface exstor_setdata_single
+    module procedure exstor_setdata_single1D
+    module procedure exstor_setdata_single2D
+  end interface
+  
+  interface exstor_getdata_double
+    module procedure exstor_getdata_double1D
+    module procedure exstor_getdata_double2D
+  end interface
+
+  interface exstor_setdata_double
+    module procedure exstor_setdata_double1D
+    module procedure exstor_setdata_double2D
+  end interface
+
+  interface exstor_getdata_logical
+    module procedure exstor_getdata_logical1D
+    module procedure exstor_getdata_logical2D
+  end interface
+
+  interface exstor_setdata_logical
+    module procedure exstor_setdata_logical1D
+    module procedure exstor_setdata_logical2D
+  end interface
+
+  interface exstor_getdata_char
+    module procedure exstor_getdata_char1D
+    module procedure exstor_getdata_char2D
+  end interface
+
+  interface exstor_setdata_char
+    module procedure exstor_setdata_char1D
+    module procedure exstor_setdata_char2D
+  end interface
+
   private :: exstor_newhandle
   private :: exstor_releasehandle
   private :: exstor_getContainer
@@ -1432,7 +1482,7 @@ contains
 
 !<subroutine>
 
-  subroutine exstor_getsize2D (ihandle, isize, rheap)
+  subroutine exstor_getsize2D (ihandle, Isize, rheap)
 
 !<description>
   ! Returns the length of an array identified by ihandle.
@@ -1499,7 +1549,7 @@ contains
 
 !<subroutine>
 
-  subroutine exstor_getdata_int (ihandle, Iarray, rheap)
+  subroutine exstor_getdata_int1D (ihandle, Iarray, rheap)
 
 !<description>
   ! This routine reads data from an external storage container and
@@ -1543,13 +1593,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_INT) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int1D')
       call sys_halt()
     end if
 
@@ -1559,7 +1609,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int1D')
       call sys_halt()
     end if
 
@@ -1657,13 +1707,174 @@ contains
       
     end subroutine getdata_directory
 
-  end subroutine exstor_getdata_int
+  end subroutine exstor_getdata_int1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_setdata_int (ihandle, Iarray, rheap)
+  subroutine exstor_getdata_int2D (ihandle, Iarray, rheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array.
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! An array that is filled with the data identified by the handle.
+  integer(I32), dimension(:,:), intent(OUT) :: Iarray
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_INT) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Iarray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int2D')
+      call sys_halt()
+    end if
+
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    select case (p_rnode%cinitNewBlock)
+    case (ST_NEWBLOCK_ZERO)
+      ! Fill the destination array with zero, that's all
+      call lalg_clearVectorInt2D (Iarray)
+
+    case (ST_NEWBLOCK_ORDERED)
+      call output_line ('Ordering not available for multidimensional array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int2D')
+      call sys_halt()
+
+    case (ST_NEWBLOCK_NOINIT)
+      ! Ok, there should be data behind. How to handle the data depends
+      ! on the container type
+      select case(p_rcontainer%ctype)
+      
+      case (EXSTOR_CONT_RAMDRIVE)
+        ! This is a RamDrive container. We use the memory management of the
+        ! storage.f90 to maintain it.
+        call getdata_ramdrive (p_rnode,Iarray)
+                
+      case (EXSTOR_CONT_DIRECTORY)
+        ! This is a directory container maintaining the data as files on the 
+        ! hard disc.
+        call getdata_directory (p_rcontainer,p_rnode,Iarray)
+
+      end select
+        
+    end select
+
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine getdata_ramdrive (rnode,dataarray)
+    
+    ! Retrieves the data from a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    integer(I32), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer(I32), dimension(:,:), pointer :: p_data
+
+      ! At first: Do we have data at all?
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        call output_line ('Trying to read noninitialised memory! Handle: '//&
+            sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
+        call sys_halt()
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_int2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorInt2D (p_data,dataarray)
+      
+    end subroutine getdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine getdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Retrieves the data from a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    integer(I32), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to read data
+      call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, bformatted=rcontainer%bformatted)
+      
+      ! Read the data from the file
+      if (rcontainer%bformatted) then
+        read(cf,*) dataarray(:,:)
+      else
+        read(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine getdata_directory
+
+  end subroutine exstor_getdata_int2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_int1D (ihandle, Iarray, rheap)
 
 !<description>
   ! This routine writes data from a local array top an external storage 
@@ -1699,13 +1910,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_INT) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int1D')
       call sys_halt()
     end if
 
@@ -1715,7 +1926,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int1D')
       call sys_halt()
     end if
 
@@ -1800,13 +2011,157 @@ contains
       
     end subroutine setdata_directory
 
-  end subroutine exstor_setdata_int
+  end subroutine exstor_setdata_int1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_getdata_single (ihandle, Farray, rheap)
+  subroutine exstor_setdata_int2D (ihandle, Iarray, rheap)
+
+!<description>
+  ! This routine writes data from a local array top an external storage 
+  ! container.
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+  ! An array with data that should be stored on the external storage
+  ! container.
+  integer(I32), dimension(:,:), intent(IN) :: Iarray
+!</input>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_INT) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Iarray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int2D')
+      call sys_halt()
+    end if
+
+    ! The data block will now contain data.
+    p_rnode%cinitNewBlock = ST_NEWBLOCK_NOINIT
+
+    ! How to handle the data depends on the container type.
+    select case(p_rcontainer%ctype)
+    
+    case (EXSTOR_CONT_RAMDRIVE)
+      ! This is a RamDrive container. We use the memory management of the
+      ! storage.f90 to maintain it.
+      call setdata_ramdrive (p_rnode,Iarray)
+              
+    case (EXSTOR_CONT_DIRECTORY)
+      ! This is a directory container maintaining the data as files on the 
+      ! hard disc.
+      call setdata_directory (p_rcontainer,p_rnode,Iarray)
+
+    end select
+        
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine setdata_ramdrive (rnode,dataarray)
+    
+    ! Writes data to a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    integer(I32), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer(I32), dimension(:,:), pointer :: p_data
+
+      ! Copy data with the storage-copy command. If necessary, new memory
+      ! is allocated.
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        ! We have to allocate memory.
+        call storage_new ('setdata_ramdrive','exdata',rnode%Isize,&
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_int2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorInt2D (dataarray,p_data)
+      
+    end subroutine setdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine setdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Writes data to a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    integer(I32), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to write data
+      call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
+      
+      ! Write the data to the file
+      if (rcontainer%bformatted) then
+        write(cf,*) dataarray(:,:)
+      else
+        write(cf) dataarray(:,:) 
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine setdata_directory
+
+  end subroutine exstor_setdata_int2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_getdata_single1D (ihandle, Farray, rheap)
 
 !<description>
   ! This routine reads data from an external storage container and
@@ -1850,13 +2205,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_SINGLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single1D')
       call sys_halt()
     end if
 
@@ -1866,7 +2221,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Farray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single1D')
       call sys_halt()
     end if
 
@@ -1964,13 +2319,174 @@ contains
       
     end subroutine getdata_directory
 
-  end subroutine exstor_getdata_single
+  end subroutine exstor_getdata_single1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_setdata_single (ihandle, Farray, rheap)
+  subroutine exstor_getdata_single2D (ihandle, Farray, rheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array.
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! An array that is filled with the data identified by the handle.
+  real(SP), dimension(:,:), intent(OUT) :: Farray
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_SINGLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Farray, 1) .or. &
+        p_rnode%Isize(2) .ne. size(Farray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single2D')
+      call sys_halt()
+    end if
+
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    select case (p_rnode%cinitNewBlock)
+    case (ST_NEWBLOCK_ZERO)
+      ! Fill the destination array with zero, that's all
+      call lalg_clearVectorSngl2D (Farray)
+
+    case (ST_NEWBLOCK_ORDERED)
+      call output_line ('Ordering not available for multidimensional array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single2D')
+      call sys_halt()
+
+    case (ST_NEWBLOCK_NOINIT)
+      ! Ok, there should be data behind. How to handle the data depends
+      ! on the container type
+      select case(p_rcontainer%ctype)
+      
+      case (EXSTOR_CONT_RAMDRIVE)
+        ! This is a RamDrive container. We use the memory management of the
+        ! storage.f90 to maintain it.
+        call getdata_ramdrive (p_rnode,Farray)
+                
+      case (EXSTOR_CONT_DIRECTORY)
+        ! This is a directory container maintaining the data as files on the 
+        ! hard disc.
+        call getdata_directory (p_rcontainer,p_rnode,Farray)
+
+      end select
+        
+    end select
+
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine getdata_ramdrive (rnode,dataarray)
+    
+    ! Retrieves the data from a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    real(SP), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      real(SP), dimension(:,:), pointer :: p_data
+
+      ! At first: Do we have data at all?
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        call output_line ('Trying to read noninitialised memory! Handle: '//&
+            sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
+        call sys_halt()
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_single2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorSngl2D (p_data,dataarray)
+      
+    end subroutine getdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine getdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Retrieves the data from a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    real(SP), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to read data
+      call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, bformatted=rcontainer%bformatted)
+      
+      ! Read the data from the file
+      if (rcontainer%bformatted) then
+        read(cf,*) dataarray(:,:)
+      else
+        read(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine getdata_directory
+
+  end subroutine exstor_getdata_single2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_single1D (ihandle, Farray, rheap)
 
 !<description>
   ! This routine writes data from a local array top an external storage 
@@ -2006,13 +2522,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_SINGLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single1D')
       call sys_halt()
     end if
 
@@ -2022,7 +2538,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Farray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single1D')
       call sys_halt()
     end if
 
@@ -2107,13 +2623,157 @@ contains
       
     end subroutine setdata_directory
 
-  end subroutine exstor_setdata_single
+  end subroutine exstor_setdata_single1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_getdata_double (ihandle, Darray, rheap)
+  subroutine exstor_setdata_single2D (ihandle, Farray, rheap)
+
+!<description>
+  ! This routine writes data from a local array top an external storage 
+  ! container.
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+  ! An array with data that should be stored on the external storage
+  ! container.
+  real(SP), dimension(:,:), intent(IN) :: Farray
+!</input>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_SINGLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Farray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Farray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single2D')
+      call sys_halt()
+    end if
+
+    ! The data block will now contain data.
+    p_rnode%cinitNewBlock = ST_NEWBLOCK_NOINIT
+
+    ! How to handle the data depends on the container type.
+    select case(p_rcontainer%ctype)
+    
+    case (EXSTOR_CONT_RAMDRIVE)
+      ! This is a RamDrive container. We use the memory management of the
+      ! storage.f90 to maintain it.
+      call setdata_ramdrive (p_rnode,Farray)
+              
+    case (EXSTOR_CONT_DIRECTORY)
+      ! This is a directory container maintaining the data as files on the 
+      ! hard disc.
+      call setdata_directory (p_rcontainer,p_rnode,Farray)
+
+    end select
+        
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine setdata_ramdrive (rnode,dataarray)
+    
+    ! Writes data to a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    real(SP), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      real(SP), dimension(:,:), pointer :: p_data
+
+      ! Copy data with the storage-copy command. If necessary, new memory
+      ! is allocated.
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        ! We have to allocate memory.
+        call storage_new ('setdata_ramdrive','exdata',rnode%Isize,&
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_single2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorSngl2D (dataarray,p_data)
+      
+    end subroutine setdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine setdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Writes data to a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    real(SP), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to write data
+      call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
+      
+      ! Write the data to the file
+      if (rcontainer%bformatted) then
+        write(cf,*) dataarray(:,:)
+      else
+        write(cf) dataarray(:,:) 
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine setdata_directory
+
+  end subroutine exstor_setdata_single2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_getdata_double1D (ihandle, Darray, rheap)
 
 !<description>
   ! This routine reads data from an external storage container and
@@ -2157,13 +2817,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_DOUBLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double1D')
       call sys_halt()
     end if
 
@@ -2173,7 +2833,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Darray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double1D')
       call sys_halt()
     end if
 
@@ -2271,13 +2931,174 @@ contains
       
     end subroutine getdata_directory
 
-  end subroutine exstor_getdata_double
+  end subroutine exstor_getdata_double1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_setdata_double (ihandle, Darray, rheap)
+  subroutine exstor_getdata_double2D (ihandle, Darray, rheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array.
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! An array that is filled with the data identified by the handle.
+  real(DP), dimension(:,:), intent(OUT) :: Darray
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_DOUBLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Darray, 1) .or. &
+        p_rnode%Isize(2) .ne. size(Darray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double2D')
+      call sys_halt()
+    end if
+
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    select case (p_rnode%cinitNewBlock)
+    case (ST_NEWBLOCK_ZERO)
+      ! Fill the destination array with zero, that's all
+      call lalg_clearVectorDble2D (Darray)
+
+    case (ST_NEWBLOCK_ORDERED)
+      call output_line ('Ordering not available for multidimensional array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double2D')
+      call sys_halt()
+
+    case (ST_NEWBLOCK_NOINIT)
+      ! Ok, there should be data behind. How to handle the data depends
+      ! on the container type
+      select case(p_rcontainer%ctype)
+      
+      case (EXSTOR_CONT_RAMDRIVE)
+        ! This is a RamDrive container. We use the memory management of the
+        ! storage.f90 to maintain it.
+        call getdata_ramdrive (p_rnode,Darray)
+                
+      case (EXSTOR_CONT_DIRECTORY)
+        ! This is a directory container maintaining the data as files on the 
+        ! hard disc.
+        call getdata_directory (p_rcontainer,p_rnode,Darray)
+
+      end select
+        
+    end select
+
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine getdata_ramdrive (rnode,dataarray)
+    
+    ! Retrieves the data from a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    real(DP), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      real(DP), dimension(:,:), pointer :: p_data
+
+      ! At first: Do we have data at all?
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        call output_line ('Trying to read noninitialised memory! Handle: '//&
+            sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
+        call sys_halt()
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_double2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorDble2D (p_data,dataarray)
+      
+    end subroutine getdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine getdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Retrieves the data from a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    real(DP), dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to read data
+      call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, bformatted=rcontainer%bformatted)
+      
+      ! Read the data from the file
+      if (rcontainer%bformatted) then
+        read(cf,*) dataarray(:,:)
+      else
+        read(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine getdata_directory
+
+  end subroutine exstor_getdata_double2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_double1D (ihandle, Darray, rheap)
 
 !<description>
   ! This routine writes data from a local array top an external storage 
@@ -2313,13 +3134,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_DOUBLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double1D')
       call sys_halt()
     end if
 
@@ -2329,7 +3150,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Darray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double1D')
       call sys_halt()
     end if
 
@@ -2414,13 +3235,157 @@ contains
       
     end subroutine setdata_directory
 
-  end subroutine exstor_setdata_double
+  end subroutine exstor_setdata_double1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_getdata_logical (ihandle, Larray, rheap)
+  subroutine exstor_setdata_double2D (ihandle, Darray, rheap)
+
+!<description>
+  ! This routine writes data from a local array top an external storage 
+  ! container.
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+  ! An array with data that should be stored on the external storage
+  ! container.
+  real(DP), dimension(:,:), intent(IN) :: Darray
+!</input>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_DOUBLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Darray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Darray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double2D')
+      call sys_halt()
+    end if
+
+    ! The data block will now contain data.
+    p_rnode%cinitNewBlock = ST_NEWBLOCK_NOINIT
+
+    ! How to handle the data depends on the container type.
+    select case(p_rcontainer%ctype)
+    
+    case (EXSTOR_CONT_RAMDRIVE)
+      ! This is a RamDrive container. We use the memory management of the
+      ! storage.f90 to maintain it.
+      call setdata_ramdrive (p_rnode,Darray)
+              
+    case (EXSTOR_CONT_DIRECTORY)
+      ! This is a directory container maintaining the data as files on the 
+      ! hard disc.
+      call setdata_directory (p_rcontainer,p_rnode,Darray)
+
+    end select
+        
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine setdata_ramdrive (rnode,dataarray)
+    
+    ! Writes data to a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    real(DP), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      real(DP), dimension(:,:), pointer :: p_data
+
+      ! Copy data with the storage-copy command. If necessary, new memory
+      ! is allocated.
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        ! We have to allocate memory.
+        call storage_new ('setdata_ramdrive','exdata',rnode%Isize,&
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_double2D (rnode%istoragehandle,p_data)
+      call lalg_copyVectorDble2D (dataarray,p_data)
+      
+    end subroutine setdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine setdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Writes data to a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    real(DP), dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to write data
+      call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
+      
+      ! Write the data to the file
+      if (rcontainer%bformatted) then
+        write(cf,*) dataarray(:,:)
+      else
+        write(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine setdata_directory
+
+  end subroutine exstor_setdata_double2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_getdata_logical1D (ihandle, Larray, rheap)
 
 !<description>
   ! This routine reads data from an external storage container and
@@ -2446,9 +3411,6 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: iorder
-  
     ! Pointer to the heap
     type(t_exstorageBlock), pointer :: p_rheap
     type(t_exstorageNode), pointer :: p_rnode
@@ -2464,13 +3426,13 @@ contains
     
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical')
+          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
     
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
     
@@ -2480,7 +3442,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Larray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
     
@@ -2493,7 +3455,7 @@ contains
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Logical array can not be initialised with ST_NEWBLOCK_ORDERED!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
 
     case (ST_NEWBLOCK_NOINIT)
@@ -2580,14 +3542,181 @@ contains
       close (cf)
       
     end subroutine getdata_directory
-
-  end subroutine exstor_getdata_logical
+    
+  end subroutine exstor_getdata_logical1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_setdata_logical (ihandle, Larray, rheap)
+  subroutine exstor_getdata_logical2D (ihandle, Larray, rheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array.
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! An array that is filled with the data identified by the handle.
+  logical, dimension(:,:), intent(OUT) :: Larray
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+    
+    ! Get the heap to use - local or global one.
+    
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+    
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
+      call sys_halt()
+    end if
+    
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
+      call sys_halt()
+    end if
+    
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Larray, 1) .or. &
+        p_rnode%Isize(2) .ne. size(Larray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
+      call sys_halt()
+    end if
+    
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    select case (p_rnode%cinitNewBlock)
+    case (ST_NEWBLOCK_ZERO)
+      ! Fill the destination array with .false., that's all
+      Larray = .false.
+
+    case (ST_NEWBLOCK_ORDERED)
+      call output_line ('Ordering not available for multidimensional array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
+      call sys_halt()
+
+    case (ST_NEWBLOCK_NOINIT)
+      ! Ok, there should be data behind. How to handle the data depends
+      ! on the container type
+      select case(p_rcontainer%ctype)
+      
+      case (EXSTOR_CONT_RAMDRIVE)
+        ! This is a RamDrive container. We use the memory management of the
+        ! storage.f90 to maintain it.
+        call getdata_ramdrive (p_rnode,Larray)
+                
+      case (EXSTOR_CONT_DIRECTORY)
+        ! This is a directory container maintaining the data as files on the 
+        ! hard disc.
+        call getdata_directory (p_rcontainer,p_rnode,Larray)
+
+      end select
+        
+    end select
+
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine getdata_ramdrive (rnode,dataarray)
+    
+    ! Retrieves the data from a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    logical, dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      logical, dimension(:,:), pointer :: p_data
+      integer :: i,j
+
+      ! At first: Do we have data at all?
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        call output_line ('Trying to read noninitialised memory! Handle: '//&
+            sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
+        call sys_halt()
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_logical2D (rnode%istoragehandle,p_data)
+
+      do j = 1, size(p_data, 2)
+        do i = 1, size(p_data,1)
+          dataarray(i,j) = p_data(i,j)
+        end do
+      end do
+      
+    end subroutine getdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine getdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Retrieves the data from a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    logical, dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to read data
+      call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, bformatted=rcontainer%bformatted)
+      
+      ! Read the data from the file
+      if (rcontainer%bformatted) then
+        read(cf,*) dataarray(:,:)
+      else
+        read(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine getdata_directory
+    
+  end subroutine exstor_getdata_logical2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_logical1D (ihandle, Larray, rheap)
 
 !<description>
   ! This routine writes data from a local array top an external storage 
@@ -2623,13 +3752,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical1D')
       call sys_halt()
     end if
 
@@ -2639,7 +3768,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Larray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical1D')
       call sys_halt()
     end if
 
@@ -2728,13 +3857,163 @@ contains
       
     end subroutine setdata_directory
 
-  end subroutine exstor_setdata_logical
+  end subroutine exstor_setdata_logical1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_getdata_char (ihandle, Carray, rheap)
+  subroutine exstor_setdata_logical2D (ihandle, Larray, rheap)
+
+!<description>
+  ! This routine writes data from a local array top an external storage 
+  ! container.
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+  ! An array with data that should be stored on the external storage
+  ! container.
+  logical, dimension(:,:), intent(IN) :: Larray
+!</input>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Larray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Larray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical2D')
+      call sys_halt()
+    end if
+
+    ! The data block will now contain data.
+    p_rnode%cinitNewBlock = ST_NEWBLOCK_NOINIT
+
+    ! How to handle the data depends on the container type.
+    select case(p_rcontainer%ctype)
+    
+    case (EXSTOR_CONT_RAMDRIVE)
+      ! This is a RamDrive container. We use the memory management of the
+      ! storage.f90 to maintain it.
+      call setdata_ramdrive (p_rnode,Larray)
+              
+    case (EXSTOR_CONT_DIRECTORY)
+      ! This is a directory container maintaining the data as files on the 
+      ! hard disc.
+      call setdata_directory (p_rcontainer,p_rnode,Larray)
+
+    end select
+        
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine setdata_ramdrive (rnode,dataarray)
+    
+    ! Writes data to a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    logical, dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      logical, dimension(:,:), pointer :: p_data
+      integer :: i,j
+
+      ! Copy data with the storage-copy command. If necessary, new memory
+      ! is allocated.
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        ! We have to allocate memory.
+        call storage_new ('setdata_ramdrive','exdata',rnode%Isize,&
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_logical2D (rnode%istoragehandle,p_data)
+
+      do j = 1, size(dataarray, 2)
+        do i = 1, size(dataarray, 1)
+          p_data(i,j) = dataarray(i,j)
+        end do
+      end do
+      
+    end subroutine setdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine setdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Writes data to a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    logical, dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to write data
+      call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
+      
+      ! Write the data to the file
+      if (rcontainer%bformatted) then
+        write(cf,*) dataarray(:,:)
+      else
+        write(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine setdata_directory
+
+  end subroutine exstor_setdata_logical2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_getdata_char1D (ihandle, Carray, rheap)
 
 !<description>
   ! This routine reads data from an external storage container and
@@ -2775,13 +4054,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_CHAR) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
       call sys_halt()
     end if
 
@@ -2791,7 +4070,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Carray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
       call sys_halt()
     end if
 
@@ -2804,7 +4083,7 @@ contains
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Character array can not be initialised with ST_NEWBLOCK_ORDERED!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
       call sys_halt()
 
     case (ST_NEWBLOCK_NOINIT)
@@ -2892,13 +4171,180 @@ contains
       
     end subroutine getdata_directory
 
-  end subroutine exstor_getdata_char
+  end subroutine exstor_getdata_char1D
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine exstor_setdata_char (ihandle, Carray, rheap)
+  subroutine exstor_getdata_char2D (ihandle, Carray, rheap)
+
+!<description>
+  ! This routine reads data from an external storage container and
+  ! saves it to a local array.
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! An array that is filled with the data identified by the handle.
+  character, dimension(:,:), intent(OUT) :: Carray
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_CHAR) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Carray, 1) .or. &
+        p_rnode%Isize(2) .ne. size(Carray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
+      call sys_halt()
+    end if
+
+    ! If the memory block is a pre-initialised block, we can directly
+    ! fill it with data...    
+    select case (p_rnode%cinitNewBlock)
+    case (ST_NEWBLOCK_ZERO)
+      ! Fill the destination array with zero, that's all
+      Carray = achar(0)
+
+    case (ST_NEWBLOCK_ORDERED)
+      call output_line ('Ordering not available for multidimensional array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
+      call sys_halt()
+
+    case (ST_NEWBLOCK_NOINIT)
+      ! Ok, there should be data behind. How to handle the data depends
+      ! on the container type
+      select case(p_rcontainer%ctype)
+      
+      case (EXSTOR_CONT_RAMDRIVE)
+        ! This is a RamDrive container. We use the memory management of the
+        ! storage.f90 to maintain it.
+        call getdata_ramdrive (p_rnode,Carray)
+                
+      case (EXSTOR_CONT_DIRECTORY)
+        ! This is a directory container maintaining the data as files on the 
+        ! hard disc.
+        call getdata_directory (p_rcontainer,p_rnode,Carray)
+
+      end select
+        
+    end select
+
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine getdata_ramdrive (rnode,dataarray)
+    
+    ! Retrieves the data from a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    character, dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      character, dimension(:,:), pointer :: p_data
+      integer :: i,j
+
+      ! At first: Do we have data at all?
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        call output_line ('Trying to read noninitialised memory! Handle: '//&
+            sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
+        call sys_halt()
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_char2D (rnode%istoragehandle,p_data)
+
+      do j = 1, size(p_data, 2)
+        do i = 1, size(p_data, 1)
+          dataarray(i,j) = p_data(i,j)
+        end do
+      end do
+      
+    end subroutine getdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine getdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Retrieves the data from a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(IN) :: rnode
+    
+    ! The destination array for the data
+    character, dimension(:,:), intent(OUT) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to read data
+      call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, bformatted=rcontainer%bformatted)
+      
+      ! Read the data from the file
+      if (rcontainer%bformatted) then
+        read(cf,*) dataarray(:,:)
+      else
+        read(cf) dataarray(:,:)
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine getdata_directory
+
+  end subroutine exstor_getdata_char2D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_char1D (ihandle, Carray, rheap)
 
 !<description>
   ! This routine writes data from a local array top an external storage 
@@ -2934,13 +4380,13 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_CHAR) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
       call sys_halt()
     end if
 
@@ -2950,7 +4396,7 @@ contains
     
     if (p_rnode%Isize(1) .ne. size(Carray)) then
       call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char')
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
       call sys_halt()
     end if
 
@@ -3039,7 +4485,157 @@ contains
       
     end subroutine setdata_directory
 
-  end subroutine exstor_setdata_char
+  end subroutine exstor_setdata_char1D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine exstor_setdata_char2D (ihandle, Carray, rheap)
+
+!<description>
+  ! This routine writes data from a local array top an external storage 
+  ! container.
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(IN) :: ihandle
+
+  ! OPTIONAL: local heap structure. If not given, the global heap is used.
+  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+
+  ! An array with data that should be stored on the external storage
+  ! container.
+  character, dimension(:,:), intent(IN) :: Carray
+!</input>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_exstorageBlock), pointer :: p_rheap
+    type(t_exstorageNode), pointer :: p_rnode
+    type(t_exstorageContainer), pointer :: p_rcontainer
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbaseexternal
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char2D')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_CHAR) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char2D')
+      call sys_halt()
+    end if
+
+    ! Get the container and the storage node
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
+    
+    if (p_rnode%Isize(1) .ne. size(Carray, 1) .or.&
+        p_rnode%Isize(2) .ne. size(Carray, 2)) then
+      call output_line ('Data array has the wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char2D')
+      call sys_halt()
+    end if
+
+    ! The data block will now contain data.
+    p_rnode%cinitNewBlock = ST_NEWBLOCK_NOINIT
+
+    ! How to handle the data depends on the container type.
+    select case(p_rcontainer%ctype)
+    
+    case (EXSTOR_CONT_RAMDRIVE)
+      ! This is a RamDrive container. We use the memory management of the
+      ! storage.f90 to maintain it.
+      call setdata_ramdrive (p_rnode,Carray)
+              
+    case (EXSTOR_CONT_DIRECTORY)
+      ! This is a directory container maintaining the data as files on the 
+      ! hard disc.
+      call setdata_directory (p_rcontainer,p_rnode,Carray)
+
+    end select
+        
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine setdata_ramdrive (rnode,dataarray)
+    
+    ! Writes data to a RamDrive container
+    
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    character, dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      character, dimension(:,:), pointer :: p_data
+      integer :: i,j
+
+      ! Copy data with the storage-copy command. If necessary, new memory
+      ! is allocated.
+      if (rnode%istorageHandle .eq. ST_NOHANDLE) then
+        ! We have to allocate memory.
+        call storage_new ('setdata_ramdrive','exdata',rnode%Isize,&
+            rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
+      end if
+    
+      ! Get the memory block and copy it.
+      call storage_getbase_char2D (rnode%istoragehandle,p_data)
+
+      do j = 1, size(dataarray, 2)
+        do i = 1, size(dataarray, 1)
+          p_data(i,j) = dataarray(i,j)
+        end do
+      end do
+      
+    end subroutine setdata_ramdrive
+
+    ! -------------------------------------------------------------------------
+    subroutine setdata_directory (rcontainer,rnode,dataarray)
+    
+    ! Writes data to a directory container
+    
+    ! The storage container assigned to the storage block
+    type(t_exstorageContainer), intent(IN) :: rcontainer
+        
+    ! The storage block containing the data
+    type(t_exstorageNode), intent(INOUT) :: rnode
+    
+    ! The source array with the data
+    character, dimension(:,:), intent(IN) :: dataarray
+    
+      ! local variables
+      integer :: cf
+      
+      ! Open the file to write data
+      call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
+          cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
+      
+      ! Write the data to the file
+      if (rcontainer%bformatted) then
+        write(cf,*) dataarray(:,:)
+      else
+        write(cf) dataarray(:,:) 
+      end if
+      
+      ! Close the file, finish
+      close (cf)
+      
+    end subroutine setdata_directory
+
+  end subroutine exstor_setdata_char2D
 
 !************************************************************************
 
@@ -3078,15 +4674,23 @@ contains
 
     ! local variables
     integer :: ctype
+    integer(I32), dimension(2) :: Isize2D
     integer(I32) :: isize
 
     ! Pointer to the heap
-    type(t_exstorageBlock), pointer :: p_rheap
-    type(t_exstorageNode), pointer :: p_rnode
-    type(t_exstorageContainer), pointer :: p_rcontainer
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(SP), dimension(:), pointer :: p_Fdata
-    integer(I32), dimension(:), pointer :: p_Idata
+    type(t_exstorageBlock), pointer       :: p_rheap
+    type(t_exstorageNode), pointer        :: p_rnode
+    type(t_exstorageContainer), pointer   :: p_rcontainer
+    real(DP), dimension(:), pointer       :: p_Ddata1D
+    real(DP), dimension(:,:), pointer     :: p_Ddata2D
+    real(SP), dimension(:), pointer       :: p_Fdata1D
+    real(SP), dimension(:,:), pointer     :: p_Fdata2D
+    integer(I32), dimension(:), pointer   :: p_Idata1D
+    integer(I32), dimension(:,:), pointer :: p_Idata2D
+    logical, dimension(:), pointer        :: p_Ldata1D
+    logical, dimension(:,:), pointer      :: p_Ldata2D
+    character, dimension(:), pointer      :: p_Cdata1D
+    character, dimension(:,:), pointer    :: p_Cdata2D
 
     ! Get the heap to use - local or global one.
 
@@ -3107,7 +4711,7 @@ contains
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
     
     if (istoragehandle .eq. ST_NOHANDLE) then
-    
+      
       ! Allocate a new memory block with the correct data type that is just
       ! as large that it can hold our data.
       
@@ -3121,19 +4725,31 @@ contains
       end select
       
     else
+      
       call storage_getdatatype(istoragehandle,ctype)
       if (p_rnode%cdataType .ne. ctype) then
         call output_line ('Wrong data format!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
         call sys_halt()
       end if
       
-      call storage_getsize (istoragehandle,isize)
-      if (p_rnode%Isize(1) .ne. isize) then
-        call output_line ('Data array has the wrong size!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
-        call sys_halt()
-      end if
+      select case(p_rnode%idimension)
+      case (1)
+        call storage_getsize (istoragehandle,isize)
+        if (p_rnode%Isize(1) .ne. isize) then
+          call output_line ('Data array has the wrong size!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+          call sys_halt()
+        end if
+        
+      case (2)
+        call storage_getsize (istoragehandle,Isize2D)
+        if (ANY(p_rnode%Isize .ne. Isize2D)) then
+          call output_line ('Data array has the wrong size!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+          call sys_halt()
+        end if
+      end select
 
     end if
     
@@ -3146,19 +4762,50 @@ contains
     
     ! Ok, we have to copy data from the external storage to the memory block.
     ! This now depends on the data type...
-    select case (p_rnode%cdataType)
-    case (ST_DOUBLE)
-      call storage_getbase_double (istoragehandle,p_Ddata,rstorageheap)
-      call exstor_getdata_double (ihandle,p_Ddata)
-    case (ST_SINGLE)
-      call storage_getbase_single (istoragehandle,p_Fdata,rstorageheap)
-      call exstor_getdata_single (ihandle,p_Fdata)
-    case (ST_INT)
-      call storage_getbase_int (istoragehandle,p_Idata,rstorageheap)
-      call exstor_getdata_int (ihandle,p_Idata)
-    case DEFAULT
-      call output_line ('Unsupported data type!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+    select case(p_rnode%idimension)
+    case (1)
+      select case (p_rnode%cdataType)
+      case (ST_DOUBLE)
+        call storage_getbase_double (istoragehandle,p_Ddata1D,rstorageheap)
+        call exstor_getdata_double (ihandle,p_Ddata1D)
+      case (ST_SINGLE)
+        call storage_getbase_single (istoragehandle,p_Fdata1D,rstorageheap)
+        call exstor_getdata_single (ihandle,p_Fdata1D)
+      case (ST_INT)
+        call storage_getbase_int (istoragehandle,p_Idata1D,rstorageheap)
+        call exstor_getdata_int (ihandle,p_Idata1D)
+      case (ST_LOGICAL)
+        call storage_getbase_logical (istoragehandle,p_Ldata1D,rstorageheap)
+        call exstor_getdata_logical (ihandle,p_Ldata1D)
+      case (ST_CHAR)
+        call storage_getbase_char (istoragehandle,p_Cdata1D,rstorageheap)
+        call exstor_getdata_char (ihandle,p_Cdata1D)
+      case DEFAULT
+        call output_line ('Unsupported data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+      end select
+
+    case (2)
+      select case (p_rnode%cdataType)
+      case (ST_DOUBLE)
+        call storage_getbase_double2D (istoragehandle,p_Ddata2D,rstorageheap)
+        call exstor_getdata_double2D (ihandle,p_Ddata2D)
+      case (ST_SINGLE)
+        call storage_getbase_single2D (istoragehandle,p_Fdata2D,rstorageheap)
+        call exstor_getdata_single2D (ihandle,p_Fdata2D)
+      case (ST_INT)
+        call storage_getbase_int2D (istoragehandle,p_Idata2D,rstorageheap)
+        call exstor_getdata_int2D (ihandle,p_Idata2D)
+      case (ST_LOGICAL)
+        call storage_getbase_logical2D (istoragehandle,p_Ldata2D,rstorageheap)
+        call exstor_getdata_logical2D (ihandle,p_Ldata2D)
+      case (ST_CHAR)
+        call storage_getbase_char2D (istoragehandle,p_Cdata2D,rstorageheap)
+        call exstor_getdata_char2D (ihandle,p_Cdata2D)
+      case DEFAULT
+        call output_line ('Unsupported data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
+      end select
     end select
 
   end subroutine exstor_getdata_storage
@@ -3196,16 +4843,24 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ctype
+    integer :: ctype,cdimension
     integer(I32) :: isize
+    integer(I32), dimension(2) :: Isize2D
 
     ! Pointer to the heap
-    type(t_exstorageBlock), pointer :: p_rheap
-    type(t_exstorageNode), pointer :: p_rnode
-    type(t_exstorageContainer), pointer :: p_rcontainer
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(SP), dimension(:), pointer :: p_Fdata
-    integer(I32), dimension(:), pointer :: p_Idata
+    type(t_exstorageBlock), pointer       :: p_rheap
+    type(t_exstorageNode), pointer        :: p_rnode
+    type(t_exstorageContainer), pointer   :: p_rcontainer
+    real(DP), dimension(:), pointer       :: p_Ddata1D
+    real(DP), dimension(:,:), pointer     :: p_Ddata2D
+    real(SP), dimension(:), pointer       :: p_Fdata1D
+    real(SP), dimension(:,:), pointer     :: p_Fdata2D
+    integer(I32), dimension(:), pointer   :: p_Idata1D
+    integer(I32), dimension(:,:), pointer :: p_Idata2D
+    logical, dimension(:), pointer        :: p_Ldata1D
+    logical, dimension(:,:), pointer      :: p_Ldata2D
+    character, dimension(:), pointer      :: p_Cdata1D
+    character, dimension(:,:), pointer    :: p_Cdata2D
 
     ! Get the heap to use - local or global one.
 
@@ -3238,30 +4893,79 @@ contains
       call sys_halt()
     end if
     
-    call storage_getsize (istoragehandle,isize)
-    if (p_rnode%Isize(1) .ne. isize) then
-      call output_line ('Data array has the wrong size!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
-      call sys_halt()
-    end if
-    
-    ! Ok, we have to copy data from the external storage to the memory block.
-    ! This now depends on the data type...
-    select case (p_rnode%cdataType)
-    case (ST_DOUBLE)
-      call storage_getbase_double (istoragehandle,p_Ddata)
-      call exstor_setdata_double (ihandle,p_Ddata)
-    case (ST_SINGLE)
-      call storage_getbase_single (istoragehandle,p_Fdata)
-      call exstor_setdata_single (ihandle,p_Fdata)
-    case (ST_INT)
-      call storage_getbase_int (istoragehandle,p_Idata)
-      call exstor_setdata_int (ihandle,p_Idata)
+    call storage_getdimension (istoragehandle, cdimension)
+
+    ! What dimension are we?
+    select case (cdimension)
+    case (1)
+      ! 1D storage block
+      call storage_getsize (istoragehandle,isize)
+      if (p_rnode%Isize(1) .ne. isize) then
+        call output_line ('Data array has the wrong size!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+        call sys_halt()
+      end if
+      
+      ! Ok, we have to copy data from the external storage to the memory block.
+      ! This now depends on the data type...
+      select case (p_rnode%cdataType)
+      case (ST_DOUBLE)
+        call storage_getbase_double (istoragehandle,p_Ddata1D)
+        call exstor_setdata_double (ihandle,p_Ddata1D)
+      case (ST_SINGLE)
+        call storage_getbase_single (istoragehandle,p_Fdata1D)
+        call exstor_setdata_single (ihandle,p_Fdata1D)
+      case (ST_INT)
+        call storage_getbase_int (istoragehandle,p_Idata1D)
+        call exstor_setdata_int (ihandle,p_Idata1D)
+      case (ST_LOGICAL)
+        call storage_getbase_logical (istoragehandle,p_Ldata1D)
+        call exstor_setdata_logical (ihandle,p_Ldata1D)
+      case (ST_CHAR)
+        call storage_getbase_char (istoragehandle,p_Cdata1D)
+        call exstor_setdata_char (ihandle,p_Cdata1D)
+      case DEFAULT
+        call output_line ('Unsupported data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      end select
+
+    case (2)
+      ! 2D storage block
+      call storage_getsize (istoragehandle,Isize)
+      if (ANY(p_rnode%Isize .ne. Isize)) then
+        call output_line ('Data array has the wrong size!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+        call sys_halt()
+      end if
+
+      ! Ok, we have to copy data from the external storage to the memory block.
+      ! This now depends on the data type...
+      select case (p_rnode%cdataType)
+      case (ST_DOUBLE)
+        call storage_getbase_double2D (istoragehandle,p_Ddata2D)
+        call exstor_setdata_double2D (ihandle,p_Ddata2D)
+      case (ST_SINGLE)
+        call storage_getbase_single2D (istoragehandle,p_Fdata2D)
+        call exstor_setdata_single2D (ihandle,p_Fdata2D)
+      case (ST_INT)
+        call storage_getbase_int2D (istoragehandle,p_Idata2D)
+        call exstor_setdata_int2D (ihandle,p_Idata2D)
+      case (ST_LOGICAL)
+        call storage_getbase_logical2D (istoragehandle,p_Ldata2D)
+        call exstor_setdata_logical2D (ihandle,p_Ldata2D)
+      case (ST_CHAR)
+        call storage_getbase_char2D (istoragehandle,p_Cdata2D)
+        call exstor_setdata_char2D (ihandle,p_Cdata2D)
+      case DEFAULT
+        call output_line ('Unsupported data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
+      end select
+
     case DEFAULT
-      call output_line ('Unsupported data type!', &
+      call output_line ('Handle '//sys_sli(ihandle, 11)//&
+                        ' is neither 1- nor 2- dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
     end select
-
   end subroutine exstor_setdata_storage
 
 !************************************************************************
