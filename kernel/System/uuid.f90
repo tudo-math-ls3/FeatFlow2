@@ -15,7 +15,10 @@
 !#  2.) uuid_isEqual
 !#      -> Check if two UUIDs are equal
 !#
-!#  3.) uuid_conv2String
+!#  3.) uuid_isNil
+!#      -> Check if UUID equals the nil UUID
+!#
+!#  4.) uuid_conv2String
 !#      -> Convert UUID to string representation
 !#
 !# </purpose>
@@ -39,7 +42,7 @@ module uuid
     integer :: cversion
 
     ! the UUID data
-    integer(1), dimension(16) :: data
+    integer, dimension(16) :: data
   end type t_uuid
 
 !</typeblock>
@@ -105,13 +108,13 @@ contains
 
       ! Include version: Take 7th byte and perform "and" operation with 0x0f
       !                  followed by an "or" operation with 0x40
-      ruuid%data(7) = iand(ruuid%data(7), int(15, 1))
-      ruuid%data(7) = ior(ruuid%data(7), int(64, 1))
+      ruuid%data(7) = iand(ruuid%data(7), 15)
+      ruuid%data(7) = ior(ruuid%data(7), 64)
       
       ! Include variant: Take 9th byte and perform "and" operation with 0x3f
       !                  followed by an "or" operation with 0x80
-      ruuid%data(9) = iand(ruuid%data(9), int(63, 1))
-      ruuid%data(9) = ior(ruuid%data(9), int(128, 1))
+      ruuid%data(9) = iand(ruuid%data(9),63)
+      ruuid%data(9) = ior(ruuid%data(9), 128)
       
     case default
       call output_line('Unsupported UUID version!',&
@@ -151,10 +154,10 @@ contains
     ruuid%cversion = cversion
 
     ! Set UUID data
-    read(svalue( 1: 2), '(Z)') ruuid%data(1)
-    read(svalue( 3: 4), '(Z)') ruuid%data(2)
-    read(svalue( 5: 6), '(Z)') ruuid%data(3)
-    read(svalue( 7: 8), '(Z)') ruuid%data(4)
+    read(svalue( 1: 2), '(Z2)') ruuid%data(1)
+    read(svalue( 3: 4), '(Z2)') ruuid%data(2)
+    read(svalue( 5: 6), '(Z2)') ruuid%data(3)
+    read(svalue( 7: 8), '(Z2)') ruuid%data(4)
 
     if (svalue(9:9) .ne. '-') then
       call output_line('String does not represent UUID!',&
@@ -162,8 +165,8 @@ contains
       call sys_halt()
     end if
 
-    read(svalue(10:11),'(Z)') ruuid%data(5)
-    read(svalue(12:13),'(Z)') ruuid%data(6)
+    read(svalue(10:11),'(Z2)') ruuid%data(5)
+    read(svalue(12:13),'(Z2)') ruuid%data(6)
 
     if (svalue(14:14) .ne. '-') then
       call output_line('String does not represent UUID!',&
@@ -171,8 +174,8 @@ contains
       call sys_halt()
     end if
 
-    read(svalue(15:16),'(Z)') ruuid%data(7)
-    read(svalue(17:18),'(Z)') ruuid%data(8)
+    read(svalue(15:16),'(Z2)') ruuid%data(7)
+    read(svalue(17:18),'(Z2)') ruuid%data(8)
 
     if (svalue(19:19) .ne. '-') then
       call output_line('String does not represent UUID!',&
@@ -180,8 +183,8 @@ contains
       call sys_halt()
     end if
 
-    read(svalue(20:21),'(Z)') ruuid%data(9)
-    read(svalue(22:23),'(Z)') ruuid%data(10)
+    read(svalue(20:21),'(Z2)') ruuid%data(9)
+    read(svalue(22:23),'(Z2)') ruuid%data(10)
 
     if (svalue(24:24) .ne. '-') then
       call output_line('String does not represent UUID!',&
@@ -189,12 +192,12 @@ contains
       call sys_halt()
     end if
 
-    read(svalue(25:26),'(Z)') ruuid%data(11)
-    read(svalue(27:28),'(Z)') ruuid%data(12)
-    read(svalue(29:30),'(Z)') ruuid%data(13)
-    read(svalue(31:32),'(Z)') ruuid%data(14)
-    read(svalue(33:34),'(Z)') ruuid%data(15)
-    read(svalue(35:36),'(Z)') ruuid%data(16)
+    read(svalue(25:26),'(Z2)') ruuid%data(11)
+    read(svalue(27:28),'(Z2)') ruuid%data(12)
+    read(svalue(29:30),'(Z2)') ruuid%data(13)
+    read(svalue(31:32),'(Z2)') ruuid%data(14)
+    read(svalue(33:34),'(Z2)') ruuid%data(15)
+    read(svalue(35:36),'(Z2)') ruuid%data(16)
 
   end subroutine uuid_createUUID_indirectly
   
@@ -232,6 +235,37 @@ contains
       bisEqual = bisEqual .and. (ruuid1%data(i) .eq. ruuid2%data(i))
     end do
   end function uuid_isEqual
+
+!************************************************************************
+
+!<function>
+
+  function uuid_isNil(ruuid) result (bisNil)
+
+!<description>
+    ! This function checks if the UUID equals the nil UUID.
+!</description>
+
+!<input>
+    ! the UUID
+    type(t_uuid), intent(in) :: ruuid
+!</input>
+
+!<result>
+    logical :: bisNil
+!</result>
+
+!</function>
+
+    ! local variable
+    type(t_uuid) :: ruuidTmp
+    
+    ruuidTmp%cversion = ruuid%cversion
+    ruuidTmp%data = 0
+
+    bisNil = uuid_isEqual(ruuid, ruuidTmp)
+
+  end function uuid_isNil
 
 !************************************************************************
 
