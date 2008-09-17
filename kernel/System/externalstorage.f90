@@ -44,8 +44,8 @@
 !# 10.) exstor_setdata_int
 !#      exstor_setdata_single,
 !#      exstor_setdata_double,
-!#      exstore_setdata_logical,
-!#      exstore_setdata_char,
+!#      exstor_setdata_logical,
+!#      exstor_setdata_char,
 !#      exstor_setdata_storage
 !#      -> Writes 1D data to a storage container
 !#
@@ -4726,7 +4726,7 @@ contains
       
     else
       
-      call storage_getdatatype(istoragehandle,ctype)
+      call storage_getdatatype(istoragehandle,ctype,rstorageheap)
       if (p_rnode%cdataType .ne. ctype) then
         call output_line ('Wrong data format!', &
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
@@ -4735,7 +4735,7 @@ contains
       
       select case(p_rnode%idimension)
       case (1)
-        call storage_getsize (istoragehandle,isize)
+        call storage_getsize (istoragehandle,isize,rstorageheap)
         if (p_rnode%Isize(1) .ne. isize) then
           call output_line ('Data array has the wrong size!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
@@ -4743,7 +4743,7 @@ contains
         end if
         
       case (2)
-        call storage_getsize (istoragehandle,Isize2D)
+        call storage_getsize (istoragehandle,Isize2D,rstorageheap)
         if (ANY(p_rnode%Isize .ne. Isize2D)) then
           call output_line ('Data array has the wrong size!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
@@ -4756,7 +4756,7 @@ contains
     ! If the memory block is a pre-initialised block, we can directly
     ! fill it with data...    
     if (p_rnode%cinitNewBlock .ne. ST_NEWBLOCK_NOINIT) then
-      call storage_initialiseBlock (istoragehandle, p_rnode%cinitNewBlock)
+      call storage_initialiseBlock (istoragehandle, p_rnode%cinitNewBlock, rstorageheap)
       return
     end if
     
@@ -4767,19 +4767,19 @@ contains
       select case (p_rnode%cdataType)
       case (ST_DOUBLE)
         call storage_getbase_double (istoragehandle,p_Ddata1D,rstorageheap)
-        call exstor_getdata_double (ihandle,p_Ddata1D)
+        call exstor_getdata_double (ihandle,p_Ddata1D,rheap)
       case (ST_SINGLE)
         call storage_getbase_single (istoragehandle,p_Fdata1D,rstorageheap)
-        call exstor_getdata_single (ihandle,p_Fdata1D)
+        call exstor_getdata_single (ihandle,p_Fdata1D,rheap)
       case (ST_INT)
         call storage_getbase_int (istoragehandle,p_Idata1D,rstorageheap)
-        call exstor_getdata_int (ihandle,p_Idata1D)
+        call exstor_getdata_int (ihandle,p_Idata1D,rheap)
       case (ST_LOGICAL)
         call storage_getbase_logical (istoragehandle,p_Ldata1D,rstorageheap)
-        call exstor_getdata_logical (ihandle,p_Ldata1D)
+        call exstor_getdata_logical (ihandle,p_Ldata1D,rheap)
       case (ST_CHAR)
         call storage_getbase_char (istoragehandle,p_Cdata1D,rstorageheap)
-        call exstor_getdata_char (ihandle,p_Cdata1D)
+        call exstor_getdata_char (ihandle,p_Cdata1D,rheap)
       case DEFAULT
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
@@ -4886,20 +4886,20 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
     
-    call storage_getdatatype(istoragehandle,ctype)
+    call storage_getdatatype(istoragehandle, ctype, rstorageheap)
     if (p_rnode%cdataType .ne. ctype) then
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
       call sys_halt()
     end if
     
-    call storage_getdimension (istoragehandle, cdimension)
+    call storage_getdimension (istoragehandle, cdimension, rstorageheap)
 
     ! What dimension are we?
     select case (cdimension)
     case (1)
       ! 1D storage block
-      call storage_getsize (istoragehandle,isize)
+      call storage_getsize (istoragehandle, isize, rstorageheap)
       if (p_rnode%Isize(1) .ne. isize) then
         call output_line ('Data array has the wrong size!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
@@ -4910,20 +4910,20 @@ contains
       ! This now depends on the data type...
       select case (p_rnode%cdataType)
       case (ST_DOUBLE)
-        call storage_getbase_double (istoragehandle,p_Ddata1D)
-        call exstor_setdata_double (ihandle,p_Ddata1D)
+        call storage_getbase_double (istoragehandle, p_Ddata1D, rstorageheap)
+        call exstor_setdata_double (ihandle, p_Ddata1D, rheap)
       case (ST_SINGLE)
-        call storage_getbase_single (istoragehandle,p_Fdata1D)
-        call exstor_setdata_single (ihandle,p_Fdata1D)
+        call storage_getbase_single (istoragehandle, p_Fdata1D, rstorageheap)
+        call exstor_setdata_single (ihandle, p_Fdata1D, rheap)
       case (ST_INT)
-        call storage_getbase_int (istoragehandle,p_Idata1D)
-        call exstor_setdata_int (ihandle,p_Idata1D)
+        call storage_getbase_int (istoragehandle, p_Idata1D, rstorageheap)
+        call exstor_setdata_int (ihandle, p_Idata1D, rheap)
       case (ST_LOGICAL)
-        call storage_getbase_logical (istoragehandle,p_Ldata1D)
-        call exstor_setdata_logical (ihandle,p_Ldata1D)
+        call storage_getbase_logical (istoragehandle, p_Ldata1D, rstorageheap)
+        call exstor_setdata_logical (ihandle, p_Ldata1D, rheap)
       case (ST_CHAR)
-        call storage_getbase_char (istoragehandle,p_Cdata1D)
-        call exstor_setdata_char (ihandle,p_Cdata1D)
+        call storage_getbase_char (istoragehandle, p_Cdata1D, rstorageheap)
+        call exstor_setdata_char (ihandle, p_Cdata1D, rheap)
       case DEFAULT
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
@@ -4931,7 +4931,7 @@ contains
 
     case (2)
       ! 2D storage block
-      call storage_getsize (istoragehandle,Isize2D)
+      call storage_getsize (istoragehandle, Isize2D, rstorageheap)
       if (ANY(p_rnode%Isize .ne. Isize2D)) then
         call output_line ('Data array has the wrong size!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
@@ -4942,20 +4942,20 @@ contains
       ! This now depends on the data type...
       select case (p_rnode%cdataType)
       case (ST_DOUBLE)
-        call storage_getbase_double2D (istoragehandle,p_Ddata2D)
-        call exstor_setdata_double2D (ihandle,p_Ddata2D)
+        call storage_getbase_double2D (istoragehandle, p_Ddata2D, rstorageheap)
+        call exstor_setdata_double2D (ihandle, p_Ddata2D, rheap)
       case (ST_SINGLE)
-        call storage_getbase_single2D (istoragehandle,p_Fdata2D)
-        call exstor_setdata_single2D (ihandle,p_Fdata2D)
+        call storage_getbase_single2D (istoragehandle, p_Fdata2D, rstorageheap)
+        call exstor_setdata_single2D (ihandle, p_Fdata2D, rheap)
       case (ST_INT)
-        call storage_getbase_int2D (istoragehandle,p_Idata2D)
-        call exstor_setdata_int2D (ihandle,p_Idata2D)
+        call storage_getbase_int2D (istoragehandle, p_Idata2D, rstorageheap)
+        call exstor_setdata_int2D (ihandle, p_Idata2D, rheap)
       case (ST_LOGICAL)
-        call storage_getbase_logical2D (istoragehandle,p_Ldata2D)
-        call exstor_setdata_logical2D (ihandle,p_Ldata2D)
+        call storage_getbase_logical2D (istoragehandle, p_Ldata2D, rstorageheap)
+        call exstor_setdata_logical2D (ihandle, p_Ldata2D, rheap)
       case (ST_CHAR)
-        call storage_getbase_char2D (istoragehandle,p_Cdata2D)
-        call exstor_setdata_char2D (ihandle,p_Cdata2D)
+        call storage_getbase_char2D (istoragehandle, p_Cdata2D, rstorageheap)
+        call exstor_setdata_char2D (ihandle, p_Cdata2D, rheap)
       case DEFAULT
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
