@@ -14687,6 +14687,9 @@ contains
         ! Final number of iterations
         rsolverNode%iiterations = ite
       
+        ! Release the temporary copy of the solution vector.
+        call lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
+      
       end if
 
       ! Finally, we look at some statistics:
@@ -14717,9 +14720,6 @@ contains
         end if
       end if
       
-      ! Release the temporary copy of the solution vector
-      call lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
-    
     end if
 
     ! As the solution vector on the finest level shared its memory with rd,
