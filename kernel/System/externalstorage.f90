@@ -180,7 +180,7 @@ module externalstorage
     ! or unformatted.
     logical :: bformatted = .false.
 
-  end type
+  end type t_exstorageContainer
 
   !</typeblock>
 
@@ -242,13 +242,13 @@ module externalstorage
     ! variable contains the filename of the file.
     character(LEN=SYS_NAMELEN) :: sfilename = ''
     
-  end type
+  end type t_exstorageNode
 
   !</typeblock>
 
   !<typeblock>
 
-  ! This block represents a heap that maintains singole, double precision
+  ! This block represents a heap that maintains single, double precision
   ! and integer data. It contains a list of t_storageNode elements for all
   ! the handles.
   ! There's one global object of this type for the global storage management,
@@ -307,7 +307,7 @@ module externalstorage
     ! of this structure.
     real(DP) :: dtotalMemMax = 0.0_DP
 
-  end type
+  end type t_exstorageBlock
 
   !</typeblock>
 
