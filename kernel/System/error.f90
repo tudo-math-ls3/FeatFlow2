@@ -114,6 +114,7 @@ module error
 contains
 
 !************************************************************************
+
 !<subroutine>
   subroutine error_print(icode, sroutine, bcritical, iarg1, iarg2, darg1, darg2, &
                          sarg1, sarg2)
@@ -300,6 +301,8 @@ contains
     endif
 
   end subroutine error_print
+
+!************************************************************************
   
 !<function>
   integer function error_askError()
@@ -329,6 +332,5 @@ contains
 
     ierror = ERR_NO_ERROR
   end subroutine error_clearError
-
 
 end module error
