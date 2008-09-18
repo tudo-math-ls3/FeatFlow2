@@ -523,8 +523,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementInitCondRHS (rproblem,rspaceTimeDiscr, &
-      rx, rb, rtempvectorX, rtempvectorD)
+  SUBROUTINE tbc_implementInitCondRHS (rproblem,rb,rinitCondRHS,rtempVectorD)
 
 !<description>
   ! Implements the initial condition into the RHS vector rb.
@@ -537,10 +536,6 @@ CONTAINS
   ! A problem structure that provides information on all
   ! levels as well as temporary vectors.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
-  ! coupled space-time system. Must correspond to rb.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
 !</input>
 
 !<inputoutput>
@@ -548,11 +543,8 @@ CONTAINS
   ! this vector.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
 
-  ! A space-time vector containing the initial condition in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
+  ! A vector containing the data for the initial condition of the RHS.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rinitCondRHS
 
   ! A temporary vector in the size of a spatial vector.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
@@ -563,26 +555,36 @@ CONTAINS
     REAL(DP) :: dtheta
     REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
     
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-
-    ! Theta-scheme identifier.
-    ! =1: impliciz Euler.
-    ! =0.5: Crank Nicolson
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
-
     ! Overwrite the primal RHS with the initial primal solution vector.
     ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 1+0, rtempVectorX)
-    
     CALL sptivec_getTimestepData(rb, 1+0, rtempVectorD)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
-
-    ! Save the modified RHS.
+    CALL lsyssc_copyVector (rinitCondRHS%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+    CALL lsyssc_copyVector (rinitCondRHS%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
     CALL sptivec_setTimestepData(rb, 1+0, rtempVectorD)
+    
+!    REAL(DP) :: dtheta
+!    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
+!    
+!    ! DEBUG!!!    
+!    CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+!    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+!
+!    ! Theta-scheme identifier.
+!    ! =1: impliciz Euler.
+!    ! =0.5: Crank Nicolson
+!    dtheta = rproblem%rtimedependence%dtimeStepTheta
+!
+!    ! Overwrite the primal RHS with the initial primal solution vector.
+!    ! This realises the inital condition.
+!    CALL sptivec_getTimestepData(rx, 1+0, rtempVectorX)
+!    
+!    CALL sptivec_getTimestepData(rb, 1+0, rtempVectorD)
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
+!
+!    ! Save the modified RHS.
+!    CALL sptivec_setTimestepData(rb, 1+0, rtempVectorD)
     
     ! DEBUG!!!
     !CALL sptivec_getTimestepData(rx, 2, rtempVectorX)
@@ -624,30 +626,41 @@ CONTAINS
     
     ! DEBUG!!!    
     CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+!
+!    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
+!    ! This realises the inital condition.
+!    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
+!    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
+!    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
 
-    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
-    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
-    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
-
-    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
-      ! That's a special case, we have the terminal condition "lambda(T)=0".
-      ! This case must be treated like the initial condition, i.e. the
-      ! dual defect in the last timestep must be overwritten by zero.
-      !
-      ! If gamma<>0, the terminal condition is implemented implicitely
-      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
-      ! play by the mass matrix term in the system matrix of the last timestep,
-      ! so this does not have to be treated explicitly.
-      
-      CALL sptivec_getTimestepData(rd, rd%NEQtime, rtempVectorD)
-      
-      CALL tbc_implementTermCondDefSingle (rspaceTimeDiscr, rtempvectorD)
-      
-      CALL sptivec_setTimestepData(rd, rd%NEQtime, rtempVectorD)
-      
-    END IF
+!    REAL(DP), DIMENSION(:),POINTER :: p_Db
+!    
+!    ! DEBUG!!!    
+!    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+!
+!    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
+!    ! This realises the inital condition.
+!    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
+!    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
+!    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
+!
+!    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
+!      ! That's a special case, we have the terminal condition "lambda(T)=0".
+!      ! This case must be treated like the initial condition, i.e. the
+!      ! dual defect in the last timestep must be overwritten by zero.
+!      !
+!      ! If gamma<>0, the terminal condition is implemented implicitely
+!      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
+!      ! play by the mass matrix term in the system matrix of the last timestep,
+!      ! so this does not have to be treated explicitly.
+!      
+!      CALL sptivec_getTimestepData(rd, rd%NEQtime, rtempVectorD)
+!      
+!      CALL tbc_implementTermCondDefSingle (rspaceTimeDiscr, rtempvectorD)
+!      
+!      CALL sptivec_setTimestepData(rd, rd%NEQtime, rtempVectorD)
+!      
+!    END IF
 
   END SUBROUTINE
 
@@ -674,14 +687,14 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rd,p_Db)
-    
-    CALL lsyssc_clearVector(rd%RvectorBlock(1))
-    CALL lsyssc_clearVector(rd%RvectorBlock(2))
-    CALL lsyssc_clearVector(rd%RvectorBlock(3))
+!    REAL(DP), DIMENSION(:),POINTER :: p_Db
+!    
+!    ! DEBUG!!!    
+!    CALL lsysbl_getbase_double (rd,p_Db)
+!    
+!    CALL lsyssc_clearVector(rd%RvectorBlock(1))
+!    CALL lsyssc_clearVector(rd%RvectorBlock(2))
+!    CALL lsyssc_clearVector(rd%RvectorBlock(3))
 
   END SUBROUTINE
 
@@ -708,37 +721,40 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
-    
-    ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rd,p_Db)
-
-    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
-      ! That's a special case, we have the terminal condition "lambda(T)=0".
-      ! This case must be treated like the initial condition, i.e. the
-      ! dual defect in the last timestep must be overwritten by zero.
-      !
-      ! If gamma<>0, the terminal condition is implemented implicitely
-      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
-      ! play by the mass matrix term in the system matrix of the last timestep,
-      ! so this does not have to be treated explicitly.
-      !
-      ! These command implement the terminal condition in a strong sense.
-      ! By commenting these lines out, the terminal condition would be
-      ! implemented in a weak sense, as the equation implemented in
-      ! spacetimelinearsystem.f90 reads:
-      !
-      !     -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
-      !
-      ! which adds a mass matrix to a 'smoothing' Laplace part.
-      
-      IF (rspaceTimeDiscr%itypeTerminalCondition .EQ. 0) THEN
-        CALL lsyssc_clearVector(rd%RvectorBlock(4))
-        CALL lsyssc_clearVector(rd%RvectorBlock(5))
-        CALL lsyssc_clearVector(rd%RvectorBlock(6))
-      END IF
-      
-    END IF
+!    Note: In the current implementation, the terminal condition is
+!    imposed weakly, therefore for following lines of code are not used!
+!
+!    REAL(DP), DIMENSION(:),POINTER :: p_Db
+!    
+!    ! DEBUG!!!    
+!    CALL lsysbl_getbase_double (rd,p_Db)
+!
+!    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
+!      ! That's a special case, we have the terminal condition "lambda(T)=0".
+!      ! This case must be treated like the initial condition, i.e. the
+!      ! dual defect in the last timestep must be overwritten by zero.
+!      !
+!      ! If gamma<>0, the terminal condition is implemented implicitely
+!      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
+!      ! play by the mass matrix term in the system matrix of the last timestep,
+!      ! so this does not have to be treated explicitly.
+!      !
+!      ! These command implement the terminal condition in a strong sense.
+!      ! By commenting these lines out, the terminal condition would be
+!      ! implemented in a weak sense, as the equation implemented in
+!      ! spacetimelinearsystem.f90 reads:
+!      !
+!      !     -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
+!      !
+!      ! which adds a mass matrix to a 'smoothing' Laplace part.
+!      
+!      IF (rspaceTimeDiscr%itypeTerminalCondition .EQ. 0) THEN
+!        CALL lsyssc_clearVector(rd%RvectorBlock(4))
+!        CALL lsyssc_clearVector(rd%RvectorBlock(5))
+!        CALL lsyssc_clearVector(rd%RvectorBlock(6))
+!      END IF
+!      
+!    END IF
 
   END SUBROUTINE
   

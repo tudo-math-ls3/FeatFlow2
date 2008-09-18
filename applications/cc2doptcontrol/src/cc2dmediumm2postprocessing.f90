@@ -46,6 +46,7 @@ MODULE cc2dmediumm2postprocessing
   USE cc2dmediumm2optcanalysis
   USE cc2dmedium_callback
   USE cc2dmediumm2boundarydef
+  USE cc2dmediumm2matvecassembly
   
   USE spacetimediscretisation
   
@@ -644,6 +645,23 @@ CONTAINS
       ! Dual pressure
       CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
       CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
+
+      ! Control u = P[min/max](-1/alpha lambda)
+      call lsyssc_scaleVector (rprjVector%RvectorBlock(4),-1/rproblem%roptControl%dalphaC)
+      if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
+        call cc_projectControlTimestep (rprjVector%RvectorBlock(4),&
+          rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
+      end if
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+      CALL ucd_addVariableVertexBased (rexport,'X-control',UCD_VAR_STANDARD, p_Ddata)
+
+      call lsyssc_scaleVector (rprjVector%RvectorBlock(5),-1/rproblem%roptControl%dalphaC)
+      if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
+        call cc_projectControlTimestep (rprjVector%RvectorBlock(5),&
+          rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
+      end if
+      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+      CALL ucd_addVariableVertexBased (rexport,'Y-control',UCD_VAR_STANDARD, p_Ddata2)
       
       ! If we have a simple Q1~ discretisation, calculate the streamfunction.
       IF (rvector%p_rblockDiscr%RspatialDiscr(1)% &

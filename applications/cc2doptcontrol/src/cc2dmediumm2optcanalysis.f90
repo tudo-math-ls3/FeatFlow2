@@ -32,6 +32,7 @@ MODULE cc2dmediumm2optcanalysis
   USE pprocerror
   USE spacetimevectors
   USE cc2dmedium_callback
+  use cc2dmediumm2matvecassembly
     
   IMPLICIT NONE
   
@@ -211,11 +212,20 @@ CONTAINS
       END IF
       
       ! Compute:
-      ! Derror(2) = ||lambda||^2_{L^2}.
-      ! (intermediate solution; ||u||=1/alpha ||-lambda|| !
+      ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
+      ! For that purpose, scale the lambda part and project it if necessary.
+      call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalpha)
+      call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
+      
+      call cc_projectControlTimestep (rtempVector%RvectorBlock(4),&
+          rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
+      call cc_projectControlTimestep (rtempVector%RvectorBlock(5),&
+          rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
+      
       CALL pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
       CALL pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
-                          
+            
+      ! We use the summed trapezoidal rule.             
       IF ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) THEN
         Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
       ELSE
@@ -234,9 +244,9 @@ CONTAINS
     Derror(4) = 0.5_DP * Derror(1)  +  0.5_DP * dgamma * Derror(3)
     
     IF (dalpha .NE. 0.0_DP) THEN
-      ! Because of u=-lambda/alpha we have:
-      !    alpha/2 ||u||^2 = alpha/2 ||lambda/alpha||^2 = 1/(2*alpha) ||lambda||^2
-      Derror(4) = Derror(4) + 0.5_DP/dalpha * Derror(2)
+      ! Calculate:
+      !    alpha/2 ||u||^2
+      Derror(4) = Derror(4) + 0.5_DP*dalpha * Derror(2)
       
       ! Calculate ||u|| = 1/alpha ||lambda||
       Derror(2) = 1.0_DP/dalpha * SQRT(Derror(2))

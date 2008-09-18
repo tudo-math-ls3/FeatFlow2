@@ -174,11 +174,6 @@ MODULE cc2dmediumm2basic
     !     of Baerwolff and Hinze!)
     INTEGER :: iconvectionExplicit = 0
 
-    ! Type of implementation of the terminal condition.
-    ! =0: implement terminal condition in a weak sense by filtering.
-    ! =1: implement terminal condition in a strong sense by modifying the matrix.
-    INTEGER :: itypeTerminalCondition = 0
-  
     ! Name of the file with the target flow
     CHARACTER(SYS_STRLEN) :: stargetFlow = ''
     
@@ -220,7 +215,7 @@ MODULE cc2dmediumm2basic
     ! =0: No constraints.
     ! =1: Constant constraints on u active: 
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-    INTEGER :: ccontrolContraints = 0
+    INTEGER :: ccontrolConstraints = 0
 
     ! Constraints on u_1
     real(DP) :: dumin1 = -1.0E10
@@ -229,7 +224,7 @@ MODULE cc2dmediumm2basic
     ! Constraints in u_2
     real(DP) :: dumin2 = -1.0E10
     real(DP) :: dumax2 = 1.0E10
-  
+    
   END TYPE
 
 !</typeblock>

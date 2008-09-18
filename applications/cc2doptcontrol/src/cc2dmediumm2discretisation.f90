@@ -1323,10 +1323,7 @@ CONTAINS
         'iconvectionExplicit',rproblem%roptcontrol%iconvectionExplicit,0)
     
     CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
-        'itypeTerminalCondition',rproblem%roptcontrol%itypeTerminalCondition,0)
-
-    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
-        'ccontrolContraints',rproblem%roptcontrol%ccontrolContraints,0)
+        'ccontrolConstraints',rproblem%roptcontrol%ccontrolConstraints,0)
 
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
         'dumin1',rproblem%roptcontrol%dumin1,-1.0E10_DP)

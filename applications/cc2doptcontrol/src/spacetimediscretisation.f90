@@ -97,11 +97,6 @@ MODULE spacetimediscretisation
     ! A value of 0.0 disables the terminal condition.
     REAL(DP) :: dgammaC = 0.0_DP
     
-    ! Type of implementation of the terminal condition.
-    ! =0: implement terminal condition in a weak sense by filtering.
-    ! =1: implement terminal condition in a strong sense by modifying the matrix.
-    INTEGER :: itypeTerminalCondition = 0
-
     ! Problem-related structure that provides the templates for
     ! matrices/vectors on the spatial level of the matrix.
     TYPE(t_problem_lvl), POINTER :: p_rlevelInfo
@@ -180,8 +175,6 @@ CONTAINS
                                 'dalphaC',rspaceTimeDiscr%dalphaC,1.0_DP)
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dgammaC',rspaceTimeDiscr%dgammaC,0.0_DP)
-    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
-        'itypeTerminalCondition',rspaceTimeDiscr%itypeTerminalCondition,0)
 
   END SUBROUTINE
 

@@ -339,9 +339,11 @@ CONTAINS
         CALL lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
         CALL lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
 
-        ! Multiply the last RHS of the dual equation -z by gamma/dtstep, that's it.
-        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),rspaceTimeDiscr%dgammaC/dtstep)
-        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),rspaceTimeDiscr%dgammaC/dtstep)
+        ! Multiply the last RHS of the dual equation -z by 1+gamma/dtstep, that's it.
+        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
+            1.0_DP+rspaceTimeDiscr%dgammaC/dtstep)
+        CALL lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
+            1.0_DP+rspaceTimeDiscr%dgammaC/dtstep)
 
       END IF
 

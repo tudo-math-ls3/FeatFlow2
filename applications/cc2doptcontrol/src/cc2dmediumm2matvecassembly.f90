@@ -11,8 +11,8 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#  $$        A_1 y   +  \eta_1 B p   +          R \lambda       = f_1 $$
-!#  $$ \tau_1 B^T y   +  \kappa_1 I p                            = f_2 $$
+!#  $$        A_1 y   +  \eta_1 B p   +          (dr1 R + dp1*P)lambda      = f_1 $$
+!#  $$ \tau_1 B^T y   +  \kappa_1 I p                                      = f_2 $$
 !#
 !#  $$        R_2 y   +  A_2 \lambda  + \eta_2   B \xi           = f_3 $$
 !#  $$            \tau_2 B^T \lambda  + \kappa_2 I \xi           = f_4 $$
@@ -47,8 +47,10 @@
 !#   $\mu_i$              - Weight for the 'coupling' mass matrix.
 !#   $\kappa_i$ = 0/1     - Switches of the identity matrix I for the pressure
 !#                          in the continuity equation
-!#   $\dr_ij \in R$       - Switches the 'reactive nonlinearity/coupling mass 
+!#   $dr_ij \in R$        - Switches the 'reactive nonlinearity/coupling mass 
 !#                          matrix' on/off
+!#   $dp$                 - Switches the mass-type matrix of the derivative of the
+!#                          projection on/off
 !#
 !# Note that the nonlinear part is always dependent on the primal velocity --
 !# for the primal equation as well as for the dual one!
@@ -71,6 +73,9 @@
 !#
 !# 2.) cc_assembleDefect
 !#     -> Set up a defect vector d:=b-A(x)x
+!#
+!# 3.) cc_projectControlTimestep
+!#     Projects a vector into a range of numbers.
 !#
 !# </purpose>
 !##############################################################################
@@ -209,6 +214,32 @@ MODULE cc2dmediumm2matvecassembly
     REAL(DP) :: dr21 = 0.0_DP
     REAL(DP) :: dr22 = 0.0_DP
     
+    ! P-parameter that weight the projective mass matrix in the
+    ! primal equation.
+    REAL(DP) :: dp1 = 0.0_DP
+    
+    ! Regularisation parameter ALPHA which controls the transformation
+    ! from the dual variable $\lambda$ to the control $u$:
+    ! $u=-1/\alpha \lambda$.
+    REAL(DP) :: dalphaC = 0.0_DP
+    
+    ! Type of constraints to apply to the control u.
+    ! =0: No constraints.
+    ! =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+    ! Necessary for applying the correct projection during matrix-vector
+    ! multiplication.
+    integer :: ccontrolConstraints = 0
+
+    ! Minimum and maximum value of u in case projection of u is
+    ! active (i.e. dp <> 0). Min/max values for u1.
+    REAL(DP) :: dumin1 = 0.0_DP
+    REAL(DP) :: dumax1 = 0.0_DP
+    
+    ! Minimum and maximum value of u in case projection of u is
+    ! active (i.e. dp <> 0). Min/max values for u2.
+    REAL(DP) :: dumin2 = 0.0_DP
+    REAL(DP) :: dumax2 = 0.0_DP
+
     ! When evaluating nonlinear terms, the evaluation routine accepts
     ! in timestep i three solution vectors -- one corresponding to
     ! the matrix Aii-1, one corresponding to matrix Aii and one corresponding
@@ -307,6 +338,155 @@ MODULE cc2dmediumm2matvecassembly
 
 CONTAINS
   
+! ***************************************************************************
+  !<subroutine>
+
+  SUBROUTINE coeff_ProjMass (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    USE basicgeometry
+    USE triangulation
+    USE collection
+    USE scalarpde
+    USE domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form
+    ! that assembles the projective mass matrix.
+    !
+    ! The coefficients is c=c(lambda_1) or =c(lambda_2) with
+    ! c=1/alpha if a < -1/alpha lambda_i < b and c=0 otherwise. This is the derivative
+    ! of the projection operator "-P[a,b](-1/alpha lambda_i)" on the left hand
+    ! side of the equation.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    TYPE(t_bilinearForm), INTENT(IN)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in trial space,nelements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorScalar), pointer :: p_rsubvector
+    real(dp), dimension(:,:), allocatable :: Dfunc
+    integer(I32) :: celement
+    real(DP) :: da, db, dalpha, dp1
+    integer :: ipt, iel
+    
+    ! Get the bounds and the multiplier from the collection
+    dalpha = rcollection%DquickAccess(3)
+    dp1 = rcollection%DquickAccess(4)
+    
+    ! Scale the bounds by -alpha = -1/alphai as we analyse lambda
+    ! ad not u. Change the role of min/max because of the "-"
+    ! sign!
+    da = -rcollection%DquickAccess(2)*dalpha
+    db = -rcollection%DquickAccess(1)*dalpha
+    
+    ! Get a pointer to the FE solution from the collection.
+    ! The routine below wrote a pointer to the vector T to the
+    ! first quick-access vector pointer in the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+
+    ! Do we have to analyse lambda_1 or lambda_2?
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      p_rsubvector => p_Rvector%RvectorBlock(4)
+    else
+      p_rsubvector => p_Rvector%RvectorBlock(5)
+    end if
+  
+    ! Allocate memory for the function values in the cubature points:
+    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    
+    ! Calculate the function value of the solution vector in all
+    ! our cubature points:
+    !
+    ! Figure out the element type, then call the 
+    ! evaluation routine for a prepared element set.
+    ! This works only if the trial space of the matrix coincides
+    ! with the FE space of the vector T we evaluate!
+    
+    celement = rdiscretisationTrial%RelementDistr(&
+        rdomainIntSubset%ielementDistribution)%celement
+    
+    call fevl_evaluate_sim (p_rsubvector, &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
+    
+    ! Now check the function values lambda.
+    ! If a < -1/alpha lambda < b, return 1/alpha.
+    ! Otherwise, return 0.
+    do iel = 1,ubound(Dcoefficients,3)
+      do ipt = 1,ubound(Dcoefficients,2)
+        ! We have to check for non-equlity here! Due to the projection of the
+        ! control, values really larger or smaller than the bounds will
+        ! not occur!
+        if ((Dfunc(ipt,iel) .gt. da) .and. (Dfunc(ipt,iel) .lt. db)) then
+          Dcoefficients(1,ipt,iel) = dp1
+        else
+          Dcoefficients(1,ipt,iel) = 0.0_DP
+        end if
+      end do
+    end do
+    
+    ! Release memory
+    deallocate(Dfunc)
+
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1494,29 +1674,96 @@ CONTAINS
     TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
     
     ! Vector that specifies where to evaluate nonlinear terms
-    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    TYPE(t_vectorBlock), INTENT(IN), target :: rvector
     
       ! local variables
       TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
       TYPE(t_matrixBlock) :: rtempmatrix
       TYPE(t_vectorBlock) :: rtempvector
-    
-      IF (rmatrixComponents%dmu1 .NE. 0.0_DP) THEN
-    
-        ! Copy the entries of the mass matrix. Share the structure.
-        ! We must not share the entries as these might be changed by the caller
-        ! e.g. due to boundary conditions!
-        
-        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
-            rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      type(t_bilinearForm) :: rform
+      type(t_collection) :: rcollection
+
+      ! Assemble A14/A25? Note that we currently support either
+      ! dmu1<>0 or dp1<>0, not both!!!    
+      IF ((rmatrixComponents%dmu1 .NE. 0.0_DP) .or. &
+          (rmatrixComponents%dp1 .NE. 0.0_DP)) THEN
+          
+        IF (rmatrixComponents%dmu1 .NE. 0.0_DP) THEN
       
-        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
-            rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-            
-        ! Scale the entries by dmu2.
-        IF (rmatrixComponents%dmu1 .NE. 1.0_DP) THEN
-          CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rmatrixComponents%dmu1)
-          CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,5),rmatrixComponents%dmu1)
+          ! Copy the entries of the mass matrix. Share the structure.
+          ! We must not share the entries as these might be changed by the caller
+          ! e.g. due to boundary conditions!
+          
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+        
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+              
+          ! Scale the entries by dmu2.
+          IF (rmatrixComponents%dmu1 .NE. 1.0_DP) THEN
+            CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rmatrixComponents%dmu1)
+            CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,5),rmatrixComponents%dmu1)
+          END IF
+        END IF
+        
+        IF (rmatrixComponents%dp1 .NE. 0.0_DP) THEN
+          
+          ! In A14/A25 we have to create a 'projective mass matrix'.
+          ! This is the derivative of a projection operator
+          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
+          ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
+          ! We assemble this matrix just as a standard mass matrix with noconstant
+          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
+          ! we return 0 as coefficient, otherwise 1.
+        
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+
+          ! In this case, we have nonconstant coefficients.
+          rform%ballCoeffConstant = .FALSE.
+          rform%BconstantCoeff(:) = .FALSE.
+
+          ! Prepare a collection structure to be passed to the callback
+          ! routine. We attach the vector T in the quick-access variables
+          ! so the callback routine can access it.
+          ! The bounds and the alpha value are passed in the
+          ! quickaccess-arrays.
+          call collct_init(rcollection)
+          rcollection%p_rvectorQuickAccess1 => rvector
+
+          ! Coefficient is dp1=1/alpha or 0, depending on lambda
+          rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+          rcollection%DquickAccess(4)  = rmatrixComponents%dp1
+          
+          ! At first, set up A14, depending on lambda_1.
+          rcollection%IquickAccess(1) = 1
+          rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+          rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+          
+          ! Now we can build the matrix entries.
+          ! We specify the callback function coeff_Laplace for the coefficients.
+          ! As long as we use constant coefficients, this routine is not used.
+          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+          ! the framework will call the callback routine to get analytical
+          ! data.
+          ! The collection is passed as additional parameter. That's the way
+          ! how we get the vector to the callback routine.
+          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,4),&
+              coeff_ProjMass,rcollection)
+
+          ! Now, set up A25, depending on lambda_2.
+          rcollection%IquickAccess(1)  = 2
+          rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+          rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+
+          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,5),&
+              coeff_ProjMass,rcollection)
+          
+          ! Now we can forget about the collection again.
+          call collct_done (rcollection)
+        
         END IF
         
         rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP
@@ -1960,9 +2207,8 @@ CONTAINS
   ! The caller must initialise the rmatrixComponents according to how the 
   ! matrix should look like.
   !
-  ! The parameter ry is optional. If specified, this parameter defines where to
+  ! The parameters rvectorI are optional. If specified, these parameter defines where to
   ! evaluate the nonlinearity (if the system matrix $A$ contains a nonlinearity).
-  ! If not specified, ry=rx is assumed.
   ! The multiplication factor cx is optional as well. If not specified,
   ! cx=1.0 is assumed.
   !
@@ -2022,6 +2268,7 @@ CONTAINS
     ! local variables
     REAL(DP) :: dcx
     TYPE(t_matrixBlock) :: rmatrix
+    type(t_vectorScalar) :: rtempVector
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dd
@@ -2182,9 +2429,14 @@ CONTAINS
     rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%dtau2
     
     ! Initialise the weights for the mass matrices
-    rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
-    rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
-    
+    if (rmatrixComponents%ccontrolConstraints .eq. 0) then
+      rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
+      rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
+    else
+      rmatrix%RmatrixBlock(1,4)%dscaleFactor = 0.0_DP
+      rmatrix%RmatrixBlock(2,5)%dscaleFactor = 0.0_DP
+    end if
+
     rmatrix%RmatrixBlock(4,1)%dscaleFactor = rmatrixComponents%dmu2
     rmatrix%RmatrixBlock(5,2)%dscaleFactor = rmatrixComponents%dmu2
 
@@ -2195,6 +2447,79 @@ CONTAINS
     ! is initialised with the multiplication factors in the submatrices
     ! from above!
     CALL lsysbl_blockMatVec (rmatrix, rx, rd, -dcx, 1.0_DP)
+    
+    ! The coupling of lambda to the primal equation is a little bit tricky.
+    ! Ok, if there are no constraints active, it's easy -- that case was handled
+    ! in the MV above...
+    if (rmatrixComponents%ccontrolConstraints .eq. 1) then
+    
+      ! But now it get's interesting. When control constraints are active,
+      ! we have the system
+      !
+      !    ( .    .    B1  PM            ) 
+      !    ( .    .    B2       PM       ) 
+      !    ( B1^T B2^T .                 ) 
+      !    ( M             .    .    B1  ) 
+      !    (      M        .    .    B2  ) 
+      !    (               B1^T B2^T .   ) 
+      !
+      ! Where P is a projection operator onto the allowed space. The dual variable
+      ! \lambda must not be changed, but before adding M\lambda to the RHS,
+      ! we have to apply a projection!
+      !
+      ! That's a little bit uglym because for this we have to carry out the matrix
+      ! vector multiplication 'by hand'. At first, create a temporary vector that
+      ! receives the projected solution.
+      call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
+        LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+      
+      ! Multiply with the mass matrix, correctly scaled.
+      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(4), &
+        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
+      
+      ! Project that to the allowed range.
+      call cc_projectControlTimestep (rtempVector,&
+          -rmatrixComponents%dumax1,-rmatrixComponents%dumin1)
+          
+      ! And then finally, carry our the defect calculation for y_1.
+      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(1),-dcx,1.0_DP)
+      
+      ! The same stuff has to be done for y_1 / lambda_2:
+      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(5), &
+        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
+      call cc_projectControlTimestep (rtempVector,&
+          -rmatrixComponents%dumax2,-rmatrixComponents%dumin2)
+      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(2),-dcx,1.0_DP)
+      
+!      Projection of the solution. Test code. Not used as the inequality
+!      defining the coupling must be used in integral form -- for what
+!      the above implementation is correct.
+!
+!      ! Copy our solution vector \lambda_2.
+!      call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
+!          LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+!      
+!      ! Project that to the allowed range.
+!      call cc_projectControlTimestep (rtempVector,rmatrixComponents%dalphaC,&
+!          rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+!
+!      ! Now carry out MV and include it to the defect
+!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
+!          rd%RvectorBlock(4), -rmatrixComponents%dmu1*dcx, 1.0_DP)
+!
+!      ! The same stuff has to be done for y_2 / lambda_2:
+!      call lsyssc_duplicateVector (rx%RvectorBlock(5),rtempVector,&
+!          LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+!      call cc_projectControlTimestep (rtempVector,rmatrixComponents%dalphaC,&
+!          rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
+!        rd%RvectorBlock(5), -rmatrixComponents%dmu1*dcx, 1.0_DP)
+
+      ! Release the temp vector, that's it.
+      call lsyssc_releaseVector (rtempVector)
+      
+    end if
+    
     
     ! If we have a reactive coupling mass matrix, it gets interesting...
     !
@@ -2235,6 +2560,23 @@ CONTAINS
       END SELECT
     
     END IF
+    
+    ! We also need a special handling if our control u has constraints!
+    ! In that case, there is dmu=0 and dp1<>0, so we have to assemble
+    ! a special defect in the primal equation!
+    if (rmatrixComponents%dp1 .ne. 0.0_DP) then
+      SELECT CASE (rmatrixComponents%idualSol)
+      CASE (1)
+        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector1)
+      CASE (2)
+        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector2)
+      CASE (3)
+        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx,rvector3)
+      END SELECT
+    end if
     
     ! Release the temporary matrix, we don't need it anymore.
     CALL lsysbl_releaseMatrix (rmatrix)
@@ -2793,6 +3135,170 @@ CONTAINS
       
     END SUBROUTINE
 
+    SUBROUTINE assemblePrimalUConstrMassDefect (rmatrixComponents,&
+        rvector,rdefect,dcx,rvelocityVector)
+        
+    ! Assembles the defect arising from the projective coupling mass
+    ! matrices in the primal equation which comes from constraints on u. 
+    ! rdefect must have been initialised with the right hand side vector.
+    !
+    ! Let the mass matrix M~ be the usual mass matrix where u is ok
+    ! and the 0-operator where u is out of bounds.
+    ! Then, we assemble
+    !
+    !       rdefect = r(primal)defect - dcx (dp1 M~ r(dual)vector)
+    !
+    ! A t_ccmatrixComponents structure providing all necessary 'source' information
+    ! about how the mass matrix part is weighted (dr11, dr12).
+    TYPE(t_ccmatrixComponents), INTENT(IN) :: rmatrixComponents
+
+    ! Solution vector. 
+    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    
+    ! On entry: RHS vector.
+    ! Is overwritten by the defect vector in the velocity subsystem.
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
+    
+    ! Multiplication factor for the whole operator A*rvector
+    REAL(DP), INTENT(IN) :: dcx
+    
+    ! Velocity vector field that should be used for the assembly of the
+    ! nonlinearity. Block 4 and 5 in that block vector are used as velocity 
+    ! field.
+    TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvelocityVector
+
+      ! local variables
+      TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+      TYPE(t_matrixBlock) :: rtempmatrix
+      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
+      type(t_collection) :: rcollection
+      type(t_bilinearForm) :: rform
+      
+      ! If we have a reactive coupling mass matrix, it gets interesting...
+      IF (rmatrixComponents%dp1 .NE. 0.0_DP) THEN
+
+        CALL lsysbl_createEmptyMatrix (rtempMatrix,2)
+
+        ! Create a matrix with the structure we need. Share the structure
+        ! of the mass matrix. Entries are not necessary for the assembly      
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+        CALL lsysbl_updateMatStrucInfo (rtempMatrix)
+
+        ! Assemble the modified mass matrices.
+        
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+
+        ! In this case, we have nonconstant coefficients.
+        rform%ballCoeffConstant = .FALSE.
+        rform%BconstantCoeff(:) = .FALSE.
+
+        ! Prepare a collection structure to be passed to the callback
+        ! routine. We attach the vector T in the quick-access variables
+        ! so the callback routine can access it.
+        ! The bounds and the alpha value are passed in the
+        ! quickaccess-arrays.
+        call collct_init(rcollection)
+        rcollection%p_rvectorQuickAccess1 => rvelocityVector
+
+        ! Coefficient is dp1=1/alpha or 0, depending on lambda
+        rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+        rcollection%DquickAccess(4)  = rmatrixComponents%dp1
+        
+        ! At first, set up A14, depending on lambda_1.
+        rcollection%IquickAccess(1) = 1
+        rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+        rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+        
+        ! Now we can build the matrix entries.
+        ! We specify the callback function coeff_Laplace for the coefficients.
+        ! As long as we use constant coefficients, this routine is not used.
+        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+        ! the framework will call the callback routine to get analytical
+        ! data.
+        ! The collection is passed as additional parameter. That's the way
+        ! how we get the vector to the callback routine.
+        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
+            coeff_ProjMass,rcollection)
+
+        ! Now, set up A22, depending on lambda_2.
+        rcollection%IquickAccess(1) = 2
+        rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+        rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+
+        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
+            coeff_ProjMass,rcollection)
+        
+        ! Now we can forget about the collection again.
+        call collct_done (rcollection)
+        
+        ! Create a temporary block vector that points to the dual velocity.
+        ! This has to be evaluated during the assembly.
+        CALL lsysbl_deriveSubvector (rvector,rtempvectorEval,4,5,.TRUE.)
+        
+        ! Create a temporary block vector for the dual defect.
+        ! Matrix*primal velocity is subtracted from this.
+        CALL lsysbl_deriveSubvector (rdefect,rtempvectorDef,1,2,.TRUE.)
+
+        ! Create the defect
+        CALL lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, -dcx, 1.0_DP)
+        
+        ! Release memory
+        call lsysbl_releaseVector (rtempvectorDef)
+        call lsysbl_releaseVector (rtempvectorEval)
+        CALL lsysbl_releaseMatrix (rtempMatrix)
+      
+      END IF
+      
+    END SUBROUTINE
+
   END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine cc_projectControlTimestep (rdualSolution,dumin,dumax)
+
+!<description>
+  ! Projects a dual solution vector u in such a way, that
+  ! dumin <= u <= dumax holds.
+!</description>
+
+!<input>
+  ! Minimum value for u
+  real(DP), intent(in) :: dumin
+
+  ! Maximum value for u
+  real(DP), intent(in) :: dumax
+!</input>
+
+!<inputoutput>
+  ! Vector to be restricted
+  type(t_vectorScalar), intent(inout) :: rdualSolution
+!</inputoutput>
+
+!</subroutine>
+ 
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: i
+    real(dp) :: dactmin,dactmax
+    
+    ! Get the vector array
+    call lsyssc_getbase_double (rdualSolution,p_Ddata)
+    
+    ! Restrict the vector
+    do i=1,rdualSolution%NEQ
+      p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
+    end do
+
+  end subroutine   
 
 END MODULE

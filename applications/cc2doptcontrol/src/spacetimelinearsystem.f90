@@ -15,6 +15,10 @@
 !#     -> Matrix-Vector multiplication of a space-time vector with the
 !#        global matrix.
 !#
+!# 2.) cc_generateInitCondRHS
+!#     -> From the initial solution vector at time t=0, generate a
+!#        RHS vector for the initial condition.
+!#
 !# Auxiliary routines:
 !#
 !# 1.) cc_setupMatrixWeights
@@ -40,11 +44,17 @@
 !#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
 !#                   N = N(y_i) = -nu*Laplace(.) - y_i*grad(.) + (.)*grad(y_i)
 !#                   R = R(l_i) = -M                                   
+!#                   P = 1/a M
 !#
 !#                   Newton iteration:
 !#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.) + grad(y_i)*(.)
 !#                   N = N(y_i) = -nu*Laplace(.) - y_i*grad(.) + grad(y_i)*(.)
 !#                   R = R(l_i) = -M + l_i*grad(.) - grad(l_i)*(.)
+!#                   P = P[a,b](l_i) = M~(l_i)
+!#
+!#        with M~(l_i)_kl = int (c(l_i) phi_l phi_k) dx
+!#        and c(l_i) = 1 if a < -1/alpha l_i(x) < b and c(l_i) = 0 otherwise
+!#        (derivative of the projection operator for constrains on the control)
 !#  
 !#  ====================================================================================================
 !#  [I     ]                       |                                  |
@@ -56,7 +66,7 @@
 !#                 [-B^t    ]      |                                  |
 !#                                 |                                  |
 !#  -------------------------------+----------------------------------+---------------------------------
-!#  [-M/dt ]                       | [M/dt + A] [-B] [ 1/a M   ]      |
+!#  [-M/dt ]                       | [M/dt + A] [-B] [ P       ]      |
 !#                                 |                                  |
 !#                                 | [-B^t    ]                       |
 !#                                 |                                  |
@@ -65,7 +75,7 @@
 !#                                 | from the        [-B^t     ]      |
 !#                                 | RHS                              |
 !#  -------------------------------+----------------------------------+---------------------------------
-!#                                 | [-M/dt   ]                       |  [M/dt + A] [-B] [ 1/a M  ]      
+!#                                 | [-M/dt   ]                       |  [M/dt + A] [-B] [ P      ]      
 !#                                 |                                  |                                  
 !#                                 |                                  |  [-B^t    ]                      
 !#                                 |                                  |                                  
@@ -94,7 +104,7 @@
 !#                                [-B^t           ]       |                                        |           |                                            
 !#                                                        |                                    !correct!       |                                            
 !#  ------------------------------------------------------+----------------------------------------------------+---------------------------------------------------
-!#  [-M/dt+(1-T)A(y_0)]                                   | [M/dt + T A(y_1) ] [-B ] [ 1/a M           ]       |                                            
+!#  [-M/dt+(1-T)A(y_0)]                                   | [M/dt + T A(y_1) ] [-B ] [ P               ]       |                                            
 !#                                                        |                                                    |                                            
 !#                                                        | [-B^t            ]                                 |                                            
 !#                                                        |                                                    |                                            
@@ -103,7 +113,7 @@
 !#                                                        | from the                 [ -B^t            ]       |                                        |    
 !#                                                        | RHS                                                |                                    !correct!    
 !#  ------------------------------------------------------+----------------------------------------------------+---------------------------------------------------
-!#                                                        | [-M/dt+(1-T)A(y_1)]                                |  [M/dt + T A(y_2)] [-B ] [ 1/a M           ]       
+!#                                                        | [-M/dt+(1-T)A(y_1)]                                |  [M/dt + T A(y_2)] [-B ] [ P               ]       
 !#                                                        |                                                    |                                                   
 !#                                                        |                                                    |  [-B^t           ]                                
 !#                                                        |                                                    |                                                   
@@ -211,6 +221,9 @@ MODULE spacetimelinearsystem
   INTEGER(I32), PARAMETER :: SPTID_FILTER_DEFECT = SPTID_FILTER_BCDEF + &
                                                    SPTID_FILTER_ICDEF + &
                                                    SPTID_FILTER_TCDEF
+                                                   
+  ! Apply control constrains filter if necessary
+  INTEGER(I32), PARAMETER :: SPTID_FILTER_CCDEF = 2**3
 
 !</constantblock>
 
@@ -249,7 +262,7 @@ CONTAINS
   ! Problem structure
   TYPE(t_problem), INTENT(IN) :: rproblem
   
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
+  ! A t_ccoptSpaceTimeMatrix structure defining the discretisation of the
   ! coupled space-time matrix.
   TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), TARGET :: rspaceTimeMatrix
 
@@ -307,7 +320,6 @@ CONTAINS
     ! Pointer to the space time discretisation structure.
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     REAL(DP) :: dnewton
-    REAL(DP) :: dsmooth
     REAL(DP) :: dtstep
     LOGICAL :: bconvectionExplicit
     
@@ -329,29 +341,8 @@ CONTAINS
         ! Newton is only to be assembled in Navier-Stokes!
         dnewton = 1.0_DP
       END IF
-      !dsmooth = 1.0_DP
-    ELSE 
-      ! Activate smoothing in the last timestep.
-      !dsmooth = 1.0_DP
     END IF
     
-    ! Note: Introducing the Navier-Stokes operator to smooth the last time step
-    ! is a difficile task. The best combination found up to now is:
-    ! Always switch on the 'smoothing' (dsmooth=1) of the terminal condition 
-    ! to get a proper matrix and filter the defect of the last timestep to 
-    ! impose the terminal condition!
-    !dsmooth = 1.0_DP
-    !
-    ! We activate the smoothing in the matrix contrary to the filter.
-    ! If the filter is on (thus weakly imposing the terminal conditions
-    ! to the defect by filtering), we activate the Navier-Stokes-Operator in 
-    ! the last timestep. If the 'smoothing' is on (thus the defect vectors in 
-    ! the last timestep of the dual solution are not forced to be zero), we
-    ! deactivate the Navier-Stokes-operator.
-
-    ! Probably activate smoothing in the last timestep.
-    dsmooth = REAL(1-p_rspaceTimeDiscr%itypeTerminalCondition,DP)
-
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! The first and last substep is a little bit special concerning
@@ -368,82 +359,153 @@ CONTAINS
       IF (irelpos .EQ. 0) THEN
       
         ! The diagonal matrix.
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 2
+!        rmatrixComponents%iprimalSol = 2
+!        rmatrixComponents%idualSol = 2
+!
+!        rmatrixComponents%diota1 = 1.0_DP
+!        rmatrixComponents%diota2 = 0.0_DP
+!
+!        rmatrixComponents%dkappa1 = 1.0_DP
+!        rmatrixComponents%dkappa2 = 0.0_DP
+!        
+!        rmatrixComponents%dalpha1 = 0.0_DP
+!        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
+!        
+!        rmatrixComponents%dtheta1 = 0.0_DP !dtheta*dtstep
+!        rmatrixComponents%dtheta2 = dtheta
+!        
+!        IF (.NOT. bconvectionExplicit) THEN
+!        
+!          rmatrixComponents%dgamma1 = 0.0_DP
+!          rmatrixComponents%dgamma2 = &
+!              - dtheta * REAL(1-rproblem%iequation,DP)
+!          
+!          rmatrixComponents%dnewton1 = 0.0_DP
+!          rmatrixComponents%dnewton2 = &
+!                dtheta * REAL(1-rproblem%iequation,DP)
+!                
+!        ELSE
+!
+!          rmatrixComponents%dgamma1 = 0.0_DP
+!          rmatrixComponents%dgamma2 = 0.0_DP
+!          
+!          rmatrixComponents%dnewton1 = 0.0_DP
+!          rmatrixComponents%dnewton2 = 0.0_DP
+!
+!        END IF
+!
+!        rmatrixComponents%deta1 = 0.0_DP
+!        rmatrixComponents%deta2 = 1.0_DP
+!        
+!        rmatrixComponents%dtau1 = 0.0_DP
+!        rmatrixComponents%dtau2 = 1.0_DP
+!        
+!        rmatrixComponents%dmu1 = 0.0_DP
+!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+!            dtheta * (-dequationType)
+!            
+!        rmatrixComponents%dp1 = 0.0_DP
+!
+!        IF (.NOT. bconvectionExplicit) THEN
+!        
+!          ! In the 0'th timestep, there is no RHS in the dual equation
+!          ! and therefore no coupling between the primal and dual solution!
+!          ! That is because of the initial condition, which fixes the primal solution
+!          ! => dual solution has no influence on the primal one
+!          ! Therefore, the following weights must be commented out, otherwise
+!          ! the solver cannot converge in the 0'th timestep!
+!          ! Instead, the dual solution of this 0'th timestep only depends
+!          ! on the dual solution of the 1st timestep and is computed assuming that
+!          ! the initial condition meets the target flow (y_0 = z_0).
+!          !
+!          ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
+!          !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
+!
+!          IF (dnewton .EQ. 0.0_DP) THEN
+!            rmatrixComponents%dr21 = 0.0_DP
+!            rmatrixComponents%dr22 = 0.0_DP
+!          ELSE
+!            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+!                dtheta * ( dequationType)
+!            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+!                dtheta * (-dequationType)
+!          END IF
+!          
+!        ELSE
+!        
+!          !rmatrixComponents%dr21 = 0.0_DP
+!          !rmatrixComponents%dr22 = 0.0_DP
+!
+!          ! Must this be used instead of the above two lines?!?!?!?!?!?!?!?!?!?!?!?
+!          IF (dnewton .EQ. 0.0_DP) THEN
+!            rmatrixComponents%dr21 = 0.0_DP
+!            rmatrixComponents%dr22 = 0.0_DP
+!          ELSE
+!            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+!                ( dequationType) * dtheta 
+!            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+!                (-dequationType) * dtheta 
+!          END IF
+!
+!        END IF
 
-        rmatrixComponents%diota1 = 1.0_DP
+        ! The diagonal matrix.
+        IF (.NOT. bconvectionExplicit) THEN
+          rmatrixComponents%iprimalSol = 2
+          rmatrixComponents%idualSol = 2
+        ELSE
+          rmatrixComponents%iprimalSol = 2
+          rmatrixComponents%idualSol = 3
+        END IF
+
+        rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
 
-        rmatrixComponents%dkappa1 = 1.0_DP
+        rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 0.0_DP
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
         rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%dtheta1 = 0.0_DP !dtheta*dtstep
+        rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
         
         IF (.NOT. bconvectionExplicit) THEN
-        
-          rmatrixComponents%dgamma1 = 0.0_DP
+
+          rmatrixComponents%dgamma1 = &
+              dtheta * REAL(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
               - dtheta * REAL(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = 0.0_DP
+          rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
                 dtheta * REAL(1-rproblem%iequation,DP)
                 
         ELSE
-
+        
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = 0.0_DP
           
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = 0.0_DP
-
+        
         END IF
 
-        rmatrixComponents%deta1 = 0.0_DP
+        rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = 1.0_DP
         
-        rmatrixComponents%dtau1 = 0.0_DP
+        rmatrixComponents%dtau1 = 1.0_DP
         rmatrixComponents%dtau2 = 1.0_DP
         
+        ! Only difference to the usual diagonal: No coupling mass matrix
+        ! from dual to the primal velocity.
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            dtheta * (-dequationType)
-
+            (-dequationType) * dtheta 
+        rmatrixComponents%dp1 = 0.0_DP
+        
         IF (.NOT. bconvectionExplicit) THEN
-        
-          ! In the 0'th timestep, there is no RHS in the dual equation
-          ! and therefore no coupling between the primal and dual solution!
-          ! That is because of the initial condition, which fixes the primal solution
-          ! => dual solution has no influence on the primal one
-          ! Therefore, the following weights must be commented out, otherwise
-          ! the solver cannot converge in the 0'th timestep!
-          ! Instead, the dual solution of this 0'th timestep only depends
-          ! on the dual solution of the 1st timestep and is computed assuming that
-          ! the initial condition meets the target flow (y_0 = z_0).
-          !
-          ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
-          !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
 
-          IF (dnewton .EQ. 0.0_DP) THEN
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          ELSE
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
-                dtheta * ( dequationType)
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
-                dtheta * (-dequationType)
-          END IF
-          
-        ELSE
-        
-          !rmatrixComponents%dr21 = 0.0_DP
-          !rmatrixComponents%dr22 = 0.0_DP
-
-          ! Must this be used instead of the above two lines?!?!?!?!?!?!?!?!?!?!?!?
           IF (dnewton .EQ. 0.0_DP) THEN
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
@@ -453,9 +515,21 @@ CONTAINS
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           END IF
-
-        END IF
           
+        ELSE
+        
+          IF (dnewton .EQ. 0.0_DP) THEN
+            rmatrixComponents%dr21 = 0.0_DP
+            rmatrixComponents%dr22 = 0.0_DP
+          ELSE
+            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+                ( dequationType) * dtheta 
+            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+                (-dequationType) * dtheta 
+          END IF
+        
+        END IF
+                  
       ELSE IF (irelpos .EQ. 1) THEN
       
         ! Offdiagonal matrix on the right of the diagonal.
@@ -517,6 +591,8 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
+        rmatrixComponents%dp1 = 0.0_DP
+
         IF (.NOT. bconvectionExplicit) THEN
 
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -603,6 +679,8 @@ CONTAINS
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
+        
+        rmatrixComponents%dp1 = 0.0_DP
 
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
@@ -662,6 +740,16 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
             
+        ! If constraints on the control are active, activate the
+        ! projective mass matrix instead of the standard
+        ! mass matrix.
+        rmatrixComponents%dp1 = 0.0_DP
+        if ((rproblem%roptcontrol%ccontrolConstraints .eq. 1) .and. &
+            (dnewton .ne. 0.0_DP)) then
+          rmatrixComponents%dp1 = rmatrixComponents%dmu1
+          rmatrixComponents%dmu1 = 0.0_DP
+        end if
+        
         IF (.NOT. bconvectionExplicit) THEN
 
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -748,6 +836,8 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
+        rmatrixComponents%dp1 = 0.0_DP
+
         IF (.NOT. bconvectionExplicit) THEN
         
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -830,6 +920,8 @@ CONTAINS
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
+        rmatrixComponents%dp1 = 0.0_DP
+
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
 
@@ -840,33 +932,33 @@ CONTAINS
         rmatrixComponents%idualSol = 2
 
         rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP ! (1.0_DP-dsmooth) !0.0_DP
+        rmatrixComponents%diota2 = 0.0_DP 
 
         rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = (1.0_DP-dsmooth) !0.0_DP
+        rmatrixComponents%dkappa2 = 0.0_DP
         
         ! Current formulation:
-        ! -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
+        ! -(gamma+1/dt)*M*y + (M+dt*nu*L)*lambda = -(gamma+1/dt)*z
         
         rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
         rmatrixComponents%dalpha2 = 1.0_DP/dtstep
-        !(1.0_DP-dsmooth) + dsmooth ! * 1.0_DP/dtstep
+        
         ! No 'time coupling' here; because of the terminal condition,
         ! the mass matrix resembles not the time dependence!
         
         rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dsmooth * dtheta
+        rmatrixComponents%dtheta2 = dtheta
         
         IF (.NOT. bconvectionExplicit) THEN
 
           rmatrixComponents%dgamma1 = &
               dtheta * REAL(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
-              - dsmooth * dtheta * REAL(1-rproblem%iequation,DP) 
+              - dtheta * REAL(1-rproblem%iequation,DP) 
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
-                dsmooth * dtheta * REAL(1-rproblem%iequation,DP) 
+                dtheta * REAL(1-rproblem%iequation,DP) 
                 
         ELSE
         
@@ -879,16 +971,26 @@ CONTAINS
         END IF        
 
         rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = dsmooth
+        rmatrixComponents%deta2 = 1.0_DP
         
         rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = dsmooth
+        rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-dequationType) * dtheta * p_rspaceTimeDiscr%dgammaC / dtstep
+            (-dequationType) * dtheta * (1.0_DP + p_rspaceTimeDiscr%dgammaC / dtstep)
             
+        ! If constraints on the control are active, activate the
+        ! projective mass matrix instead of the standard
+        ! mass matrix.
+        rmatrixComponents%dp1 = 0.0_DP
+        if ((rproblem%roptcontrol%ccontrolConstraints .eq. 1) .and. &
+            (dnewton .ne. 0.0_DP)) then
+          rmatrixComponents%dp1 = rmatrixComponents%dmu1
+          rmatrixComponents%dmu1 = 0.0_DP
+        end if
+
         IF (.NOT. bconvectionExplicit) THEN
         
           ! Weight the mass matrix by GAMMA instead of delta(T).
@@ -988,6 +1090,17 @@ CONTAINS
 !      END IF
 
     END IF
+    
+    ! The dumin/dumax parameters are the same for all equations. They get active
+    ! only if dp1<>0.
+    rmatrixComponents%dumin1 = rproblem%roptcontrol%dumin1
+    rmatrixComponents%dumax1 = rproblem%roptcontrol%dumax1
+    rmatrixComponents%dumin2 = rproblem%roptcontrol%dumin2
+    rmatrixComponents%dumax2 = rproblem%roptcontrol%dumax2
+    
+    ! General parameters.
+    rmatrixComponents%dalphaC = rproblem%roptcontrol%dalphaC
+    rmatrixComponents%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
 
   END SUBROUTINE  
   
@@ -1000,9 +1113,9 @@ CONTAINS
 
 !<description>
   ! This routine performs a matrix-vector multiplication with the
-  ! system matrix A defined by rspaceTimeDiscr.
+  ! system matrix A defined by rspaceTimeMatrix.
   !    rd  :=  cx A(p_rsolution) rx  +  cy rd
-  ! If rspaceTimeDiscr does not specify an evaluation point for th nonlinearity
+  ! If rspaceTimeMatrix does not specify an evaluation point for th nonlinearity
   ! in A(.), the routine calculates
   !    rd  :=  cx A(rx) rx  +  cy rd
   ! rd is overwritten by the result.
@@ -1013,8 +1126,7 @@ CONTAINS
   ! levels as well as temporary vectors.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
-  ! coupled space-time matrix.
+  ! A t_ccoptSpaceTimeMatrix structure defining the space-time matrix.
   TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
 
   ! A space-time vector defining the current solution.
@@ -1094,16 +1206,6 @@ CONTAINS
     ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
     CALL sptivec_getTimestepData(rx, 1+0, rtempVector(2))
     
-    ! If constraints on u are active, restrict u.
-    if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
-      call cc_projectcontrol (rtempVector(2)%RvectorBlock(4),&
-          rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
-          rproblem%roptcontrol%dumax1)
-      call cc_projectcontrol (rtempVector(2)%RvectorBlock(5),&
-          rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
-          rproblem%roptcontrol%dumax2)
-    end if
-      
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
     ! account as the actual matrix multiplication routine cc_assembleDefect
     ! introduces another -1!
@@ -1136,15 +1238,6 @@ CONTAINS
     IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
       CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
           1+0, rtempVectorEval(2))
-      ! If constraints on u are active, restrict u.
-      if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
-        call cc_projectcontrol (rtempVectorEval(2)%RvectorBlock(4),&
-            rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
-            rproblem%roptcontrol%dumax1)
-        call cc_projectcontrol (rtempVectorEval(2)%RvectorBlock(5),&
-            rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
-            rproblem%roptcontrol%dumax2)
-      end if
     END IF
     
     ! DEBUG!!!
@@ -1219,16 +1312,6 @@ CONTAINS
 
         CALL sptivec_getTimestepData(rx, 1+ieqTime+1, rtempVector(3))
 
-        ! If constraints on u are active, restrict u.
-        if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
-          call cc_projectcontrol (rtempVector(3)%RvectorBlock(4),&
-              rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
-              rproblem%roptcontrol%dumax1)
-          call cc_projectcontrol (rtempVector(3)%RvectorBlock(5),&
-              rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
-              rproblem%roptcontrol%dumax2)
-        end if
-          
         ! If necesary, multiply the rtempVectorX. We have to take a -1 into
         ! account as the actual matrix multiplication routine cc_assembleDefect
         ! introduces another -1!
@@ -1239,16 +1322,6 @@ CONTAINS
         IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
           CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
               1+ieqTime+1, rtempVectorEval(3))
-
-          ! If constraints on u are active, restrict u.
-          if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
-            call cc_projectcontrol (rtempVectorEval(3)%RvectorBlock(4),&
-                rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin1,&
-                rproblem%roptcontrol%dumax1)
-            call cc_projectcontrol (rtempVectorEval(3)%RvectorBlock(5),&
-                rproblem%roptcontrol%dalphaC,rproblem%roptcontrol%dumin2,&
-                rproblem%roptcontrol%dumax2)
-          end if
 
         END IF
 
@@ -1347,6 +1420,9 @@ CONTAINS
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
+        if (iand(cfilter,SPTID_FILTER_CCDEF) .eq. 0) &
+          rmatrixComponents%ccontrolConstraints = 0
+          
         ! Subtract: rd = rd - Aii xi
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
@@ -1406,6 +1482,9 @@ CONTAINS
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
+        if (iand(cfilter,SPTID_FILTER_CCDEF) .eq. 0) &
+          rmatrixComponents%ccontrolConstraints = 0
+          
         ! Subtract: rd = rd - Ann xn
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
@@ -1483,54 +1562,109 @@ CONTAINS
     
   END SUBROUTINE 
    
+
   ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine cc_projectcontrol (rdualSolution,dalpha,dumin,dumax)
+  SUBROUTINE cc_generateInitCondRHS (rproblem,rspaceTimeDiscr,rx,rb)
 
 !<description>
-  ! Projects a dual solution vector lambda in such a way, that
-  ! dumin <= 1/alpha * lambda = u <= dumax holds.
+  ! Generates the RHS vector used for the initial condition.
 !</description>
 
 !<input>
-  ! Alpha value from the discretisation
-  real(DP), intent(in) :: dalpha
+  ! Problem structure of the main problem.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
   
-  ! Minimum value for u
-  real(DP), intent(in) :: dumin
-
-  ! Maximum value for u
-  real(DP), intent(in) :: dumax
+  ! Space-time discretisation structure of the level of the RHS.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  
+  ! Solution vector containing the solution of the first timestep.
+  type(t_vectorBlock), intent(in) :: rx
 !</input>
 
 !<inputoutput>
-  ! Vector to be restricted
-  type(t_vectorScalar), intent(inout) :: rdualSolution
+  ! Vector that receives the RHS for the initial condition.
+  ! The vector must have been initialised. The vector data is overwritten
+  ! by the RHS data.
+  type(t_vectorBlock), intent(inout) :: rb
 !</inputoutput>
 
 !</subroutine>
- 
-    ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata
-    integer :: i
-    real(dp) :: dactmin,dactmax
-    
-    ! Get the vector array
-    call lsyssc_getbase_double (rdualSolution,p_Ddata)
-    
-    ! Get the actual bounds -- they depend on alpha
-    dactmin = dalpha*dumin
-    dactmax = dalpha*dumax
-    
-    ! Restrict the vector
-    do i=1,rdualSolution%NEQ
-      p_Ddata(i) = min(max(p_Ddata(i),dactmin),dactmax)
-    end do
 
-  end subroutine   
-  
+    ! local variables
+    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_problem_lvl), pointer :: p_rlevelInfo
+    LOGICAL :: bconvectionExplicit
+    real(DP) :: dtstep, dtheta,dequationType
+    
+    ! If the following constant is set from 1.0 to 0.0, the primal system is
+    ! decoupled from the dual system!
+    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
+    
+    ! If the following constant is set from 1.0 to 0.0, the dual system is
+    ! decoupled from the primal system!
+    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
+    
+    ! If the following parameter is set from 1.0 to 0.0, the time coupling
+    ! is disabled, resulting in a stationary simulation in every timestep.
+    REAL(DP), PARAMETER :: dtimeCoupling = 1.0_DP
+    
+    ! The initial condition is implemented as:
+    !
+    !   (M/dt + A) y_0  =  b_0 := (M/dt + A) y^0
+    !
+    ! i.e. we take the solution vector of the 0th timestep. multiply it by the
+    ! (Navier--)Stokes equation and what we receive is the RHS for the
+    ! terminal condition. We only have to take care of bondary conditions.
+    
+    ! Set up the basic components of the Navier--Stokes matrix
+    p_rlevelInfo => rspaceTimeDiscr%p_rlevelInfo
+
+    rmatrixComponents%p_rdiscretisation         => p_rlevelInfo%rdiscretisation
+    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%rmatrixB1              
+    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%rmatrixB2              
+    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
+        
+    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
+    
+    ! Set up the matrix weights the matrix in the 0th timestep.
+    ! We set up only the stuff for the primal equation; for setting up
+    ! the RHS, there is no dual equation and also no coupling between the
+    ! primal and dual solutions.
+    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .NE. 0
+
+    dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
+    dtheta = rproblem%rtimedependence%dtimeStepTheta
+    
+    dequationType = 1.0_DP
+    IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
+      dequationType = -1.0_DP
+      
+    rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
+    rmatrixComponents%dtheta1 = dtheta
+    
+    IF (.NOT. bconvectionExplicit) THEN
+      rmatrixComponents%dgamma1 = &
+          dtheta * REAL(1-rproblem%iequation,DP)
+    END IF
+
+    rmatrixComponents%deta1 = 1.0_DP
+    rmatrixComponents%dtau1 = 1.0_DP
+        
+    ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1
+    call lsysbl_clearVector (rb)
+    call cc_assembleDefect (rmatrixComponents,rx,rb,-1.0_DP,rx,rx,rx)
+
+  END SUBROUTINE
+
 !  ! ***************************************************************************
 !  
 !!<subroutine>

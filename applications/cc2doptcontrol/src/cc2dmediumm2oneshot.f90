@@ -671,6 +671,7 @@ CONTAINS
     TYPE(t_matrixBlock) :: rmatrix
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorSol
+    type(t_vectorBlock) :: rinitialCondRHS
     
     REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
 
@@ -683,14 +684,21 @@ CONTAINS
     ! =0.5: Crank Nicolson
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
+    ! Generate the RHS for the initial condition.
+    call lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rinitialCondRHS,.false.)
+    call sptivec_getTimestepData (rx, 1, rtempVectorX)
+    call cc_generateInitCondRHS (rproblem,p_rspaceTimeDiscr,&
+        rtempVectorX,rinitialCondRHS)
+
     ! Assemble the space-time RHS into rd.
-    !CALL cc_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
-    !  rtempvectorX, rtempvectorB, rtempvectorD, .TRUE.)
     CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .TRUE.)
       
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
-        rx, rd, rtempvectorX, rtempvectorD)    
+    CALL tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvectorD)    
+
+    ! Release the rhs vector with the init. condition again.
+    call lsysbl_releaseVector (rinitialCondRHS)
 
     ! ----------------------------------------------------------------------
     ! 2.) Generate the matrix A
@@ -1568,6 +1576,7 @@ CONTAINS
     REAL(DP) :: ddefNorm,dinitDefNorm,depsRel,depsAbs
     
     TYPE(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
+    type(t_vectorBlock) :: rinitialCondRHS
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx
@@ -1628,6 +1637,13 @@ CONTAINS
 
     CALL tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx)
     
+    ! Generate the RHS for the initial condition.
+    call lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rinitialCondRHS,.false.)
+    call sptivec_getTimestepData (rx, 1, rtempVectorX)
+    call cc_generateInitCondRHS (rproblem,rspaceTimeDiscr,&
+        rtempVectorX,rinitialCondRHS)
+
     ddefNorm = 1.0_DP
 
     ! ---------------------------------------------------------------
@@ -1649,8 +1665,7 @@ CONTAINS
     CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
-        rx, rb, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -1676,8 +1691,7 @@ CONTAINS
     CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
-        rx, rd, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
 
     ! Assemble the defect
     !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
@@ -1699,6 +1713,7 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVectorB)
     CALL lsysbl_releaseVector (rtempVectorX)
     CALL lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rinitialCondRHS)
           
   END SUBROUTINE
 
@@ -1901,6 +1916,7 @@ CONTAINS
     LOGICAL :: bneumann
     CHARACTER(LEN=SYS_STRLEN) :: sstring,slinearSolver
     INTEGER :: nminIterations,nmaxIterations
+    type(t_vectorBlock) :: rinitialCondRHS
 
     REAL(DP) :: ddefNorm,dinitDefNorm,depsRel,depsAbs,dlastDefNorm,depsDiff
     
@@ -1983,6 +1999,13 @@ CONTAINS
 !    END DO
     CALL tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx)
     
+    ! Generate the RHS for the initial condition.
+    call lsysbl_createVecBlockByDiscr (rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rinitialCondRHS,.false.)
+    call sptivec_getTimestepData (rx, 1, rtempVectorX)
+    call cc_generateInitCondRHS (rproblem,rspaceTimeDiscr,&
+        rtempVectorX,rinitialCondRHS)
+
     ddefNorm = 1.0_DP
     
     ! ---------------------------------------------------------------
@@ -2014,8 +2037,7 @@ CONTAINS
     CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
-        rx, rb, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -2093,8 +2115,7 @@ CONTAINS
     CALL trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
-        rx, rd, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
 
     ! Assemble the defect
     !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, rx, rd, ddefNorm)
@@ -2116,6 +2137,7 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVectorB)
     CALL lsysbl_releaseVector (rtempVectorX)
     CALL lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rinitialCondRHS)
           
   END SUBROUTINE
   
@@ -2192,6 +2214,7 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeMatrix), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspaceTimePrecondMatrix
     TYPE(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
     TYPE(t_vectorBlock) :: rtempVecCoarse,rtempVecFine
+    type(t_vectorBlock) :: rinitialCondRHS
     
     ! A solver node that identifies our solver.
     TYPE(t_sptilsNode), POINTER :: p_rprecond,p_rsolverNode
@@ -2266,7 +2289,14 @@ CONTAINS
 
     ! Implement the bondary conditions into all initial solution vectors
     CALL tbc_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
-    
+
+    ! Generate the RHS for the initial condition.
+    call lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rinitialCondRHS,.false.)
+    call sptivec_getTimestepData (rx, 1, rtempVectorX)
+    call cc_generateInitCondRHS (rproblem,p_rspaceTimeDiscr,&
+        rtempVectorX,rinitialCondRHS)
+
     ! We set up a space-time preconditioner, e.g. in the following configuration:
     ! Main Preconditioner: Multigrid
     !     -> Presmoother:  Block Jacobi/GS
@@ -2654,8 +2684,7 @@ CONTAINS
       RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, .FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
-        rx, rb, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)
         
     ! DEBUG!!!
     !CALL sptivec_saveToFileSequence (rb,&
@@ -2669,7 +2698,8 @@ CONTAINS
     !    rx, rd, ddefNorm)
     CALL sptivec_copyVector (rb,rd)
     CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT+SPTID_FILTER_CCDEF,&
+      ddefNorm,rproblem%MT_outputLevel .GE. 2)
 
     ! DEBUG!!!
     !CALL sptivec_saveToFileSequence (rb,&
@@ -2865,6 +2895,12 @@ CONTAINS
         ! Normalise the primal and dual pressure to integral mean value zero.
         CALL tbc_pressureToL20 (rx,rtempVectorX)
       END IF
+      
+      ! Are bounds to the control active? If yes, restrict the control
+      ! to the allowed range.
+!      if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+!        call cc_projectControl (rproblem,rx)
+!      end if
 
       ! Call a parser that parses the script file commandfile.txt.
       ! This allows in-program modification of the problem sructure.
@@ -2887,7 +2923,8 @@ CONTAINS
       !    rx, rd, ddefNorm)
       IF (rproblem%MT_outputLevel .GE. 2) CALL output_line('Nonlinear defect:')
       CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT+SPTID_FILTER_CCDEF,&
+        ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       ! Filter the defect for boundary conditions in space and time.
       !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
@@ -2913,8 +2950,7 @@ CONTAINS
     CALL trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .TRUE.)
 
     ! Implement the initial condition into the RHS.
-    CALL tbc_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
-        rx, rd, rtempvectorX, rtempvector)    
+    CALL tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
 
     ! Assemble the defect
     !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &  
@@ -2996,6 +3032,7 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVectorB)
     CALL lsysbl_releaseVector (rtempVectorX)
     CALL lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rinitialCondRHS)
     
   END SUBROUTINE
   
