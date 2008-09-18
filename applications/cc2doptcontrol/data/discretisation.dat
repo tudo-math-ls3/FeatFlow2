@@ -281,24 +281,15 @@ ispaceTimeFormulation = 0
 #     of Baerwolff and Hinze!)
 iconvectionExplicit = 0
 
-# Type of implementation of the terminal condition.
-# =0: Standard. Implement terminal condition in a weak sense (and thus impose an 
-#     additional smoothing operator to the equation of the last time step and 
-#     filter the defect vectors for the terminal condition).
-# =1: Implement terminal condition in a strong sense into the equation.
-#     Vectors are not filtered but the matrix contains some identity operators.
-#     Not advisable.
-itypeTerminalCondition = 0
-
 # Type of constraints to apply to the control u.
 # =0: No constraints.
 # =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-ccontrolContraints = 0
+ccontrolConstraints = 0
 
 # Constraints on u_1
-dumin1 = -1.0E10
-dumax1 = 1.0E10
+dumin1 = -0.01
+dumax1 = 0.01 
 
 # Constraints in u_2
-dumin2 = -1.0E10
-dumax2 = 1.0E10
+dumin2 = -0.01
+dumax2 = 0.01 
