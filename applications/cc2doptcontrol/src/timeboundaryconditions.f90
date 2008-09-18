@@ -668,12 +668,12 @@ CONTAINS
     
     ! DEBUG!!!    
     CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-!
-!    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
-!    ! This realises the inital condition.
-!    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
-!    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
-!    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
+
+    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
+    ! This realises the inital condition.
+    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
+    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
+    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
 
 !    REAL(DP), DIMENSION(:),POINTER :: p_Db
 !    
@@ -729,14 +729,14 @@ CONTAINS
 
 !</subroutine>
 
-!    REAL(DP), DIMENSION(:),POINTER :: p_Db
-!    
-!    ! DEBUG!!!    
-!    CALL lsysbl_getbase_double (rd,p_Db)
-!    
-!    CALL lsyssc_clearVector(rd%RvectorBlock(1))
-!    CALL lsyssc_clearVector(rd%RvectorBlock(2))
-!    CALL lsyssc_clearVector(rd%RvectorBlock(3))
+    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    
+    ! DEBUG!!!    
+    CALL lsysbl_getbase_double (rd,p_Db)
+    
+    CALL lsyssc_clearVector(rd%RvectorBlock(1))
+    CALL lsyssc_clearVector(rd%RvectorBlock(2))
+    CALL lsyssc_clearVector(rd%RvectorBlock(3))
 
   END SUBROUTINE
 
