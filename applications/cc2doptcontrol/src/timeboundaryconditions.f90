@@ -519,7 +519,7 @@ CONTAINS
 
   END SUBROUTINE
 
-  ! ***************************************************************************
+  ! *************************************************************************
   
 !<subroutine>
 
@@ -594,6 +594,48 @@ CONTAINS
     !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
     !CALL sptivec_setTimestepData(rb, 2, rtempVectorD)
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE tbc_implementInitCond (rproblem,rx,rinitCondSol,rtempVector)
+
+!<description>
+  ! Implements the initial condition into the vector rx.
+  ! Overwrites the rx of the first time step.
+  !
+  ! Does not implement boundary conditions!
+!</description>
+
+!<input>
+  ! A problem structure that provides information on all
+  ! levels as well as temporary vectors.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</input>
+
+!<inputoutput>
+  ! A space-time vector with the RHS. The initial condition is implemented into
+  ! this vector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+
+  ! A vector containing the data for the initial condition of the RHS.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rinitCondSol
+
+  ! A temporary vector in the size of a spatial vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Overwrite the primal solution with the initial primal solution vector.
+    ! This realises the inital condition.
+    CALL sptivec_getTimestepData(rx, 1+0, rtempVector)
+    CALL lsyssc_copyVector (rinitCondSol%RvectorBlock(1),rtempVector%RvectorBlock(1))
+    CALL lsyssc_copyVector (rinitCondSol%RvectorBlock(2),rtempVector%RvectorBlock(2))
+    CALL sptivec_setTimestepData(rx, 1+0, rtempVector)
+    
   END SUBROUTINE
 
   ! ***************************************************************************
