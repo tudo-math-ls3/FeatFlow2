@@ -57,7 +57,7 @@ module uuid
     integer :: cversion
 
     ! the UUID data
-    integer, dimension(16) :: data
+    integer(1), dimension(16) :: data
   end type t_uuid
 
 !</typeblock>
@@ -126,7 +126,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,rand0,rand
+    integer :: i,byte0,byte
     
     select case(cversion)
     case (0)
@@ -141,23 +141,27 @@ contains
       ruuid%cversion = 4
       
       ! Compute seed from system clock
-      call system_clock(rand0)
+      call system_clock(byte0)
       
       do i = 1, 16
-        rand = MOD((57*rand0+1), 128)
-        rand0 = MOD((57*rand+1), 128)
-        ruuid%data(i) = rand0
+        byte = MOD((57*byte0+1), 128)
+        byte0 = MOD((57*byte+1), 128)
+        ruuid%data(i) = byte0
       end do
 
       ! Include version: Take 7th byte and perform "and" operation with 0x0f
       !                  followed by an "or" operation with 0x40
-      ruuid%data(7) = iand(ruuid%data(7), 15)
-      ruuid%data(7) = ior(ruuid%data(7), 64)
+      byte = ruuid%data(7)
+      byte = iand(byte, 15)
+      byte = ior(byte, 64)
+      ruuid%data(7) = byte
       
       ! Include variant: Take 9th byte and perform "and" operation with 0x3f
       !                  followed by an "or" operation with 0x80
-      ruuid%data(9) = iand(ruuid%data(9),63)
-      ruuid%data(9) = ior(ruuid%data(9), 128)
+      byte = ruuid%data(9)
+      byte = iand(byte, 63)
+      byte = ior(byte, 128)
+      ruuid%data(9) = byte
       
     case default
       call output_line('Unsupported UUID version!',&
@@ -171,7 +175,7 @@ contains
 
 !<subroutine>
 
-  subroutine uuid_createUUID_indirectly(svalue, cversion, ruuid)
+  subroutine uuid_createUUID_indirectly(svalue, ruuid)
 
 !<description>
     ! This subroutine creates a universally unique identifier
@@ -181,9 +185,6 @@ contains
 !<input>
     ! the string representation of the UUID
     character(len=36), intent(in) :: svalue
-
-    ! the version of the UUID
-    integer, intent(in)           :: cversion
 !</input>
 
 !<output>
@@ -193,9 +194,6 @@ contains
 
 !</subroutine>
     
-    ! Set version
-    ruuid%cversion = cversion
-
     ! Set UUID data
     read(svalue( 1: 2), '(Z2)') ruuid%data(1)
     read(svalue( 3: 4), '(Z2)') ruuid%data(2)
@@ -241,6 +239,9 @@ contains
     read(svalue(31:32),'(Z2)') ruuid%data(14)
     read(svalue(33:34),'(Z2)') ruuid%data(15)
     read(svalue(35:36),'(Z2)') ruuid%data(16)
+
+    ! Set version
+    ruuid%cversion = 4
 
   end subroutine uuid_createUUID_indirectly
   
