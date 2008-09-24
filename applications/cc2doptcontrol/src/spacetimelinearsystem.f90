@@ -183,6 +183,11 @@ MODULE spacetimelinearsystem
     ! =0: Standard system matrix.
     ! =1: Newton matrix
     INTEGER :: cmatrixType = 0
+    
+    ! Activate nonlinear projection operators in the matrix.
+    ! =0: Matrix does not contain projection operators for u.
+    ! =1: Matrix contains projection operators for u.
+    INTEGER :: ccontrolConstraints = 0
   
     ! Pointer to the space time discretisation that corresponds to this matrix.
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation => NULL()
@@ -222,9 +227,6 @@ MODULE spacetimelinearsystem
                                                    SPTID_FILTER_ICDEF + &
                                                    SPTID_FILTER_TCDEF
                                                    
-  ! Apply control constrains filter if necessary
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_CCDEF = 2**3
-
 !</constantblock>
 
 !</constants>
@@ -502,7 +504,6 @@ CONTAINS
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
-        rmatrixComponents%dp1 = 0.0_DP
         
         IF (.NOT. bconvectionExplicit) THEN
 
@@ -591,8 +592,6 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
-        rmatrixComponents%dp1 = 0.0_DP
-
         IF (.NOT. bconvectionExplicit) THEN
 
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -680,8 +679,6 @@ CONTAINS
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
         
-        rmatrixComponents%dp1 = 0.0_DP
-
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
 
@@ -740,16 +737,6 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
             
-        ! If constraints on the control are active, activate the
-        ! projective mass matrix instead of the standard
-        ! mass matrix.
-        rmatrixComponents%dp1 = 0.0_DP
-        if ((rproblem%roptcontrol%ccontrolConstraints .eq. 1) .and. &
-            (dnewton .ne. 0.0_DP)) then
-          rmatrixComponents%dp1 = rmatrixComponents%dmu1
-          rmatrixComponents%dmu1 = 0.0_DP
-        end if
-        
         IF (.NOT. bconvectionExplicit) THEN
 
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -836,8 +823,6 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
-        rmatrixComponents%dp1 = 0.0_DP
-
         IF (.NOT. bconvectionExplicit) THEN
         
           IF (dnewton .EQ. 0.0_DP) THEN
@@ -920,8 +905,6 @@ CONTAINS
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
-        rmatrixComponents%dp1 = 0.0_DP
-
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
 
@@ -981,16 +964,6 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta * (1.0_DP + p_rspaceTimeDiscr%dgammaC / dtstep)
             
-        ! If constraints on the control are active, activate the
-        ! projective mass matrix instead of the standard
-        ! mass matrix.
-        rmatrixComponents%dp1 = 0.0_DP
-        if ((rproblem%roptcontrol%ccontrolConstraints .eq. 1) .and. &
-            (dnewton .ne. 0.0_DP)) then
-          rmatrixComponents%dp1 = rmatrixComponents%dmu1
-          rmatrixComponents%dmu1 = 0.0_DP
-        end if
-
         IF (.NOT. bconvectionExplicit) THEN
         
           ! Weight the mass matrix by GAMMA instead of delta(T).
@@ -1091,8 +1064,7 @@ CONTAINS
 
     END IF
     
-    ! The dumin/dumax parameters are the same for all equations. They get active
-    ! only if dp1<>0.
+    ! The dumin/dumax parameters are the same for all equations. 
     rmatrixComponents%dumin1 = rproblem%roptcontrol%dumin1
     rmatrixComponents%dumax1 = rproblem%roptcontrol%dumax1
     rmatrixComponents%dumin2 = rproblem%roptcontrol%dumin2
@@ -1100,7 +1072,8 @@ CONTAINS
     
     ! General parameters.
     rmatrixComponents%dalphaC = rproblem%roptcontrol%dalphaC
-    rmatrixComponents%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
+    rmatrixComponents%ccontrolConstraints = rspaceTimeMatrix%ccontrolConstraints
+    rmatrixComponents%cmatrixType = rspaceTimeMatrix%cmatrixType
 
   END SUBROUTINE  
   
@@ -1420,9 +1393,6 @@ CONTAINS
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
-        if (iand(cfilter,SPTID_FILTER_CCDEF) .eq. 0) &
-          rmatrixComponents%ccontrolConstraints = 0
-          
         ! Subtract: rd = rd - Aii xi
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
@@ -1482,9 +1452,6 @@ CONTAINS
         CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
-        if (iand(cfilter,SPTID_FILTER_CCDEF) .eq. 0) &
-          rmatrixComponents%ccontrolConstraints = 0
-          
         ! Subtract: rd = rd - Ann xn
         CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))

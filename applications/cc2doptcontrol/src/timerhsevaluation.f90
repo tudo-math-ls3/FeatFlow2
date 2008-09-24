@@ -228,6 +228,7 @@ CONTAINS
       IF (isubstep .EQ. 0) THEN
       
         ! Primal RHS comes from rtempVector1. The dual from the
+        ! mean (depending on the timestep scheme) of 0 and the
         ! isubstep+1'th RHS in rtempVector2.
         !
         ! primal RHS(0) = PRIMALRHS(0)
@@ -236,6 +237,10 @@ CONTAINS
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(1),rtempVectorRHS%RvectorBlock(1))
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
+
+        CALL lsyssc_clearVector (rtempVector1%RvectorBlock(4))
+        CALL lsyssc_clearVector (rtempVector1%RvectorBlock(5))
+        CALL lsyssc_clearVector (rtempVector1%RvectorBlock(6))
 
         CALL lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&

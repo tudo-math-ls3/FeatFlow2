@@ -1742,7 +1742,7 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 
   ! space time matrix structure defining the matrix A.
-  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
+  TYPE(t_ccoptSpaceTimeMatrix), INTENT(INout) :: rspaceTimeMatrix
   
   ! A space-time vector defining the current solution.
   TYPE(t_spacetimeVector), INTENT(IN) :: rx
@@ -1770,17 +1770,20 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel
-    REAL(DP) :: dtheta,dtstep
+    INTEGER :: isubstep,ilevel,itejac
+    REAL(DP) :: dtheta,dtstep,ddefNorm,dinitDef
     LOGICAL :: bsuccess
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX3
+    TYPE(t_spacetimeVector) :: rcurrentx,rcurrentd
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
     
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    
+    rspaceTimeMatrix%cmatrixType=1
     
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
@@ -1812,63 +1815,99 @@ CONTAINS
     CALL lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX1,.TRUE.)
     CALL lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX3,.TRUE.)
     
+    ! Create a temp vector for the current iterates of the preconditioner
+    call sptivec_initVectorDiscr (rcurrentx,rx%p_rtimeDiscretisation,rx%p_rblockDiscretisation)
+    call sptivec_initVectorDiscr (rcurrentd,rd%p_rtimeDiscretisation,rd%p_rblockDiscretisation)
+
+    ! Create the initial defect.
+    call sptivec_copyVector (rd,rcurrentd)
+    CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rcurrentx, rcurrentd, &
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dinitDef,rproblem%MT_outputLevel .GE. 2)
+    ddefNorm = dinitDef
+    call output_line("Block-JAC: Ite=0, ||res||="//ADJUSTL(sys_sdEP(ddefNorm,20,10)))
+    
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
     !
-    ! For this purpose, loop through the substeps.
+    ! Loop until convergence.
+    do itejac = 1,100
     
-    DO isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
+      ! Sopping criterion: 2 digits.
+      if (ddefNorm .lE. dinitDef*1.0E-2_DP) exit
     
-      ! Current time step?
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep * dtstep
-      rproblem%rtimedependence%itimestep = isubstep
-
-      CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
-          TRIM(sys_siL(isubstep,10))//&
-          ' Time: '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,10)))
-    
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL cc_updateDiscreteBC (rproblem)
-      END IF
-
-      ! DEBUG!!!      
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-      CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
-
-      ! Read in the RHS/solution/defect vector of the current timestep.
-      CALL sptivec_getTimestepData (rx, 1+isubstep, rtempVectorX)
-      CALL sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
-
-      IF (isubstep .GT. 0) THEN
-        CALL sptivec_getTimestepData (rx, 1+isubstep-1, rtempVectorX1)
-      END IF
-
-      IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
-        CALL sptivec_getTimestepData (rx, 1+isubstep-3, rtempVectorX3)
-      END IF
+      ! For this purpose, loop through the substeps.
       
-      ! Set up the matrix weights for the diagonal matrix
-      CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents)
+      DO isubstep = 1,p_rspaceTimeDiscr%NEQtime
+      
+        ! Current time step?
+        rproblem%rtimedependence%dtime = &
+            rproblem%rtimedependence%dtimeInit + (isubstep-1) * dtstep
+        rproblem%rtimedependence%itimestep = isubstep-1
+
+        CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
+            TRIM(sys_siL(isubstep,10))//&
+            ' Time: '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,10)))
+      
+        ! -----
+        ! Discretise the boundary conditions at the new point in time -- 
+        ! if the boundary conditions are nonconstant in time!
+        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+          CALL cc_updateDiscreteBC (rproblem)
+        END IF
+
+        ! DEBUG!!!      
+        CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+        CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
+
+        ! Read in the RHS/solution/defect vector of the current timestep.
+        CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
+        CALL sptivec_getTimestepData (rcurrentd, isubstep, rtempVectorD)
+
+        IF (isubstep .GT. 1) THEN
+          CALL sptivec_getTimestepData (rx, isubstep-1, rtempVectorX1)
+        END IF
+
+        IF (isubstep .LE. p_rspaceTimeDiscr%NEQtime-1) THEN
+          CALL sptivec_getTimestepData (rx, isubstep+1, rtempVectorX3)
+        END IF
         
-      ! Perform preconditioning of the defect with the method provided by the
-      ! core equation module.
-      CALL cc_precondDefect (rpreconditioner,rmatrixComponents,rtempVectorD,&
-        rtempVectorX1,rtempVectorX,rtempVectorX3,&
-        bsuccess,rproblem%rcollection)      
-    
-      ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, 1+isubstep, rtempVectorD)
+        ! Set up the matrix weights for the diagonal matrix
+        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+          isubstep,0,rmatrixComponents)
+          
+        ! Perform preconditioning of the defect with the method provided by the
+        ! core equation module.
+        CALL cc_precondDefect (rpreconditioner,rmatrixComponents,rtempVectorD,&
+          rtempVectorX1,rtempVectorX,rtempVectorX3,&
+          bsuccess,rproblem%rcollection)      
       
-    END DO
+        ! Save back the preconditioned defect.
+        CALL sptivec_setTimestepData (rcurrentd, isubstep, rtempVectorD)
+        
+      END DO
+      
+      ! Add the correction to the current iterate
+      call sptivec_vectorLinearComb(rcurrentd,rcurrentx,1.0_DP,1.0_DP)
+
+      ! Create the new defect
+      call sptivec_copyVector (rd,rcurrentd)
+      CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rcurrentx, rcurrentd, &
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, ddefNorm,.false.)
+      call output_line("Block-JAC: Ite="//trim(sys_siL(itejac,10))//&
+          ", ||res||="//ADJUSTL(sys_sdEP(ddefNorm,20,10)))
+      
+    end do ! itejac
+    
+    ! Return the preconditioned defect
+    call sptivec_copyVector (rcurrentx,rd)
     
     ! Release temp vectors
     CALL lsysbl_releaseVector (rtempVectorX1)
     CALL lsysbl_releaseVector (rtempVectorX3)
+    call sptivec_releaseVector (rcurrentx)
+    call sptivec_releaseVector (rcurrentd)
+    
+    rspaceTimeMatrix%cmatrixType=0
     
   END SUBROUTINE
 
@@ -2023,10 +2062,12 @@ CONTAINS
 
     rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
     rspaceTimeMatrix%cmatrixType = 0
+    rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
     rspaceTimeMatrix%p_rsolution => rx
     
     ! Set up a structure for the matrix that serves as space-time
-    ! preconditioner. This is based onthe space time matrix...
+
+    ! preconditioner. This is based on the space time matrix...
     
     rspaceTimePreconditioner = rspaceTimeMatrix
     IF ((rproblem%iequation .EQ. 0) .AND. (ctypePreconditioner .EQ. 1)) THEN
@@ -2107,8 +2148,8 @@ CONTAINS
         -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       CALL output_separator (OU_SEP_EQUAL)
-      CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
-          ' Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+      CALL output_line ('Iteration: '//trim(sys_siL(iglobIter,10))//&
+          '              Defect of supersystem: '//adjustl(sys_sdEP(ddefNorm,20,10)))
       CALL output_separator (OU_SEP_EQUAL)
       
     END DO
@@ -2234,7 +2275,8 @@ CONTAINS
     
     ! TYPE(t_spaceTimeVector) :: rtemp
 
-    REAL(DP) :: ddefNorm,dinitDefNorm,dlastDefNorm
+    REAL(DP) :: ddefNorm,dinitDefNorm,dlastDefNorm,dtempdef,depsrelLinSol
+    REAL(DP) :: dinexactNewtonExponent,dinexactNewtonEpsRel
     
     CHARACTER(LEN=SYS_STRLEN) :: slinearSolver,sstring
     
@@ -2388,10 +2430,6 @@ CONTAINS
          
       IF (ilev .EQ. 1) THEN
         ! ..., on the minimum level, create a coarse grid solver, ...
-        NULLIFY(p_rsmoother)
-        NULLIFY(p_rpresmoother)
-        NULLIFY(p_rpostsmoother)
-        NULLIFY(p_rprecond)
 
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'domega', domega, 1.0_DP)
@@ -2494,6 +2532,11 @@ CONTAINS
               'ioutputLevel', p_rprecond%ioutputLevel, 100)
         END IF
         
+        ! ...; finally initialise the level with that       
+        CALL sptils_setMultigridLevel (p_rmgSolver,ilev,&
+                      rinterlevelProjection(ilev),&
+                      NULL(),NULL(),p_rcgrSolver)
+        
       ELSE
         ! ... on higher levels, create a smoother, ...
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
@@ -2590,14 +2633,13 @@ CONTAINS
           CALL sptils_releaseSolver(p_rsmoother)
         END IF
 
-        ! NULLIFY(p_rsmoother)
-        NULLIFY(p_rcgrSolver)
+        ! ...; finally initialise the level with that       
+        CALL sptils_setMultigridLevel (p_rmgSolver,ilev,&
+                      rinterlevelProjection(ilev),&
+                      p_rpresmoother,p_rpostsmoother,NULL())
+
       END IF
        
-      ! ...; finally initialise the level with that       
-      CALL sptils_setMultigridLevel (p_rmgSolver,ilev,&
-                    rinterlevelProjection(ilev),&
-                    p_rpresmoother,p_rpostsmoother,p_rcgrSolver)
     END DO
     
     ! Our main solver is MG now.
@@ -2627,6 +2669,10 @@ CONTAINS
                                 'dalphaMax', p_rmgSolver%p_rsubnodeMultigrid%dalphaMax,&
                                 1.0_DP)
                                 
+    ! Save the relative stopping criterion of the linear solver; we
+    ! probably need it for the adaptive Newton.
+    depsrelLinSol = p_rmgSolver%depsRel
+                                
     ! For the optimal coarse grid correction, we multiply the residuum of the
     ! 3rd and 6th equation by -1; gives better results (matrix symmetry?!?).
     ! Note that there is currently no INIT/DONE-Routine for the weights, so we
@@ -2644,13 +2690,14 @@ CONTAINS
       
       ! Configure the matrix type; standard or Newton matrix
       SELECT CASE (ctypePreconditioner)
-      CASE (1)
+      CASE (CCPREC_LINEARSOLVER)
         ! Standard system matrix
         RspaceTimePrecondMatrix(ilev)%cmatrixType = 0
         
-      CASE (2)
+      CASE (CCPREC_NEWTON,CCPREC_INEXACTNEWTON)
         ! Newton matrix
         RspaceTimePrecondMatrix(ilev)%cmatrixType = 1
+        RspaceTimePrecondMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
       END SELECT
       
     END DO 
@@ -2673,6 +2720,10 @@ CONTAINS
     ! contain any Newton parts!
     rspaceTimeMatrix%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
     rspaceTimeMatrix%p_rsolution => rx
+    
+    ! That matrix also has to apply projection operators when being applied
+    ! to a vector -- in case control constraints are active.
+    rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
     
     ! Attach matrix information to the linear solver
     CALL sptils_setMatrices (p_rsolverNode,RspaceTimePrecondMatrix)
@@ -2711,7 +2762,7 @@ CONTAINS
     !    rx, rd, ddefNorm)
     CALL sptivec_copyVector (rb,rd)
     CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT+SPTID_FILTER_CCDEF,&
+      -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
       ddefNorm,rproblem%MT_outputLevel .GE. 2)
 
     ! DEBUG!!!
@@ -2720,6 +2771,10 @@ CONTAINS
         
     dinitDefNorm = ddefNorm
     dlastDefNorm = 0.0_DP
+    if (dinitDefNorm .eq. 0.0_DP) then
+      ! Trick to avoid div/0.
+      dinitDefNorm = 1.0_DP
+    end if
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
@@ -2747,6 +2802,12 @@ CONTAINS
                                  'depsDiff', depsDiff, 0.0_DP)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
                                  'domega', domega, 1.0_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
+                                 'domega', domega, 1.0_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
+                                 'dinexactNewtonEpsRel', dinexactNewtonEpsRel, 1.0E-2_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SOLVER', &
+                                 'dinexactNewtonExponent', dinexactNewtonExponent, 2.0_DP)
 
     ! Initalise statistic variables
     CALL stat_clearTimer (rtimeSmoothing)
@@ -2822,6 +2883,37 @@ CONTAINS
 !        END DO
 !      END IF
       
+      IF (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) THEN
+      
+        ! Determine the stopping criterion for the inexact Newton.
+        ! This is an adaptive stopping criterion depending on the current
+        ! defect. In detail, we calculate:
+        !
+        !   |b-Ax_{i+1}|         ( |b-Ax_i| ) exp             ( |b-Ax_i| )
+        !   ------------ = min { ( -------- )     , depsrel * ( -------- ) }
+        !     |b-Ax_0|           ( |b-Ax_0| )                 ( |b-Ax_0| )
+        !
+        ! see e.g. [Michael Hinze, Habilitation, p. 51]
+        !
+        ! Switch off the relative stopping criterion in the linear solver:
+        
+        p_rsolverNode%depsRel = 0.0_DP
+        
+        ! Calculate the new absolute stopping criterion:
+        
+        dtempdef = ddefNorm / dinitDefNorm
+        
+        p_rsolverNode%depsAbs = MIN(dtempDef**dinexactNewtonExponent,&
+                                    dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
+        
+        ! For the coarse grid solver, we choose the same stopping criterion.
+        ! But just for safetyness, the coarse grid solver should gain at least
+        ! one digit!
+        p_rcgrSolver%depsRel = 1.0E-1_DP
+        p_rcgrSolver%depsAbs = p_rsolverNode%depsAbs
+      
+      END IF
+
       IF (rproblem%MT_outputLevel .GE. 1) THEN
         ! Value of the functional
         CALL cc_optc_nonstatFunctional (rproblem,&
@@ -2833,8 +2925,14 @@ CONTAINS
         CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
         CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
         CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
+        IF (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) THEN
+          CALL output_lbrk ()
+          CALL output_line ('Inexact Newton: Stopping criterion = '//&
+              TRIM(sys_sdEL(p_rsolverNode%depsAbs,10)))
+        END IF
+        CALL output_separator (OU_SEP_EQUAL)
       END IF
-      
+            
       CALL stat_clearTimer (rtimerMGStep)
 
       ! DEBUG!!!
@@ -2938,8 +3036,9 @@ CONTAINS
       !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
       !    rx, rd, ddefNorm)
       IF (rproblem%MT_outputLevel .GE. 2) CALL output_line('Nonlinear defect:')
+      
       CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT+SPTID_FILTER_CCDEF,&
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
         ddefNorm,rproblem%MT_outputLevel .GE. 2)
           
       ! Filter the defect for boundary conditions in space and time.
@@ -2947,8 +3046,8 @@ CONTAINS
       !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       CALL output_separator (OU_SEP_EQUAL)
-      CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
-          ' Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+      CALL output_line ('Iteration: '//TRIM(sys_siL(iglobIter,10))//&
+          '                          Defect of supersystem:  '//ADJUSTL(sys_sdEP(ddefNorm,20,10)))
       CALL output_line ('Time for computation of this iterate: '//&
           TRIM(sys_sdL(rtimerMGStep%delapsedReal+rtimeFactorisationStep%delapsedReal,10)))
       CALL output_separator (OU_SEP_EQUAL)

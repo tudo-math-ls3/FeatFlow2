@@ -720,7 +720,7 @@ CONTAINS
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioning
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_INEXACTNEWTON)
       ! Preconditioner was a linear solver structure.
       !
       ! Release the preconditioner matrix on every level
@@ -822,7 +822,7 @@ CONTAINS
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioner
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_INEXACTNEWTON)
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
       !
@@ -949,7 +949,7 @@ CONTAINS
     SELECT CASE (rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_NONE)
       ! No preconditioner
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_INEXACTNEWTON)
 
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
@@ -1000,7 +1000,8 @@ CONTAINS
 
           ! ----------------------------------------------------
           ! Should the linear solver use the Newton matrix?
-          IF (rpreconditioner%ctypePreconditioning .EQ. CCPREC_NEWTON) THEN
+          IF ((rpreconditioner%ctypePreconditioning .EQ. CCPREC_NEWTON) .or. &
+              (rpreconditioner%ctypePreconditioning .EQ. CCPREC_INEXACTNEWTON)) THEN
             ! That means, our preconditioner matrix must look like
             !
             !  A11  A12  B1

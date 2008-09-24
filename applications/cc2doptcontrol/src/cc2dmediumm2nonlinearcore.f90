@@ -135,6 +135,9 @@ MODULE cc2dmediumm2nonlinearcore
 
   ! Preconditioning by Newton-Iteration
   INTEGER, PARAMETER :: CCPREC_NEWTON        = 2
+  
+  ! Preconditioning by inexact/adaptive Newton iteration
+  INTEGER, PARAMETER :: CCPREC_INEXACTNEWTON = 3
 
 !</constantblock>
 
@@ -269,7 +272,7 @@ MODULE cc2dmediumm2nonlinearcore
     ! Type of preconditioner.
     ! This is one of the CCPREC_xxxx flags as defined above (CCPREC_INVERSEMASS for
     ! preconditioning with inverse mass matrix, CCPREC_LINEARSOLVER for solving a linear
-    ! system, CCPREC_NEWTON for a Newton iteration,...)
+    ! system, CCPREC_NEWTON / CCPREC_INEXACTNEWTON for a Newton iteration,...)
     INTEGER :: ctypePreconditioning = CCPREC_NONE
     
     ! Name of the section in the DAT file configuring this preconditioner.
@@ -453,7 +456,7 @@ CONTAINS
       SELECT CASE (rpreconditioner%ctypePreconditioning)
       CASE (CCPREC_NONE)
         ! No preconditioning. Do nothing.
-      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_INEXACTNEWTON)
         ! Preconditioning with a linear solver.
         !
         ! At first, assemble the preconditioner matrices on all levels
@@ -463,7 +466,8 @@ CONTAINS
         
         bassembleNewton = .FALSE.
         
-        IF (rpreconditioner%ctypePreconditioning .EQ. CCPREC_NEWTON) THEN
+        IF ((rpreconditioner%ctypePreconditioning .EQ. CCPREC_NEWTON) .or. &
+            (rpreconditioner%ctypePreconditioning .EQ. CCPREC_INEXACTNEWTON)) THEN
             
           ! Use Newton in any case.
           bassembleNewton = .TRUE.

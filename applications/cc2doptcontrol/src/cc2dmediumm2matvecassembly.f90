@@ -11,7 +11,7 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#  $$        A_1 y   +  \eta_1 B p   +          (dr1 R + dp1*P)lambda      = f_1 $$
+!#  $$        A_1 y   +  \eta_1 B p   +          R lambda      = f_1 $$
 !#  $$ \tau_1 B^T y   +  \kappa_1 I p                                      = f_2 $$
 !#
 !#  $$        R_2 y   +  A_2 \lambda  + \eta_2   B \xi           = f_3 $$
@@ -21,7 +21,7 @@
 !#
 !#   $$ A_1 = \iota_1 I  +  \alpha_1 M  +  \theta_1 L  +  \gamma_1 N(y) + dnewton_1 N*(y)$$
 !#   $$ A_2 = \iota_2 I  +  \alpha_2 M  +  \theta_2 L  +  \gamma_2 N(y) + dnewton_2 N*(y)$$
-!#   $$ R_1 =               \mu_1    M  +            dr_{11} N(\lambda) + dr_{12}   N*(\lambda) $$
+!#   $$ R_1 =               \mu_1 (P)M  +            dr_{11} N(\lambda) + dr_{12}   N*(\lambda) $$
 !#   $$ R_2 =               \mu_2    M  +            dr_{21} N(\lambda) + dr_{22}   N*(\lambda) $$
 !#  
 !# and
@@ -214,22 +214,23 @@ MODULE cc2dmediumm2matvecassembly
     REAL(DP) :: dr21 = 0.0_DP
     REAL(DP) :: dr22 = 0.0_DP
     
-    ! P-parameter that weight the projective mass matrix in the
-    ! primal equation.
-    REAL(DP) :: dp1 = 0.0_DP
-    
     ! Regularisation parameter ALPHA which controls the transformation
     ! from the dual variable $\lambda$ to the control $u$:
     ! $u=-1/\alpha \lambda$.
     REAL(DP) :: dalphaC = 0.0_DP
     
+    ! Type of this matrix.
+    ! =0: Standard matrix.
+    ! =1: Newton matrix.
+    integer :: cmatrixType = 0
+
     ! Type of constraints to apply to the control u.
     ! =0: No constraints.
     ! =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
     ! Necessary for applying the correct projection during matrix-vector
     ! multiplication.
     integer :: ccontrolConstraints = 0
-
+    
     ! Minimum and maximum value of u in case projection of u is
     ! active (i.e. dp <> 0). Min/max values for u1.
     REAL(DP) :: dumin1 = 0.0_DP
@@ -430,8 +431,8 @@ CONTAINS
     dalpha = rcollection%DquickAccess(3)
     dp1 = rcollection%DquickAccess(4)
     
-    ! Scale the bounds by -alpha = -1/alphai as we analyse lambda
-    ! ad not u. Change the role of min/max because of the "-"
+    ! Scale the bounds by -alpha as we analyse lambda
+    ! and not u. Change the role of min/max because of the "-"
     ! sign!
     da = -rcollection%DquickAccess(2)*dalpha
     db = -rcollection%DquickAccess(1)*dalpha
@@ -467,13 +468,11 @@ CONTAINS
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
     
     ! Now check the function values lambda.
-    ! If a < -1/alpha lambda < b, return 1/alpha.
+    ! If b < -1/alpha lambda < a, return 1/alpha.
     ! Otherwise, return 0.
     do iel = 1,ubound(Dcoefficients,3)
       do ipt = 1,ubound(Dcoefficients,2)
-        ! We have to check for non-equlity here! Due to the projection of the
-        ! control, values really larger or smaller than the bounds will
-        ! not occur!
+        ! Check if the dual variable is in the bounds for the control.
         if ((Dfunc(ipt,iel) .gt. da) .and. (Dfunc(ipt,iel) .lt. db)) then
           Dcoefficients(1,ipt,iel) = dp1
         else
@@ -486,6 +485,61 @@ CONTAINS
     deallocate(Dfunc)
 
   END SUBROUTINE
+
+  ! -----------------------------------------------------
+
+  SUBROUTINE massmatfilter (rmatrix, rvector, dalphaC, dmin, dmax)
+      
+  ! Filters a mass matrix. The lines in the matrix rmatrix corresponding
+  ! to all entries in the (control-)vector violating the constraints
+  ! of the problem.
+  
+  ! Matrix to be filtered
+  type(t_matrixScalar), intent(inout) :: rmatrix
+
+  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
+  ! violates the control constraints given by rmatrixComponents, the corresponding
+  ! lines are set to 0.
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! ALPHA regularisation parameter from the space-time matrix
+  real(dp), intent(in) :: dalphaC
+  
+  ! minimum bound for the control
+  real(dp), intent(in) :: dmin
+
+  ! maximum bound for the control
+  real(dp), intent(in) :: dmax
+  
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Ddata
+    integer(i32), dimension(:), allocatable :: p_Idofs
+    integer :: i,nviolate
+    real(dp) :: du
+    return    
+    ! Get the vector data
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    
+    ! Figure out the DOF's violating the constraints
+    allocate(p_Idofs(rvector%NEQ))
+    
+    nviolate = 0
+    do i=1,rvector%NEQ
+      du = -p_Ddata(i)/dalphaC
+      if ((du .le. dmin) .or. (du .ge. dmax)) then
+        nviolate = nviolate + 1
+        p_Idofs(nviolate) = i
+      end if
+    end do
+    
+    if (nviolate .gt. 0) then
+      ! Filter the matrix
+      call mmod_replaceLinesByZero (rmatrix,p_Idofs(1:nviolate))
+    end if
+    
+    deallocate(p_Idofs)
+
+  END SUBROUTINE    
 
   ! ***************************************************************************
 
@@ -1683,12 +1737,13 @@ CONTAINS
       type(t_bilinearForm) :: rform
       type(t_collection) :: rcollection
 
-      ! Assemble A14/A25? Note that we currently support either
-      ! dmu1<>0 or dp1<>0, not both!!!    
-      IF ((rmatrixComponents%dmu1 .NE. 0.0_DP) .or. &
-          (rmatrixComponents%dp1 .NE. 0.0_DP)) THEN
+      ! Assemble A14/A25? 
+      IF (rmatrixComponents%dmu1 .NE. 0.0_DP) THEN
           
-        IF (rmatrixComponents%dmu1 .NE. 0.0_DP) THEN
+        ! Calculate the usual mass matrix if conrol constraints are deactivated
+        ! or if Newton is not active.
+        IF ((rmatrixComponents%ccontrolConstraints .eq. 0) .or. &
+            (rmatrixComponents%cmatrixType .eq. 1)) THEN
       
           ! Copy the entries of the mass matrix. Share the structure.
           ! We must not share the entries as these might be changed by the caller
@@ -1705,65 +1760,87 @@ CONTAINS
             CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rmatrixComponents%dmu1)
             CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,5),rmatrixComponents%dmu1)
           END IF
-        END IF
+          
+        ELSE IF ((rmatrixComponents%ccontrolConstraints .eq. 1) .and. &
+                 (rmatrixComponents%cmatrixType .eq. 1)) THEN
+          
+!          ! In A14/A25 we have to create a 'projective mass matrix'.
+!          ! This is the derivative of a projection operator
+!          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
+!          ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
+!          ! We assemble this matrix just as a standard mass matrix with noconstant
+!          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
+!          ! we return 0 as coefficient, otherwise 1.
+!        
+!          rform%itermCount = 1
+!          rform%Idescriptors(1,1) = DER_FUNC
+!          rform%Idescriptors(2,1) = DER_FUNC
+!
+!          ! In this case, we have nonconstant coefficients.
+!          rform%ballCoeffConstant = .FALSE.
+!          rform%BconstantCoeff(:) = .FALSE.
+!
+!          ! Prepare a collection structure to be passed to the callback
+!          ! routine. We attach the vector T in the quick-access variables
+!          ! so the callback routine can access it.
+!          ! The bounds and the alpha value are passed in the
+!          ! quickaccess-arrays.
+!          call collct_init(rcollection)
+!          rcollection%p_rvectorQuickAccess1 => rvector
+!
+!          ! Coefficient is dmu1=1/alpha or 0, depending on lambda
+!          rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+!          rcollection%DquickAccess(4)  = rmatrixComponents%dmu1
+!          
+!          ! At first, set up A14, depending on lambda_1.
+!          rcollection%IquickAccess(1) = 1
+!          rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+!          rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+!          
+!          ! Now we can build the matrix entries.
+!          ! We specify the callback function coeff_Laplace for the coefficients.
+!          ! As long as we use constant coefficients, this routine is not used.
+!          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!          ! the framework will call the callback routine to get analytical
+!          ! data.
+!          ! The collection is passed as additional parameter. That's the way
+!          ! how we get the vector to the callback routine.
+!          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,4),&
+!              coeff_ProjMass,rcollection)
+!
+!          ! Now, set up A25, depending on lambda_2.
+!          rcollection%IquickAccess(1)  = 2
+!          rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+!          rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+!
+!          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,5),&
+!              coeff_ProjMass,rcollection)
+!          
+!          ! Now we can forget about the collection again.
+!          call collct_done (rcollection)
+
+          ! Copy the entries of the mass matrix. Share the structure.
+          ! We must not share the entries as these might be changed by the caller
+          ! e.g. due to boundary conditions!
+          
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
         
-        IF (rmatrixComponents%dp1 .NE. 0.0_DP) THEN
-          
-          ! In A14/A25 we have to create a 'projective mass matrix'.
-          ! This is the derivative of a projection operator
-          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
-          ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
-          ! We assemble this matrix just as a standard mass matrix with noconstant
-          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
-          ! we return 0 as coefficient, otherwise 1.
-        
-          rform%itermCount = 1
-          rform%Idescriptors(1,1) = DER_FUNC
-          rform%Idescriptors(2,1) = DER_FUNC
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+              
+          ! Scale the entries by dmu2.
+          IF (rmatrixComponents%dmu1 .NE. 1.0_DP) THEN
+            CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rmatrixComponents%dmu1)
+            CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,5),rmatrixComponents%dmu1)
+          END IF
 
-          ! In this case, we have nonconstant coefficients.
-          rform%ballCoeffConstant = .FALSE.
-          rform%BconstantCoeff(:) = .FALSE.
-
-          ! Prepare a collection structure to be passed to the callback
-          ! routine. We attach the vector T in the quick-access variables
-          ! so the callback routine can access it.
-          ! The bounds and the alpha value are passed in the
-          ! quickaccess-arrays.
-          call collct_init(rcollection)
-          rcollection%p_rvectorQuickAccess1 => rvector
-
-          ! Coefficient is dp1=1/alpha or 0, depending on lambda
-          rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
-          rcollection%DquickAccess(4)  = rmatrixComponents%dp1
-          
-          ! At first, set up A14, depending on lambda_1.
-          rcollection%IquickAccess(1) = 1
-          rcollection%DquickAccess(1) = rmatrixComponents%dumin1
-          rcollection%DquickAccess(2) = rmatrixComponents%dumax1
-          
-          ! Now we can build the matrix entries.
-          ! We specify the callback function coeff_Laplace for the coefficients.
-          ! As long as we use constant coefficients, this routine is not used.
-          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-          ! the framework will call the callback routine to get analytical
-          ! data.
-          ! The collection is passed as additional parameter. That's the way
-          ! how we get the vector to the callback routine.
-          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,4),&
-              coeff_ProjMass,rcollection)
-
-          ! Now, set up A25, depending on lambda_2.
-          rcollection%IquickAccess(1)  = 2
-          rcollection%DquickAccess(1) = rmatrixComponents%dumin2
-          rcollection%DquickAccess(2) = rmatrixComponents%dumax2
-
-          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,5),&
-              coeff_ProjMass,rcollection)
-          
-          ! Now we can forget about the collection again.
-          call collct_done (rcollection)
-        
+          ! Filter the matrix. All the rows corresponding to DOF's that violate
+          ! the bounds must be set to zero.
+          call massmatfilter (rmatrix%RmatrixBlock(1,4),rvector%RvectorBlock(4),&
+              rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+          call massmatfilter (rmatrix%RmatrixBlock(2,5),rvector%RvectorBlock(5),&
+              rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
         END IF
         
         rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP
@@ -1797,7 +1874,7 @@ CONTAINS
       ELSE IF ((rmatrixComponents%dr11 .NE. 0.0_DP) .OR. &
                (rmatrixComponents%dr12 .NE. 0.0_DP)) THEN
         
-        ! There is some data in A15/A25, so create empty space there
+        ! There is some data in A14/A25, so create empty space there
         ! in case it's missing.
         IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,4)) THEN
           CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
@@ -2451,7 +2528,8 @@ CONTAINS
     ! The coupling of lambda to the primal equation is a little bit tricky.
     ! Ok, if there are no constraints active, it's easy -- that case was handled
     ! in the MV above...
-    if (rmatrixComponents%ccontrolConstraints .eq. 1) then
+    if ((rmatrixComponents%ccontrolConstraints .eq. 1) .and. &
+        (rmatrixComponents%dmu1 .ne. 0.0_DP)) then
     
       ! But now it get's interesting. When control constraints are active,
       ! we have the system
@@ -2467,59 +2545,92 @@ CONTAINS
       ! \lambda must not be changed, but before adding M\lambda to the RHS,
       ! we have to apply a projection!
       !
-      ! That's a little bit uglym because for this we have to carry out the matrix
-      ! vector multiplication 'by hand'. At first, create a temporary vector that
-      ! receives the projected solution.
-      call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
-        LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+      ! That's a little bit ugly because for this we have to carry out the matrix
+      ! vector multiplication 'by hand'. 
       
-      ! Multiply with the mass matrix, correctly scaled.
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(4), &
-        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
-      
-      ! Project that to the allowed range.
-      call cc_projectControlTimestep (rtempVector,&
-          -rmatrixComponents%dumax1,-rmatrixComponents%dumin1)
-          
-      ! And then finally, carry our the defect calculation for y_1.
-      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(1),-dcx,1.0_DP)
-      
-      ! The same stuff has to be done for y_1 / lambda_2:
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(5), &
-        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
-      call cc_projectControlTimestep (rtempVector,&
-          -rmatrixComponents%dumax2,-rmatrixComponents%dumin2)
-      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(2),-dcx,1.0_DP)
-      
+
+      ! What's the type of the current matrix? Is this a Newton-matrix?
+      if (rmatrixComponents%cmatrixType .eq. 0) then
+
+        ! No, this is a standard matrix. That means, we just have to project
+        ! the control u and multiply it with the mass matrix.
+
 !      Projection of the solution. Test code. Not used as the inequality
 !      defining the coupling must be used in integral form -- for what
-!      the above implementation is correct.
-!
-!      ! Copy our solution vector \lambda_2.
+!      the implementation below that is correct.
+
+!      ! At first, create a temporary vector that
+!      ! receives the projected solution.
 !      call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
-!          LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+!        LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+!      
+!      ! Multiply with the mass matrix, correctly scaled.
+!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(4), &
+!        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
 !      
 !      ! Project that to the allowed range.
-!      call cc_projectControlTimestep (rtempVector,rmatrixComponents%dalphaC,&
-!          rmatrixComponents%dumin1,rmatrixComponents%dumax1)
-!
-!      ! Now carry out MV and include it to the defect
-!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
-!          rd%RvectorBlock(4), -rmatrixComponents%dmu1*dcx, 1.0_DP)
-!
-!      ! The same stuff has to be done for y_2 / lambda_2:
-!      call lsyssc_duplicateVector (rx%RvectorBlock(5),rtempVector,&
-!          LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
-!      call cc_projectControlTimestep (rtempVector,rmatrixComponents%dalphaC,&
-!          rmatrixComponents%dumin2,rmatrixComponents%dumax2)
-!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
-!        rd%RvectorBlock(5), -rmatrixComponents%dmu1*dcx, 1.0_DP)
+!      call cc_projectControlTimestep (rtempVector,&
+!          -rmatrixComponents%dumax1,-rmatrixComponents%dumin1)
+!          
+!      ! And then finally, carry our the defect calculation for y_1.
+!      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(1),-dcx,1.0_DP)
+!      
+!      ! The same stuff has to be done for y_1 / lambda_2:
+!      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rx%RvectorBlock(5), &
+!        rtempVector, rmatrixComponents%dmu1, 0.0_DP)
+!      call cc_projectControlTimestep (rtempVector,&
+!          -rmatrixComponents%dumax2,-rmatrixComponents%dumin2)
+!      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(2),-dcx,1.0_DP)
 
-      ! Release the temp vector, that's it.
-      call lsyssc_releaseVector (rtempVector)
+        ! Copy our solution vector \lambda_1. Scale it by -1/alpha.
+        call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
+            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        call lsyssc_scaleVector (rtempVector,-rmatrixComponents%dmu1)
+        
+        ! Project that to the allowed range to create u_1.
+        call cc_projectControlTimestep (rtempVector,&
+            rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+
+        ! Now carry out MV and include it to the defect.
+        ! Here, we apply an MV where we include again dmu1 into the coefficient.
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
+            rd%RvectorBlock(1), dcx, 1.0_DP)
+
+        ! The same stuff has to be done for y_2 / lambda_2:
+        call lsyssc_duplicateVector (rx%RvectorBlock(5),rtempVector,&
+            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+        call lsyssc_scaleVector (rtempVector,-rmatrixComponents%dmu1)
+        call cc_projectControlTimestep (rtempVector,&
+            rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, rtempVector, &
+          rd%RvectorBlock(2), dcx, 1.0_DP)
+
+        ! Release the temp vector, that's it.
+        call lsyssc_releaseVector (rtempVector)
+
+      else
+
+        ! Yes, that's a Newton matrix. That means, we have to multiply the
+        ! vector with the derivative of the projection operator:
+        ! b-P[a,b]'(lambda).
+        ! For that purpose, we have to assemble special mass matrices:
       
+        SELECT CASE (rmatrixComponents%idualSol)
+        CASE (1)
+          CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx,rvector1)
+        CASE (2)
+          CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx,rvector2)
+        CASE (3)
+          CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx,rvector3)
+        END SELECT
+        
+      end if
+
     end if
-    
     
     ! If we have a reactive coupling mass matrix, it gets interesting...
     !
@@ -2560,23 +2671,6 @@ CONTAINS
       END SELECT
     
     END IF
-    
-    ! We also need a special handling if our control u has constraints!
-    ! In that case, there is dmu=0 and dp1<>0, so we have to assemble
-    ! a special defect in the primal equation!
-    if (rmatrixComponents%dp1 .ne. 0.0_DP) then
-      SELECT CASE (rmatrixComponents%idualSol)
-      CASE (1)
-        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx,rvector1)
-      CASE (2)
-        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx,rvector2)
-      CASE (3)
-        CALL assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx,rvector3)
-      END SELECT
-    end if
     
     ! Release the temporary matrix, we don't need it anymore.
     CALL lsysbl_releaseMatrix (rmatrix)
@@ -3146,7 +3240,7 @@ CONTAINS
     ! and the 0-operator where u is out of bounds.
     ! Then, we assemble
     !
-    !       rdefect = r(primal)defect - dcx (dp1 M~ r(dual)vector)
+    !       rdefect = r(primal)defect - dcx (dmu1 M~ r(dual)vector)
     !
     ! A t_ccmatrixComponents structure providing all necessary 'source' information
     ! about how the mass matrix part is weighted (dr11, dr12).
@@ -3170,73 +3264,102 @@ CONTAINS
       ! local variables
       TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
       TYPE(t_matrixBlock) :: rtempmatrix
-      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
+      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef,rtempVectorU
       type(t_collection) :: rcollection
       type(t_bilinearForm) :: rform
       
       ! If we have a reactive coupling mass matrix, it gets interesting...
-      IF (rmatrixComponents%dp1 .NE. 0.0_DP) THEN
+      IF (rmatrixComponents%dmu1 .NE. 0.0_DP) THEN
 
         CALL lsysbl_createEmptyMatrix (rtempMatrix,2)
 
-        ! Create a matrix with the structure we need. Share the structure
-        ! of the mass matrix. Entries are not necessary for the assembly      
-        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
-            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!        ! Create a matrix with the structure we need. Share the structure
+!        ! of the mass matrix. Entries are not necessary for the assembly      
+!        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+!            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!
+!        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+!            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!
+!        CALL lsysbl_updateMatStrucInfo (rtempMatrix)
+!
+!        ! Assemble the modified mass matrices.
+!        
+!        rform%itermCount = 1
+!        rform%Idescriptors(1,1) = DER_FUNC
+!        rform%Idescriptors(2,1) = DER_FUNC
+!
+!        ! In this case, we have nonconstant coefficients.
+!        rform%ballCoeffConstant = .FALSE.
+!        rform%BconstantCoeff(:) = .FALSE.
+!
+!        ! Prepare a collection structure to be passed to the callback
+!        ! routine. We attach the vector T in the quick-access variables
+!        ! so the callback routine can access it.
+!        ! The bounds and the alpha value are passed in the
+!        ! quickaccess-arrays.
+!        call collct_init(rcollection)
+!        rcollection%p_rvectorQuickAccess1 => rvelocityVector
+!
+!        ! Coefficient is dmu1=1/alpha or 0, depending on lambda
+!        rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+!        rcollection%DquickAccess(4)  = rmatrixComponents%dmu1
+!        
+!        ! At first, set up A14, depending on lambda_1.
+!        rcollection%IquickAccess(1) = 1
+!        rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+!        rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+!        
+!        ! Now we can build the matrix entries.
+!        ! We specify the callback function coeff_Laplace for the coefficients.
+!        ! As long as we use constant coefficients, this routine is not used.
+!        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!        ! the framework will call the callback routine to get analytical
+!        ! data.
+!        ! The collection is passed as additional parameter. That's the way
+!        ! how we get the vector to the callback routine.
+!        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
+!            coeff_ProjMass,rcollection)
+!
+!        ! Now, set up A22, depending on lambda_2.
+!        rcollection%IquickAccess(1) = 2
+!        rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+!        rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+!
+!        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
+!            coeff_ProjMass,rcollection)
+!        
+!        ! Now we can forget about the collection again.
+!        call collct_done (rcollection)
 
         CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
-            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
+            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+         
         CALL lsysbl_updateMatStrucInfo (rtempMatrix)
+           
+        ! Scale the entries by dmu1.
+        IF (rmatrixComponents%dmu1 .NE. 1.0_DP) THEN
+          CALL lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(1,1),rmatrixComponents%dmu1)
+          CALL lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rmatrixComponents%dmu1)
+        END IF
 
-        ! Assemble the modified mass matrices.
-        
-        rform%itermCount = 1
-        rform%Idescriptors(1,1) = DER_FUNC
-        rform%Idescriptors(2,1) = DER_FUNC
+        ! Create u from lambda.
+        call lsysbl_deriveSubvector (rvelocityVector,rtempVectorU,4,5,.FALSE.)
+        call lsysbl_scaleVector (rtempVectorU,-rmatrixComponents%dmu1)
 
-        ! In this case, we have nonconstant coefficients.
-        rform%ballCoeffConstant = .FALSE.
-        rform%BconstantCoeff(:) = .FALSE.
+        ! Filter the matrix. All the rows corresponding to DOF's that violate
+        ! the bounds must be set to zero.
+        call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rtempVectorU%RvectorBlock(1),&
+            rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+        call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rtempVectorU%RvectorBlock(2),&
+            rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+            
+        ! Release U, we don't need it anymore.
+        call lsysbl_releaseVector (rtempVectorU)
 
-        ! Prepare a collection structure to be passed to the callback
-        ! routine. We attach the vector T in the quick-access variables
-        ! so the callback routine can access it.
-        ! The bounds and the alpha value are passed in the
-        ! quickaccess-arrays.
-        call collct_init(rcollection)
-        rcollection%p_rvectorQuickAccess1 => rvelocityVector
-
-        ! Coefficient is dp1=1/alpha or 0, depending on lambda
-        rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
-        rcollection%DquickAccess(4)  = rmatrixComponents%dp1
-        
-        ! At first, set up A14, depending on lambda_1.
-        rcollection%IquickAccess(1) = 1
-        rcollection%DquickAccess(1) = rmatrixComponents%dumin1
-        rcollection%DquickAccess(2) = rmatrixComponents%dumax1
-        
-        ! Now we can build the matrix entries.
-        ! We specify the callback function coeff_Laplace for the coefficients.
-        ! As long as we use constant coefficients, this routine is not used.
-        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-        ! the framework will call the callback routine to get analytical
-        ! data.
-        ! The collection is passed as additional parameter. That's the way
-        ! how we get the vector to the callback routine.
-        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
-            coeff_ProjMass,rcollection)
-
-        ! Now, set up A22, depending on lambda_2.
-        rcollection%IquickAccess(1) = 2
-        rcollection%DquickAccess(1) = rmatrixComponents%dumin2
-        rcollection%DquickAccess(2) = rmatrixComponents%dumax2
-
-        call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
-            coeff_ProjMass,rcollection)
-        
-        ! Now we can forget about the collection again.
-        call collct_done (rcollection)
         
         ! Create a temporary block vector that points to the dual velocity.
         ! This has to be evaluated during the assembly.
