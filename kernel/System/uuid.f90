@@ -204,7 +204,8 @@ contains
 !</description>
 
 !<input>
-    ! version for the UUID
+    ! version for the UUID.
+    ! =0: Create zero-UUID.
     integer, intent(in) :: cversion
 !</input>
 
