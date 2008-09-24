@@ -11,7 +11,7 @@
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
@@ -166,7 +166,8 @@
 		<File RelativePath="..\..\..\kernel\System\paramlist.f90"/>
 		<File RelativePath="..\..\..\kernel\System\sort.f90"/>
 		<File RelativePath="..\..\..\kernel\System\statistics.f90"/>
-		<File RelativePath="..\..\..\kernel\System\storage.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\System\storage.f90"/>
+		<File RelativePath="..\..\..\kernel\System\uuid.f90"/></Filter>
 		<Filter Name="TimeDependence">
 		<File RelativePath="..\..\..\kernel\TimeDependence\timestepping.f90"/></Filter>
 		<Filter Name="Triangulation">
