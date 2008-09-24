@@ -98,7 +98,6 @@
 
 module storage
   
-  use fpersistaux
   use fsystem
   use genoutput
   use linearalgebra
