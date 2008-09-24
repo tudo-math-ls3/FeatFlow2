@@ -23,8 +23,8 @@
 !# derived from the uuid library found in the e2fsprogs package.
 !#
 !# A UUID is a 16-byte (128-bit) number. The number of theoretically 
-!# possible UUIDs is therefore 216*8 = 2128 = 25616 or about 3.4 × 
-!# 1038. This means that 1 trillion UUIDs would have to be created 
+!# possible UUIDs is therefore $2^{16*8} = 2^128 = 256^16$ or about $3.4*10^38$.
+!# This means that 1 trillion UUIDs would have to be created 
 !# every nanosecond for 10 billion years to exhaust the number of 
 !# UUIDs.
 !# 
