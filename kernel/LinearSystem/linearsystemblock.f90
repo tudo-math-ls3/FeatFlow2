@@ -4175,8 +4175,8 @@ contains
     ! Next question: should we share the vector content or not?
     if (.not. bshareContent) then
       ! Allocate a new large vector holding all data.
-      call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', sum(Isize), &
-                          rvectorDest%cdataType, &
+      call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+                          rvectorDest%NEQ, rvectorDest%cdataType, &
                           rvectorDest%h_Ddata, ST_NEWBLOCK_NOINIT)
       rvectorDest%RvectorBlock(1:ncount)%h_Ddata = rvectorDest%h_Ddata
     else
@@ -4199,7 +4199,10 @@ contains
 
     rvectorDest%bisCopy = bshareContent
     
-    idupflag = LSYSSC_DUP_COPY
+    ! Basically copy the data, overwrite the allocated memory without
+    ! reallocating.
+    ! If bshareContent=true, just share the data.
+    idupflag = LSYSSC_DUP_COPYOVERWRITE
     if (bshareContent) idupflag = LSYSSC_DUP_SHARE
 
     ! Everything is prepared, just copy -- either only the structure or
