@@ -37,7 +37,7 @@
 !# 9.) lalg_vectorSortXXX
 !#     -> Resort the entries of a vector according to a given permutation
 !#
-!# 10.) lalg_vectorAddScalar
+!# 10.) lalg_vectorAddScalarXXX
 !#      -> Adds a scalar to each entry of a vector
 !#
 !# 11.) lalg_vectorCompMultXXX
@@ -50,7 +50,105 @@ module linearalgebra
   use fsystem
 
   implicit none
-  
+
+  interface lalg_copyVector
+    module procedure lalg_copyVectorDble
+    module procedure lalg_copyVectorSngl
+    module procedure lalg_copyVectorSnglDbl
+    module procedure lalg_copyVectorDblSngl
+    module procedure lalg_copyVectorInt
+    module procedure lalg_copyVectorLogical
+    module procedure lalg_copyVectorChar
+    module procedure lalg_copyVectorDble2D
+    module procedure lalg_copyVectorSngl2D
+    module procedure lalg_copyVectorSnglDbl2D
+    module procedure lalg_copyVectorDblSngl2D
+    module procedure lalg_copyVectorInt2D
+    module procedure lalg_copyVectorLogical2D
+    module procedure lalg_copyVectorChar2D
+  end interface
+
+  interface lalg_scaleVector
+    module procedure lalg_scaleVectorDble
+    module procedure lalg_scaleVectorSngl
+    module procedure lalg_scaleVectorInt
+    module procedure lalg_scaleVectorDble2D
+    module procedure lalg_scaleVectorSngl2D
+    module procedure lalg_scaleVectorInt2D
+  end interface
+
+  interface lalg_clearVector
+    module procedure lalg_clearVectorDble
+    module procedure lalg_clearVectorSngl
+    module procedure lalg_clearVectorInt
+    module procedure lalg_clearVectorDble2D
+    module procedure lalg_clearVectorSngl2D
+    module procedure lalg_clearVectorInt2D
+  end interface
+
+  interface lalg_setVector
+    module procedure lalg_setVectorDble
+    module procedure lalg_setVectorSngl
+    module procedure lalg_setVectorInt
+    module procedure lalg_setVectorLogical
+    module procedure lalg_setVectorChar
+    module procedure lalg_setVectorDble2D
+    module procedure lalg_setVectorSngl2D
+    module procedure lalg_setVectorInt2D
+    module procedure lalg_setVectorLogical2D
+    module procedure lalg_setVectorChar2D
+  end interface
+
+  interface lalg_vectorLinearComb
+    module procedure lalg_vectorLinearCombDble
+    module procedure lalg_vectorLinearCombSngl
+    module procedure lalg_vectorLinearCombSnglDble
+    module procedure lalg_vectorLinearCombDble2D
+    module procedure lalg_vectorLinearCombSngl2D
+    module procedure lalg_vectorLinearCombSnglDble2D
+  end interface
+
+  interface lalg_scalarProduct
+    module procedure lalg_scalarProductDble
+    module procedure lalg_scalarProductSngl
+    module procedure lalg_scalarProductInt
+    module procedure lalg_scalarProductDble2D
+    module procedure lalg_scalarProductSngl2D
+    module procedure lalg_scalarProductInt2D
+  end interface
+
+  interface lalg_norm
+    module procedure lalg_normDble
+    module procedure lalg_normSngl
+  end interface
+
+  interface lalg_errorNorm
+    module procedure lalg_errorNormDble
+    module procedure lalg_errorNormSngl
+  end interface
+    
+  interface lalg_vectorSort
+    module procedure lalg_vectorSortDble
+    module procedure lalg_vectorSortSngl
+    module procedure lalg_vectorSortInt
+  end interface
+
+  interface lalg_vectorAddScalar
+    module procedure lalg_vectorAddScalarDble
+    module procedure lalg_vectorAddScalarSngl
+    module procedure lalg_vectorAddScalarInt
+    module procedure lalg_vectorAddScalarDble2D
+    module procedure lalg_vectorAddScalarSngl2D
+    module procedure lalg_vectorAddScalarInt2D
+  end interface
+
+  interface lalg_vectorCompMult
+    module procedure lalg_vectorCompMultDble
+    module procedure lalg_vectorCompMultSngl
+    module procedure lalg_vectorCompMultInt
+    module procedure lalg_vectorCompMultDbleSngl
+  end interface
+
 !<constants>
 
 !<constantblock description="Constants identifying vector norms">
@@ -318,6 +416,114 @@ contains
 
 !<subroutine>
 
+  subroutine lalg_copyVectorLogical (Lx,Ly,n)
+  
+!<description>
+  ! Copies a logical vector Lx: Ly = Lx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  logical, dimension(:), intent(IN) :: Lx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  logical, dimension(:), intent(OUT) :: Ly
+  
+!</output>
+  
+!</subroutine>
+  integer(I32) :: i
+  
+  if (.not. present(n)) then
+  
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i=1,size(Lx)
+      Ly(i) = Lx(i)
+    end do
+  !%OMP  end parallel do
+  
+  else
+
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i=1,n
+      Ly(i) = Lx(i)
+    end do
+  !%OMP  end parallel do
+  
+  end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorChar (Sx,Sy,n)
+  
+!<description>
+  ! Copies a character vector sx: Sy = Sx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  character, dimension(:), intent(IN) :: Sx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  character, dimension(:), intent(OUT) :: Sy
+  
+!</output>
+  
+!</subroutine>
+  integer(I32) :: i
+  
+  if (.not. present(n)) then
+  
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i=1,size(Sx)
+      Sy(i) = Sx(i)
+    end do
+  !%OMP  end parallel do
+  
+  else
+
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i=1,n
+      Sy(i) = Sx(i)
+    end do
+  !%OMP  end parallel do
+  
+  end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine lalg_copyVectorDble2D (Dx,Dy)
   
 !<description>
@@ -492,7 +698,89 @@ contains
 !%OMP  end parallel do
   
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorLogical2D (Lx,Ly)
   
+!<description>
+  ! Copies a logical vector Lx: Ly = Lx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  logical, dimension(:,:), intent(IN) :: Lx
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  logical, dimension(:,:), intent(OUT) :: Ly
+  
+!</output>
+  
+!</subroutine>
+
+  integer(I32) :: i,j
+  
+  ! Does not exist in BLAS!
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+  do j=1,size(Lx,2)
+    do i=1,size(Lx,1)
+      Ly(i,j) = Lx(i,j)
+    end do
+  end do
+!%OMP  end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorChar2D (Sx,Sy)
+  
+!<description>
+  ! Copies a character vector Sx: Sy = Sx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  character, dimension(:,:), intent(IN) :: Sx
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  character, dimension(:,:), intent(OUT) :: Sy
+  
+!</output>
+  
+!</subroutine>
+
+  integer(I32) :: i,j
+  
+  ! Does not exist in BLAS!
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+  do j=1,size(Sx,2)
+    do i=1,size(Sx,1)
+      Sy(i,j) = Sx(i,j)
+    end do
+  end do
+!%OMP  end parallel do
+  
+  end subroutine
+
   ! ***************************************************************************
   
 !<subroutine>
@@ -1147,7 +1435,7 @@ contains
   ! We trust the internal loop unrolling functions of the compiler...
   ! normally we can use:
   
-  !Dx = ivalue
+  !Ix = ivalue
   
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
@@ -1166,6 +1454,118 @@ contains
   !%OMP& private(i)
     do i = 1,n
       Ix(i) = ivalue
+    end do
+  !%OMP  end parallel do
+  end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorLogical (Lx,lvalue,n)
+  
+!<description>
+  ! Sets the vector data to a defined value: Lx = lvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  logical, intent(IN) :: lvalue
+
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  logical, dimension(:), intent(OUT) :: Lx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer(I32) :: i
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Lx = lvalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+  if (.not. present(n)) then
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i = 1,size(Lx)
+      Lx(i) = lvalue
+    end do
+  !%OMP  end parallel do
+  else
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i = 1,n
+      Lx(i) = lvalue
+    end do
+  !%OMP  end parallel do
+  end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorChar (Sx,svalue,n)
+  
+!<description>
+  ! Sets the vector data to a defined value: Sx = svalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  character, intent(IN) :: svalue
+
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  character, dimension(:), intent(OUT) :: Sx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer(I32) :: i
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Sx = svalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+  if (.not. present(n)) then
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i = 1,size(Sx)
+      Sx(i) = svalue
+    end do
+  !%OMP  end parallel do
+  else
+  !%OMP  parallel do &
+  !%OMP& default(shared) &
+  !%OMP& private(i)
+    do i = 1,n
+      Sx(i) = svalue
     end do
   !%OMP  end parallel do
   end if
@@ -1290,7 +1690,7 @@ contains
   ! We trust the internal loop unrolling functions of the compiler...
   ! normally we can use:
   
-  !Dx = ivalue
+  !Ix = ivalue
   
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
@@ -1301,6 +1701,96 @@ contains
   do j = 1,size(Ix,2)
     do i = 1,size(Ix,1)
       Ix(i,j) = ivalue
+    end do
+  end do
+!%OMP  end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorLogical2D (Lx,lvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Lx = lvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  logical, intent(IN) :: lvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  logical, dimension(:,:), intent(OUT) :: Lx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer(I32) :: i,j
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Lx = lvalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+  do j = 1,size(Lx,2)
+    do i = 1,size(Lx,1)
+      Lx(i,j) = lvalue
+    end do
+  end do
+!%OMP  end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorChar2D (Sx,svalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Sx = svalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  character, intent(IN) :: svalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  character, dimension(:,:), intent(OUT) :: Sx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer(I32) :: i,j
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Lx = lvalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+  do j = 1,size(Sx,2)
+    do i = 1,size(Sx,1)
+      Sx(i,j) = svalue
     end do
   end do
 !%OMP  end parallel do
@@ -2724,7 +3214,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarSnglD (Fx,fvalue)
+  subroutine lalg_vectorAddScalarSngl2D (Fx,fvalue)
   
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
@@ -2851,7 +3341,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultSnlg (Fx,Fy,sc,n)
+  subroutine lalg_vectorCompMultSngl (Fx,Fy,sc,n)
   
 !<description>
   ! Performs componentwise multiplication: Fy = sc * Fx * Fy
