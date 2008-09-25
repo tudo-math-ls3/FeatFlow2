@@ -4208,7 +4208,7 @@ contains
     ! Everything is prepared, just copy -- either only the structure or
     ! the structure as well as the content.
     do i=1,ncount
-      call lsyssc_duplicateVector (rvectorSrc%RvectorBlock(i),&
+      call lsyssc_duplicateVector (rvectorSrc%RvectorBlock(i+ifirst-1),&
           rvectorDest%RvectorBlock(i),&
           LSYSSC_DUP_COPY,idupflag)
     end do
