@@ -770,6 +770,22 @@ MODULE cc2dmediumm2spacetimesolver
   ! This structure realises the subnode for the UMFPACK4 solver.
   
   TYPE t_sptilsSubnodeUMFPACK4
+
+    ! DEBUG flag: With this flag, UMFPACK can be told to write out the system
+    ! matrix in initData after assembling it.
+    ! =0: Don't write anything.
+    ! =1: Write out the matrix to a text file.
+    ! =2: Write out the matrix to a text file and stop the program afterwards.
+    logical :: cwriteMatrix = .false.
+    
+    ! File name of the file receiving the system matrix in human readable
+    ! form if bwriteMatrix=true.
+    character(len=SYS_STRLEN) :: sfilename = "matrix.txt"
+
+    ! <!--
+    ! The following variables are internal variables and not to be used
+    ! by any application
+    ! -->
   
     ! Control structure for UMFPACK4; contains parameter for the solver
     REAL(DP), DIMENSION(20) :: Dcontrol
@@ -4633,12 +4649,16 @@ CONTAINS
     
     !CALL matio_spyMatrix('matrix','matrix',p_rmatrix,.TRUE.)
 
-    !!! DEBUG
-    !CALL lsyssc_getbase_double (rtempMatrix,p_DA)
-    !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
-    !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
-    !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
-    !CALL sys_halt()
+    if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .gt. 0) then
+      CALL lsyssc_getbase_double (p_rmatrix,p_DA)
+      WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
+      CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
+                                .TRUE., 0, rsolverNode%p_rsubnodeUMFPACK4%sfilename,&
+                                '(E15.5)')
+      if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .eq. 2) then
+        CALL sys_halt()
+      end if
+    end if
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
     CALL lsyssc_addIndex (p_rmatrix%h_Kcol,-1_I32)

@@ -516,7 +516,7 @@ CONTAINS
     integer(i32), dimension(:), allocatable :: p_Idofs
     integer :: i,nviolate
     real(dp) :: du
-    return    
+    
     ! Get the vector data
     call lsyssc_getbase_double (rvector,p_Ddata)
     
@@ -1743,7 +1743,7 @@ CONTAINS
         ! Calculate the usual mass matrix if conrol constraints are deactivated
         ! or if Newton is not active.
         IF ((rmatrixComponents%ccontrolConstraints .eq. 0) .or. &
-            (rmatrixComponents%cmatrixType .eq. 1)) THEN
+            (rmatrixComponents%cmatrixType .eq. 0)) THEN
       
           ! Copy the entries of the mass matrix. Share the structure.
           ! We must not share the entries as these might be changed by the caller
@@ -3360,6 +3360,16 @@ CONTAINS
         ! Release U, we don't need it anymore.
         call lsysbl_releaseVector (rtempVectorU)
 
+
+        !CALL lsysbl_deriveSubvector (rvector,rtempvectorEval,4,5,.false.)
+        !CALL lsysbl_scaleVector (rtempvectorEval,-rmatrixComponents%dmu1)
+        
+        !Projection deactivated. For a defect, there is usually no projection!
+        !call cc_projectControlTimestep (rtempvectorEval%RvectorBlock(1),&
+        !    rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+        !call cc_projectControlTimestep (rtempvectorEval%RvectorBlock(2),&
+        !    rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+
         
         ! Create a temporary block vector that points to the dual velocity.
         ! This has to be evaluated during the assembly.
@@ -3370,7 +3380,10 @@ CONTAINS
         CALL lsysbl_deriveSubvector (rdefect,rtempvectorDef,1,2,.TRUE.)
 
         ! Create the defect
+        ! Negative dcx if mu1 is directly incorporated to the matrix.
+        ! Positive dcx if mu1 is incorporated to the vector rtempvectorEval.
         CALL lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, -dcx, 1.0_DP)
+        !CALL lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, dcx, 1.0_DP)
         
         ! Release memory
         call lsysbl_releaseVector (rtempvectorDef)

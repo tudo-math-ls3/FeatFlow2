@@ -1778,6 +1778,10 @@ CONTAINS
     TYPE(t_vectorBlock) :: rtempVectorX1,rtempVectorX3
     TYPE(t_spacetimeVector) :: rcurrentx,rcurrentd
     
+    TYPE(t_sptilsNode), POINTER         :: rsolverNode
+    TYPE(t_ccoptSpaceTimeMatrix), dimension(1) :: RspaceTimeMatrices
+    integer :: ierror
+    
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
     
@@ -1825,6 +1829,18 @@ CONTAINS
       -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dinitDef,rproblem%MT_outputLevel .GE. 2)
     ddefNorm = dinitDef
     call output_line("Block-JAC: Ite=0, ||res||="//ADJUSTL(sys_sdEP(ddefNorm,20,10)))
+    
+    
+    !!! <!-- DEBUG
+    call sptils_initUMFPACK4 (rproblem,rsolverNode)
+    rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix = 1
+    RspaceTimeMatrices(1) = rspaceTimeMatrix
+    call sptils_setMatrices (rsolverNode,RspaceTimeMatrices)
+    call sptils_initstructure (rsolverNode,ierror)
+    call sptils_initdata (rsolverNode,ierror)
+    CALL sptils_releaseSolver (rsolverNode)
+    !!! -->
+    read *
     
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
@@ -1887,7 +1903,7 @@ CONTAINS
       END DO
       
       ! Add the correction to the current iterate
-      call sptivec_vectorLinearComb(rcurrentd,rcurrentx,1.0_DP,1.0_DP)
+      call sptivec_vectorLinearComb(rcurrentd,rcurrentx,0.7_DP,1.0_DP)
 
       ! Create the new defect
       call sptivec_copyVector (rd,rcurrentd)
