@@ -142,12 +142,8 @@ module uuid
   
   ! Type for universally unique identifier
   type t_uuid
-    
-    ! version of the UUID
-    integer :: cversion
-
     ! the UUID data
-    integer(1), dimension(16) :: data
+    integer, dimension(16) :: data
   end type t_uuid
 
 !</typeblock>
@@ -217,43 +213,36 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,byte0,byte
+    real(DP), dimension(16) :: Drandom
+    integer :: i
     
     select case(cversion)
     case (0)
       ! nil UUID
-      ruuid%cversion = 0
       ruuid%data     = 0
       
     case (4)
       ! Pseudo-random UUID following the algorithm outlined on pages 10 and 11 of the
       ! "UUIDs and GUIDs" Internet Draft found at
       ! http://www.ics.uci.edu/pub/ietf/webdav/uuid-guid/draft-leach-uuids-guids-01.txt
-      ruuid%cversion = 4
       
-      ! Compute seed from system clock
-      call system_clock(byte0)
+      ! Generate 16 random double values
+      call random_number(Drandom)
       
       do i = 1, 16
-        byte = MOD((57*byte0+1), 128)
-        byte0 = MOD((57*byte+1), 128)
-        ruuid%data(i) = byte0
+        ruuid%data(i) = int(128*Drandom(i))
       end do
-
+      
       ! Include version: Take 7th byte and perform "and" operation with 0x0f
       !                  followed by an "or" operation with 0x40
-      byte = ruuid%data(7)
-      byte = iand(byte, 15)
-      byte = ior(byte, 64)
-      ruuid%data(7) = byte
+      ruuid%data(7) = iand(ruuid%data(7), 15)
+      ruuid%data(7) = ior(ruuid%data(7), 64)
       
       ! Include variant: Take 9th byte and perform "and" operation with 0x3f
       !                  followed by an "or" operation with 0x80
-      byte = ruuid%data(9)
-      byte = iand(byte, 63)
-      byte = ior(byte, 128)
-      ruuid%data(9) = byte
-      
+      ruuid%data(9) = iand(ruuid%data(9), 63)
+      ruuid%data(9) = ior(ruuid%data(9), 128)
+            
     case default
       call output_line('Unsupported UUID version!',&
           OU_CLASS_ERROR,OU_MODE_STD,'uuid_createUUID_directly')
@@ -331,9 +320,6 @@ contains
     read(svalue(33:34),'(Z2)') ruuid%data(15)
     read(svalue(35:36),'(Z2)') ruuid%data(16)
 
-    ! Set version
-    ruuid%cversion = 4
-
   end subroutine uuid_createUUID_indirectly
   
 !************************************************************************
@@ -364,7 +350,7 @@ contains
     ! local variable
     integer :: i
     
-    bisEqual = ruuid1%cversion .eq. ruuid2%cversion
+    bisEqual = .true.
     
     do i = 1, 16
       bisEqual = bisEqual .and. (ruuid1%data(i) .eq. ruuid2%data(i))
@@ -395,7 +381,6 @@ contains
     ! local variable
     type(t_uuid) :: ruuidTmp
     
-    ruuidTmp%cversion = ruuid%cversion
     ruuidTmp%data = 0
 
     bisNil = uuid_isEqual(ruuid, ruuidTmp)
