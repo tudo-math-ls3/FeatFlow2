@@ -1358,7 +1358,6 @@ contains
     
     ! local variables
     character(LEN=len(svalue)+3) :: svalueTemp
-    logical :: bhasDot
     integer :: ipos
 
     ! Check if string contains a 'dot'
@@ -1419,7 +1418,6 @@ contains
     
     ! local variables
     character(LEN=len(svalue)+3) :: svalueTemp
-    logical :: bhasDot
     integer :: ipos
 
     ! Check if string contains a 'dot'
