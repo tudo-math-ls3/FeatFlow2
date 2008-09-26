@@ -242,7 +242,7 @@ contains
   if (.not. present(n)) then
     call SCOPY(size(Fx),Fx,1,Fy,1)
   else
-    call SCOPY(size(Fx),Fx,1,Fy,1)
+    call SCOPY(n,Fx,1,Fy,1)
   end if
   
   end subroutine
@@ -524,7 +524,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDble2D (Dx,Dy)
+  subroutine lalg_copyVectorDble2D (Dx,Dy,n,m)
   
 !<description>
   ! Copies a double precision vector dx: Dy = Dx
@@ -535,6 +535,9 @@ contains
   ! Source vector
   real(DP), dimension(:,:), intent(IN) :: Dx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+  
 !</input>
 
 !<output>
@@ -546,7 +549,11 @@ contains
   
 !</subroutine>
 
-  call DCOPY(size(Dx,1)*size(Dx,2),Dx,1,Dy,1)
+  if (present(n) .and. present(m)) then
+    call DCOPY(n*m,Dx,1,Dy,1)
+  else
+    call DCOPY(size(Dx,1)*size(Dx,2),Dx,1,Dy,1)
+  end if
   
   end subroutine
   
@@ -554,7 +561,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSngl2D (Fx,Fy)
+  subroutine lalg_copyVectorSngl2D (Fx,Fy,n,m)
   
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -565,6 +572,9 @@ contains
   ! Source vector
   real(SP), dimension(:,:), intent(IN) :: Fx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -575,8 +585,11 @@ contains
 !</output>
   
 !</subroutine>
-
-  call SCOPY(size(Fx,1)*size(Fx,2),Fx,1,Fy,1)
+  if (present(n) .and. present(m)) then
+    call SCOPY(n*m,Fx,1,Fy,1)
+  else
+    call SCOPY(size(Fx,1)*size(Fx,2),Fx,1,Fy,1)
+  end if
   
   end subroutine
   
@@ -584,7 +597,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglDbl2D (Fx,Dy)
+  subroutine lalg_copyVectorSnglDbl2D (Fx,Dy,n,m)
   
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -595,6 +608,9 @@ contains
   ! Source vector
   real(SP), dimension(:,:), intent(IN) :: Fx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -607,15 +623,31 @@ contains
 !</subroutine>
   integer(I32) :: i,j
   
+  if (present(n) .and. present(m)) then
+
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(i,j)
-  do j=1,size(Fx,2)
-    do i=1,size(Fx,1)
-      Dy(i,j) = real(Fx(i,j),DP)
+    do j=1,m
+      do i=1,n
+        Dy(i,j) = real(Fx(i,j),DP)
+      end do
     end do
-  end do
 !%OMP  end parallel do
+
+  else
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+    do j=1,size(Fx,2)
+      do i=1,size(Fx,1)
+        Dy(i,j) = real(Fx(i,j),DP)
+      end do
+    end do
+!%OMP  end parallel do
+    
+  end if
 
   end subroutine
 
@@ -623,7 +655,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblSngl2D (Dx,Fy)
+  subroutine lalg_copyVectorDblSngl2D (Dx,Fy,n,m)
   
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -634,6 +666,9 @@ contains
   ! Source vector
   real(DP), dimension(:,:), intent(IN) :: Dx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -646,15 +681,31 @@ contains
 !</subroutine>
   integer(I32) :: i,j
   
+  if (present(n) .and. present(m)) then
+
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(i,j)
-  do j=1,size(Dx,2)
-    do i=1,size(Dx,1)
-      Fy(i,j) = real(Dx(i,j),SP)
+    do j=1,m
+      do i=1,n
+        Fy(i,j) = real(Dx(i,j),SP)
+      end do
     end do
-  end do
 !%OMP  end parallel do
+
+  else
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+    do j=1,size(Dx,2)
+      do i=1,size(Dx,1)
+        Fy(i,j) = real(Dx(i,j),SP)
+      end do
+    end do
+!%OMP  end parallel do
+    
+  end if
 
   end subroutine
 
@@ -662,7 +713,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorInt2D (Ix,Iy)
+  subroutine lalg_copyVectorInt2D (Ix,Iy,n,m)
   
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
@@ -673,6 +724,9 @@ contains
   ! Source vector
   integer(I32), dimension(:,:), intent(IN) :: Ix
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -686,24 +740,39 @@ contains
 
   integer(I32) :: i,j
   
-  ! Does not exist in BLAS!
+  if (present(n) .and. present(m)) then
+
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(i,j)
-  do j=1,size(Ix,2)
-    do i=1,size(Ix,1)
-      Iy(i,j) = Ix(i,j)
+    do j=1,m
+      do i=1,n
+        Iy(i,j) = Ix(i,j)
+      end do
     end do
-  end do
+!%OMP  end parallel do
+
+  else
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+    do j=1,size(Ix,2)
+      do i=1,size(Ix,1)
+        Iy(i,j) = Ix(i,j)
+      end do
+    end do
 !%OMP  end parallel do
   
+  end if
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine lalg_copyVectorLogical2D (Lx,Ly)
+  subroutine lalg_copyVectorLogical2D (Lx,Ly,n,m)
   
 !<description>
   ! Copies a logical vector Lx: Ly = Lx
@@ -714,6 +783,9 @@ contains
   ! Source vector
   logical, dimension(:,:), intent(IN) :: Lx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -727,16 +799,31 @@ contains
 
   integer(I32) :: i,j
   
-  ! Does not exist in BLAS!
+  if (present(n) .and. present(m)) then
+
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(i,j)
-  do j=1,size(Lx,2)
-    do i=1,size(Lx,1)
-      Ly(i,j) = Lx(i,j)
+    do j=1,m
+      do i=1,n
+        Ly(i,j) = Lx(i,j)
+      end do
     end do
-  end do
 !%OMP  end parallel do
+
+  else
+    
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+    do j=1,size(Lx,2)
+      do i=1,size(Lx,1)
+        Ly(i,j) = Lx(i,j)
+      end do
+    end do
+!%OMP  end parallel do
+
+  end if
   
   end subroutine
   
@@ -744,7 +831,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorChar2D (Sx,Sy)
+  subroutine lalg_copyVectorChar2D (Sx,Sy,n,m)
   
 !<description>
   ! Copies a character vector Sx: Sy = Sx
@@ -755,6 +842,9 @@ contains
   ! Source vector
   character, dimension(:,:), intent(IN) :: Sx
   
+  ! OPTIONAL: Size of the vector
+  integer, intent(IN), optional :: n,m
+
 !</input>
 
 !<output>
@@ -768,16 +858,31 @@ contains
 
   integer(I32) :: i,j
   
-  ! Does not exist in BLAS!
+  if (present(n) .and. present(m)) then
+
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(i,j)
-  do j=1,size(Sx,2)
-    do i=1,size(Sx,1)
-      Sy(i,j) = Sx(i,j)
+    do j=1,m
+      do i=1,n
+        Sy(i,j) = Sx(i,j)
+      end do
     end do
-  end do
 !%OMP  end parallel do
+
+  else
+
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i,j)
+    do j=1,size(Sx,2)
+      do i=1,size(Sx,1)
+        Sy(i,j) = Sx(i,j)
+      end do
+    end do
+!%OMP  end parallel do
+
+  end if
   
   end subroutine
 
