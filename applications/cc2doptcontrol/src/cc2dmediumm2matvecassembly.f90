@@ -3264,7 +3264,7 @@ CONTAINS
       ! local variables
       TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
       TYPE(t_matrixBlock) :: rtempmatrix
-      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef,rtempVectorU
+      TYPE(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
       type(t_collection) :: rcollection
       type(t_bilinearForm) :: rform
       
@@ -3346,20 +3346,13 @@ CONTAINS
           CALL lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rmatrixComponents%dmu1)
         END IF
 
-        ! Create u from lambda.
-        call lsysbl_deriveSubvector (rvelocityVector,rtempVectorU,4,5,.FALSE.)
-        call lsysbl_scaleVector (rtempVectorU,-rmatrixComponents%dmu1)
-
         ! Filter the matrix. All the rows corresponding to DOF's that violate
         ! the bounds must be set to zero.
-        call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rtempVectorU%RvectorBlock(1),&
+        call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
             rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
-        call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rtempVectorU%RvectorBlock(2),&
+        call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
             rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
             
-        ! Release U, we don't need it anymore.
-        call lsysbl_releaseVector (rtempVectorU)
-
 
         !CALL lsysbl_deriveSubvector (rvector,rtempvectorEval,4,5,.false.)
         !CALL lsysbl_scaleVector (rtempvectorEval,-rmatrixComponents%dmu1)
