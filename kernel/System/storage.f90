@@ -75,29 +75,21 @@
 !# 12.) storage_getdimension
 !#      -> Get the dimension of an array on the heap.
 !#
-!# 13.) storage_getname
-!#      -> Get the name of an array on the heap.
-!#
-!# 14.) storage_realloc
+!# 13.) storage_realloc
 !#      -> Reallocate a 1D or 2D array (only 2nd dimension)
 !#
-!# 15.) storage_initialiseBlock
+!# 14.) storage_initialiseBlock
 !#      -> Initialise a storage block with zero (like storage_clear)
 !#         or increasing number.
 !#
-!# 16.) storage_isEqual
+!# 15.) storage_isEqual
 !#      -> Checks if the content of two different handles is equal
-!#
-!# 17.) storage_isFree
-!#      -> Checks if the given handle is free
-!#
-!# 18.) storage_getBlock
-!#      -> Get the internal data of the storage block
 !# </purpose>
 !##############################################################################
 
 module storage
   
+  use fpersistence
   use fsystem
   use genoutput
   use linearalgebra
@@ -179,7 +171,7 @@ module storage
     private
 
     ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
-    ! ST_DOUBLE, ST_INT)
+    ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
     integer :: idataType = ST_NOHANDLE
 
     ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
@@ -187,9 +179,6 @@ module storage
 
     ! The name of the array that is associated to that handle
     character(LEN=SYS_NAMELEN) :: sname = ''
-
-    ! The name of the calling routine that modified this handle
-    character(LEN=SYS_NAMELEN) :: scall = ''
 
     ! Amount of memory (in bytes) associated to this block.
     ! We store that as a double to allow storing numbers > 2GB !
@@ -383,7 +372,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_init(ihandleCount, ihandlesDelta, rheap)
+  subroutine storage_init (ihandleCount, ihandlesDelta, rheap)
 
 !<description>
 
@@ -466,7 +455,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_done(rheap)
+  subroutine storage_done (rheap)
 
 !<description>
   ! This routine cleans up the storage management. All data on the
@@ -495,13 +484,23 @@ contains
     end if
     
     ! Delete all data from the heap
-    do i = 1,size(p_rheap%p_Rdescriptors)
-      ! Don't pass i as handle as storage_free will set the handle
-      ! passed to it to 0!
-      ihandle = i
-      if (p_rheap%p_Rdescriptors(i)%idataType .ne. ST_NOHANDLE) &
-          call storage_free(ihandle,rheap)
-    end do
+    if (associated(p_rheap%p_Rdescriptors)) then
+      do i = 1,size(p_rheap%p_Rdescriptors)
+        ! Don't pass i as handle as storage_free will set the handle
+        ! passed to it to 0!
+        ihandle = i
+        if (p_rheap%p_Rdescriptors(i)%idataType .ne. ST_NOHANDLE) &
+            call storage_free(ihandle,rheap)
+      end do
+      
+      ! Release the descriptors
+      deallocate(p_rheap%p_IfreeHandles)
+    end if
+
+    ! Release the descriptors
+    if (associated(p_rheap%p_Rdescriptors)) then
+      deallocate(p_rheap%p_Rdescriptors)
+    end if
     
     ! Clean up the memory management block
     p_rheap%nhandlesTotal = 0
@@ -509,11 +508,7 @@ contains
     p_rheap%p_inextFreeHandle = 0
     p_rheap%p_ilastFreeHandle = 0
     p_rheap%ihandlesInUse = 0
-    
-    ! Release the descriptors
-    deallocate(p_rheap%p_IfreeHandles)
-    deallocate(p_rheap%p_Rdescriptors)
-    
+        
   end subroutine storage_done
 
 !************************************************************************
@@ -832,7 +827,7 @@ contains
 !<subroutine>
 
   subroutine storage_initialiseBlock (ihandle, cinitNewBlock,&
-      rheap, istartIndex)
+                                      rheap, istartIndex)
 
 !<description>
   ! This routine initialises the memory associated to ihandle according
@@ -1008,7 +1003,7 @@ contains
 !<subroutine>
 
   subroutine storage_new1Dfixed (scall, sname, ilbound, iubound,&
-                            ctype, ihandle, cinitNewBlock, rheap)
+                                 ctype, ihandle, cinitNewBlock, rheap)
 
 !<description>
   !This routine reserves a 1D memory block of desired bounds and type.
@@ -1251,7 +1246,7 @@ contains
 !<subroutine>
 
   subroutine storage_new2Dfixed (scall, sname, Ilbound, Iubound, ctype,&
-                            ihandle, cinitNewBlock, rheap)
+                                 ihandle, cinitNewBlock, rheap)
 
 !<description>
   !This routine reserves a 2D memory block of desired bounds and type.
@@ -1912,7 +1907,7 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D)) .or. &
       (lbnd .gt. ubnd)) then
-    call output_line ('Bound invalid!', &
+    call output_line ('Bounds invalid!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_intUBnd')
     call sys_halt()
   end if
@@ -2130,7 +2125,7 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D)) .or. &
       (lbnd .gt. ubnd)) then
-    call output_line ('Bound invalid!', &
+    call output_line ('Bounds invalid!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_singleUBnd')
     call sys_halt()
   end if
@@ -2347,7 +2342,7 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D)) .or. &
       (lbnd .gt. ubnd)) then
-    call output_line ('Bound invalid!', &
+    call output_line ('Bounds invalid!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_doubleUBnd')
     call sys_halt()
   end if
@@ -2404,12 +2399,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
-    print *,'storage_getbase_logical: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical')
     call sys_halt()
   end if
 
@@ -2469,18 +2466,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalUBnd')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
-    print *,'storage_getbase_logical: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalUBnd')
     call sys_halt()
   end if
 
   if ((ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) then
-    print *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalUBnd')
     call sys_halt()
   end if
 
@@ -2543,12 +2543,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalLUBnd')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
-    print *,'storage_getbase_logical: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalLUBnd')
     call sys_halt()
   end if
 
@@ -2557,7 +2559,8 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .or. &
       (lbnd .gt. ubnd)) then
-    print *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalUBnd')
     call sys_halt()
   end if
 
@@ -2614,12 +2617,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
-    print *,'storage_getbase_char: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char')
     call sys_halt()
   end if
 
@@ -2679,18 +2684,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charUBnd')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
-    print *,'storage_getbase_char: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charUBnd')
     call sys_halt()
   end if
 
   if ((ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) then
-    print *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charUBnd')
     call sys_halt()
   end if
 
@@ -2753,12 +2761,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charLUBnd')
     call sys_halt()
   end if
 
   if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
-    print *,'storage_getbase_char: Wrong data format!'
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charLUBnd')
     call sys_halt()
   end if
 
@@ -2767,7 +2777,8 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. size(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .or. &
       (lbnd .gt. ubnd)) then
-    print *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charUBnd')
     call sys_halt()
   end if
 
@@ -2824,7 +2835,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_int2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2D')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2D')
     call sys_halt()
   end if
 
@@ -2884,13 +2902,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_int2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
     call sys_halt()
   end if
 
   if ((ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2))) then
-    print *,'storage_getbase_int2DUBnd: Bounds invalid invalid!'
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
     call sys_halt()
   end if
 
@@ -2954,7 +2980,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_int2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DLUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DLUBnd')
     call sys_halt()
   end if
 
@@ -2963,7 +2996,8 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)) .or. &
       (lbnd .gt. ubnd)) then
-    print *,'storage_getbase_int2DLUBnd: Bounds invalid invalid!'
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
     call sys_halt()
   end if
 
@@ -3020,7 +3054,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_single2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2D')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2D')
     call sys_halt()
   end if
 
@@ -3080,13 +3121,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_single2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DUBnd')
     call sys_halt()
   end if
 
   if ((ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2))) then
-    print *,'storage_getbase_single2DUBnd: Bounds invalid invalid!'
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DUBnd')
     call sys_halt()
   end if
 
@@ -3150,7 +3199,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_single2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DLUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DLUBnd')
     call sys_halt()
   end if
 
@@ -3159,7 +3215,8 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)) .or. &
       (lbnd .gt. ubnd)) then
-    print *,'storage_getbase_single2DLUBnd: Bounds invalid invalid!'
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DUBnd')
     call sys_halt()
   end if
 
@@ -3212,7 +3269,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_double2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2D')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2D')
     call sys_halt()
   end if
 
@@ -3268,13 +3332,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_double2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DUBnd')
     call sys_halt()
   end if
 
   if ((ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2))) then
-    print *,'storage_getbase_double2DUBnd: Bounds invalid invalid!'
+     call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DUBnd')
     call sys_halt()
   end if
 
@@ -3334,7 +3406,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_double2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DLUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DLUBnd')
     call sys_halt()
   end if
 
@@ -3343,7 +3422,8 @@ contains
       (ubnd .lt. 1) .or. &
       (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)) .or. &
       (lbnd .gt. ubnd)) then
-    print *,'storage_getbase_double2DLUBnd: Bounds invalid invalid!'
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DUBnd')
     call sys_halt()
   end if
 
@@ -3400,7 +3480,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2D')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2D')
     call sys_halt()
   end if
 
@@ -3460,7 +3547,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DUBnd')
+    call sys_halt()
+  end if
+
+  if ((ubnd .lt. 1) .or. &
+      (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2))) then
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DUBnd')
     call sys_halt()
   end if
 
@@ -3524,7 +3625,24 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_logical2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DLUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DLUBnd')
+    call sys_halt()
+  end if
+
+  if ((lbnd .lt. 1) .or. &
+      (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)) .or. &
+      (ubnd .lt. 1) .or. &
+      (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)) .or. &
+      (lbnd .gt. ubnd)) then
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DUBnd')
     call sys_halt()
   end if
 
@@ -3581,7 +3699,14 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2D')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2D')
     call sys_halt()
   end if
 
@@ -3641,7 +3766,21 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DUBnd')
+    call sys_halt()
+  end if
+
+  if ((ubnd .lt. 1) .or. &
+      (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2))) then
+    call output_line ('Upper bound invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DUBnd')
     call sys_halt()
   end if
 
@@ -3705,7 +3844,24 @@ contains
   end if
 
   if (ihandle .eq. ST_NOHANDLE) then
-    print *,'storage_getbase_char2D: Wrong handle'
+    call output_line ('Wrong handle!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DLUBnd')
+    call sys_halt()
+  end if
+
+  if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+    call output_line ('Wrong data format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DLUBnd')
+    call sys_halt()
+  end if
+
+  if ((lbnd .lt. 1) .or. &
+      (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)) .or. &
+      (ubnd .lt. 1) .or. &
+      (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)) .or. &
+      (lbnd .gt. ubnd)) then
+    call output_line ('Bounds invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DUBnd')
     call sys_halt()
   end if
 
@@ -3719,7 +3875,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_copy(h_source, h_dest, rheap)
+  subroutine storage_copy (h_source, h_dest, rheap)
 
 !<description>
   ! This routine copies the information of one array to another.
@@ -3750,8 +3906,8 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
-  integer(I32) :: i,j
-  integer(I32), dimension(2) :: Isize
+  integer(I32) :: i,j,isizeSource,isizeDest
+  integer(I32), dimension(2) :: Isize2DSource,Isize2DDest
 
     ! Get the heap to use - local or global one.
 
@@ -3762,16 +3918,18 @@ contains
     end if
 
     if (h_source .eq. ST_NOHANDLE) then
-      print *,'storage_copy: Wrong handle'
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
       call sys_halt()
     end if
     if (.not. associated(p_rheap%p_Rdescriptors)) then
-      print *,'storage_copy: Heap not initialised!'
+      call output_line ('Heap not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
       call sys_halt()
     end if
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
-
+    
     ! Create a new array?
     if (h_dest .eq. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
@@ -3781,46 +3939,56 @@ contains
         select case (p_rsource%idataType)
         case (ST_DOUBLE)
           call storage_new ('storage_copy',p_rsource%sname,&
-                            int(size(p_rsource%p_Ddouble1D),I32),&
+                            int(lbound(p_rsource%p_Ddouble1D,1),I32),&
+                            int(ubound(p_rsource%p_Ddouble1D,1),I32),&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_SINGLE)
           call storage_new ('storage_copy',p_rsource%sname,&
-                            int(size(p_rsource%p_Fsingle1D),I32),&
+                            int(lbound(p_rsource%p_Fsingle1D,1),I32),&
+                            int(ubound(p_rsource%p_Fsingle1D,1),I32),&
                             ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT)
           call storage_new ('storage_copy',p_rsource%sname,&
-                            int(size(p_rsource%p_Iinteger1D),I32),&
+                            int(lbound(p_rsource%p_Iinteger1D,1),I32),&
+                            int(ubound(p_rsource%p_Iinteger1D,1),I32),&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_LOGICAL)
           call storage_new ('storage_copy',p_rsource%sname,&
-                            int(size(p_rsource%p_Blogical1D),I32),&
+                            int(lbound(p_rsource%p_Blogical1D,1),I32),&
+                            int(ubound(p_rsource%p_Blogical1D,1),I32),&
                             ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_CHAR)
           call storage_new ('storage_copy',p_rsource%sname,&
-                            int(size(p_rsource%p_Schar1D),I32),&
+                            int(lbound(p_rsource%p_Schar1D,1),I32),&
+                            int(ubound(p_rsource%p_Schar1D,1),I32),&
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         end select
       case (2)
         select case (p_rsource%IdataType)
         case (ST_DOUBLE)
-          Isize = ubound(p_rsource%p_Ddouble2D)   ! =SIZE(...) here
-          call storage_new ('storage_copy', p_rsource%sname, Isize,&
+          call storage_new ('storage_copy', p_rsource%sname,&
+                            int(lbound(p_rsource%p_Ddouble2D),I32),&
+                            int(ubound(p_rsource%p_Ddouble2D),I32),&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_SINGLE)
-          Isize = ubound(p_rsource%p_Fsingle2D)   ! =SIZE(...) here
-          call storage_new ('storage_copy', p_rsource%sname, Isize,&
+          call storage_new ('storage_copy', p_rsource%sname,&
+                            int(lbound(p_rsource%p_Fsingle2D),I32),&
+                            int(ubound(p_rsource%p_Fsingle2D),I32),&
                             ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT)
-          Isize = ubound(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
-          call storage_new ('storage_copy', p_rsource%sname, Isize,&
+          call storage_new ('storage_copy', p_rsource%sname,&
+                            int(lbound(p_rsource%p_Iinteger2D),I32),&
+                            int(ubound(p_rsource%p_Iinteger2D),I32),&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_LOGICAL)
-          Isize = ubound(p_rsource%p_Blogical2D)      ! =SIZE(...) here
-          call storage_new ('storage_copy', p_rsource%sname, Isize,&
+          call storage_new ('storage_copy', p_rsource%sname,&
+                            int(lbound(p_rsource%p_Blogical2D),I32),&
+                            int(ubound(p_rsource%p_Blogical2D),I32),&
                             ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_CHAR)
-          Isize = ubound(p_rsource%p_Schar2D)      ! =SIZE(...) here
-          call storage_new ('storage_copy', p_rsource%sname, Isize,&
+          call storage_new ('storage_copy', p_rsource%sname,&
+                            int(lbound(p_rsource%p_Schar2D),I32),&
+                            int(ubound(p_rsource%p_Schar2D),I32),&
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         end select
       end select
@@ -3828,15 +3996,41 @@ contains
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
       ! pointer again to be sure it's correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
-      
-    end if
+      p_rdest   => p_rheap%p_Rdescriptors(h_dest)
 
-    p_rdest => p_rheap%p_Rdescriptors(h_dest)
+    else
 
-    ! 1D/2D the same?
-    if (p_rsource%idimension .ne. p_rdest%idimension) then
-      print *,'storage_copy: Structure different!'
-      call sys_halt()
+      ! Check if the given destination handle is compatible with the source handle
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+      ! 1D/2D the same?
+      if (p_rsource%idimension .ne. p_rdest%idimension) then
+        call output_line ('Dimension of source and destination handles are different!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
+        call sys_halt()
+      end if
+
+      ! Sizes the same?
+      select case(p_rsource%idimension)
+      case (1)
+        call storage_getsize(h_source, isizeSource, rheap)
+        call storage_getsize(h_dest,   isizeDest,   rheap)
+        if (isizeSource .ne. isizeDest) then
+          call output_line ('Size of source and destination handles are different!', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
+        end if
+
+      case (2)
+        call storage_getsize(h_source, Isize2DSource, rheap)
+        call storage_getsize(h_dest,   Isize2DDest,   rheap)
+        if ((Isize2DSource(1) .ne. Isize2DDest(1)) .or.&
+            (Isize2DSource(2) .ne. Isize2DDest(2))) then
+          call output_line ('Size of source and destination handles are different!', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
+        end if
+
+      end select
+
     end if
 
     ! What is to copy
@@ -3850,7 +4044,8 @@ contains
         case (ST_SINGLE)
           call lalg_copyVectorDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
         case DEFAULT
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end select
 
@@ -3861,7 +4056,8 @@ contains
         case (ST_SINGLE)
           call lalg_copyVectorSngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
         case DEFAULT
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end select
 
@@ -3869,172 +4065,98 @@ contains
         if (p_rdest%idataType .eq. ST_INT) then
           call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
         else
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
 
       case (ST_LOGICAL)
         if (p_rdest%idataType .eq. ST_LOGICAL) then
-          ! Copy by hand
-          do i=1,size(p_rsource%p_Blogical1D)
-            p_rdest%p_Blogical1D(i) = p_rsource%p_Blogical1D(i)
-          end do
+          call lalg_copyVectorLogical(p_rsource%p_Blogical1D,p_rdest%p_Blogical1D)
         else
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
 
       case (ST_CHAR)
         if (p_rdest%idataType .eq. ST_CHAR) then
-          ! Copy by hand
-          do i=1,size(p_rsource%p_Schar1D)
-            p_rdest%p_Schar1D(i) = p_rsource%p_Schar1D(i)
-          end do
+          call lalg_copyVectorChar(p_rsource%p_Schar1D,p_rdest%p_Schar1D)
         else
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
 
       case DEFAULT
-        print *,'storage_copy: Unknown data type'
+        call output_line ('Unknown data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
         call sys_halt()
       end select
 
     case (2)
       select case (p_rsource%idataType)
       case (ST_DOUBLE)
-        if ((ubound(p_rsource%p_Ddouble2D,1) .ne. ubound(p_rdest%p_Ddouble2D,1)) .or.&
-            (ubound(p_rsource%p_Ddouble2D,2) .ne. ubound(p_rdest%p_Ddouble2D,2))) then
-          print *,'storage_copy: Structure different!'
-          call sys_halt()
-        end if
-
         select case (p_rdest%idataType)
         case (ST_DOUBLE)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Ddouble2D,2)
-            do i=1,ubound(p_rsource%p_Ddouble2D,1)
-              p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorDble2D (p_rsource%p_Ddouble2D,p_rdest%p_Ddouble2D)
 
         case (ST_SINGLE)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Fsingle2D,2)
-            do i=1,ubound(p_rsource%p_Fsingle2D,1)
-              p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Ddouble2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorDblSngl2D (p_rsource%p_Ddouble2D,p_rdest%p_Fsingle2D)
 
-        case (ST_INT)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Iinteger2D,2)
-            do i=1,ubound(p_rsource%p_Iinteger2D,1)
-              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Ddouble2D(i,j)
-            end do
-          end do
-
-        case DEFAULT ! Might be ST_LOGICAL or ST_CHAR
-          print *,'storage_copy: Unsupported data type combination'
+        case DEFAULT ! Might be ST_INT, ST_LOGICAL or ST_CHAR
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
 
         end select
 
       case (ST_SINGLE)
-        if ((ubound(p_rsource%p_Fsingle2D,1) .ne. ubound(p_rdest%p_Fsingle2D,1)) .or.&
-            (ubound(p_rsource%p_Fsingle2D,2) .ne. ubound(p_rdest%p_Fsingle2D,2))) then
-          print *,'storage_copy: Structure different!'
-          call sys_halt()
-        end if
-
         select case (p_rdest%idataType)
         case (ST_DOUBLE)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Ddouble2D,2)
-            do i=1,ubound(p_rsource%p_Ddouble2D,1)
-              p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Fsingle2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorSnglDbl2D (p_rsource%p_Fsingle2D,p_rdest%p_Ddouble2D)
 
         case (ST_SINGLE)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Fsingle2D,2)
-            do i=1,ubound(p_rsource%p_Fsingle2D,1)
-              p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Fsingle2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorSngl2D (p_rsource%p_Fsingle2D,p_rdest%p_Fsingle2D)
 
-        case (ST_INT)
-          ! Copy by hand
-          do j=1,ubound(p_rsource%p_Iinteger2D,2)
-            do i=1,ubound(p_rsource%p_Iinteger2D,1)
-              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
-            end do
-          end do
-
-        ! Might be ST_LOGICAL or ST_CHAR
+        ! Might be ST_INT, ST_LOGICAL or ST_CHAR
         case DEFAULT
-          print *,'storage_copy: Unsupported data type combination'
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
 
         end select
 
       case (ST_INT)
-        if ((ubound(p_rsource%p_Iinteger2D,1) .ne. ubound(p_rdest%p_Iinteger2D,1)) .or.&
-            (ubound(p_rsource%p_Iinteger2D,2) .ne. ubound(p_rdest%p_Iinteger2D,2))) then
-          print *,'storage_copy: Structure different!'
+        if (p_rdest%idataType .eq. ST_INT) then
+          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iinteger2D)
+        else
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
-        if (p_rdest%idataType .ne. ST_INT) then
-          print *,'storage_copy: unsupported data type combination'
-          call sys_halt()
-        end if
-
-        ! Copy by hand
-        do j=1,ubound(p_rsource%p_Iinteger2D,2)
-          do i=1,ubound(p_rsource%p_Iinteger2D,1)
-            p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Iinteger2D(i,j)
-          end do
-        end do
 
       case (ST_LOGICAL)
-        if ((ubound(p_rsource%p_Blogical2D,1) .ne. ubound(p_rdest%p_Blogical2D,1)) .or.&
-            (ubound(p_rsource%p_Blogical2D,2) .ne. ubound(p_rdest%p_Blogical2D,2))) then
-          print *,'storage_copy: Structure different!'
+        if (p_rdest%idataType .eq. ST_LOGICAL) then
+          call lalg_copyVectorLogical2D (p_rsource%p_Blogical2D, p_rdest%p_Blogical2D)
+        else
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
-        if (p_rdest%idataType .ne. ST_LOGICAL) then
-          print *,'storage_copy: unsupported data type combination'
-          call sys_halt()
-        end if
-
-        ! Copy by hand
-        do j=1,ubound(p_rsource%p_Blogical2D,2)
-          do i=1,ubound(p_rsource%p_Blogical2D,1)
-            p_rdest%p_Blogical2D(i,j) = p_rsource%p_Blogical2D(i,j)
-          end do
-        end do
 
       case (ST_CHAR)
-        if ((ubound(p_rsource%p_Schar2D,1) .ne. ubound(p_rdest%p_Schar2D,1)) .or.&
-            (ubound(p_rsource%p_Schar2D,2) .ne. ubound(p_rdest%p_Schar2D,2))) then
-          print *,'storage_copy: Structure different!'
+        if (p_rdest%idataType .eq. ST_CHAR) then
+          call lalg_copyVectorChar2D (p_rsource%p_Schar2D, p_rdest%p_Schar2D)
+        else
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
           call sys_halt()
         end if
-        if (p_rdest%idataType .ne. ST_CHAR) then
-          print *,'storage_copy: unsupported data type combination'
-          call sys_halt()
-        end if
-
-        ! Copy by hand
-        do j=1,ubound(p_rsource%p_Schar2D,2)
-          do i=1,ubound(p_rsource%p_Schar2D,1)
-            p_rdest%p_Schar2D(i,j) = p_rsource%p_Schar2D(i,j)
-          end do
-        end do
 
       case DEFAULT
-        print *,'storage_copy: Unknown data type'
+        call output_line ('Unknown data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy')
         call sys_halt()
       end select
     end select
@@ -4045,8 +4167,8 @@ contains
 
 !<subroutine>
 
-  subroutine storage_copy_explicit(h_source, h_dest, istart_source, &
-             istart_dest, ilength, rheap)
+  subroutine storage_copy_explicit (h_source, h_dest, istart_source, &
+                                    istart_dest, ilength, rheap)
 
 !<description>
   ! This routine copies the information of one array to another.
@@ -4092,11 +4214,12 @@ contains
     integer(I32) :: i
     character(LEN=SYS_NAMELEN) :: sname = ''
 
-    ! Check if the start address is positive
-    if (istart_source <= 0 .or. istart_dest <= 0) then
-      print *, 'storage_copy_explicit: start address must be positive'
-      call sys_halt()
-    end if
+!!$    ! Check if the start address is positive
+!!$    if (istart_source .le. 0 .or. istart_dest .le. 0) then
+!!$      call output_line ('Start address must be positive!', &
+!!$                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+!!$      call sys_halt()
+!!$    end if
 
     ! Get the heap to use - local or global one.
 
@@ -4107,11 +4230,13 @@ contains
     end if
 
     if (h_source .eq. ST_NOHANDLE) then
-      print *,'storage_copy_explicit: Wrong handle'
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
       call sys_halt()
     end if
     if (.not. associated(p_rheap%p_Rdescriptors)) then
-      print *,'storage_copy_explicit: Heap not initialised!'
+      call output_line ('Heap not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
       call sys_halt()
     end if
 
@@ -4121,169 +4246,214 @@ contains
     if (h_dest .eq. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
-      if (p_rsource%idimension /= 1) then
-        print *, 'storage_copy_explicit: only 1D arrays are allowed'
+      if (p_rsource%idimension .ne. 1) then
+        call output_line ('Only 1D arrays are allowed!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
         call sys_halt()
       end if
 
       select case (p_rsource%idataType)
       case (ST_DOUBLE)
-         call storage_new ('storage_copy_explicit',p_rsource%sname,&
-              int(size(p_rsource%p_Ddouble1D),I32),&
-              ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+                          int(lbound(p_rsource%p_Ddouble1D,1),I32),&
+                          int(ubound(p_rsource%p_Ddouble1D,1),I32),&
+                          ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_SINGLE)
-         call storage_new ('storage_copy_explicit',p_rsource%sname,&
-              int(size(p_rsource%p_Fsingle1D),I32),&
-              ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+                          int(lbound(p_rsource%p_Fsingle1D,1),I32),&
+                          int(ubound(p_rsource%p_Fsingle1D,1),I32),&
+                          ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-         call storage_new ('storage_copy_explicit',p_rsource%sname,&
-              int(size(p_rsource%p_Iinteger1D),I32),&
-              ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+                          int(lbound(p_rsource%p_Iinteger1D,1),I32),&
+                          int(ubound(p_rsource%p_Iinteger1D,1),I32),&
+                          ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-         call storage_new ('storage_copy_explicit',p_rsource%sname,&
-              int(size(p_rsource%p_Blogical1D),I32),&
-              ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+                          int(lbound(p_rsource%p_Blogical1D,1),I32),&
+                          int(ubound(p_rsource%p_Blogical1D,1),I32),&
+                          ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-         call storage_new ('storage_copy_explicit',p_rsource%sname,&
-              int(size(p_rsource%p_Schar1D),I32),&
-              ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+                          int(lbound(p_rsource%p_Schar1D,1),I32),&
+                          int(ubound(p_rsource%p_Schar1D,1),I32),&
+                          ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       end select
 
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
       ! pointer again to be sure it's correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
+      p_rdest   => p_rheap%p_Rdescriptors(h_dest)
+
+    else
       
+      ! Check if the given destination handle is compatible with the source handle
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+      ! 1D/2D the same?
+      if (p_rsource%idimension .ne. p_rdest%idimension) then
+        call output_line ('Dimension of source and destination handles are different!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end if
+
     end if
-
-    p_rdest => p_rheap%p_Rdescriptors(h_dest)
-
-    ! 1D/2D the same?
-    if (p_rsource%idimension .ne. p_rdest%idimension) then
-      print *,'storage_copy_explicit: Structure different!'
-      call sys_halt()
-    end if
-
+    
     ! What is to copy
     select case (p_rsource%idataType)
     case (ST_DOUBLE)
-       select case (p_rdest%idataType)
-       case (ST_DOUBLE)
-          if (istart_source+ilength-1 > size(p_rsource%p_Ddouble1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Ddouble1D)) then
-            print *, 'storage_copy_explicit: Subarrays incompatible!'
-            call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-            p_rdest%p_Ddouble1D(istart_dest+i-1) = &
-              p_rsource%p_Ddouble1D(istart_source+i-1)
-          end do
-       case (ST_SINGLE)
-          if (istart_source+ilength-1 > size(p_rsource%p_Ddouble1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Fsingle1D)) then
-            print *, 'storage_copy_explicit: Subarrays incompatible!'
-            call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-            p_rdest%p_Fsingle1D(istart_dest+i-1) = &
-              p_rsource%p_Ddouble1D(istart_source+i-1)
-          end do
-       case DEFAULT
-          print *,'storage_copy_explicit: Unsupported data type combination'
+      select case (p_rdest%idataType)
+      case (ST_DOUBLE)
+        if (istart_source           < lbound(p_rsource%p_Ddouble1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Ddouble1D,1) .or. &
+            istart_source+ilength-1 > ubound(p_rsource%p_Ddouble1D,1) .or. &
+            istart_dest+ilength-1   > ubound(p_rdest%p_Ddouble1D,1)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
           call sys_halt()
-       end select
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Ddouble1D(istart_dest+i-1) = &
+              p_rsource%p_Ddouble1D(istart_source+i-1)
+        end do
+        
+      case (ST_SINGLE)
+        if (istart_source           < lbound(p_rsource%p_Ddouble1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Fsingle1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Ddouble1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Fsingle1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Fsingle1D(istart_dest+i-1) = &
+              p_rsource%p_Ddouble1D(istart_source+i-1)
+        end do
 
+      case DEFAULT
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end select
+      
     case (ST_SINGLE)
-       select case (p_rdest%idataType)
-       case (ST_DOUBLE)
-          if (istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Ddouble1D)) then
-             print *, 'storage_copy_explicit: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-             p_rdest%p_Ddouble1D(istart_dest+i-1) = &
-               p_rsource%p_Fsingle1D(istart_source+i-1)
-          end do
-       case (ST_SINGLE)
-          if (istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Fsingle1D)) then
-             print *, 'storage_copy_explicit: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-             p_rdest%p_Fsingle1D(istart_dest+i-1) = &
-               p_rsource%p_Fsingle1D(istart_source+i-1)
-          end do
-       case DEFAULT
-          print *,'storage_copy_explicit: Unsupported data type combination'
+      select case (p_rdest%idataType)
+      case (ST_DOUBLE)
+        if (istart_source           < lbound(p_rsource%p_Fsingle1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Ddouble1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Ddouble1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
           call sys_halt()
-       end select
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Ddouble1D(istart_dest+i-1) = &
+              p_rsource%p_Fsingle1D(istart_source+i-1)
+        end do
 
+      case (ST_SINGLE)
+        if (istart_source           < lbound(p_rsource%p_Fsingle1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Fsingle1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Fsingle1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Fsingle1D(istart_dest+i-1) = &
+              p_rsource%p_Fsingle1D(istart_source+i-1)
+        end do
+
+      case DEFAULT
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end select
+      
     case (ST_INT)
-       if (p_rdest%idataType .eq. ST_INT) then
-          if (istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Iinteger1D)) then
-             print *, 'storage_copy_explicit: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-             p_rdest%p_Iinteger1D(istart_dest+i-1) = p_rsource%p_Iinteger1D(istart_source+i-1)
-          end do
-       else
-          print *,'storage_copy_explicit: Unsupported data type combination'
+      if (p_rdest%idataType .eq. ST_INT) then
+        if (istart_source           < lbound(p_rsource%p_Iinteger1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Iinteger1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
           call sys_halt()
-       end if
-
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Iinteger1D(istart_dest+i-1) = &
+              p_rsource%p_Iinteger1D(istart_source+i-1)
+        end do
+      else
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end if
+      
     case (ST_LOGICAL)
-       if (p_rdest%idataType .eq. ST_LOGICAL) then
-          if (istart_source+ilength-1 > size(p_rsource%p_Blogical1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Blogical1D)) then
-             print *, 'storage_copy_explicit: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-             p_rdest%p_Blogical1D(istart_dest+i-1) = p_rsource%p_Blogical1D(istart_source+i-1)
-          end do
-       else
-          print *,'storage_copy_explicit: Unsupported data type combination'
+      if (p_rdest%idataType .eq. ST_LOGICAL) then
+        if (istart_source           < lbound(p_rsource%p_Blogical1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Blogical1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Blogical1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Blogical1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
           call sys_halt()
-       end if
-
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Blogical1D(istart_dest+i-1) = &
+              p_rsource%p_Blogical1D(istart_source+i-1)
+        end do
+      else
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end if
+      
     case (ST_CHAR)
-       if (p_rdest%idataType .eq. ST_CHAR) then
-          if (istart_source+ilength-1 > size(p_rsource%p_Schar1D) .or. &
-               istart_dest+ilength-1 > size(p_rdest%p_Schar1D)) then
-             print *, 'storage_copy_explicit: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do i=1,ilength
-             p_rdest%p_Schar1D(istart_dest+i-1) = p_rsource%p_Schar1D(istart_source+i-1)
-          end do
-       else
-          print *,'storage_copy_explicit: Unsupported data type combination'
+      if (p_rdest%idataType .eq. ST_CHAR) then
+        if (istart_source           < lbound(p_rsource%p_Schar1D,1) .or. &
+            istart_dest             < lbound(p_rdest%p_Schar1D,1) .or. &
+            istart_source+ilength-1 > size(p_rsource%p_Schar1D) .or. &
+            istart_dest+ilength-1   > size(p_rdest%p_Schar1D)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
           call sys_halt()
-       end if
-
+        end if
+        ! Copy by hand
+        do i=1,ilength
+          p_rdest%p_Schar1D(istart_dest+i-1) = &
+              p_rsource%p_Schar1D(istart_source+i-1)
+        end do
+      else
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+        call sys_halt()
+      end if
+      
     case DEFAULT
-       print *,'storage_copy_explicit: Unknown data type'
-       call sys_halt()
+      call output_line ('Unknown data type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+      call sys_halt()
     end select
-
+    
   end subroutine storage_copy_explicit
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_copy_explicit2D(h_source, h_dest, Istart_source, &
-      Istart_dest, Ilength, rheap)
+  subroutine storage_copy_explicit2D (h_source, h_dest, Istart_source, &
+                                      Istart_dest, Ilength, rheap)
 
 !<description>
   ! This routine copies the information of one array to another.
@@ -4329,11 +4499,12 @@ contains
   integer(I32) :: i,j
   integer(I32), dimension(2) :: Isize
 
-    ! Check if the start address is positive
-    if (any(istart_source <= 0) .or. any(istart_dest <= 0)) then
-      print *, 'storage_copy_explicit: start address must be positive'
-      call sys_halt()
-    end if
+!!$    ! Check if the start address is positive
+!!$    if (any(istart_source .le. 0) .or. any(istart_dest .le. 0)) then
+!!$      call output_line ('Start address must be positive!', &
+!!$                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+!!$      call sys_halt()
+!!$    end if
 
     ! Get the heap to use - local or global one.
 
@@ -4344,11 +4515,13 @@ contains
     end if
 
     if (h_source .eq. ST_NOHANDLE) then
-      print *,'storage_copy_explicit: Wrong handle'
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
       call sys_halt()
     end if
     if (.not. associated(p_rheap%p_Rdescriptors)) then
-      print *,'storage_copy_explicit: Heap not initialised!'
+      call output_line ('Heap not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
       call sys_halt()
     end if
 
@@ -4358,228 +4531,287 @@ contains
     if (h_dest .eq. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
-      if (p_rsource%idimension /= 2) then
-        print *, 'storage_copy_explicit: only 1D arrays are allowed'
+      if (p_rsource%idimension .ne. 2) then
+        call output_line ('Only 2D arrays are allowed!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
         call sys_halt()
       end if
 
       select case (p_rsource%IdataType)
       case (ST_DOUBLE)
-         Isize = ubound(p_rsource%p_Ddouble2D)   ! =SIZE(...) here
-         call storage_new ('storage_copy', p_rsource%sname, Isize,&
-              ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit2D', p_rsource%sname,&
+                          int(lbound(p_rsource%p_Ddouble2D),I32),&
+                          int(ubound(p_rsource%p_Ddouble2D),I32),&
+                          ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_SINGLE)
-         Isize = ubound(p_rsource%p_Fsingle2D)   ! =SIZE(...) here
-         call storage_new ('storage_copy', p_rsource%sname, Isize,&
-              ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit2D', p_rsource%sname,&
+                          int(lbound(p_rsource%p_Fsingle2D),I32),&
+                          int(ubound(p_rsource%p_Fsingle2D),I32),&
+                          ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-         Isize = ubound(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
-         call storage_new ('storage_copy', p_rsource%sname, Isize,&
-              ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit2D', p_rsource%sname,&
+                          int(lbound(p_rsource%p_Iinteger2D),I32),&
+                          int(ubound(p_rsource%p_Iinteger2D),I32),&
+                          ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-         Isize = ubound(p_rsource%p_Blogical2D)      ! =SIZE(...) here
-         call storage_new ('storage_copy', p_rsource%sname, Isize,&
-              ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit2D', p_rsource%sname,&
+                          int(lbound(p_rsource%p_Blogical2D),I32),&
+                          int(ubound(p_rsource%p_Blogical2D),I32),&
+                          ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-         Isize = ubound(p_rsource%p_Schar2D)      ! =SIZE(...) here
-         call storage_new ('storage_copy', p_rsource%sname, Isize,&
-              ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        call storage_new ('storage_copy_explicit2D', p_rsource%sname,&
+                          int(lbound(p_rsource%p_Schar2D),I32),&
+                          int(ubound(p_rsource%p_Schar2D),I32),&
+                          ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       end select
 
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
       ! pointer again to be sure it's correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+    else
       
-    end if
+      ! Check if the given destination handle is compatible with the source handle
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+      
+      ! 1D/2D the same?
+      if (p_rsource%idimension .ne. p_rdest%idimension) then
+        call output_line ('Dimension of source and destination handles are different!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
 
-    p_rdest => p_rheap%p_Rdescriptors(h_dest)
-
-    ! 1D/2D the same?
-    if (p_rsource%idimension .ne. p_rdest%idimension) then
-      print *,'storage_copy_explicit: Structure different!'
-      call sys_halt()
     end if
 
     ! What is to copy
     select case (p_rsource%idataType)
     case (ST_DOUBLE)
-       select case (p_rdest%idataType)
-       case (ST_DOUBLE)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Ddouble2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Ddouble2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case (ST_SINGLE)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Fsingle2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Fsingle2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case (ST_INT)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Iinteger2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Iinteger2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case DEFAULT ! Might be ST_LOGICAL or ST_CHAR
-          print *,'storage_copy_explicit2D: Unsupported data type combination'
+      select case (p_rdest%idataType)
+      case (ST_DOUBLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Ddouble2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Ddouble2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Ddouble2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Ddouble2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-
-       end select
-
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case (ST_SINGLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Fsingle2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Fsingle2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Fsingle2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Fsingle2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case DEFAULT ! Might be ST_LOGICAL or ST_CHAR
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+        
+      end select
+      
     case (ST_SINGLE)
-       select case (p_rdest%idataType)
-       case (ST_DOUBLE)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Ddouble2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Ddouble2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case (ST_SINGLE)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Fsingle2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Fsingle2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case (ST_INT)
-          if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
-               Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
-               Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Iinteger2D,1) .or. &
-               Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Iinteger2D,2)) then
-             print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             call sys_halt()
-          end if
-          ! Copy by hand
-          do j=1,Ilength(2)
-             do i=1,Ilength(1)
-                p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-             end do
-          end do
-
-       case DEFAULT ! Might be ST_LOGICAL or ST_CHAR
-          print *,'storage_copy_explicit2D: Unsupported data type combination'
+      select case (p_rdest%idataType)
+      case (ST_DOUBLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Ddouble2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Ddouble2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Ddouble2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Ddouble2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-
-       end select
-
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case (ST_SINGLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Fsingle2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Fsingle2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Fsingle2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Fsingle2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle2D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle2D,2) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger2D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger2D,2) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle2D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle2D,2) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger2D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger2D,2)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          end do
+        end do
+        
+      case DEFAULT ! Might be ST_LOGICAL or ST_CHAR
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+        
+      end select
+      
     case (ST_INT)
-       if (p_rdest%idataType .ne. ST_INT) then
-          print *,'storage_copy_explicit2D: unsupported data type combination'
-          call sys_halt()
-       end if
-       if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger2D,1) .or. &
-            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger2D,2) .or. &
-            Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Iinteger2D,1) .or. &
-            Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Iinteger2D,2)) then
-          print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          call sys_halt()
-       end if
-
-       ! Copy by hand
-       do j=1,Ilength(2)
-          do i=1,Ilength(1)
-             p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                  p_rsource%p_Iinteger2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-          end do
-       end do
-
+      if (p_rdest%idataType .ne. ST_INT) then
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
+      if (Istart_source(1) < lbound(p_rsource%p_Iinteger2D,1) .or.&
+          Istart_source(2) < lbound(p_rsource%p_Iinteger2D,2) .or.&
+          Istart_dest(1)   < lbound(p_rdest%p_Iinteger2D,1) .or. &
+          Istart_dest(2)   < lbound(p_rdest%p_Iinteger2D,2) .or. &
+          Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger2D,1) .or. &
+          Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger2D,2) .or. &
+          Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger2D,1) .or. &
+          Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger2D,2)) then
+        call output_line ('Subarrays incompatible!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if      
+      ! Copy by hand
+      do j=1,Ilength(2)
+        do i=1,Ilength(1)
+          p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+              p_rsource%p_Iinteger2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+        end do
+      end do
+      
     case (ST_LOGICAL)
-       if (p_rdest%idataType .ne. ST_LOGICAL) then
-          print *,'storage_copy_explicit2D: unsupported data type combination'
-          call sys_halt()
-       end if
-       if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Blogical2D,1) .or. &
-            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Blogical2D,2) .or. &
-            Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Blogical2D,1) .or. &
-            Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Blogical2D,2)) then
-          print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          call sys_halt()
-       end if
-
-       ! Copy by hand
-       do j=1,Ilength(2)
-          do i=1,Ilength(1)
-             p_rdest%p_Blogical2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                  p_rsource%p_Blogical2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-          end do
-       end do
-
+      if (p_rdest%idataType .ne. ST_LOGICAL) then
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
+      if (Istart_source(1) < lbound(p_rsource%p_Blogical2D,1) .or.&
+          Istart_source(2) < lbound(p_rsource%p_Blogical2D,2) .or.&
+          Istart_dest(1)   < lbound(p_rdest%p_Blogical2D,1) .or. &
+          Istart_dest(2)   < lbound(p_rdest%p_Blogical2D,2) .or. &
+          Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Blogical2D,1) .or. &
+          Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Blogical2D,2) .or. &
+          Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Blogical2D,1) .or. &
+          Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Blogical2D,2)) then
+        call output_line ('Subarrays incompatible!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
+      ! Copy by hand
+      do j=1,Ilength(2)
+        do i=1,Ilength(1)
+          p_rdest%p_Blogical2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+              p_rsource%p_Blogical2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+        end do
+      end do
+      
     case (ST_CHAR)
-       if (p_rdest%idataType .ne. ST_CHAR) then
-          print *,'storage_copy_explicit2D: unsupported data type combination'
-          call sys_halt()
-       end if
-       if (Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Schar2D,1) .or. &
-            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Schar2D,2) .or. &
-            Istart_dest(1)+Ilength(1)-1 > ubound(p_rdest%p_Schar2D,1) .or. &
-            Istart_dest(2)+Ilength(2)-1 > ubound(p_rdest%p_Schar2D,2)) then
-          print *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          call sys_halt()
-       end if
-
-       ! Copy by hand
-       do j=1,Ilength(2)
-          do i=1,Ilength(1)
-             p_rdest%p_Schar2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
-                  p_rsource%p_Schar2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
-          end do
-       end do
-
+      if (p_rdest%idataType .ne. ST_CHAR) then
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
+      if (Istart_source(1) < lbound(p_rsource%p_Schar2D,1) .or.&
+          Istart_source(2) < lbound(p_rsource%p_Schar2D,2) .or.&
+          Istart_dest(1)   < lbound(p_rdest%p_Schar2D,1) .or. &
+          Istart_dest(2)   < lbound(p_rdest%p_Schar2D,2) .or. &
+          Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Schar2D,1) .or. &
+          Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Schar2D,2) .or. &
+          Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Schar2D,1) .or. &
+          Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Schar2D,2)) then
+        call output_line ('Subarrays incompatible!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+        call sys_halt()
+      end if
+      ! Copy by hand
+      do j=1,Ilength(2)
+        do i=1,Ilength(1)
+          p_rdest%p_Schar2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+              p_rsource%p_Schar2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+        end do
+      end do
+      
     case DEFAULT
-       print *,'storage_copy: Unknown data type'
-       call sys_halt()
+      call output_line ('Unknown data type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
+      call sys_halt()
     end select
 
   end subroutine storage_copy_explicit2D
@@ -4588,7 +4820,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_info(bprintHandles,rheap)
+  subroutine storage_info (bprintHandles, rheap)
 
 !<description>
   ! This routine prints information about the current memory consumption
@@ -4803,63 +5035,10 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getname (ihandle, sname, rheap)
-
-!<description>
-  ! Returns the name of an array identified by ihandle.
-!</description>
-
-!<input>
-  ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
-
-  ! OPTIONAL: local heap structure to initialise. If not given, the
-  ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
-!</input>
-
-!<output>
-  ! Name of the array identified by ihandle.
-  character(LEN=*), intent(OUT) :: sname
-!</output>
-
-!</subroutine>
-
-  ! local variables
-
-  ! Pointer to the heap
-  type(t_storageBlock), pointer :: p_rheap
-  type(t_storageNode), pointer :: p_rnode
-
-  ! Get the heap to use - local or global one.
-
-  if(present(rheap)) then
-    p_rheap => rheap
-  else
-    p_rheap => rbase
-  end if
-
-  if (ihandle .le. ST_NOHANDLE) then
-    call output_line ('Handle invalid!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getname')
-    call sys_halt()
-  end if
-
-  ! Where is the descriptor of the handle?
-  p_rnode => p_rheap%p_Rdescriptors(ihandle)
-
-  sname = p_rnode%sname
-
-  end subroutine storage_getname
-
-!************************************************************************
-
-!<subroutine>
-
   subroutine storage_realloc (scall, isize, ihandle, cinitNewBlock, bcopy, rheap)
 
 !<description>
-  ! This routine reallocates an existing memory block wih a new desired
+  ! This routine reallocates an existing memory block with a new desired
   ! size. In case of a multiple-dimension block, the last dimension
   ! is changed. isize is the size of the new memory block / the new size
   ! of the last dimension.
@@ -4921,9 +5100,13 @@ contains
     ! size of the old 2-dimensional array
     integer(I32), dimension(2) :: Isize2Dold
 
-    integer(I32) :: i,j
-
     logical :: bcopyData
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
+      call sys_halt()
+    end if
 
     if (isize .eq. 0) then
       ! Ok, not much to do...
@@ -4974,7 +5157,7 @@ contains
       end select
 
       ! Do we really have to change anything?
-      if (isize == isizeOld) return
+      if (isize .eq. isizeOld) return
 
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
@@ -4996,7 +5179,8 @@ contains
         allocate(rstorageNode%p_Schar1D(isize))
         rstorageNode%dmemBytes = real(isize,DP)*real(ST_CHAR2BYTES,DP)
       case DEFAULT
-        print *,'Error: unknown mem type'
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
         call sys_halt()
       end select
 
@@ -5008,24 +5192,20 @@ contains
         isizeCopy=min(isize,isizeOld)
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isizeCopy),&
-                                    rstorageNode%p_Fsingle1D(1:isizeCopy))
+          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D,&
+                                    rstorageNode%p_Fsingle1D, isizeCopy)
         case (ST_DOUBLE)
-          call lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isizeCopy),&
-                                    rstorageNode%p_Ddouble1D(1:isizeCopy))
+          call lalg_copyVectorDble (p_rnode%p_Ddouble1D,&
+                                    rstorageNode%p_Ddouble1D, isizeCopy)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isizeCopy),&
-                                  rstorageNode%p_Iinteger1D(1:isizeCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iinteger1D,&
+                                   rstorageNode%p_Iinteger1D, isizeCopy)
         case (ST_LOGICAL)
-          ! Copy by hand
-          do i = 1, isizeCopy
-            rstorageNode%p_Blogical1D(i) = p_rnode%p_Blogical1D(i)
-          end do
+          call lalg_copyVectorLogical (p_rnode%p_Blogical1D,&
+                                       rstorageNode%p_Blogical1D, isizeCopy)
         case (ST_CHAR)
-          ! Copy by hand
-          do i = 1, isizeCopy
-            rstorageNode%p_Schar1D(i) = p_rnode%p_Schar1D(i)
-          end do
+          call lalg_copyVectorChar (p_rnode%p_Schar1D,&
+                                    rstorageNode%p_Schar1D, isizeCopy)
         end select
       end if
 
@@ -5046,7 +5226,7 @@ contains
       end select
 
       ! Do we really have to change anything?
-      if (isize == Isize2Dold(2)) return
+      if (isize .eq. Isize2Dold(2)) return
 
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
@@ -5072,7 +5252,8 @@ contains
         rstorageNode%dmemBytes = &
              real(Isize2Dold(1),DP)*real(isize,DP)*real(ST_CHAR2BYTES,DP)
       case DEFAULT
-        print *,'Error: unknown mem type'
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
         call sys_halt()
       end select
 
@@ -5087,51 +5268,41 @@ contains
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_DOUBLE)
-          ! Copy by hand
-          do j=1,min(size(rstorageNode%p_Ddouble2D,2),Isize2DOld(2))
-            do i=1,size(rstorageNode%p_Ddouble2D,1)
-              rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
-            end do
-          end do
+          isizeCopy = min(size(rstorageNode%p_Ddouble2D,2),Isize2DOld(2))
+          call lalg_copyVectorDble2D(p_rnode%p_Ddouble2D,&
+                                     rstorageNode%p_Ddouble2D,&
+                                     size(rstorageNode%p_Ddouble2D,1), isizeCopy)
 
         case (ST_SINGLE)
-          ! Copy by hand
-          do j=1,min(size(rstorageNode%p_Fsingle2D,2),Isize2DOld(2))
-            do i=1,size(rstorageNode%p_Fsingle2D,1)
-              rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
-            end do
-          end do
+          isizeCopy = min(size(rstorageNode%p_Fsingle2D,2),Isize2DOld(2))
+          call lalg_copyVectorSngl2D(p_rnode%p_Fsingle2D,&
+                                     rstorageNode%p_Fsingle2D,&
+                                     size(rstorageNode%p_Fsingle2D,1), isizeCopy)
 
         case (ST_INT)
-          ! Copy by hand
-          do j=1,min(size(rstorageNode%p_Iinteger2D,2),Isize2DOld(2))
-            do i=1,size(rstorageNode%p_Iinteger2D,1)
-              rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
-            end do
-          end do
+          isizeCopy = min(size(rstorageNode%p_Iinteger2D,2),Isize2DOld(2))
+          call lalg_copyVectorInt2D(p_rnode%p_Iinteger2D,&
+                                     rstorageNode%p_Iinteger2D,&
+                                     size(rstorageNode%p_Iinteger2D,1), isizeCopy)
 
         case (ST_LOGICAL)
-          ! Copy by hand
-          do j=1,min(size(rstorageNode%p_Blogical2D,2),Isize2DOld(2))
-            do i=1,size(rstorageNode%p_Blogical2D,1)
-              rstorageNode%p_Blogical2D(i,j) = p_rnode%p_Blogical2D(i,j)
-            end do
-          end do
+          isizeCopy = min(size(rstorageNode%p_Blogical2D,2),Isize2DOld(2))
+          call lalg_copyVectorLogical2D(p_rnode%p_Blogical2D,&
+                                        rstorageNode%p_Blogical2D,&
+                                        size(rstorageNode%p_Blogical2D,1), isizeCopy)
 
         case (ST_CHAR)
-          ! Copy by hand
-          do j=1,min(size(rstorageNode%p_Schar2D,2),Isize2DOld(2))
-            do i=1,size(rstorageNode%p_Schar2D,1)
-              rstorageNode%p_Schar2D(i,j) = p_rnode%p_Schar2D(i,j)
-            end do
-          end do
+          isizeCopy = min(size(rstorageNode%p_Schar2D,2),Isize2DOld(2))
+          call lalg_copyVectorChar2D(p_rnode%p_Schar2D,&
+                                     rstorageNode%p_Schar2D,&
+                                     size(rstorageNode%p_Schar2D,1), isizeCopy)
         end select
 
       end if
 
     case DEFAULT
-      print *, 'Error in storage_realloc: Handle ',ihandle, &
-               ' is neither 1- nor 2- dimensional!'
+      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1- nor 2-dimensional!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
       call sys_halt()
 
     end select
@@ -5168,10 +5339,10 @@ contains
 !<subroutine>
 
   subroutine storage_reallocFixed (scall, ilbound, iubound, ihandle, &
-             cinitNewBlock, bcopy, rheap)
+                                   cinitNewBlock, bcopy, rheap)
 
 !<description>
-  ! This routine reallocates an existing memory block wih a new desired
+  ! This routine reallocates an existing memory block with a new desired
   ! size. In case of a multiple-dimension block, the last dimension
   ! is changed. isize is the size of the new memory block / the new size
   ! of the last dimension.
@@ -5193,7 +5364,7 @@ contains
   ! dimension in the memory block identified by ihandle
   integer(I32), intent(IN) :: iubound
 
-  ! Init new storage block identifier (ST_NEWBLOCK_ZERO,
+  ! Init new storage block identifier (ST_NEWBLOCK_Zero,
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
   ! Specifies how to initialise memory if isize > original array size.
   integer, intent(IN) :: cinitNewBlock
@@ -5259,6 +5430,12 @@ contains
 
     logical :: bcopyData
 
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+      call sys_halt()
+    end if
+
     isize=iubound-ilbound+1
     if (isize .eq. 0) then
       ! Ok, not much to do...
@@ -5319,8 +5496,8 @@ contains
       end select
 
       ! Do we really have to change anything?
-      if ((ilbound == ilboundOld) .and. &
-          (iubound == iuboundOld)) return
+      if ((ilbound .eq. ilboundOld) .and. &
+          (iubound .eq. iuboundOld)) return
 
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
@@ -5342,7 +5519,8 @@ contains
         allocate(rstorageNode%p_Schar1D(ilbound:iubound))
         rstorageNode%dmemBytes = real(isize,DP)*real(ST_CHAR2BYTES,DP)
       case DEFAULT
-        print *,'Error: unknown mem type'
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
         call sys_halt()
       end select
 
@@ -5364,17 +5542,13 @@ contains
                                     rstorageNode%p_Ddouble1D(ilboundCopy:iuboundCopy))
         case (ST_INT)
           call lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilboundCopy:iuboundCopy),&
-                                  rstorageNode%p_Iinteger1D(ilboundCopy:iuboundCopy))
+                                   rstorageNode%p_Iinteger1D(ilboundCopy:iuboundCopy))
         case (ST_LOGICAL)
-          ! Copy by hand
-          do i = ilboundCopy, iuboundCopy
-            rstorageNode%p_Blogical1D(i) = p_rnode%p_Blogical1D(i)
-          end do
+          call lalg_copyVectorLogical (p_rnode%p_Blogical1D(ilboundCopy:iuboundCopy),&
+                                       rstorageNode%p_Blogical1D(ilboundCopy:iuboundCopy))
         case (ST_CHAR)
-          ! Copy by hand
-          do i = ilboundCopy, iuboundCopy
-            rstorageNode%p_Schar1D(i) = p_rnode%p_Schar1D(i)
-          end do
+          call lalg_copyVectorChar (p_rnode%p_Schar1D(ilboundCopy:iuboundCopy),&
+                                    rstorageNode%p_Schar1D(ilboundCopy:iuboundCopy))
         end select
       end if
 
@@ -5405,8 +5579,8 @@ contains
       end select
 
       ! Do we really have to change anything?
-      if ((ilbound == ilbound2Dold(2)) .and. &
-          (iubound == iubound2Dold(2))) return
+      if ((ilbound .eq. ilbound2Dold(2)) .and. &
+          (iubound .eq. iubound2Dold(2))) return
 
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
@@ -5442,7 +5616,8 @@ contains
         rstorageNode%dmemBytes = &
              real(Isize2Dold(1),DP)*real(isize,DP)*real(ST_CHAR2BYTES,DP)
       case DEFAULT
-        print *,'Error: unknown mem type'
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
         call sys_halt()
       end select
 
@@ -5459,7 +5634,7 @@ contains
         ! Here it's easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         select case (rstorageNode%idataType)
-        case (ST_DOUBLE)
+        case (ST_DOUBLE)         
           ! Copy by hand
           do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
             do i=Ilbound2DOld(1),Iubound2Dold(1)
@@ -5503,8 +5678,8 @@ contains
       end if
 
     case DEFAULT
-      print *, 'Error in storage_realloc: Handle ',ihandle, &
-               ' is neither 1- nor 2- dimensional!'
+      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1- nor 2-dimensional!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
       call sys_halt()
 
     end select
@@ -5725,130 +5900,725 @@ contains
     end select
 
   case DEFAULT
-    print *, 'Error in storage_realloc: Handle ',ihandle1, &
-        ' is neither 1- nor 2- dimensional!'
+    call output_line ('Handle '//trim(sys_siL(ihandle1,11))//' is neither 1- nor 2-dimensional!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_isEqual')
     call sys_halt()
   end select
   end function storage_isEqual
 
-!************************************************************************
+  !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function storage_isFree (ihandle, rheap) result (bisfree)
+  subroutine storage_createFpdbObject (rfpdbObjectItem, sname, rheap)
 
 !<description>
-
-    ! This function checks if the handle is free
-
+    ! This subroutine creates an abstract object of the heap structure
+    ! that can be stored in the persistence database
 !</description>
 
 !<input>
-
-    ! The handle
-    integer, intent(IN) :: ihandle
+    ! The full qualified name of the object
+    character(LEN=*), intent(IN) :: sname
     
-    ! OPTIONAL: local heap structure to initialise. If not given, the
-    ! global heap is used.
+    ! OPTIONAL: local heap structure to initialise. 
+    ! If not given, the global heap is initialised.
     type(t_storageBlock), intent(IN), target, optional :: rheap
-
 !</input>
 
-!<result>
+!<inputoutput>
+    ! The 
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+!</inputoutput>
+!</subroutine>
 
-    ! .TRUE. if the handle is free
-    logical :: bisfree
+    ! local variables
+    integer :: i,ihandlesInUse
 
-!</result>
-
-!</function>
-
-    ! Pointer to the heaps
+    ! Pointer to the heap to initialise
     type(t_storageBlock), pointer :: p_rheap
-    
-    ! Get the heaps to use - local or global one.
-    
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
     if(present(rheap)) then
       p_rheap => rheap
     else
       p_rheap => rbase
     end if
+
+    ! Check if storage block has UUID; otherwise create one
+    if (uuid_isNil(p_rheap%ruuid)) then
+      call uuid_createUUID(4, p_rheap%ruuid)
+      rfpdbObjectItem%ruuid = p_rheap%ruuid
+    end if
+
+    ! Set the name and type of the object
+    rfpdbObjectItem%sname = sname
+    rfpdbObjectItem%stype = 't_storageBlock'
     
-    if (ihandle .le. ST_NOHANDLE) then
-      call output_line ('Wrong handle!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_isFree')
+    ! Allocate the array of data items: 9 + the number of handles in use
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(9+p_rheap%ihandlesInUse))
+
+    ! Fill the array of data items: p_inextFreeHandle
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'p_inextFreeHandle'
+    p_fpdbDataItem%iinteger = p_rheap%p_inextFreeHandle
+
+    ! Fill the array of data items: p_ilastFreeHandle
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'p_ilastFreeHandle'
+    p_fpdbDataItem%iinteger = p_rheap%p_ilastFreeHandle
+
+    ! Fill the array of data items: ihandlesInUse
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'ihandlesInUse'
+    p_fpdbDataItem%iinteger = p_rheap%ihandlesInUse
+
+    ! Fill the array of data items: nhandlesTotal
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'nhandlesTotal'
+    p_fpdbDataItem%iinteger = p_rheap%nhandlesTotal
+
+    ! Fill the array of data items: ihandlesDelta
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'ihandlesDelta'
+    p_fpdbDataItem%iinteger = p_rheap%ihandlesDelta
+
+    ! Fill the array of data items: dtotalMem
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem%ctype    = FPDB_DOUBLE
+    p_fpdbDataItem%sname    = 'dtotalMem'
+    p_fpdbDataItem%ddouble  = p_rheap%dtotalMem
+
+    ! Fill the array of data items: nhandlesInUseMax
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'nhandlesInUseMax'
+    p_fpdbDataItem%iinteger = p_rheap%nhandlesInUseMax
+
+    ! Fill the array of data items: dtotalMemMax
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem%ctype    = FPDB_DOUBLE
+    p_fpdbDataItem%sname    = 'dtotalMemMax'
+    p_fpdbDataItem%ddouble  = p_rheap%dtotalMemMax
+
+      ! Fill the array of data items: p_IfreeHandles
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem%ctype        =  FPDB_INT1D
+    p_fpdbDataItem%sname        =  'p_IfreeHandles'
+    p_fpdbDataItem%p_Iinteger1D => p_rheap%p_IfreeHandles
+
+    ! Attach all handles currently in use
+    ihandlesInUse = 0
+    do i = 1, size(p_rheap%p_Rdescriptors)
+      
+      ! Only attach handles which are in use
+      if (p_rheap%p_Rdescriptors(i)%idataType .ne. ST_NOHANDLE) then
+        ihandlesInUse = ihandlesInUse+1
+
+        p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9+ihandlesInUse)
+        p_fpdbDataItem%ctype = FPDB_OBJECT
+        p_fpdbDataItem%sname = 'handle_'//trim(sys_siL(i,11))
+
+        allocate(p_fpdbDataItem%p_fpdbObjectItem)
+        call createFpdbObjectHandle(p_fpdbDataItem%p_fpdbObjectItem, i)
+      end if
+    end do
+      
+    ! Check consistency of handles in use
+    if (ihandlesInUse .ne. p_rheap%ihandlesInUse) then
+      call output_line ('Inconsistency detected', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_createFpdbObject')
       call sys_halt()
     end if
 
-    ! Check of the handle is free
-    bisfree = (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_NOHANDLE)
+
+  contains
+
+    subroutine createFpdbObjectHandle (rfpdbObjectItem, ihandle)
+
+      ! The object item that represents the handle
+      type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+
+      ! The handle number
+      integer, intent(in) :: ihandle
+
+
+      ! local variables
+      type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+      ! Check if storage block has UUID; otherwise create one
+      if (uuid_isNil(rfpdbObjectItem%ruuid)) then
+        call uuid_createUUID(4, rfpdbObjectItem%ruuid)
+      end if
+      
+      ! Set the name and type of the object
+      rfpdbObjectItem%sname = 'handle_'//trim(sys_siL(ihandle,11))
+      rfpdbObjectItem%stype = 't_storageNode'
+
+      ! Allocate the array of data items:
+      allocate(rfpdbObjectItem%p_RfpdbDataItem(10))
+
+      ! Fill the array of data items: ihandle
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+      p_fpdbDataItem%ctype    = FPDB_INT
+      p_fpdbDataItem%sname    = 'ihandle'
+      p_fpdbDataItem%iinteger = ihandle
+
+      ! Fill the array of data items: idatatype
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+      p_fpdbDataItem%ctype    = FPDB_INT
+      p_fpdbDataItem%sname    = 'idatatype'
+      p_fpdbDataItem%iinteger = p_rheap%p_Rdescriptors(ihandle)%idatatype
+
+      ! Fill the array of data items: idimension
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+      p_fpdbDataItem%ctype    = FPDB_INT
+      p_fpdbDataItem%sname    = 'idimension'
+      p_fpdbDataItem%iinteger = p_rheap%p_Rdescriptors(ihandle)%idimension
+
+      ! Fill the array of data items: sname
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+      p_fpdbDataItem%ctype = FPDB_CHAR
+      p_fpdbDataItem%sname = 'sname'
+      p_fpdbDataItem%schar = p_rheap%p_Rdescriptors(ihandle)%sname
+
+      ! Fill the array of data items: dmemBytes
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+      p_fpdbDataItem%ctype   = FPDB_DOUBLE
+      p_fpdbDataItem%sname   = 'dmemBytes'
+      p_fpdbDataItem%ddouble = p_rheap%p_Rdescriptors(ihandle)%dmemBytes
+
+      select case(p_rheap%p_Rdescriptors(ihandle)%idimension)
+      case (1)
+        select case(p_rheap%p_Rdescriptors(ihandle)%idatatype)
+        case (ST_SINGLE)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname       = 'data'
+          p_fpdbDataItem%ctype       =  FPDB_SINGLE1D
+          p_fpdbDataItem%p_Fsingle1D => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D
+
+
+        case (ST_DOUBLE)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname       = 'data'
+          p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
+          p_fpdbDataItem%p_Ddouble1D => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D
+
+
+        case (ST_INT)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_INT1D
+          p_fpdbDataItem%p_Iinteger1D => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D
+
+
+        case (ST_LOGICAL)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_LOGICAL1D
+          p_fpdbDataItem%p_Blogical1D => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D
+
+
+        case (ST_CHAR)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar1D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar1D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = 0
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_CHAR1D
+          p_fpdbDataItem%p_Schar1D => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D
+
+
+        case DEFAULT
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'createFpdbObjectHandle')
+          call sys_halt()
+        end select
+
+      case (2)
+        select case(p_rheap%p_Rdescriptors(ihandle)%idatatype)
+        case (ST_SINGLE)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname       = 'data'
+          p_fpdbDataItem%ctype       =  FPDB_SINGLE2D
+          p_fpdbDataItem%p_Fsingle2D => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D
+
+
+        case (ST_DOUBLE)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname       = 'data'
+          p_fpdbDataItem%ctype       =  FPDB_DOUBLE2D
+          p_fpdbDataItem%p_Ddouble2D => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
+
+          
+        case (ST_INT)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_INT2D
+          p_fpdbDataItem%p_Iinteger2D => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D
+
+
+        case (ST_LOGICAL)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_LOGICAL2D
+          p_fpdbDataItem%p_Blogical2D => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D
+
+
+        case (ST_CHAR)
+          ! Fill the array of data items: lbound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound1'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,1)
+
+          ! Fill the array of data items: ubound1
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound1'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,1)
+
+          ! Fill the array of data items: lbound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'lbound2'
+          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)
+
+          ! Fill the array of data items: ubound2
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+          p_fpdbDataItem%ctype    = FPDB_INT
+          p_fpdbDataItem%sname    = 'ubound2'
+          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)
+
+          ! Fill the array of data items: data
+          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+          p_fpdbDataItem%sname        = 'data'
+          p_fpdbDataItem%ctype        =  FPDB_CHAR2D
+          p_fpdbDataItem%p_Schar2D => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
+
+
+        case DEFAULT
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'createFpdbObjectHandle')
+          call sys_halt()
+        end select
+
+      case DEFAULT
+        call output_line ('Invalid dimension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'createFpdbObjectHandle')
+        call sys_halt()
+      end select
+    end subroutine createFpdbObjectHandle
     
-  end function storage_isFree
+  end subroutine storage_createFpdbObject
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_getBlock (ihandlesInUse, nhandlesTotal, ihandlesDelta,&
-                               dtotalMem, nhandlesInUseMax, dtotalMemMax, rheap)
+  subroutine storage_restoreFpdbObject (rfpdbObjectItem, rheap)
 
-!<subroutine>
-
-    ! This subroutine allows to get internal structures of the storage block.
-
+!<description>
+    ! This subroutine creates an abstract object of the heap structure
+    ! that can be stored in the persistence database
 !</description>
 
 !<input>
-    
-    ! OPTIONAL: local heap structure to initialise. If not given, the
-    ! global heap is used.
-    type(t_storageBlock), intent(IN), target, optional :: rheap
-
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
 !</input>
 
-!<output>
-
-    ! Number of handles in use
-    integer, intent(OUT), optional :: ihandlesInUse
-
-    ! Total number of handles maintained by this block
-    integer, intent(OUT), optional :: nhandlesTotal
-
-    ! Number of handles to add if there are not enough free handles
-    integer, intent(OUT), optional :: ihandlesDelta
-
-    ! Total amount of memory (in bytes) that is in use.
-    real(DP), intent(OUT), optional :: dtotalMem
-
-    ! Maximum number of handles that were in use over 
-    ! the whole lifetime of this structure.
-    integer, intent(OUT), optional :: nhandlesInUseMax
-
-    ! Maximum amount of memory that was in use over the whole lifetime
-    ! of this structure.
-    real(DP), intent(OUT), optional :: dtotalMemMax
-
-!</output>
-
+!<inputoutput>
+    ! OPTIONAL: local heap structure to initialise. 
+    ! If not given, the global heap is initialised.
+    type(t_storageBlock), intent(INOUT), target, optional :: rheap   
+!</inputoutput>
 !</subroutine>
 
-    ! Pointer to the heaps
+    ! Pointer to the heap to initialise
     type(t_storageBlock), pointer :: p_rheap
-    
-    ! Get the heaps to use - local or global one.
-    
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+    type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem
+
+    ! local variables
+    integer :: i,ihandle
+
     if(present(rheap)) then
       p_rheap => rheap
     else
       p_rheap => rbase
     end if
 
-    if (present(ihandlesInUse))    ihandlesInUse = p_rheap%ihandlesInUse
-    if (present(nhandlesTotal))    nhandlesTotal = p_rheap%nhandlesTotal
-    if (present(ihandlesDelta))    ihandlesDelta = p_rheap%ihandlesDelta
-    if (present(dtotalMem))        dtotalMem = p_rheap%dtotalMem
-    if (present(nhandlesInUseMax)) nhandlesInUseMax = p_rheap%nhandlesInUseMax
-    if (present(dtotalMemMax))     dtotalMemMax = p_rheap%dtotalMemMax
+    ! Check if ObjectItem has correct type
+    if (trim(rfpdbObjectItem%stype) .ne. 't_storageBlock') then
+      call output_line ('Invalid object type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    end if
 
-  end subroutine storage_getBlock
+    ! Check if DataItems are associated and have correct size
+    if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+      call output_line ('Missing data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    end if
+
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .lt. 9) then
+      call output_line ('Invalid data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    end if
+
+    ! Restore the data from the DataItem: p_inextFreeHandle
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'p_inextFreeHandle')) then
+      call output_line ('Invalid data: p_inextFreeHandle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%p_inextFreeHandle = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: p_ilastFreeHandle
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'p_ilastFreeHandle')) then
+      call output_line ('Invalid data: p_ilastFreeHandle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%p_ilastFreeHandle = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: ihandlesInUse
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'ihandlesInUse')) then
+      call output_line ('Invalid data: ihandlesInUse!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%ihandlesInUse = p_fpdbDataItem%iinteger
+    end if
+    
+    ! Restore the data from the DataItem: nhandlesTotal
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'nhandlesTotal')) then
+      call output_line ('Invalid data: nhandlesTotal!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%nhandlesTotal = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: ihandlesDelta
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'ihandlesDelta')) then
+      call output_line ('Invalid data: ihandlesDelta!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%ihandlesDelta = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: dtotalMem
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'dtotalMem')) then
+      call output_line ('Invalid data: dtotalMem!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%dtotalMem = p_fpdbDataItem%ddouble
+    end if
+
+    ! Restore the data from the DataItem: nhandlesInUseMax
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'nhandlesInUseMax')) then
+      call output_line ('Invalid data: nhandlesInUseMax!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%nhandlesInUseMax = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: dtotalMemMax
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'dtotalMemMax')) then
+      call output_line ('Invalid data: dtotalMemMax!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      p_rheap%dtotalMemMax = p_fpdbDataItem%ddouble
+    end if
+
+    ! Restore the data from the DataItem: p_IfreeHandles
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT1D) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'p_IfreeHandles')) then
+      call output_line ('Invalid data: p_IfreeHandles!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+      call sys_halt()
+    else
+      allocate(p_rheap%p_IfreeHandles(size(p_fpdbDataItem%p_Iinteger1D)))
+      p_rheap%p_IfreeHandles = p_fpdbDataItem%p_Iinteger1D
+    end if
+    
+    ! Initialise descriptors
+    allocate(p_rheap%p_Rdescriptors(size(p_rheap%p_IfreeHandles)))
+
+    ! Loop over remaining data and initialise memory nodes
+    do i = 10, size(rfpdbObjectItem%p_RfpdbDataItem)
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(i)
+
+      if (p_fpdbDataItem%ctype .ne. FPDB_OBJECT) then
+        call output_line ('Datatype is no handle!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
+        call sys_halt()
+      else
+        p_fpdbObjectItem => p_fpdbDataItem%p_fpdbObjectItem
+
+!        if (trim(p_fpdbObjectItem%stype) .ne. 't_storageNode'
+      end if
+    end do
+
+!!$  contains
+!!$
+!!$    subroutine restore(FpdbObjectHandle)
+!!$
+!!$    end subroutine restore
+  end subroutine storage_restoreFpdbObject
 end module storage
