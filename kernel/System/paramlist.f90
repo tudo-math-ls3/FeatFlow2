@@ -71,10 +71,12 @@
 !# parameter1 = data1
 !# parameter2 = data2
 !#
-!# # now a section follows
+!# # now a section follows; if one of the child data files above
+!# # also contains that section and the parameter 'parameter3',
+!# # that data is overwritten here!
 !#
 !# [Section1]
-!# parameter3 = 'This is a string of ''multiple'' words'
+!# parameter3 = 'this string replaces parameter3 from the child-files'
 !# ...
 !# -------------------------snip------------------------------
 !#
@@ -255,7 +257,7 @@ module paramlist
 !</types>
 
   private :: parlst_initsection, parlst_reallocsection, parlst_realloclist
-  !private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
+  private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
   
   interface parlst_queryvalue
     module procedure parlst_queryvalue_direct
@@ -692,7 +694,8 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'parlst_addsection')
     call sys_halt()
   end if
   
@@ -745,7 +748,8 @@ contains
   exists = 0
   
   if (sparameter .eq. '') then
-    print *,'Empty parameter name!'
+    call output_line ('Empty parameter name!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_queryvalue_indir')
     call sys_halt()
   end if
   
@@ -797,14 +801,16 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_queryvalue_direct')
     call sys_halt()
   end if
   
   ! Get the section
   call parlst_querysection(rparlist, ssectionName, p_rsection) 
   if (.not. associated(p_rsection)) then
-    print *,'Section not found'
+    call output_line ('Section not found: '//trim(ssectionName), &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_queryvalue_direct')
     return
   end if
   
@@ -845,7 +851,8 @@ contains
   character(LEN=PARLST_MLNAME) :: paramname
   
   if (sparameter .eq. '') then
-    print *,'Empty parameter name!'
+    call output_line ('Empty parameter name!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_querysubstrings_indir')
     call sys_halt()
   end if
   
@@ -899,14 +906,16 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_querysubstrings_direct')
     call sys_halt()
   end if
   
   ! Get the section
   call parlst_querysection(rparlist, ssectionName, p_rsection) 
   if (.not. associated(p_rsection)) then
-    print *,'Section not found'
+    call output_line ('Section not found: '//trim(ssectionName), &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_querysubstrings_direct')
     return
   end if
   
@@ -974,7 +983,8 @@ contains
   character(LEN=PARLST_MLNAME) :: paramname
   
   if (sparameter .eq. '') then
-    print *,'Empty parameter name!'
+    call output_line ('Empty parameter name!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_indir')
     call sys_halt()
   end if
 
@@ -989,7 +999,8 @@ contains
     if (present(sdefault)) then
       svalue = sdefault
     else
-      print *,'Parameter ',trim(paramname),' does not exist!'
+      call output_line ('Parameter not found: '//trim(paramname), &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_indir')
       call sys_halt()
     end if
   else
@@ -1070,7 +1081,9 @@ contains
   if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
     if (.not. present(bexists)) then 
-      print *,'Error. Parameter ',iparameter,' does not exist!'
+      call output_line ('Error. Parameter '//trim(sys_siL(iparameter,10))//&
+          ' does not exist!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_fetch')
       call sys_halt()
     else
       svalue = ''
@@ -1156,7 +1169,8 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_fetch')
     call sys_halt()
   end if
   
@@ -1167,7 +1181,8 @@ contains
       svalue = sdefault
       return
     else
-      print *,'Section not found'
+      call output_line ('Section not found: '//trim(ssectionName), &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_fetch')
       call sys_halt()
     end if
   end if
@@ -1776,14 +1791,16 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_fetch')
     call sys_halt()
   end if
   
   ! Get the section
   call parlst_querysection(rparlist, ssectionName, p_rsection) 
   if (.not. associated(p_rsection)) then
-    print *,'Section not found'
+    call output_line ('Section not found: '//trim(ssectionName), &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_addvalue_direct')
     return
   end if
 
@@ -1857,7 +1874,9 @@ contains
   if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
     if (.not. present(iexists)) then 
-      print *,'Error. Parameter ',iparameter,' does not exist!'
+      call output_line ('Error. Parameter '//trim(sys_siL(iparameter,10))//&
+          ' does not exist!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_fetch')
       call sys_halt()
     else
       iexists = NO
@@ -1937,7 +1956,9 @@ contains
   i = parlst_queryvalue_indir (rsection, paramname)
   
   if (i .eq. 0) then
-    print *,'Parameter ',paramname,' does not exist, cannot be modified!'
+    call output_line ('Parameter '//trim(paramname)//&
+        ' does not exist, cannot be modified!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_indir')
     call sys_halt()
   else 
   
@@ -2007,14 +2028,16 @@ contains
   
   ! Cancel if the list is not initialised.
   if (rparlist%isectionCount .eq. 0) then
-    print *,'Parameter list not initialised!'
+    call output_line ('Parameter list not initialised!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_direct')
     call sys_halt()
   end if
   
   ! Get the section
   call parlst_querysection(rparlist, ssectionName, p_rsection) 
   if (.not. associated(p_rsection)) then
-    print *,'Section not found'
+    call output_line ('Section not found: '//trim(ssectionName), &
+        OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_direct')
     return
   end if
 
@@ -2103,7 +2126,7 @@ contains
   !  ityp = 4 -> Line is a substring of a multi-valued parameter.
   
   subroutine parlst_parseline (sdata, ityp, isubstring, ilinenum, &
-                               ssecname, sparamname, svalue)
+                               ssecname, sparamname, svalue, sfilename)
   
   ! The line to be parsed
   character(LEN=*), intent(IN) :: sdata
@@ -2132,6 +2155,10 @@ contains
   ! Parameter value, if it's a parameter
   character(LEN=*), intent(INOUT) :: svalue
   
+  ! OPTIONAL: Filename of the file to be parsed.
+  ! Will be printed out in error messages if present.
+  character(LEN=*), intent(IN), optional :: sfilename
+  
   ! local variables
   integer :: i,j1,j2,ltr
   character(LEN=PARLST_LENLINEBUF) :: sbuf,slen
@@ -2159,8 +2186,15 @@ contains
         end do
         
         if (sbuf(ltr:ltr) .ne. ']') then
-          print *,'Wrong syntax of section name. Line ',ilinenum,':'
-          print *,sbuf
+          if (present(sfilename)) then
+            call output_line ('File: '//trim(sfilename),&
+                OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
+          end if
+          call output_line ('Wrong syntax of section name. Line '//&
+              trim(sys_siL(ilinenum,10))//':', &
+              OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
+          call output_line (sbuf, &
+              OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
           call sys_halt()
         end if
         
@@ -2191,7 +2225,15 @@ contains
         i = index(sbuf(1:ltr),'=')
 
         if (i .eq. 0) then
-          print *,'Invalid parameter syntax. Line ',ilinenum,':'
+          if (present(sfilename)) then
+            call output_line ('File: '//trim(sfilename),&
+                OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
+          end if
+          call output_line ('Invalid parameter syntax. Line '&
+              //trim(sys_siL(ilinenum,10))//':', &
+              OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
+          call output_line (trim(sbuf), &
+              OU_CLASS_ERROR,OU_MODE_STD,'parlst_parseline')
           call sys_halt()
         end if
       
@@ -2564,7 +2606,7 @@ contains
     ! Oops...
     if (iunit .eq. -1) then
       CALL output_line ('Error opening .INI file: '//trim(sfilename), &
-          OU_CLASS_WARNING,OU_MODE_STD,'parlst_readfromsinglefile')
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_readfromsinglefile')
       call sys_halt()
     end if
     
@@ -2586,7 +2628,7 @@ contains
       
         ! Parse the line
         call parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
-                              sparname, svalue)  
+                              sparname, svalue,sfilename)  
         
         select case (ityp)
         case (1)
@@ -2594,10 +2636,15 @@ contains
           ! When the first section starts, the unnamed section is finished.
           if (.not. bimportSections) exit
         
-          ! A new section name. Add a section, set the current section
-          ! to the new one.
-          call parlst_addsection (rparlist, ssectionname)
-          p_currentsection => rparlist%p_Rsections(rparlist%isectionCount)
+          ! Check if the section exists; if not, create a new one.
+          call parlst_querysection(rparlist, ssectionname, p_currentsection) 
+          
+          if (.not. associated(p_currentsection)) then
+            ! A new section name. Add a section, set the current section
+            ! to the new one.
+            call parlst_addsection (rparlist, ssectionname)
+            p_currentsection => rparlist%p_Rsections(rparlist%isectionCount)
+          end if
           
         case (2)
           ! A new parameter. Add it to the current section.
@@ -2674,7 +2721,8 @@ contains
   character, dimension(:), pointer :: p_sbuf
   
     if (rparlist%isectionCount .eq. 0) then
-      print *,'parlst_getStringRepresentation: Parameter list not initialised!'
+      call output_line ('Parameter list not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_getStringRepresentation')
       call sys_halt()
     end if
   
@@ -2820,7 +2868,8 @@ contains
   integer :: isection,ivalue,ientry,icount
   
     if (rparlist%isectionCount .eq. 0) then
-      print *,'parlst_info: Parameter list not initialised!'
+      call output_line ('Parameter list not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_info')
       call sys_halt()
     end if
   
