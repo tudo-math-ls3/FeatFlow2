@@ -571,7 +571,7 @@ contains
       call sys_halt()
     end if
     
-    ! Import persistence database starting at record number 1
+    ! Phase1: Import persistence database starting at record number 1
     irecordNumber = 1
     import: do 
 
@@ -590,6 +590,11 @@ contains
       ! Increase record number by one
       irecordNumber = irecordNumber+1
     end do import
+
+    ! Phase2: Regenerate internal ObjectItem links
+    if (associated(rfpdb%p_rfpdbObjectTable)) then
+      call relinkObjectItem(rfpdb%p_rfpdbObjectTable)
+    end if
 
     ! That's it
 1   return
@@ -627,12 +632,12 @@ contains
     
       ! Allocate pointer for data
       allocate(rfpdbObjectItem%p_RfpdbDataItem(rfpdbObjectItem%ilengthdatarecnum))
-!!$      
-!!$      ! Import DataItems from file
-!!$      do i = 1, rfpdbObjectItem%ilengthDataRecnum
-!!$        call importDataItem(rfpdbObjectItem%p_RfpdbDataItem(i),&
-!!$                            rfpdbObjectItem%ifirstDataRecnum+i-1)
-!!$      end do
+      
+      ! Import DataItems from file
+      do i = 1, rfpdbObjectItem%ilengthDataRecnum
+        call importDataItem(rfpdbObjectItem%p_RfpdbDataItem(i),&
+                            rfpdbObjectItem%ifirstDataRecnum+i-1)
+      end do
 
       ! That's it
       return
@@ -645,85 +650,87 @@ contains
     end subroutine importObjectItem
 
 
-!!$    !**************************************************************
-!!$    ! Import of the data table
-!!$    ! Each DataItem is imported into the database.
-!!$
-!!$    subroutine importDataItem(rfpdbDataItem, irecordNumber)
-!!$
-!!$      integer, intent(in)               :: irecordNumber
-!!$      type(t_fpdbDataItem), intent(out) :: rfpdbDataItem
-!!$
-!!$      ! local variables
-!!$      integer, dimension(2) :: Isize2D
-!!$      character(LEN=36) :: suuid
-!!$      integer :: isize1D,iunit
-!!$
-!!$      ! Read datatype from file
-!!$      read(rfpdb%iunitDataTable, rec=irecordNumber, err=1) rfpdbDataItem%ctype
-!!$
-!!$      ! What data item are we?
-!!$      select case(rfpdbDataItem%ctype)
-!!$
-!!$        ! ----------------------------------------------------------------------
-!!$        ! Below, we deal with atomic data
-!!$        ! ----------------------------------------------------------------------
-!!$
-!!$      case (FPDB_UUID)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             suuid
-!!$        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
-!!$        
-!!$      case (FPDB_HANDLE)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             suuid
-!!$        allocate(rfpdbDataItem%p_rhandle)
-!!$        call importHandle(suuid, rfpdbDataItem%p_rhandle)
-!!$
-!!$      case (FPDB_SINGLE)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             rfpdbDataItem%fsingle
-!!$
-!!$      case (FPDB_DOUBLE)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             rfpdbDataItem%ddouble
-!!$
-!!$      case (FPDB_INT)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             rfpdbDataItem%iinteger
-!!$      
-!!$      case (FPDB_LOGICAL)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             rfpdbDataItem%blogical
-!!$
-!!$      case (FPDB_CHAR)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             rfpdbDataItem%schar
-!!$        
-!!$        ! ----------------------------------------------------------------------
-!!$        ! Below, we deal with 1D data
-!!$        ! ----------------------------------------------------------------------
-!!$
-!!$      case (FPDB_UUID1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$             suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Ruuid1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Ruuid1D
-!!$        close(iunit)        
+    !**************************************************************
+    ! Import of the data table
+    ! Each DataItem is imported into the database.
+
+    subroutine importDataItem(rfpdbDataItem, irecordNumber)
+
+      integer, intent(in)               :: irecordNumber
+      type(t_fpdbDataItem), intent(out) :: rfpdbDataItem
+
+      ! local variables
+      integer, dimension(2) :: Isize2D
+      character(LEN=36) :: suuid
+      integer :: isize1D,iunit
+
+      ! Read datatype from file
+      read(rfpdb%iunitDataTable, rec=irecordNumber, err=1) rfpdbDataItem%ctype
+
+      ! What data item are we?
+      select case(rfpdbDataItem%ctype)
+
+        ! ----------------------------------------------------------------------
+        ! Below, we deal with atomic data
+        ! ----------------------------------------------------------------------
+
+      case (FPDB_UUID)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             suuid
+        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
+        
+      case (FPDB_OBJECT)
+        ! Here, we import the UUID of the ObjectItem which will be
+        ! used to associated the link to the corresponding object
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             suuid
+        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
+
+      case (FPDB_SINGLE)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             rfpdbDataItem%fsingle
+
+      case (FPDB_DOUBLE)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             rfpdbDataItem%ddouble
+
+      case (FPDB_INT)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             rfpdbDataItem%iinteger
+      
+      case (FPDB_LOGICAL)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             rfpdbDataItem%blogical
+
+      case (FPDB_CHAR)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             rfpdbDataItem%schar
+        
+        ! ----------------------------------------------------------------------
+        ! Below, we deal with 1D data
+        ! ----------------------------------------------------------------------
+
+      case (FPDB_UUID1D)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             suuid
+
+        ! Read content of UUID from data file
+        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
+                                   iunit, bformatted=.FALSE.)
+        read(iunit, err=2) isize1D
+        allocate(rfpdbDataItem%p_Ruuid1D(isize1D))
+        rewind(iunit)
+        read(iunit, err=2) isize1D, rfpdbDataItem%p_Ruuid1D
+        close(iunit)        
+
 !!$      case (FPDB_SINGLE1D)
 !!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
 !!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
@@ -871,56 +878,75 @@ contains
 !!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Schar2D
 !!$        close(iunit)
 !!$
-!!$      case DEFAULT
-!!$        call output_line ('Undefined data type!', &
-!!$                          OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
-!!$        call sys_halt()
-!!$      end select
-!!$
-!!$
-!!$      ! That's it
-!!$      return
-!!$      
-!!$      
-!!$1     call output_line ('Unable to import data into table!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
-!!$      call sys_halt()
-!!$
-!!$2     call output_line ('Unable to import data from file!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
-!!$      call sys_halt()
-!!$
-!!$    end subroutine importDataItem
+      case DEFAULT
+        call output_line ('Undefined data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
+        print *, rfpdbDataItem%ctype
+        call sys_halt()
+      end select
 
 
-!!$    !**************************************************************
-!!$    ! Import a storage handle from file
-!!$
-!!$    subroutine importHandle(suuid, rhandle)
-!!$
-!!$      character(LEN=36), intent(in) :: suuid
-!!$      type(t_handle), intent(out)    :: rhandle
-!!$
-!!$      ! local variables
-!!$      integer :: iunit
-!!$
-!!$      ! Read content of handle to data file
-!!$      call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                 iunit, bformatted=.FALSE.)
-!!$      read(iunit, err=1) rhandle
-!!$      
-!!$      ! Close the output unit
-!!$      close(iunit)
-!!$
-!!$      ! That's it
-!!$      return
-!!$
-!!$
-!!$1     call output_line ('Unable to import handle from file!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'importHandle')
-!!$      call sys_halt()
-!!$      
-!!$    end subroutine importHandle
+      ! That's it
+      return
+      
+      
+1     call output_line ('Unable to import data into table!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
+      call sys_halt()
+
+2     call output_line ('Unable to import data from file!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
+      call sys_halt()
+
+    end subroutine importDataItem
+
+    !**************************************************************
+    ! Preorder traversal of the object table.
+    ! Each DataItem which contains an ObjectItem is 
+    ! relinked to the corresponding ObjectItem
+    
+    recursive subroutine relinkObjectItem(rfpdbObjectItem)
+      
+      type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+
+      ! local variables
+      type(t_fpdbDataItem), pointer :: p_rfpdbDataItem
+      integer :: i
+
+      ! Do we have associated DataItems?
+      if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+        
+        ! Loop over all DataItems
+        do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
+
+          ! Set pointer
+          p_rfpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(i)
+          
+          if (p_rfpdbDataItem%ctype .eq. FPDB_OBJECT) then
+            ! Retrieve corresponding ObjectItem by UUID
+            call fpdb_retrieveObject(rfpdb, p_rfpdbDataItem%ruuid,&
+                                     p_rfpdbDataItem%p_fpdbObjectItem)
+            call uuid_createUUID(0, p_rfpdbDataItem%ruuid)
+            if (.not.associated(p_rfpdbDataItem%p_fpdbObjectItem)) then
+              call output_line ('Inconsistent database structure!', &
+                                OU_CLASS_ERROR,OU_MODE_STD,'relinkObjectItem')
+              call sys_halt()
+            end if
+          end if
+        end do
+      end if
+
+      ! Proceed to left child
+      if (associated(rfpdbObjectItem%p_rfpdbObjectLeft)) then
+        call relinkObjectItem(rfpdbObjectItem%p_rfpdbObjectLeft)
+      end if
+
+      ! Proceed to right child
+      if (associated(rfpdbObjectItem%p_rfpdbObjectRight)) then
+        call relinkObjectItem(rfpdbObjectItem%p_rfpdbObjectRight)
+      end if
+      
+    end subroutine relinkObjectItem
 
   end subroutine fpdb_import
 
@@ -1030,12 +1056,10 @@ contains
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
       case (FPDB_OBJECT)
-!!$        call uuid_createUUID(4, ruuid)
-!!$        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
-!!$              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-!!$              uuid_conv2String(ruuid)
-!!$        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-!!$        call exportHandle(ruuid, rfpdbDataItem%p_rhandle)
+        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
+              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+              uuid_conv2String(rfpdbDataItem%p_fpdbObjectItem%ruuid)
+        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
 
       case (FPDB_SINGLE)
@@ -1084,8 +1108,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Ruuid1D), rfpdbDataItem%p_Ruuid1D
           close(iunit)
         end if
@@ -1104,8 +1129,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of handle to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Fsingle1D), rfpdbDataItem%p_Fsingle1D
           close(iunit)
         end if
@@ -1124,8 +1150,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of handle to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Ddouble1D), rfpdbDataItem%p_Ddouble1D
           close(iunit)
         end if
@@ -1145,8 +1172,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of handle to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Iinteger1D), rfpdbDataItem%p_Iinteger1D
           close(iunit)
         end if
@@ -1165,8 +1193,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of handle to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Blogical1D), rfpdbDataItem%p_Blogical1D
           close(iunit)
         end if
@@ -1185,8 +1214,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of handle to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Schar1D), rfpdbDataItem%p_Schar1D
           close(iunit)
         end if
@@ -1209,8 +1239,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Ruuid2D), rfpdbDataItem%p_Ruuid2D
           close(iunit)
         end if
@@ -1229,8 +1260,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Fsingle2D), rfpdbDataItem%p_Fsingle2D
           close(iunit)
         end if
@@ -1249,8 +1281,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Ddouble2D), rfpdbDataItem%p_Ddouble2D
           close(iunit)
         end if
@@ -1269,8 +1302,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Iinteger2D), rfpdbDataItem%p_Iinteger2D
           close(iunit)
         end if
@@ -1289,8 +1323,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Blogical2D), rfpdbDataItem%p_Blogical2D
           close(iunit)
         end if
@@ -1309,8 +1344,9 @@ contains
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
           ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.FALSE.)
+          call io_openFileForWriting(trim(rfpdb%spath)//&
+                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
+                                     iunit, SYS_REPLACE, bformatted=.false.)
           write(iunit, err=2) size(rfpdbDataItem%p_Schar2D), rfpdbDataItem%p_Schar2D
           close(iunit)
         end if
@@ -1341,122 +1377,6 @@ contains
       call sys_halt()
         
     end subroutine exportDataItem
-    
-!!$    !**************************************************************
-!!$    ! Export of a storage handle to file
-!!$
-!!$    subroutine exportHandle(ruuid, rhandle)
-!!$
-!!$      type(t_uuid), intent(in)   :: ruuid
-!!$      type(t_handle), intent(in) :: rhandle
-!!$
-!!$      ! pointers to the storage items
-!!$      real(DP), dimension(:), pointer  :: p_Ddouble1D
-!!$      real(SP), dimension(:), pointer  :: p_Fsingle1D
-!!$      integer, dimension(:), pointer   :: p_Iinteger1D
-!!$      logical, dimension(:), pointer   :: p_Blogical1D
-!!$      character, dimension(:), pointer :: p_Schar1D
-!!$      real(DP), dimension(:,:), pointer  :: p_Ddouble2D
-!!$      real(SP), dimension(:,:), pointer  :: p_Fsingle2D
-!!$      integer, dimension(:,:), pointer   :: p_Iinteger2D
-!!$      logical, dimension(:,:), pointer   :: p_Blogical2D
-!!$      character, dimension(:,:), pointer :: p_Schar2D
-!!$
-!!$      ! local variables
-!!$      integer :: iunit
-!!$
-!!$      if (rhandle%ihandle .le. ST_NOHANDLE) then
-!!$        call output_line ('Exporting ST_NOHANDLE is not allowed!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'exportHandle')
-!!$        call sys_halt()
-!!$      end if
-!!$
-!!$      ! Write content of handle to data file
-!!$      call io_openFileForWriting(trim(rfpdb%spath)//uuid_conv2String(ruuid)//'.fpd',&
-!!$                                 iunit, SYS_REPLACE, bformatted=.FALSE.)
-!!$      
-!!$      write(iunit, err=1) rhandle
-!!$
-!!$      ! What dimension are we?
-!!$      select case (rhandle%idimension)
-!!$      case (1)
-!!$               
-!!$        ! What datatype are we?
-!!$        select case (rhandle%idatatype)
-!!$        case (ST_DOUBLE)
-!!$          call storage_getbase_double(rhandle%ihandle, p_Ddouble1D)
-!!$          write(iunit, err=1) p_Ddouble1D
-!!$          
-!!$        case (ST_SINGLE)
-!!$          call storage_getbase_single(rhandle%ihandle, p_Fsingle1D)
-!!$          write(iunit, err=1) p_Fsingle1D
-!!$          
-!!$        case (ST_INT)
-!!$          call storage_getbase_int(rhandle%ihandle, p_Iinteger1D)
-!!$          write(iunit, err=1) p_Iinteger1D
-!!$          
-!!$        case (ST_LOGICAL)
-!!$          call storage_getbase_logical(rhandle%ihandle, p_Blogical1D)
-!!$          write(iunit, err=1) p_Blogical1D
-!!$          
-!!$        case (ST_CHAR)
-!!$          call storage_getbase_char(rhandle%ihandle, p_Schar1D)
-!!$          write(iunit, err=1) p_Schar1D
-!!$          
-!!$        case DEFAULT
-!!$          call output_line ('Unsupported datatype!', &
-!!$                             OU_CLASS_ERROR,OU_MODE_STD,'exportHandle')
-!!$          call sys_halt()
-!!$        end select
-!!$        
-!!$      case (2)
-!!$        
-!!$        ! What datatype are we?
-!!$        select case (rhandle%idatatype)
-!!$        case (ST_DOUBLE)
-!!$          call storage_getbase_double2D(rhandle%ihandle, p_Ddouble2D)
-!!$          write(iunit, err=1) p_Ddouble2D
-!!$          
-!!$        case (ST_SINGLE)
-!!$          call storage_getbase_single2D(rhandle%ihandle, p_Fsingle2D)
-!!$          write(iunit, err=1) p_Fsingle2D
-!!$          
-!!$        case (ST_INT)
-!!$          call storage_getbase_int2D(rhandle%ihandle, p_Iinteger2D)
-!!$          write(iunit, err=1) p_Iinteger2D
-!!$          
-!!$        case (ST_LOGICAL)
-!!$          call storage_getbase_logical2D(rhandle%ihandle, p_Blogical2D)
-!!$          write(iunit, err=1) p_Blogical2D
-!!$          
-!!$        case (ST_CHAR)
-!!$          call storage_getbase_char2D(rhandle%ihandle, p_Schar2D)
-!!$          write(iunit, err=1) p_Schar2D
-!!$          
-!!$        case DEFAULT
-!!$          call output_line ('Unsupported datatype!', &
-!!$                             OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
-!!$          call sys_halt()
-!!$        end select
-!!$        
-!!$      case DEFAULT
-!!$        call output_line ('Unsupported dimension!', &
-!!$            OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
-!!$        call sys_halt()
-!!$      end select
-!!$      
-!!$      ! Close the output unit
-!!$      close(iunit)
-!!$
-!!$      ! That's it
-!!$      return
-!!$
-!!$
-!!$1     call output_line ('Unable to export handle to file!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'exportHandle')
-!!$      call sys_halt()
-!!$      
-!!$    end subroutine exportHandle
     
   end subroutine fpdb_export
 
