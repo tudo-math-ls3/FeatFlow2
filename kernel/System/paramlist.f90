@@ -54,6 +54,37 @@
 !# a line not enclosed by apostrophes, the rest of the line is
 !# ignored as a comment.
 !#
+!# An INI file may contain references to subfiles. Subfiles must
+!# be specified at the beginning of an INI file with the following 
+!# syntax:
+!# -------------------------snip------------------------------
+!# # this is a data file which imports a couple of subfiles
+!#
+!# simportdatafiles(4) = 
+!#   "subfilename1.ini"
+!#   "subfilename2.ini"
+!#   "subfilename3.ini"
+!#   "subfilename4.ini"
+!#
+!# # The rest of the file overwrites the data in the subfiles.
+!#
+!# parameter1 = data1
+!# parameter2 = data2
+!#
+!# # now a section follows
+!#
+!# [Section1]
+!# parameter3 = 'This is a string of ''multiple'' words'
+!# ...
+!# -------------------------snip------------------------------
+!#
+!# parlst_readfromfile will at first read all subfiles and then
+!# evaluate the data in the main file. Data in the main file will
+!# overwrite data in the subfiles. Subfiles may contain references
+!# to other subfiles. That way, a 'master.ini' file may define
+!# a couple of files which are read at first and then overwrite
+!# some parameters.
+!#
 !# The following routines can be used to maintain a parameter
 !# list:
 !#  1.) parlst_init 
@@ -98,6 +129,11 @@
 !#
 !# 13.) parlst_info 
 !#      -> Print the parameter list to the terminal
+!#
+!# Auxiliary routines
+!#
+!# 1.) parlst_readfromsinglefile
+!#     -> Reads a single INI file without checking for subfiles.
 !#
 !# </purpose>
 !##############################################################################
@@ -155,8 +191,6 @@ module paramlist
   
   type t_parlstValue
   
-    private
-    
     ! Number of strings. If set to 0, the value consists of one
     ! string, to be found in svalue. If > 0, there are nsize
     ! strings to be found in p_Sentry.
@@ -179,8 +213,6 @@ module paramlist
   ! to these names. The arrays are dynamically allocated. 
   
   type t_parlstSection
-  
-    private
   
     ! The name of the section.
     character(LEN=PARLST_MLSECTION) :: ssectionName = ''
@@ -208,8 +240,6 @@ module paramlist
   
   type t_parlist
   
-    private
-  
     ! Actual number of sections in the parameter list. There's at least
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is not initialised.
@@ -225,7 +255,7 @@ module paramlist
 !</types>
 
   private :: parlst_initsection, parlst_reallocsection, parlst_realloclist
-  private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
+  !private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
   
   interface parlst_queryvalue
     module procedure parlst_queryvalue_direct
@@ -1618,6 +1648,7 @@ contains
   
 !<description>
   ! Adds a parameter to a section rsection.
+  ! If the parameter exists, it's overwritten.
 !</description>
   
 !<inputoutput> 
@@ -1644,31 +1675,59 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  character(LEN=PARLST_MLNAME) :: paramname
-  
-  ! Create the upper-case parameter name
-  paramname = adjustl(sparameter)
-  call parlst_toupper (paramname)
+    ! local variables
+    character(LEN=PARLST_MLNAME) :: paramname
+    integer :: i
+    
+    ! Create the upper-case parameter name
+    paramname = adjustl(sparameter)
+    call parlst_toupper (paramname)
 
-  ! Enough space free? Otherwise reallocate the parameter list
-  if (rsection%iparamCount .eq. size(rsection%p_Sparameters)) then
-    call parlst_reallocsection (rsection, size(rsection%p_Sparameters)+PARLST_NPARSPERBLOCK)
-  end if
+    ! Get the parameter index into 'exists', finish.
+    call parlst_fetchparameter(rsection, paramname, i)
+    
+    if (i .eq. 0) then
+    
+      ! Does not exist. Append.
+      !
+      ! Enough space free? Otherwise reallocate the parameter list
+      if (rsection%iparamCount .eq. size(rsection%p_Sparameters)) then
+        call parlst_reallocsection (rsection, size(rsection%p_Sparameters)+PARLST_NPARSPERBLOCK)
+      end if
 
-  ! Add the parameter - without any adjustment of the 'value' string
-  rsection%iparamCount = rsection%iparamCount + 1  
-  
-  rsection%p_Sparameters(rsection%iparamCount) = paramname
-  rsection%p_Rvalues(rsection%iparamCount)%sentry = svalue
-  
-  ! Add a list for the substrings if the parameter should have substrings.
-  if (present(nsubstrings)) then
-    if (nsubstrings .gt. 0) then
-      allocate(rsection%p_Rvalues(rsection%iparamCount)%p_Sentry(nsubstrings))
-      rsection%p_Rvalues(rsection%iparamCount)%nsize = nsubstrings
+      ! Add the parameter - without any adjustment of the 'value' string
+      rsection%iparamCount = rsection%iparamCount + 1  
+      
+      ! Set i to the index of the parameter
+      i = rsection%iparamCount
+      
+    else
+    
+      ! Check if there are substrings. If yes, deallocate.
+      ! Will be allocated later if necessary.
+      if (associated(rsection%p_Rvalues(i)%p_Sentry)) then
+        deallocate(rsection%p_Rvalues(i)%p_Sentry)
+        rsection%p_Rvalues(i)%nsize = 0
+      end if
+      
     end if
-  end if
+      
+    rsection%p_Sparameters(i) = paramname
+    rsection%p_Rvalues(i)%sentry = svalue
+    
+    ! Add a list for the substrings if the parameter should have substrings.
+    if (present(nsubstrings)) then
+      if (nsubstrings .gt. 0) then
+        allocate(rsection%p_Rvalues(i)%p_Sentry(nsubstrings))
+        rsection%p_Rvalues(i)%nsize = nsubstrings
+      else
+        nullify(rsection%p_Rvalues(i)%p_Sentry)
+        rsection%p_Rvalues(i)%nsize = 0
+      end if
+    else
+      nullify(rsection%p_Rvalues(i)%p_Sentry)
+      rsection%p_Rvalues(i)%nsize = 0
+    end if
 
   end subroutine
   
@@ -2255,21 +2314,27 @@ contains
 
 !<subroutine>
   
-  subroutine parlst_readfromfile (rparlist, sfilename)
+  subroutine parlst_readfromfile (rparlist, sfilename, sdirectory)
   
 !<description>
   
   ! This routine parses a text file for data of the INI-file form.
   ! sfilename must be the name of a file on the hard disc.
-  ! The parameters read from the file are added to the parameter list
+  ! The file may have references to subfiles in the unnamed section:
+  ! If there is a parameter "simportdatafiles(n)" present in the
+  ! unnamed section, the routine expects a list of filenames in this
+  ! parameter. All the files listed there are read in as well.
+  ! Parameters at the end of the master file will overwrite
+  ! the parameters from the files in simportdatafiles.
+  !
+  ! The parameters read from the file(s) are added to the parameter list
   ! rparlist, which has to be initialised with parlst_init before
   ! calling the routine.
+  !
   ! Remark: When adding parameters/sections to rparlist, the routine
-  !   does not check whether the parameters/sections already exist.
+  !   checks whether the parameters/sections already exist.
   !   Adding a parameter/section which exists does not result in an error -
-  !   the second instance of the parameter/section will simply become
-  !   inaccessible, since the GET-routines always return the first
-  !   instance!
+  !   the first instance of the parameter/section will just be overwritten.
   
 !</description>
 
@@ -2285,95 +2350,296 @@ contains
   ! The filename of the file to read.
   character(LEN=*), intent(IN) :: sfilename
   
+  ! OPTIONAL: Directory containing other data files in case
+  ! the main file sfilename contains references to subfiles.
+  character(LEN=*), intent(IN), optional :: sdirectory
+  
 !</input>
-  
-!</subroutine>
 
-  ! local variables
-  integer :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,nsubstrings,iparpos
-  type(t_parlstSection), pointer :: p_currentsection
-  character(LEN=PARLST_LENLINEBUF) :: sdata
-  character(LEN=PARLST_MLSECTION) :: ssectionname
-  character(LEN=PARLST_MLNAME) :: sparname
-  character(LEN=PARLST_MLDATA) :: svalue
-  
-  ! Try to open the file
-  call io_openFileForReading(sfilename, iunit)
-  
-  ! Oops...
-  if (iunit .eq. -1) then
-    print *,'Error opening .INI file.' 
-    call sys_halt()
-  end if
-  
-  ! Start adding parameters to the unnamed section
-  p_currentsection => rparlist%p_Rsections(1)
-  
-  ! Read all lines from the file
-  ios = 0
-  ilinenum = 0
-  isubstring = 0
-  nsubstrings = 0
-  do while (ios .eq. 0) 
-    
-    ! Read a line from the file into sbuf
-    call parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
-    ilinenum = ilinenum + 1
-    
-    if (isbuflen .ne. 0) then
-    
-      ! Parse the line
-      call parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
-                             sparname, svalue)  
-      
-      select case (ityp)
-      case (1)
-        ! A new section name. Add a section, set the current section
-        ! to the new one.
-        call parlst_addsection (rparlist, ssectionname)
-        p_currentsection => rparlist%p_Rsections(rparlist%isectionCount)
-        
-      case (2)
-        ! A new parameter. Add it to the current section.
-        call parlst_addvalue (p_currentsection, sparname, svalue)
-        
-      case (3)
-        ! 'Headline' of a multi-valued parameter. Add the parameter with
-        ! isubstring subvalues
-        call parlst_addvalue (p_currentsection, sparname, svalue, nsubstrings)
-        
-        ! Fetch the parameter for later adding of subvalues.
-        iparpos = parlst_queryvalue(p_currentsection, sparname)
-        
-        ! isubstring counts the current readed substring.
-        ! Set it to 0, it will be increased up to nsubstrings in 'case 4'.
-        isubstring = 0
-        
-      case (4)
-        ! Increase number of current substring
-        isubstring = isubstring + 1
-        
-        ! Sub-parameter of a multi-valued parameter. Add the value to
-        ! the last parameter that was added in case 3.
-        call parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
-                                    isubstring=isubstring)
-                                    
-        ! Decrement the substring counter. If we reach 0, parlst_parseline
-        ! continues to parse standard parameters.
-        nsubstrings = nsubstrings - 1
-        
-      ! Other cases: comment.
-      end select
-    
+    ! local variables
+    integer :: iidxsubfiles,icurrentsubfile
+    character(LEN=PARLST_MLDATA), dimension(:), pointer :: p_Ssubfiles,p_SsubfilesTemp
+    character(LEN=PARLST_MLDATA) :: sstring,smainfile
+    integer :: nsubfiles,nnewsubfiles,j
+    logical :: bexists
+
+    ! Filename/path of the master dat file.
+    ! Search at first in the specified path.
+    bexists = .false.
+    if (present(sdirectory)) then
+      smainfile = trim(sdirectory)//"/"//sfilename
+      inquire(file=smainfile, exist=bexists)
     end if
+    
+    if (.not. bexists) then
+      smainfile = sfilename
+      inquire(file=smainfile, exist=bexists)
+    end if
+
+    ! Create a list of files to be read.
+    allocate(p_Ssubfiles(1))
+    p_Ssubfiles(1) = smainfile
+    
+    icurrentsubfile = 0
+    nsubfiles = 1
+
+    ! Now read all files in the list. Append new files to the list if necessary.
+    do while (icurrentsubfile .lt. nsubfiles)
+      
+      ! Read the unnamed section from the next file.
+      icurrentsubfile = icurrentsubfile + 1
+
+      ! Get the filename including the path. 
+      bexists = .false.
+      if (present(sdirectory)) then
+        ! First search in the specified directory.
+        sstring = trim(sdirectory)//"/"//trim(p_Ssubfiles(icurrentsubfile))
+        inquire(file=sstring, exist=bexists)
+      end if
+      
+      if (.not. bexists) then
+        ! If no directory is specified or if no file was found there,
+        ! directly search for the file without specifying the
+        ! directory. So we will also find files where an absolute
+        ! path is specified.
+        sstring = trim(p_Ssubfiles(icurrentsubfile))
+        inquire(file=sstring, exist=bexists)
+      end if
+      
+      if (bexists) then
+        call parlst_readfromsinglefile (rparlist, sstring, .false.)
+        
+        ! Replace the filename with the string including the path.
+        ! Then the actual read process at the end of the routine can be
+        ! handled easier.
+        p_Ssubfiles(icurrentsubfile) = trim(sstring)
+        
+      else
+        call output_line ('Specified data-subfile does not exist: '//sstring, &
+            OU_CLASS_WARNING,OU_MODE_STD,'parlst_readfromfile')
+      end if
+
+      ! Check if there's a parameter "simportdatafiles" available in the
+      ! parameter list. It must be present in the unnamed section.
+      call parlst_fetchparameter(rparlist%p_Rsections(1), "SIMPORTDATAFILES", iidxsubfiles)
+      
+      if (iidxsubfiles .ne. 0) then
+        ! Append the new files to the file list.
+        !
+        ! Get the number of new files. The parameter definitely exists as
+        ! it was created when reading the 'master' INI file.
+        nnewsubfiles = parlst_querysubstrings (rparlist%p_Rsections(1), &
+            "SIMPORTDATAFILES")
+        
+        ! if nnewsubfiles=0, there is (hopefully) only one string here.
+        if (nnewsubfiles .eq. 0) then
+          call parlst_getvalue_string(rparlist%p_Rsections(1), iidxsubfiles, sstring)
+          if (trim(sstring) .ne. "") then
+            ! Append the data.
+            allocate(p_SsubfilesTemp(nsubfiles+1))
+            p_SsubfilesTemp(1:nsubfiles) = p_Ssubfiles(:)
+            deallocate(p_Ssubfiles)
+            p_Ssubfiles => p_SsubfilesTemp
+            nullify(p_SsubfilesTemp)
+            
+            read (sstring,*) p_Ssubfiles(nsubfiles+1)
+            nsubfiles = nsubfiles + 1
+          end if
+        else
+          ! Get all the filenames.
+          allocate(p_SsubfilesTemp(nsubfiles+nnewsubfiles))
+          p_SsubfilesTemp(1:nsubfiles) = p_Ssubfiles(:)
+          deallocate(p_Ssubfiles)
+          p_Ssubfiles => p_SsubfilesTemp
+          nullify(p_SsubfilesTemp)
+          
+          do j=1,nnewsubfiles
+            call parlst_getvalue_string(rparlist%p_Rsections(1), iidxsubfiles, &
+                sstring,isubstring=j)
+            read (sstring,*) p_Ssubfiles(nsubfiles+j)
+          end do
+          
+          nsubfiles = nsubfiles + nnewsubfiles
+        end if
+        
+        ! Remove all substrings from the simportdatafiles parameter, so the parameter
+        ! is filled with new data upon the next read statement.
+        call parlst_addvalue(rparlist%p_Rsections(1), "SIMPORTDATAFILES", "")
+          
+      end if
+      
+    end do
+    
+    ! Ok, at that point we know which files to read -- so read them, one after
+    ! the other. The 'master' file must be read at last!
+    do icurrentsubfile = 2,nsubfiles
+      sstring = trim(p_Ssubfiles(icurrentsubfile))
+      inquire(file=sstring, exist=bexists)
+      
+      if (bexists) then
+        ! Read the sub-files...
+        call parlst_readfromsinglefile (rparlist, sstring, .true.)
+      end if
+    end do
+    
+    ! ... and the master
+    icurrentsubfile = 1
+    sstring = trim(p_Ssubfiles(icurrentsubfile))
+    inquire(file=sstring, exist=bexists)
+    
+    if (bexists) then
+      call parlst_readfromsinglefile (rparlist, sstring, .true.)
+    end if
+
+    if (nsubfiles .gt. 1) then
+      ! There have a couple of subfiles been read from disc.
+      ! All subfiles can be found in p_Ssubfiles.
+      
+      ! Incorporate the complete list to the parameter "SIMPORTDATAFILES".
+      if (associated(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry)) then
+        deallocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry)
+      end if
+      
+      allocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry(nsubfiles-1))
+      do icurrentsubfile = 1,nsubfiles-1
+        rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry(icurrentsubfile) = &
+          '"'//trim(p_Ssubfiles(1+icurrentsubfile))//'"'
+      end do
+      rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%nsize = nsubfiles-1
+    end if
+
+    ! Release memory, finish
+    deallocate(p_Ssubfiles)
+    
+  end subroutine
   
-  end do
+  ! ***************************************************************************
+
+  subroutine parlst_readfromsinglefile (rparlist, sfilename, bimportSections)
+    
+!<description>
   
-  ! Close the file, finish.
-  close (iunit)
+  ! This routine parses a text file for data of the INI-file form.
+  ! sfilename must be the name of a file on the hard disc.
+  ! The parameters read from the file are added to the parameter list
+  ! rparlist, which has to be initialised with parlst_init before
+  ! calling the routine.
+  ! Remark: When adding parameters/sections to rparlist, the routine
+  !   checks whether the parameters/sections already exist.
+  !   Adding a parameter/section which exists does not result in an error -
+  !   the first instance of the parameter/section will just be overwritten.
+  
+!</description>
+
+!<inputoutput> 
+    
+  ! The parameter list which is filled with data from the file
+  type(t_parlist), intent(INOUT) :: rparlist
+  
+!</inputoutput>
+  
+!<input>
+  
+  ! The filename of the file to read.
+  character(LEN=*), intent(IN) :: sfilename
+  
+  ! TRUE: Import all sections in the DAT file.
+  ! FALSE: Import only the main (unnamed) section and ignore all other
+  ! sections.#
+  logical, intent(in) :: bimportSections
+  
+!</input>
+    
+    ! local variables
+    integer :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,nsubstrings,iparpos
+    type(t_parlstSection), pointer :: p_currentsection
+    character(LEN=PARLST_LENLINEBUF) :: sdata
+    character(LEN=PARLST_MLSECTION) :: ssectionname
+    character(LEN=PARLST_MLNAME) :: sparname
+    character(LEN=PARLST_MLDATA) :: svalue
+    
+    ! Try to open the file
+    call io_openFileForReading(sfilename, iunit)
+    
+    ! Oops...
+    if (iunit .eq. -1) then
+      CALL output_line ('Error opening .INI file: '//trim(sfilename), &
+          OU_CLASS_WARNING,OU_MODE_STD,'parlst_readfromsinglefile')
+      call sys_halt()
+    end if
+    
+    ! Start adding parameters to the unnamed section
+    p_currentsection => rparlist%p_Rsections(1)
+    
+    ! Read all lines from the file
+    ios = 0
+    ilinenum = 0
+    isubstring = 0
+    nsubstrings = 0
+    do while (ios .eq. 0) 
+      
+      ! Read a line from the file into sbuf
+      call parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
+      ilinenum = ilinenum + 1
+      
+      if (isbuflen .ne. 0) then
+      
+        ! Parse the line
+        call parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
+                              sparname, svalue)  
+        
+        select case (ityp)
+        case (1)
+          ! Stop parsing the file here if bimportSections tells us to do so.
+          ! When the first section starts, the unnamed section is finished.
+          if (.not. bimportSections) exit
+        
+          ! A new section name. Add a section, set the current section
+          ! to the new one.
+          call parlst_addsection (rparlist, ssectionname)
+          p_currentsection => rparlist%p_Rsections(rparlist%isectionCount)
+          
+        case (2)
+          ! A new parameter. Add it to the current section.
+          call parlst_addvalue (p_currentsection, sparname, svalue)
+          
+        case (3)
+          ! 'Headline' of a multi-valued parameter. Add the parameter with
+          ! isubstring subvalues
+          call parlst_addvalue (p_currentsection, sparname, svalue, nsubstrings)
+          
+          ! Fetch the parameter for later adding of subvalues.
+          iparpos = parlst_queryvalue(p_currentsection, sparname)
+          
+          ! isubstring counts the current readed substring.
+          ! Set it to 0, it will be increased up to nsubstrings in 'case 4'.
+          isubstring = 0
+          
+        case (4)
+          ! Increase number of current substring
+          isubstring = isubstring + 1
+          
+          ! Sub-parameter of a multi-valued parameter. Add the value to
+          ! the last parameter that was added in case 3.
+          call parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
+                                      isubstring=isubstring)
+                                      
+          ! Decrement the substring counter. If we reach 0, parlst_parseline
+          ! continues to parse standard parameters.
+          nsubstrings = nsubstrings - 1
+          
+        ! Other cases: comment.
+        end select
+      
+      end if
+    
+    end do
+    
+    ! Close the file, finish.
+    close (iunit)
 
   end subroutine
-
+  
   ! ***************************************************************************
 
 !<subroutine>
