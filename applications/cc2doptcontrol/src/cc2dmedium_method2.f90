@@ -176,18 +176,31 @@ CONTAINS
 
 !</subroutine>
 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
-    ! to the parameter list.
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/discretisation.dat')
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//linsol_cc2d.dat')
-    ! CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//output.dat')
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//paramtriang.dat')
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//bdconditions.dat')
-    CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//timediscr.dat')
+    logical :: bexists
+    
+    ! Read the file 'master.dat'.
+    ! If that does not exist, try to manually read files with parameters from a
+    ! couple of files.
+    inquire(file=TRIM(DIR_DATA)//'/master.dat', exist=bexists)
+    
+    if (bexists) then
+      ! Read the master file. That either one contains all parameters or
+      ! contains references to subfiles with data.
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/master.dat',TRIM(DIR_DATA))
+    else
+      ! Each 'readfromfile' command adds the parameter of the specified file 
+      ! to the parameter list.
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/discretisation.dat')
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//linsol_cc2d.dat')
+      ! CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//nonlinsol_cc2d.dat')
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//output.dat')
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//paramtriang.dat')
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//bdconditions.dat')
+      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//timediscr.dat')
+    end if
   
   END SUBROUTINE
-
+  
   ! ***************************************************************************
 
 !<subroutine>
