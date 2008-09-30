@@ -55,8 +55,8 @@
 !#  7.) storage_getbase_single2D,
 !#      storage_getbase_double2D,
 !#      storage_getbase_int2D,
-!#      storage_getbase_logical,
-!#      storage_getbase_char,
+!#      storage_getbase_logical2D,
+!#      storage_getbase_char2D,
 !#      -> Determine pointer associated to a handle for singles, doubles,
 !#         32-Bit integers, logicals or chars, 2D array
 !#
@@ -84,6 +84,13 @@
 !#
 !# 15.) storage_isEqual
 !#      -> Checks if the content of two different handles is equal
+!#
+!# 16.) storage_createFpdbObject
+!#      -> Creates an ObjectItem representing the storage management
+!#
+!# 17.) storage_restoreFpdbObject
+!#      -> Restores the storage management from an ObjectItem
+!#
 !# </purpose>
 !##############################################################################
 
@@ -6040,6 +6047,9 @@ contains
 
   contains
 
+    !**************************************************************
+    ! Create a separate ObjectItem for each handle
+
     subroutine createFpdbObjectHandle (rfpdbObjectItem, ihandle)
 
       ! The object item that represents the handle
@@ -6062,7 +6072,7 @@ contains
       rfpdbObjectItem%stype = 't_storageNode'
 
       ! Allocate the array of data items:
-      allocate(rfpdbObjectItem%p_RfpdbDataItem(10))
+      allocate(rfpdbObjectItem%p_RfpdbDataItem(6))
 
       ! Fill the array of data items: ihandle
       p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
@@ -6094,165 +6104,35 @@ contains
       p_fpdbDataItem%sname   = 'dmemBytes'
       p_fpdbDataItem%ddouble = p_rheap%p_Rdescriptors(ihandle)%dmemBytes
 
+      
+      ! Fill the array of data items: data
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+      p_fpdbDataItem%sname = 'data'
+
       select case(p_rheap%p_Rdescriptors(ihandle)%idimension)
       case (1)
         select case(p_rheap%p_Rdescriptors(ihandle)%idatatype)
         case (ST_SINGLE)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname       = 'data'
           p_fpdbDataItem%ctype       =  FPDB_SINGLE1D
           p_fpdbDataItem%p_Fsingle1D => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D
 
 
         case (ST_DOUBLE)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname       = 'data'
           p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
           p_fpdbDataItem%p_Ddouble1D => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D
 
 
         case (ST_INT)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_INT1D
           p_fpdbDataItem%p_Iinteger1D => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D
 
 
         case (ST_LOGICAL)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_LOGICAL1D
           p_fpdbDataItem%p_Blogical1D => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D
 
 
         case (ST_CHAR)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar1D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar1D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = 0
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_CHAR1D
           p_fpdbDataItem%p_Schar1D => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D
 
@@ -6266,161 +6146,26 @@ contains
       case (2)
         select case(p_rheap%p_Rdescriptors(ihandle)%idatatype)
         case (ST_SINGLE)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname       = 'data'
           p_fpdbDataItem%ctype       =  FPDB_SINGLE2D
           p_fpdbDataItem%p_Fsingle2D => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D
 
 
         case (ST_DOUBLE)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname       = 'data'
           p_fpdbDataItem%ctype       =  FPDB_DOUBLE2D
           p_fpdbDataItem%p_Ddouble2D => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
 
           
         case (ST_INT)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_INT2D
           p_fpdbDataItem%p_Iinteger2D => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D
 
 
         case (ST_LOGICAL)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D,2)
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_LOGICAL2D
           p_fpdbDataItem%p_Blogical2D => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D
 
 
         case (ST_CHAR)
-          ! Fill the array of data items: lbound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound1'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,1)
-
-          ! Fill the array of data items: ubound1
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound1'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,1)
-
-          ! Fill the array of data items: lbound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'lbound2'
-          p_fpdbDataItem%iinteger = lbound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)
-
-          ! Fill the array of data items: ubound2
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-          p_fpdbDataItem%ctype    = FPDB_INT
-          p_fpdbDataItem%sname    = 'ubound2'
-          p_fpdbDataItem%iinteger = ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar2D,2)
-
-          ! Fill the array of data items: data
-          p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-          p_fpdbDataItem%sname        = 'data'
           p_fpdbDataItem%ctype        =  FPDB_CHAR2D
           p_fpdbDataItem%p_Schar2D => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
 
@@ -6447,8 +6192,8 @@ contains
   subroutine storage_restoreFpdbObject (rfpdbObjectItem, rheap)
 
 !<description>
-    ! This subroutine creates an abstract object of the heap structure
-    ! that can be stored in the persistence database
+    ! This subroutine creates an abstract object of the heap 
+    ! structure that can be stored in the persistence database
 !</description>
 
 !<input>
@@ -6463,12 +6208,11 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Pointer to the heap to initialise
+    ! local variables
     type(t_storageBlock), pointer :: p_rheap
     type(t_fpdbDataItem), pointer :: p_fpdbDataItem
     type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem
 
-    ! local variables
     integer :: i,ihandle
 
     if(present(rheap)) then
@@ -6484,13 +6228,14 @@ contains
       call sys_halt()
     end if
 
-    ! Check if DataItems are associated and have correct size
+    ! Check if DataItems are associated
     if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
       call output_line ('Missing data!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
       call sys_halt()
     end if
 
+    ! Check if DataItems have correct size
     if (size(rfpdbObjectItem%p_RfpdbDataItem) .lt. 9) then
       call output_line ('Invalid data!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
@@ -6593,8 +6338,9 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_restoreFpdbObject')
       call sys_halt()
     else
-      allocate(p_rheap%p_IfreeHandles(size(p_fpdbDataItem%p_Iinteger1D)))
-      p_rheap%p_IfreeHandles = p_fpdbDataItem%p_Iinteger1D
+      allocate(p_rheap%p_IfreeHandles(&
+               p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+      call fpdb_getdata_int1d(p_fpdbDataItem, p_rheap%p_IfreeHandles)
     end if
     
     ! Initialise descriptors
@@ -6610,15 +6356,188 @@ contains
         call sys_halt()
       else
         p_fpdbObjectItem => p_fpdbDataItem%p_fpdbObjectItem
-
-!        if (trim(p_fpdbObjectItem%stype) .ne. 't_storageNode'
+        call restoreFpdbObjectHandle(p_fpdbObjectItem)
       end if
     end do
 
-!!$  contains
-!!$
-!!$    subroutine restore(FpdbObjectHandle)
-!!$
-!!$    end subroutine restore
+  contains
+    
+    subroutine restoreFpdbObjectHandle(rfpdbObjectItem)
+
+      ! The object item that represents the handle
+      type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
+
+      
+      ! local variables
+      type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+      type(t_storageNode), pointer :: p_rnode
+      integer :: ihandle
+
+
+      ! Check if ObjectItem has correct type
+      if (trim(rfpdbObjectItem%stype) .ne. 't_storageNode') then
+        call output_line ('Invalid object type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      end if
+
+      ! Check if DataItems are associated
+      if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+        call output_line ('Missing data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      end if
+
+      ! Check if DataItems have correct size
+      if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 6) then
+        call output_line ('Invalid data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      end if
+      
+      ! Restore the data from the DataItem: ihandle
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+      if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+          (trim(p_fpdbDataItem%sname) .ne. 'ihandle')) then
+        call output_line ('Invalid data: ihandle!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      else
+        ihandle =  p_fpdbDataItem%iinteger
+        p_rnode => p_rheap%p_Rdescriptors(ihandle)
+      end if
+
+      ! Restore the data from the DataItem: idatatype
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+      if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+          (trim(p_fpdbDataItem%sname) .ne. 'idatatype')) then
+        call output_line ('Invalid data: idatatype!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      else
+        p_rnode%idatatype = p_fpdbDataItem%iinteger
+      end if
+      
+      ! Restore the data from the DataItem: idimension
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+      if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+          (trim(p_fpdbDataItem%sname) .ne. 'idimension')) then
+        call output_line ('Invalid data: idimension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      else
+        p_rnode%idimension = p_fpdbDataItem%iinteger
+      end if
+
+      ! Restore the data from the DataItem: sname
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+      if ((p_fpdbDataItem%ctype .ne. FPDB_CHAR) .or.&
+          (trim(p_fpdbDataItem%sname) .ne. 'sname')) then
+        call output_line ('Invalid data: sname!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      else
+        p_rnode%sname = p_fpdbDataItem%schar
+      end if
+
+      ! Restore the data from the DataItem: dmemBytes
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+      if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE) .or.&
+          (trim(p_fpdbDataItem%sname) .ne. 'dmemBytes')) then
+        call output_line ('Invalid data: dmemBytes!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      else
+        p_rnode%dmemBytes = p_fpdbDataItem%ddouble
+      end if
+
+
+      ! Restore the data from the DataItem: data
+      p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+      if (trim(p_fpdbDataItem%sname) .ne. 'data') then
+        call output_line ('Invalid data: data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      end if
+
+      select case(p_rnode%idimension)
+      case (1)
+        select case(p_rnode%idatatype)
+        case (ST_SINGLE)
+          allocate(p_rnode%p_Fsingle1D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+          call fpdb_getdata_single1d(p_fpdbDataItem, p_rnode%p_Fsingle1D)
+
+        case (ST_DOUBLE)
+          allocate(p_rnode%p_Ddouble1D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+          call fpdb_getdata_double1d(p_fpdbDataItem, p_rnode%p_Ddouble1D)
+
+        case (ST_INT)
+          allocate(p_rnode%p_Iinteger1D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+          call fpdb_getdata_int1d(p_fpdbDataItem, p_rnode%p_Iinteger1D)
+
+        case (ST_LOGICAL)
+          allocate(p_rnode%p_Blogical1D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+          call fpdb_getdata_logical1d(p_fpdbDataItem, p_rnode%p_Blogical1D)
+
+        case (ST_CHAR)
+          allocate(p_rnode%p_Schar1D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
+          call fpdb_getdata_char1d(p_fpdbDataItem, p_rnode%p_Schar1D)
+
+        case DEFAULT
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+          call sys_halt()
+        end select
+
+      case (2)
+        select case(p_rnode%idatatype)
+        case (ST_SINGLE)
+          allocate(p_rnode%p_Fsingle2D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2)))
+          call fpdb_getdata_single2d(p_fpdbDataItem, p_rnode%p_Fsingle2D)
+
+        case (ST_DOUBLE)
+          allocate(p_rnode%p_Ddouble2D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2)))
+          call fpdb_getdata_double2d(p_fpdbDataItem, p_rnode%p_Ddouble2D)
+
+        case (ST_INT)
+          allocate(p_rnode%p_Iinteger2D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2)))
+          call fpdb_getdata_int2d(p_fpdbDataItem, p_rnode%p_Iinteger2D)
+
+        case (ST_LOGICAL)
+          allocate(p_rnode%p_Blogical2D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2)))
+          call fpdb_getdata_logical2d(p_fpdbDataItem, p_rnode%p_Blogical2D)
+
+        case (ST_CHAR)
+          allocate(p_rnode%p_Schar2D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2)))
+          call fpdb_getdata_char2d(p_fpdbDataItem, p_rnode%p_Schar2D)
+
+        case DEFAULT
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+          call sys_halt()
+        end select
+
+      case DEFAULT
+        call output_line ('Invalid dimension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+        call sys_halt()
+      end select
+    end subroutine restoreFpdbObjectHandle
+
   end subroutine storage_restoreFpdbObject
 end module storage
