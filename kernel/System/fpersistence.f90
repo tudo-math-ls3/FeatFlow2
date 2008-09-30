@@ -87,6 +87,13 @@
 !#
 !#  5.) fpdb_getDataLength
 !#      -> Returns the record length of the DataItem
+!#
+!#  6.) fpdb_getdata_single1d,
+!#      fpdb_getdata_double1d,
+!#      fpdb_getdata_int1d,
+!#      fpdb_getdata_logical1d,
+!#      fpdb_getdata_char1d
+!#      -> Import the data item associated to a DataItem
 !# </purpose>
 !##############################################################################
 module fpersistence
@@ -98,6 +105,13 @@ module fpersistence
   implicit none
 
 !<constants>
+
+!<constantblock description="Persistence database constants">
+
+  ! Maximum number of dimensions supported by the persistence database
+  integer, parameter :: FPDB_MAXDIM = 2
+!</constantblock>
+
 
 !<constantblock description="Flags for the persistence database specification bitfield">
 
@@ -278,7 +292,16 @@ module fpersistence
     
     ! Name of the data item
     character(LEN=SYS_NAMELEN) :: sname = ''
+
+    ! Filename of the data item (if any)
+    character(LEN=SYS_STRLEN) :: sfilename = './feat2pdb'
     
+    ! Array of lower bounds of the associated data item
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds
+
+    ! Array of upper bounds of the associated data item
+    integer, dimension(FPDB_MAXDIM) :: Iubounds
+
     ! Pointer to an ObjectItem
     type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem => null()
 
@@ -314,35 +337,6 @@ module fpersistence
 
   end type t_fpdbDataItem
   
-!</typeblock>
-
-!<typeblock>
-  
-  ! This type block specifies a handle of the persistence database
-
-  type t_handle
-
-    ! Number of the handle
-    integer :: ihandle
-
-    ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
-    ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
-    integer :: idataType
-
-    ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
-    integer :: idimension
-    
-    ! Lower bounds of the data associated to the handle
-    integer, dimension(2) :: ILbound
-
-    ! Upper bounds of the data associated to the handle
-    integer, dimension(2) :: IUbound
-
-    ! Amount of memory (in bytes) associated to this block.
-    ! We store that as a double to allow storing numbers > 2GB !
-    real(DP) :: dmemBytes = 0.0_DP
-  end type t_handle
-
 !</typeblock>
 
 !</types>
@@ -592,12 +586,9 @@ contains
     end do import
 
     ! Phase2: Regenerate internal ObjectItem links
-    if (associated(rfpdb%p_rfpdbObjectTable)) then
+1   if (associated(rfpdb%p_rfpdbObjectTable)) then
       call relinkObjectItem(rfpdb%p_rfpdbObjectTable)
     end if
-
-    ! That's it
-1   return
 
 
   contains
@@ -660,9 +651,8 @@ contains
       type(t_fpdbDataItem), intent(out) :: rfpdbDataItem
 
       ! local variables
-      integer, dimension(2) :: Isize2D
       character(LEN=36) :: suuid
-      integer :: isize1D,iunit
+      integer :: iunit
 
       ! Read datatype from file
       read(rfpdb%iunitDataTable, rec=irecordNumber, err=1) rfpdbDataItem%ctype
@@ -671,7 +661,8 @@ contains
       select case(rfpdbDataItem%ctype)
 
         ! ----------------------------------------------------------------------
-        ! Below, we deal with atomic data
+        ! Below, we deal with atomic data:
+        !    The data item itself is read from the data table
         ! ----------------------------------------------------------------------
 
       case (FPDB_UUID)
@@ -714,174 +705,59 @@ contains
              rfpdbDataItem%schar
         
         ! ----------------------------------------------------------------------
-        ! Below, we deal with 1D data
+        ! Below, we deal with 1D data:
+        !    The UUID of the filename containing the data item is read from
+        !    the data table. The actual data is read from a separate file.
         ! ----------------------------------------------------------------------
 
-      case (FPDB_UUID1D)
+      case (FPDB_UUID1D,&
+            FPDB_SINGLE1D,&
+            FPDB_DOUBLE1D,&
+            FPDB_INT1D,&
+            FPDB_LOGICAL1D,&
+            FPDB_CHAR1D)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-             suuid
+             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
+        
+        ! Set filename of data file
+        rfpdbDataItem%sfilename = trim(rfpdb%spath)//suuid//'.fpd'
 
         ! Read content of UUID from data file
-        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
+        call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
                                    iunit, bformatted=.FALSE.)
-        read(iunit, err=2) isize1D
-        allocate(rfpdbDataItem%p_Ruuid1D(isize1D))
-        rewind(iunit)
-        read(iunit, err=2) isize1D, rfpdbDataItem%p_Ruuid1D
+        read(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                           rfpdbDataItem%Iubounds
         close(iunit)        
 
-!!$      case (FPDB_SINGLE1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Fsingle1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Fsingle1D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_DOUBLE1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Ddouble1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Ddouble1D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_INT1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Iinteger1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Iinteger1D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_LOGICAL1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Blogical1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Blogical1D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_CHAR1D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) isize1D
-!!$        allocate(rfpdbDataItem%p_Schar1D(isize1D))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) isize1D, rfpdbDataItem%p_Schar1D
-!!$        close(iunit)
-!!$
-!!$        ! ----------------------------------------------------------------------
-!!$        ! Below, we deal with 2D data
-!!$        ! ----------------------------------------------------------------------
-!!$
-!!$      case (FPDB_UUID2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Ruuid2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Ruuid2D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_SINGLE2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Fsingle2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Fsingle2D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_DOUBLE2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Ddouble2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Ddouble2D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_INT2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Iinteger2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Iinteger2D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_LOGICAL2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Blogical2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Blogical2D
-!!$        close(iunit)
-!!$
-!!$      case (FPDB_CHAR2D)
-!!$        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-!!$             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-!!$
-!!$        ! Read content of handle from data file
-!!$        call io_openFileForReading(trim(rfpdb%spath)//suuid//'.fpd',&
-!!$                                   iunit, bformatted=.FALSE.)
-!!$        read(iunit, err=2) Isize2D
-!!$        allocate(rfpdbDataItem%p_Schar2D(Isize2D(1), Isize2D(2)))
-!!$        rewind(iunit)
-!!$        read(iunit, err=2) Isize2D, rfpdbDataItem%p_Schar2D
-!!$        close(iunit)
-!!$
+        ! ----------------------------------------------------------------------
+        ! Below, we deal with 2D data:
+        !    The UUID of the filename containing the data item is read from
+        !    the data table. The actual data is read from a separate file.
+        ! ----------------------------------------------------------------------
+
+      case (FPDB_UUID2D,&
+            FPDB_SINGLE2D,&
+            FPDB_DOUBLE2D,&
+            FPDB_INT2D,&
+            FPDB_LOGICAL2D,&
+            FPDB_CHAR2D)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
+
+        ! Set filename of data file
+        rfpdbDataItem%sfilename = trim(rfpdb%spath)//suuid//'.fpd'
+
+        ! Read content of handle from data file
+        call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                                   iunit, bformatted=.FALSE.)
+        read(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                           rfpdbDataItem%Iubounds
+        close(iunit)
+
+
       case DEFAULT
         call output_line ('Undefined data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
-        print *, rfpdbDataItem%ctype
         call sys_halt()
       end select
 
@@ -1046,7 +922,8 @@ contains
       select case(rfpdbDataItem%ctype)
         
         ! ----------------------------------------------------------------------
-        ! Below, we deal with atomic data
+        ! Below, we deal with atomic data:
+        !    The data item itself is written to the data table
         ! ----------------------------------------------------------------------
         
       case (FPDB_UUID)
@@ -1098,7 +975,9 @@ contains
 
 
         ! ----------------------------------------------------------------------
-        ! Below, we deal with 1D data
+        ! Below, we deal with 1D data:
+        !    The UUID of the filename containing the data item is written to
+        !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
 
       case (FPDB_UUID1D)
@@ -1107,11 +986,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Ruuid1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Ruuid1D,1)
+          
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Ruuid1D), rfpdbDataItem%p_Ruuid1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Ruuid1D
           close(iunit)
         end if
           
@@ -1128,11 +1013,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Fsingle1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Fsingle1D,1)
+
           ! Write content of handle to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Fsingle1D), rfpdbDataItem%p_Fsingle1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Fsingle1D
           close(iunit)
         end if
 
@@ -1149,11 +1040,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Ddouble1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Ddouble1D,1)
+
           ! Write content of handle to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Ddouble1D), rfpdbDataItem%p_Ddouble1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Ddouble1D
           close(iunit)
         end if
 
@@ -1171,11 +1068,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Iinteger1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Iinteger1D,1)
+
           ! Write content of handle to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Iinteger1D), rfpdbDataItem%p_Iinteger1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Iinteger1D
           close(iunit)
         end if
 
@@ -1192,11 +1095,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Blogical1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Blogical1D,1)
+
           ! Write content of handle to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Blogical1D), rfpdbDataItem%p_Blogical1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Blogical1D
           close(iunit)
         end if
 
@@ -1213,11 +1122,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Schar1D,1)
+          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Schar1D,1)
+
           ! Write content of handle to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Schar1D), rfpdbDataItem%p_Schar1D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Schar1D
           close(iunit)
         end if
 
@@ -1229,7 +1144,9 @@ contains
 
 
         ! ----------------------------------------------------------------------
-        ! Below, we deal with 2D data
+        ! Below, we deal with 2D data:
+        !    The UUID of the filename containing the data item is written to
+        !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
         
       case (FPDB_UUID2D)
@@ -1238,11 +1155,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Ruuid2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Ruuid2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Ruuid2D), rfpdbDataItem%p_Ruuid2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Ruuid2D
           close(iunit)
         end if
           
@@ -1259,11 +1182,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Fsingle2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Fsingle2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Fsingle2D), rfpdbDataItem%p_Fsingle2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Fsingle2D
           close(iunit)
         end if
           
@@ -1280,11 +1209,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Ddouble2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Ddouble2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Ddouble2D), rfpdbDataItem%p_Ddouble2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Ddouble2D
           close(iunit)
         end if
           
@@ -1301,11 +1236,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Iinteger2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Iinteger2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Iinteger2D), rfpdbDataItem%p_Iinteger2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Iinteger2D
           close(iunit)
         end if
           
@@ -1322,11 +1263,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Blogical2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Blogical2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Blogical2D), rfpdbDataItem%p_Blogical2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Blogical2D
           close(iunit)
         end if
           
@@ -1343,11 +1290,17 @@ contains
           ! If not create a new UUID
           call uuid_createUUID(4, rfpdbDataItem%ruuid)
 
+          ! Fill array of upper/lower bounds
+          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Schar2D)
+          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Schar2D)
+
           ! Write content of UUIDs to data file
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) size(rfpdbDataItem%p_Schar2D), rfpdbDataItem%p_Schar2D
+          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
+                              rfpdbDataItem%Iubounds,&
+                              rfpdbDataItem%p_Schar2D
           close(iunit)
         end if
           
@@ -1361,6 +1314,7 @@ contains
       case DEFAULT
         call output_line ('Undefined data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
+print *, rfpdbDataItem%ctype
         call sys_halt()
       end select
 
@@ -1446,7 +1400,7 @@ contains
 !************************************************************************
 
 !<subroutine>
-
+  
   recursive subroutine fpdb_insertObject(rfpdb, rfpdbObjectItem)
 
 !<description>
@@ -1457,7 +1411,7 @@ contains
 
 !<inputoutput>
     ! The persistence database structure
-    type(t_fpdb), intent(inout) :: rfpdb
+    type(t_fpdb), intent(inout), target :: rfpdb
 
     ! The item that is inserted
     type(t_fpdbObjectItem), intent(inout), target :: rfpdbObjectItem
@@ -1538,7 +1492,8 @@ contains
     ! Check if DataItems contain ObjectItems
     if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
       do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
-        if (rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) then
+        if ((rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) .and.&
+            (associated(rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem))) then
           call fpdb_insertObject(rfpdb, rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem)
         end if
       end do
@@ -1737,7 +1692,7 @@ contains
 
   end subroutine fpdb_retrieveObjectByName
 
-  !************************************************************************
+!************************************************************************
 
 !<function>
   
@@ -1786,4 +1741,690 @@ contains
                                uuid_conv2String(rfpdbDataItem%ruuid)
     
   end function fpdb_getDataLength
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_single1d(rfpdbDataItem, Farray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the single float array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    real(SP), dimension(:), intent(out), target, optional :: Farray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    real(SP), dimension(:), pointer :: p_Fsingle
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_SINGLE1D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single1d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Farray)) then
+      p_Fsingle => Farray
+    else
+      if (.not.associated(rfpdbDataItem%p_Fsingle1D)) then
+        allocate(rfpdbDataItem%p_Fsingle1D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+      end if
+      p_Fsingle => rfpdbDataItem%p_Fsingle1D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Fsingle,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Fsingle,1) .ne. rfpdbDataItem%Iubounds(1))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single1d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single1d')
+    call sys_halt()
+  end subroutine fpdb_getdata_single1d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_double1d(rfpdbDataItem, Darray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the double float array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    real(DP), dimension(:), intent(out), target, optional :: Darray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    real(DP), dimension(:), pointer :: p_Ddouble
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_DOUBLE1D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double1d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Darray)) then
+      p_Ddouble => Darray
+    else
+      if (.not.associated(rfpdbDataItem%p_Ddouble1D)) then
+        allocate(rfpdbDataItem%p_Ddouble1D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+      end if
+      p_Ddouble => rfpdbDataItem%p_Ddouble1D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Ddouble,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Ddouble,1) .ne. rfpdbDataItem%Iubounds(1))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double1d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double1d')
+    call sys_halt()
+  end subroutine fpdb_getdata_double1d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_int1d(rfpdbDataItem, Iarray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the integer array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    integer, dimension(:), intent(out), target, optional :: Iarray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    integer, dimension(:), pointer :: p_Iinteger
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_INT1D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int1d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Iarray)) then
+      p_Iinteger => Iarray
+    else
+      if (.not.associated(rfpdbDataItem%p_Iinteger1D)) then
+        allocate(rfpdbDataItem%p_Iinteger1D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+      end if
+      p_Iinteger => rfpdbDataItem%p_Iinteger1D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Iinteger,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Iinteger,1) .ne. rfpdbDataItem%Iubounds(1))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int1d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int1d')
+    call sys_halt()
+  end subroutine fpdb_getdata_int1d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_logical1d(rfpdbDataItem, Larray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the logical array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    logical, dimension(:), intent(out), target, optional :: Larray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    logical, dimension(:), pointer :: p_Blogical
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_LOGICAL1D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical1d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Larray)) then
+      p_Blogical => Larray
+    else
+      if (.not.associated(rfpdbDataItem%p_Blogical1D)) then
+        allocate(rfpdbDataItem%p_Blogical1D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+      end if
+      p_Blogical => rfpdbDataItem%p_Blogical1D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Blogical,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Blogical,1) .ne. rfpdbDataItem%Iubounds(1))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical1d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_blogical1d')
+    call sys_halt()
+  end subroutine fpdb_getdata_logical1d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_char1d(rfpdbDataItem, Sarray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the character array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    character, dimension(:), intent(out), target, optional :: Sarray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    character, dimension(:), pointer :: p_Schar
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_CHAR1D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char1d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Sarray)) then
+      p_Schar => Sarray
+    else
+      if (.not.associated(rfpdbDataItem%p_Schar1D)) then
+        allocate(rfpdbDataItem%p_Schar1D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+      end if
+      p_Schar => rfpdbDataItem%p_Schar1D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Schar,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Schar,1) .ne. rfpdbDataItem%Iubounds(1))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char1d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Schar
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char1d')
+    call sys_halt()
+  end subroutine fpdb_getdata_char1d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_single2d(rfpdbDataItem, Farray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the single float array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    real(SP), dimension(:,:), intent(out), target, optional :: Farray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    real(SP), dimension(:,:), pointer :: p_Fsingle
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_SINGLE2D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single2d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Farray)) then
+      p_Fsingle => Farray
+    else
+      if (.not.associated(rfpdbDataItem%p_Fsingle2D)) then
+        allocate(rfpdbDataItem%p_Fsingle2D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                 rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+      end if
+      p_Fsingle => rfpdbDataItem%p_Fsingle2D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Fsingle,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Fsingle,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
+        (lbound(p_Fsingle,2) .ne. rfpdbDataItem%Ilbounds(2)) .or.&
+        (ubound(p_Fsingle,2) .ne. rfpdbDataItem%Iubounds(2))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single2d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single2d')
+    call sys_halt()
+  end subroutine fpdb_getdata_single2d  
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_double2d(rfpdbDataItem, Darray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the double float array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    real(DP), dimension(:,:), intent(out), target, optional :: Darray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    real(DP), dimension(:,:), pointer :: p_Ddouble
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_DOUBLE2D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double2d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Darray)) then
+      p_Ddouble => Darray
+    else
+      if (.not.associated(rfpdbDataItem%p_Ddouble2D)) then
+        allocate(rfpdbDataItem%p_Ddouble2D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                 rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+      end if
+      p_Ddouble => rfpdbDataItem%p_Ddouble2D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Ddouble,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Ddouble,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
+        (lbound(p_Ddouble,2) .ne. rfpdbDataItem%Ilbounds(2)) .or.&
+        (ubound(p_Ddouble,2) .ne. rfpdbDataItem%Iubounds(2))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_ddouble2d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_ddouble2d')
+    call sys_halt()
+  end subroutine fpdb_getdata_double2d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_int2d(rfpdbDataItem, Iarray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the integer array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    integer, dimension(:,:), intent(out), target, optional :: Iarray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    integer, dimension(:,:), pointer :: p_Iinteger
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_INT2D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int2d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Iarray)) then
+      p_Iinteger => Iarray
+    else
+      if (.not.associated(rfpdbDataItem%p_Iinteger2D)) then
+        allocate(rfpdbDataItem%p_Iinteger2D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                 rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+      end if
+      p_Iinteger => rfpdbDataItem%p_Iinteger2D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Iinteger,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Iinteger,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
+        (lbound(p_Iinteger,2) .ne. rfpdbDataItem%Ilbounds(2)) .or.&
+        (ubound(p_Iinteger,2) .ne. rfpdbDataItem%Iubounds(2))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int2d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int2d')
+    call sys_halt()
+  end subroutine fpdb_getdata_int2d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_logical2d(rfpdbDataItem, Larray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the logical array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    logical, dimension(:,:), intent(out), target, optional :: Larray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    logical, dimension(:,:), pointer :: p_Blogical
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_LOGICAL2D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical2d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Larray)) then
+      p_Blogical => Larray
+    else
+      if (.not.associated(rfpdbDataItem%p_Blogical2D)) then
+        allocate(rfpdbDataItem%p_Blogical2D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                 rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+      end if
+      p_Blogical => rfpdbDataItem%p_Blogical2D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Blogical,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Blogical,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
+        (lbound(p_Blogical,2) .ne. rfpdbDataItem%Ilbounds(2)) .or.&
+        (ubound(p_Blogical,2) .ne. rfpdbDataItem%Iubounds(2))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical2d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical2d')
+    call sys_halt()
+  end subroutine fpdb_getdata_logical2d
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine fpdb_getdata_char2d(rfpdbDataItem, Sarray)
+
+!<description>
+    ! This subroutine imports the data associated with the DataItem
+!</description>
+
+!<inputoutput>
+    ! The DataItem to be imported
+    type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: the character array. If not given, 
+    ! the pointer of the DataItem is used instead.
+    character, dimension(:,:), intent(out), target, optional :: Sarray
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    character, dimension(:,:), pointer :: p_Schar
+    integer :: iunit
+
+    ! Check if data type is compatible
+    if (rfpdbDataItem%ctype .ne. FPDB_CHAR2D) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char2d')
+      call sys_halt()
+    end if
+    
+    ! Set the pointer to the data array
+    if (present(Sarray)) then
+      p_Schar => Sarray
+    else
+      if (.not.associated(rfpdbDataItem%p_Schar2D)) then
+        allocate(rfpdbDataItem%p_Schar2D(&
+                 rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                 rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+      end if
+      p_Schar => rfpdbDataItem%p_Schar2D
+    end if
+    
+    ! Check if data array is compatible
+    if ((lbound(p_Schar,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
+        (ubound(p_Schar,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
+        (lbound(p_Schar,2) .ne. rfpdbDataItem%Ilbounds(2)) .or.&
+        (ubound(p_Schar,2) .ne. rfpdbDataItem%Iubounds(2))) then
+      call output_line ('Invalid structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char2d')
+      call sys_halt()
+    end if
+
+    ! Read content of UUID from data file
+    call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
+                               iunit, bformatted=.FALSE.)
+    read(iunit, err=1) Ilbounds, Iubounds, p_Schar
+    close(iunit)
+
+    ! That's it
+    return
+
+1   call output_line ('Unable to import data from file!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char2d')
+    call sys_halt()
+  end subroutine fpdb_getdata_char2d
+
 end module fpersistence
