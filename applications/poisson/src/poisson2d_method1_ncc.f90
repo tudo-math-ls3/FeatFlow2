@@ -167,7 +167,7 @@ CONTAINS
     ! We choose c:=nu_0 from the bilinear form
     ! and n:=2. T is the function we just calculated.
     Dcoefficients(1,:,:) = rform%Dcoefficients(1) * Dfunc(:,:) ** 2.0_DP
-    Dcoefficients(2,:,:) = rform%Dcoefficients(1) * Dfunc(:,:) ** 2.0_DP
+    Dcoefficients(2,:,:) = rform%Dcoefficients(2) * Dfunc(:,:) ** 2.0_DP
     
     ! Release memory
     deallocate(Dfunc)
