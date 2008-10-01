@@ -1832,15 +1832,15 @@ CONTAINS
     
     
     !!! <!-- DEBUG
-    call sptils_initUMFPACK4 (rproblem,rsolverNode)
-    rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix = 1
-    RspaceTimeMatrices(1) = rspaceTimeMatrix
-    call sptils_setMatrices (rsolverNode,RspaceTimeMatrices)
-    call sptils_initstructure (rsolverNode,ierror)
-    call sptils_initdata (rsolverNode,ierror)
-    CALL sptils_releaseSolver (rsolverNode)
+    !call sptils_initUMFPACK4 (rproblem,rsolverNode)
+    !rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix = 1
+    !RspaceTimeMatrices(1) = rspaceTimeMatrix
+    !call sptils_setMatrices (rsolverNode,RspaceTimeMatrices)
+    !call sptils_initstructure (rsolverNode,ierror)
+    !call sptils_initdata (rsolverNode,ierror)
+    !CALL sptils_releaseSolver (rsolverNode)
     !!! -->
-    read *
+    !read *
     
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
@@ -2462,7 +2462,8 @@ CONTAINS
           
         CASE (1)
           ! Block SOR preconditioner
-          CALL sptils_initBlockSOR (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBSOR (rproblem,p_rprecond,domega,&
+              domegaPrecond,RspatialPrecond(ilev))
 
           ! Defect correction solver
           CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
@@ -2576,8 +2577,8 @@ CONTAINS
             domega,RspatialPrecond(ilev))
         CASE (1)
           ! Block SOR
-          CALL sptils_initBlockSOR (rproblem,p_rsmoother,&
-            domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockFBSOR (rproblem,p_rsmoother,&
+            domega,domegaPrecond,RspatialPrecond(ilev))
         CASE (2)
           ! Block Forward-Backward Gauss-Seidel
           CALL sptils_initBlockFBGS (rproblem,p_rsmoother,&
