@@ -133,31 +133,39 @@ module fpersistence
 !<constantblock description="Data item identifiers">
 
   ! defines an undefined data item
-  integer, parameter :: FPDB_UNDEFINED = -1
-
-  ! defines an atomic object data item
-  integer, parameter :: FPDB_UUID = 0
-
-  ! defines an atomic ObjectItem as data item
+  ! This allows to create a nullified data item,
+  ! e.g., to indicate that a pointer is nullified
+  integer, parameter :: FPDB_NULL = 0
+  
+  ! defines an atomic ObjectItem as data item:
+  ! This allows to create an ObjectItem for, say, a block matrix
+  ! which has an array of scalar matrices as data. Note that the
+  ! ObjectItem means that the corresponding item is physically
+  ! created when it is imported from the persistence database.
   integer, parameter :: FPDB_OBJECT = 1
   
+  ! defines an atomic Link as data item:
+  ! This allows to create a link to an ObjectItem. As an example
+  ! consider a scalar vectors which may feature a pointer to the
+  ! spatial discretisation. Note that the spatial discretisation
+  ! is not created when the vector is created but only a pointer
+  ! to the spatial discretisation is associated.
+  integer, parameter :: FPDB_LINK = 2
+
   ! defines an atomic single data item
-  integer, parameter :: FPDB_SINGLE = 2
+  integer, parameter :: FPDB_SINGLE = 3
 
   ! defines an atomic double data item
-  integer, parameter :: FPDB_DOUBLE = 3
+  integer, parameter :: FPDB_DOUBLE = 4
 
   ! defines an atomic integer data item
-  integer, parameter :: FPDB_INT = 4
+  integer, parameter :: FPDB_INT = 5
 
   ! defines an atomic logical data item
-  integer, parameter :: FPDB_LOGICAL = 5
+  integer, parameter :: FPDB_LOGICAL = 6
 
   ! defines an atomic character data item
-  integer, parameter :: FPDB_CHAR = 6
-
-  ! defines a 1D object data item
-  integer, parameter :: FPDB_UUID1D = 7
+  integer, parameter :: FPDB_CHAR = 7
 
   ! defines a 1D single data item
   integer, parameter :: FPDB_SINGLE1D = 8
@@ -174,23 +182,20 @@ module fpersistence
   ! defines a 1D character data item
   integer, parameter :: FPDB_CHAR1D = 12
 
-  ! defines a 2D object data item
-  integer, parameter :: FPDB_UUID2D = 13
-
   ! defines a 2D single data item
-  integer, parameter :: FPDB_SINGLE2D = 14
+  integer, parameter :: FPDB_SINGLE2D = 13
 
   ! defines a 2D double data item
-  integer, parameter :: FPDB_DOUBLE2D = 15
+  integer, parameter :: FPDB_DOUBLE2D = 14
 
   ! defines a 2D integer data item
-  integer, parameter :: FPDB_INT2D = 16
+  integer, parameter :: FPDB_INT2D = 15
 
   ! defines a 2D logical data item
-  integer, parameter :: FPDB_LOGICAL2D = 17
+  integer, parameter :: FPDB_LOGICAL2D = 16
 
   ! defines a 2D character data item
-  integer, parameter :: FPDB_CHAR2D = 18
+  integer, parameter :: FPDB_CHAR2D = 17
   
 !</constantblock>
 
@@ -288,7 +293,7 @@ module fpersistence
   type t_fpdbDataItem
     
     ! Type descriptor of the data item
-    integer :: ctype = FPDB_UNDEFINED
+    integer :: ctype = FPDB_NULL
     
     ! Name of the data item
     character(LEN=SYS_NAMELEN) :: sname = ''
@@ -307,6 +312,8 @@ module fpersistence
 
     ! Below, the implemented data types follow:
 
+    ! -~-~-~ Auxiliary quantity for ObjectItems and links -~-~-~
+
     type(t_uuid) :: ruuid
     
     ! -~-~-~ Atomic quantities -~-~-~
@@ -319,21 +326,19 @@ module fpersistence
     
     ! -~-~-~ 1D quantities -~-~-~
     
-    type(t_uuid), dimension(:), pointer :: p_Ruuid1D
-    real(DP), dimension(:), pointer     :: p_Ddouble1D
-    real(SP), dimension(:), pointer     :: p_Fsingle1D
-    integer, dimension(:), pointer      :: p_Iinteger1D
-    logical, dimension(:), pointer      :: p_Blogical1D
-    character, dimension(:), pointer    :: p_Schar1D
+    real(DP), dimension(:), pointer  :: p_Ddouble1D
+    real(SP), dimension(:), pointer  :: p_Fsingle1D
+    integer, dimension(:), pointer   :: p_Iinteger1D
+    logical, dimension(:), pointer   :: p_Blogical1D
+    character, dimension(:), pointer :: p_Schar1D
 
     ! -~-~-~ 2D quantities -~-~-~
     
-    type(t_uuid), dimension(:,:), pointer :: p_Ruuid2D
-    real(DP), dimension(:,:), pointer     :: p_Ddouble2D
-    real(SP), dimension(:,:), pointer     :: p_Fsingle2D
-    integer, dimension(:,:), pointer      :: p_Iinteger2D
-    logical, dimension(:,:), pointer      :: p_Blogical2D
-    character, dimension(:,:), pointer    :: p_Schar2D
+    real(DP), dimension(:,:), pointer  :: p_Ddouble2D
+    real(SP), dimension(:,:), pointer  :: p_Fsingle2D
+    integer, dimension(:,:), pointer   :: p_Iinteger2D
+    logical, dimension(:,:), pointer   :: p_Blogical2D
+    character, dimension(:,:), pointer :: p_Schar2D
 
   end type t_fpdbDataItem
   
@@ -514,19 +519,19 @@ contains
 
       type(t_fpdbDataItem), intent(inout) :: rfpdbDataItem
 
-      rfpdbDataItem%ctype = FPDB_UNDEFINED
+      rfpdbDataItem%ctype = FPDB_NULL
       rfpdbDataItem%sname = ''
+
+      call uuid_createUUID(0, rfpdbDataItem%ruuid)
 
       nullify(rfpdbDataItem%p_fpdbObjectItem)
 
-      nullify(rfpdbDataItem%p_Ruuid1D)
       nullify(rfpdbDataItem%p_Ddouble1D)
       nullify(rfpdbDataItem%p_Fsingle1D)
       nullify(rfpdbDataItem%p_Iinteger1D)
       nullify(rfpdbDataItem%p_Blogical1D)
       nullify(rfpdbDataItem%p_Schar1D)
 
-      nullify(rfpdbDataItem%p_Ruuid2D)
       nullify(rfpdbDataItem%p_Ddouble2D)
       nullify(rfpdbDataItem%p_Fsingle2D)
       nullify(rfpdbDataItem%p_Iinteger2D)
@@ -579,7 +584,7 @@ contains
       call importObjectItem(p_rfpdbObjectItem, irecordNumber)
       
       ! Insert ObjectItem into object table
-      call fpdb_insertObject(rfpdb, p_rfpdbObjectItem)
+      call fpdb_insertObject(rfpdb, p_rfpdbObjectItem, .false.)
 
       ! Increase record number by one
       irecordNumber = irecordNumber+1
@@ -661,23 +666,24 @@ contains
       select case(rfpdbDataItem%ctype)
 
         ! ----------------------------------------------------------------------
+        ! Below, we deal with data items which require special treatment
+        ! ----------------------------------------------------------------------
+
+      case (FPDB_NULL)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname
+        
+      case (FPDB_OBJECT,&
+            FPDB_LINK)
+        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
+             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
+             suuid
+        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
+
+        ! ----------------------------------------------------------------------
         ! Below, we deal with atomic data:
         !    The data item itself is read from the data table
         ! ----------------------------------------------------------------------
-
-      case (FPDB_UUID)
-        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-             suuid
-        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
-        
-      case (FPDB_OBJECT)
-        ! Here, we import the UUID of the ObjectItem which will be
-        ! used to associated the link to the corresponding object
-        read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
-             rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-             suuid
-        call uuid_createUUID(suuid, rfpdbDataItem%ruuid)
 
       case (FPDB_SINGLE)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
@@ -710,8 +716,7 @@ contains
         !    the data table. The actual data is read from a separate file.
         ! ----------------------------------------------------------------------
 
-      case (FPDB_UUID1D,&
-            FPDB_SINGLE1D,&
+      case (FPDB_SINGLE1D,&
             FPDB_DOUBLE1D,&
             FPDB_INT1D,&
             FPDB_LOGICAL1D,&
@@ -735,8 +740,7 @@ contains
         !    the data table. The actual data is read from a separate file.
         ! ----------------------------------------------------------------------
 
-      case (FPDB_UUID2D,&
-            FPDB_SINGLE2D,&
+      case (FPDB_SINGLE2D,&
             FPDB_DOUBLE2D,&
             FPDB_INT2D,&
             FPDB_LOGICAL2D,&
@@ -798,7 +802,9 @@ contains
           ! Set pointer
           p_rfpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(i)
           
-          if (p_rfpdbDataItem%ctype .eq. FPDB_OBJECT) then
+          if ((p_rfpdbDataItem%ctype .eq. FPDB_OBJECT) .or.&
+              (p_rfpdbDataItem%ctype .eq. FPDB_LINK)) then
+
             ! Retrieve corresponding ObjectItem by UUID
             call fpdb_retrieveObject(rfpdb, p_rfpdbDataItem%ruuid,&
                                      p_rfpdbDataItem%p_fpdbObjectItem)
@@ -809,6 +815,7 @@ contains
               call sys_halt()
             end if
           end if
+
         end do
       end if
 
@@ -922,22 +929,25 @@ contains
       select case(rfpdbDataItem%ctype)
         
         ! ----------------------------------------------------------------------
-        ! Below, we deal with atomic data:
-        !    The data item itself is written to the data table
+        ! Below, we deal with data items which require special treatment
         ! ----------------------------------------------------------------------
-        
-      case (FPDB_UUID)
-        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
-              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-              uuid_conv2String(rfpdbDataItem%ruuid)
-        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
-      case (FPDB_OBJECT)
+      case (FPDB_NULL)
+        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
+              rfpdbDataItem%ctype, rfpdbDataItem%sname
+        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
+        
+      case (FPDB_OBJECT,&
+            FPDB_LINK)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%p_fpdbObjectItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-
+        
+        ! ----------------------------------------------------------------------
+        ! Below, we deal with atomic data:
+        !    The data item itself is written to the data table
+        ! ----------------------------------------------------------------------
 
       case (FPDB_SINGLE)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
@@ -945,20 +955,17 @@ contains
               rfpdbDataItem%fsingle
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
-
       case (FPDB_DOUBLE)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               rfpdbDataItem%ddouble
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
-
       case (FPDB_INT)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               rfpdbDataItem%iinteger
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-
       
       case (FPDB_LOGICAL)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
@@ -966,46 +973,17 @@ contains
               rfpdbDataItem%blogical
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
-
       case (FPDB_CHAR)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               rfpdbDataItem%schar
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
-
         ! ----------------------------------------------------------------------
         ! Below, we deal with 1D data:
         !    The UUID of the filename containing the data item is written to
         !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
-
-      case (FPDB_UUID1D)
-        ! Check if this DataItem has been exported before
-        if (uuid_isNil(rfpdbDataItem%ruuid)) then
-          ! If not create a new UUID
-          call uuid_createUUID(4, rfpdbDataItem%ruuid)
-
-          ! Fill array of upper/lower bounds
-          rfpdbDataItem%Ilbounds(1) = lbound(rfpdbDataItem%p_Ruuid1D,1)
-          rfpdbDataItem%Iubounds(1) = ubound(rfpdbDataItem%p_Ruuid1D,1)
-          
-          ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//&
-                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
-                              rfpdbDataItem%Iubounds,&
-                              rfpdbDataItem%p_Ruuid1D
-          close(iunit)
-        end if
-          
-        ! Write the DataItem to data table file
-        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
-              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-              uuid_conv2String(rfpdbDataItem%ruuid)
-        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1       
-
 
       case (FPDB_SINGLE1D)
         ! Check if this DataItem has been exported before
@@ -1149,33 +1127,6 @@ contains
         !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
         
-      case (FPDB_UUID2D)
-        ! Check if this DataItem has been exported before
-        if (uuid_isNil(rfpdbDataItem%ruuid)) then
-          ! If not create a new UUID
-          call uuid_createUUID(4, rfpdbDataItem%ruuid)
-
-          ! Fill array of upper/lower bounds
-          rfpdbDataItem%Ilbounds(1:2) = lbound(rfpdbDataItem%p_Ruuid2D)
-          rfpdbDataItem%Iubounds(1:2) = ubound(rfpdbDataItem%p_Ruuid2D)
-
-          ! Write content of UUIDs to data file
-          call io_openFileForWriting(trim(rfpdb%spath)//&
-                                     uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
-                                     iunit, SYS_REPLACE, bformatted=.false.)
-          write(iunit, err=2) rfpdbDataItem%Ilbounds,&
-                              rfpdbDataItem%Iubounds,&
-                              rfpdbDataItem%p_Ruuid2D
-          close(iunit)
-        end if
-          
-        ! Write the DataItem to data table file
-        write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
-              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
-              uuid_conv2String(rfpdbDataItem%ruuid)
-        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1   
-       
-
       case (FPDB_SINGLE2D)
         ! Check if this DataItem has been exported before
         if (uuid_isNil(rfpdbDataItem%ruuid)) then
@@ -1314,7 +1265,6 @@ contains
       case DEFAULT
         call output_line ('Undefined data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
-print *, rfpdbDataItem%ctype
         call sys_halt()
       end select
 
@@ -1381,7 +1331,7 @@ print *, rfpdbDataItem%ctype
       if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
         do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
           call output_line('DataItem: '//trim(sys_siL(i,6))//&
-                           ' ctype: '//trim(sys_siL(rfpdbObjectItem%p_RfpdbDataItem(i)%ctype,3))//&
+                           ' ctype: '//trim(ctype2String(rfpdbObjectItem%p_RfpdbDataItem(i)%ctype))//&
                            ' sname: '//trim(rfpdbObjectItem%p_RfpdbDataItem(i)%sname))
         end do
         call output_line('------------------------------------------------')
@@ -1395,19 +1345,71 @@ print *, rfpdbDataItem%ctype
       
     end subroutine infoObjectItem
 
-  end subroutine fpdb_info
+    function ctype2String(ctype) result(str)
+
+      integer, intent(in) :: ctype
+      character(len=SYS_STRLEN) :: str
+
+      select case(ctype)
+      case (FPDB_NULL)
+        str = 'FPDB_NULL'
+      case (FPDB_OBJECT)
+        str = 'FPDB_OBJECT'
+      case (FPDB_LINK)
+        str = 'FPDB_LINK'
+      case (FPDB_SINGLE)
+        str = 'FPDB_SINGLE'
+      case (FPDB_DOUBLE)
+        str = 'FPDB_DOUBLE'
+      case (FPDB_INT)
+        str = 'FPDB_INT'
+      case (FPDB_LOGICAL)
+        str = 'FPDB_LOGICAL'
+      case (FPDB_CHAR)
+        str = 'FPDB_CHAR'
+      case (FPDB_SINGLE1D)
+        str = 'FPDB_SINGLE1D'
+      case (FPDB_DOUBLE1D)
+        str = 'FPDB_DOUBLE1D'
+      case (FPDB_INT1D)
+        str = 'FPDB_INT1D'
+      case (FPDB_LOGICAL1D)
+        str = 'FPDB_LOGICAL1D'
+      case (FPDB_CHAR1D)
+        str = 'FPDB_CHAR1D'
+      case (FPDB_SINGLE2D)
+        str = 'FPDB_SINGLE2D'
+      case (FPDB_DOUBLE2D)
+        str = 'FPDB_DOUBLE2D'
+      case (FPDB_INT2D)
+        str = 'FPDB_INT2D'
+      case (FPDB_LOGICAL2D)
+        str = 'FPDB_LOGICAL2D'
+      case (FPDB_CHAR2D)
+        str = 'FPDB_CHAR2D'
+      case DEFAULT
+        str = 'unknown'
+      end select
+    end function ctype2String
+
+    end subroutine fpdb_info
 
 !************************************************************************
 
 !<subroutine>
   
-  recursive subroutine fpdb_insertObject(rfpdb, rfpdbObjectItem)
+  recursive subroutine fpdb_insertObject(rfpdb, rfpdbObjectItem, brecursive)
 
 !<description>
     ! This subroutine inserts an item into the object table.
     ! The object table is stored as a binary tree, hence,
     ! standard search-insert algorithm is applied.
 !</description>
+
+!<input>
+    ! Flag: if TRUE objects are inserted recursively
+    logical, intent(in) :: brecursive
+!</input>
 
 !<inputoutput>
     ! The persistence database structure
@@ -1421,7 +1423,7 @@ print *, rfpdbDataItem%ctype
     ! local variables
     type(t_fpdbObjectItem), pointer :: p_rfpdbObjectItem
     integer :: i
-
+    
     ! Check if the tree is empty
     if (.not.associated(rfpdb%p_rfpdbObjectTable)) then
 
@@ -1432,6 +1434,21 @@ print *, rfpdbDataItem%ctype
       nullify(rfpdbObjectItem%p_rfpdbObjectFather)
       nullify(rfpdbObjectItem%p_rfpdbObjectLeft)
       nullify(rfpdbObjectItem%p_rfpdbObjectRight)
+
+      ! Do we have to insert objects recursively?
+      if (.not.brecursive) return
+      
+      ! Check if DataItems contain ObjectItems
+      if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+        do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
+          if ((rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) .and.&
+              (associated(rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem))) then
+            call fpdb_insertObject(rfpdb,&
+                 rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem,&
+                 brecursive)
+          end if
+        end do
+      end if
 
     else
 
@@ -1460,6 +1477,21 @@ print *, rfpdbDataItem%ctype
             nullify(rfpdbObjectItem%p_rfpdbObjectLeft)
             nullify(rfpdbObjectItem%p_rfpdbObjectRight)
 
+            ! Do we have to insert objects recursively?
+            if (.not.brecursive) return
+            
+            ! Check if DataItems contain ObjectItems
+            if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+              do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
+                if ((rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) .and.&
+                    (associated(rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem))) then
+                  call fpdb_insertObject(rfpdb,&
+                       rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem,&
+                       brecursive)
+                end if
+              end do
+            end if
+
             ! That's it
             return
           end if
@@ -1476,29 +1508,34 @@ print *, rfpdbDataItem%ctype
             nullify(rfpdbObjectItem%p_rfpdbObjectLeft)
             nullify(rfpdbObjectItem%p_rfpdbObjectRight)
 
+            ! Do we have to insert objects recursively?
+            if (.not.brecursive) return
+            
+            ! Check if DataItems contain ObjectItems
+            if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+              do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
+                if ((rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) .and.&
+                    (associated(rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem))) then
+                  call fpdb_insertObject(rfpdb,&
+                       rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem,&
+                       brecursive)
+                end if
+              end do
+            end if
+            
             ! That's it
             return
           end if
           
         end if
       end do
-
+      
       ! If we end up here, some critical error occured
       call output_line ('Critical error occured!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_insertObject')
       call sys_halt()
     end if
 
-    ! Check if DataItems contain ObjectItems
-    if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
-      do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
-        if ((rfpdbObjectItem%p_RfpdbDataItem(i)%ctype .eq. FPDB_OBJECT) .and.&
-            (associated(rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem))) then
-          call fpdb_insertObject(rfpdb, rfpdbObjectItem%p_RfpdbDataItem(i)%p_fpdbObjectItem)
-        end if
-      end do
-    end if
-    
   end subroutine fpdb_insertObject
 
 !************************************************************************
