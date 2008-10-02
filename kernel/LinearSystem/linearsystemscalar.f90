@@ -202,6 +202,18 @@
 !# 57.) lsyssc_assignDiscretDirectMat
 !#      -> Assign a block discretisation to a matrix
 !#
+!# 58.) lsyssc_createFpdbObjectVec
+!#      -> Creates an ObjectItem representing a scalar vector
+!#
+!# 59.) lsyssc_createFpdbObjectMat
+!#      -> Creates an ObjectItem representing a scalar matrix
+!#
+!# 60.) lsyssc_restoreFpdbObjectVec
+!#      -> Restores a scalar vector from an ObjectItem
+!#
+!# 61.) lsyssc_restoreFpdbObjectMat
+!#      -> Restores a scalar matrix from an ObjectItem
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -233,11 +245,13 @@
 
 module linearsystemscalar
 
+  use fpersistence
   use fsystem
   use storage
   use spatialdiscretisation
   use dofmapping
   use genoutput
+  use uuid
 
   implicit none
 
@@ -451,25 +465,28 @@ module linearsystemscalar
   
   type t_vectorScalar
   
+    ! Universally unique identifier
+    type(t_uuid) :: ruuid
+
     ! Length of the vector; not necessarily = SIZE(p_Ddata), as this
     ! scalar vector might be a subvector of a larger vector allocated
     ! on the heap!
-    integer(PREC_VECIDX) :: NEQ       = 0
+    integer(PREC_VECIDX) :: NEQ = 0
     
     ! Number of local variables; in general, scalar vectors of size
     ! NEQ posses NEQ entries. However, scalar vectors can be
     ! interleaved, that is, each of the NEQ entries stores NVAR local
     ! variables. In this case, NEQ remains unmodified but NVAR>1 such
     ! that the physical length of the vector is NEQ*NVAR.
-    integer         :: NVAR      = 1
+    integer :: NVAR = 1
 
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
-    integer         :: cdataType = ST_DOUBLE
+    integer :: cdataType = ST_DOUBLE
     
     ! Handle identifying the vector entries.
     ! = ST_NOHANDLE if not allocated on the global heap. 
-    integer         :: h_Ddata   = ST_NOHANDLE
+    integer :: h_Ddata = ST_NOHANDLE
     
     ! Flag whether or not the vector is resorted.
     !  <0: Vector is unsorted, sorting strategy is prepared in 
@@ -486,7 +503,7 @@ module linearsystemscalar
     ! vector (+) or not (-).
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
-    integer         :: isortStrategy   = 0
+    integer :: isortStrategy = 0
     
     ! Handle to renumbering strategy for resorting the vector.
     ! The renumbering strategy is a vector
@@ -500,7 +517,7 @@ module linearsystemscalar
     !  p_IsortPermutation (NEQ+position in unsorted vector) = position in sorted vector.
     ! Whether or not the vector is actually sorted depends on the
     ! flag isortStrategy!
-    integer         :: h_IsortPermutation = ST_NOHANDLE
+    integer :: h_IsortPermutation = ST_NOHANDLE
     
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
@@ -521,7 +538,7 @@ module linearsystemscalar
     ! This is usually used for block vectors containing a couple of
     ! scalar subvectors; in this case, the block vector is the actual
     ! 'owner' of the handle!
-    logical              :: bisCopy        = .false.
+    logical :: bisCopy = .false.
     
     ! A pointer to the spatial discretisation or NULL(), if the vector is
     ! just an array, not belonging to any discretisation.
@@ -537,13 +554,16 @@ module linearsystemscalar
   
   type t_matrixScalar
     
+    ! Universally unique identifier
+    type(t_uuid) :: ruuid
+
     ! Format-tag. Identifies the format of the matrix. 
     ! Can take one of the LSYSSC_MATRIXx format flags.
-    integer      :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
+    integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
 
     ! Format-tag. Identifies the format of the interleaved matrix.
     ! Can take one of the LSYSSC_MATRIX1/D format flags.
-    integer      :: cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+    integer :: cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
     
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
@@ -583,7 +603,7 @@ module linearsystemscalar
     ! Note: This parameter is not supported by all algorithms, many
     ! algorithms will simply stop when this factor is <> 1, or they
     ! might ignore it. Therefore, use this factor with care!
-    real(DP)         :: dscaleFactor = 1.0_DP
+    real(DP) :: dscaleFactor = 1.0_DP
     
     ! Flag whether or not the matrix is resorted.
     !  <0: Matrix is unsorted, sorting strategy is prepared in 
@@ -597,7 +617,7 @@ module linearsystemscalar
     ! matrix (+) or not (-).
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
-    integer         :: isortStrategy   = 0
+    integer :: isortStrategy = 0
     
     ! Handle to renumbering strategy for resorting the matrix.
     ! The renumbering strategy is a vector
@@ -611,23 +631,23 @@ module linearsystemscalar
     !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
-    integer         :: h_IsortPermutation = ST_NOHANDLE
+    integer :: h_IsortPermutation = ST_NOHANDLE
     
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
-    integer         :: cdataType = ST_DOUBLE
+    integer :: cdataType = ST_DOUBLE
     
     ! Format-7 and Format-9: Handle identifying the elements in the matrix
     !REAL(PREC_MATRIX), DIMENSION(:), POINTER       :: DA         => NULL()
-    integer                    :: h_DA = ST_NOHANDLE
+    integer :: h_DA = ST_NOHANDLE
     
     ! Format-7 and Format-9: Handle identifying the column structure
     !INTEGER(PREC_MATIDX), DIMENSION(:), POINTER    :: KCOL       => NULL()
-    integer                    :: h_Kcol = ST_NOHANDLE
+    integer :: h_Kcol = ST_NOHANDLE
     
     ! Format-7 and Format-9: Handle identifying the row structure
     !INTEGER, DIMENSION(:), POINTER            :: KLD        => NULL()
-    integer                    :: h_Kld = ST_NOHANDLE
+    integer :: h_Kld = ST_NOHANDLE
     
     ! Format-9: Similar to row structure. Handle top array of length NEQ.
     ! For each row, pointer to the first element on the upper
@@ -638,7 +658,7 @@ module linearsystemscalar
     ! For matrices with no elements in the upper right part of the
     ! matrix, this points to the first element on the next line.
     !INTEGER, DIMENSION(:), POINTER            :: Kdiagonal  => NULL()
-    integer                    :: h_Kdiagonal = ST_NOHANDLE
+    integer :: h_Kdiagonal = ST_NOHANDLE
 
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
@@ -650,15 +670,15 @@ module linearsystemscalar
     real(DP), dimension(LSYSSC_MAXTAGS) :: DTags = 0._DP
     
     ! A pointer to the spatial discretisation for the trial functions.
-    type(t_spatialDiscretisation), pointer     :: p_rspatialDiscrTrial => null()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTrial => null()
     
     ! A pointer to the spatial discretisation for the test functions.
-    type(t_spatialDiscretisation), pointer     :: p_rspatialDiscrTest => null()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTest => null()
 
     ! Flag: Trial and Test functions in all element distributions
     ! are the same. If FALSE, there's at least one element distribution
     ! with different trial and test functions.
-    logical                          :: bidenticalTrialAndTest = .true.
+    logical :: bidenticalTrialAndTest = .true.
     
   end type
   
@@ -17572,6 +17592,7 @@ contains
 
     call output_line ('ScalarMatrix:')
     call output_line ('-------------')
+    call output_line ('UUID:                    '//uuid_conv2String(rmatrix%ruuid))
     call output_line ('cmatrixFormat:           '//trim(sys_siL(rmatrix%cmatrixFormat,15)))
     call output_line ('cinterleavematrixFormat: '//trim(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
     call output_line ('cdataType:               '//trim(sys_siL(rmatrix%cdataType,15)))
@@ -17643,6 +17664,7 @@ contains
 
     call output_line ('ScalarVector:')
     call output_line ('-------------')
+    call output_line ('UUID:                   '//uuid_conv2String(rvector%ruuid))
     call output_line ('cdataType:              '//trim(sys_siL(rvector%cdataType,15)))
     call output_line ('NEQ:                    '//trim(sys_siL(rvector%NEQ,15)))
     call output_line ('NVAR:                   '//trim(sys_siL(rvector%NVAR,15)))
@@ -18372,4 +18394,746 @@ contains
       end do
     end subroutine do_packInt
   end subroutine lsyssc_packVector
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createFpdbObjectVec (rfpdbObjectItem, sname, rvector)
+
+!<description>
+    ! This subroutine creates an abstract ObjectItem from the scalar
+    ! vector that can be stored in the persistence database
+!</description>
+
+!<input>
+    ! The full qualified name of the object
+    character(LEN=*), intent(IN) :: sname
+!</input>
+
+!<inputoutput>
+    ! The ObjectItem  that is created
+    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+
+    ! The scalar vector
+    type(t_vectorScalar), intent(INOUT), target :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if vector has UUID; otherwise create one
+    if (uuid_isNil(rvector%ruuid)) then
+      call uuid_createUUID(4, rvector%ruuid)
+    end if
+    rfpdbObjectItem%ruuid = rvector%ruuid
+
+    ! Set the name and type of the object
+    rfpdbObjectItem%sname = sname
+    rfpdbObjectItem%stype = 't_vectorScalar'
+
+    ! Allocate the array of data items: 11
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(11))
+
+    ! Fill the array of data items: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NEQ'
+    p_fpdbDataItem%iinteger = rvector%NEQ
+
+    ! Fill the array of data items: NVAR
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NVAR'
+    p_fpdbDataItem%iinteger = rvector%NVAR
+
+    ! Fill the array of data items: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'cdataType'
+    p_fpdbDataItem%iinteger = rvector%cdataType
+
+    ! Fill the array of data items: h_Ddata
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_Ddata'
+    p_fpdbDataItem%iinteger = rvector%h_Ddata
+
+    ! Fill the array of data items: isortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'isortStrategy'
+    p_fpdbDataItem%iinteger = rvector%isortStrategy
+
+    ! Fill the array of data items: h_IsortPermutation
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_IsortPermutation'
+    p_fpdbDataItem%iinteger = rvector%h_IsortPermutation
+
+    ! Fill the array of data items: iidxFirstEntry
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'iidxFirstEntry'
+    p_fpdbDataItem%iinteger = rvector%iidxFirstEntry
+    
+    ! Fill the array of data items: ITags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem%ctype        =  FPDB_INT1D
+    p_fpdbDataItem%sname        =  'ITags'
+    p_fpdbDataItem%p_Iinteger1D => rvector%ITags
+
+    ! Fill the array of data items: DTags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
+    p_fpdbDataItem%sname       =  'DTags'
+    p_fpdbDataItem%p_Ddouble1D => rvector%DTags
+
+    ! Fill the array of data items: bisCopy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bisCopy'
+    p_fpdbDataItem%blogical = rvector%bisCopy
+    
+    ! Fill the array of data items: p_rspatialDiscr
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    p_fpdbDataItem%sname = 'p_rspatialDiscr'
+    if (associated(rvector%p_rspatialDiscr)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+  end subroutine lsyssc_createFpdbObjectVec
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createFpdbObjectMat (rfpdbObjectItem, sname, rmatrix)
+
+!<description>
+    ! This subroutine creates an abstract ObjectItem from the scalar
+    ! matrix that can be stored in the persistence database
+!</description>
+
+!<input>
+    ! The full qualified name of the object
+    character(LEN=*), intent(IN) :: sname
+!</input>
+
+!<inputoutput>
+    ! The ObjectItem  that is created
+    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+
+    ! The scalar matrix
+    type(t_matrixScalar), intent(INOUT), target :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if matrix has UUID; otherwise create one
+    if (uuid_isNil(rmatrix%ruuid)) then
+      call uuid_createUUID(4, rmatrix%ruuid)
+    end if
+    rfpdbObjectItem%ruuid = rmatrix%ruuid
+
+    ! Set the name and type of the object
+    rfpdbObjectItem%sname = sname
+    rfpdbObjectItem%stype = 't_matrixScalar'
+
+    ! Allocate the array of data items: 20
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(20))
+
+    ! Fill the array of data items: cmatrixFormat
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'cmatrixFormat'
+    p_fpdbDataItem%iinteger = rmatrix%cmatrixFormat
+
+    ! Fill the array of data items: cinterleavematrixFormat
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'cinterleavematrixFormat'
+    p_fpdbDataItem%iinteger = rmatrix%cinterleavematrixFormat
+
+    ! Fill the array of data items: imatrixSpec
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'imatrixSpec'
+    p_fpdbDataItem%iinteger = rmatrix%imatrixSpec
+
+    ! Fill the array of data items: NA
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NA'
+    p_fpdbDataItem%iinteger = rmatrix%NA
+
+    ! Fill the array of data items: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NEQ'
+    p_fpdbDataItem%iinteger = rmatrix%NEQ
+
+    ! Fill the array of data items: NCOLS
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NCOLS'
+    p_fpdbDataItem%iinteger = rmatrix%NCOLS
+
+    ! Fill the array of data items: NVAR
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NVAR'
+    p_fpdbDataItem%iinteger = rmatrix%NVAR
+
+    ! Fill the array of data items: dscaleFactor
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem%ctype   = FPDB_DOUBLE
+    p_fpdbDataItem%sname   = 'dscaleFactor'
+    p_fpdbDataItem%ddouble = rmatrix%dscaleFactor
+
+    ! Fill the array of data items: isortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'isortStrategy'
+    p_fpdbDataItem%iinteger = rmatrix%isortStrategy
+
+    ! Fill the array of data items: h_IsortPermutation
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_IsortPermutation'
+    p_fpdbDataItem%iinteger = rmatrix%h_IsortPermutation
+
+    ! Fill the array of data items: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'cdataType'
+    p_fpdbDataItem%iinteger = rmatrix%cdataType
+
+    ! Fill the array of data items: h_DA
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_DA'
+    p_fpdbDataItem%iinteger = rmatrix%h_DA
+
+    ! Fill the array of data items: h_Kcol
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_Kcol'
+    p_fpdbDataItem%iinteger = rmatrix%h_Kcol
+
+    ! Fill the array of data items: h_Kld
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_Kld'
+    p_fpdbDataItem%iinteger = rmatrix%h_Kld
+
+    ! Fill the array of data items: h_Kdiagonal
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_Kdiagonal'
+    p_fpdbDataItem%iinteger = rmatrix%h_Kdiagonal
+
+    ! Fill the array of data items: ITags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
+    p_fpdbDataItem%ctype        =  FPDB_INT1D
+    p_fpdbDataItem%sname        =  'ITags'
+    p_fpdbDataItem%p_Iinteger1D => rmatrix%ITags
+
+    ! Fill the array of data items: DTags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
+    p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
+    p_fpdbDataItem%sname       =  'DTags'
+    p_fpdbDataItem%p_Ddouble1D => rmatrix%DTags
+    
+    ! Fill the array of data items: bidenticalTrialAndTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bidenticalTrialAndTest'
+    p_fpdbDataItem%blogical = rmatrix%bidenticalTrialAndTest
+
+    ! Fill the array of data items: p_rspatialDiscrTrial
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
+    p_fpdbDataItem%sname = 'p_rspatialDiscrTrial'
+    if (associated(rmatrix%p_rspatialDiscrTrial)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+
+    ! Fill the array of data items: p_rspatialDiscrTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
+    p_fpdbDataItem%sname = 'p_rspatialDiscrTest'
+    if (associated(rmatrix%p_rspatialDiscrTest)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+  end subroutine lsyssc_createFpdbObjectMat
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_restoreFpdbObjectVec (rfpdbObjectItem, rvector)
+
+!<description>
+    ! This subroutine restores the scalar vector from the abstract ObjectItem 
+!</description>
+
+!<input>
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+!</input>
+
+!<output>
+    ! The scalar vector
+    type(t_vectorScalar), intent(OUT), target :: rvector
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if ObjectItem has correct type
+    if (trim(rfpdbObjectItem%stype) .ne. 't_vectorScalar') then
+      call output_line ('Invalid object type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems are associated
+    if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+      call output_line ('Missing data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems have correct size
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 11) then
+      call output_line ('Invalid data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Restore the UUID
+    rvector%ruuid = rfpdbObjectItem%ruuid
+
+    ! Restore the data from the DataItem: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
+      call output_line ('Invalid data: NEQ!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%NEQ = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NVAR
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NVAR')) then
+      call output_line ('Invalid data: NVAR!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%NVAR = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'cdataType')) then
+      call output_line ('Invalid data: cdataType!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%cdataType = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_Ddata
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_Ddata')) then
+      call output_line ('Invalid data: h_Ddata!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%h_Ddata = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: isortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'isortStrategy')) then
+      call output_line ('Invalid data: isortStrategy!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%isortStrategy = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_IsortPermutation
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_IsortPermutation')) then
+      call output_line ('Invalid data: h_IsortPermutation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%h_IsortPermutation = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: iidxFirstEntry
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'iidxFirstEntry')) then
+      call output_line ('Invalid data: iidxFirstEntry!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%iidxFirstEntry = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: ITags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT1D) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'ITags')) then
+      call output_line ('Invalid data: ITags!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      call fpdb_getdata_int1d(p_fpdbDataItem, rvector%ITags)
+    end if
+
+    ! Restore the data from the DataItem: DTags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE1D) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'DTags')) then
+      call output_line ('Invalid data: DTags!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      call fpdb_getdata_double1d(p_fpdbDataItem, rvector%DTags)
+    end if
+
+    ! Restore the data from the DataItem: bisCopy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'bisCopy')) then
+      call output_line ('Invalid data: bisCopy!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%bisCopy = p_fpdbDataItem%blogical
+    end if
+
+    ! Restore the data from the DataItem: p_rspatialDiscr
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rspatialDiscr') then
+      call output_line ('Invalid data: p_rspatialDiscr!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%p_rspatialDiscr)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rspatialDiscr!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        call sys_halt()
+      end if
+    end if
+
+  end subroutine lsyssc_restoreFpdbObjectVec
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_restoreFpdbObjectMat (rfpdbObjectItem, rmatrix)
+
+!<description>
+    ! This subroutine restores the scalar matrix from the abstract ObjectItem 
+!</description>
+
+!<input>
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+!</input>
+
+!<output>
+    ! The scalar matrix
+    type(t_matrixScalar), intent(OUT), target :: rmatrix
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if ObjectItem has correct type
+    if (trim(rfpdbObjectItem%stype) .ne. 't_matrixScalar') then
+      call output_line ('Invalid object type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems are associated
+    if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+      call output_line ('Missing data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems have correct size
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 20) then
+      call output_line ('Invalid data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Restore the UUID
+    rmatrix%ruuid = rfpdbObjectItem%ruuid
+
+    ! Restore the data from the DataItem: cmatrixFormat
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'cmatrixFormat')) then
+      call output_line ('Invalid data: cmatrixFormat!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%cmatrixFormat = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: cinterleavematrixFormat
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'cinterleavematrixFormat')) then
+      call output_line ('Invalid data: cinterleavematrixFormat!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%cinterleavematrixFormat = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: imatrixSpec
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'imatrixSpec')) then
+      call output_line ('Invalid data: imatrixSpec!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%imatrixSpec = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NA
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NA')) then
+      call output_line ('Invalid data: NA!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NA = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
+      call output_line ('Invalid data: NEQ!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NEQ = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NCOLS
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NCOLS')) then
+      call output_line ('Invalid data: NCOLS!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NCOLS = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NVAR
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NVAR')) then
+      call output_line ('Invalid data: NVAR!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NVAR = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: dscaleFactor
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'dscaleFactor')) then
+      call output_line ('Invalid data: dscaleFactor!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%dscaleFactor = p_fpdbDataItem%ddouble
+    end if
+    
+    ! Restore the data from the DataItem: isortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'isortStrategy')) then
+      call output_line ('Invalid data: isortStrategy!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%isortStrategy = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_IsortPermutation
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_IsortPermutation')) then
+      call output_line ('Invalid data: h_IsortPermutation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%h_IsortPermutation = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'cdataType')) then
+      call output_line ('Invalid data: cdataType!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%cdataType = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_DA
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_DA')) then
+      call output_line ('Invalid data: h_DA!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%h_DA = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_Kcol
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_Kcol')) then
+      call output_line ('Invalid data: h_Kcol!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%h_Kcol = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_Kld
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_Kld')) then
+      call output_line ('Invalid data: h_Kld!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%h_Kld = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_Kdiagonal
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_Kdiagonal')) then
+      call output_line ('Invalid data: h_Kdiagonal!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%h_Kdiagonal = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: ITags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT1D) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'ITags')) then
+      call output_line ('Invalid data: ITags!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      call fpdb_getdata_int1d(p_fpdbDataItem, rmatrix%ITags)
+    end if
+
+    ! Restore the data from the DataItem: DTags
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE1D) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'DTags')) then
+      call output_line ('Invalid data: DTags!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      call fpdb_getdata_double1d(p_fpdbDataItem, rmatrix%DTags)
+    end if
+
+    ! Restore the data from the DataItem: bidenticalTrialAndTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'bidenticalTrialAndTest')) then
+      call output_line ('Invalid data: bidenticalTrialAndTest!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%bidenticalTrialAndTest = p_fpdbDataItem%blogical
+    end if
+
+    ! Restore the data from the DataItem: p_rspatialDiscrTrial
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
+    if (trim(p_fpdbDataItem%sname) .eq. 'p_rspatialDiscrTrial') then
+      call output_line ('Invalid data: p_rspatialDiscrTrial!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rspatialDiscrTrial)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rspatialDiscrTrial!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: p_rspatialDiscrTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rspatialDiscrTest') then
+      call output_line ('Invalid data: p_rspatialDiscrTest!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rspatialDiscrTest)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rspatialDiscrTest!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+
+  end subroutine lsyssc_restoreFpdbObjectMat
+
 end module

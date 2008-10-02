@@ -181,11 +181,24 @@
 !# 52.) lsysbl_assignDiscretDirectVec
 !#      -> Assign a block discretisation to a vector
 !#
+!# 53.) lsysbl_createFpdbObjectVec
+!#      -> Creates an ObjectItem representing a block vector
+!#
+!# 54.) lsysbl_createFpdbObjectMat
+!#      -> Creates an ObjectItem representing a block matrix
+!#
+!# 55.) lsysbl_restoreFpdbObjectVec
+!#      -> Restores a block vector from an ObjectItem
+!#
+!# 56.) lsysbl_restoreFpdbObjectMat
+!#      -> Restores a block matrix from an ObjectItem
+!#
 !# </purpose>
 !##############################################################################
 
 module linearsystemblock
 
+  use fpersistence
   use fsystem
   use storage
   use spatialdiscretisation
@@ -194,6 +207,7 @@ module linearsystemblock
   use dofmapping
   use discretebc
   use discretefbc
+  use uuid
   
   implicit none
 
@@ -240,6 +254,9 @@ module linearsystemblock
   ! A block vector that can be used by block linear algebra routines.
   
   type t_vectorBlock
+
+    ! Universally unique identifier
+    type(t_uuid) :: ruuid
     
     ! Total number of equations in the vector
     integer(PREC_DOFIDX)       :: NEQ = 0
@@ -307,6 +324,9 @@ module linearsystemblock
   
   type t_matrixBlock
     
+    ! Universally unique identifier
+    type(t_uuid) :: ruuid
+
     ! Total number of equations = rows in the whole matrix.
     ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that 
     ! at least one block row in the block matrix is completely zero.
@@ -5071,6 +5091,7 @@ contains
     integer :: iblock
 
     call output_lbrk()
+    call output_line ('UUID: '//uuid_conv2String(rvector%ruuid))
     call output_line ('Vector is a ('&
         //trim(sys_siL(rvector%nblocks,3))//') vector.')
 
@@ -5102,6 +5123,7 @@ contains
     integer :: iblock,jblock
 
     call output_lbrk()
+    call output_line ('UUID: '//uuid_conv2String(rmatrix%ruuid))
     call output_line ('Matrix is a ('&
         //trim(sys_siL(rmatrix%ndiagBlocks,3))//','&
         //trim(sys_siL(rmatrix%ndiagBlocks,3))//') matrix.')
@@ -5388,5 +5410,811 @@ contains
     end do
 
   end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createFpdbObjectVec (rfpdbObjectItem, sname, rvector)
+
+!<description>
+    ! This subroutine creates an abstract ObjectItem from the block
+    ! vector that can be stored in the persistence database
+!</description>
+
+!<input>
+    ! The full qualified name of the object
+    character(LEN=*), intent(IN) :: sname
+!</input>
+
+!<inputoutput>
+    ! The ObjectItem  that is created
+    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+
+    ! The block vector
+    type(t_vectorBlock), intent(INOUT), target :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+    
+    ! Check if vector has UUID; otherwise create one
+    if (uuid_isNil(rvector%ruuid)) then
+      call uuid_createUUID(4, rvector%ruuid)
+    end if
+    rfpdbObjectItem%ruuid = rvector%ruuid
+
+    ! Set the name and type of the object
+    rfpdbObjectItem%sname = sname
+    rfpdbObjectItem%stype = 't_vectorBlock'
+
+    ! Allocate the array of data items: 10
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(10))
+    
+    ! Fill the array of data items: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NEQ'
+    p_fpdbDataItem%iinteger = rvector%NEQ
+
+    ! Fill the array of data items: h_Ddata
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'h_Ddata'
+    p_fpdbDataItem%iinteger = rvector%h_Ddata
+
+    ! Fill the array of data items: iidxFirstEntry
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'iidxFirstEntry'
+    p_fpdbDataItem%iinteger = rvector%iidxFirstEntry
+
+    ! Fill the array of data items: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'cdataType'
+    p_fpdbDataItem%iinteger = rvector%cdataType
+    
+    ! Fill the array of data items: bisCopy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bisCopy'
+    p_fpdbDataItem%blogical = rvector%bisCopy
+
+    ! Fill the array of data items: nblocks
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'nblocks'
+    p_fpdbDataItem%iinteger = rvector%nblocks
+
+    ! Fill the array of data items: p_rblockDiscr
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem%sname = 'p_rblockDiscr'
+    if (associated(rvector%p_rblockDiscr)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+    
+    ! Fill the array of data items: p_rdiscreteBC
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem%sname = 'p_rdiscreteBC'
+    if (associated(rvector%p_rdiscreteBC)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if  
+
+    ! Fill the array of data items: p_rdiscreteBCfict
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem%sname = 'p_rdiscreteBCfict'
+    if (associated(rvector%p_rdiscreteBCfict)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+    ! Fill the array of data items: RvectorBlock
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem%sname = 'RvectorBlock'
+    if (.not.associated(rvector%RvectorBlock)) then
+      p_fpdbDataItem%ctype = FPDB_NULL
+    else
+      ! Creating the data item for the RvectorBlock is slightly more
+      ! complicated. First, we need to create a new ObjectItem which
+      ! is associated to the DataItem of the original block vector.
+      p_fpdbDataItem%ctype = FPDB_OBJECT
+      allocate(p_fpdbDataItem%p_fpdbObjectItem)
+      call createFpdbObjectVectorBlock(p_fpdbDataItem%p_fpdbObjectItem)
+    end if
+
+  contains
+
+    !**************************************************************
+    ! Create a separate ObjectItem for the RvectorBlock
+
+    subroutine createFpdbObjectVectorBlock (rfpdbObjectItem)
+
+      ! The object item that represents the RvectorBlock
+      type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+
+      ! local variables
+      integer :: iblock
+
+      ! Check if storage block has UUID; otherwise create one
+      if (uuid_isNil(rfpdbObjectItem%ruuid)) then
+        call uuid_createUUID(4, rfpdbObjectItem%ruuid)
+      end if
+
+      ! Set the name and type of the object
+      rfpdbObjectItem%sname = 'RvectorBlock'
+      rfpdbObjectItem%stype = 't_vectorScalar'
+      
+      ! Allocate the array of data items: size(rvector%RvectorBlock)
+      allocate(rfpdbObjectItem%p_RfpdbDataItem(size(rvector%RvectorBlock)))
+
+      ! For each scalar subvector a new ObjectItem is created and associated
+      ! to the DataItem of the array of scalar vectors.
+      do iblock = 1, rvector%nblocks
+        rfpdbObjectItem%p_RfpdbDataItem(iblock)%ctype = FPDB_OBJECT
+        rfpdbObjectItem%p_RfpdbDataItem(iblock)%sname = 't_vectorScalar'
+        allocate(rfpdbObjectItem%p_RfpdbDataItem(iblock)%p_fpdbObjectItem)
+        call lsyssc_createFpdbObjectVec(&
+            rfpdbObjectItem%p_RfpdbDataItem(iblock)%p_fpdbObjectItem,&
+            '', rvector%RvectorBlock(iblock))
+      end do
+      
+    end subroutine createFpdbObjectVectorBlock
+
+  end subroutine lsysbl_createFpdbObjectVec
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createFpdbObjectMat (rfpdbObjectItem, sname, rmatrix)
+
+!<description>
+    ! This subroutine creates an abstract ObjectItem from the block
+    ! matrix that can be stored in the persistence database
+!</description>
+
+!<input>
+    ! The full qualified name of the object
+    character(LEN=*), intent(IN) :: sname
+!</input>
+
+!<inputoutput>
+    ! The ObjectItem  that is created
+    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+
+    ! The block matrix
+    type(t_matrixBlock), intent(INOUT), target :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+    
+    ! Check if vector has UUID; otherwise create one
+    if (uuid_isNil(rmatrix%ruuid)) then
+      call uuid_createUUID(4, rmatrix%ruuid)
+    end if
+    rfpdbObjectItem%ruuid = rmatrix%ruuid
+
+    ! Set the name and type of the object
+    rfpdbObjectItem%sname = sname
+    rfpdbObjectItem%stype = 't_matrixBlock'
+
+    ! Allocate the array of data items: 10
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(10))
+    
+    ! Fill the array of data items: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NEQ'
+    p_fpdbDataItem%iinteger = rmatrix%NEQ
+
+    ! Fill the array of data items: NCOLS
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'NCOLS'
+    p_fpdbDataItem%iinteger = rmatrix%NCOLS
+
+    ! Fill the array of data items: ndiagBlocks
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'ndiagBlocks'
+    p_fpdbDataItem%iinteger = rmatrix%ndiagBlocks
+
+    ! Fill the array of data items: imatrixSpec
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'imatrixSpec'
+    p_fpdbDataItem%iinteger = rmatrix%imatrixSpec
+
+    ! Fill the array of data items: p_rblockDiscrTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem%sname = 'p_rblockDiscrTest'
+    if (associated(rmatrix%p_rblockDiscrTest)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+    ! Fill the array of data items: p_rblockDiscrTrial
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem%sname = 'p_rblockDiscrTrial'
+    if (associated(rmatrix%p_rblockDiscrTrial)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+    ! Fill the array of data items: bidenticalTrialAndTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bidenticalTrialAndTest'
+    p_fpdbDataItem%blogical = rmatrix%bidenticalTrialAndTest
+
+    ! Fill the array of data items: p_rdiscreteBC
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem%sname = 'p_rdiscreteBC'
+    if (associated(rmatrix%p_rdiscreteBC)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+    
+    ! Fill the array of data items: p_rdiscreteBCfict
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem%sname = 'p_rdiscreteBCfict'
+    if (associated(rmatrix%p_rdiscreteBCfict)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+    ! Fill the array of data items: RmatrixBlock
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem%sname = 'RmatrixBlock'
+    if (.not.associated(rmatrix%RmatrixBlock)) then
+      p_fpdbDataItem%ctype = FPDB_NULL
+    else
+      ! Creating the data item for the RmatrixBlock is slightly more
+      ! complicated. First, we need to create a new ObjectItem which
+      ! is associated to the DataItem of the original block matrix.
+      p_fpdbDataItem%ctype = FPDB_OBJECT
+      allocate(p_fpdbDataItem%p_fpdbObjectItem)
+      call createFpdbObjectMatrixBlock(p_fpdbDataItem%p_fpdbObjectItem)
+    end if
+    
+  contains
+
+    !**************************************************************
+    ! Create a separate ObjectItem for the RmatrixBlock
+
+    subroutine createFpdbObjectMatrixBlock (rfpdbObjectItem)
+
+      ! The object item that represents the RmatrixBlock
+      type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+
+      ! local variables
+      integer :: i,j,idx
+
+      ! Check if storage block has UUID; otherwise create one
+      if (uuid_isNil(rfpdbObjectItem%ruuid)) then
+        call uuid_createUUID(4, rfpdbObjectItem%ruuid)
+      end if
+
+      ! Set the name and type of the object
+      rfpdbObjectItem%sname = 'RmatrixBlock'
+      rfpdbObjectItem%stype = 't_matrixScalar'
+    
+      ! Allocate the array of data items
+      allocate(rfpdbObjectItem%p_RfpdbDataItem(&
+               size(rmatrix%RmatrixBlock,1)*&
+               size(rmatrix%RmatrixBlock,2)))
+
+      ! For each scalar submatrix a new ObjectItem is created and 
+      ! associated to the DataItem of the array of scalar matrices.
+      do j = 1, rmatrix%ndiagblocks
+        do i = 1, rmatrix%ndiagblocks
+          
+          ! Compute index position
+          idx = rmatrix%ndiagblocks*(j-1)+i
+          
+          rfpdbObjectItem%p_RfpdbDataItem(idx)%ctype = FPDB_OBJECT
+          rfpdbObjectItem%p_RfpdbDataItem(idx)%sname = 't_matrixScalar'
+          allocate(rfpdbObjectItem%p_RfpdbDataItem(idx)%p_fpdbObjectItem)
+          call lsyssc_createFpdbObjectMat(&
+              rfpdbObjectItem%p_RfpdbDataItem(idx)%p_fpdbObjectItem,&
+              '', rmatrix%RmatrixBlock(i,j))
+        end do
+      end do
+
+    end subroutine createFpdbObjectMatrixBlock
+
+  end subroutine lsysbl_createFpdbObjectMat
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_restoreFpdbObjectVec (rfpdbObjectItem, rvector)
+
+!<description>
+    ! This subroutine restores the block vector from the abstract ObjectItem 
+!</description>
+
+!<input>
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+!</input>
+
+!<inputoutput>
+    ! The block vector
+    type(t_vectorBlock), intent(OUT), target :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if ObjectItem has correct type
+    if (trim(rfpdbObjectItem%stype) .ne. 't_vectorBlock') then
+      call output_line ('Invalid object type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems are associated
+    if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+      call output_line ('Missing data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems have correct size
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 10) then
+      call output_line ('Invalid data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    end if
+
+    ! Restore the UUID
+    rvector%ruuid = rfpdbObjectItem%ruuid
+
+    ! Restore the data from the DataItem: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
+      call output_line ('Invalid data: NEQ!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%NEQ = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: h_Ddata
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'h_Ddata')) then
+      call output_line ('Invalid data: h_Ddata!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%h_Ddata = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: iidxFirstEntry
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'iidxFirstEntry')) then
+      call output_line ('Invalid data: iidxFirstEntry!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%iidxFirstEntry = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: cdataType
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'cdataType')) then
+      call output_line ('Invalid data: cdataType!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%cdataType = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: bisCopy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'bisCopy')) then
+      call output_line ('Invalid data: bisCopy!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%bisCopy = p_fpdbDataItem%blogical
+    end if
+
+    ! Restore the data from the DataItem: nblocks
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'nblocks')) then
+      call output_line ('Invalid data: nblocks!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      rvector%nblocks = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: p_rblockDiscr
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rblockDiscr') then
+      call output_line ('Invalid data: p_rblockDiscr!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%p_rblockDiscr)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rblockDiscr!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: p_rdiscreteBC
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBC') then
+      call output_line ('Invalid data: p_rdiscreteBC!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%p_rdiscreteBC)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rdiscreteBC!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: p_rdiscreteBCfict
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBCfict') then
+      call output_line ('Invalid data: p_rdiscreteBCfict!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%p_rdiscreteBCfict)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rdiscreteBCfict!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: RvectorBlock
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    if (trim(p_fpdbDataItem%sname) .ne. 'RvectorBlock') then
+      call output_line ('Invalid data: RvectorBlock!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_OBJECT) then
+        p_fpdbObjectItem => p_fpdbDataItem%p_fpdbObjectItem
+        call restoreFpdbObjectVectorBlock(p_fpdbObjectItem)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%Rvectorblock)
+      else
+        call output_line ('Invalid data: RvectorBlock!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectVec')
+        call sys_halt()
+      end if
+    end if
+
+  contains
+    
+    !**************************************************************
+    ! Restore the RvectorBlock from the separate ObjectItem
+
+    subroutine restoreFpdbObjectVectorBlock (rfpdbObjectItem)
+
+      ! The object item that represents the RvectorBlock
+      type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+      
+      ! local variables
+      integer :: iblock
+      
+      ! Check if ObjectItem has correct type
+      if ((trim(rfpdbObjectItem%stype) .ne. 't_vectorScalar') .or.&
+          (trim(rfpdbObjectItem%sname) .ne. 'RvectorBlock')) then
+        call output_line ('Invalid object type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectVectorBlock')
+        call sys_halt()
+      end if
+
+      ! Check if DataItems are associated
+      if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+        call output_line ('Missing data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectVectorBlock')
+        call sys_halt()
+      end if
+      
+      ! Check if DataItems have correct size
+      if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. rvector%nblocks) then
+        call output_line ('Invalid data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectVectorBlock')
+        call sys_halt()
+      end if
+
+      ! Allocate the array of scalar vectors
+      allocate(rvector%RvectorBlock(rvector%nblocks))
+      
+      do iblock = 1, rvector%nblocks
+        call lsyssc_restoreFpdbObjectVec(&
+            rfpdbObjectItem%p_RfpdbDataItem(iblock)%p_fpdbObjectItem,&
+            rvector%RvectorBlock(iblock))
+      end do
+
+    end subroutine restoreFpdbObjectVectorBlock
+
+  end subroutine lsysbl_restoreFpdbObjectVec
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_restoreFpdbObjectMat (rfpdbObjectItem, rmatrix)
+
+!<description>
+    ! This subroutine restores the block matrix from the abstract ObjectItem 
+!</description>
+
+!<input>
+    ! The object item that is created
+    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+!</input>
+
+!<inputoutput>
+    ! The block matrix
+    type(t_matrixBlock), intent(OUT), target :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem
+    type(t_fpdbDataItem), pointer :: p_fpdbDataItem
+
+    ! Check if ObjectItem has correct type
+    if (trim(rfpdbObjectItem%stype) .ne. 't_matrixBlock') then
+      call output_line ('Invalid object type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems are associated
+    if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+      call output_line ('Missing data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Check if DataItems have correct size
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 10) then
+      call output_line ('Invalid data!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    end if
+
+    ! Restore the UUID
+    rmatrix%ruuid = rfpdbObjectItem%ruuid
+
+    ! Restore the data from the DataItem: NEQ
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
+      call output_line ('Invalid data: NEQ!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NEQ = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: NCOLS
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'NCOLS')) then
+      call output_line ('Invalid data: NCOLS!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%NCOLS = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: ndiagBlocks
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'ndiagBlocks')) then
+      call output_line ('Invalid data: ndiagBlocks!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%ndiagBlocks = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: imatrixSpec
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'imatrixSpec')) then
+      call output_line ('Invalid data: imatrixSpec!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%imatrixSpec = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: p_rblockDiscrTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rblockDiscrTest') then
+      call output_line ('Invalid data: p_rblockDiscrTest!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rblockDiscrTest)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rblockDiscrTest!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: p_rblockDiscrTrial
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rblockDiscrTrial') then
+      call output_line ('Invalid data: p_rblockDiscrTrial!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rblockDiscrTrial)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rblockDiscrTrial!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Restore the data from the DataItem: bidenticalTrialAndTest
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'bidenticalTrialAndTest')) then
+      call output_line ('Invalid data: bidenticalTrialAndTest!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%bidenticalTrialAndTest = p_fpdbDataItem%blogical
+    end if
+
+    ! Restore the data from the DataItem: p_rdiscreteBC
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBC') then
+      call output_line ('Invalid data: p_rdiscreteBC!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rdiscreteBC)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rdiscreteBC!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Restore the data from the DataItem: p_rdiscreteBCfict
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBCfict') then
+      call output_line ('Invalid data: p_rdiscreteBCfict!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rdiscreteBC)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ('Invalid data: p_rdiscreteBCfict!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Restore the data from the DataItem: RmatrixBlock
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    if (trim(p_fpdbDataItem%sname) .ne. 'RmatrixBlock') then
+      call output_line ('Invalid data: RmatrixBlock!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_OBJECT) then
+        p_fpdbObjectItem => p_fpdbDataItem%p_fpdbObjectItem
+        call restoreFpdbObjectMatrixBlock(p_fpdbObjectItem)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%RmatrixBlock)
+      else
+        call output_line ('Invalid data: RmatrixBlock!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+        call sys_halt()
+      end if
+    end if
+
+    contains
+
+      !**************************************************************
+      ! Restore the RmatrixBlock from the separate ObjectItem
+      
+      subroutine restoreFpdbObjectMatrixBlock (rfpdbObjectItem)
+        
+        ! The object item that represents the RvectorBlock
+        type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
+        
+        ! local variables
+        integer :: i,j,idx
+
+        ! Check if ObjectItem has correct type
+        if ((trim(rfpdbObjectItem%stype) .ne. 't_matrixScalar') .or.&
+            (trim(rfpdbObjectItem%sname) .ne. 'RmatrixBlock')) then
+          call output_line ('Invalid object type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectMatrixBlock')
+          call sys_halt()
+        end if
+        
+        ! Check if DataItems are associated
+        if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
+          call output_line ('Missing data!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectMatrixBlock')
+          call sys_halt()
+        end if
+      
+        ! Check if DataItems have correct size
+        if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne.&
+            rmatrix%ndiagBlocks*rmatrix%ndiagBlocks) then
+          call output_line ('Invalid data!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectMatrixBlock')
+          call sys_halt()
+        end if
+        
+        ! Allocate the array of scalar vectors
+        allocate(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,&
+                                      rmatrix%ndiagBlocks))
+
+        do j = 1, rmatrix%ndiagblocks
+          do i = 1, rmatrix%ndiagblocks
+          
+            ! Compute index position
+            idx = rmatrix%ndiagblocks*(j-1)+i
+            call lsyssc_restoreFpdbObjectMat(&
+                rfpdbObjectItem%p_RfpdbDataItem(idx)%p_fpdbObjectItem,&
+                rmatrix%RmatrixBlock(i,j))
+          end do
+        end do
+
+      end subroutine restoreFpdbObjectMatrixBlock
+      
+  end subroutine lsysbl_restoreFpdbObjectMat
 
 end module
