@@ -406,6 +406,22 @@
 !#     It may be used for special solvers like VANKA to check, if the solver
 !#     can handle what is set up in the discretisation.
 !#
+!# 10.) How is the damping parameter rsolverNode%domega used?
+!#
+!#     Well, this depends a little bit on the algorithm. Generally can be said
+!#     that most preconditioners scale the preconditioned defect by this
+!#     value. For example when UMFPACK is used for preconditioning,
+!#     UMFPACK returns:
+!#                       rd := domega A^(-1) rd
+!#
+!#     thus one should usually use domega=1. 'Direct' solvers usually
+!#     act this ways. Exceptions for this rule are algorithms that use this
+!#     parameter for 'internal damping' like SOR:
+!#
+!#                       rd := (D + domega L)^-1 rd
+!#
+!#     i.e. here not the defect is damped but the operator itself.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -566,7 +582,7 @@ module linearsolver
   
   ! Solver supports filtering
   integer(I32), parameter :: LINSOL_ABIL_USEFILTER    = 2**6
-
+  
 !</constantblock>
 
 ! *****************************************************************************
@@ -796,9 +812,11 @@ module linearsolver
     real(DP)                        :: dtimeFiltering
     
     ! INPUT PARAMETER:
-    ! General solver parameter; solver specific use.
+    ! General damping and solver parameter. A preconditioner scales its defect
+    ! by this value upon return (or uses this parameter as internal parameter
+    ! for damping -- depends on the algorithm).
     ! Standard value = 1.0 (corresponds to 'no damping' e.g. with the defect
-    ! correction iteration)
+    ! correction iteration).
     real(DP)                        :: domega  = 1.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
@@ -3997,7 +4015,7 @@ contains
     
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                                LINSOL_ABIL_DIRECT
+                                LINSOL_ABIL_DIRECT 
     
       ! No subnode for Jacobi. Only save domega to the structure.
     if (present(domega)) then
@@ -4269,7 +4287,7 @@ contains
     
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                                LINSOL_ABIL_DIRECT
+                                LINSOL_ABIL_DIRECT 
     
     ! No subnode for Jin-Wei-Tam. Only save domega to the structure.
     if (present(domega)) then
@@ -4732,7 +4750,7 @@ contains
     
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                                LINSOL_ABIL_DIRECT
+                                LINSOL_ABIL_DIRECT 
     
     ! Save domega to the structure.
     if (present(domega)) then
@@ -5004,7 +5022,7 @@ contains
     
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                                LINSOL_ABIL_DIRECT
+                                LINSOL_ABIL_DIRECT 
     
     ! Save domega to the structure.
     if (present(domega)) then
@@ -5388,7 +5406,7 @@ contains
   
   ! Initialise the ability bitfield with the ability of this solver:
   p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                              LINSOL_ABIL_DIRECT
+                              LINSOL_ABIL_DIRECT 
   
   ! Allocate the subnode for VANKA.
   ! This initialises most of the variables with default values appropriate
@@ -6589,6 +6607,10 @@ contains
       ! All ok.
       rsolverNode%iiterations = 1
       rsolverNode%dconvergenceRate = 0.0_DP
+      
+      ! Scale defect by omega
+      call lsysbl_scaleVector(rd, rsolverNode%domega)
+      
     case DEFAULT
       ! We had an error. Don't know which one.
       rsolverNode%iresult = -1
@@ -6978,9 +7000,10 @@ contains
     ilup = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_ilup
     
     ! When the scaling factor is not = 1, scale the vector before
-    ! preconditioning. This emulates: d = (cA)^-1 d = A^-1 (x/c)!
-    ! (The value saved in the structure is 1/c!)
-    call lsysbl_scaleVector(rd,rsolverNode%p_rsubnodeMILUs1x1%dscaleFactor)
+    ! preconditioning. This emulates: d = omega(cA)^-1 d = A^-1 (omega*x/c)!
+    ! (The value saved in the structure is 1/c!).
+    call lsysbl_scaleVector(rd,rsolverNode%domega * &
+        rsolverNode%p_rsubnodeMILUs1x1%dscaleFactor)
 
     ! Solve the system. Call SPLIB, this overwrites the defect vector
     ! with the preconditioned one.
@@ -7842,8 +7865,9 @@ contains
     rsolverNode%iiterations = ite
     
     ! Overwrite our previous RHS by the new correction vector p_rx.
-    ! This completes the preconditioning.
-    call lsysbl_copyVector (p_rx,rd)
+    ! This completes the preconditioning. Scale the vector by the damping parameter
+    ! in the solver structure.
+    call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -8827,9 +8851,10 @@ contains
     rsolverNode%iiterations = ite
     
     ! Overwrite our previous RHS by the new correction vector p_rx.
-    ! This completes the preconditioning.
-    call lsysbl_copyVector (p_rx,rd)
-      
+    ! This completes the preconditioning. Scale the vector by the damping parameter
+    ! in the solver structure.
+    call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
+
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
       
@@ -9268,8 +9293,9 @@ contains
     end if
 
     ! Overwrite our previous RHS by the new correction vector p_rx.
-    ! This completes the preconditioning.
-    call lsysbl_copyVector (p_rx,rd)
+    ! This completes the preconditioning. Scale the vector by the damping parameter
+    ! in the solver structure.
+    call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -10435,8 +10461,9 @@ contains
     rsolverNode%iiterations = ite
     
     ! Overwrite our previous RHS by the new correction vector p_rx.
-    ! This completes the preconditioning.
-    call lsysbl_copyVector (p_rx,rd)
+    ! This completes the preconditioning. Scale the vector by the damping parameter
+    ! in the solver structure.
+    call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -12995,6 +13022,9 @@ contains
       
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
       
+      ! Scale the defect by the damping parameter in the solver structure.
+      call lsysbl_scaleVector (rd,rsolverNode%domega)      
+      
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_lbrk()
         call output_line ('Multigrid statistics:')
@@ -14726,6 +14756,9 @@ contains
     ! we just calculated the new correction vector!
       
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
+      
+      ! Scale the defect by the damping parameter in the solver structure.
+      call lsysbl_scaleVector (rd,rsolverNode%domega)      
       
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_lbrk()
