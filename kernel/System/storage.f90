@@ -5920,8 +5920,8 @@ contains
   subroutine storage_createFpdbObject (rfpdbObjectItem, sname, rheap)
 
 !<description>
-    ! This subroutine creates an abstract object of the heap structure
-    ! that can be stored in the persistence database
+    ! This subroutine creates an abstract ObjectItem from the heap
+    ! structure that can be stored in the persistence database
 !</description>
 
 !<input>
@@ -5934,8 +5934,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! The 
-    ! The object item that is created
+    ! The ObjectItem that is created
     type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
 !</inputoutput>
 !</subroutine>
@@ -5956,8 +5955,8 @@ contains
     ! Check if storage block has UUID; otherwise create one
     if (uuid_isNil(p_rheap%ruuid)) then
       call uuid_createUUID(4, p_rheap%ruuid)
-      rfpdbObjectItem%ruuid = p_rheap%ruuid
     end if
+    rfpdbObjectItem%ruuid = p_rheap%ruuid
 
     ! Set the name and type of the object
     rfpdbObjectItem%sname = sname
@@ -6192,8 +6191,7 @@ contains
   subroutine storage_restoreFpdbObject (rfpdbObjectItem, rheap)
 
 !<description>
-    ! This subroutine creates an abstract object of the heap 
-    ! structure that can be stored in the persistence database
+    ! This subroutine restores the heap structure from the abstract ObjectItem 
 !</description>
 
 !<input>
