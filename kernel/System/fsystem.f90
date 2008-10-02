@@ -12,81 +12,74 @@
 !#
 !# The following routines can be found here
 !#
-!#  1.) sys_initClock
-!#      -> Initialise the time measurement
+!#  1.) system_init = system_init_simple /
+!#                    system_init_ext
+!#      -> Initialise system-wide settings
 !#
-!#  2.) sys_doneClock
-!#      -> Finalise the time measurement
-!#
-!#  3.) sys_setClock
-!#      -> Set clock for time measurement
-!#
-!#  4.) sys_setEncompClock
-!#      -> Set encompassing clock for time measurement
-!#
-!#  5.) sys_startClock
-!#      -> Start clock for time measurement
-!#
-!#  6.) sys_stopClock
-!#      -> Stop clock for time measurement
-!#
-!#  7.) sys_stopClockAll
-!#      -> Stop all clocks for time measurement
-!#
-!#  8.) sys_infoClock
-!#      -> Output information about time measurement
-!#
-!#   9.) sys_permute
-!#      -> Compute a random permutation of a given sequence
-!#
-!# 10.) sys_halt
-!#      -> Halts the application. Replacement for CALL sys_halt() in F90.
+!#  2.) sys_halt
+!#      -> Halts the application. Replacement for STOP commands in F90.
 !#         Can be configured how to halt.
 !#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROFPE,
 !#         this routine will stop the program by a floating point exception,
 !#         which prints the stack trace to the terminal on some compilers.
 !#
-!# 11.) sys_throwFPE
-!#      -> Throw a floating point exception
-!#
-!# 12.) system_init = system_init_simple /
-!#                    system_init_ext
-!#      -> Initialise system-wide settings
-!#
-!# 13.) sys_version
+!#  3.) sys_version
 !#      -> Get kernal version number
 !#
-!# 14.) sys_toupper = sys_toupper_replace /
+!#  4.) sys_throwFPE
+!#      -> Throw a floating point exception
+!#
+!#  5.) sys_permute
+!#      -> Compute a random permutation of a given sequence
+!#
+!#  6.) sys_toupper = sys_toupper_replace /
 !#                    sys_toupper_copy
 !#      -> Convert a string to uppercase
 !#
-!# 15.) sys_tolower = sys_tolower_replace /
+!#  7.) sys_tolower = sys_tolower_replace /
 !#                    sys_tolower_copy
 !#      -> Convert a string to lowercase
 !#
-!# 16.) sys_upcase
+!#  8.) sys_upcase
 !#      -> Convert a string to uppercase, function version
 !#
-!# 17.) sys_lowcase
+!#  9.) sys_lowcase
 !#      -> Convert a string to lowercase, function version
 !#
-!# 18.) sys_charreplace
+!# 10.) sys_charreplace
 !#      -> Replaces characters in a string
 !#
-!# 19.) sys_getFreeUnit
+!# 11.) sys_getFreeUnit
 !#      -> Determine a free file handle for use in an OPEN() command
 !#
-!# 20.) sys_fileExists
+!# 12.) sys_fileExists
 !#      -> Check if file with a given name exists
 !#
-!# 21.) sys_flush
+!# 13.) sys_flush
 !#      -> Flush file (if available)
 !#
-!# 22.) sys_str2Double
+!# 14.) sys_str2Double
 !#      -> Convert string to double value
 !#
-!# 23.) sys_str2Single
+!# 15.) sys_str2Single
 !#      -> Convert string to single value
+!#
+!# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP,sys_sdL ,sys_sdEL, 
+!#      sys_r   ,sys_s3  ,sys_s5   ,sys_s6  ,sys_s14 ,sys_s18 ,sys_s32,
+!#      sys_s54 ,sys_s61 ,sys_s63  ,sys_s84,
+!#      sys_s2E ,sys_s4E ,sys_s6E  ,sys_s10E
+!#      -> String routines to convert double precision numbers to strings
+!#
+!# 17.) sys_si  ,sys_si0 ,sys_sli ,sys_sli0,sys_siL ,sys_si0L,
+!#      sys_i03 ,sys_i04 ,sys_i05 ,sys_i1  ,sys_i2  ,sys_i3  ,sys_i4,
+!#      sys_i6  ,sys_i8  ,sys_i10 ,sys_i12 ,sys_i16 ,sys_i64  
+!#      -> String routines to convert integer numbers to strings
+!#
+!# 18.) sys_sliL,sys_sli0L,sys_li12
+!#      -> String routines to convert long integer numbers to strings
+!#
+!# 19.) sys_sl  
+!#      -> String routines to convert a logical to a strings
 !#
 !# </purpose>
 !##############################################################################
@@ -261,40 +254,12 @@ module fsystem
     ! starting time of this project
     integer                   :: iprojectStart = 0
 
-    ! starting time of this project (long time runs)
+    ! Starting time of this project (long time runs).
+    ! Format: year / month / day / time-difference to UTC / 
+    !         hours / minutes / seconds / milliseconds.
     integer, dimension(8)     :: iprojectStartLong = 0
     
   end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Global time measurement
-  type t_clock
-
-    ! The name of the clock
-    character(LEN=SYS_NAMELEN) :: sname = ''
-
-    ! Starting time
-    integer  :: istart       = 0
-
-    ! Stopping time
-    integer  :: istop        = 0
-
-    ! Total time elapsed
-    integer :: icount        = 0
-
-    ! Total overflow of system clock
-    integer :: ioverflow     = 0
-
-    ! Activation flag
-    logical  :: bactive      = .false.
-
-    ! Number of encompassing clock
-    integer  :: iencompClock = 0
-
-  end type t_clock
 
 !</typeblock>
 
@@ -303,18 +268,22 @@ module fsystem
 !************************************************************************
 
 !<globals>
-  ! Global time measurement structure
-  type(t_clock), dimension(:), allocatable, target, save :: rclock
-
-  ! maximal measurable time span in seconds (system-dependend)
-  real(DP) :: sys_dtimeMax
-
   ! global system configuration
   type (t_sysconfig), target, save :: sys_sysconfig
   
   ! Halt mode. This variable defines the way, sys_halt halts the program.
   ! One of the SYS_HALT_xxxx constants.
-  integer :: sys_haltmode = SYS_HALT_STOP
+  integer, save :: sys_haltmode = SYS_HALT_STOP
+
+  ! The Fortran system_clock timer, like all integer timers, has a cycle
+  ! time of real(max)/real(rate) seconds. After max clock cycles the 
+  ! clock will start counting again from zero. This is the maximum time 
+  ! span that can be measured when using system_clock manually.
+  !
+  ! Note: Timing routines in the statistics module automatically
+  ! respect this setting but do not explicitely use this variable.
+  real(DP), save :: sys_dtimeMax = 0.0_DP
+
 !</globals>
 
 !************************************************************************
@@ -335,410 +304,6 @@ module fsystem
   end interface
 
 contains
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_initClock(nclock)
-
-!<description>
-
-    ! This routine initializes the time measurement.
-
-!</description>
-
-!<input>
-
-    ! Number of clocks.
-    integer, intent(IN) :: nclock
-
-!</input>
-
-!</subroutine>
-
-    if (allocated(rclock)) then
-      print *, "sys_initClock: Time measurement is already initialised!"
-      call sys_halt()
-    end if
-    
-    allocate(rclock(nclock))
-    
-  end subroutine sys_initClock
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_doneClock
-
-!<description>
-
-    ! This routine releases the time measurement.
-
-!</description>
-
-!</subroutine>
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_doneClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-    
-    deallocate(rclock)
-    
-  end subroutine sys_doneClock
-
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_setClock(iclock, sname)
-
-!<description>
-
-  ! This routine sets a clock for time measurement.
-
-!</description>
-
-!<input>
-
-    ! Number of the clock
-    integer, intent(IN)          :: iclock
-
-    ! Name of the clock
-    character(LEN=*), intent(IN) :: sname
-
-!</input>
-
-!</subroutine>
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_setClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-    
-    if (iclock .gt. size(rclock)) then
-      print *, "sys_setClock: Clock number exceeds maximum number of clocks!"
-      call sys_halt()
-    end if
-    
-    rclock(iclock)%sname        = sname
-    rclock(iclock)%istart       = 0
-    rclock(iclock)%istop        = 0
-    rclock(iclock)%icount       = 0
-    rclock(iclock)%ioverflow    = 0
-    rclock(iclock)%bactive      = .false.
-    rclock(iclock)%iencompClock = 0
-
-  end subroutine sys_setClock
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_setEncompClock(iclock, iencompClock)
-
-!<description>
-
-  ! This routine sets an encompassing clock for a given clock.
-
-!</description>
-
-!<input>
-
-    ! Number of the clock
-    integer, intent(IN) :: iclock
-
-    ! Number of the encompassing clock
-    integer, intent(IN) :: iencompClock
-
-!</input>
-    
-!</subroutine>
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_setEncompClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-    
-    if (max(iclock,iencompClock) .gt. size(rclock)) then
-      print *, "sys_setEncompClock: Clock number(s) exceed maximum number of clocks!"
-      call sys_halt()
-    end if
-    
-    rclock(iclock)%iencompClock = iencompClock
-    
-  end subroutine sys_setEncompClock
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_startClock(iclock)
-
-!<description>
-
-    ! This routine starts the given clock.
-
-!</description>
-
-!<input>
-
-    ! Number of the clock
-    integer, intent(IN) :: iclock
-
-!</input>
-
-!</subroutine>
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_startClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-    
-    if (iclock .gt. size(rclock)) then
-      print *, "sys_startClock: Clock number exceeds maximum number of clocks!"
-      call sys_halt()
-    end if
-    
-    ! Start time measurement
-    rclock(iclock)%bactive = .true.
-    call system_clock(rclock(iclock)%istart)
-  end subroutine sys_startClock
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_stopClock(iclock)
-
-!<description>
-
-    ! This routine stops the given clock.
-
-!</description>
-
-!<input>
-
-    ! Number of the clock
-    integer, intent(IN) :: iclock
-
-!</input>
-
-!</subroutine>
-
-    ! local variables
-    integer :: icount,irate,icountmax
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_stopClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-    
-    if (iclock .gt. size(rclock)) then
-      print *, "sys_stopClock: Clock number exceeds maximum number of clocks!"
-      call sys_halt()
-    end if
-    
-    if (.not.rclock(iclock)%bactive) then
-      print *, "sys_stopClock: Clock has not been started, skipping!"
-      return
-    end if
-
-    ! Stop time measurement
-    rclock(iclock)%bactive = .false.
-    call system_clock(rclock(iclock)%istop, irate, icountmax)
-    
-    ! Calculate elapsed time. Note that the stopping time may be smaller
-    ! than the starting time. In this case the maximum number of counts
-    ! has been reached and must be considered.
-    if (rclock(iclock)%istart  .gt. rclock(iclock)%istop) then
-      icount = icountmax-rclock(iclock)%istart
-      icount = icount+rclock(iclock)%istop
-      if (rclock(iclock)%icount .gt. icountmax-icount) then
-        rclock(iclock)%icount    = rclock(iclock)%icount-icountmax
-        rclock(iclock)%icount    = rclock(iclock)%icount+icount
-        rclock(iclock)%ioverflow = rclock(iclock)%ioverflow+1
-      else
-        rclock(iclock)%icount =  rclock(iclock)%icount+icount
-      end if
-    else
-      icount = rclock(iclock)%istop-rclock(iclock)%istart
-      if (rclock(iclock)%icount .gt. icountmax-icount) then
-        rclock(iclock)%icount    = rclock(iclock)%icount-icountmax
-        rclock(iclock)%icount    = rclock(iclock)%icount+icount
-        rclock(iclock)%ioverflow = rclock(iclock)%ioverflow+1
-      else
-        rclock(iclock)%icount = rclock(iclock)%icount+icount
-      end if
-    end if
-  end subroutine sys_stopClock
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_stopClockAll
-
-!<description>
-
-    ! This routine stops all clocks.
-
-!</description>
-
-!</subroutine>
-
-    ! local variables
-    integer :: iclock
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_stopClockAll: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-
-    do iclock = 1, size(rclock)
-      call sys_stopClock(iclock)
-    end do
-
-  end subroutine sys_stopClockAll
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine sys_infoClock
-
-!<description>
-
-    ! This routine prints information about the clock
-
-!</description>
-
-!</subroutine>
-
-    ! local variables
-    type(t_clock), dimension(:), pointer :: rclockTmp
-    real(DP) :: dtotaltime,dtime,dtimeself
-    integer  :: iclock,icount,irate,icountmax
-    integer  :: ndays,nsecs,nsec1,nsec2
-    integer, dimension(8) :: istopLong
-
-    write(*,FMT='(A)') 'Time measurement:'
-    write(*,FMT='(A)') '-----------------'
-
-    ! Compute total cpu time
-    call system_clock(icount,irate,icountmax)
-    call date_and_time(values=istopLong)
-
-    ! Compute number of days elapsed
-    ndays = calender_to_julian(istopLong(1), istopLong(2), istopLong(3))-&
-        calender_to_julian(sys_sysconfig%iprojectStartLong(1),&
-                           sys_sysconfig%iprojectStartLong(2),&
-                           sys_sysconfig%iprojectStartLong(3))
-
-    ! Compute number of seconds elapsed
-    nsec1 = istopLong(5)*3600+istopLong(6)*60+istopLong(7)
-    nsec2 = sys_sysconfig%iprojectStartLong(5)*3600+&
-            sys_sysconfig%iprojectStartLong(6)*60+&
-            sys_sysconfig%iprojectStartLong(7)
-
-    if (nsec2 .lt. nsec1) then
-      nsecs = 86400-(nsec2-nsec1)
-    else
-      nsecs = nsec2-nsec1
-    end if
-
-    ! Compute total time from system clock
-    if (icount .lt. sys_sysconfig%iprojectStart) then
-      dtime = real(icountmax+icount-sys_sysconfig%iprojectStart, DP)/real(irate, DP)
-    else
-      dtime = real(icount-sys_sysconfig%iprojectStart, DP)/real(irate, DP)
-    end if
-
-    ! Ok, now we have two times. Check which measurement can be used
-    dtotaltime = real(icountmax, DP)/real(irate, DP)
-
-    if (ndays .le. int(dtotaltime/86400._DP)) then
-      dtotaltime = dtime
-      write(*,FMT='(A)') 'Simulation ran '//trim(sys_sdEL(dtime, 8))//' seconds'
-    else
-      dtotaltime = real(ndays*86400+nsecs, DP)
-      write(*,FMT='(A)') 'Simulation ran '//trim(sys_siL(ndays, 15))//' days and '//&
-                                            trim(sys_siL(nsecs, 15))//' seconds'
-    end if
-
-    if (.not.allocated(rclock)) then
-      print *, "sys_infoClock: Time measurement is not initialised!"
-      call sys_halt()
-    end if
-
-    ! Make a copy of the system clock
-    allocate(rclockTmp(size(rclock)))
-    rclockTmp = rclock
-
-    ! Subtract the individual times from the encompassing clocks
-    do iclock = 1, size(rclockTmp)
-      if (rclockTmp(iclock)%iencompClock .ne. 0) then
-        rclockTmp(rclockTmp(iclock)%iencompClock)%icount =&
-            rclockTmp(rclockTmp(iclock)%iencompClock)%icount-rclockTmp(iclock)%icount
-        if (rclockTmp(rclockTmp(iclock)%iencompClock)%icount .lt. 0) then
-          rclockTmp(rclockTmp(iclock)%iencompClock)%icount =&
-              rclockTmp(rclockTmp(iclock)%iencompClock)%icount+icountmax
-          rclockTmp(rclockTmp(iclock)%iencompClock)%ioverflow =&
-              rclockTmp(rclockTmp(iclock)%iencompClock)%ioverflow-1  
-        end if
-      end if
-    end do
-    
-    ! Check consistency
-    do iclock = 1, size(rclockTmp)
-      if (rclockTmp(iclock)%icount .lt. 0 .or.&
-          rclockTmp(iclock)%ioverflow .lt. 0) then
-        print *, "sys_infoClock: Time measurement is incorrect!"
-      end if
-    end do
-
-    write(*,*)
-    write(*,FMT='(A,T35,A,T60,A)') 'Clock name', 'elapsed time (%)', 'self time (%)'
-    write(*,FMT='(85("="))')
-
-    ! Print out all clocks
-    do iclock = 1, size(rclock)
-      
-      ! Compute time in seconds
-      dtime = rclock(iclock)%ioverflow*real(icountmax, DP)/real(irate, DP)+&
-              real(rclock(iclock)%icount, DP)/real(irate, DP)
-      dtimeself = rclockTmp(iclock)%ioverflow*real(icountmax, DP)/real(irate, DP)+&
-                  real(rclockTmp(iclock)%icount, DP)/real(irate, DP)
-
-      write(*,FMT='(A,T35,A,T60,A)')&
-          trim(adjustl(rclock(iclock)%sname)),&
-          trim(sys_sdEL(dtime, 8))//' ('//&
-          trim(sys_sdL(100._DP/dtotaltime*dtime, 2))//')',&
-          trim(sys_sdEL(dtimeself, 8))//' ('//&
-          trim(sys_sdL(100._DP/dtotaltime*dtimeself,2))//')'
-    end do
-
-    ! Free unused memory
-    deallocate(rclockTmp)
-
-  contains
-
-    function calender_to_julian(year, month, day) result(ivalue)
-      integer, intent(IN) :: year
-      integer, intent(IN) :: month
-      integer, intent(IN) :: day
-
-      integer             :: ivalue
-
-      ivalue = day-32075+&
-               1461*(year+4800+(month-14)/12)/4+&
-               367*(month-2-((month-14)/12)*12)/12-&
-               3*((year+4900+(month-14)/12)/100)/4
-    end function calender_to_julian
-  end subroutine sys_infoClock
 
 !************************************************************************
 
@@ -879,11 +444,11 @@ contains
     ! system_clock is not a FEAT, but a basic FORTRAN 90 routine
     call system_clock(icount,irate,icmax)
 
+    ! compute maximam measurable timespan
+    sys_dtimeMax = real(icmax,DP)/real(irate,DP)
+
     ! use data_and_time to measure long time runs
     call date_and_time(values=sys_sysconfig%iprojectStartLong)
-
-    ! maximal measurable time span in seconds (system-dependend)
-    sys_dtimeMax = real(icmax,DP)/real(irate,DP)
 
     ! Initialise the global sysconfig structure
     sys_sysconfig%sprojectID    = sprojectID
@@ -929,7 +494,7 @@ contains
     ifeastVersionMiddle=0
     ifeastVersionLow=1
     
-    sreldate="01.01.2007 RC0"
+    sreldate="01.01.2009 RC0"
     
   end subroutine sys_version
 
