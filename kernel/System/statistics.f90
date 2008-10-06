@@ -175,10 +175,10 @@ module statistics
     
     !<!-- Long-term timer -->
     
-    ! Long-term timer: Start real time (wall clock); format is a Julian date.
+    ! Long-term timer: Start date (wall clock); format is a Julian date.
     integer :: istartCPUdate = 0
     
-    ! Long-term timer: Start real time (wall clock) relative to 0:00:00
+    ! Long-term timer: Start time (wall clock) in ms relative to 0:00:00
     ! of the current day.
     integer :: istartCPUtime = 0
     
@@ -368,7 +368,7 @@ contains
 
 !</subroutine>
 
-    real(DP), parameter :: dmsPerDay = real(24*60*60*1000,dp)
+    real(DP), parameter :: dsecPerDay = real(24*60*60,dp)
 
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentCpu, dcurrentReal, dtmp, delapsed
@@ -422,7 +422,7 @@ contains
                              itimeLong(8)
                              
       ! Calculate the actual time since the last start_timer:
-      dtmp = real(iCPUdate - rtimer%istartCPUdate,dp) * dmsPerDay + &
+      dtmp = real(iCPUdate - rtimer%istartCPUdate,dp) * dsecPerDay + &
              real(iCPUtime - rtimer%istartCPUtime,dp) * 0.001_DP
              
       ! If both, short- and long-term timer, are activated, take the
