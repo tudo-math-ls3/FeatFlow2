@@ -73,7 +73,7 @@ CONTAINS
     integer, dimension(:), allocatable :: Ipivot
     integer :: nc, nf, info
     integer(I32) :: ielem
-    logical :: bProl, bRest, bInterp
+    logical :: bProl, bRest, bInterp, bFilterMat
     
     
     ! Specify the element to be used
@@ -87,6 +87,9 @@ CONTAINS
     
     ! Compare Interpolation?
     bInterp = .TRUE.
+    
+    ! Filter local matrices?
+    bFilterMat = .TRUE.
     
 
     CALL output_lbrk()
@@ -181,6 +184,12 @@ CONTAINS
       DAp = MATMUL(Dimf, Dn)
       call prolrest_buildProlMatrix(rdiscrC, rdiscrF, DBp)
       
+      ! Filter matrices if desired
+      if(bFilterMat) then
+        call mat_filterByEps(DAp)
+        call mat_filterByEps(DBp)
+      end if
+      
       ! Calculate error matrix
       DEp = DAp - DBp
       call mat_filterByEps(DEp)
@@ -206,6 +215,12 @@ CONTAINS
       DAr = MATMUL(DnT, Dimf)
       call prolrest_buildRestMatrix(rdiscrC, rdiscrF, DBr)
       
+      ! Filter matrices if desired
+      if(bFilterMat) then
+        call mat_filterByEps(DAr)
+        call mat_filterByEps(DBr)
+      end if
+
       ! Calculate error matrix
       DEr = DAr - DBr
       call mat_filterByEps(DEr)
@@ -230,6 +245,12 @@ CONTAINS
       ! Calculate interpolation matrices
       DAi = MATMUL(Dimc, DnT)
       call prolrest_buildInterpMatrix(rdiscrC, rdiscrF, DBi)
+
+      ! Filter matrices if desired
+      if(bFilterMat) then
+        call mat_filterByEps(DAi)
+        call mat_filterByEps(DBi)
+      end if
 
       ! Calculate error matrix
       DEi = DAi - DBi
