@@ -96,8 +96,8 @@
 
 module storage
   
-  use fpersistence
   use fsystem
+  use fpersistence
   use genoutput
   use linearalgebra
   use uuid
