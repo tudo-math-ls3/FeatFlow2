@@ -27,5 +27,7 @@
 		<File RelativePath="..\src\prolrest2d_1.f90"/>
 		<File RelativePath="..\src\prolrest2d_2.f90"/>
 		<File RelativePath="..\src\prolrest2d_3.f90"/>
+		<File RelativePath="..\src\prolrest2d_4.f90"/>
+		<File RelativePath="..\src\prolrest2d_5.f90"/>
 		<File RelativePath="..\src\prolrest_aux.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

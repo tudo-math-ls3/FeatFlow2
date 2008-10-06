@@ -13,7 +13,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
 
 # The source files 
 SRC = prolrest_aux.f90 prolrest2d_1.f90 prolrest2d_2.f90 prolrest2d_3.f90 \
-      prolrest.f90
+      prolrest2d_4.f90 prolrest2d_5.f90 prolrest.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk

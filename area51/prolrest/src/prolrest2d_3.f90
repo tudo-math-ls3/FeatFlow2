@@ -4,6 +4,15 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module discreticises the "PDE"
+!#
+!#                                 u = f
+!#
+!# on two levels and solves the systems on both levels.
+!# Afterwards, the prolongation / restriction results of the hard-coded
+!# inter-level projection structure defined in the multilevelprojection
+!# module are compared with the true L2-projection based on the
+!# 2-Level-Mass matrix assembled by the multileveloperators module.
 !# </purpose>
 !##############################################################################
 
@@ -249,7 +258,7 @@ CONTAINS
     
     ! Calculate error of prolongation
     CALL lsysbl_vectorLinearComb(rvecL2Prol,rvecProl,1.0_DP,-1.0_DP,rtempF)
-    CALL filterByEps(p_DtmpF)
+    CALL vec_filterByEps(p_DtmpF)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5
@@ -272,7 +281,7 @@ CONTAINS
 
     ! Calculate error of restriction
     CALL lsysbl_vectorLinearComb(rvecL2Rest,rvecRest,1.0_DP,-1.0_DP,rtempC)
-    CALL filterByEps(p_DtmpC)
+    CALL vec_filterByEps(p_DtmpC)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5

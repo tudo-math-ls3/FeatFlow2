@@ -13,6 +13,8 @@ PROGRAM prolrest
   USE prolrest2d_test1
   USE prolrest2d_test2
   USE prolrest2d_test3
+  USE prolrest2d_test4
+  USE prolrest2d_test5
   
   IMPLICIT NONE
   
@@ -29,9 +31,11 @@ PROGRAM prolrest
   CALL storage_init(999, 100)
 
   ! Call 2D prol-rest test
-  CALL prolrest2d_1()
-  CALL prolrest2d_2()
-  CALL prolrest2d_3() 
+  !CALL prolrest2d_1()
+  !CALL prolrest2d_2()
+  !CALL prolrest2d_3() 
+  !CALL prolrest2d_4()
+  CALL prolrest2d_5()
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

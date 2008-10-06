@@ -4,6 +4,17 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module discreticises the "PDE"
+!#
+!#                                 u = f
+!#
+!# on two levels and solves the systems on both levels.
+!# Afterwards, the fine mesh solution is compared with the prolongated
+!# coarse mesh solution and the coarse mesh RHS is compared with the
+!# restricted fine mesh RHS.
+!#
+!# The grid transfer is performed using true L2-projection based on the
+!# 2-Level-Mass matrix assembled by the multileveloperators module.
 !# </purpose>
 !##############################################################################
 
@@ -19,12 +30,8 @@ MODULE prolrest2d_test2
   USE cubature
   USE triangulation
   USE spatialdiscretisation
-  USE ucd
-  USE pprocerror
   USE genoutput
-  USE multilevelprojection
   USE multileveloperators
-  USE matrixio
 
   USE prolrest_aux
   
@@ -141,9 +148,6 @@ CONTAINS
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrixC%RmatrixBlock(1,1))
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrixF%RmatrixBlock(1,1))
     
-    CALL matio_writeMatrixHR (rmatrixC%RmatrixBlock(1,1), 'coarse E037 mass',&
-                                   .TRUE., 0, 'E037_mass.txt', '(E20.10)')
-
     ! Create the 2-Level matrix structure
     CALL mlop_create2LvlMatrixStruct(rdiscrC%RspatialDiscr(1),&
             rdiscrF%RspatialDiscr(1),LSYSSC_MATRIX9,rmatrix2Lvl)
@@ -231,7 +235,7 @@ CONTAINS
 
     ! Calculate error of prolongation
     CALL lsysbl_vectorLinearComb(rrhsF,rtempF,1.0_DP,-1.0_DP,rsolF)
-    CALL filterByEps(p_DsolF)
+    CALL vec_filterByEps(p_DsolF)
     
     ! Print out all DOFs
     !                0         1         2         3         4         5
@@ -254,7 +258,7 @@ CONTAINS
 
     ! Calculate error of restriction
     CALL lsysbl_vectorLinearComb(rrhsC,rtempC,1.0_DP,-1.0_DP,rsolC)
-    CALL filterByEps(p_DsolC)
+    CALL vec_filterByEps(p_DsolC)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5

@@ -4,6 +4,18 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module discreticises the "PDE"
+!#
+!#                                 u = f
+!#
+!# on two levels and solves the systems on both levels.
+!# Afterwards, the fine mesh solution is compared with the prolongated
+!# coarse mesh solution, the coarse mesh RHS is compared with the restricted
+!# fine mesh RHS and the coarse mesh solution is compared with the
+!# interpolated fine mesh solution.
+!#
+!# The grid transfer is performed using the inter-level projection structure
+!# defined in the multilevelprojection module.
 !# </purpose>
 !##############################################################################
 
@@ -19,8 +31,6 @@ MODULE prolrest2d_test1
   USE cubature
   USE triangulation
   USE spatialdiscretisation
-  USE ucd
-  USE pprocerror
   USE genoutput
   USE multilevelprojection
     
@@ -114,9 +124,9 @@ CONTAINS
     CALL spdiscr_initBlockDiscr2D (rdiscrF,1,rtriaF, rboundary)
 
     CALL spdiscr_initDiscr_simple (rdiscrC%RspatialDiscr(1), &
-                                   EL_Q1,CUB_G5X5,rtriaC, rboundary)
+                                   EL_E037,CUB_G5X5,rtriaC, rboundary)
     CALL spdiscr_initDiscr_simple (rdiscrF%RspatialDiscr(1), &
-                                   EL_Q1,CUB_G5X5,rtriaF, rboundary)
+                                   EL_E037,CUB_G5X5,rtriaF, rboundary)
 
     ! Allocate two block matrices
     CALL lsysbl_createMatBlockByDiscr (rdiscrC,rmatrixC)
@@ -232,7 +242,7 @@ CONTAINS
     
     ! Calculate error of prolongation: e_h := u_h - P*u_2h
     CALL lsysbl_vectorLinearComb(rsolF,rvecProl,1.0_DP,-1.0_DP,rtempF)
-    CALL filterByEps(p_DtmpF)
+    CALL vec_filterByEps(p_DtmpF)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5
@@ -255,7 +265,7 @@ CONTAINS
 
     ! Calculate error of restriction: e_2h := rhs_2h - R*rhs_h
     CALL lsysbl_vectorLinearComb(rrhsC,rvecRest,1.0_DP,-1.0_DP,rtempC)
-    CALL filterByEps(p_DtmpC)
+    CALL vec_filterByEps(p_DtmpC)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5
@@ -270,7 +280,7 @@ CONTAINS
     END DO    
     
     ! -------------------------------------------------------------------------
-    ! Restriction Test
+    ! Interpolation Test
     ! -------------------------------------------------------------------------
     CALL output_separator(OU_SEP_MINUS)
     CALL output_line('Interpolation Test')
@@ -278,7 +288,7 @@ CONTAINS
 
     ! Calculate error of interpolation: e_2h := sol_2h - I*sol_2h
     CALL lsysbl_vectorLinearComb(rsolC,rvecInter,1.0_DP,-1.0_DP,rtempC)
-    CALL filterByEps(p_DtmpC)
+    CALL vec_filterByEps(p_DtmpC)
 
     ! Print out all DOFs
     !                0         1         2         3         4         5
