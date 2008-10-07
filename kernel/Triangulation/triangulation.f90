@@ -2793,10 +2793,6 @@ contains
             rtriangulation%h_IelementsAtVertex)
     end if
 
-    ! Bit 11: KBCT   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
-          rtriangulation%h_IboundaryCpIdx)
-
     ! Bit 14: KMBD   is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
           rtriangulation%h_IedgesAtBoundary)
@@ -2885,7 +2881,7 @@ contains
            
     if (.not. bext) then           
       call checkAndRelease(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
-          rtriangulation%h_InodalProperty)
+          rtriangulation%h_ImacroNodalProperty)
     end if
 
     ! Clean up the rest of the structure
