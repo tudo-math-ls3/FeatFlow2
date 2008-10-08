@@ -95,10 +95,6 @@ APPS:= $(shell ls $(FEATFLOW)/applications)
 # list of all library modules available at the top level
 LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
 
-ifeq ($(HDF5),YES)
-LIBS:=$(LIBS) hdf5_fortran hdf5 zlib sz 
-endif
-
 ########################################################################
 # General name and location of compilers.
 #
