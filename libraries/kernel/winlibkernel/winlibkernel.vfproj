@@ -160,6 +160,7 @@
 		<File RelativePath="..\..\..\kernel\System\error.f90"/>
 		<File RelativePath="..\..\..\kernel\System\externalstorage.f90"/>
 		<File RelativePath="..\..\..\kernel\System\fparser.f90"/>
+		<File RelativePath="..\..\..\kernel\System\fpersistence.f90"/>
 		<File RelativePath="..\..\..\kernel\System\fsystem.f90"/>
 		<File RelativePath="..\..\..\kernel\System\genoutput.f90"/>
 		<File RelativePath="..\..\..\kernel\System\io.f90"/>
