@@ -385,6 +385,37 @@ CONTAINS
         CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
             EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
 
+      CASE (7)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscr(1), &
+                    EL_E037,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscr(1)% &
+          RelementDistr(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards.
+        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
+            p_rdiscretisation%RspatialDiscr(2))
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
+            EL_QP1, icubB,p_rdiscretisation%RspatialDiscr(3))
+
       CASE DEFAULT
         CALL output_line (&
             'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
