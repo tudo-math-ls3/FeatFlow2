@@ -32,7 +32,7 @@
 !#      -> Calculate the scalar product of two vectors
 !#
 !#  5.) lsyssc_scalarMatVec
-!#      -> Multiply a scalar matrix with a scalar vector
+!#      -> Multiply a scalar matrix (or its transpose) with a scalar vector
 !#
 !#  6.) lsyssc_releaseMatrix
 !#      -> Release a scalar matrix from memory.
@@ -3254,7 +3254,7 @@ contains
 
 !<subroutine>
   
-  subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy)
+  subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose)
   
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -3275,6 +3275,11 @@ contains
   ! Multiplicative factor for ry
   real(DP), intent(IN)                              :: cy
   
+  ! OPTIONAL: Specifies whether a multiplication with the matrix itself
+  ! (.false.) or with its transpose (.true.) should be performed. If not
+  ! given, .false. is assumed.
+  logical, optional, intent(IN)                     :: btranspose
+  
 !</input>
 
 !<inputoutput>
@@ -3284,12 +3289,19 @@ contains
 
 !</subroutine>
 
+  ! local variables
+  logical :: bvirt_trans = .false.
+  logical :: btrans = .false.
+  
+    ! Should we multiply by the matrix transpose?
+    if(present(btranspose)) btrans = btranspose
+
     ! If the scale factor is =0, we have nothing to do.
     if (rmatrix%dscaleFactor .eq. 0.0_DP) return
     
     ! Vectors must be compatible to the matrix.
-    call lsyssc_isMatrixCompatible (rx,rmatrix,.false.)
-    call lsyssc_isMatrixCompatible (ry,rmatrix,.true.)
+    call lsyssc_isMatrixCompatible (rx,rmatrix, btrans)
+    call lsyssc_isMatrixCompatible (ry,rmatrix, .not. btrans)
     
     ! rx and ry must have at least the same data type!
     if (rx%cdataType .ne. ry%cdataType) then
@@ -3304,11 +3316,14 @@ contains
       call sys_halt()
     end if
     
+    ! Is the matrix 'virtually transposed' ?
+    bvirt_trans = (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)
+    
     ! Handle the scaling factor by multiplication of cx with dscaleFactor.
     !
     ! Now, which matrix format do we have?
     
-    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
+    if (bvirt_trans .eqv. btrans) then
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
       
