@@ -43,16 +43,83 @@
 !#     -> Interpolated a solution from a fine grid to a coarse grid
 !#        (L2-projection in the primal space)
 !#
-!# 7.) mlprj_setL2ProjMatrices
+!# 7.) mlprj_initL2Projection
 !#     -> Sets the matrices for an scalar projection structure which are
 !#        needed for L2-projection.
+!#
+!# 8.) mlprj_initMatrixProjection
+!#     -> Directly sets the prolongation (and thus implicitly also the
+!#        restriction) matrix that is to be used.
 !# 
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# --> Some notes on the L2-Projection grid transfer <--
+!# -----------------------------------------------------
+!# The possibility to choose 'real' L2-projection for multi-level grid
+!# transfer has been added mainly for research purposes, especially with
+!# non-conforming elements.
+!#
+!# In contrast to the 'hard-coded' grid transfer this method has 2 advantages:
+!#
+!# +1. It is a black-box projection, i.e. one can apply the multigrid solver
+!#     on discretisations for which the developer has not (yet) written hard-
+!#     coded grid transfer operators.
+!#
+!# +2. It provides true L2-orthogonality also for non-conforming elements.
+!#     The 'hard-coded' grid transfer for non-conforming elements is just an
+!#     approximation of the 'true' L2-projection operator, thus usually giving
+!#     worse results.
+!#
+!# But it also has 2 major disadvantages:
+!#
+!# -1. The user also needs to assemble a mass (on the fine grid) and a 
+!#     2-level-mass matrix for the grid transfer and pass it to the
+!#     mlprj_initL2Projection routine. The mass matrix can be assembled using
+!#     the bilinearformevaluation. The 2-level-mass matrix needs to be
+!#     assembled by the multileveloperators module which, until now, supports
+!#     only uniform discretisations (and no triangular meshes).
+!#
+!# -2. The grid transfer is (in contrast to the 'hard-coded' projection)
+!#     very expensive and time consuming, as each prolongation and each
+!#     restriction involves solving a linear system with the fine mesh mass
+!#     matrix.
+!#
+!# ------------
+!# - WARNING! -
+!# ------------
+!# There is no support for the 'mlprj_performInterpolation' routine using
+!# L2-projection, and it is NOT planned to implement it! If you want to
+!# restrict a solution vector using L2-projection you will need to do it by
+!# yourself ^_^
+!# 
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# --> Some notes on the matrix-based grid transfer <--
+!# ----------------------------------------------------
+!# There also is a possibility to directly specify a matrix for grid transfer.
+!# In this case, when prolongating a coarse mesh solution, the prolongation
+!# matrix is multiplied by the coarse mesh solution vector to get the fine
+!# mesh solution vector. When restricting a defect vector, the transposed
+!# prolongation matrix is multiplied by the fine mesh defect vector to get
+!# the coarse mesh defect vector.
+!#
+!# ------------
+!# - WARNING! -
+!# ------------
+!# There is no support for the 'mlprj_performInterpolation' routine using
+!# matrix-based grid transfer, and it is NOT planned to implement it! If you
+!# want to restrict a solution vector using a matrix you will need to do it
+!# by yourself ^_^
+!#
+!# Note:
+!# -----
+!# Currently there are no routines in FEAT2 which can assemble a prolongation
+!# matrix...coming soon...hopefully...
 !# </purpose>
 !##############################################################################
 
 module multilevelprojection
 
   use fsystem
+  use genoutput
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
@@ -69,7 +136,10 @@ module multilevelprojection
   integer(I32), parameter :: MLP_PROJ_TYPE_HARDCODED = 0
   
   ! L2-projection operators
-  integer(I32), parameter :: MLP_PROJ_TYPE_L2 = 1
+  integer(I32), parameter :: MLP_PROJ_TYPE_L2_PROJ   = 1
+  
+  ! Matrix-based projection operators
+  integer(I32), parameter :: MLP_PROJ_TYPE_MATRIX    = 2
 
 !</constantblock>
 
@@ -236,23 +306,23 @@ module multilevelprojection
     ! Mass matrix of the fine mesh spatial discretisation.
     type(t_matrixScalar)        :: rmatrixMass
     
-    ! Lumped Mass matrix of the fine mesh spatial discretisation.
-    type(t_matrixScalar)        :: rlumpedMass
+    ! 2-Level-Mass matrix between the spatial discretisations.
+    type(t_matrixScalar)        :: rmatrix2Lvl
     
-    ! 2-Level-Mass matrix and its virtually transpose
-    type(t_matrixScalar)        :: rmatrix2LvlMass
-    type(t_matrixScalar)        :: rmatrix2LvlMassT
+    ! Maximum number of iterations
+    integer                     :: nmaxL2Iter = 50
     
-    ! Two temporary vectors
-    type(t_vectorScalar)        :: rvectorTmp
-    type(t_vectorScalar)        :: rvectorDef
+    ! Relaxation parameter for internal SSOR preconditioner
+    real(DP)                    :: drelaxL2 = 1.0_DP
     
-    ! Number of iterations
-    integer                     :: imaxL2Iterations = 30
-    
-    ! Relative and absolute tolerance
-    real(DP)                    :: depsRelL2 = 1E-5_DP
-    real(DP)                    :: depsAbsL2 = 1E-10_DP
+    ! Absolute tolerance for L2-projection
+    real(DP)                    :: depsL2 = 1E-10_DP
+
+    ! -------------------------------------------------------------------------
+    ! Matrix-based Projection Structures
+    ! -------------------------------------------------------------------------
+    ! The prolongation matrix that is to be used
+    type(t_matrixScalar)        :: rmatrixProl
     
   end type
   
@@ -284,6 +354,9 @@ module multilevelprojection
   !</typeblock>
 
 !</types>
+
+  ! CG-SSOR solver for L2-projection
+  private :: mlprj_aux_CG_SSOR
 
 contains
 
@@ -519,17 +592,21 @@ contains
           
           p_rprj => rprojection%RscalarProjection(i,j)
         
-          ! Release all matrices and vectors for L2-projection
-          call lsyssc_releaseMatrix(p_rprj%rmatrixMass)
-          call lsyssc_releaseMatrix(p_rprj%rlumpedMass)
-          call lsyssc_releaseMatrix(p_rprj%rmatrix2LvlMass)
-          call lsyssc_releaseMatrix(p_rprj%rmatrix2LvlMassT)
-          if(p_rprj%rvectorTmp%NEQ .ne. 0) then
-            call lsyssc_releaseVector(p_rprj%rvectorTmp)
-          end if
-          if(p_rprj%rvectorDef%NEQ .ne. 0) then
-            call lsyssc_releaseVector(p_rprj%rvectorDef)
-          end if
+          ! What projection type did we use?
+          select case(p_rprj%iprojType)
+          case (MLP_PROJ_TYPE_HARDCODED)
+            ! Nothing to do here...
+            
+          case (MLP_PROJ_TYPE_L2_PROJ)
+            ! Release the mass matrices  for L2-projection
+            call lsyssc_releaseMatrix(p_rprj%rmatrixMass)
+            call lsyssc_releaseMatrix(p_rprj%rmatrix2Lvl)
+          
+          case (MLP_PROJ_TYPE_MATRIX)
+            ! Release the prolongation matrix
+            call lsyssc_releaseMatrix(p_rprj%rmatrixProl)
+          
+          end select
         
         end do ! j
       end do ! i
@@ -670,11 +747,41 @@ contains
   
 !</function>
 
-  ! Currently, there is no additional memory needed.
-  mlprj_getTempMemoryScalar = 0
+  ! local variables
+  integer :: i, nmem, nmemtotal
   
-  ! In case, P_0 is interpolated linearly, e.g., there might be some memory
-  ! necessary!
+    ! Assume that we don't need any additional memory.
+    nmemtotal = 0
+    
+    ! Now loop through all scalar projections
+    do i = 1, ubound(RprojectionScalar,1)
+    
+      ! What type of projection do we perform here?
+      select case(RprojectionScalar(i)%iprojType)
+      case (MLP_PROJ_TYPE_HARDCODED)
+        ! In this case, no additional memory is needed.
+        nmem = 0
+        
+      case (MLP_PROJ_TYPE_L2_PROJ)
+        ! In this case, we will definately need additional memory.
+        ! The amount of memory we need is four vectors at the size of
+        ! the fine mesh mass matrix, as we need them for the internal
+        ! solving process.
+        nmem = 4*RprojectionScalar(i)%rmatrixMass%NEQ
+        
+      case default
+        ! Unknown - so nothing is needed.
+        nmem = 0
+      
+      end select
+      
+      ! And let's choose the maximum
+      nmemtotal = max(nmemtotal, nmem)
+  
+    end do
+
+    ! Basically, there is no additional memory needed.
+    mlprj_getTempMemoryScalar = nmemtotal
 
   end function
   
@@ -978,18 +1085,26 @@ contains
     
       if (rcoarseVector%RvectorBlock(i)%NEQ .gt. 0) then
       
-        ! Do we use L2-Projection here?
-        if (rprojection%RscalarProjection(1,i)%iprojType .eq. &
-            MLP_PROJ_TYPE_L2) then
-          
+        ! What type of prolongation do we use here?
+        select case(rprojection%RscalarProjection(1,i)%iprojType)
+        case (MLP_PROJ_TYPE_L2_PROJ)
           ! Call scalar L2-prolongation
           call mlprj_prolScalarL2(rprojection%RscalarProjection(1,i), &
-            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i))
+            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
         
           ! Continue with next block
           cycle
+        
+        case (MLP_PROJ_TYPE_MATRIX)
+          ! Matrix-based prolongation
+          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i), &
+            1.0_DP, 0.0_DP, .false.)
+            
+          ! Continue with next block
+          cycle
           
-        end if
+        end select
       
         p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
         p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
@@ -1219,7 +1334,7 @@ contains
             end if
           end select
         
-        case (EL_E037)
+        case (EL_Q2TB)
           ! Q2~ with bubble prolongation
           call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
@@ -1234,7 +1349,7 @@ contains
           call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
                                p_ItwistIndexEdgesCoarse)
 
-          call mlprj_prolUniformE037_double (p_DuCoarse,p_DuFine, &
+          call mlprj_prolUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
               p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
@@ -1418,18 +1533,28 @@ contains
     
       if (rcoarseVector%RvectorBlock(i)%NEQ .gt. 0) then
 
-        ! Do we use L2-Projection here?
-        if (rprojection%RscalarProjection(1,i)%iprojType .eq. &
-            MLP_PROJ_TYPE_L2) then
+        ! What type of restriction do we use here?
+        select case(rprojection%RscalarProjection(1,i)%iprojType)
+        case(MLP_PROJ_TYPE_L2_PROJ)
           
           ! Call scalar L2-restriction
           call mlprj_restScalarL2(rprojection%RscalarProjection(1,i), &
-            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i))
+            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
         
           ! Continue with next block
           cycle
+        
+        case(MLP_PROJ_TYPE_MATRIX)
           
-        end if
+          ! Matrix-based restriction
+          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+            rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
+            1.0_DP, 0.0_DP, .true.)
+          
+          ! Continue with next block
+          cycle
+          
+        end select
       
 
         p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
@@ -1669,7 +1794,7 @@ contains
             end if
           end select
 
-        case (EL_E037)
+        case (EL_Q2TB)
           ! Q2~ with bubble prolongation
           call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
@@ -1684,7 +1809,7 @@ contains
           call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
                                p_ItwistIndexEdgesCoarse)
 
-          call mlprj_restUniformE037_double (p_DuCoarse,p_DuFine, &
+          call mlprj_restUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
               p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
@@ -1964,7 +2089,7 @@ contains
                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                p_rtriaCoarse%NEL)          
 
-        case (EL_E037)
+        case (EL_Q2TB)
           ! Q2~ with bubble interpolation
           call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
@@ -1979,7 +2104,7 @@ contains
           call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
                                p_ItwistIndexEdgesCoarse)
 
-          call mlprj_interpUniformE037_double (p_DuCoarse,p_DuFine, &
+          call mlprj_interpUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
               p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
@@ -7965,14 +8090,14 @@ contains
 
 !<subroutine>
 
-  subroutine mlprj_prolUniformE037_double (DuCoarse,DuFine,&
+  subroutine mlprj_prolUniformEB50_double (DuCoarse,DuFine,&
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                ItwistCoarse,ItwistFine,NMTcoarse,NMTfine,NELcoarse,NELfine)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
-  ! E037, uniform triangulation, double precision vector.
+  ! EB50, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -8203,14 +8328,14 @@ contains
 
 !<subroutine>
 
-  subroutine mlprj_restUniformE037_double (DuCoarse,DuFine, &
+  subroutine mlprj_restUniformEB50_double (DuCoarse,DuFine, &
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                ItwistCoarse,ItwistFine,NMTcoarse,NMTfine,NELcoarse,NELfine)
   
 !<description>
   ! Restricts a defect vector from a fine grid to a coarse grid.
-  ! E037, uniform triangulation, double precision vector.
+  ! EB50, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -8434,14 +8559,14 @@ contains
 
 !<subroutine>
 
-  subroutine mlprj_interpUniformE037_double (DuCoarse,DuFine, &
+  subroutine mlprj_interpUniformEB50_double (DuCoarse,DuFine, &
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                ItwistCoarse,ItwistFine,NMTcoarse,NMTfine,NELcoarse,NELfine)
   
 !<description>
   ! Restricts a solution vector from a fine grid to a coarse grid.
-  ! E037, uniform triangulation, double precision vector.
+  ! EB50, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -8652,11 +8777,10 @@ contains
   
 !<subroutine>
 
-  subroutine mlprj_initL2Proj (rprojection,r2Lvlmass,rmass,rlumpedMass,&
-                               rvecTemp1,rvecTemp2)
+  subroutine mlprj_initL2Projection (rprojection,r2Lvlmass,rmass)
 
 !<description>
-  ! Sets the matrices and vectors which are needed for L2-projection.
+  ! Sets the mass matrices which are needed for L2-projection.
 !</description>
   
 !<input>
@@ -8665,15 +8789,6 @@ contains
 
   ! The mass matrix of the fine grid
   type(t_matrixScalar), intent(IN) :: rmass
-
-  ! OPTIONAL: The lumped mass matrix of the fine grid. If not given, the
-  ! lumped mass matrix is created from rmassFine.
-  type(t_matrixScalar), optional, intent(IN) :: rlumpedMass
-
-  ! OPTIONAL: Two temporary vectors that match the structure of the fine
-  ! mesh mass matrix. The vectors must not share the same data array.
-  type(t_vectorScalar), optional, intent(IN) :: rvecTemp1
-  type(t_vectorScalar), optional, intent(IN) :: rvecTemp2
 !</input>
 
 !<inputoutput>
@@ -8684,53 +8799,43 @@ contains
 !</subroutine>
 
      ! This is an L2-projection
-     rprojection%iprojType = MLP_PROJ_TYPE_L2
+     rprojection%iprojType = MLP_PROJ_TYPE_L2_PROJ
+     
+     ! First of all make sure that the mass matrix is a type 7/9 matrix.
+!     if(rprojection%drelaxL2 .eq. 0.0_DP) then
+!       
+!       ! Type 7 or 9 is allowed
+!       if((rmass%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+!          (rmass%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+!          
+!          ! We cannot handle this...
+!          call output_line('Mass matrix must be a type 7/9 matrix!', &
+!              OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initL2Projection')
+!          
+!          call sys_halt()
+!       
+!       end if
+!     
+!     else
+     
+       ! Only type 9 is allowed
+       if(rmass%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+          
+          ! We cannot handle this...
+          call output_line('Mass matrix must be a type 9 matrix!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initL2Projection')
+          
+          call sys_halt()
+       
+       end if
+     
+!     end if
 
      ! Create shared copies of the mass matrices
-     call lsyssc_duplicateMatrix(r2LvlMass, rprojection%rmatrix2LvlMass, &
+     call lsyssc_duplicateMatrix(r2LvlMass, rprojection%rmatrix2Lvl, &
                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
      call lsyssc_duplicateMatrix(rmass, rprojection%rmatrixMass, &
                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-     
-     ! Transpose the 2-Level-Mass matrix
-     call lsyssc_transposeMatrix(r2LvlMass, rprojection%rmatrix2LvlMassT,&
-                                 LSYSSC_TR_VIRTUAL)
-     
-     ! Do we have the lumped fine grid mass matrix?
-     if (present(rlumpedMass)) then
-
-       ! Create a shared copy of it then.
-       call lsyssc_duplicateMatrix(rlumpedMass, rprojection%rlumpedMass, &
-                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-
-     else
-     
-       ! Copy mass matrix
-       call lsyssc_duplicateMatrix(rmass, rprojection%rlumpedMass, &
-                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-     
-       ! And lump it
-       call lsyssc_lumpMatrixScalar(rprojection%rlumpedMass,LSYSSC_LUMP_DIAG)
-     
-     end if
-     
-     ! Do we have the temporary vectors?
-     if (present(rvecTemp1)) then
-       ! Create a shared copy of it
-       call lsyssc_duplicateVector(rvecTemp1,rprojection%rvectorTmp,&
-                                   LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
-     else
-       ! Create a vector based on the matrix
-       call lsyssc_createVecIndMat(rmass, rprojection%rvectorTmp)
-     end if
-     if (present(rvecTemp2)) then
-       ! Create a shared copy of it
-       call lsyssc_duplicateVector(rvecTemp2,rprojection%rvectorDef,&
-                                   LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
-     else
-       ! Create a vector based on the matrix
-       call lsyssc_createVecIndMat(rmass, rprojection%rvectorDef)
-     end if
      
      ! That's it
      
@@ -8740,7 +8845,211 @@ contains
   
 !<subroutine>
 
-  subroutine mlprj_prolScalarL2 (rprojection, rcoarseVector, rfineVector)
+  subroutine mlprj_aux_CG_SSOR(p_Dx,p_Dwork,rmass,drelax,deps,nmaxiter)
+  
+!<description>
+  ! PRIVATE AUXILIARY ROUTINE
+  ! Solves a system with a mass matrix using a CG solver with built-in SSOR
+  ! preconditioner.
+!</description>
+
+!<input>
+  ! The mass matrix of the system.
+  type(t_matrixScalar), intent(IN) :: rmass
+  
+  ! The relaxation parameter that is to be used. Must be in range (0,2).
+  real(DP), intent(IN) :: drelax
+  
+  ! The absolute tolerance.
+  real(DP), intent(IN) :: deps
+  
+  ! The maximum number of allowed CG iterations.
+  integer, intent(IN) :: nmaxiter
+!</input>
+
+!<inputoutput>
+  ! On entry, the right hand side of the system.
+  ! On exit, the solution of the system.
+  real(DP), dimension(:), pointer :: p_Dx
+  
+  ! A work array with a length of at least 3 * rmass%NEQ entries.
+  real(DP), dimension(:), pointer :: p_Dwork
+!</inputoutput>
+
+!</subroutine>
+
+  ! local CG variables
+  real(DP) :: dalpha, dbeta, dgamma, dgamma2,dtol,dt
+  integer :: iter,i,j,k,l,n
+  
+  ! matrix arrays
+  real(DP), dimension(:), pointer :: p_Da
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  
+  ! temporary sub-vectors
+  real(DP), dimension(:), pointer :: p_Ddef, p_Ddir, p_Dtmp
+  
+    ! Choose tolerance
+    dtol = max(deps**2, 10.0_DP*SYS_EPSREAL)
+  
+    ! First of all, get the number of equations
+    n = rmass%NEQ
+    
+    ! Now get the matrix arrays
+    call lsyssc_getbase_double(rmass, p_Da)
+    call lsyssc_getbase_Kcol(rmass, p_Kcol)
+    call lsyssc_getbase_Kld(rmass, p_Kld)
+    call lsyssc_getbase_Kdiagonal(rmass, p_Kdiag)
+    
+    ! Get the sub-vectors
+    p_Ddef => p_Dwork(    1 :   n)  ! defect (/gradient) vector
+    p_Ddir => p_Dwork(  n+1 : 2*n)  ! descend direction vector
+    p_Dtmp => p_Dwork(2*n+1 : 3*n)  ! temporary vector
+    
+    ! First of all, copy Dx to Ddef
+    call lalg_copyVectorDble(p_Dx,p_Ddef,n)
+    
+    ! And clear the solution vector
+    call lalg_clearVectorDble(p_Dx,n)
+    
+    ! copy Ddef to Ddir
+    call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
+    
+    ! Apply preconditioner onto Ddir
+    call mlprj_aux_precSSOR(p_Ddir,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
+    
+    ! Calculate gamma
+    dgamma = lalg_scalarProductDble(p_Ddef,p_Ddir,n)
+    
+    ! Check against tolerance
+    if(dgamma .le. dtol) return
+    
+    ! Okay, start the CG iteration
+    do iter = 1, nmaxiter
+    
+      ! Dtmp := A * Ddir
+      !$omp parallel do private(j,dt) default(shared)
+      do i = 1, n
+        dt = 0.0_DP
+        do j = p_Kld(i), p_Kld(i+1)-1
+          dt = dt + p_Da(j)*p_Ddir(p_Kcol(j))
+        end do
+        p_Dtmp(i) = dt
+      end do
+      !$omp end parallel do
+      
+      ! Calculate alpha
+      dalpha = lalg_scalarProductDble(p_Ddir,p_Dtmp,n)
+      if(dalpha .eq. 0.0_DP) return
+      dalpha = dgamma / dalpha
+      
+      ! Calculate Dx = Dx + alpha*Ddir
+      call lalg_vectorLinearCombDble(p_Ddir,p_Dx,dalpha,1.0_DP,n)
+      
+      ! Jump out here if the maximum number of iterations is reached
+      if(iter .eq. nmaxiter) return
+      
+      ! Calculate Ddef = Ddef - alpha*Dtmp
+      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
+
+      ! Copy Ddef to Dtmp
+      call lalg_copyVectorDble(p_Ddef,p_Dtmp,n)
+      
+      ! Apply preconditioner onto Dtmp
+      call mlprj_aux_precSSOR(p_Dtmp,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
+      
+      ! Calculate new gamma and beta
+      dgamma2 = dgamma
+      dgamma = lalg_scalarProductDble(p_Ddef,p_Dtmp,n)
+      if(dgamma .le. dtol) return
+      dbeta = dgamma / dgamma2
+      
+      ! Calculate Ddir = Dtmp + beta*Ddir
+      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddir,1.0_DP,dbeta,n)
+    
+    end do
+    
+  contains
+
+  !<subroutine>
+
+    pure subroutine mlprj_aux_precSSOR(Dx,Kld,Kcol,Kdiag,Da,drlx)
+
+  !<description>
+    ! PRIVATE AUXILIARY ROUTINE
+    ! Applies the SSOR preconditioner onto a defect vector.
+  !</description>
+  
+  !<inputoutput>
+    ! The defect vector that is to be preconditioned.
+    real(DP), dimension(:), intent(INOUT) :: Dx
+  !</inputoutput> 
+  
+  !<input>
+    ! The Kld array of the mass matrix.
+    integer, dimension(:), intent(IN) :: Kld
+    
+    ! The Kcol array of the mass matrix.
+    integer, dimension(:), intent(IN) :: Kcol
+    
+    ! The Kdiagonal array of the mass matrix.
+    integer, dimension(:), intent(IN) :: Kdiag
+
+    ! The DA array of the mass matrix.
+    real(DP), dimension(:), intent(IN) :: Da
+    
+    ! The relaxation parameter for SSOR. If set to 0, Jacobi is used instead.
+    real(DP), intent(IN) :: drlx
+  !</input>
+  
+  !</subroutine>
+    
+    integer :: i,j,k
+    real(DP) :: dt
+    
+      ! Is the relax set to 0? Use Jacobi then.
+      if(drlx .eq. 0.0_DP) then
+        
+        !$omp parallel do default(shared)
+        do i = 1, ubound(Kdiag,1)
+          Dx(i) = Dx(i) / Da(Kdiag(i))
+        end do
+        !$omp end parallel do
+        
+        return
+        
+      end if
+    
+      ! Forward insertion
+      do i = 1, ubound(Kld,1)-1
+        dt = 0.0_DP
+        k = Kdiag(i)
+        do j = Kld(i), k-1
+          dt = dt + Da(j)*Dx(Kcol(j))
+        end do
+        Dx(i) = (Dx(i) - drlx*dt) / Da(k)
+      end do
+      
+      ! Backward insertion
+      do i = ubound(Kld,1)-1, 1, -1
+        dt = 0.0_DP
+        k = Kdiag(i)
+        do j = Kld(i+1)-1, k+1, -1
+          dt = dt + Da(j)*Dx(Kcol(j))
+        end do
+        Dx(i) = Dx(i) - ((drlx*dt) / Da(k))
+      end do
+    
+    end subroutine ! mlprj_aux_precSSOR
+  
+  end subroutine ! mlprj_aux_CG_SSOR
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mlprj_prolScalarL2 (rprojection, rcoarseVector, rfineVector, &
+                                 rtempVector)
   
 !<description>
   ! Performs an L2-prolongation of a solution vector on the coarse grid
@@ -8753,6 +9062,9 @@ contains
 
   ! Coarse grid vector
   type(t_vectorScalar), intent(INOUT) :: rcoarseVector
+  
+  ! Temporary vector
+  type(t_vectorScalar), intent(INOUT) :: rtempVector
 !</input>
 
 !<output>
@@ -8762,60 +9074,32 @@ contains
   
 !</subroutine>
 
-  integer :: i
-  real(DP) :: ddefInit, ddef
-  type(t_vectorScalar) :: rtmp, rdef
-  logical :: bcheckDef
+  real(DP), dimension(:), pointer :: p_Dfine, p_Dtmp
   
-    ! Get temporary vectors
-    rtmp = rprojection%rvectorTmp
-    rdef = rprojection%rvectorDef
-  
-    ! Do we check the defect?
-    bcheckDef = ((rprojection%depsRelL2 .gt. 0.0_DP) .and. &
-                 (rprojection%depsAbsL2 .gt. 0.0_DP))
-
-    ! Clear fine grid vector
-    call lsyssc_clearVector(rfineVector)
-    
-    ! Multiply coarse grid vector with 2-Level-Mass
-    call lsyssc_scalarMatVec(rprojection%rmatrix2LvlMass, rcoarseVector,&
-                             rtmp, 1.0_DP, 0.0_DP)
-    
-    ! Calculate initial defect
-    call lsyssc_copyVector(rtmp, rdef)
-    if (bcheckDef) then
-      ddefInit = lsyssc_vectorNorm(rdef, LINALG_NORML2)
-      if (ddefInit .le. rprojection%depsAbsL2) return
-      if (ddefInit .le. SYS_EPSREAL) ddefInit = 1.0_DP
+    ! Make sure the temporary vector's size is sufficient. For the
+    ! prolongation, 3*NEQ is sufficient.
+    if(rtempVector%NEQ .lt. 3*rfineVector%NEQ) then
+      
+      ! The temporary vector is too small...
+      call output_line('Temporary vector is too small!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_prolScalarL2')
+      
+      call sys_halt()
+      
     end if
+   
+    ! Calculate the product of the 2-Level-Mass matrix and the coarse
+    ! mesh solution vector.
+    call lsyssc_scalarMatVec (rprojection%rmatrix2Lvl, rcoarseVector, &
+                              rfineVector, 1.0_DP, 0.0_DP, .false.)
     
-    ! Start the defect correction
-    do i = 1, rprojection%imaxL2Iterations
+    ! Now get the temporary and fine mesh vector's data arrays
+    call lsyssc_getbase_double(rtempVector, p_Dtmp)
+    call lsyssc_getbase_double(rfineVector, p_Dfine)
     
-      ! Multiply by the inverse of the lumped mass matrix:
-      ! d := M_l^-1 d
-      call lsyssc_invertedDiagMatVec (rprojection%rlumpedMass,&
-                                      rdef,1.0_DP,rdef)
-
-      ! Add to the main vector:  x = x + omega*d
-      call lsyssc_vectorLinearComb (rdef,rfineVector,1.0_DP,1.0_DP)
-      
-      ! Set up the defect: d := b-Mx
-      call lsyssc_copyVector (rtmp,rdef)
-      call lsyssc_scalarMatVec (rprojection%rmatrixMass, rfineVector,&
-                                rdef, -1.0_DP, 1.0_DP)
-      
-      if (bcheckDef) then
-        ddef = lsyssc_vectorNorm(rdef, LINALG_NORML2)
-        
-        ! Are we finished?
-        if ((ddef .le. rprojection%depsAbsL2) .and. (ddef/ddefInit .le.&
-            rprojection%depsRelL2)) exit
-      
-      end if
-
-    end do
+    ! And call the CG-SSOR solver...
+    call mlprj_aux_CG_SSOR(p_Dfine, p_Dtmp, rprojection%rmatrixMass,&
+        rprojection%drelaxL2, rprojection%depsL2, rprojection%nmaxL2Iter)
     
     ! That's it
 
@@ -8825,7 +9109,8 @@ contains
   
 !<subroutine>
 
-  subroutine mlprj_restScalarL2 (rprojection,rcoarseVector,rfineVector)
+  subroutine mlprj_restScalarL2 (rprojection, rcoarseVector, rfineVector, &
+                                 rtempVector)
   
 !<description>
   ! Performs an L2-restriction of a defect vector on the fine grid
@@ -8838,6 +9123,9 @@ contains
 
   ! Fine grid vector
   type(t_vectorScalar), intent(INOUT) :: rfineVector
+  
+  ! Temporary vector
+  type(t_vectorScalar), intent(INOUT) :: rtempVector
 !</input>
 
 !<output>
@@ -8847,64 +9135,109 @@ contains
   
 !</subroutine>
 
-  integer :: i
-  real(DP) :: ddefInit, ddef
-  type(t_vectorScalar) :: rtmp, rdef
-  logical :: bcheckDef
-  
-    ! Get temporary vectors
-    rtmp = rprojection%rvectorTmp
-    rdef = rprojection%rvectorDef
-    
-    ! Do we check the defect?
-    bcheckDef = ((rprojection%depsRelL2 .gt. 0.0_DP) .and. &
-                 (rprojection%depsAbsL2 .gt. 0.0_DP))
-  
-    ! Clear temporary vector
-    call lsyssc_clearVector(rtmp)
-        
-    ! Calculate initial defect
-    call lsyssc_copyVector(rfineVector, rdef)
-    
-    if (bcheckDef) then
-      ddefInit = lsyssc_vectorNorm(rdef, LINALG_NORML2)
-      if (ddefInit .le. rprojection%depsAbsL2) return
-      if (ddefInit .le. SYS_EPSREAL) ddefInit = 1.0_DP
+  ! vector data arrays
+  integer :: n
+  real(DP), dimension(:), pointer :: p_Dtmp, p_Dwork, p_Dfine, p_Dcoarse
+
+  ! variables concerning the 2-Level-Mass matrix
+  integer :: i,j,k
+  real(DP), dimension(:), pointer :: p_Da
+  integer, dimension(:), pointer :: p_Kcol, p_Kld
+
+    ! Make sure the temporary vector's size is sufficient. For the
+    ! restriction, we need 4*NEQ.
+    if(rtempVector%NEQ .lt. 4*rfineVector%NEQ) then
+      
+      ! The temporary vector is too small...
+      call output_line('Temporary vector is too small!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_restScalarL2')
+      
+      call sys_halt()
+      
     end if
     
-    ! Start the defect correction
-    do i = 1, rprojection%imaxL2Iterations
+    ! Now get the temporary and fine mesh vector's data arrays
+    call lsyssc_getbase_double(rtempVector, p_Dtmp)
+    call lsyssc_getbase_double(rfineVector, p_Dfine)
     
-      ! Multiply by the inverse of the lumped mass matrix:
-      ! d := M_l^-1 d
-      call lsyssc_invertedDiagMatVec (rprojection%rlumpedMass,&
-                                      rdef,1.0_DP,rdef)
+    ! Get the size of the fine mesh vector
+    n = rfineVector%NEQ
+    
+    ! Now copy the fine mesh vector into the temporary vector. We will not call
+    ! the lsyssc_copyVector routine as the vectors have different length!
+    call lsyssc_getbase_double(rfineVector, p_Dfine)
+    call lalg_copyVectorDble(p_Dfine,p_Dtmp,n)
+    
+    ! Okay, now the fine mesh vector has been copied into p_Dtmp(1:n).
+    ! Now we need to assign the work array. As the length of p_Dtmp is
+    ! at least 4*n, we can use the rest as a work array:
+    p_Dwork => p_Dtmp(n+1:)
+    
+    ! And call the CG-SSOR solver...
+    call mlprj_aux_CG_SSOR(p_Dtmp, p_Dwork, rprojection%rmatrixMass,&
+        rprojection%drelaxL2, rprojection%depsL2, rprojection%nmaxL2Iter)
+    
+    ! If everything went well, p_Dtmp(1:n) now contains the solution of
+    ! the Mass system. The only thing we now need to do is to multiply
+    ! the solution by the transposed 2-Level-Mass matrix to get the
+    ! restricted coarse mesh vector. Unfortunately, the solution vector's size
+    ! does not match the matrix's size, so we will perform the matrix-vector
+    ! multiplication by hand here:
 
-      ! Add to the main vector:  x = x + omega*d
-      call lsyssc_vectorLinearComb (rdef,rtmp,1.0_DP,1.0_DP)
-      
-      ! Set up the defect: d := b-Mx
-      call lsyssc_copyVector (rfineVector,rdef)
-      call lsyssc_scalarMatVec (rprojection%rmatrixMass, rtmp,&
-                                rdef, -1.0_DP, 1.0_DP)
-      
-      if (bcheckDef) then
-        ddef = lsyssc_vectorNorm(rdef, LINALG_NORML2)
-        
-        ! Are we finished?
-        if ((ddef .le. rprojection%depsAbsL2) .and. (ddef/ddefInit .le.&
-            rprojection%depsRelL2)) exit
-            
-      end if
+    ! Get the coarse mesh vector's data array
+    call lsyssc_getbase_double(rcoarseVector, p_Dcoarse)
+    
+    ! Get the arrays from the 2-Level-Mass matrix
+    call lsyssc_getbase_double(rprojection%rmatrix2Lvl, p_Da)
+    call lsyssc_getbase_Kcol(rprojection%rmatrix2Lvl, p_Kcol)
+    call lsyssc_getbase_Kld(rprojection%rmatrix2Lvl, p_Kld)
+    
+    ! Format the coarse mesh vector
+    call lalg_clearVectorDble(p_Dcoarse, rcoarseVector%NEQ)
 
+    ! And perform the transposed matrix-vector multiplication
+    do i = 1, rfinevector%NEQ
+      do j = p_Kld(i), p_Kld(i+1)-1
+        k = p_Kcol(j)
+        p_Dcoarse(k) = p_Dcoarse(k) + p_Da(j)*p_Dtmp(i)
+      end do
     end do
-
-    ! Multiply temporary vector with transposed 2-Level-Mass
-    call lsyssc_scalarMatVec(rprojection%rmatrix2LvlMassT, rtmp,&
-                             rcoarseVector, 1.0_DP, 0.0_DP)
     
     ! That's it
 
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mlprj_initMatrixProjection (rprojection,rmatrixProl)
+
+!<description>
+  ! Sets the prolongation matrix which is needed for matrix-based projection.
+!</description>
+  
+!<input>
+  ! The prolongation matrix
+  type(t_matrixScalar), intent(IN) :: rmatrixProl
+!</input>
+
+!<inputoutput>
+  ! The scalar projection structure for which the matrix is to be set.
+  type(t_interlevelProjectionScalar), intent(INOUT) :: rprojection 
+!</inputout>
+
+!</subroutine>
+
+    ! This is a matrix-based projection
+    rprojection%iprojType = MLP_PROJ_TYPE_MATRIX
+   
+    ! Create a shared copy of the prolongation matrix
+    call lsyssc_duplicateMatrix(rmatrixProl, rprojection%rmatrixProl, &
+                                LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+    
+    ! That's it
+  
   end subroutine
 
 end module
