@@ -3290,14 +3290,31 @@ contains
 !</subroutine>
 
   ! local variables
+  integer :: NEQ
   logical :: bvirt_trans = .false.
   logical :: btrans = .false.
   
     ! Should we multiply by the matrix transpose?
     if(present(btranspose)) btrans = btranspose
-
-    ! If the scale factor is =0, we have nothing to do.
-    if (rmatrix%dscaleFactor .eq. 0.0_DP) return
+    
+    ! If the scale factor is = 0 or cx = 0, we don't want to perform a MV
+    ! multiplication. We just need to take care of the cy then...
+    if ((cx*rmatrix%dscaleFactor) .eq. 0.0_DP) then
+      
+      if(cy .eq. 0.0_DP) then
+        ! Simply clear ry
+        call lsyssc_clearVector(ry)
+        
+      else if(cy .ne. 1.0_DP) then
+        ! Scale ry by cy
+        call lsyssc_scaleVector(ry,cy)
+        
+      end if
+      
+      ! And exit this routine
+      return
+      
+    end if
     
     ! Vectors must be compatible to the matrix.
     call lsyssc_isMatrixCompatible (rx,rmatrix, btrans)
@@ -3319,11 +3336,19 @@ contains
     ! Is the matrix 'virtually transposed' ?
     bvirt_trans = (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)
     
-    ! Handle the scaling factor by multiplication of cx with dscaleFactor.
-    !
-    ! Now, which matrix format do we have?
-    
+    ! By what do we multiply now? The matrix itself or its transposed?
     if (bvirt_trans .eqv. btrans) then
+      
+      ! We are multiplying by te matrix itself. Now is the matrix virtually
+      ! transposed?
+      if(bvirt_trans) then
+        ! Yes, so exchange NEQ with NCOLS
+        NEQ   = rmatrix%NCOLS
+      else
+        ! No, so simply copy NEQ
+        NEQ   = rmatrix%NEQ
+      end if
+    
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
       
@@ -3338,7 +3363,7 @@ contains
           case (ST_DOUBLE)
             ! double precision matrix, double precision vectors
             call lsyssc_LAX79doubledouble (&
-                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
           
           case DEFAULT
             print *,'Only double precision vectors supported for now in MV!'
@@ -3353,6 +3378,16 @@ contains
         
       case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
         
+        ! We are multiplying by the transposed matrix. Now is the matrix
+        ! virtually transposed?
+        if(.not. bvirt_trans) then
+          ! No, so exchange NEQ with NCOLS
+          NEQ   = rmatrix%NCOLS
+        else
+          ! Yes, so simply copy NEQ
+          NEQ   = rmatrix%NEQ
+        end if
+
         ! Take care of the precision of the entries
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -3364,11 +3399,11 @@ contains
             select case(rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
               call lsyssc_LAX79INTL1doubledouble (&
-                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
 
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDdoubledouble (&
-                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
 
             case DEFAULT
               print *, 'Invalid interleave matrix format!'
@@ -3397,7 +3432,7 @@ contains
           case (ST_DOUBLE)
             ! double precision matrix, double precision vectors
             call lsyssc_LATXDdoubledouble (&
-                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
           
           case DEFAULT
             print *,'Only double precision vectors supported for now in MV!'
@@ -3420,42 +3455,18 @@ contains
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
       
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
       
         ! Take care of the precision of the entries
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
-          ! Format 9 multiplication
+          ! Format 7 and Format 9 multiplication
           select case (rx%cdataType)
           
           case (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            call lsyssc_LTX9doubledouble (&
-                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
-          
-          case DEFAULT
-            print *,'Only double precision vectors supported for now in MV!'
-            call sys_halt()
-            
-          end select
-          
-        case DEFAULT
-          print *,'Only double precision matrices supported for now in MV!'
-          call sys_halt()
-        end select
-        
-      case (LSYSSC_MATRIX7)
-      
-        ! Take care of the precision of the entries
-        select case (rmatrix%cdataType)
-        case (ST_DOUBLE)
-          ! Format 7 multiplication
-          select case (rx%cdataType)
-          
-          case (ST_DOUBLE)
-            ! double precision matrix, double precision vectors
-            call lsyssc_LTX7doubledouble (&
-                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+            call lsyssc_LTX79doubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
           
           case DEFAULT
             print *,'Only double precision vectors supported for now in MV!'
@@ -3479,7 +3490,7 @@ contains
           case (ST_DOUBLE)
             ! double precision matrix, double precision vectors
             call lsyssc_LATXDdoubledouble (&
-                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy,NEQ)
           
           case DEFAULT
             print *,'Only double precision vectors supported for now in MV!'
@@ -3510,7 +3521,7 @@ contains
     ! double precision matrix,
     ! double precision vectors
     
-    subroutine lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy)
+    subroutine lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -3519,111 +3530,106 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
+    integer(PREC_VECIDX), intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     integer(PREC_MATIDX) :: ia
     integer(PREC_VECIDX) :: irow,icol
-    real(DP) :: dtmp
-    integer(PREC_VECIDX) :: NEQ
+    real(DP) :: dt
 
       ! Get the matrix
       call lsyssc_getbase_double (rmatrix,p_DA)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       
-      ! Get NEQ - from the matrix, not from the vector!
-      NEQ = rmatrix%NEQ
-
       ! Get the vectors
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
       
-      ! By commenting in the following two lines,
-      ! one can gain a slight speedup in the matrix vector
-      ! multiplication by avoiding some checks and by using
-      ! arrays with undefined length.
-      ! Makes a difference of 57 to 40 MFLOP/s, but should only
-      ! be used in RELEASE-mode!
-      !
-      ! #ifdef RELEASE
-      ! CALL lsyssc_qLAX79doubledouble (p_DA,p_Kcol,p_Kld,p_Dx,p_Dy,cx,cy,NEQ)
-      ! RETURN
-      ! #endif
-      
       ! Perform the multiplication
-      if (cx .ne. 0.0_DP) then
+      if(cx .ne. 1.0_DP) then
       
-        if (cy .eq. 0.0_DP) then
-        
-          ! cy = 0. We have simply to make matrix*vector without adding ry.
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to ry.
-          ! Don't multiply with cy, this comes later.
-          !
-          ! What is this complicated IF-THEN structure for?
-          ! Well, to prevent an initialisation of rx with zero in case cy=0!
-       
-!$omp parallel do default(shared) private(irow,icol,ia)
-          do irow=1,NEQ
-            ia   = p_Kld(irow)
-            icol = p_Kcol(ia)
-            p_Dy(irow) = p_Dx(icol) * p_DA(ia)
-          end do
-!$omp end parallel do
+        if(cy .eq. 0.0_DP) then
 
-          ! Now we have an initial ry where we can do a usual MV
-          ! with the rest of the matrix...
-          
-        else 
-        
-          ! cy <> 0. We have to perform matrix*vector + vector.
-          ! What we actually calculate here is:
-          !    ry  =  cx * A * x  +  cy * y
-          !        =  cx * ( A * x  +  cy/cx * y).
-          !
-          ! Scale down y:
-        
-          dtmp = cy/cx
-          if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(p_Dy,dtmp)
-          end if
-          
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to the (scaled) ry.
-          
-!$omp parallel do default(shared) private(irow,icol,ia)
-          do irow=1,NEQ
-            ia   = p_Kld(irow)
-            icol = p_Kcol(ia)
-            p_Dy(irow) = p_Dx(icol)*p_DA(ia) + p_Dy(irow) 
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = cx*dt
           end do
-!$omp end parallel do
-          
-        endif
+          !$omp end parallel do
         
-        ! Multiply the rest of rx with the matrix and add it to ry:
-        
-!$omp parallel do default(shared) private(irow,icol,ia)
-        do irow=1,NEQ
-          do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
-            icol = p_Kcol(ia)
-            p_Dy(irow) = p_Dy(irow) + p_DA(ia)*p_Dx(icol)
+        else if(cy .eq. 1.0_DP) then
+
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = p_Dy(irow) + cx*dt
           end do
-        end do
-!$omp end parallel do
+          !$omp end parallel do
         
-        ! Scale by cx, finish.
+        else
+
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = cy*p_Dy(irow) + cx*dt
+          end do
+          !$omp end parallel do
         
-        if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (p_Dy,cx)
         end if
+      
+      else
+      
+        if(cy .eq. 0.0_DP) then
+
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = dt
+          end do
+          !$omp end parallel do
         
-      else 
-        ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(p_Dy,cy)
-      endif
+        else if(cy .eq. 1.0_DP) then
+
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = p_Dy(irow) + dt
+          end do
+          !$omp end parallel do
+        
+        else
+
+          !$omp parallel do private(ia,dt) default(shared)
+          do irow = 1, NEQ
+            dt = 0.0_DP
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            end do
+            p_Dy(irow) = cy*p_Dy(irow) + dt
+          end do
+          !$omp end parallel do
+        
+        end if
+      
+      end if
    
     end subroutine
     
@@ -3728,13 +3734,13 @@ contains
       endif
    
     end subroutine
-    
+        
     !**************************************************************
     ! Format 7 and Format 9 full interleaved multiplication
     ! double precision matrix,
     ! double precision vectors
     
-    subroutine lsyssc_LAX79INTL1doubledouble (rmatrix,rx,ry,cx,cy)
+    subroutine lsyssc_LAX79INTL1doubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -3743,13 +3749,13 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
+    integer(PREC_VECIDX), intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     integer(PREC_VECIDX) :: irow,icol,ia
     real(DP) :: dtmp
-    integer(PREC_VECIDX) :: NEQ
     integer :: ivar,jvar
     integer :: NVAR
 
@@ -3758,9 +3764,6 @@ contains
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       
-      ! Get NEQ - from the matrix, not from the vector!
-      NEQ = rmatrix%NEQ
-
       ! Get NVAR - from the matrix, not from the vector!
       NVAR = rmatrix%NVAR
 
@@ -3880,7 +3883,7 @@ contains
     ! double precision matrix,
     ! double precision vectors
     
-    subroutine lsyssc_LAX79INTLDdoubledouble (rmatrix,rx,ry,cx,cy)
+    subroutine lsyssc_LAX79INTLDdoubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -3889,13 +3892,13 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
+    integer(PREC_VECIDX), intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     integer(PREC_VECIDX) :: irow,icol,ia
     real(DP) :: dtmp
-    integer(PREC_VECIDX) :: NEQ
     integer :: ivar,jvar
     integer :: NVAR
 
@@ -3903,9 +3906,6 @@ contains
       call lsyssc_getbase_double (rmatrix,p_DA)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
-      
-      ! Get NEQ - from the matrix, not from the vector!
-      NEQ = rmatrix%NEQ
 
       ! Get NVAR - from the matrix, not from the vector!
       NVAR = rmatrix%NVAR
@@ -4012,7 +4012,7 @@ contains
     ! As we have  diagonal matrix, this is used for both, MV and
     ! tranposed MV.
     
-    subroutine lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+    subroutine lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -4021,18 +4021,16 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
+    integer(PREC_VECIDX), intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     real(DP) :: dtmp
-    integer(PREC_VECIDX) :: irow,NEQ
+    integer(PREC_VECIDX) :: irow
     integer :: ivar,NVAR
 
       ! Get the matrix - it's an 1D array
       call lsyssc_getbase_double (rmatrix,p_DA)
       
-      ! Get NEQ - from the matrix, not from the vector!
-      NEQ = rmatrix%NEQ
-
       ! Get NVAR - from the vector not from the matrix!
       NVAR = rx%NVAR
 
@@ -4124,13 +4122,13 @@ contains
       end if
 
     end subroutine
-   
+    
     !**************************************************************
-    ! Format 7 multiplication, transposed matrix
+    ! Format 7/9 multiplication, transposed matrix
     ! double precision matrix,
     ! double precision vectors
     
-    subroutine lsyssc_LTX7doubledouble (rmatrix,rx,ry,cx,cy)
+    subroutine lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -4139,113 +4137,7 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-
-    real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_VECIDX) :: irow,icol
-    real(DP) :: dtmp
-    integer(PREC_VECIDX) :: NEQ
-
-      ! Get the matrix
-      call lsyssc_getbase_double (rmatrix,p_DA)
-      call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rmatrix,p_Kld)
-      
-      ! NCOLS(real matrix) = NEQ(saved matrix structure) !
-      NEQ = rmatrix%NCOLS
-
-      ! Get the vectors
-      call lsyssc_getbase_double (rx,p_Dx)
-      call lsyssc_getbase_double (ry,p_Dy)
-      
-      ! Perform the multiplication.
-      if (cx .ne. 0.0_DP) then
-      
-        if (cy .eq. 0.0_DP) then
-        
-          ! cy = 0. We have simply to make matrix*vector without adding ry.
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to ry.
-          ! Don't multiply with cy, this comes later.
-          !
-          ! What is this complicated IF-THEN structure for?
-          ! Well, to prevent an initialisation of rx with zero in case cy=0!
-          
-!$omp parallel do&
-!$omp&default(shared) &
-!$omp&private(irow)
-          do irow=1,NEQ
-            p_Dy(irow) = p_Dx(irow)*p_DA(p_Kld(irow)) 
-          end do
-!$omp end parallel do
-          
-          ! Now we have an initial ry where we can do a usual MV
-          ! with the rest of the matrix...
-          
-        else 
-        
-          ! cy <> 0. We have to perform matrix*vector + vector.
-          ! What we actually calculate here is:
-          !    ry  =  cx * A^t * x  +  cy * y
-          !        =  cx * ( A^t * x  +  cy/cx * y).
-          !        =  cx * ( (x^t * A)  +  cy/cx * y^t)^t.
-          !
-          ! Scale down y:
-        
-          dtmp = cy/cx
-          if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(p_Dy,dtmp)
-          end if
-          
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to the (scaled) ry.
-          
-!$omp parallel do&
-!$omp&default(shared) &
-!$omp&private(irow)
-          do irow=1,NEQ
-            p_Dy(irow) = p_Dy(irow) + p_Dx(irow)*p_DA(p_Kld(irow)) 
-          end do
-!$omp end parallel do
-          
-        endif
-        
-        ! Multiply the rest of rx with the matrix and add it to ry:
-        
-        do irow=1,NEQ
-          do icol = p_Kld(irow)+1,p_Kld(irow+1)-1
-            p_Dy(p_Kcol(icol)) = p_Dy(p_Kcol(icol)) + p_Dx(irow)*p_DA(icol)
-          end do
-        end do
-        
-        ! Scale by cx, finish.
-        
-        if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (p_Dy,cx)
-        end if
-        
-      else 
-        ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(p_Dy,cy)
-      endif
-      
-    end subroutine
-
-    !**************************************************************
-    ! Format 9 multiplication, transposed matrix
-    ! double precision matrix,
-    ! double precision vectors
-    
-    subroutine lsyssc_LTX9doubledouble (rmatrix,rx,ry,cx,cy)
-
-    ! Save arguments as above - given as parameters as some compilers
-    ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
+    integer(PREC_VECIDX), intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
@@ -4253,67 +4145,51 @@ contains
     integer(PREC_MATIDX) :: ia
     integer(PREC_VECIDX) :: irow,icol
     real(DP) :: dtmp
-    integer(PREC_VECIDX) :: NEQ
 
       ! Get the matrix
       call lsyssc_getbase_double (rmatrix,p_DA)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       
-      ! NCOLS(real matrix) = NEQ(saved matrix structure) !
-      NEQ = rmatrix%NCOLS
-
       ! Get the vectors
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
       
-      ! Perform the multiplication.
-      if (cx .ne. 0.0_DP) then
+      ! Unfortunately, if cy != 1, then we need to scale y now.
+      if(cy .eq. 0.0_DP) then
+        ! Clear y
+        call lalg_clearVectorDble (p_Dy)
       
-        if (cy .eq. 0.0_DP) then
+      else if(cy .ne. 1.0_DP) then
+        ! Scale y
+        call lalg_scaleVectorDble (p_Dy, cy)
+      
+      end if
+      
+      ! Perform the multiplication.
+      if (cx .ne. 1.0_DP) then
         
-          ! cy = 0. Clear the output vector at first
-          call lalg_clearVectorDble (p_Dy)
-          
-          ! Now we have an empty ry where we can do a usual MV
-          ! with the rest of the matrix...
-          
-        else 
+        do irow = 1, NEQ
         
-          ! cy <> 0. We have to perform matrix*vector + vector.
-          ! What we actually calculate here is:
-          !    ry  =  cx * A^t * x  +  cy * y
-          !        =  cx * ( A^t * x  +  cy/cx * y).
-          !        =  cx * ( (x^t * A)  +  cy/cx * y^t)^t.
-          !
-          ! Scale down y:
-        
-          dtmp = cy/cx
-          if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(p_Dy,dtmp)
-          end if
-          
-        endif
-        
-        ! Multiply rx with the matrix and add it to ry:
-        
-        do irow=1,NEQ
-          do ia = p_Kld(irow),p_Kld(irow+1)-1
+          do ia = p_Kld(irow), p_Kld(irow+1)-1
             icol = p_Kcol(ia)
-            p_Dy(icol) = p_Dy(icol) + p_Dx(irow)*p_DA(ia)
+            p_Dy(icol) = p_Dy(icol) + cx*p_DA(ia)*p_Dx(irow)
           end do
+          
+        end do
+      
+      else
+
+        do irow = 1, NEQ
+        
+          do ia = p_Kld(irow), p_Kld(irow+1)-1
+            icol = p_Kcol(ia)
+            p_Dy(icol) = p_Dy(icol) + p_DA(ia)*p_Dx(irow)
+          end do
+          
         end do
         
-        ! Scale by cx, finish.
-        
-        if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (p_Dy,cx)
-        end if
-        
-      else 
-        ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(p_Dy,cy)
-      endif
+      end if
       
     end subroutine
 
