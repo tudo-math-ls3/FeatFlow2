@@ -782,7 +782,7 @@ MODULE cc2dmediumm2spacetimesolver
     ! =0: Don't write anything.
     ! =1: Write out the matrix to a text file.
     ! =2: Write out the matrix to a text file and stop the program afterwards.
-    logical :: cwriteMatrix = .false.
+    integer :: cwriteMatrix = 0
     
     ! File name of the file receiving the system matrix in human readable
     ! form if bwriteMatrix=true.
