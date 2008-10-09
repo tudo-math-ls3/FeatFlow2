@@ -146,6 +146,8 @@ CONTAINS
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX,istep
     INTEGER, DIMENSION(:,:), ALLOCATABLE :: Ispacetimelevel
 
+    call output_lbrk()
+
     ! Get the minimum and maximum time level from the parameter list    
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMIN',TIMENLMIN,1)
@@ -160,6 +162,8 @@ CONTAINS
     ! the finest time level as well as the finest space level.
     ALLOCATE(RspaceTimeDiscr(1:TIMENLMAX))
     
+    call output_line ('Initialising space-time discretisation of the maximum level...')
+    
     CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
         rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX))
         
@@ -172,10 +176,13 @@ CONTAINS
         
     ! If a start vector is given, propagate it to all timesteps.
     IF (PRESENT(rvector)) THEN
+      call output_line ('Propagating start vector...')
       DO istep = 1,rx%NEQtime
         CALL sptivec_setTimestepData(rx,istep,rvector)
       END DO
     END IF
+
+    call output_line ('Reading target flow...')
 
     ! Read the target flow -- stationary or nonstationary
     CALL cc_initTargetFlow (rproblem,&
@@ -197,6 +204,7 @@ CONTAINS
     SELECT CASE (cspaceTimeSolverType)
     CASE (0)
       ! 1-level (in time) Gauss elimination solver.
+      call output_line ('Invoking Gauss elimination solver...')
       CALL cc_solveSupersystemDirect (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
 
@@ -205,6 +213,7 @@ CONTAINS
       ! in space. 
       !
       ! Call the defect correction solver      
+      call output_line ('Invoking defect correction solver...')
       CALL cc_solveSupersystemDefCorr (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd, ctypePreconditioner)
       
@@ -227,6 +236,8 @@ CONTAINS
       CALL parlst_getvalue_double (rproblem%rparamList,'TIME-MULTIGRID',&
           'dspacetimeRefFactor',dspacetimeRefFactor,1.0_DP)
 
+      call output_line ('Initialising space-time discretisation of the lower levels...')
+      
       ! Initialise the supersystem on all levels below the topmost one
       SELECT CASE (ispacelevelcoupledtotimelevel)
       CASE (0)
@@ -329,13 +340,18 @@ CONTAINS
       END DO
       
       ! Call the multigrid solver to solve on all these levels
+      call output_line ('Invoking nonlinear space-time solver...')
       CALL cc_solveSupersystemMultigrid (rproblem, &
           RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd, ctypePreconditioner)
     END SELECT
     
+    call output_line ('Postprocessing...')
+    
     ! POSTPROCESSING
     !
     CALL cc_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
+    
+    call output_line ('Cleaning up...')
     
     CALL cc_doneTargetFlow (rproblem)
     

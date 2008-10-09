@@ -2359,6 +2359,8 @@ CONTAINS
     ! Implement the bondary conditions into all initial solution vectors
     CALL tbc_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
 
+    call output_line ('NLST-Solver: Generating initial RHS...')
+
     ! Generate the RHS for the initial condition.
     call lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rinitialCondRHS,.false.)
@@ -2381,6 +2383,8 @@ CONTAINS
     
     ! Loop over the time levels.
     DO ilev=1,SIZE(RspatialPrecond)
+
+      call output_line ('NLST-Solver: Initialising MG solver on level '//sys_siL(ilev,10))
     
       ! Type of smoother to use?
       CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
@@ -2741,6 +2745,8 @@ CONTAINS
     ! That matrix also has to apply projection operators when being applied
     ! to a vector -- in case control constraints are active.
     rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
+    
+    call output_line ('NLST-Solver: Preparing space-time preconditioner...')
     
     ! Attach matrix information to the linear solver
     CALL sptils_setMatrices (p_rsolverNode,RspaceTimePrecondMatrix)
