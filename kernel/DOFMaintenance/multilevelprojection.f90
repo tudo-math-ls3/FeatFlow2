@@ -8890,7 +8890,7 @@ contains
   real(DP), dimension(:), pointer :: p_Ddef, p_Ddir, p_Dtmp
   
     ! Choose tolerance
-    dtol = max(deps**2, 10.0_DP*SYS_EPSREAL)
+    dtol = max(deps**2, SYS_EPSREAL**2)
   
     ! First of all, get the number of equations
     n = rmass%NEQ

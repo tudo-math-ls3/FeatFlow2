@@ -7,15 +7,10 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# This module is based on poisson2d_method1_mg, but using the E037 element
-!# (Q2~ with bubble) and L2-projection for multi-level operations and
+!# This module is based on poisson2d_method1_mg, but using the EB30 element
+!# (Q1~ with bubble) and L2-projection for multi-level operations and
 !# post-processing, i.e. prolongation, restiction and the spatial projection
 !# for the UCD output.
-!#
-!# Remark:
-!# As we are currently facing some issues with the mass matrix of the E037
-!# element, this example temporarily uses the E030 (integral-mean-based Q1~)
-!# instead.
 !#
 !# </purpose>
 !##############################################################################
@@ -157,8 +152,8 @@ CONTAINS
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror
     
-    ! Two spatial discretisations for the L2-projection of the solution
-    TYPE(t_spatialDiscretisation) :: rdiscrQ1, rdiscrPrj
+    ! One spatial discretisation for the L2-projection of the solution
+    TYPE(t_spatialDiscretisation) :: rdiscrQ1
     
     ! Two scalar matrices for the L2-projection
     TYPE(t_matrixScalar) :: rmatrixMassPrj, rlumpedMassPrj
@@ -183,7 +178,7 @@ CONTAINS
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 2
-    NLMAX = 7
+    NLMAX = 6
     
     ! Allocate memory for all levels
     ALLOCATE(Rlevels(NLMIN:NLMAX))
@@ -214,7 +209,7 @@ CONTAINS
       
       ! Create a standard mesh
       CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
-        rboundary)
+          rboundary)
     
     END DO
 
@@ -234,7 +229,7 @@ CONTAINS
     DO i = NLMIN, NLMAX
       CALL spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_E030,CUB_G3X3,Rlevels(i)%rtriangulation, rboundary)
+          EL_EB30,CUB_G3X3,Rlevels(i)%rtriangulation, rboundary)
     END DO
                  
     ! Now as the discretisation is set up, we can start to generate
@@ -408,9 +403,11 @@ CONTAINS
                                     Rlevels(i)%rmatrix)
       
       ! And initialise the L2-projection
-      CALL mlprj_initL2Proj (&
+      CALL mlprj_initL2Projection (&
           Rlevels(i)%rprojection%RscalarProjection(1,1),&
           Rlevels(i)%rmatrix2Lvl, Rlevels(i)%rmatrixMass)
+      
+      Rlevels(i)%rprojection%RscalarProjection(1,1)%depsL2 = 1e-20_DP
       
     END DO
 
@@ -442,10 +439,7 @@ CONTAINS
     
       ! Create a Jacobi smoother
       CALL linsol_initJacobi(p_rsmoother)
-      
-      ! Create an ILU(0) smoother
-      !CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-      
+
       ! We will use 4 smoothing steps with damping parameter 0.7
       CALL linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
 
@@ -521,15 +515,15 @@ CONTAINS
     CALL output_line('Performing L2-projection of solution to Q1 space')
     CALL output_lbrk()
 
-    ! We now have the solution vector, but unfortunately, it's a Q2~ solution
+    ! We now have the solution vector, but unfortunately, it's a Q1~ solution
     ! vector and what we need are the function values in the vertices of the
     ! mesh. Instead of calling the spatial-projection module to interpolate
-    ! the solution we will perform a "true" L2-projection of the Q2~ solution
+    ! the solution we will perform a "true" L2-projection of the Q1~ solution
     ! into the Q1 space, i.e. we want to "solve"
     !
     !                   v_h = u_h                                    (1)
     !
-    ! with v_h in Q1 and u_h being our actual discrete Q2~ solution of the
+    ! with v_h in Q1 and u_h being our actual discrete Q1~ solution of the
     ! Poisson equation. So as a weak formulation of (1) we get
     !
     !          (v_h, phi_i) = (u_h, phi_i)  for all 1 <= i <= m      (2)
@@ -541,7 +535,7 @@ CONTAINS
     !                   u_h = sum (x_k * psi_k)                      (3)
     !                         k=1
     !
-    ! with (psi_1,...,psi_n) being the basis functions of Q2~ and
+    ! with (psi_1,...,psi_n) being the basis functions of Q1~ and
     ! x = (x_1,...,x_n) being our actual solution vector rvectorBlock.
     ! Now the discrete Q1 function v_h we search for also has a coefficient
     ! vector y = (y_1,...,y_m) and can be written as
@@ -561,7 +555,7 @@ CONTAINS
     !                 N_ik := (psi_k, phi_i)
     !
     ! So there are 2 matrices we need to build: the Q1 mass matrix (M) and a
-    ! mass matrix with Q2~ being its trial and Q1 being its test space (N).
+    ! mass matrix with Q1~ being its trial and Q1 being its test space (N).
     ! Afterwards we solve (5) and get the coefficient vector y of our
     ! Q1 solution v_h...
     !
@@ -569,13 +563,11 @@ CONTAINS
     CALL spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, CUB_G3X3, &
                                   Rlevels(NLMAX)%rtriangulation, rboundary)
 
-    ! Derive a discretisation structure with Q2~ for the test space.
-    call spdiscr_deriveSimpleDiscrSc (rdiscrQ1, EL_E030, CUB_G3X3, &
-                                      rdiscrPrj)
-
     ! Now create the the matrix structure of N.
-    ! Test space is Q1, trial space is Q1~.
-    CALL bilf_createMatrixStructure (rdiscrPrj,LSYSSC_MATRIX9, rmatrixMassPrj, rdiscrQ1)
+    ! The trial space is EB30 and the test space is Q1:
+    CALL bilf_createMatrixStructure (&
+        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
+        LSYSSC_MATRIX9, rmatrixMassPrj, rdiscrQ1)
 
     ! And assemble the mass matrix entries of N:
     CALL stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
@@ -590,11 +582,9 @@ CONTAINS
     CALL lsyssc_scalarMatVec(rmatrixMassPrj, rvectorBlock%rvectorBlock(1),&
                              rvecRhsQ1, 1.0_DP, 0.0_DP)
     
-    ! At this point we won't need the matrix N and its underlying
-    ! discretisation structure anymore, as we just needed them to get a
-    ! rhs vector for our Q1 mass system - so we'll release them now.
+    ! At this point we won't need the matrix N anymore, as we just needed
+    ! it to get a rhs vector for our Q1 mass system - so we'll release it now.
     CALL lsyssc_releaseMatrix(rmatrixMassPrj)
-    CALL spdiscr_releaseDiscr(rdiscrPrj)
 
     ! As rmatrixMassPrj is free now, we will use it to store M
     CALL bilf_createMatrixStructure (rdiscrQ1,LSYSSC_MATRIX9,rmatrixMassPrj)
@@ -647,14 +637,14 @@ CONTAINS
                                -1.0_DP, 1.0_DP)
       
       ! Calculate the current residual = || d_i ||_2
-      dres = lsyssc_vectorNorm(rvecDefQ1, LINALG_NORMEUCLID)
+      dres = lsyssc_vectorNorm(rvecDefQ1, LINALG_NORML2)
       
       ! Print the residual to screen
       CALL output_line('L2prj: Iteration ' // TRIM(sys_siL(i,10)) // &
                        ',  !!RES!! = ' // TRIM(sys_sdEL(dres,15)))
       
       ! Is our L2-projection good enough?
-      IF (dres .LE. 1e-8_DP) EXIT
+      IF (dres .LE. 1e-7_DP) EXIT
       
       ! Otherwise multiply the defect by the inverse of L
       CALL lsyssc_invertedDiagMatVec(rlumpedMassPrj, rvecDefQ1, 1.0_DP,&
