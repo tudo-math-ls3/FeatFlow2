@@ -10848,13 +10848,6 @@ contains
   ! matrix in rtransposedMatrix.
   ! itransFlag decides (if specified) how the creation of the
   ! transposed matrix is to be performed.
-  !
-  ! Remark: Building a transposed matrix involves switching the trial- and
-  !  test-functions of the underlying discretisation. This routine does
-  !  *not* perform this switching! If the matrices base on a 
-  !  discretisation, the application has to set up the corresponding
-  !  discretisation structure manually and to attach it to the transposed
-  !  matrix!
 !</description>
 
 !<input>
