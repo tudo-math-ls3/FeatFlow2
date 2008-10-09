@@ -17904,7 +17904,7 @@ contains
 
 !<function>
   
-  pure logical function lsyssc_hasMatrixStricture (rmatrix)
+  pure logical function lsyssc_hasMatrixStructure (rmatrix)
   
 !<description>
   ! Returns whether a matrix has a structure or not.
@@ -17927,7 +17927,7 @@ contains
 
     ! All up to now implemented matrix types use Kcol if they have a 
     ! structure...
-    lsyssc_hasMatrixStricture = rmatrix%h_Kcol .ne. ST_NOHANDLE
+    lsyssc_hasMatrixStructure = rmatrix%h_Kcol .ne. ST_NOHANDLE
 
   end function
 
