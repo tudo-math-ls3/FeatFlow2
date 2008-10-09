@@ -102,7 +102,7 @@
 !#        CALL output_line ('This is an error message.',OU_CLASS_ERROR)
 !#        CALL output_line ('This is an warning message.',OU_CLASS_WARNING)
 !#
-!#     f) CALL output_line_sep (OU_SEP_MINUS)
+!#     f) CALL output_separator (OU_SEP_MINUS)
 !#
 !#     -> Writes a separation line with '-' signs to the terminal / log file
 !#
@@ -207,6 +207,18 @@ module genoutput
   ! Separator line: + character
   integer, parameter :: OU_SEP_PLUS   = 5
 
+  ! Separator line: ~ character
+  integer, parameter :: OU_SEP_TILDE  = 6
+
+  ! Separator line: & character
+  integer, parameter :: OU_SEP_AMPAND = 7
+
+  ! Separator line: % character
+  integer, parameter :: OU_SEP_PERC   = 8
+
+  ! Separator line: # character
+  integer, parameter :: OU_SEP_HASH   = 9
+  
 !</constantblock>
 
 !<constantblock>
@@ -296,8 +308,9 @@ contains
           action="write")
 
     if (istatus .ne. 0) then
-      write(unit=*,fmt=*) 'Error: io_openFileForWriting. &
-                          &Error while opening file "', trim(sfilename), '". ***'
+      write (unit=*, fmt=*) 'Error: io_openFileForWriting. &
+                            &Error while opening file "',&
+                            trim(sfilename), '". ***'
       iunit = -1
     endif
 
@@ -533,7 +546,7 @@ contains
 
   subroutine output_line_std (smessage, &
                               coutputClass, coutputMode, ssubroutine, &
-                              bnolinebreak,bnotrim)
+                              bnolinebreak, bnotrim)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
@@ -577,6 +590,7 @@ contains
   integer :: coMode, coClass, iofChannel, iotChannel
   logical :: bntrim, bnnewline
   character(LEN=len(smessage)+20+SYS_NAMELEN) :: smsg
+  character(LEN=OU_LINE_LENGTH) :: smsgadjusted
   
     ! Get the actual parameters.
     
@@ -603,7 +617,7 @@ contains
         ((coClass .eq. OU_CLASS_MSG) .or. &
          (coClass .eq. OU_CLASS_WARNING) .or. &
          (coClass .eq. OU_CLASS_ERROR)) ) then
-         
+      
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
         if (bnnewline) then
@@ -695,7 +709,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_lbrk (coutputClass, coutputMode, ssubroutine)
+  subroutine output_lbrk (coutputClass, coutputMode, ssubroutine, nlbrk)
 
 !<description>
   ! Writes a line break to the terminal, log file or error log file,
@@ -718,12 +732,26 @@ contains
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(IN), optional :: ssubroutine
   
-  ! OPTIONAL: Name
+  ! OPTIONAL: Number of linebreaks
+  integer, intent(IN), optional :: nlbrk
 !</input>
 
 !</subroutine>
 
-    call output_line_std ('', coutputClass, coutputMode, ssubroutine)
+    ! local variables
+    integer :: ilbrk
+
+    if (present(nlbrk)) then
+
+      do ilbrk = 1, nlbrk
+        call output_line_std ('', coutputClass, coutputMode, ssubroutine)
+      end do
+
+    else
+
+      call output_line_std ('', coutputClass, coutputMode, ssubroutine)
+
+    end if
 
   end subroutine
 
@@ -782,8 +810,17 @@ contains
       write (saux,'(A,I3,A)') '(',len(cstr),'(''$''))'
     case (OU_SEP_AT)
       write (saux,'(A,I3,A)') '(',len(cstr),'(''@''))'
+    case (OU_SEP_TILDE)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''~''))'
+    case (OU_SEP_AMPAND)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''&''))'
+    case (OU_SEP_PERC)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''%''))'
+    case (OU_SEP_HASH)
+      write (saux,'(A,I3,A)') '(',len(cstr),'(''#''))'
     case DEFAULT
-      print *,'output_separator: Unknown separator type: ',csepType
+      write (unit=*, fmt=*) 'output_separator: Unknown separator type: ',&
+                            csepType
       call sys_halt()
     end select
     
