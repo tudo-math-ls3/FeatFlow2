@@ -588,7 +588,7 @@ module triangulation
   
   integer(I32), parameter :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
   integer(I32), parameter :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
-  integer(I32), parameter :: TR_SHARE_IELEMENTSATFACE        = 2**22  ! K???
+  integer(I32), parameter :: TR_SHARE_IELEMENTSATFACE        = 2**22
   integer(I32), parameter :: TR_SHARE_IEDGESATFACE           = 2**23 
   integer(I32), parameter :: TR_SHARE_IFACESATEDGE           = 2**24
   integer(I32), parameter :: TR_SHARE_IFACESATVERTEX         = 2**25
@@ -693,34 +693,33 @@ module triangulation
   ! Each point has a number, which is usually an integer value.
   type t_elementCorners1D
     integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE1D) :: Icorners
-  end type
+  end type t_elementCorners1D
   
   ! Each 2D element consists of at most TRIA_MAXNVE2D points.
   ! Each point has a number, which is usually an integer value.
   type t_elementCorners2D
     integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D) :: Icorners
-  end type
+  end type t_elementCorners2D
 
   ! Each 2D element contains at most TRIA_MAXNME2D edges.
   ! Each edge has a number, which is usually an integer value.
   type t_elementEdges2D
     integer(PREC_EDGEIDX), dimension(TRIA_MAXNME2D) :: Iedges
-  end type
+  end type t_elementEdges2D
   
   ! Each 1D element contains at most TRIA_MAXNVE1D neighbour elements,
   ! each meeting the element in a vertice.
   ! Each neighbour element has a number, which is usually an integer value.
   type t_elementNeighbours1D
     integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE1D) :: Ineighbours
-  end type
-  
+  end type t_elementNeighbours1D
   
   ! Each 2D element contains at most NMAXEDGES neighbour elements,
   ! each meeting the element in an edge.
   ! Each neighbour element has a number, which is usually an integer value.
   type t_elementNeighbours2D
     integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNME2D) :: Ineighbours
-  end type
+  end type t_elementNeighbours2D
   
 !<typeblock>
   
@@ -744,27 +743,45 @@ module triangulation
     ! maintained by another triangulation structure and must not
     ! be deleted by TRIDEL. When the bit is 0, the array is a real
     ! copy of another array and must be deleted in TRIDEL.
-    ! Bit  0: DCORVG is a copy of another structure
-    ! Bit  1: DCORMG is a copy of another structure
-    ! Bit  2: KVERT  is a copy of another structure
-    ! Bit  3: KMID   is a copy of another structure
-    ! Bit  4: KADJ   is a copy of another structure
-    ! Bit  5: KVEL   is a copy of another structure
-    ! Bit  6: KMEL   is a copy of another structure
-    ! Bit  7: KNPR   is a copy of another structure
-    ! Bit  8: KMM    is a copy of another structure
-    ! Bit  9: KVBD   is a copy of another structure
-    ! Bit 10: KEBD   is a copy of another structure
-    ! Bit 11: KBCT   is a copy of another structure
-    ! Bit 12: DVBDP  is a copy of another structure
-    ! Bit 13: DMBDP  is a copy of another structure
-    ! Bit 14: KMBD   is a copy of another structure
-    ! Bit 16: KEAN   is a copy of another structure
-    ! Bit 17: KVBDI  is a copy of another structure
-    ! Bit 18: KMBDI  is a copy of another structure
-    ! Bit 19: DAREA  is a copy of another structure
-    ! Bit 20: IrefinementPatch/IrefinementPatchIdx is a copy of another structure
-    ! Bit 21: IcoarseGridElement is a copy of another structure
+    ! Bit  0: DvertexCoords          is a copy of another structure (DCORVG)
+    ! Bit  1: DfreeVertexCoordinates is a copy of another structure (DCORMG)
+    ! Bit  2: IverticesAtElement     is a copy of another structure (KVERT)
+    ! Bit  3: IedgesAtElement        is a copy of another structure (KMID)
+    ! Bit  4: IneighboursAtElement   is a copy of another structure (KADJ)
+    ! Bit  5: IelementsAtVertex +
+    !         IelementsAtVertexIdx   is a copy of another structure (KVEL)
+    ! Bit  6: IelementsAtEdge +
+    !         IelementsAtEdge3D +
+    !         IelementsAtEdgeIdx3D   is a copy of another structure (KMEL)
+    ! Bit  7: InodalProperty         is a copy of another structure (KNPR)
+    ! Bit  8: IverticesAtBoundary    is a copy of another structure (KVBD)
+    ! Bit  9: IelementsAtBoundary    is a copy of another structure (KEBD)
+    ! Bit 10: IboundaryCpIdx         is a copy of another structure (KBCT)
+    ! Bit 11: DvertexParameterValue  is a copy of another structure (DVBDP)
+    ! Bit 12: DedgeParameterValue    is a copy of another structure (DMBDP)
+    ! Bit 13: IedgesAtBoundary       is a copy of another structure (KMBD)
+    ! Bit 14: IverticesAtEdge        is a copy of another structure (KEAN)
+    ! Bit 15: IboundaryVertexPos     is a copy of another structure (KVBDI)
+    ! Bit 16: IboundaryEdgePos       is a copy of another structure (KMBDI)
+    ! Bit 17: DelementArea           is a copy of another structure (DAREA)
+    ! Bit 18: IrefinementPatch +
+    !         IrefinementPatchIdx    is a copy of another structure
+    ! Bit 19: IcoarseGridElement     is a copy of another structure
+    ! Bit 20: IverticesAtFace        is a copy of another structure (KVAR)
+    ! Bit 21: IfacesAtElement        is a copy of another structure (KAREA)
+    ! Bit 22: IelementsAtFace        is a copy of another structure
+    ! Bit 23: IedgesAtFace           is a copy of another structure
+    ! Bit 24: IfacesAtEdge +
+    !         IfacesAtEdgeIdx        is a copy of another structure
+    ! Bit 25: IfacesAtVertex +
+    !         IfacesAtVertexIdx      is a copy of another structure
+    ! Bit 26: IfacesAtBoundary +
+    !         IboundaryCpFacesIdx    is a copy of another structure
+    ! Bit 27: IedgesAtVertex +
+    !          IedgesAtVertexIdx     is a copy of another structure
+    ! Bit 28: ItwistIndexEdges +
+    !         ItwistIndexFaces       is a copy of another structure
+    ! Bit 29: ImacroNodalProperty    is a copy of another structure
     integer(I32)             :: iduplicationFlag
   
     ! Dimension of the triangulation.
@@ -1373,7 +1390,7 @@ module triangulation
     !       p_ItwistIndexEdges = array [1..#faces,1..NEL] of integer.
     integer        :: h_ItwistIndexFaces = ST_NOHANDLE
 
-  end type
+  end type t_triangulation
 
 !</typeblock>
 
@@ -1406,11 +1423,12 @@ module triangulation
     ! Vertices not on the boundary are identified by DvertexPar(.) = -1.
     real(DP), dimension(:), pointer :: p_DallVerticesParameterValue => null()
     
-  end type
-  
-!</types>
+  end type t_cellSet
+
+!</typeblock>
 
 !<typeblock>
+
   ! a connector connects to adjacent cells (i.e. a face in 3d)
   ! structure used to generate 3d connectivity
   type t_connector3d
@@ -1418,7 +1436,8 @@ module triangulation
       ! at 5 the element the face belongs to
       ! at 6 it stores the local face number
       integer, dimension(6) :: I_conData
-  end type
+    end type t_connector3d
+
 !</typeblock>
   
 !</types>
@@ -1435,9 +1454,7 @@ contains
 !<subroutine>
 
   subroutine tria_wrp_tria2Structure (TRIA, rtriangulation)
-  
-!!$  USE afcutil
-  
+
 !<description>
   ! Wrapper routine. Accepts an 'old' triangulation structure array of CC2D
   ! and converts it completely to a triangulation structure. All 'old'
@@ -1590,7 +1607,6 @@ contains
   call copy_featarray_double2d ('DCORMG',2,int(rtriangulation%NMT),TRIA(OLCORMG),&
                                 rtriangulation%h_DfreeVertexCoordinates)
   
-
   contains
   
     ! Now the COPY-sub-subroutines used above.
@@ -1659,7 +1675,7 @@ contains
     end do
     !$OMP END PARALLEL DO
     
-    end subroutine
+    end subroutine copy_featarray_int2d
 
     ! *************************************************************************
     ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
@@ -1719,7 +1735,7 @@ contains
     end do
     !$OMP END PARALLEL DO
     
-    end subroutine
+    end subroutine copy_featarray_int1d
 
     ! *************************************************************************
     ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
@@ -1784,7 +1800,7 @@ contains
     end do
     !$OMP END PARALLEL DO
     
-    end subroutine
+    end subroutine copy_featarray_double2d
 
     ! *************************************************************************
     ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
@@ -1844,7 +1860,7 @@ contains
     end do
     !$OMP END PARALLEL DO
     
-    end subroutine
+    end subroutine copy_featarray_double1d
 
     ! *************************************************************************
     ! Builds a new KADJ structure, translates the old KVEL.
@@ -1949,16 +1965,16 @@ contains
     ! Set up last element in the index array.
     p_arrayidx(NVT+1) = nentries+1
     
-    end subroutine
+    end subroutine translate_KVEL
 
-  end subroutine
+  end subroutine tria_wrp_tria2Structure
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine tria_duplicate (rtriangulation,rbackupTriangulation,&
-                             iduplicationFlag,bupdate)
+  subroutine tria_duplicate (rtriangulation, rbackupTriangulation,&
+                             iduplicationFlag, bupdate)
   
 !<description>
   ! This routine makes a copy of a triangulation structure in memory.
@@ -2074,10 +2090,15 @@ contains
     ! Call checkAndCopy for all the arrays. this will either copy the handle
     ! or allocate new memory and copy the content of the array.
     
-    ! Bit  0: DCORVG 
+    ! Bit  0: DCORVG
     call checkAndCopy(idupflag, TR_SHARE_DVERTEXCOORDS,&
           rtriangulation%h_DvertexCoords, &
           rbackupTriangulation%h_DvertexCoords)
+
+    ! Bit  1: DCORMG 
+    call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates, &
+          rbackupTriangulation%h_DfreeVertexCoordinates)
 
     ! Bit  2: KVERT  
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
@@ -2094,29 +2115,6 @@ contains
           rtriangulation%h_IneighboursAtElement, &
           rbackupTriangulation%h_IneighboursAtElement)
 
-    ! Bit  6: KMEL   
-    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge, &
-          rbackupTriangulation%h_IelementsAtEdge)
-    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge3d, &
-          rbackupTriangulation%h_IelementsAtEdge3d)
-
-    ! Bit 14: KEAN   
-    call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
-          rtriangulation%h_IverticesAtEdge, &
-          rbackupTriangulation%h_IverticesAtEdge)
-
-    ! Bit  7: KNPR   
-    call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
-          rtriangulation%h_InodalProperty, &
-          rbackupTriangulation%h_InodalProperty)
-
-    ! Bit 17: DAREA  
-    call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
-          rtriangulation%h_DelementVolume, &
-          rbackupTriangulation%h_DelementVolume)
-
     ! Bit  5: KVEL   
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertexIdx, &
@@ -2125,28 +2123,36 @@ contains
           rtriangulation%h_IelementsAtVertex, &
           rbackupTriangulation%h_IelementsAtVertex)
 
-    ! Bit 10: KBCT   
-    call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
-          rtriangulation%h_IboundaryCpIdx, &
-          rbackupTriangulation%h_IboundaryCpIdx)
+    ! Bit  6: KMEL   
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge, &
+          rbackupTriangulation%h_IelementsAtEdge)
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d, &
+          rbackupTriangulation%h_IelementsAtEdge3D)
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d, &
+          rbackupTriangulation%h_IelementsAtEdgeIdx3D)
+
+    ! Bit  7: KNPR   
+    call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty, &
+          rbackupTriangulation%h_InodalProperty)
 
     ! Bit  8: KVBD   
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
           rtriangulation%h_IverticesAtBoundary, &
           rbackupTriangulation%h_IverticesAtBoundary)
 
-    ! Bit 13: KMBD   
-    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IedgesAtBoundary, &
-          rbackupTriangulation%h_IedgesAtBoundary)
-    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IboundaryCpEdgesIdx, &
-          rbackupTriangulation%h_IboundaryCpEdgesIdx)
-
-    ! Bit 10: KEBD   
+    ! Bit  9: KEBD   
     call checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary, &
           rbackupTriangulation%h_IelementsAtBoundary)
+
+    ! Bit 10: KBCT   
+    call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx, &
+          rbackupTriangulation%h_IboundaryCpIdx)
 
     ! Bit 11: DVBDP  
     call checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
@@ -2158,6 +2164,19 @@ contains
           rtriangulation%h_DedgeParameterValue, &
           rbackupTriangulation%h_DedgeParameterValue)
 
+    ! Bit 13: KMBD   
+    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary, &
+          rbackupTriangulation%h_IedgesAtBoundary)
+    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpEdgesIdx, &
+          rbackupTriangulation%h_IboundaryCpEdgesIdx)
+
+    ! Bit 14: KEAN   
+    call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge, &
+          rbackupTriangulation%h_IverticesAtEdge)
+
     ! Bit 15: KVBDI  
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos, &
@@ -2167,12 +2186,13 @@ contains
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos, &
           rbackupTriangulation%h_IboundaryEdgePos)
-    
-    ! Bit  1: DCORMG 
-    call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
-          rtriangulation%h_DfreeVertexCoordinates, &
-          rbackupTriangulation%h_DfreeVertexCoordinates)
 
+    ! Bit 17: DAREA  
+    call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementVolume, &
+          rbackupTriangulation%h_DelementVolume)
+
+    ! Bit 18: IrefinementPatch
     call checkAndCopy(idupflag, TR_SHARE_IREFINEMENTPATCH,&
           rtriangulation%h_IrefinementPatch, &
           rbackupTriangulation%h_IrefinementPatch)
@@ -2180,26 +2200,32 @@ contains
           rtriangulation%h_IrefinementPatchIdx, &
           rbackupTriangulation%h_IrefinementPatchIdx)
 
+    ! Bit 19: IcoarseGridElement
     call checkAndCopy(idupflag, TR_SHARE_ICOARSEGRIDELEMENT,&
           rtriangulation%h_IcoarseGridElement, &
           rbackupTriangulation%h_IcoarseGridElement)
 
+    ! Bit 20: KVAR
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATFACE,&
           rtriangulation%h_IverticesAtFace, &
           rbackupTriangulation%h_IverticesAtFace)
 
+    ! Bit 21: KAREA
     call checkAndCopy(idupflag, TR_SHARE_IFACESATELEMENT,&
           rtriangulation%h_IfacesAtElement, &
           rbackupTriangulation%h_IfacesAtElement)
 
+    ! Bit 22: IelementsAtFace
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATFACE,&
           rtriangulation%h_IelementsAtFace, &
           rbackupTriangulation%h_IelementsAtFace)
 
+    ! Bit 23: IedgesAtFace
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATFACE,&
           rtriangulation%h_IedgesAtFace, &
           rbackupTriangulation%h_IedgesAtFace)
 
+    ! Bit 24: IfacesAtEdge
     call checkAndCopy(idupflag, TR_SHARE_IFACESATEDGE,&
           rtriangulation%h_IfacesAtEdge, &
           rbackupTriangulation%h_IfacesAtEdge)
@@ -2207,6 +2233,7 @@ contains
           rtriangulation%h_IfacesAtEdgeIdx, &
           rbackupTriangulation%h_IfacesAtEdgeIdx)
 
+    ! Bit 25: IfacesAtVertex
     call checkAndCopy(idupflag, TR_SHARE_IFACESATVERTEX,&
           rtriangulation%h_IfacesAtVertex, &
           rbackupTriangulation%h_IfacesAtVertex)
@@ -2214,6 +2241,7 @@ contains
           rtriangulation%h_IfacesAtVertexIdx, &
           rbackupTriangulation%h_IfacesAtVertexIdx)
 
+    ! Bit 26: IfacesAtBoundary
     call checkAndCopy(idupflag, TR_SHARE_IFACESATBOUNDARY,&
           rtriangulation%h_IfacesAtBoundary, &
           rbackupTriangulation%h_IfacesAtBoundary)
@@ -2221,6 +2249,7 @@ contains
           rtriangulation%h_IboundaryCpFacesIdx, &
           rbackupTriangulation%h_IboundaryCpFacesIdx)
 
+    ! Bit 27: IedgesAtVertex
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex, &
           rbackupTriangulation%h_IedgesAtVertex)
@@ -2228,14 +2257,15 @@ contains
           rtriangulation%h_IedgesAtVertexIdx, &
           rbackupTriangulation%h_IedgesAtVertexIdx)
 
+    ! Bit 28: ItwistIndex
     call checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexEdges, &
           rbackupTriangulation%h_ItwistIndexEdges)
-
     call checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexFaces, &
           rbackupTriangulation%h_ItwistIndexFaces)
     
+    ! Bit 29: ImacroNodalProperty
     call checkAndCopy(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
           rtriangulation%h_ImacroNodalProperty, &
           rbackupTriangulation%h_ImacroNodalProperty)
@@ -2262,9 +2292,9 @@ contains
         idesthandle = isourcehandle
       end if
       
-    end subroutine
+    end subroutine checkAndCopy
 
-  end subroutine
+  end subroutine tria_duplicate
 
   ! ***************************************************************************
 
@@ -2305,6 +2335,11 @@ contains
           rtriangulation%h_DvertexCoords, &
           rbackupTriangulation%h_DvertexCoords)
 
+    ! Bit  1: DCORMG 
+    call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates, &
+          rbackupTriangulation%h_DfreeVertexCoordinates)
+
     ! Bit  2: KVERT  
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
           rtriangulation%h_IverticesAtElement, &
@@ -2320,29 +2355,6 @@ contains
           rtriangulation%h_IneighboursAtElement, &
           rbackupTriangulation%h_IneighboursAtElement)
 
-    ! Bit  6: KMEL   
-    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge, &
-          rbackupTriangulation%h_IelementsAtEdge)
-    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge3d, &
-          rbackupTriangulation%h_IelementsAtEdge3d)
-
-    ! Bit 14: KEAN   
-    call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
-          rtriangulation%h_IverticesAtEdge, &
-          rbackupTriangulation%h_IverticesAtEdge)
-
-    ! Bit  7: KNPR   
-    call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
-          rtriangulation%h_InodalProperty, &
-          rbackupTriangulation%h_InodalProperty)
-
-    ! Bit 17: DAREA  
-    call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
-          rtriangulation%h_DelementVolume, &
-          rbackupTriangulation%h_DelementVolume)
-
     ! Bit  5: KVEL   
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertexIdx, &
@@ -2351,28 +2363,36 @@ contains
           rtriangulation%h_IelementsAtVertex, &
           rbackupTriangulation%h_IelementsAtVertex)
 
-    ! Bit 10: KBCT   
-    call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
-          rtriangulation%h_IboundaryCpIdx, &
-          rbackupTriangulation%h_IboundaryCpIdx)
+    ! Bit  6: KMEL   
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge, &
+          rbackupTriangulation%h_IelementsAtEdge)
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d, &
+          rbackupTriangulation%h_IelementsAtEdge3d)
+    call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d, &
+          rbackupTriangulation%h_IelementsAtEdgeIdx3d)
+
+    ! Bit  7: KNPR   
+    call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty, &
+          rbackupTriangulation%h_InodalProperty)
 
     ! Bit  8: KVBD   
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
           rtriangulation%h_IverticesAtBoundary, &
           rbackupTriangulation%h_IverticesAtBoundary)
 
-    ! Bit 13: KMBD   
-    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IedgesAtBoundary, &
-          rbackupTriangulation%h_IedgesAtBoundary)
-    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IboundaryCpEdgesIdx, &
-          rbackupTriangulation%h_IboundaryCpEdgesIdx)
-
-    ! Bit 10: KEBD   
+    ! Bit  9: KEBD   
     call checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary, &
           rbackupTriangulation%h_IelementsAtBoundary)
+
+    ! Bit 10: KBCT
+    call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx, &
+          rbackupTriangulation%h_IboundaryCpIdx)
 
     ! Bit 11: DVBDP  
     call checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
@@ -2384,6 +2404,19 @@ contains
           rtriangulation%h_DedgeParameterValue, &
           rbackupTriangulation%h_DedgeParameterValue)
 
+    ! Bit 13: KMBD   
+    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary, &
+          rbackupTriangulation%h_IedgesAtBoundary)
+    call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpEdgesIdx, &
+          rbackupTriangulation%h_IboundaryCpEdgesIdx)
+    
+    ! Bit 14: KEAN   
+    call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge, &
+          rbackupTriangulation%h_IverticesAtEdge)
+
     ! Bit 15: KVBDI  
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos, &
@@ -2393,12 +2426,13 @@ contains
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos, &
           rbackupTriangulation%h_IboundaryEdgePos)
-    
-    ! Bit  1: DCORMG 
-    call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
-          rtriangulation%h_DfreeVertexCoordinates, &
-          rbackupTriangulation%h_DfreeVertexCoordinates)
 
+    ! Bit 17: DAREA  
+    call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementVolume, &
+          rbackupTriangulation%h_DelementVolume)
+
+    ! Bit 18: IrefinementPatch
     call checkAndCopy(idupflag, TR_SHARE_IREFINEMENTPATCH,&
           rtriangulation%h_IrefinementPatch, &
           rbackupTriangulation%h_IrefinementPatch)
@@ -2406,26 +2440,32 @@ contains
           rtriangulation%h_IrefinementPatchIdx, &
           rbackupTriangulation%h_IrefinementPatchIdx)
 
+    ! Bit 19: IcoarseGridElement
     call checkAndCopy(idupflag, TR_SHARE_ICOARSEGRIDELEMENT,&
           rtriangulation%h_IcoarseGridElement, &
           rbackupTriangulation%h_IcoarseGridElement)
 
+    ! Bit 20: KVAR
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATFACE,&
           rtriangulation%h_IverticesAtFace, &
           rbackupTriangulation%h_IverticesAtFace)
 
+    ! Bit 21: KAREA
     call checkAndCopy(idupflag, TR_SHARE_IFACESATELEMENT,&
           rtriangulation%h_IfacesAtElement, &
           rbackupTriangulation%h_IfacesAtElement)
 
+    ! Bit 22: IelementsAtFace
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATFACE,&
           rtriangulation%h_IelementsAtFace, &
           rbackupTriangulation%h_IelementsAtFace)
-
+    
+    ! Bit 23: IedgesAtFace
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATFACE,&
           rtriangulation%h_IedgesAtFace, &
           rbackupTriangulation%h_IedgesAtFace)
 
+    ! Bit 24: IfacesAtEdge
     call checkAndCopy(idupflag, TR_SHARE_IFACESATEDGE,&
           rtriangulation%h_IfacesAtEdge, &
           rbackupTriangulation%h_IfacesAtEdge)
@@ -2433,6 +2473,7 @@ contains
           rtriangulation%h_IfacesAtEdgeIdx, &
           rbackupTriangulation%h_IfacesAtEdgeIdx)
 
+    ! Bit 25: IfacesAtVertex
     call checkAndCopy(idupflag, TR_SHARE_IFACESATVERTEX,&
           rtriangulation%h_IfacesAtVertex, &
           rbackupTriangulation%h_IfacesAtVertex)
@@ -2440,6 +2481,7 @@ contains
           rtriangulation%h_IfacesAtVertexIdx, &
           rbackupTriangulation%h_IfacesAtVertexIdx)
 
+    ! Bit 26: IfacesAtBoundary
     call checkAndCopy(idupflag, TR_SHARE_IFACESATBOUNDARY,&
           rtriangulation%h_IfacesAtBoundary, &
           rbackupTriangulation%h_IfacesAtBoundary)
@@ -2447,6 +2489,7 @@ contains
           rtriangulation%h_IboundaryCpFacesIdx, &
           rbackupTriangulation%h_IboundaryCpFacesIdx)
 
+    ! Bit 27: IedgesAtVertex
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex, &
           rbackupTriangulation%h_IedgesAtVertex)
@@ -2454,10 +2497,15 @@ contains
           rtriangulation%h_IedgesAtVertexIdx, &
           rbackupTriangulation%h_IedgesAtVertexIdx)
 
+    ! Bit 28: ItwistIndex
+    call checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
+          rtriangulation%h_ItwistIndexEdges, &
+          rbackupTriangulation%h_ItwistIndexEdges)
     call checkAndCopy(idupflag, TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexFaces, &
           rbackupTriangulation%h_ItwistIndexFaces)
 
+    ! Bit 29: ImacroNodalProperty
     call checkAndCopy(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
           rtriangulation%h_ImacroNodalProperty, &
           rbackupTriangulation%h_ImacroNodalProperty)
@@ -2481,9 +2529,9 @@ contains
         end if
       end if
       
-    end subroutine
+    end subroutine checkAndCopy
 
-  end subroutine
+  end subroutine tria_restore
 
   ! ***************************************************************************
 
@@ -2511,9 +2559,6 @@ contains
     
     idupflag = rtriangulation%iduplicationFlag
     
-    ! Bit  8: KMM    is a copy of another structure
-    ! ... does not exist!?!
-
     ! Just release all allocated handles.
     ! Take care of which handles are duplicates from other structures - 
     ! these must not be released, as we are not the owner of them!
@@ -2521,6 +2566,10 @@ contains
     ! Bit  0: DCORVG is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_DVERTEXCOORDS,&
           rtriangulation%h_DvertexCoords)
+
+    ! Bit  1: DCORMG is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates)
 
     ! Bit  2: KVERT  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IVERTICESATELEMENT,&
@@ -2534,135 +2583,123 @@ contains
     call checkAndRelease(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
           rtriangulation%h_IneighboursAtElement)
 
-    ! Bit  6: KMEL   is a copy of another structure
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge)
-    ! Bit  5: KMEL  3d Version          
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdgeIdx3d)
-          
-    ! Bit  5: KMEL  3d Version      
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge3d)
-
-    ! Bit 16: KEAN   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
-          rtriangulation%h_IverticesAtEdge)
-
-    ! Bit  7: KNPR   is a copy of another structure
-    call checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
-          rtriangulation%h_InodalProperty)
-
-    ! Bit 19: DAREA  is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
-          rtriangulation%h_DelementVolume)
-
     ! Bit  5: KVEL   is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertexIdx)
     call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertex)
 
-    ! Bit 11: KBCT   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
-          rtriangulation%h_IboundaryCpIdx)
+    ! Bit  6: KMEL   is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge)
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d)
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d)
 
-    ! Bit  9: KVBD   is a copy of another structure
+    ! Bit  7: KNPR   is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty)
+
+    ! Bit  8: KVBD   is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
           rtriangulation%h_IverticesAtBoundary)
 
-    ! Bit 14: KMBD   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IedgesAtBoundary)
-
-    ! Bit 10: KEBD   is a copy of another structure
+    ! Bit  9: KEBD   is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary)
 
-    ! Bit 12: DVBDP  is a copy of another structure
+    ! Bit 10: KBCT   is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx)
+
+    ! Bit 11: DVBDP  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
           rtriangulation%h_DvertexParameterValue)
 
-    ! Bit 13: DMBDP  is a copy of another structure
+    ! Bit 12: DMBDP  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
           rtriangulation%h_DedgeParameterValue)
 
-    ! Bit 17: KVBDI  is a copy of another structure
+    ! Bit 13: KMBD   is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary)
+    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpEdgesIdx)
+
+    ! Bit 14: KEAN   is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge)
+
+    ! Bit 15: KVBDI  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos)
 
-    ! Bit 18: KMBDI  is a copy of another structure
+    ! Bit 16: KMBDI  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos)
-    
-    ! Bit  1: DCORMG is a copy of another structure
-    call checkAndRelease(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
-          rtriangulation%h_DfreeVertexCoordinates)
 
-    ! Bit 20: IrefinementPatch          
+    ! Bit 17: DAREA  is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementVolume)
+
+    ! Bit 18: IrefinementPatch  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
            rtriangulation%h_IrefinementPatch)
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
            rtriangulation%h_IrefinementPatchIdx)
 
-    ! Bit 21: IcoarseGridElement
+    ! Bit 19: IcoarseGridElement  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_ICOARSEGRIDELEMENT, &
            rtriangulation%h_IcoarseGridElement)
 
-    ! Bit 22: KVAR          
+    ! Bit 20: KVAR  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
            rtriangulation%h_IverticesAtFace)
            
-    ! Bit 23: KAREA           
+    ! Bit 21: KAREA  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
            rtriangulation%h_IFacesAtElement)
     
-    ! Bit 24: K????       
+    ! Bit 22: IelementsAtFace  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
            rtriangulation%h_IelementsAtFace)
-           
-    ! Bit 23: K????       
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
-           rtriangulation%h_IelementsAtFace)
-           
-    ! Bit 24: K????       
+    
+    ! Bit 23: IedgesAtEdge  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IEDGESATFACE, &
            rtriangulation%h_IedgesAtFace)
            
-    ! Bit 25: K????       
+    ! Bit 24: IfacesAtEdge  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
            rtriangulation%h_IfacesAtEdgeIdx)
-       
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
-           rtriangulation%h_IfacesAtVertexIdx)
-
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
-           rtriangulation%h_IfacesAtVertex)
-    
     call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
            rtriangulation%h_IfacesAtEdge)
 
+    ! Bit 25: IfacesAtVertex  is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertexIdx)
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertex)
+    
+    ! Bit 26: IfacesAtBoundary  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IFACESATBOUNDARY, &
            rtriangulation%h_IfacesAtBoundary)
-           
-    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IboundaryCpEdgesIdx)
-
     call checkAndRelease(idupflag,TR_SHARE_IFACESATBOUNDARY,&
           rtriangulation%h_IboundaryCpFacesIdx)
      
+    ! Bit 27: IedgesAtVertex  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertexIdx)
-
     call checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex)
 
+    ! Bit 28: ItwistIndex  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexEdges)
-           
     call checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexFaces)
-           
+    
+    ! Bit 29: ImacroNodalProperty  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
           rtriangulation%h_InodalProperty)
 
@@ -2710,9 +2747,9 @@ contains
         ihandle = ST_NOHANDLE
       end if
       
-    end subroutine
+    end subroutine checkAndRelease
 
-  end subroutine
+  end subroutine tria_done
 
   ! ***************************************************************************
 
@@ -2747,9 +2784,6 @@ contains
     
     idupflag = rtriangulation%iduplicationFlag
     
-    ! Bit  8: KMM    is a copy of another structure
-    ! ... does not exist!?!
-
     ! Just release all allocated handles.
     ! Take care of which handles are duplicates from other structures - 
     ! these must not be released, as we are not the owner of them!
@@ -2766,25 +2800,6 @@ contains
             rtriangulation%h_IneighboursAtElement)
     end if
     
-    ! Bit  6: KMEL   is a copy of another structure
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge)
-    ! Bit  5: KMEL  3d Version          
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdgeIdx3d)
-          
-    ! Bit  5: KMEL  3d Version      
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
-          rtriangulation%h_IelementsAtEdge3d)
-
-    ! Bit 16: KEAN   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
-          rtriangulation%h_IverticesAtEdge)
-
-    ! Bit 19: DAREA  is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
-          rtriangulation%h_DelementVolume)
-
     if (.not. bext) then
       ! Bit  5: KVEL   is a copy of another structure
       call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
@@ -2793,93 +2808,104 @@ contains
             rtriangulation%h_IelementsAtVertex)
     end if
 
-    ! Bit 14: KMBD   is a copy of another structure
-    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IedgesAtBoundary)
+    ! Bit  6: KMEL   is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge)
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdgeIdx3d)
+    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge3d)
 
-    ! Bit 10: KEBD   is a copy of another structure
+    ! Bit  9: KEBD   is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary)
 
-    ! Bit 13: DMBDP  is a copy of another structure
+    ! Bit 12: DMBDP  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
           rtriangulation%h_DedgeParameterValue)
 
-    ! Bit 17: KVBDI  is a copy of another structure
+    ! Bit 13: KMBD   is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary)
+    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IboundaryCpEdgesIdx)
+
+    ! Bit 14: KEAN   is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge)
+
+    ! Bit 15: KVBDI  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos)
 
-    ! Bit 18: KMBDI  is a copy of another structure
+    ! Bit 16: KMBDI  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos)
-    
-    ! Bit 20: IrefinementPatch          
+
+    ! Bit 17: DAREA  is a copy of another structure
+    call checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementVolume)
+
+    ! Bit 18: IrefinementPatch  is a copy of another structure      
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
            rtriangulation%h_IrefinementPatch)
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
            rtriangulation%h_IrefinementPatchIdx)
 
-    ! Bit 21: IcoarseGridElement
+    ! Bit 19: IcoarseGridElement  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_ICOARSEGRIDELEMENT, &
            rtriangulation%h_IcoarseGridElement)
 
-    ! Bit 22: KVAR          
+    ! Bit 20: KVAR  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
            rtriangulation%h_IverticesAtFace)
 
     if (.not. bext) then           
-      ! Bit 23: KAREA           
+      ! Bit 21: KAREA  is a copy of another structure
       call checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
             rtriangulation%h_IFacesAtElement)
     end if
     
-    ! Bit 24: K????       
+    ! Bit 22: IelementsAtFace  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
            rtriangulation%h_IelementsAtFace)
            
-    ! Bit 23: K????       
-    call checkAndRelease(idupflag, TR_SHARE_IELEMENTSATFACE, &
-           rtriangulation%h_IelementsAtFace)
-           
-    ! Bit 24: K????       
+    ! Bit 23: IedgesAtFace  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IEDGESATFACE, &
            rtriangulation%h_IedgesAtFace)
-           
-    ! Bit 25: K????       
+
+    ! Bit 24: IfacesAtEdge  is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
+           rtriangulation%h_IfacesAtEdge)
     call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
            rtriangulation%h_IfacesAtEdgeIdx)
-       
+   
+    ! Bit 25: IfacesAtVertex  is a copy of another structure
+    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
+           rtriangulation%h_IfacesAtVertex)
     call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
            rtriangulation%h_IfacesAtVertexIdx)
 
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATVERTEX, &
-           rtriangulation%h_IfacesAtVertex)
-    
-    call checkAndRelease(idupflag, TR_SHARE_IFACESATEDGE, &
-           rtriangulation%h_IfacesAtEdge)
-
+    ! Bit 26: IfacesAtBoundary  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IFACESATBOUNDARY, &
            rtriangulation%h_IfacesAtBoundary)
-           
-    call checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
-          rtriangulation%h_IboundaryCpEdgesIdx)
-
     call checkAndRelease(idupflag,TR_SHARE_IFACESATBOUNDARY,&
           rtriangulation%h_IboundaryCpFacesIdx)
-     
+
+    ! Bit 27: IedgesAtVertex  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertexIdx)
-
     call checkAndRelease(idupflag,TR_SHARE_IEDGESATVERTEX,&
           rtriangulation%h_IedgesAtVertex)
 
+    ! Bit 28: ItwistIndex  is a copy of another structure
     call checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexEdges)
-           
     call checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndexFaces)
            
     if (.not. bext) then           
+      ! Bit 29: ImacroNodalProperty  is a copy of another structure
       call checkAndRelease(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
           rtriangulation%h_ImacroNodalProperty)
     end if
@@ -2919,9 +2945,9 @@ contains
         ihandle = ST_NOHANDLE
       end if
       
-    end subroutine
+    end subroutine checkAndRelease
 
-  end subroutine
+  end subroutine tria_resetToRaw
 
   ! ***************************************************************************
 
@@ -2975,7 +3001,7 @@ contains
     call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
     
     ! Convert the array
-    call quadToTriang_aux1 (&
+    call convert_QuadToTria (&
         rtriangulation%NEL, icount,&
         p_IverticesAtElement, p_IverticesAtElementTri)
     
@@ -3004,7 +3030,7 @@ contains
 
   contains
 
-    subroutine quadToTriang_aux1 (nel, nelquad, IverticesAtElement, Kvert_triang)
+    subroutine convert_QuadToTria (nel, nelquad, IverticesAtElement, Kvert_triang)
 
   !<description>
     ! Purpose: Convert mixed quad/tri mesh to triangular mesh
@@ -3059,9 +3085,9 @@ contains
       
       ! That's it.
       
-    end subroutine  
+    end subroutine convert_QuadToTria
     
-  end subroutine
+  end subroutine tria_rawGridToTri
 
 
   ! ***************************************************************************
@@ -3087,21 +3113,21 @@ contains
     select case (rtriangulation%ndim)
     case (NDIM1D)
       ! Generate basic arrays for 1D meshes.
-      call tria_genElementsAtVertex2D (rtriangulation)
+      call tria_genElementsAtVertex2D    (rtriangulation)
       call tria_genNeighboursAtElement1D (rtriangulation)
 
     case (NDIM2D)
       ! Generate all standard arrays for 2D meshes.
-      call tria_genElementsAtVertex2D (rtriangulation)
+      call tria_genElementsAtVertex2D    (rtriangulation)
       call tria_genNeighboursAtElement2D (rtriangulation)
-      call tria_genEdgesAtElement2D (rtriangulation)
+      call tria_genEdgesAtElement2D      (rtriangulation)
 
     case (NDIM3D)
       ! Generate all standard arrays for 3D meshes.
-      call tria_genElementsAtVertex3D (rtriangulation)
+      call tria_genElementsAtVertex3D    (rtriangulation)
       call tria_genNeighboursAtElement3D (rtriangulation)
-      call tria_genEdgesAtElement3D (rtriangulation)
-      call tria_genFacesAtElement (rtriangulation)
+      call tria_genEdgesAtElement3D      (rtriangulation)
+      call tria_genFacesAtElement        (rtriangulation)
 
     case default
       call output_line ('Triangulation structure not initialised!', &
@@ -3109,7 +3135,56 @@ contains
       call sys_halt()
     end select
 
-  end subroutine
+  end subroutine tria_initExtendedRawMesh
+
+
+
+!====================================================================
+!
+!        ++       ++++
+!       + +       +   +  
+!         +       +    +
+!         +       +    +
+!         +       +    + 
+!         +       +   +  
+!       +++++     ++++
+! tag@1D
+!====================================================================
+
+!====================================================================
+!
+!       ++++      ++++
+!           +     +   +  
+!          +      +    +
+!         +       +    +
+!        +        +    + 
+!       +         +   +  
+!       ++++      ++++
+! tag@2D    
+!====================================================================
+
+!====================================================================
+!
+!       ++++      ++++
+!           +     +   +  
+!           +     +    +
+!        +++      +    +
+!           +     +    + 
+!           +     +   +  
+!       ++++      ++++
+! tag@3D
+!====================================================================
+
+
+
+
+
+
+
+
+
+
+
 
 !************************************************************************
 
