@@ -396,7 +396,7 @@ CONTAINS
         ! velocity...
         CALL spdiscr_initDiscr_simple ( &
                     p_rdiscretisation%RspatialDiscr(1), &
-                    EL_E037,icubA, &
+                    EL_EB50,icubA, &
                     p_rtriangulation, p_rboundary)
                     
         ! Manually set the cubature formula for the RHS as the above routine
