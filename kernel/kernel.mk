@@ -33,9 +33,9 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	graph.f90 octree.f90 triasearch.f90 statistics.f90 \
 	meshmodification.f90 mapleio.f90 jumpstabilisation.f90 \
 	boundaryintegral.f90 afcstabilisation.f90 groupfemscalar.f90 \
-	hadaptaux.f90 hadaptaux2d.f90 hadaptaux3d.f90 groupfemsystem.f90 \
-	meshregion.f90 pprocsolution.f90 elementpreprocessing.f90 iluk.f90 \
-	gmvwritef.c multileveloperators.f90 adjacency.f90 meshadjacency.f90 \
+	hadaptaux.f90 hadaptaux1d.f90 hadaptaux2d.f90 hadaptaux3d.f90 \
+	groupfemsystem.f90 meshregion.f90 pprocsolution.f90 elementpreprocessing.f90\
+	iluk.f90 gmvwritef.c multileveloperators.f90 adjacency.f90 meshadjacency.f90 \
 	vanka_aux.f90 vanka_navst2d.f90 vanka_bouss2d.f90 uuid.f90 \
 	fpersistence.f90
 
