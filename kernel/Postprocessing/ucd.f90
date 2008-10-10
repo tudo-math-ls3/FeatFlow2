@@ -5857,7 +5857,7 @@ contains
       select case (rtriangulation%ndim)
       case (NDIM2D)
         ! Create some standard mesh information
-        call tria_genElementsAtVertex2D    (rtriangulation)
+        call tria_genElementsAtVertex1D2D  (rtriangulation)
         call tria_genNeighboursAtElement2D (rtriangulation)
         call tria_genEdgesAtElement2D      (rtriangulation)
         call tria_genElementsAtEdge2D      (rtriangulation)
