@@ -16,118 +16,118 @@
 !#
 !#  1.) add_vertex2D = add_vertex_atEdgeMidpoint2D /
 !#                     add_vertex_atElementCenter2D
-!#      -> add a new vertex to the adaptation data structure in 2D
+!#      -> Adds a new vertex to the adaptation data structure in 2D
 !#
 !#  2.) remove_vertex2D
-!#      -> remove an existing vertex from the adaptation data structure in 2D
+!#      -> Removes an existing vertex from the adaptation data structure in 2D
 !#
 !#  3.) replace_element2D = replace_elementTria /
 !#                          replace_elementQuad
-!#      -> replace an existing element by another element of he same type in 2D
+!#      -> Replaces an existing element by another element of he same type in 2D
 !#
 !#  4.) add_element2D = add_elementTria /
 !#                      add_elementQuad
-!#      -> add a new element to the adaptation data structure in 2D
+!#      -> Adds a new element to the adaptation data structure in 2D
 !#
 !#  5.) remove_element2D
-!#      -> remove an existing element from the adaptation data structure in 2D
+!#      -> Removes an existing element from the adaptation data structure in 2D
 !#
 !#  6.) update_ElementNeighbors2D = update_ElemNeighb2D_1to2 /
 !#                                  update_ElemNeighb2D_2to2
-!#      -> update the list of neighboring elements  in 2D
+!#      -> Updates the list of neighboring elements  in 2D
 !#
 !#  7.) update_AllElementNeighbors2D
-!#      -> update the lists of neighboring elements of ALL adjacent elements
+!#      -> Updates the lists of neighboring elements of ALL adjacent elements
 !#
 !#  8.) refine_Tria2Tria
-!#      -> refine a triangle by subdivision into two triangles
+!#      -> Refines a triangle by subdivision into two triangles
 !#
 !#  9.) refine_Tria3Tria
-!#      -> refine a triangle by subdivision into three triangles
+!#      -> Refines a triangle by subdivision into three triangles
 !#
 !# 10.) refine_Tria4Tria
-!#      -> refine a triangle by subdivision into four triangles
+!#      -> Refines a triangle by subdivision into four triangles
 !#
 !# 11.) refine_Quad2Quad
-!#      -> refine a quadrilateral by subdivision into two quadrilaterals
+!#      -> Refines a quadrilateral by subdivision into two quadrilaterals
 !#
 !# 12.) refine_Quad3Tria
-!#      -> refine a quadrilateral by subdivision into three triangles
+!#      -> Refines a quadrilateral by subdivision into three triangles
 !#
 !# 13.) refine_Quad4Tria
-!#      -> refine a quadrilateral by subdivision into four triangles
+!#      -> Refines a quadrilateral by subdivision into four triangles
 !#
 !# 14.) refine_Quad4Quad
-!#      -> refine a quadrilateral by subdivision into four quadrilaterals
+!#      -> Refines a quadrilateral by subdivision into four quadrilaterals
 !#
 !# 15.) convert_Tria2Tria
-!#      -> convert two neighboring triangles into four similar triangle
+!#      -> Converts two neighboring triangles into four similar triangle
 !#
 !# 16.) convert_Quad2Quad
-!#      -> convert two neighboring quadrilaterals into four similar quadrilaterals
+!#      -> Converts two neighboring quadrilaterals into four similar quadrilaterals
 !#
 !# 17.) convert_Quad3Tria
-!#      -> convert three neighboring triangles into four similar quadrilaterals
+!#      -> Converts three neighboring triangles into four similar quadrilaterals
 !#
 !# 18.) convert_Quad4Tria
-!#      -> convert four neighboring triangles into four similar quadrilaterals
+!#      -> Converts four neighboring triangles into four similar quadrilaterals
 !#
 !# 19.) coarsen_2Tria1Tria
-!#      -> coarsen two green triangles by combining them to the macro element
+!#      -> Coarsens two green triangles by combining them to the macro element
 !#
 !# 20.) coarsen_4Tria1Tria
-!#      -> coarsen four red triangles by combining them to the macro element
+!#      -> Coarsens four red triangles by combining them to the macro element
 !#
 !# 21.) coarsen_4Tria2Tria
-!#      -> coarsen four red triangles by combining them to two green elements
+!#      -> Coarsens four red triangles by combining them to two green elements
 !#
 !# 22.) coarsen_4Quad1Quad
-!#      -> coarsen four red quadrilaterals by combining them to the macro element
+!#      -> Coarsens four red quadrilaterals by combining them to the macro element
 !#
 !# 23.) coarsen_4Quad2Quad
-!#      -> coarsen four red quadrilaterals by combining them to two green elements
+!#      -> Coarsens four red quadrilaterals by combining them to two green elements
 !#
 !# 24.) coarsen_4Quad3Tria
-!#      -> coarsen four red quadrilaterals by combining them to three green elements
+!#      -> Coarsens four red quadrilaterals by combining them to three green elements
 !#
 !# 25.) coarsen_4Quad4Tria
-!#      -> coarsen four red quadrilaterals by combining them to four green elements
+!#      -> Coarsens four red quadrilaterals by combining them to four green elements
 !#
 !# 26.) coarsen_2Quad1Quad
-!#      -> coarsen two green quadrilaterals by combining them to the macro element
+!#      -> Coarsens two green quadrilaterals by combining them to the macro element
 !#
 !# 27.) coarsen_2Quad3Tria
-!#      -> coarsen two green quadrilaterals by combining them to three green triangles
+!#      -> Coarsens two green quadrilaterals by combining them to three green triangles
 !#
 !# 28.) coarsen_3Tria1Quad
-!#      -> coarsen three green triangles by combining them to the macro element
+!#      -> Coarsens three green triangles by combining them to the macro element
 !#
 !# 29.) coarsen_4Tria1Quad
-!#      -> coarsen four green triangles by combining them to the macro element
+!#      -> Coarsens four green triangles by combining them to the macro element
 !#
 !# 30.) coarsen_4Tria3Tria
-!#      -> coarsen four green triangles by combining them to three green triangles
+!#      -> Coarsens four green triangles by combining them to three green triangles
 !#
 !# 31.) mark_refinement2D
-!#      -> mark elements for refinement in 2D
+!#      -> Marks elements for refinement in 2D
 !#
 !# 32.) redgreen_mark_coarsening2D
-!#      -> mark elements for coarsening in 2D
+!#      -> Marks elements for coarsening in 2D
 !#
 !# 33.) redgreen_mark_refinement2D
-!#      -> mark elements for refinement due to Red-Green strategy in 2D
+!#      -> Marks elements for refinement due to Red-Green strategy in 2D
 !#
 !# 34. redgreen_getState2D
-!#      -> return the state of an element in 2D
+!#      -> Returns the state of an element in 2D
 !#
 !# 35.) redgreen_getStateTria
-!#      -> return the state of a triangle
+!#      -> Returns the state of a triangle
 !#
 !# 36.) redgreen_getStateQuad
-!#      -> return the state of a quadrilateral
+!#      -> Returns the state of a quadrilateral
 !#
 !# 37.) redgreen_rotateState2D
-!#      -> compute the state of an element after rotation in 2D
+!#      -> Computes the state of an element after rotation in 2D
 !# </purpose>
 !##############################################################################
 
