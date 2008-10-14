@@ -14,43 +14,43 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2postprocessing
+module cc2dmediumm2postprocessing
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE pprocerror
-  USE pprocgradients
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use pprocerror
+  use pprocgradients
   
-  USE collection
-  USE convection
+  use collection
+  use convection
   
-  USE ucd
+  use ucd
   
-  USE pprocnavierstokes
+  use pprocnavierstokes
   
-  USE cc2dmediumm2basic
-  USE cc2dmediumm2optcanalysis
-  USE cc2dmedium_callback
-  USE cc2dmediumm2boundarydef
-  USE cc2dmediumm2matvecassembly
+  use cc2dmediumm2basic
+  use cc2dmediumm2optcanalysis
+  use cc2dmedium_callback
+  use cc2dmediumm2boundarydef
+  use cc2dmediumm2matvecassembly
   
-  USE spacetimediscretisation
+  use spacetimediscretisation
   
-  IMPLICIT NONE
+  implicit none
   
 !<types>
 
@@ -60,54 +60,54 @@ MODULE cc2dmediumm2postprocessing
   ! called, they fills this structure using the current solution vector (and other
   ! information if necessary). The information in this structure can then be used
   ! for GMV output e.g.
-  TYPE t_c2d2postprocessing
+  type t_c2d2postprocessing
 
     ! A discretisation structure that describes a piecewise constant discretisation
     ! (usually P0 or Q0).
-    TYPE(t_spatialDiscretisation) :: rdiscrConstant
+    type(t_spatialDiscretisation) :: rdiscrConstant
     
     ! A discretisation structure that describes a piecewise linear discretisation
     ! (usually P1 or Q1).
-    TYPE(t_spatialDiscretisation) :: rdiscrLinear
+    type(t_spatialDiscretisation) :: rdiscrLinear
 
     ! A discretisation structure that describes a piecewise quadratic discretisation
     ! (usually P2 or Q2).
-    TYPE(t_spatialDiscretisation) :: rdiscrQuadratic
+    type(t_spatialDiscretisation) :: rdiscrQuadratic
 
     ! A vector that describes the X-velocity field in the vertices
-    TYPE(t_vectorScalar) :: rvectorVelX
+    type(t_vectorScalar) :: rvectorVelX
 
     ! A vector that describes the Y-velocity field in the vertices
-    TYPE(t_vectorScalar) :: rvectorVelY
+    type(t_vectorScalar) :: rvectorVelY
 
     ! A vector that describes the pressure field in the vertices
-    TYPE(t_vectorScalar) :: rvectorPressure
+    type(t_vectorScalar) :: rvectorPressure
 
     ! A vector that describes the pressure field in the cells
-    TYPE(t_vectorScalar) :: rvectorPressureCells
+    type(t_vectorScalar) :: rvectorPressureCells
 
     ! A vector that describes the streamfunction
-    TYPE(t_vectorScalar) :: rvectorStreamfunction
+    type(t_vectorScalar) :: rvectorStreamfunction
     
     ! A vector that describes the H1-error of the velocity field in the vertices
-    TYPE(t_vectorScalar) :: rvectorH1err
+    type(t_vectorScalar) :: rvectorH1err
 
     ! A vector that describes the H1-error of the pressure in the cells
-    TYPE(t_vectorScalar) :: rvectorH1errCells
+    type(t_vectorScalar) :: rvectorH1errCells
   
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_postprocessingStationary (rproblem,rvector)
+  subroutine cc_postprocessingStationary (rproblem,rvector)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -116,109 +116,109 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
 !</input>
 
 !</subroutine>
 
   ! local variables
-    INTEGER :: ieltype
+    integer :: ieltype
   
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
 
     ! A pointer to the triangulation.
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation
     
     ! A vector accepting Q1 data
-    TYPE(t_vectorBlock) :: rprjVector
+    type(t_vectorBlock) :: rprjVector
     
     ! A discretisation structure for Q1
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC
-    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
+    type(t_discreteBC), target :: rdiscreteBC
+    type(t_discreteFBC), target :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
+    type(t_ucdExport) :: rexport
     
     ! Forces on the object
-    REAL(DP), DIMENSION(NDIM2D) :: Dforces
-    REAL(DP) :: df1,df2
-    TYPE(t_boundaryRegion) :: rregion
+    real(DP), dimension(NDIM2D) :: Dforces
+    real(DP) :: df1,df2
+    type(t_boundaryRegion) :: rregion
     
     ! Divergence
-    TYPE(t_matrixScalar) :: rBmatrix
-    TYPE(t_vectorScalar), TARGET :: rtempVector
+    type(t_matrixScalar) :: rBmatrix
+    type(t_vectorScalar), target :: rtempVector
 
     ! If we have a uniform discreisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    IF ((rvector%p_rblockDiscr%RspatialDiscr(1)% &
-         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        (boundary_igetNBoundComp(rproblem%rboundary) .GE. 2)) THEN
+    if ((rvector%p_rblockDiscr%RspatialDiscr(1)% &
+         ccomplexity .eq. SPDISC_UNIFORM) .and. &
+        (boundary_igetNBoundComp(rproblem%rboundary) .ge. 2)) then
 
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
-      CALL boundary_createRegion (rproblem%rboundary, &
+      call boundary_createRegion (rproblem%rboundary, &
           2, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       df1 = 1.0_DP/1000.0_DP
       df2 = 0.1_DP * 0.2_DP**2
-      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+      call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
 
-      CALL output_lbrk()
-      CALL output_line ('Body forces real bd., bdc/horiz/vert')
-      CALL output_line (' 2 / ' &
-          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
-          //TRIM(sys_sdEP(Dforces(2),15,6)) )
+      call output_lbrk()
+      call output_line ('Body forces real bd., bdc/horiz/vert')
+      call output_line (' 2 / ' &
+          //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //trim(sys_sdEP(Dforces(2),15,6)) )
       
-    ENDIF
+    endif
     
     ! Print out the value of the optimal control functional.
-    CALL output_lbrk ()
-    CALL cc_printControlFunctionalStat (rproblem,rvector)
+    call output_lbrk ()
+    call cc_printControlFunctionalStat (rproblem,rvector)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscr%RspatialDiscr(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
+        ccomplexity .eq. SPDISC_UNIFORM) then
         
       ieltype = rvector%p_rblockDiscr%RspatialDiscr(1)% &
                 RelementDistr(1)%celement
                 
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
         ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscr,&
-            rtempVector,.TRUE.)
+        call lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscr,&
+            rtempVector,.true.)
 
         ! Calculate divergence = B1^T u1 + B2^T u2
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
+        call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
             rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
+        call lsyssc_scalarMatVec (&
             rBmatrix, rvector%RvectorBlock(1), &
             rtempVector, 1.0_DP, 0.0_DP)
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
+        call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
             rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
+        call lsyssc_scalarMatVec (&
             rBmatrix, rvector%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         
-        CALL output_lbrk()
-        CALL output_line ('Divergence = ' &
-            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
+        call output_lbrk()
+        call output_line ('Divergence = ' &
+            //trim(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
 
-        CALL lsyssc_releaseVector (rtempVector)
+        call lsyssc_releaseVector (rtempVector)
       
-      END IF
+      end if
       
-    END IF    
+    end if    
     
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -232,25 +232,25 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
+    call spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
     
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(1))
 
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(2))
 
     ! Also use Q1 for the dual velocity field.
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(4), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(4))
 
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(5), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(5))
@@ -259,19 +259,19 @@ CONTAINS
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
-    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution (rvector,rprjVector)
+    call spdp_projectSolution (rvector,rprjVector)
     
     ! Discretise the boundary conditions for this discretisation
-    CALL bcasm_initDiscreteBC(rdiscreteBC)
-    CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
       rdiscreteBC,rproblem%rcollection)
 
-    CALL bcasm_initDiscreteFBC(rdiscreteFBC)
-    CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+    call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
       rdiscreteFBC,rproblem%rcollection)
     
     ! Connect the vector with the BC's
@@ -279,14 +279,14 @@ CONTAINS
     rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC's.
-    CALL vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector)
 
     ! Filter the solution vector to implement discrete BC's for fictitious 
     ! boundary components.
-    CALL vecfil_discreteFBCsol (rprjVector)
+    call vecfil_discreteFBCsol (rprjVector)
     
     ! Clean up the collection (as we are done with the assembly.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
@@ -295,125 +295,125 @@ CONTAINS
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u.gmv')
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u.gmv')
     
     ! Write the configuration of the application as comment block
     ! to the output file.
-    CALL ucd_addCommentLine (rexport,'Configuration:')
-    CALL ucd_addCommentLine (rexport,'---------------')
-    CALL ucd_addParameterList (rexport,rproblem%rparamList)
-    CALL ucd_addCommentLine (rexport,'---------------')
+    call ucd_addCommentLine (rexport,'Configuration:')
+    call ucd_addCommentLine (rexport,'---------------')
+    call ucd_addParameterList (rexport,rproblem%rparamList)
+    call ucd_addCommentLine (rexport,'---------------')
 
     ! Write velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
-    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    call ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
 
     ! Write pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
 
     ! Dual velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
-    CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+    call ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
     
     ! Dual pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscr%RspatialDiscr(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
+        ccomplexity .eq. SPDISC_UNIFORM) then
         
       ieltype = rvector%p_rblockDiscr%RspatialDiscr(1)% &
                 RelementDistr(1)%celement
                 
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
           
-        CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+        call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
         
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-        CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'streamfunction',&
             UCD_VAR_STANDARD, p_Ddata)
 
-      END IF
+      end if
       
-    END IF
+    end if
     
     ! Calculate the derivative of the pressure.
     ! First, project the pressure from Q0 to Q1 (if it's Q0).
-    IF (rvector%p_rblockDiscr%RspatialDiscr(3)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    if (rvector%p_rblockDiscr%RspatialDiscr(3)% &
+        ccomplexity .eq. SPDISC_UNIFORM) then
         
       ieltype = rvector%p_rblockDiscr%RspatialDiscr(3)% &
                 RelementDistr(1)%celement
                 
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q0) THEN
+      if (elem_getPrimaryElement(ieltype) .eq. EL_Q0) then
         ! rprjVector%RvectorBlock(4) is already prepared to accept Q1 solutions
-        CALL spdp_projectSolutionScalar (rvector%RvectorBlock(3),rprjVector%RvectorBlock(4))
+        call spdp_projectSolutionScalar (rvector%RvectorBlock(3),rprjVector%RvectorBlock(4))
 
         ! Calculate the derivative of the pressure into the first two
         ! subvectors -- overwriting the projected velocity field, which we don't need
         ! anymore.
-        CALL ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
+        call ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
         
         ! Write pressure derivative field
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
         
-        CALL ucd_addVariableVertexBased (rexport,'X-deriv-pres',UCD_VAR_STANDARD, p_Ddata)
-        CALL ucd_addVariableVertexBased (rexport,'Y-deriv-pres',UCD_VAR_STANDARD, p_Ddata2)
+        call ucd_addVariableVertexBased (rexport,'X-deriv-pres',UCD_VAR_STANDARD, p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'Y-deriv-pres',UCD_VAR_STANDARD, p_Ddata2)
             
-      END IF
+      end if
           
       ieltype = rvector%p_rblockDiscr%RspatialDiscr(6)% &
                 RelementDistr(1)%celement
                 
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q0) THEN
+      if (elem_getPrimaryElement(ieltype) .eq. EL_Q0) then
         ! rprjVector%RvectorBlock(4) is already prepared to accept Q1 solutions
-        CALL spdp_projectSolutionScalar (rvector%RvectorBlock(6),rprjVector%RvectorBlock(4))
+        call spdp_projectSolutionScalar (rvector%RvectorBlock(6),rprjVector%RvectorBlock(4))
 
         ! Calculate the derivative of the dual pressure into the first two
         ! subvectors -- overwriting the projected velocity field, which we don't need
         ! anymore.
-        CALL ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
+        call ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
         
         ! Write pressure derivative field
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
         
-        CALL ucd_addVariableVertexBased (rexport,'X-deriv-dpres',UCD_VAR_STANDARD, p_Ddata)
-        CALL ucd_addVariableVertexBased (rexport,'Y-deriv-dpres',UCD_VAR_STANDARD, p_Ddata2)
+        call ucd_addVariableVertexBased (rexport,'X-deriv-dpres',UCD_VAR_STANDARD, p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'Y-deriv-dpres',UCD_VAR_STANDARD, p_Ddata2)
             
-      END IF
+      end if
           
-    END IF
+    end if
     
     ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
     
     ! Release the auxiliary vector
-    CALL lsysbl_releaseVector (rprjVector)
+    call lsysbl_releaseVector (rprjVector)
     
     ! Release the discretisation strucutre
-    CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
+    call spdiscr_releaseBlockDiscr(rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
-    CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
+    call bcasm_releaseDiscreteBC (rdiscreteBC)
+    call bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_postprocessingNonstat (rproblem,rvector)
+  subroutine cc_postprocessingNonstat (rproblem,rvector)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -422,72 +422,72 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
 !</input>
 
 !</subroutine>
 
   ! local variables
-    INTEGER :: ieltype
+    integer :: ieltype
   
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
 
     ! A pointer to the triangulation.
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation
     
     ! A vector accepting Q1 data
-    TYPE(t_vectorBlock) :: rprjVector
+    type(t_vectorBlock) :: rprjVector
     
     ! A discretisation structure for Q1
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC
-    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
+    type(t_discreteBC), target :: rdiscreteBC
+    type(t_discreteFBC), target :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
+    type(t_ucdExport) :: rexport
     
     ! Forces on the object
-    REAL(DP), DIMENSION(NDIM2D) :: Dforces
-    REAL(DP) :: df1,df2
-    TYPE(t_boundaryRegion) :: rregion
+    real(DP), dimension(NDIM2D) :: Dforces
+    real(DP) :: df1,df2
+    type(t_boundaryRegion) :: rregion
     
     ! Divergence
-    TYPE(t_matrixScalar) :: rBmatrix
-    TYPE(t_vectorScalar), TARGET :: rtempVector
+    type(t_matrixScalar) :: rBmatrix
+    type(t_vectorScalar), target :: rtempVector
     
-    CHARACTER(SYS_STRLEN) :: sgmvName,stemp
+    character(SYS_STRLEN) :: sgmvName,stemp
 
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    IF ((rvector%p_rblockDiscr%RspatialDiscr(1)% &
-         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        (boundary_igetNBoundComp(rproblem%rboundary) .GE. 2)) THEN
+    if ((rvector%p_rblockDiscr%RspatialDiscr(1)% &
+         ccomplexity .eq. SPDISC_UNIFORM) .and. &
+        (boundary_igetNBoundComp(rproblem%rboundary) .ge. 2)) then
 
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
-      CALL boundary_createRegion (rproblem%rboundary, &
+      call boundary_createRegion (rproblem%rboundary, &
           2, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       df1 = 1.0_DP/1000.0_DP
       df2 = 0.1_DP * 0.2_DP**2
-      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+      call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
       
-      CALL output_lbrk()
-      CALL output_line ('Body forces real bd., bdc/horiz/vert')
-      CALL output_line (' 2 / ' &
-          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
-          //TRIM(sys_sdEP(Dforces(2),15,6)) )
+      call output_lbrk()
+      call output_line ('Body forces real bd., bdc/horiz/vert')
+      call output_line (' 2 / ' &
+          //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //trim(sys_sdEP(Dforces(2),15,6)) )
       
-    ENDIF
+    endif
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
 !    IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
@@ -536,26 +536,26 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,&
+    call spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,&
         rprjDiscretisation)
     
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(1))
 
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(2))
                  
     ! Also use Q1 for the dual velocity field.
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(4), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(4))
 
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  rvector%p_rblockDiscr%RspatialDiscr(5), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(5))
@@ -564,38 +564,38 @@ CONTAINS
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
-    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution (rvector,rprjVector)
+    call spdp_projectSolution (rvector,rprjVector)
     
-    CALL cc_initCollectForAssembly(rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     ! Discretise the boundary conditions for this discretisation
-    CALL bcasm_initDiscreteBC(rdiscreteBC)
-    CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
       rdiscreteBC,rproblem%rcollection)
 
-    CALL bcasm_initDiscreteFBC(rdiscreteFBC)
-    CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+    call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
       rdiscreteFBC,rproblem%rcollection)
     
-    CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Connect the vector with the BC's
     rprjVector%p_rdiscreteBC => rdiscreteBC
     rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC's.
-    CALL vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector)
     !DEBUG: CALL vecfil_discreteBCdef (rprjVector)
 
     ! Filter the solution vector to implement discrete BC's for fictitious 
     ! boundary components.
-    CALL vecfil_discreteFBCsol (rprjVector)
+    call vecfil_discreteFBCsol (rprjVector)
     
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
@@ -604,107 +604,107 @@ CONTAINS
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! Get GMV filename
-    CALL parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
+    call parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
                                         'sgmvFileName', stemp, 'gmv/u.gmv')
-    READ(stemp,*) sgmvName
+    read(stemp,*) sgmvName
     
-    IF (sgmvName .NE. '') THEN
+    if (sgmvName .ne. '') then
     
       ! Start UCD export to GMV file:
-      CALL output_lbrk ()
-      CALL output_line ('Writing GMV file: ' &
-          //TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      call output_lbrk ()
+      call output_line ('Writing GMV file: ' &
+          //trim(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
       
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-          TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+          trim(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
       
       ! Write the configuration of the application as comment block
       ! to the output file.
-      CALL ucd_addCommentLine (rexport,'Configuration:')
-      CALL ucd_addCommentLine (rexport,'---------------')
-      CALL ucd_addParameterList (rexport,rproblem%rparamList)
-      CALL ucd_addCommentLine (rexport,'---------------')
+      call ucd_addCommentLine (rexport,'Configuration:')
+      call ucd_addCommentLine (rexport,'---------------')
+      call ucd_addParameterList (rexport,rproblem%rparamList)
+      call ucd_addCommentLine (rexport,'---------------')
 
       ! Write velocity field
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       
-      CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-      CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+      call ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
       
       ! Write pressure
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-      CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+      call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
       
       ! Dual velocity field
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
-      CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
-      CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+      call ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
       
       ! Dual pressure
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-      CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+      call ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
 
       ! Control u = P[min/max](-1/alpha lambda)
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
       call lsyssc_scaleVector (rprjVector%RvectorBlock(4),-1.0_DP/rproblem%roptControl%dalphaC)
       if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
         call cc_projectControlTimestep (rprjVector%RvectorBlock(4),&
           rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
       end if
-      CALL ucd_addVariableVertexBased (rexport,'X-control',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'X-control',UCD_VAR_STANDARD, p_Ddata)
 
-      CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
       call lsyssc_scaleVector (rprjVector%RvectorBlock(5),-1.0_DP/rproblem%roptControl%dalphaC)
       if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
         call cc_projectControlTimestep (rprjVector%RvectorBlock(5),&
           rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
       end if
-      CALL ucd_addVariableVertexBased (rexport,'Y-control',UCD_VAR_STANDARD, p_Ddata2)
+      call ucd_addVariableVertexBased (rexport,'Y-control',UCD_VAR_STANDARD, p_Ddata2)
       
       ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-      IF (rvector%p_rblockDiscr%RspatialDiscr(1)% &
-          ccomplexity .EQ. SPDISC_UNIFORM) THEN
+      if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
+          ccomplexity .eq. SPDISC_UNIFORM) then
           
         ieltype = rvector%p_rblockDiscr%RspatialDiscr(1)% &
                   RelementDistr(1)%celement
                   
-        IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+        if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
             
-          CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+          call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
           
-          CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-          CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+          call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+          call ucd_addVariableVertexBased (rexport,'streamfunction',&
               UCD_VAR_STANDARD, p_Ddata)
               
-        END IF
+        end if
         
-      END IF
+      end if
       
       ! Write the file to disc, that's it.
-      CALL ucd_write (rexport)
-      CALL ucd_release (rexport)
+      call ucd_write (rexport)
+      call ucd_release (rexport)
       
-    END IF
+    end if
     
     ! Release the auxiliary vector
-    CALL lsysbl_releaseVector (rprjVector)
+    call lsysbl_releaseVector (rprjVector)
   
     ! Release the discretisations structure
-    CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
+    call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
     ! Throw away the discrete BC's - not used anymore.
-    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
-    CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
+    call bcasm_releaseDiscreteBC (rdiscreteBC)
+    call bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_postprocSpaceTimeGMV (rproblem,rdiscr,rvector,sfilename)
+  subroutine cc_postprocSpaceTimeGMV (rproblem,rdiscr,rvector,sfilename)
   
 !<description>
   ! For every sub-solution in the global space-time vector rvector,
@@ -713,59 +713,59 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! A space-time discretisation structure defining the discretisation of
   ! rvector.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rdiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rdiscr
 
   ! A space-time vector. For every timestep, a GMV is written.
-  TYPE(t_spaceTimeVector), INTENT(IN) :: rvector
+  type(t_spaceTimeVector), intent(IN) :: rvector
   
   ! A path + basic filename for the GMV-files. A number '.00000','.00001',...
   ! is appended for every timestep.
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  character(LEN=*), intent(IN) :: sfilename
 !</input>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i,ieltype 
+    type(t_vectorBlock) :: rvectorTmp
+    integer :: i,ieltype 
     
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
 
     ! A pointer to the triangulation.
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation
     
     ! A vector accepting Q1 data
-    TYPE(t_vectorBlock) :: rprjVector
+    type(t_vectorBlock) :: rprjVector
     
     ! A discretisation structure for Q1
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Discrete boundary conditions for the output vector
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC
-    TYPE(t_discreteFBC), TARGET :: rdiscreteFBC
+    type(t_discreteBC), target :: rdiscreteBC
+    type(t_discreteFBC), target :: rdiscreteFBC
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
+    type(t_ucdExport) :: rexport
     
     ! Create a temp vector
-    CALL lsysbl_createVecBlockByDiscr (&
+    call lsysbl_createVecBlockByDiscr (&
         rdiscr%p_rlevelInfo%rdiscretisation,&
-        rvectorTmp,.TRUE.)
+        rvectorTmp,.true.)
     
     ! Attach the boundary conditions to that vector
     rvectorTmp%p_rdiscreteBC => rdiscr%p_rlevelInfo%p_rdiscreteBC
     rvectorTmp%p_rdiscreteBCfict => rdiscr%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,rdiscr%rtimeDiscr%nintervals
+    do i = 0,rdiscr%rtimeDiscr%nintervals
     
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + i*rdiscr%rtimeDiscr%dtstep
@@ -775,7 +775,7 @@ CONTAINS
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rvector, i, rvectorTmp)
-      CALL tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
+      call tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
     
       ! The solution vector is probably not in the way, GMV likes it!
       ! GMV for example does not understand Q1~ vectors!
@@ -789,26 +789,26 @@ CONTAINS
       ! structure and modifying the discretisation structures of the
       ! two velocity subvectors:
       
-      CALL spdiscr_duplicateBlockDiscr(rvectorTmp%p_rblockDiscr,&
+      call spdiscr_duplicateBlockDiscr(rvectorTmp%p_rblockDiscr,&
           rprjDiscretisation)
       
-      CALL spdiscr_deriveSimpleDiscrSc (&
+      call spdiscr_deriveSimpleDiscrSc (&
                   rvectorTmp%p_rblockDiscr%RspatialDiscr(1), &
                   EL_Q1, CUB_G2X2, &
                   rprjDiscretisation%RspatialDiscr(1))
 
-      CALL spdiscr_deriveSimpleDiscrSc (&
+      call spdiscr_deriveSimpleDiscrSc (&
                   rvectorTmp%p_rblockDiscr%RspatialDiscr(2), &
                   EL_Q1, CUB_G2X2, &
                   rprjDiscretisation%RspatialDiscr(2))
                    
       ! Also use Q1 for the dual velocity field.
-      CALL spdiscr_deriveSimpleDiscrSc (&
+      call spdiscr_deriveSimpleDiscrSc (&
                   rvectorTmp%p_rblockDiscr%RspatialDiscr(4), &
                   EL_Q1, CUB_G2X2, &
                   rprjDiscretisation%RspatialDiscr(4))
 
-      CALL spdiscr_deriveSimpleDiscrSc (&
+      call spdiscr_deriveSimpleDiscrSc (&
                   rvectorTmp%p_rblockDiscr%RspatialDiscr(5), &
                   EL_Q1, CUB_G2X2, &
                   rprjDiscretisation%RspatialDiscr(5))
@@ -817,36 +817,36 @@ CONTAINS
       !
       ! Now set up a new solution vector based on this discretisation,
       ! allocate memory.
-      CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+      call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
       
       ! Then take our original solution vector and convert it according to the
       ! new discretisation:
-      CALL spdp_projectSolution (rvectorTmp,rprjVector)
+      call spdp_projectSolution (rvectorTmp,rprjVector)
       
-      CALL cc_initCollectForAssembly(rproblem,rproblem%rcollection)
+      call cc_initCollectForAssembly(rproblem,rproblem%rcollection)
       
       ! Discretise the boundary conditions for this discretisation
-      CALL bcasm_initDiscreteBC(rdiscreteBC)
-      CALL cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+      call bcasm_initDiscreteBC(rdiscreteBC)
+      call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdiscreteBC,rproblem%rcollection)
 
-      CALL bcasm_initDiscreteFBC(rdiscreteFBC)
-      CALL cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+      call bcasm_initDiscreteFBC(rdiscreteFBC)
+      call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
         rdiscreteFBC,rproblem%rcollection)
       
       ! Connect the vector with the BC's
       rprjVector%p_rdiscreteBC => rdiscreteBC
       rprjVector%p_rdiscreteBCfict => rdiscreteFBC
       
-      CALL cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
+      call cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
       
       ! Filter the solution vector to implement discrete BC's.
-      CALL vecfil_discreteBCsol (rprjVector)
+      call vecfil_discreteBCsol (rprjVector)
       !DEBUG: CALL vecfil_discreteBCdef (rprjVector)
 
       ! Filter the solution vector to implement discrete BC's for fictitious 
       ! boundary components.
-      CALL vecfil_discreteFBCsol (rprjVector)
+      call vecfil_discreteFBCsol (rprjVector)
       
       ! Now we have a Q1/Q1/Q0 solution in rprjVector.
       !
@@ -855,85 +855,85 @@ CONTAINS
         rvectorTmp%rvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
       
       ! Start UCD export to GMV file:
-      CALL output_line ('Writing GMV file: ' &
-          //TRIM(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      call output_line ('Writing GMV file: ' &
+          //trim(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
       
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-          TRIM(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+          trim(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
       
       ! Write the configuration of the application as comment block
       ! to the output file.
-      CALL ucd_addCommentLine (rexport,'Configuration:')
-      CALL ucd_addCommentLine (rexport,'---------------')
-      CALL ucd_addParameterList (rexport,rproblem%rparamList)
-      CALL ucd_addCommentLine (rexport,'---------------')
+      call ucd_addCommentLine (rexport,'Configuration:')
+      call ucd_addCommentLine (rexport,'---------------')
+      call ucd_addParameterList (rexport,rproblem%rparamList)
+      call ucd_addCommentLine (rexport,'---------------')
 
       ! Write velocity field
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(1),p_Ddata)
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(2),p_Ddata2)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(1),p_Ddata)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(2),p_Ddata2)
       
-      CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-      CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+      call ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
       
       ! Write pressure
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(3),p_Ddata)
-      CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(3),p_Ddata)
+      call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
       
       ! Dual velocity field
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(4),p_Ddata)
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(5),p_Ddata2)
-      CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
-      CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(4),p_Ddata)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(5),p_Ddata2)
+      call ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
       
       ! Dual pressure
-      CALL lsyssc_getbase_double (rprjVector%rvectorBlock(6),p_Ddata)
-      CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
+      call lsyssc_getbase_double (rprjVector%rvectorBlock(6),p_Ddata)
+      call ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
       
       ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-      IF (rvectorTmp%p_rblockDiscr%RspatialDiscr(1)% &
-          ccomplexity .EQ. SPDISC_UNIFORM) THEN
+      if (rvectorTmp%p_rblockDiscr%RspatialDiscr(1)% &
+          ccomplexity .eq. SPDISC_UNIFORM) then
           
         ieltype = rvectorTmp%p_rblockDiscr%RspatialDiscr(1)% &
                   RelementDistr(1)%celement
                   
-        IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+        if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
             
-          CALL ppns2D_streamfct_uniform (rvectorTmp,rprjVector%rvectorBlock(1))
+          call ppns2D_streamfct_uniform (rvectorTmp,rprjVector%rvectorBlock(1))
           
-          CALL lsyssc_getbase_double (rprjVector%rvectorBlock(1),p_Ddata)
-          CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+          call lsyssc_getbase_double (rprjVector%rvectorBlock(1),p_Ddata)
+          call ucd_addVariableVertexBased (rexport,'streamfunction',&
               UCD_VAR_STANDARD, p_Ddata)
               
-        END IF
+        end if
         
-      END IF
+      end if
       
       ! Write the file to disc, that's it.
-      CALL ucd_write (rexport)
-      CALL ucd_release (rexport)
+      call ucd_write (rexport)
+      call ucd_release (rexport)
       
       ! Release the auxiliary vector
-      CALL lsysbl_releaseVector (rprjVector)
+      call lsysbl_releaseVector (rprjVector)
       
       ! Release the discretisation structure
-      CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
+      call spdiscr_releaseBlockDiscr(rprjDiscretisation)
       
       ! Throw away the discrete BC's - not used anymore.
-      CALL bcasm_releaseDiscreteBC (rdiscreteBC)
-      CALL bcasm_releaseDiscreteFBC (rdiscreteFBC)
+      call bcasm_releaseDiscreteBC (rdiscreteBC)
+      call bcasm_releaseDiscreteFBC (rdiscreteFBC)
       
-    END DO
+    end do
 
     ! Release memory.
-    CALL lsysbl_releaseVector (rvectorTmp)
+    call lsysbl_releaseVector (rvectorTmp)
     
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initpostprocessing (rproblem,rpostprocessing)
+  subroutine cc_initpostprocessing (rproblem,rpostprocessing)
 
 !<description>
   ! Initialises the given postprocessing structure rpostprocessing
@@ -943,17 +943,17 @@ CONTAINS
 
 !<input>
   ! A problem structure that describes the main problem to solve.
-  TYPE(t_problem), INTENT(IN),TARGET :: rproblem
+  type(t_problem), intent(IN),target :: rproblem
 !</input>
 
 !<output>  
-  TYPE(t_c2d2postprocessing), INTENT(OUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(OUT) :: rpostprocessing
 !</output>
 
 !</subroutine>
 
   ! local variables
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
+  type(t_blockDiscretisation), pointer :: p_rdiscr
 
     ! For postprocessing, we need discretisation structures in the Q0 and Q1 space,
     ! later perhaps in the Q2 space. For this purpose, derive the corresponding
@@ -966,30 +966,30 @@ CONTAINS
     p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  p_rdiscr%RspatialDiscr(1), &
                  EL_Q0, CUB_G1X1, &
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  p_rdiscr%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
                  p_rdiscr%RspatialDiscr(1), &
                  EL_Q2, CUB_G3X3, &
                  rpostprocessing%rdiscrQuadratic)
   
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_clearpostprocessing (rpostprocessing)
+  subroutine cc_clearpostprocessing (rpostprocessing)
 
 !<description>
   ! Releases all calculated data in the given postprocessing structure
@@ -1000,27 +1000,27 @@ CONTAINS
 !</description>
 
 !<inputoutput>  
-  TYPE(t_c2d2postprocessing), INTENT(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
 
     ! Release all vectors which might be allocated.
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorVelX)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorVelY)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorPressure)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorPressureCells)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorStreamfunction)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorH1err)
-    CALL lsyssc_releaseVector (rpostprocessing%rvectorH1errCells)
+    call lsyssc_releaseVector (rpostprocessing%rvectorVelX)
+    call lsyssc_releaseVector (rpostprocessing%rvectorVelY)
+    call lsyssc_releaseVector (rpostprocessing%rvectorPressure)
+    call lsyssc_releaseVector (rpostprocessing%rvectorPressureCells)
+    call lsyssc_releaseVector (rpostprocessing%rvectorStreamfunction)
+    call lsyssc_releaseVector (rpostprocessing%rvectorH1err)
+    call lsyssc_releaseVector (rpostprocessing%rvectorH1errCells)
 
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_donepostprocessing (rpostprocessing)
+  subroutine cc_donepostprocessing (rpostprocessing)
 
 !<description>
   ! Releases a given problem structure. All allocated memory of this structure
@@ -1028,26 +1028,26 @@ CONTAINS
 !</description>
 
 !<inputoutput>  
-  TYPE(t_c2d2postprocessing), INTENT(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
 
     ! Release all vectors -- if there are still some allocated
-    CALL cc_clearpostprocessing (rpostprocessing)
+    call cc_clearpostprocessing (rpostprocessing)
 
     ! Release the discretisation structures allocated above.
-    CALL spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
-    CALL spdiscr_releaseDiscr(rpostprocessing%rdiscrLinear)
-    CALL spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
+    call spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
+    call spdiscr_releaseDiscr(rpostprocessing%rdiscrLinear)
+    call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_printControlFunctionalStat (rproblem,rvector)
+  subroutine cc_printControlFunctionalStat (rproblem,rvector)
   
 !<description>
   ! Calculates and prints the value of the optimal control functional J(y,u) 
@@ -1056,39 +1056,39 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
 !</input>
 
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(3) :: Derror
-    REAL(DP) :: dalphaC
+    real(DP), dimension(3) :: Derror
+    real(DP) :: dalphaC
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Analyse the deviation from the target velocity field.
-    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+    call parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dalphaC',dalphaC,0.1_DP)
-    CALL cc_optc_stationaryFunctional (rvector,dalphaC,Derror,&
+    call cc_optc_stationaryFunctional (rvector,dalphaC,Derror,&
         rproblem%rcollection)
 
-    CALL output_line ('||y-z||_L2: '//TRIM(sys_sdEL(Derror(1),2)))
-    CALL output_line ('||u||_L2  : '//TRIM(sys_sdEL(Derror(2),2)))
-    CALL output_line ('J(y,u)    : '//TRIM(sys_sdEL(Derror(3),2)))
+    call output_line ('||y-z||_L2: '//trim(sys_sdEL(Derror(1),2)))
+    call output_line ('||u||_L2  : '//trim(sys_sdEL(Derror(2),2)))
+    call output_line ('J(y,u)    : '//trim(sys_sdEL(Derror(3),2)))
     
     ! Release assembly-stuff from the collection
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
     
-  END SUBROUTINE
+  end subroutine
 
 !  !****************************************************************************
 !
@@ -1395,4 +1395,4 @@ CONTAINS
 !  
 !  END SUBROUTINE
 
-END MODULE
+end module

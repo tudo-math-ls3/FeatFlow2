@@ -16,42 +16,42 @@
 !# </purpose>
 !##############################################################################
 
-MODULE heatcond_solver
+module heatcond_solver
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE sortstrategy
-  USE coarsegridcorrection
-  USE ucd
-  USE timestepping
-  USE genoutput
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use sortstrategy
+  use coarsegridcorrection
+  use ucd
+  use timestepping
+  use genoutput
   
-  USE collection
-  USE paramlist
+  use collection
+  use paramlist
     
-  USE heatcond_callback
+  use heatcond_callback
   
-  USE heatcond_basic
+  use heatcond_basic
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hc5_initSolver (rproblem)
+  subroutine hc5_initSolver (rproblem)
   
 !<description>
   ! Initialises the linear solver according to the problem rproblem.
@@ -59,32 +59,32 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-    INTEGER :: ilvmin,ilvmax
-    INTEGER :: i
+    integer :: ilvmin,ilvmax
+    integer :: i
 
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    integer :: ierror    
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
-    TYPE(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
+    type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1:rproblem%ilvmax) :: Rmatrices
+    type(t_matrixBlock), dimension(1:rproblem%ilvmax) :: Rmatrices
     
     ! One level of multigrid
-    TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
+    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
     
     ilvmin = rproblem%ilvmin
     ilvmax = rproblem%ilvmax
@@ -103,33 +103,33 @@ CONTAINS
     !
     ! At first, initialise a standard interlevel projection structure. We
     ! can use the same structure for all levels.
-    CALL mlprj_initProjectionDiscr (rproblem%rprojection,&
+    call mlprj_initProjectionDiscr (rproblem%rprojection,&
          rproblem%RlevelInfo(ilvmax)%p_rdiscretisation)
     
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => rproblem%RfilterChain
-    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
-    DO i=ilvmin,ilvmax
+    do i=ilvmin,ilvmax
       
       ! On the coarsest grid, set up a coarse grid solver and no smoother
       ! On finer grids, set up a smoother but no coarse grid solver.
-      NULLIFY(p_rpreconditioner)
-      NULLIFY(p_rsmoother)
-      NULLIFY(p_rcoarseGridSolver)
-      IF (i .EQ. ilvmin) THEN
+      nullify(p_rpreconditioner)
+      nullify(p_rsmoother)
+      nullify(p_rcoarseGridSolver)
+      if (i .eq. ilvmin) then
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
         ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
         ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
         
         ! Set up UMFPACK coarse grid solver.
-        CALL linsol_initUMFPACK4 (p_rcoarseGridSolver)
+        call linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
-      ELSE
+      else
         ! Setting up Jacobi smoother for multigrid would be:
         ! CALL linsol_initJacobi (p_rsmoother)
 
@@ -138,15 +138,15 @@ CONTAINS
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-         CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+         call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+         call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
         
-      END IF
+      end if
     
       ! Add the level.
-      CALL linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rproblem%rprojection,&
+      call linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rproblem%rprojection,&
                                      p_rsmoother,p_rsmoother,p_rcoarseGridSolver)
-    END DO
+    end do
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -157,23 +157,23 @@ CONTAINS
     ! to the setMatrices routines. This intitialises then the matrices
     ! on all levels according to that array.
     Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
+    call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
     ! Save the solver node in the problem structure, finish
     rproblem%p_rsolverNode => p_rsolverNode
 
     ! Allocate memory, initialise solver structures according to the
     ! linear system we just attached.
-    CALL linsol_initStructure (p_rsolverNode,ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    call linsol_initStructure (p_rsolverNode,ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hc5_doneSolver (rproblem)
+  subroutine hc5_doneSolver (rproblem)
   
 !<description>
   ! Releases the solver from the problem structure.
@@ -181,21 +181,21 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
  
     ! Release solver data and structure
-    CALL linsol_doneData (rproblem%p_rsolverNode)
-    CALL linsol_doneStructure (rproblem%p_rsolverNode)
+    call linsol_doneData (rproblem%p_rsolverNode)
+    call linsol_doneStructure (rproblem%p_rsolverNode)
     
     ! Release the solver node and all subnodes attached to it (if at all):
-    CALL linsol_releaseSolver (rproblem%p_rsolverNode)
+    call linsol_releaseSolver (rproblem%p_rsolverNode)
     
     ! Release the multilevel projection structure.
-    CALL mlprj_doneProjection (rproblem%rprojection)
+    call mlprj_doneProjection (rproblem%rprojection)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

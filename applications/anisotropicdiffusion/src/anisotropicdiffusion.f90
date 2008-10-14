@@ -24,45 +24,45 @@
 !# for initialisation, discretisation, solving and cleanup.
 !##############################################################################
 
-PROGRAM anisotropicdiffusion
+program anisotropicdiffusion
 
-  USE anisotropicdiffusion_method1
-  USE anisotropicdiffusion_method2
+  use anisotropicdiffusion_method1
+  use anisotropicdiffusion_method2
   
-  IMPLICIT NONE
+  implicit none
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init(); sys_haltmode = SYS_HALT_THROWFPE
+  call system_init(); sys_haltmode = SYS_HALT_THROWFPE
   
   ! Initialise the output system. Write the program output to screen as
   ! well as to the file 'log/output.txt'.
-  CALL output_init ('./log/output.txt')
+  call output_init ('./log/output.txt')
 
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
 
   ! Call the problem to solve. 
-  CALL output_lbrk ()
-  CALL output_line ('Calculating anisotropic diffusion problem with method 1')
-  CALL output_line ('-------------------------------------------------------')
-  CALL anisotropicdiffusion1
+  call output_lbrk ()
+  call output_line ('Calculating anisotropic diffusion problem with method 1')
+  call output_line ('-------------------------------------------------------')
+  call anisotropicdiffusion1
 
   ! Call the problem to solve. 
-  CALL output_lbrk ()
-  CALL output_line ('Calculating anisotropic diffusion problem with method 2')
-  CALL output_line ('-------------------------------------------------------')
-  CALL anisotropicdiffusion2
+  call output_lbrk ()
+  call output_line ('Calculating anisotropic diffusion problem with method 2')
+  call output_line ('-------------------------------------------------------')
+  call anisotropicdiffusion2
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  CALL output_lbrk ()
-  CALL storage_info(.TRUE.)
+  call output_lbrk ()
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

@@ -20,79 +20,79 @@
 !# </purpose>
 !##############################################################################
 
-MODULE navst3d_method1_mg
+module navst3d_method1_mg
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE bilinearformevaluation
-  USE trilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE ucd
-  USE meshregion
+  use fsystem
+  use storage
+  use linearsolver
+  use bilinearformevaluation
+  use trilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use ucd
+  use meshregion
   
-  USE convection
+  use convection
   
-  USE stokes3d_callback
-  USE dom3d_c3d0
+  use stokes3d_callback
+  use dom3d_c3d0
   
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
 
-  TYPE t_level
+  type t_level
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
-    TYPE(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation
     
     ! The system matrix for that level.
-    Type(t_matrixBlock) :: rmatrix
+    type(t_matrixBlock) :: rmatrix
 
     ! The solution vector for that specific level.
-    TYPE(t_vectorBlock) :: rvecSol
+    type(t_vectorBlock) :: rvecSol
 
     ! The Laplace matrix for that level.
-    TYPE(t_matrixScalar) :: rmatrixStokes
+    type(t_matrixScalar) :: rmatrixStokes
 
     ! B1-matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixB1
+    type(t_matrixScalar) :: rmatrixB1
 
     ! B2-matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixB2
+    type(t_matrixScalar) :: rmatrixB2
     
     ! B3-matrix for that specific level.
-    TYPE(t_matrixScalar) :: rmatrixB3
+    type(t_matrixScalar) :: rmatrixB3
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC) :: rdiscreteBC
+    type(t_discreteBC) :: rdiscreteBC
   
-  END TYPE
+  end type
   
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE navst3d_1_mg
+  subroutine navst3d_1_mg
   
  
 !<description>
@@ -117,84 +117,84 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
+    type(t_level), dimension(:), target, allocatable :: Rlevels
 
     ! An object for saving the boundary mesh region
-    TYPE(t_meshregion) :: rmeshRegion
+    type(t_meshregion) :: rmeshRegion
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation) :: rprjDiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_trilinearForm) :: rtriform1, rtriform2, rtriform3
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_trilinearForm) :: rtriform1, rtriform2, rtriform3
+    type(t_linearForm) :: rlinform
     
     ! A streamline-diffusion structure
-    TYPE(t_convStreamlineDiffusion) :: rsd
+    type(t_convStreamlineDiffusion) :: rsd
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_vectorBlock) :: rrhs,rvecDef,rtempBlock,rprjVector
+    type(t_vectorBlock) :: rrhs,rvecDef,rtempBlock,rprjVector
     
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_discreteBC), TARGET :: rprjDiscreteBC
+    type(t_discreteBC), target :: rprjDiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner,&
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,&
                                    p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    type(t_matrixBlock), dimension(:), allocatable :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! An interlevel projection structure for changing levels
-    TYPE(t_interlevelProjectionBlock) :: rprojection
+    type(t_interlevelProjectionBlock) :: rprojection
 
     ! One level of multigrid
-    TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
+    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
     
     ! NLMIN receives the level of the coarse grid.
-    INTEGER :: NLMIN
+    integer :: NLMIN
 
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Viscosity parameter nu = 1/Re
-    REAL(DP) :: dnu
+    real(DP) :: dnu
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    integer :: ierror    
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2,p_Ddata3
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2,p_Ddata3
 
     ! A counter variable
-    INTEGER :: i,nl,niterMaxNL
+    integer :: i,nl,niterMaxNL
     
     ! Stokes or Navier-Stokes?
-    LOGICAL :: bNavier
+    logical :: bNavier
     
     ! What kind of stabilisation?
-    INTEGER :: iConvAsm
+    integer :: iConvAsm
     
     ! Streamline-diffusion parameter
-    REAL(DP) :: dupsam
+    real(DP) :: dupsam
     
     ! Residual for the non-linear iteration
-    REAL(DP) :: dnlres, dnlresInit
+    real(DP) :: dnlres, dnlresInit
     
     ! Damping parameter
-    REAL(DP) :: dnlDamping
+    real(DP) :: dnlDamping
 
     ! We want to solve our (Navier-)Stokes problem on level...
     NLMIN = 1
@@ -204,7 +204,7 @@ CONTAINS
     dnu = 1.0_DP / 1000.0_DP
     
     ! Do we want to assemble a Navier-Stokes system?
-    bNavier = .TRUE.
+    bNavier = .true.
     
     ! If we want to solve Navier-Stokes, how do we assemble the
     ! convective term?
@@ -222,56 +222,56 @@ CONTAINS
     dnlDamping = 1.0_DP
     
     ! Allocate memory for all levels
-    ALLOCATE(Rlevels(NLMIN:NLMAX))
+    allocate(Rlevels(NLMIN:NLMAX))
 
     ! At first read in the basic triangulation.
-    CALL tria_readTriFile3D (Rlevels(NLMIN)%rtriangulation, &
+    call tria_readTriFile3D (Rlevels(NLMIN)%rtriangulation, &
                              './pre/C3D0.tri')
 
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation)
+    call tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation)
     
     ! Call mesh correction routine
-    CALL dom3d_c3d0_correctMesh(Rlevels(NLMIN)%rtriangulation)
+    call dom3d_c3d0_correctMesh(Rlevels(NLMIN)%rtriangulation)
 
     ! Refine the mesh up to the minimum level
-    DO i = 2, NLMIN
+    do i = 2, NLMIN
 
       ! Refine the grid using the 2-Level-Ordering algorithm
-      CALL tria_refine2LevelOrdering(Rlevels(i)%rtriangulation)
+      call tria_refine2LevelOrdering(Rlevels(i)%rtriangulation)
       
       ! And create information about adjacencies and everything one needs from
       ! a triangulation.
-      CALL tria_initStandardMeshFromRaw (Rlevels(i)%rtriangulation)
+      call tria_initStandardMeshFromRaw (Rlevels(i)%rtriangulation)
       
       ! Call mesh correction routine
-      CALL dom3d_c3d0_correctMesh(Rlevels(i)%rtriangulation)
+      call dom3d_c3d0_correctMesh(Rlevels(i)%rtriangulation)
 
-    END DO
+    end do
     
     ! Now refine the grid for the fine levels.
-    DO i = NLMIN+1, NLMAX
+    do i = NLMIN+1, NLMAX
 
       ! Refine the grid using the 2-Level-Ordering algorithm
-      CALL tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
+      call tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
           Rlevels(i)%rtriangulation)
       
       ! Create a standard mesh
-      CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation)
+      call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation)
 
       ! Call mesh correction routine
-      CALL dom3d_c3d0_correctMesh(Rlevels(i)%rtriangulation)
+      call dom3d_c3d0_correctMesh(Rlevels(i)%rtriangulation)
     
-    END DO
+    end do
 
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 4 blocks in the
     ! solution vector.
-    DO i = NLMIN, NLMAX
-      CALL spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 4, &
+    do i = NLMIN, NLMAX
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 4, &
                                    Rlevels(i)%rtriangulation)
-    END DO
+    end do
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.
@@ -280,10 +280,10 @@ CONTAINS
     !  Component 2 = Y-velocity
     !  Component 3 = Z-velocity
     !  Component 4 = Pressure
-    DO i = NLMIN, NLMAX
+    do i = NLMIN, NLMAX
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
-      CALL spdiscr_initDiscr_simple (&
+      call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           EL_EM30_3D, CUB_G3_3D, Rlevels(i)%rtriangulation)
                   
@@ -291,26 +291,26 @@ CONTAINS
       ! of the 2nd and 3rd component (Y-/Z-velocity). This needs no
       ! additional memory, as all three structures will share the same dynamic
       ! information afterwards.
-      CALL spdiscr_duplicateDiscrSc (&
+      call spdiscr_duplicateDiscrSc (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
-      CALL spdiscr_duplicateDiscrSc (&
+      call spdiscr_duplicateDiscrSc (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(3))
 
       ! For the pressure (4th component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
-      CALL spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
+      call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
           EL_Q0_3D, CUB_G3_3D, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
     
-    END DO
+    end do
 
-    DO i = NLMIN, NLMAX
+    do i = NLMIN, NLMAX
     
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,&
+      call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,&
                                          Rlevels(i)%rmatrix)    
       
       ! Inform the matrix that we build a saddle-point problem.
@@ -324,7 +324,7 @@ CONTAINS
       ! using the discretisation structure of the first block.
       !
       ! Create the matrix structure of the X-velocity.
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrixStokes)
 
@@ -344,7 +344,7 @@ CONTAINS
       !
       ! Create the matrices structure of the pressure using the 4th
       ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrixB1,&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1))
@@ -354,9 +354,9 @@ CONTAINS
       ! structure between B1 and B2/B3 (B1 is the parent and B2/B3 the children). 
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB3,&
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB3,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
                                        
       ! And now to the entries of the matrix. For assembling of the entries,
@@ -372,8 +372,8 @@ CONTAINS
       rform%Idescriptors(2,3) = DER_DERIV3D_Z
 
       ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = dnu
       rform%Dcoefficients(2)  = dnu
       rform%Dcoefficients(3)  = dnu
@@ -389,7 +389,7 @@ CONTAINS
       ! in the collection.
       !
       ! Build the Laplace matrix:
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+      call bilf_buildMatrixScalar (rform,.true.,&
           Rlevels(i)%rmatrixStokes, coeff_Stokes_3D)
       
       ! Duplicate the Laplace matrix to the X-velocity matrix and share
@@ -397,28 +397,28 @@ CONTAINS
       ! share the content with the Laplace matrix, in the case of a
       ! Navier-Stokes system the velocity blocks will also recieve the
       ! convective term (u * \nabla)u, so the content needs to be copied.
-      IF (bNavier) THEN
-        CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixStokes,&
+      if (bNavier) then
+        call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixStokes,&
             Rlevels(i)%rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      ELSE
-        CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixStokes,&
+      else
+        call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixStokes,&
             Rlevels(i)%rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      END IF
+      end if
 
       ! Duplicate the X-velocity matrix to the Y-/Z-velocity matrix, share
       ! structure and content between them (as the matrices are the same).
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
           Rlevels(i)%rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
           Rlevels(i)%rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Manually change the discretisation structure of the Y-/Z-velocity 
       ! matrix to the Y-/Z-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      CALL lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
-      CALL lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(3,3),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(3))
                                   
       ! Build the first pressure matrix B1.
@@ -428,11 +428,11 @@ CONTAINS
       rform%Idescriptors(2,1) = DER_DERIV3D_X
 
       ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = -1.0_DP
       
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,Rlevels(i)%rmatrixB1,&
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB1,&
                                    coeff_Pressure_3D)
 
       ! Build the second pressure matrix B2.
@@ -442,11 +442,11 @@ CONTAINS
       rform%Idescriptors(2,1) = DER_DERIV3D_Y
 
       ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = -1.0_DP
       
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,Rlevels(i)%rmatrixB2,&
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB2,&
                                    coeff_Pressure_3D)
                                   
       ! Build the third pressure matrix B3.
@@ -456,11 +456,11 @@ CONTAINS
       rform%Idescriptors(2,1) = DER_DERIV3D_Z
 
       ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = -1.0_DP
       
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,Rlevels(i)%rmatrixB3,&
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB3,&
                                    coeff_Pressure_3D)
 
       ! The B1/B2/B3 matrices exist up to now only in our local problem structure.
@@ -469,57 +469,57 @@ CONTAINS
       ! Note that we share the structure of B1/B2/B3 with those B1/B2/B3 of the
       ! block matrix, while we create copies of the entries. The reason is
       ! that these matrices are modified for boundary conditions later.
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, &
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, &
           Rlevels(i)%rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB2, &
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB2, &
           Rlevels(i)%rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
       
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB3, &
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB3, &
           Rlevels(i)%rmatrix%RmatrixBlock(3,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
       ! Furthermore, put B1^T, B2^T and B3^T to the block matrix.
-      CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB1, &
+      call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB1, &
           Rlevels(i)%rmatrix%RmatrixBlock(4,1),LSYSSC_TR_VIRTUAL)
 
-      CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
+      call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
           Rlevels(i)%rmatrix%RmatrixBlock(4,2),LSYSSC_TR_VIRTUAL)
 
-      CALL lsyssc_transposeMatrix (Rlevels(i)%rmatrixB3, &
+      call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB3, &
           Rlevels(i)%rmatrix%RmatrixBlock(4,3),LSYSSC_TR_VIRTUAL)
 
       ! Update the structural information of the block matrix, as we manually
       ! changed the submatrices:
-      CALL lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
+      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
       
       ! Create the solution vector for this level
-      CALL lsysbl_createVecBlockIndMat (Rlevels(i)%rmatrix,Rlevels(i)%rvecSol,.FALSE.)
+      call lsysbl_createVecBlockIndMat (Rlevels(i)%rmatrix,Rlevels(i)%rvecSol,.false.)
     
-    END DO
+    end do
     
     ! Prepare the trilinearform for the convection operator (u * \nabla) u
     ! The trilinearform is evaluated in the nonlinear defect correction loop
     ! below.
     ! First convective term: u1 * d_x * u
     rtriform1%itermCount = 1
-    rtriform1%ballCoeffConstant = .TRUE.
-    rtriform1%BconstantCoeff = .TRUE.
+    rtriform1%ballCoeffConstant = .true.
+    rtriform1%BconstantCoeff = .true.
     rtriform1%Dcoefficients = 1.0_DP
     rtriform1%Idescriptors(1,1) = DER_FUNC3D
     rtriform1%Idescriptors(2,1) = DER_DERIV3D_X
     rtriform1%Idescriptors(3,1) = DER_FUNC3D
     ! Second convective term: u2 * d_y * u
     rtriform2%itermCount = 1
-    rtriform2%ballCoeffConstant = .TRUE.
-    rtriform2%BconstantCoeff = .TRUE.
+    rtriform2%ballCoeffConstant = .true.
+    rtriform2%BconstantCoeff = .true.
     rtriform2%Dcoefficients = 1.0_DP
     rtriform2%Idescriptors(1,1) = DER_FUNC3D
     rtriform2%Idescriptors(2,1) = DER_DERIV3D_Y
     rtriform2%Idescriptors(3,1) = DER_FUNC3D
     ! Third convective term: u3 * d_z * u
     rtriform3%itermCount = 1
-    rtriform3%ballCoeffConstant = .TRUE.
-    rtriform3%BconstantCoeff = .TRUE.
+    rtriform3%ballCoeffConstant = .true.
+    rtriform3%BconstantCoeff = .true.
     rtriform3%Dcoefficients = 1.0_DP
     rtriform3%Idescriptors(1,1) = DER_FUNC3D
     rtriform3%Idescriptors(2,1) = DER_DERIV3D_Z
@@ -533,8 +533,8 @@ CONTAINS
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:
-    CALL lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhs,.FALSE.)
-    CALL lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvecDef,.FALSE.)
+    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhs,.false.)
+    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvecDef,.false.)
 
     ! The vector structure is ready but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
@@ -548,27 +548,27 @@ CONTAINS
     ! corresponding block.
     !
     ! Note that the vector is unsorted after calling this routine!
-    CALL linf_buildVectorScalar (&
+    call linf_buildVectorScalar (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-        rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
 
-    CALL linf_buildVectorScalar (&
+    call linf_buildVectorScalar (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2),&
-        rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_X_3D)
 
-    CALL linf_buildVectorScalar (&
+    call linf_buildVectorScalar (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(3),&
-        rlinform,.TRUE.,rrhs%RvectorBlock(3),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(3),coeff_RHS_X_3D)
                                 
     ! The fourth subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
-    CALL lsyssc_clearVector(rrhs%RvectorBlock(4))
+    call lsyssc_clearVector(rrhs%RvectorBlock(4))
                                 
     ! Clear the solution vector on the finest level.
-    CALL lsysbl_clearVector(Rlevels(NLMAX)%rvecSol)
+    call lsysbl_clearVector(Rlevels(NLMAX)%rvecSol)
 
     ! Now set up the boundary conditions
-    DO i = NLMIN, NLMAX
+    do i = NLMIN, NLMAX
 
       ! Now we need to implement the boundary conditions. To do this, we
       ! first need to create a mesh region describing the mesh's boundary.
@@ -578,24 +578,24 @@ CONTAINS
       ! nodal-property array and then kick out everything that belongs to the
       ! right face. But we will use the dom3d_cube module, which performs
       ! this task for us.
-      CALL dom3d_c3d0_calcMeshRegion(rmeshRegion, Rlevels(i)%rtriangulation, &
+      call dom3d_c3d0_calcMeshRegion(rmeshRegion, Rlevels(i)%rtriangulation, &
                                      DOM3D_C3D0_REG_STOKES)
 
       ! Initialise the structure for discrete boundary conditions.
-      CALL bcasm_initDiscreteBC (Rlevels(i)%rdiscreteBC)
+      call bcasm_initDiscreteBC (Rlevels(i)%rdiscreteBC)
 
       ! Set Dirichlet BCs for X-velocity:
-      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 1, &
+      call bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 1, &
           Rlevels(i)%rdiscreteBC, rmeshRegion, &
           getBoundaryValuesC3D0)
 
       ! Set Dirichlet BCs for Y-velocity:
-      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 2, &
+      call bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 2, &
           Rlevels(i)%rdiscreteBC, rmeshRegion, &
           getBoundaryValuesC3D0)
 
       ! Set Dirichlet BCs for Z-velocity:
-      CALL bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 3, &
+      call bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 3, &
           Rlevels(i)%rdiscreteBC, rmeshRegion, &
           getBoundaryValuesC3D0)
 
@@ -610,22 +610,22 @@ CONTAINS
       ! The discrete boundary conditions are already attached to the
       ! matrix. Call the appropriate matrix filter that modifies the matrix
       ! according to the boundary conditions.
-      CALL matfil_discreteBC (Rlevels(i)%rmatrix)
+      call matfil_discreteBC (Rlevels(i)%rmatrix)
       
       ! Don't forget to release the mesh region
-      CALL mshreg_done(rmeshRegion)
+      call mshreg_done(rmeshRegion)
     
-    END DO
+    end do
 
     ! Also implement the discrete boundary conditions on the finest level
     ! onto our right-hand-side and solution vectors.
     rrhs%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
     rvecDef%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
-    CALL vecfil_discreteBCrhs (rrhs)
-    CALL vecfil_discreteBCsol (Rlevels(NLMAX)%rvecSol)
+    call vecfil_discreteBCrhs (rrhs)
+    call vecfil_discreteBCsol (Rlevels(NLMAX)%rvecSol)
 
     ! Create a temporary vector we need that for some preparation.
-    CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .FALSE.)
+    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .false.)
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -641,13 +641,13 @@ CONTAINS
     !
     ! At first, initialise a standard interlevel projection structure. We
     ! can use the same structure for all levels.
-    CALL mlprj_initProjectionMat (rprojection,Rlevels(NLMAX)%rmatrix)
+    call mlprj_initProjectionMat (rprojection,Rlevels(NLMAX)%rmatrix)
 
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
 
     ! As we will use multigrid as a preconditioner for the non-linear loop,
     ! we set the maximum allowed iterations to 10 and the relative convergence
@@ -659,32 +659,32 @@ CONTAINS
     p_rsolverNode%ioutputLevel = 2
     
     ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
-    CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
-    CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+    call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
+    call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the coarse grid solver to -1, so that it
     ! does not print any residuals or warning messages...
     p_rcoarseGridSolver%ioutputLevel = -1
     
     ! Add the coarse grid level.
-    CALL linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                  NULL(), NULL(), p_rcoarseGridSolver)
+    call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
+                                  null(), null(), p_rcoarseGridSolver)
 
     ! Now set up the other levels...
-    DO i = NLMIN+1, NLMAX
+    do i = NLMIN+1, NLMAX
     
       ! Set up the 3D diagonal VANKA smoother.
-      CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DNAVST)
+      call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_3DNAVST)
       
       ! We will use 4 smoothing steps with damping parameter 1.0.
-      CALL linsol_convertToSmoother(p_rsmoother, 4, 1.0_DP)
+      call linsol_convertToSmoother(p_rsmoother, 4, 1.0_DP)
       
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      CALL linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                    p_rsmoother, p_rsmoother, NULL())
+      call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
+                                    p_rsmoother, p_rsmoother, null())
       
-    END DO
+    end do
     
     ! Attach the system matrix to the solver.
     !
@@ -693,173 +693,173 @@ CONTAINS
     ! on all levels according to that array. Note that this does not
     ! allocate new memory, we create only 'links' to existing matrices
     ! into Rmatrices(:)!
-    ALLOCATE(Rmatrices(NLMIN:NLMAX))
-    DO i = NLMIN, NLMAX
-      CALL lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
+    allocate(Rmatrices(NLMIN:NLMAX))
+    do i = NLMIN, NLMAX
+      call lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    END DO
+    end do
     
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
+    call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
     ! We can release Rmatrices immediately -- as long as we don't
     ! release Rlevels(i)%rmatrix!
-    DO i=NLMIN,NLMAX
-      CALL lsysbl_releaseMatrix (Rmatrices(i))
-    END DO
-    DEALLOCATE(Rmatrices)
+    do i=NLMIN,NLMAX
+      call lsysbl_releaseMatrix (Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
-    IF (.NOT. bNavier) THEN
+    if (.not. bNavier) then
       ! Initialize solver data
-      CALL linsol_initData (p_rsolverNode, ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    END IF
+      call linsol_initData (p_rsolverNode, ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    end if
     
     ! Okay, everything is set up - so we can start our nonlinear iteration
       
     ! First, calculate the initial non-linear defect
-    CALL lsysbl_copyVector(rrhs, rvecDef)
-    CALL lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
+    call lsysbl_copyVector(rrhs, rvecDef)
+    call lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
              Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
-    CALL vecfil_discreteBCdef (rvecDef)
+    call vecfil_discreteBCdef (rvecDef)
     dnlresInit = lsysbl_vectorNorm(rvecDef, LINALG_NORMEUCLID)
     
     ! Print the residual
-    PRINT *, '-----------------------------------------------------------'
-    PRINT *, 'NL-Iteration: ', 0, '|RES| = ', dnlresInit
-    PRINT *, '-----------------------------------------------------------'
+    print *, '-----------------------------------------------------------'
+    print *, 'NL-Iteration: ', 0, '|RES| = ', dnlresInit
+    print *, '-----------------------------------------------------------'
     
     ! Make sure the inital residual is not zero, as we need to divide
     ! by it later...
-    IF (dnlresInit .LE. SYS_EPSREAL) dnlresInit = 1.0_DP
+    if (dnlresInit .le. SYS_EPSREAL) dnlresInit = 1.0_DP
     
     ! Start the non-linear defect-correction loop
-    DO nl = 1, niterMaxNL
+    do nl = 1, niterMaxNL
 
       ! If we want to solve a Navier-Stokes system, we need to
       ! initialise the solver data here:
-      IF (bNavier) THEN
+      if (bNavier) then
       
         ! Initialize solver data
-        CALL linsol_initData (p_rsolverNode, ierror)
-        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+        call linsol_initData (p_rsolverNode, ierror)
+        if (ierror .ne. LINSOL_ERR_NOERROR) stop
         
-      END IF
+      end if
       
       ! Call the preconditioner - which is our linear solver
-      CALL linsol_precondDefect(p_rsolverNode, rvecDef)
+      call linsol_precondDefect(p_rsolverNode, rvecDef)
       
       ! Check the solver result
-      IF (p_rsolverNode%iresult .NE. 0) THEN
+      if (p_rsolverNode%iresult .ne. 0) then
       
         ! Release the solver data in case of a Navier-Stokes system.
-        IF (bNavier) THEN
-          CALL linsol_doneData(p_rsolverNode)
-        END IF
+        if (bNavier) then
+          call linsol_doneData(p_rsolverNode)
+        end if
 
         ! Print an error
-        PRINT *, '-----------------------------------------------------------'
-        PRINT *, 'NL-Iteration: ERROR: linear solver broke down'
-        PRINT *, '-----------------------------------------------------------'
+        print *, '-----------------------------------------------------------'
+        print *, 'NL-Iteration: ERROR: linear solver broke down'
+        print *, '-----------------------------------------------------------'
         
         ! Exit the non-linear loop
-        EXIT
+        exit
         
-      END IF
+      end if
       
       ! Add the preconditioned defect onto the solution
-      CALL lsysbl_vectorLinearComb(rvecDef, Rlevels(NLMAX)%rvecSol, &
+      call lsysbl_vectorLinearComb(rvecDef, Rlevels(NLMAX)%rvecSol, &
                                    dnlDamping, 1.0_DP)
 
       ! In the case of a Navier-Stokes system, we need to reassemble
       ! the system matrices on all levels.
-      IF (bNavier) THEN
+      if (bNavier) then
       
         ! Release solver data
-        CALL linsol_doneData(p_rsolverNode)
+        call linsol_doneData(p_rsolverNode)
         
         ! Restrict the new solution vector to all levels
-        DO i = NLMAX, NLMIN+1, -1
+        do i = NLMAX, NLMIN+1, -1
         
-          CALL mlprj_performInterpolation(rprojection, Rlevels(i-1)%rvecSol,&
+          call mlprj_performInterpolation(rprojection, Rlevels(i-1)%rvecSol,&
                              Rlevels(i)%rvecSol, rtempBlock%RvectorBlock(1))
           
           ! And filter the restricted vector.
           ! Note: We don't need to filter the solution on the finest level
-          CALL vecfil_discreteBCsol (Rlevels(i-1)%rvecSol)
+          call vecfil_discreteBCsol (Rlevels(i-1)%rvecSol)
       
-        END DO
+        end do
         
         ! Update the matrices on all levels
-        DO i = NLMIN, NLMAX
+        do i = NLMIN, NLMAX
         
           ! Copy Stokes matrix to X-velocity block
-          CALL lsyssc_duplicateMatrix(Rlevels(i)%rmatrixStokes,&
+          call lsyssc_duplicateMatrix(Rlevels(i)%rmatrixStokes,&
                             Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                             LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
           
           ! Now how do we assemble the convective term?
-          SELECT CASE (iConvAsm)
-          CASE (1) 
+          select case (iConvAsm)
+          case (1) 
             ! Use the streamline-diffusion
             
-            CALL conv_streamlineDiffusion3d(Rlevels(i)%rvecSol,&
+            call conv_streamlineDiffusion3d(Rlevels(i)%rvecSol,&
                  Rlevels(i)%rvecSol, 1.0_DP, 0.0_DP, rsd, CONV_MODMATRIX, &
                  Rlevels(i)%rmatrix%RmatrixBlock(1,1))
           
-          CASE DEFAULT
+          case DEFAULT
             ! Use the trilinearform
 
             ! Assemble u_1 * d_x u
-            CALL trilf_buildMatrixScalar(rtriform1,.FALSE.,&
+            call trilf_buildMatrixScalar(rtriform1,.false.,&
                  Rlevels(i)%rmatrix%RmatrixBlock(1,1), &
                  Rlevels(i)%rvecSol%RvectorBlock(1))
             ! Assemble u_2 * d_y u
-            CALL trilf_buildMatrixScalar(rtriform2,.FALSE.,&
+            call trilf_buildMatrixScalar(rtriform2,.false.,&
                  Rlevels(i)%rmatrix%RmatrixBlock(1,1), &
                  Rlevels(i)%rvecSol%RvectorBlock(2))
             ! Assemble u_3 * d_z u
-            CALL trilf_buildMatrixScalar(rtriform3,.FALSE.,&
+            call trilf_buildMatrixScalar(rtriform3,.false.,&
                  Rlevels(i)%rmatrix%RmatrixBlock(1,1), &
                  Rlevels(i)%rvecSol%RvectorBlock(3))
           
-          END SELECT
+          end select
           
           ! And filter the matrix
-          CALL matfil_discreteBC (Rlevels(i)%rmatrix)
+          call matfil_discreteBC (Rlevels(i)%rmatrix)
           
           ! The other velocity blocks are automatically updated, since they
           ! are just a shared copy of the X-velocity block
           
-        END DO
+        end do
       
-      END IF ! bNavier
+      end if ! bNavier
 
       ! Calculate non-linear defect:
-      CALL lsysbl_copyVector(rrhs, rvecDef)
-      CALL lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
+      call lsysbl_copyVector(rrhs, rvecDef)
+      call lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
                Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
       
       ! Filter the defect vector
-      CALL vecfil_discreteBCdef (rvecDef)
+      call vecfil_discreteBCdef (rvecDef)
       
       ! Calculate residual
       dnlres = lsysbl_vectorNorm(rvecDef, LINALG_NORMEUCLID)
-      PRINT *, '-----------------------------------------------------------'
-      PRINT *, 'NL-Iteration: ', nl, '|RES| = ', dnlres
-      PRINT *, '-----------------------------------------------------------'
+      print *, '-----------------------------------------------------------'
+      print *, 'NL-Iteration: ', nl, '|RES| = ', dnlres
+      print *, '-----------------------------------------------------------'
       
       ! Are we finished?
-      IF ((dnlres .LE. 1E-8_DP) .AND. ((dnlres / dnlresInit) .LE. 1E-5_DP)) EXIT
+      if ((dnlres .le. 1E-8_DP) .and. ((dnlres / dnlresInit) .le. 1E-5_DP)) exit
       
       ! Proceed with next non-linear iteration
       
-    END DO ! nl
+    end do ! nl
 
     ! The solution vector is probably not in the way GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -873,16 +873,16 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr (Rlevels(NLMAX)%rdiscretisation,&
+    call spdiscr_duplicateBlockDiscr (Rlevels(NLMAX)%rdiscretisation,&
                                       rprjDiscretisation)
     
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1), &
         EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(1))
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2), &
         EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(2))
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveSimpleDiscrSc (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(3), &
         EL_Q1_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(3))
                  
@@ -890,30 +890,30 @@ CONTAINS
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
-    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution (Rlevels(NLMAX)%rvecSol,rprjVector)
+    call spdp_projectSolution (Rlevels(NLMAX)%rvecSol,rprjVector)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q1/Q0 
     ! discretisation:
     
     ! Get the boundary mesh region on the finest level
-    CALL dom3d_c3d0_calcMeshRegion(rmeshRegion, Rlevels(NLMAX)%rtriangulation, &
+    call dom3d_c3d0_calcMeshRegion(rmeshRegion, Rlevels(NLMAX)%rtriangulation, &
                                    DOM3D_C3D0_REG_STOKES)
 
     ! And prescribe Dirichlet boundary conditions
-    CALL bcasm_initDiscreteBC (rprjDiscreteBC)
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 1, rprjDiscreteBC, &
+    call bcasm_initDiscreteBC (rprjDiscreteBC)
+    call bcasm_newDirichletBConMR(rprjDiscretisation, 1, rprjDiscreteBC, &
                        rmeshRegion, getBoundaryValuesC3D0)
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 2, rprjDiscreteBC, &
+    call bcasm_newDirichletBConMR(rprjDiscretisation, 2, rprjDiscreteBC, &
                        rmeshRegion, getBoundaryValuesC3D0)
-    CALL bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
+    call bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
                        rmeshRegion, getBoundaryValuesC3D0)
 
     ! Now we don't need the mesh region anymore, so release it
-    CALL mshreg_done(rmeshRegion)
+    call mshreg_done(rmeshRegion)
 
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => rprjDiscreteBC
@@ -922,22 +922,22 @@ CONTAINS
     ! This modifies the vector according to the attached discrete boundary
     ! conditions.
     !CALL lsysbl_clearVector(rprjVector)
-    CALL vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector)
     
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
         Rlevels(NLMAX)%rtriangulation,'gmv/u3d_navst_mg.gmv')
 
     ! Write velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata3)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata3)
     
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X-,Y- and Z-velocity at once to the ucd module.
-    CALL ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2,p_Ddata3)
+    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2,p_Ddata3)
 
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
@@ -946,12 +946,12 @@ CONTAINS
     !CALL ucd_addVariableVertexBased (rexport,'Z-vel',UCD_VAR_ZVELOCITY, p_Ddata3)
         
     ! Write pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
 
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
@@ -959,58 +959,58 @@ CONTAINS
     ! If we have solved a Stokes system, then we need to release the
     ! solver data - in case of a Naver-Stokes system this was already
     ! done inside the non-linear loop
-    IF (.NOT. bNavier) THEN
+    if (.not. bNavier) then
       ! Release solver data
-      CALL linsol_doneData(p_rsolverNode)
-    END IF
+      call linsol_doneData(p_rsolverNode)
+    end if
     
     ! Release solver data and structure
-    CALL linsol_doneStructure (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
     
     ! Release the interlevel projection structure
-    CALL mlprj_doneProjection (rprojection)
+    call mlprj_doneProjection (rprojection)
 
     ! Release the solver node and all subnodes attached to it (if at all):
-    CALL linsol_releaseSolver (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the block matrix/vectors
-    CALL lsysbl_releaseVector (rprjVector)
-    CALL lsysbl_releaseVector (rtempBlock)
-    CALL lsysbl_releaseVector (rvecDef)
-    CALL lsysbl_releaseVector (rrhs)
-    DO i = NLMAX, NLMIN, -1
-      CALL lsysbl_releaseVector (Rlevels(i)%rvecSol)
-      CALL lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
-    END DO
+    call lsysbl_releaseVector (rprjVector)
+    call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rvecDef)
+    call lsysbl_releaseVector (rrhs)
+    do i = NLMAX, NLMIN, -1
+      call lsysbl_releaseVector (Rlevels(i)%rvecSol)
+      call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
+    end do
     
     ! Release B1, B2 and B3 matrices
-    DO i = NLMAX, NLMIN, -1
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrixB3)
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrixB2)
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrixB1)
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrixStokes)
-    END DO
+    do i = NLMAX, NLMIN, -1
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrixB3)
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrixB2)
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrixB1)
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrixStokes)
+    end do
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (rprjDiscreteBC)
-    DO i = NLMAX, NLMIN, -1
-      CALL bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
-    END DO
+    call bcasm_releaseDiscreteBC (rprjDiscreteBC)
+    do i = NLMAX, NLMIN, -1
+      call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
+    end do
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
-    DO i = NLMAX, NLMIN, -1
-      CALL spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
-    END DO
+    call spdiscr_releaseBlockDiscr(rprjDiscretisation)
+    do i = NLMAX, NLMIN, -1
+      call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
+    end do
     
     ! Release the triangulation. 
-    DO i = NLMAX, NLMIN, -1
-      CALL tria_done (Rlevels(i)%rtriangulation)
-    END DO
+    do i = NLMAX, NLMIN, -1
+      call tria_done (Rlevels(i)%rtriangulation)
+    end do
     
-    DEALLOCATE(Rlevels)
+    deallocate(Rlevels)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

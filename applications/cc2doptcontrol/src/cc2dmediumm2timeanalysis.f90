@@ -23,12 +23,12 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2timeanalysis
+module cc2dmediumm2timeanalysis
 
-  USE fsystem
-  USE linearsystemblock
+  use fsystem
+  use linearsystemblock
     
-  IMPLICIT NONE
+  implicit none
   
 !<types>
 
@@ -36,42 +36,42 @@ MODULE cc2dmediumm2timeanalysis
   
   ! Time error analysis block. Contains values of different time 
   ! error functionals.
-  TYPE t_timeError
+  type t_timeError
   
     ! $||rel. error in U||_{L2}$
-    REAL(DP) :: drelUL2
+    real(DP) :: drelUL2
 
     ! $||rel. error in U||_{\max}$
-    REAL(DP) :: drelUmax
+    real(DP) :: drelUmax
 
     ! $||rel. error in P||_{L2}$
-    REAL(DP) :: drelPL2
+    real(DP) :: drelPL2
 
     ! $||rel. error in P||_{\max}$
-    REAL(DP) :: drelPmax
+    real(DP) :: drelPmax
   
-  END TYPE
+  end type
   
 !</typeblock>
 
 !<typeblock>
   
   ! Block for norms of the time derivative 
-  TYPE t_timeDerivatives
+  type t_timeDerivatives
   
     ! $||rel. change in U||_{L2}$
-    REAL(DP) :: drelUL2
+    real(DP) :: drelUL2
 
     ! $||rel. change in U||_{\max}$
-    REAL(DP) :: drelUmax
+    real(DP) :: drelUmax
 
     ! $||rel. change in P||_{L2}$
-    REAL(DP) :: drelPL2
+    real(DP) :: drelPL2
 
     ! $||rel. change in P||_{\max}$
-    REAL(DP) :: drelPmax
+    real(DP) :: drelPmax
   
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -83,45 +83,45 @@ MODULE cc2dmediumm2timeanalysis
 !<constantblock description="Identifiers for norms of time-dependent solutions.">
 
   ! $ ||u||_{l2} $
-  INTEGER, PARAMETER :: TNRM_L2U    = 1  
+  integer, parameter :: TNRM_L2U    = 1  
 
   ! $ ||u||_{\max} $
-  INTEGER, PARAMETER :: TNRM_LMAX   = 2
+  integer, parameter :: TNRM_LMAX   = 2
 
   ! $ ||p||_{\l2} $
-  INTEGER, PARAMETER :: TNRM_P2U    = 3
+  integer, parameter :: TNRM_P2U    = 3
 
   ! $ ||p||_{\max} $
-  INTEGER, PARAMETER :: TNRM_PMAX   = 4
+  integer, parameter :: TNRM_PMAX   = 4
 
   ! $ \max ( ||u||_{l2} , ||p||_{l2} ) $
-  INTEGER, PARAMETER :: TNRM_L2UP2U     = 5
+  integer, parameter :: TNRM_L2UP2U     = 5
 
   ! $ \max ( ||u||_{\max} , ||p||_{\max} ) $
-  INTEGER, PARAMETER :: TNRM_L2MAXPMAX  = 6
+  integer, parameter :: TNRM_L2MAXPMAX  = 6
 
   ! $ \max ( ||u||_{l2}   , ||p||_{l2} , 
   !          ||u||_{\max} , ||p||_{\max} ) $
-  INTEGER, PARAMETER :: TNRM_MAX        = 7
+  integer, parameter :: TNRM_MAX        = 7
 
   ! $ \min ( ||u||_{l2}   , ||p||_{l2} , 
   !          ||u||_{\max} , ||p||_{\max} ) $
-  INTEGER, PARAMETER :: TNRM_MIN        = 8
+  integer, parameter :: TNRM_MIN        = 8
 
 !</constantblock>
 
 !</constants>
 
-CONTAINS
+contains
 
 !******************************************************************************
 
 !<function>
 
-  REAL(DP) FUNCTION cc_timeErrorByPredictor (ctimeErrorControl,&
+  real(DP) function cc_timeErrorByPredictor (ctimeErrorControl,&
                       rsolution,rpredSolution,rauxVector,&
                       rtimeError) &
-           RESULT(dtimeerror)
+           result(dtimeerror)
 
 !<description>
   ! Calculates the value of the time error functional $J(u_{n})$ by using the
@@ -150,23 +150,23 @@ CONTAINS
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
   ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
-  INTEGER                        :: ctimeErrorControl
+  integer                        :: ctimeErrorControl
   
   ! Solution vector u2.
-  TYPE(t_vectorBlock), INTENT(IN) :: rsolution
+  type(t_vectorBlock), intent(IN) :: rsolution
   
   ! Solution vector u1 of the predictor calculation.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rpredSolution
+  type(t_vectorBlock), intent(INOUT) :: rpredSolution
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rauxVector
+  type(t_vectorBlock), intent(INOUT) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time error analysis block. Returns values of different time error functionals.
-  TYPE(t_timeError), INTENT(OUT), TARGET, OPTIONAL :: rtimeError
+  type(t_timeError), intent(OUT), target, optional :: rtimeError
 !</output>
 
 !<result>
@@ -176,19 +176,19 @@ CONTAINS
 !</function>
 
     ! local variables
-    REAL(DP) :: dtmp
-    REAL(DP), DIMENSION(3) :: Dnorms1,Dnorms2
-    INTEGER(PREC_VECIDX), DIMENSION(3) :: Cnorms
-    TYPE(t_timeError),TARGET :: rtimeErrorLocal
-    TYPE(t_timeError), POINTER :: p_rtimeError
+    real(DP) :: dtmp
+    real(DP), dimension(3) :: Dnorms1,Dnorms2
+    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    type(t_timeError),target :: rtimeErrorLocal
+    type(t_timeError), pointer :: p_rtimeError
 
     ! Write the results of the time error analysis either to the local analysis
     ! block or to the one given as parameter.
     p_rtimeError => rtimeErrorLocal
-    IF (PRESENT(rtimeError)) p_rtimeError => rtimeError
+    if (present(rtimeError)) p_rtimeError => rtimeError
 
     ! Calculate d:=u2-u1
-    CALL lsysbl_vectorLinearComb (rSolution,rpredSolution,1.0_DP,-1.0_DP,rauxVector)
+    call lsysbl_vectorLinearComb (rSolution,rpredSolution,1.0_DP,-1.0_DP,rauxVector)
     
     ! Calculate the different norms of the error functionals for the standard
     ! (Navier-)Stokes equation -- all at once.
@@ -201,12 +201,12 @@ CONTAINS
     ! Compatibility note: For full compatibility to the old CC2D version, one must
     ! test (dtmp .LE. 1.0_DP) everywhere here instead of (dtmp .EQ. 0.0_DP) !
 
-    dtmp = SQRT( 0.5_DP * (Dnorms2(1)**2+Dnorms2(2)**2) )
-    IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelUL2 = SQRT(0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) / dtmp
+    dtmp = sqrt( 0.5_DP * (Dnorms2(1)**2+Dnorms2(2)**2) )
+    if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
+    p_rtimeError%drelUL2 = sqrt(0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) / dtmp
 
     dtmp = Dnorms2(3)
-    IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
+    if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
     p_rtimeError%drelPL2 = Dnorms1(3) / dtmp
     
     ! ||d||_max
@@ -214,45 +214,45 @@ CONTAINS
     Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
     Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
 
-    dtmp = MAX(Dnorms2(1),Dnorms2(2))
-    IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelUmax = MAX(Dnorms1(1),Dnorms1(2)) / dtmp
+    dtmp = max(Dnorms2(1),Dnorms2(2))
+    if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
+    p_rtimeError%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtmp
 
     dtmp = Dnorms2(3)
-    IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
+    if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
     p_rtimeError%drelPmax = Dnorms1(3) / dtmp
     
     ! Get the value of the error functional J(.)
-    SELECT CASE (ctimeErrorControl)
-    CASE DEFAULT
+    select case (ctimeErrorControl)
+    case DEFAULT
       dtimeerror = p_rtimeError%drelUL2
-    CASE (TNRM_LMAX)
+    case (TNRM_LMAX)
       dtimeerror = p_rtimeError%drelUmax
-    CASE (TNRM_P2U)
+    case (TNRM_P2U)
       dtimeerror = p_rtimeError%drelPL2
-    CASE (TNRM_PMAX)
+    case (TNRM_PMAX)
       dtimeerror = p_rtimeError%drelPmax
-    CASE (TNRM_L2UP2U)
-      dtimeerror = MAX(p_rtimeError%drelUL2,p_rtimeError%drelPL2)
-    CASE (TNRM_L2MAXPMAX)
-      dtimeerror = MAX(p_rtimeError%drelUmax,p_rtimeError%drelPmax)
-    CASE (TNRM_MAX)
-      dtimeerror = MAX(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
+    case (TNRM_L2UP2U)
+      dtimeerror = max(p_rtimeError%drelUL2,p_rtimeError%drelPL2)
+    case (TNRM_L2MAXPMAX)
+      dtimeerror = max(p_rtimeError%drelUmax,p_rtimeError%drelPmax)
+    case (TNRM_MAX)
+      dtimeerror = max(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
                        p_rtimeError%drelUmax,p_rtimeError%drelPmax)
-    CASE (TNRM_MIN)
-      dtimeerror = MIN(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
+    case (TNRM_MIN)
+      dtimeerror = min(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
                        p_rtimeError%drelUmax,p_rtimeError%drelPmax)
-    END SELECT
+    end select
     
-  END FUNCTION
+  end function
 
 !******************************************************************************
 
 !<function>
 
-  REAL(DP) FUNCTION cc_timeDerivative (ctimeErrorControl,&
+  real(DP) function cc_timeDerivative (ctimeErrorControl,&
                       rsolutionNew,rsolutionOld,dtstep,rauxVector,rtimeDerivNorms) &
-           RESULT(dtimenorm)
+           result(dtimenorm)
 
 !<description>
   ! Calculates the norm of the time derivative of a solution:
@@ -271,27 +271,27 @@ CONTAINS
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
   ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
-  INTEGER                        :: ctimeErrorControl
+  integer                        :: ctimeErrorControl
   
   ! Solution vector $u_{n+1}$ at the end of the time step.
-  TYPE(t_vectorBlock), INTENT(IN) :: rsolutionNew
+  type(t_vectorBlock), intent(IN) :: rsolutionNew
   
   ! Solution vector $u_n$ at the beginning of the time step.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rsolutionOld
+  type(t_vectorBlock), intent(INOUT) :: rsolutionOld
   
   ! Length of time step
-  REAL(DP), INTENT(IN) :: dtstep
+  real(DP), intent(IN) :: dtstep
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rauxVector
+  type(t_vectorBlock), intent(INOUT) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time norm analysis block. Returns different norms of the 
   ! time derivative.
-  TYPE(t_timeDerivatives), INTENT(INOUT), TARGET, OPTIONAL :: rtimeDerivNorms
+  type(t_timeDerivatives), intent(INOUT), target, optional :: rtimeDerivNorms
 !</output>
 
 !<result>
@@ -301,19 +301,19 @@ CONTAINS
 !</function>
 
     ! local variables
-    REAL(DP), DIMENSION(3) :: Dnorms1
-    INTEGER(PREC_VECIDX), DIMENSION(3) :: Cnorms
-    TYPE(t_timeDerivatives),TARGET :: rtimeNormLocal
-    TYPE(t_timeDerivatives), POINTER :: p_rtimeNorm
-    INTEGER(PREC_VECIDX) :: nequ,neqp
+    real(DP), dimension(3) :: Dnorms1
+    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    type(t_timeDerivatives),target :: rtimeNormLocal
+    type(t_timeDerivatives), pointer :: p_rtimeNorm
+    integer(PREC_VECIDX) :: nequ,neqp
 
     ! Write the results of the time error analysis either to the local analysis
     ! block or to the one given as parameter.
     p_rtimeNorm => rtimeNormLocal
-    IF (PRESENT(rtimeDerivNorms)) p_rtimeNorm => rtimeDerivNorms
+    if (present(rtimeDerivNorms)) p_rtimeNorm => rtimeDerivNorms
 
     ! Calculate d:=u2-u1
-    CALL lsysbl_vectorLinearComb (rSolutionNew,rsolutionOld,1.0_DP,-1.0_DP,rauxVector)
+    call lsysbl_vectorLinearComb (rSolutionNew,rsolutionOld,1.0_DP,-1.0_DP,rauxVector)
     
     ! Get the length of the subvectors
     nequ = rSolutionNew%RvectorBlock(1)%NEQ+rSolutionNew%RvectorBlock(2)%NEQ
@@ -326,36 +326,36 @@ CONTAINS
     Cnorms = LINALG_NORML2
     Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
     
-    p_rtimeNorm%drelUL2 = SQRT( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
-        / (SQRT(REAL(nequ,DP)) * dtstep)
-    p_rtimeNorm%drelPL2 = Dnorms1(3) / (SQRT(REAL(neqp,DP)) * dtstep)
+    p_rtimeNorm%drelUL2 = sqrt( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
+        / (sqrt(real(nequ,DP)) * dtstep)
+    p_rtimeNorm%drelPL2 = Dnorms1(3) / (sqrt(real(neqp,DP)) * dtstep)
 
     ! ||d||_max / dtstep
-    p_rtimeNorm%drelUmax = MAX(Dnorms1(1),Dnorms1(2)) / dtstep
+    p_rtimeNorm%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtstep
     p_rtimeNorm%drelPmax = Dnorms1(3) / dtstep
     
     ! Return the value in the desired norm
-    SELECT CASE (ctimeErrorControl)
-    CASE DEFAULT
+    select case (ctimeErrorControl)
+    case DEFAULT
       dtimenorm = p_rtimeNorm%drelUL2
-    CASE (TNRM_LMAX)
+    case (TNRM_LMAX)
       dtimenorm = p_rtimeNorm%drelUmax
-    CASE (TNRM_P2U)
+    case (TNRM_P2U)
       dtimenorm = p_rtimeNorm%drelPL2
-    CASE (TNRM_PMAX)
+    case (TNRM_PMAX)
       dtimenorm = p_rtimeNorm%drelPmax
-    CASE (TNRM_L2UP2U)
-      dtimenorm = MAX(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2)
-    CASE (TNRM_L2MAXPMAX)
-      dtimenorm = MAX(p_rtimeNorm%drelUmax,p_rtimeNorm%drelPmax)
-    CASE (TNRM_MAX)
-      dtimenorm = MAX(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2,&
+    case (TNRM_L2UP2U)
+      dtimenorm = max(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2)
+    case (TNRM_L2MAXPMAX)
+      dtimenorm = max(p_rtimeNorm%drelUmax,p_rtimeNorm%drelPmax)
+    case (TNRM_MAX)
+      dtimenorm = max(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2,&
                       p_rtimeNorm%drelUmax,p_rtimeNorm%drelPmax)
-    CASE (TNRM_MIN)
-      dtimenorm = MIN(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2,&
+    case (TNRM_MIN)
+      dtimenorm = min(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2,&
                       p_rtimeNorm%drelUmax,p_rtimeNorm%drelPmax)
-    END SELECT
+    end select
     
-  END FUNCTION
+  end function
   
-END MODULE
+end module

@@ -28,22 +28,22 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2scriptfile
+module cc2dmediumm2scriptfile
 
-  USE fsystem
-  USE storage
+  use fsystem
+  use storage
   
-  USE cc2dmediumm2basic
+  use cc2dmediumm2basic
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE scr_readScript (sfilename,ccleardelete,rproblem)
+  recursive subroutine scr_readScript (sfilename,ccleardelete,rproblem)
 
 !<description>
   ! Reads a text file sfilename line by line and calls scr_parseLine
@@ -53,20 +53,20 @@ CONTAINS
 !<input>
 
   ! Name of the file to be read
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  character(LEN=*), intent(IN) :: sfilename
 
   ! Whether to delete or clear the file after reading
   ! =0: don't do anything.
   ! =1: clear the file.
   ! =2: delete the file.
-  INTEGER, INTENT(IN) :: ccleardelete
+  integer, intent(IN) :: ccleardelete
 
 !</input>
 
 !<inputoutput>
 
   ! Problem structure; passed to scr_parseLine.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 
 !</inputoutput>
 
@@ -76,70 +76,70 @@ CONTAINS
     ! This is somehow like io_openFileForReading but cancels if
     ! the file cannot be exclusively opened.
 
-    LOGICAL :: bexists, bcontinue
-    INTEGER :: istatus,iunit,ilinelen,istat
-    CHARACTER(LEN=4096) :: sdata
+    logical :: bexists, bcontinue
+    integer :: istatus,iunit,ilinelen,istat
+    character(LEN=4096) :: sdata
 
-    IF (trim(sfilename) .eq. '') THEN
-      CALL output_line ('No file name!', &
+    if (trim(sfilename) .eq. '') then
+      call output_line ('No file name!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'scr_readScript')
-      CALL sys_halt()
-    ENDIF
+      call sys_halt()
+    endif
 
     iunit = sys_getFreeUnit()
-    IF (iunit .eq. -1) THEN
-      CALL output_line ('No free unit number!', &
+    if (iunit .eq. -1) then
+      call output_line ('No free unit number!', &
                         OU_CLASS_WARNING,OU_MODE_STD,'scr_readScript')
-      RETURN
-    ENDIF
+      return
+    endif
 
     ! Check if the file exists. Open it for reading and writing to get
     ! exclusive access.
-    INQUIRE(file=trim(sfilename), exist=bexists)
+    inquire(file=trim(sfilename), exist=bexists)
 
-    IF (bexists) THEN
+    if (bexists) then
     
-      OPEN(unit=iunit, file=trim(sfilename), iostat=istatus, &
+      open(unit=iunit, file=trim(sfilename), iostat=istatus, &
           action="readwrite",form="formatted")
           
-      IF (istatus .NE. 0) THEN
-        RETURN
-      END IF
+      if (istatus .ne. 0) then
+        return
+      end if
       
-    ELSE
-      RETURN
-    END IF
+    else
+      return
+    end if
     
     ! Read the file, line by line.
     ! Call scr_parseLine for each line.
-    bcontinue = .FALSE.
+    bcontinue = .false.
     istat = 0
-    DO WHILE (istat .EQ. 0)
-      CALL io_readlinefromfile (iunit, sdata, ilinelen, istat)
-      IF (ilinelen .NE. 0) THEN
-        CALL scr_parseLine (sdata(1:ilinelen),bcontinue,rproblem)
+    do while (istat .eq. 0)
+      call io_readlinefromfile (iunit, sdata, ilinelen, istat)
+      if (ilinelen .ne. 0) then
+        call scr_parseLine (sdata(1:ilinelen),bcontinue,rproblem)
         
         ! Probably leave the loop and continue with the processing.
-        IF (bcontinue) EXIT
-      END IF
-    END DO
+        if (bcontinue) exit
+      end if
+    end do
     
     ! Close the file, delete it if necessary.
-    CLOSE (iunit)
-    IF (ccleardelete .EQ. 2) THEN
-      CALL io_deleteFile (sfilename)
-    ELSE IF (ccleardelete .EQ. 1) THEN
-      CALL io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
-      CLOSE(iunit)
-    END IF
+    close (iunit)
+    if (ccleardelete .eq. 2) then
+      call io_deleteFile (sfilename)
+    else if (ccleardelete .eq. 1) then
+      call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
+      close(iunit)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE scr_readTerminal (rproblem)
+  recursive subroutine scr_readTerminal (rproblem)
 
 !<description>
   ! Reads from the terminal line by line and calls scr_parseLine
@@ -149,36 +149,36 @@ CONTAINS
 !<inputoutput>
 
   ! Problem structure; passed to scr_parseLine.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: ilinelen,istat
-    CHARACTER(LEN=4096) :: sdata
-    LOGICAL :: bcontinue
+    integer :: ilinelen,istat
+    character(LEN=4096) :: sdata
+    logical :: bcontinue
 
     ! Read the file, line by line.
     ! Call scr_parseLine for each line.
-    bcontinue = .FALSE.
+    bcontinue = .false.
     istat = 0
-    DO WHILE (.NOT. bcontinue)
-      CALL output_line ('> ', bnolinebreak=.TRUE.,bnotrim=.TRUE.)
-      CALL io_readlinefromfile (IN_TERMINAL, sdata, ilinelen, istat)
-      IF (ilinelen .NE. 0) THEN
-        CALL output_line (sdata(1:ilinelen), OU_CLASS_MSG,OU_MODE_LOG)
-        CALL scr_parseLine (sdata(1:ilinelen),bcontinue,rproblem)
-      END IF
-    END DO
+    do while (.not. bcontinue)
+      call output_line ('> ', bnolinebreak=.true.,bnotrim=.true.)
+      call io_readlinefromfile (IN_TERMINAL, sdata, ilinelen, istat)
+      if (ilinelen .ne. 0) then
+        call output_line (sdata(1:ilinelen), OU_CLASS_MSG,OU_MODE_LOG)
+        call scr_parseLine (sdata(1:ilinelen),bcontinue,rproblem)
+      end if
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE scr_parseLine (sline,bcontinue,rproblem)
+  recursive subroutine scr_parseLine (sline,bcontinue,rproblem)
 
 !<description>
   ! Parses a line of a script file and executes the commands in there.
@@ -186,172 +186,172 @@ CONTAINS
 
 !<input>
   ! Line to be parsed.
-  CHARACTER(LEN=*), INTENT(IN) :: sline
+  character(LEN=*), intent(IN) :: sline
 !</input>
 
 !<inputoutput>
   ! Continuation flag. If this flag is set to TRUE, the routine advises
   ! the caller to stop processing commands and continue with the
   ! calculation.
-  LOGICAL, INTENT(INOUT) :: bcontinue
+  logical, intent(INOUT) :: bcontinue
 
   ! Problem structure.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    CHARACTER(LEN=SYS_NAMELEN) :: scommand,sparam1,sparam2
+    character(LEN=SYS_NAMELEN) :: scommand,sparam1,sparam2
     
     ! Get the command
-    IF (TRIM(sline) .EQ. '') RETURN
-    READ (sline,*) scommand
-    CALL sys_toupper(scommand)
+    if (trim(sline) .eq. '') return
+    read (sline,*) scommand
+    call sys_toupper(scommand)
     
     ! Interpret the command, execute the corresponding subfunction
     !
     ! ----------------------- STANDARD COMMANDS -------------------------------
-    IF (scommand .EQ. '') THEN
-      RETURN
-    END IF
+    if (scommand .eq. '') then
+      return
+    end if
     
-    IF (scommand .EQ. 'PAUSE') THEN
-      READ *
-      RETURN
-    END IF
+    if (scommand .eq. 'PAUSE') then
+      read *
+      return
+    end if
     
-    IF (scommand .EQ. 'CONTINUE') THEN
-      bcontinue = .TRUE.
-      RETURN
-    END IF
+    if (scommand .eq. 'CONTINUE') then
+      bcontinue = .true.
+      return
+    end if
 
-    IF (scommand .EQ. 'C') THEN
-      bcontinue = .TRUE.
-      RETURN
-    END IF
+    if (scommand .eq. 'C') then
+      bcontinue = .true.
+      return
+    end if
 
-    IF (scommand .EQ. 'REM') THEN
+    if (scommand .eq. 'REM') then
       ! Ignore the line
-      RETURN
-    END IF
+      return
+    end if
     
-    IF (scommand(1:1) .EQ. '#') THEN
+    if (scommand(1:1) .eq. '#') then
       ! Ignore the line
-      RETURN
-    END IF
+      return
+    end if
     
-    IF (scommand .EQ. 'EXIT') THEN
+    if (scommand .eq. 'EXIT') then
       ! CONTINUE and EXIT are the same
-      bcontinue = .TRUE.
-      RETURN
-    END IF
+      bcontinue = .true.
+      return
+    end if
     
-    IF (scommand .EQ. 'STOP') THEN
+    if (scommand .eq. 'STOP') then
       sys_haltmode = SYS_HALT_STOP
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (scommand .EQ. 'TERMINAL') THEN
-      CALL scr_readTerminal (rproblem)
-      RETURN
-    END IF
+    if (scommand .eq. 'TERMINAL') then
+      call scr_readTerminal (rproblem)
+      return
+    end if
 
-    IF (scommand .EQ. 'SCRIPT') THEN
+    if (scommand .eq. 'SCRIPT') then
       ! Get the name of the script file to execute.
-      READ (sline,*) scommand,sparam1
+      read (sline,*) scommand,sparam1
       
       ! Cancel away the quotation marks
-      READ (sline,*) sparam1,sparam2
+      read (sline,*) sparam1,sparam2
       
       ! Execute that script
-      CALL scr_readScript (sparam2,0,rproblem)
-      RETURN
-    END IF
+      call scr_readScript (sparam2,0,rproblem)
+      return
+    end if
     
     ! ----------------------- APPLICATION-SPECIFIC COMMANDS -------------------
     
-    IF (scommand .EQ. 'WRITE_SOLUTION') THEN
+    if (scommand .eq. 'WRITE_SOLUTION') then
       ! Get the name of the file
-      READ (sline,*) scommand,sparam1
+      read (sline,*) scommand,sparam1
       
       ! Cancel away the quotation marks
-      READ (sline,*) sparam1,sparam2
+      read (sline,*) sparam1,sparam2
 
-      CALL write_vector (sparam2,rproblem%rdataOneshot%p_rx)
-      RETURN
-    END IF
+      call write_vector (sparam2,rproblem%rdataOneshot%p_rx)
+      return
+    end if
 
-    IF (scommand .EQ. 'READ_SOLUTION') THEN
+    if (scommand .eq. 'READ_SOLUTION') then
       ! Get the name of the file
-      READ (sline,*) scommand,sparam1
+      read (sline,*) scommand,sparam1
       
       ! Cancel away the quotation marks
-      READ (sline,*) sparam1,sparam2
+      read (sline,*) sparam1,sparam2
 
-      CALL read_vector(sparam2,rproblem%rdataOneshot%p_rx)
-      RETURN
-    END IF
+      call read_vector(sparam2,rproblem%rdataOneshot%p_rx)
+      return
+    end if
 
-    IF (scommand .EQ. 'WRITE_RHS') THEN
+    if (scommand .eq. 'WRITE_RHS') then
       ! Get the name of the file
-      READ (sline,*) scommand,sparam1
+      read (sline,*) scommand,sparam1
       
       ! Cancel away the quotation marks
-      READ (sline,*) sparam1,sparam2
+      read (sline,*) sparam1,sparam2
 
-      CALL write_vector (sparam2,rproblem%rdataOneshot%p_rb)
-      RETURN
-    END IF
+      call write_vector (sparam2,rproblem%rdataOneshot%p_rb)
+      return
+    end if
 
-    IF (scommand .EQ. 'READ_RHS') THEN
+    if (scommand .eq. 'READ_RHS') then
       ! Get the name of the file
-      READ (sline,*) scommand,sparam1
+      read (sline,*) scommand,sparam1
       
       ! Cancel away the quotation marks
-      READ (sline,*) sparam1,sparam2
+      read (sline,*) sparam1,sparam2
 
-      CALL read_vector(sparam2,rproblem%rdataOneshot%p_rb)
-      RETURN
-    END IF
+      call read_vector(sparam2,rproblem%rdataOneshot%p_rb)
+      return
+    end if
 
     ! -------------------------------------------------------------------------
 
-    CALL output_line('Unknown command!')
-    CALL output_lbrk()
+    call output_line('Unknown command!')
+    call output_lbrk()
 
-  CONTAINS
+  contains
   
     ! Write a space-time solution to disc
-    SUBROUTINE write_vector(sfilename,rxsuper)
-      CHARACTER(LEN=*),INTENT(IN) :: sfilename
-      TYPE(t_spaceTimeVector), INTENT(INOUT) :: rxsuper
-      TYPE(t_vectorBlock) :: rx
-      IF (sfilename .EQ. '') THEN
-        CALL output_line('Unknown filename!')
-        RETURN
-      END IF
-      CALL sptivec_convertSupervecToVector (rxsuper, rx)
-      CALL vecio_writeBlockVectorHR(rx,'vec',.FALSE.,0,sfilename,'(E20.10)')
-      CALL lsysbl_releaseVector (rx)
-      CALL output_line('Solution written.')
-    END SUBROUTINE
+    subroutine write_vector(sfilename,rxsuper)
+      character(LEN=*),intent(IN) :: sfilename
+      type(t_spaceTimeVector), intent(INOUT) :: rxsuper
+      type(t_vectorBlock) :: rx
+      if (sfilename .eq. '') then
+        call output_line('Unknown filename!')
+        return
+      end if
+      call sptivec_convertSupervecToVector (rxsuper, rx)
+      call vecio_writeBlockVectorHR(rx,'vec',.false.,0,sfilename,'(E20.10)')
+      call lsysbl_releaseVector (rx)
+      call output_line('Solution written.')
+    end subroutine
 
     ! Reads a space-time solution from disc
-    SUBROUTINE read_vector(sfilename,rxsuper)
-      CHARACTER(LEN=*),INTENT(IN) :: sfilename
-      CHARACTER(LEN=SYS_NAMELEN) :: sname
-      TYPE(t_spaceTimeVector), INTENT(INOUT) :: rxsuper
-      TYPE(t_vectorBlock) :: rx
-      IF (sfilename .EQ. '') THEN
-        CALL output_line('Unknown filename!')
-        RETURN
-      END IF
-      CALL vecio_readBlockVectorHR(rx,sname,.FALSE.,0,sfilename,.TRUE.)
-      CALL sptivec_convertVectorToSupervec (rx,rxsuper)
-      CALL lsysbl_releaseVector (rx)
-      CALL output_line('Solution read.')
-    END SUBROUTINE
+    subroutine read_vector(sfilename,rxsuper)
+      character(LEN=*),intent(IN) :: sfilename
+      character(LEN=SYS_NAMELEN) :: sname
+      type(t_spaceTimeVector), intent(INOUT) :: rxsuper
+      type(t_vectorBlock) :: rx
+      if (sfilename .eq. '') then
+        call output_line('Unknown filename!')
+        return
+      end if
+      call vecio_readBlockVectorHR(rx,sname,.false.,0,sfilename,.true.)
+      call sptivec_convertVectorToSupervec (rx,rxsuper)
+      call lsysbl_releaseVector (rx)
+      call output_line('Solution read.')
+    end subroutine
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

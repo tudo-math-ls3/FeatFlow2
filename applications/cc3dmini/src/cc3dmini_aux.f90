@@ -8,22 +8,22 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc3dmini_aux
+module cc3dmini_aux
 
-  USE fsystem
-  USE storage
-  USE triangulation
-  USE meshregion
+  use fsystem
+  use storage
+  use triangulation
+  use meshregion
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc3daux_calcCubeDirichletRegion(rmeshRegion)
+  subroutine cc3daux_calcCubeDirichletRegion(rmeshRegion)
 
 !<description>
   ! This auxiliary routine extracts the faces from a mesh region describing
@@ -40,42 +40,42 @@ CONTAINS
   ! The mesh region describing the cube's boundary.
   ! On entry: the complete cube boundary
   ! On exit: the cube boundary except the Neumann boundary face
-  TYPE(t_meshRegion), INTENT(INOUT)                 :: rmeshRegion
+  type(t_meshRegion), intent(INOUT)                 :: rmeshRegion
 
 !</inputoutput>
 !</subroutine>
 
    ! A hand full of local variables
-   TYPE(t_triangulation), POINTER :: p_rtria
-   INTEGER, DIMENSION(:), POINTER :: p_IfaceIdx
-   INTEGER, DIMENSION(:), ALLOCATABLE :: IfacesInMR
-   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertsAtFace
-   REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
-   INTEGER :: i, iface, iNAT
-   REAL(DP) :: dx
+   type(t_triangulation), pointer :: p_rtria
+   integer, dimension(:), pointer :: p_IfaceIdx
+   integer, dimension(:), allocatable :: IfacesInMR
+   integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtFace
+   real(DP), dimension(:,:), pointer :: p_Dcoords
+   integer :: i, iface, iNAT
+   real(DP) :: dx
 
     ! Let's see if the mesh region has faces at all...
-    IF((rmeshRegion%h_IfaceIdx .EQ. ST_NOHANDLE) .OR. &
-       (rmeshRegion%NAT .LE. 0)) THEN
-      PRINT *, 'ERROR: st3daux_calcCubeRegion'
-      PRINT *, 'Mesh region does not have any faces!'
-      STOP
-    END IF
+    if((rmeshRegion%h_IfaceIdx .eq. ST_NOHANDLE) .or. &
+       (rmeshRegion%NAT .le. 0)) then
+      print *, 'ERROR: st3daux_calcCubeRegion'
+      print *, 'Mesh region does not have any faces!'
+      stop
+    end if
     
     ! Get the arrays from the triangulation
     p_rtria => rmeshRegion%p_rtriangulation
-    CALL storage_getbase_int2D(p_rtria%h_IverticesAtFace, p_IvertsAtFace)
-    CALL storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dcoords)
+    call storage_getbase_int2D(p_rtria%h_IverticesAtFace, p_IvertsAtFace)
+    call storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dcoords)
     
     ! Get the face indices from the mesh region
-    CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+    call storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
     
     ! Allocate a temporary array
-    ALLOCATE(IfacesInMR(p_rtria%NAT))
+    allocate(IfacesInMR(p_rtria%NAT))
     IfacesInMR = 0
     
     ! Now go through all faces in the input mesh region
-    DO i = 1, rmeshRegion%NAT
+    do i = 1, rmeshRegion%NAT
     
       ! Get the face index
       iface = p_IfaceIdx(i)
@@ -87,55 +87,55 @@ CONTAINS
                     + p_Dcoords(1,p_IvertsAtFace(4,iface)))
                     
       ! Do we have to add this face?
-      IF (dx .LT. 0.999_DP) IfacesInMR(iface) = 1
+      if (dx .lt. 0.999_DP) IfacesInMR(iface) = 1
         
-    END DO
+    end do
     
     ! Count how many faces there are in the new mesh region
     iNAT = 0
-    DO i = 1, UBOUND(IfacesInMR,1)
+    do i = 1, ubound(IfacesInMR,1)
       iNAT = iNAT + IfacesInMR(i)
-    END DO
+    end do
     
     ! At this point, we can release the old mesh region
-    CALL mshreg_done(rmeshRegion)
+    call mshreg_done(rmeshRegion)
 
     ! Make sure that there are any faces left
-    IF (iNAT .LE. 0) THEN
-      PRINT *, 'ERROR: cc3daux_calcCubeRegion'
-      PRINT *, 'Could not find any suitable faces!'
-      STOP
-    END IF
+    if (iNAT .le. 0) then
+      print *, 'ERROR: cc3daux_calcCubeRegion'
+      print *, 'Could not find any suitable faces!'
+      stop
+    end if
     
     ! Call the storage to allocate the face index array
-    CALL storage_new('cc3daux_calcCubeRegion', 'p_IfaceIdx', iNAT, &
+    call storage_new('cc3daux_calcCubeRegion', 'p_IfaceIdx', iNAT, &
                      ST_INT, rmeshRegion%h_IfaceIdx, ST_NEWBLOCK_NOINIT)
 
     ! Get the face indices from the mesh region
-    CALL storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
+    call storage_getbase_int(rmeshRegion%h_IfaceIdx, p_IfaceIdx)
     
     ! And build up the face index array
     iface = 1
-    DO i = 1, UBOUND(IfacesInMR,1)
-      IF (IfacesInMR(i) .NE. 0) THEN
+    do i = 1, ubound(IfacesInMR,1)
+      if (IfacesInMR(i) .ne. 0) then
         p_IfaceIdx(iface) = i
         iface = iface + 1
-      END IF
-    END DO
+      end if
+    end do
     
     ! Copy the triangulation pointer to the new mesh region
     rmeshRegion%p_rtriangulation => p_rtria
     rmeshRegion%NAT = iNAT
     
     ! Now we can deallocate the work array
-    DEALLOCATE(IfacesInMR)
+    deallocate(IfacesInMR)
     
     ! Finally, recalculate the edge and vertex index arrays from the faces
-    CALL mshreg_recalcEdgesFromFaces(rmeshRegion)
-    CALL mshreg_recalcVerticesFromFaces(rmeshRegion)
+    call mshreg_recalcEdgesFromFaces(rmeshRegion)
+    call mshreg_recalcVerticesFromFaces(rmeshRegion)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

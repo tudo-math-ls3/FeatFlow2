@@ -12,44 +12,44 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccstationary
+module ccstationary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
+  use fsystem
+  use storage
+  use linearsolver
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE ccbasic
-  USE cccallback
+  use ccbasic
+  use cccallback
   
-  USE ccnonlinearcore
-  USE ccnonlinearcoreinit
+  use ccnonlinearcore
+  use ccnonlinearcoreinit
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_solveStationary (rproblem,rvector,rrhs)
+  subroutine cc_solveStationary (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
@@ -67,65 +67,65 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
   ! iteration. After the iteration, this is replaced by the new solution vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !<input>
   ! The right-hand-side vector to use in the equation
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
 !</input>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
+    type(t_ccNonlinearIteration) :: rnonlinearIteration
 
     ! The nonlinear solver configuration
-    TYPE(t_nlsolNode) :: rnlSol
+    type(t_nlsolNode) :: rnlSol
     
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
-    CALL cc_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC3D-NONLINEAR')
+    call cc_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC3D-NONLINEAR')
 
     ! Initialise the nonlinear loop. This is to prepare everything for
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
-    CALL cc_initNonlinearLoop (&
+    call cc_initNonlinearLoop (&
         rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
         rnonlinearIteration,'CC3D-NONLINEAR')
         
     ! Set up all the weights in the core equation according to the current timestep.
     rnonlinearIteration%dalpha = 0.0_DP
     rnonlinearIteration%dtheta = 1.0_DP
-    rnonlinearIteration%dgamma = REAL(1-rproblem%iequation,DP)
+    rnonlinearIteration%dgamma = real(1-rproblem%iequation,DP)
     rnonlinearIteration%deta   = 1.0_DP
     rnonlinearIteration%dtau   = 1.0_DP
 
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL cc_initPreconditioner (rproblem,&
+    call cc_initPreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
 
     ! Call the nonlinear solver to solve the core equation.
-    CALL cc_solveCoreEquation (rproblem,rnonlinearIteration,rnlSol,&
+    call cc_solveCoreEquation (rproblem,rnonlinearIteration,rnlSol,&
         rvector,rrhs)             
              
     ! Release the preconditioner
-    CALL cc_releasePreconditioner (rnonlinearIteration)
+    call cc_releasePreconditioner (rnonlinearIteration)
     
     ! Release parameters of the nonlinear loop, final clean up
-    CALL cc_doneNonlinearLoop (rnonlinearIteration)
+    call cc_doneNonlinearLoop (rnonlinearIteration)
              
-    CALL output_lbrk()
-    CALL output_line ('Nonlinear solver statistics')
-    CALL output_line ('---------------------------')
-    CALL output_line ('Intial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
+    call output_lbrk()
+    call output_line ('Nonlinear solver statistics')
+    call output_line ('---------------------------')
+    call output_line ('Intial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
+    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

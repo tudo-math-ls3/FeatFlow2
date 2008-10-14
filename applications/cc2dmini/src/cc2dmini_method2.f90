@@ -29,44 +29,44 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmini_method2
+module cc2dmini_method2
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dminim2basic
-  USE cc2dminim2init
-  USE cc2dminim2boundary
-  USE cc2dminim2discretisation
-  USE cc2dminim2postprocessing
-  USE cc2dminim2stationary
+  use cc2dminim2basic
+  use cc2dminim2init
+  use cc2dminim2boundary
+  use cc2dminim2discretisation
+  use cc2dminim2postprocessing
+  use cc2dminim2stationary
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmini2
+  subroutine cc2dmini2
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -93,86 +93,86 @@ CONTAINS
 !</subroutine>
 
     ! A problem structure for our problem
-    TYPE(t_problem), POINTER :: p_rproblem
+    type(t_problem), pointer :: p_rproblem
     
-    INTEGER :: i
+    integer :: i
     
     ! Ok, let's start. 
     !
     ! Allocate the problem structure on the heap -- it's rather large.
-    ALLOCATE(p_rproblem)
+    allocate(p_rproblem)
 
     ! Initialise the collection
-    CALL collct_init (p_rproblem%rcollection)
-    DO i=1,NNLEV
-      CALL collct_addlevel_all (p_rproblem%rcollection)
-    END DO
+    call collct_init (p_rproblem%rcollection)
+    do i=1,NNLEV
+      call collct_addlevel_all (p_rproblem%rcollection)
+    end do
     
     ! Initialise the parameter list object. This creates an empty parameter list.
-    CALL parlst_init (p_rproblem%rparamList)
+    call parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
     ! from the DAT/INI files are available everywhere where we have the 
     ! collection.
-    CALL collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
-                                p_rproblem%rparamList,.TRUE.)
+    call collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
+                                p_rproblem%rparamList,.true.)
 
     ! Read parameters from the INI/DAT files into the parameter list. 
     ! Each 'readfromfile' command adds the parameter of the specified file 
     ! to the parameter list.
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/discretisation.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/linsol_cc2d.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/output.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/paramtriang.dat')
+    call parlst_readfromfile (p_rproblem%rparamList, './data/discretisation.dat')
+    call parlst_readfromfile (p_rproblem%rparamList, './data/linsol_cc2d.dat')
+    call parlst_readfromfile (p_rproblem%rparamList, './data/nonlinsol_cc2d.dat')
+    call parlst_readfromfile (p_rproblem%rparamList, './data/output.dat')
+    call parlst_readfromfile (p_rproblem%rparamList, './data/paramtriang.dat')
     
     ! Ok, parameters are read in.
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
-    CALL c2d2_initParameters (p_rproblem)
+    call c2d2_initParameters (p_rproblem)
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL c2d2_initParamTriang (p_rproblem)
-    CALL c2d2_initDiscretisation (p_rproblem)    
-    CALL c2d2_initMatVec (p_rproblem)    
-    CALL c2d2_initDiscreteBC (p_rproblem)
+    call c2d2_initParamTriang (p_rproblem)
+    call c2d2_initDiscretisation (p_rproblem)    
+    call c2d2_initMatVec (p_rproblem)    
+    call c2d2_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions
-    CALL c2d2_implementBC (p_rproblem)
+    call c2d2_implementBC (p_rproblem)
     
     ! Solve the problem
-    CALL c2d2_solve (p_rproblem)
+    call c2d2_solve (p_rproblem)
     
     ! Postprocessing
-    CALL c2d2_postprocessing (p_rproblem)
+    call c2d2_postprocessing (p_rproblem)
     
     ! Cleanup
-    CALL c2d2_doneMatVec (p_rproblem)
-    CALL c2d2_doneBC (p_rproblem)
-    CALL c2d2_doneDiscretisation (p_rproblem)
-    CALL c2d2_doneParamTriang (p_rproblem)
+    call c2d2_doneMatVec (p_rproblem)
+    call c2d2_doneBC (p_rproblem)
+    call c2d2_doneDiscretisation (p_rproblem)
+    call c2d2_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
-    CALL c2d2_doneParameters (p_rproblem)
+    call c2d2_doneParameters (p_rproblem)
 
     ! Release the parameter list
-    CALL collct_deleteValue (p_rproblem%rcollection,'INI')
-    CALL parlst_done (p_rproblem%rparamList)
+    call collct_deleteValue (p_rproblem%rcollection,'INI')
+    call parlst_done (p_rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
-    PRINT *
-    PRINT *,'Remaining collection statistics:'
-    PRINT *,'--------------------------------'
-    PRINT *
-    CALL collct_printStatistics (p_rproblem%rcollection)
+    print *
+    print *,'Remaining collection statistics:'
+    print *,'--------------------------------'
+    print *
+    call collct_printStatistics (p_rproblem%rcollection)
     
     ! Finally release the collection and the problem structure.
-    CALL collct_done (p_rproblem%rcollection)
+    call collct_done (p_rproblem%rcollection)
     
-    DEALLOCATE(p_rproblem)
+    deallocate(p_rproblem)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

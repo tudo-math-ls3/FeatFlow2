@@ -12,35 +12,35 @@
 !# </purpose>
 !##############################################################################
 
-MODULE stokes2d_method0_simple
+module stokes2d_method0_simple
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE ucd
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use ucd
   
-  USE stokes2d_callback
+  use stokes2d_callback
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stokes2d_0_simple
+  subroutine stokes2d_0_simple
   
 !<description>
   ! This is an all-in-one stokes solver for directly solving a stokes
@@ -64,58 +64,58 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
 
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation) :: rdiscretisation,rprjDiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation,rprjDiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
 
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    TYPE(t_matrixScalar) :: rmatrixB1, rmatrixB2
+    type(t_matrixScalar) :: rmatrixB1, rmatrixB2
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_matrixBlock) :: rmatrix
-    TYPE(t_vectorBlock) :: rvector,rrhs,rtempBlock,rprjVector
+    type(t_matrixBlock) :: rmatrix
+    type(t_vectorBlock) :: rvector,rrhs,rtempBlock,rprjVector
     
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC, rprjDiscreteBC
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_discreteBC), target :: rdiscreteBC, rprjDiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
+    type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Viscosity parameter nu = 1/Re
-    REAL(DP) :: dnu
+    real(DP) :: dnu
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    integer :: ierror    
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
 
     ! Ok, let's start. 
     !
@@ -129,22 +129,22 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
     
     ! Refine the mesh up to the minimum level
-    CALL tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation,rboundary)
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
     ! solution vector.
-    CALL spdiscr_initBlockDiscr2D (rdiscretisation,3,&
+    call spdiscr_initBlockDiscr2D (rdiscretisation,3,&
                                    rtriangulation, rboundary)
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
@@ -155,24 +155,24 @@ CONTAINS
     !  Component 3 = Pressure
     ! For simplicity, we set up one discretisation structure for the 
     ! velocity...
-    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1),&
+    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1),&
                 EL_EM30, CUB_G2X2, rtriangulation, rboundary)
                 
     ! ...and copy this structure also to the discretisation structure
     ! of the 2nd component (Y-velocity). This needs no additional memory, 
     ! as both structures will share the same dynamic information afterwards.
-    CALL spdiscr_duplicateDiscrSc(rdiscretisation%RspatialDiscr(1),&
+    call spdiscr_duplicateDiscrSc(rdiscretisation%RspatialDiscr(1),&
         rdiscretisation%RspatialDiscr(2))
 
     ! For the pressure (3rd component), we set up a separate discretisation 
     ! structure, as this uses different finite elements for trial and test
     ! functions.
-    CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
+    call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
         EL_Q0, CUB_G2X2, rdiscretisation%RspatialDiscr(3))
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    CALL lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrix)    
+    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrix)    
     
     ! Inform the matrix that we build a saddle-point problem.
     ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
@@ -185,7 +185,7 @@ CONTAINS
     ! using the discretisation structure of the first block.
     !
     ! Create the matrix structure of the X-velocity.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,1))
 
     ! In the Stokes problem, the matrix for the Y-velocity is identical to
@@ -202,7 +202,7 @@ CONTAINS
     !
     ! Create the matrices structure of the pressure using the 3rd
     ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(3),&
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(3),&
                                      LSYSSC_MATRIX9, rmatrixB1,&
                                      rdiscretisation%RspatialDiscr(1))
               
@@ -211,7 +211,7 @@ CONTAINS
     ! structure between B1 and B2 (B1 is the parent and B2 the child). 
     ! Don't create a content array yet, it will be created by 
     ! the assembly routines later.
-    CALL lsyssc_duplicateMatrix (rmatrixB1, rmatrixB2, LSYSSC_DUP_COPY,&
+    call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB2, LSYSSC_DUP_COPY,&
                                  LSYSSC_DUP_REMOVE)
                                      
     ! And now to the entries of the matrix. For assembling of the entries,
@@ -225,8 +225,8 @@ CONTAINS
     rform%Idescriptors(2,2) = DER_DERIV_Y
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dnu
     rform%Dcoefficients(2)  = dnu
 
@@ -241,19 +241,19 @@ CONTAINS
     ! in the collection.
     !
     ! Build the X-velocity matrix:
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,1),&
+    call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
                                  coeff_Stokes_2D)
     
     ! Duplicate the matrix to the Y-velocity matrix, share structure and
     ! content between them (as the matrices are the same).
-    CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
              rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     
     ! Manually change the discretisation structure of the Y-velocity 
     ! matrix to the Y-discretisation structure.
     ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
     ! so this is not really necessary - we do this for sure...
-    CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
         rdiscretisation%RspatialDiscr(2))
     
     ! Build the first pressure matrix B1.
@@ -263,11 +263,11 @@ CONTAINS
     rform%Idescriptors(2,1) = DER_DERIV_X
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrixB1,coeff_Pressure_2D)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixB1,coeff_Pressure_2D)
 
     ! Build the second pressure matrix B2.
     ! Again first set up the bilinear form, then call the matrix assembly.
@@ -276,11 +276,11 @@ CONTAINS
     rform%Idescriptors(2,1) = DER_DERIV_Y
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrixB2,coeff_Pressure_2D)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixB2,coeff_Pressure_2D)
                                 
     ! The B1/B2 matrices exist up to now only in our local problem structure.
     ! Put a copy of them into the block matrix.
@@ -288,28 +288,28 @@ CONTAINS
     ! Note that we share the structure of B1/B2 with those B1/B2 of the
     ! block matrix, while we create copies of the entries. The reason is
     ! that these matrices are modified for boundary conditions later.
-    CALL lsyssc_duplicateMatrix (rmatrixB1, rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_duplicateMatrix (rmatrixB1, rmatrix%RmatrixBlock(1,3),&
                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-    CALL lsyssc_duplicateMatrix (rmatrixB2, rmatrix%RmatrixBlock(2,3),&
+    call lsyssc_duplicateMatrix (rmatrixB2, rmatrix%RmatrixBlock(2,3),&
                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
     
     ! Furthermore, put B1^T and B2^T to the block matrix.
-    CALL lsyssc_transposeMatrix (rmatrixB1, rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_transposeMatrix (rmatrixB1, rmatrix%RmatrixBlock(3,1),&
                                  LSYSSC_TR_VIRTUAL)
 
-    CALL lsyssc_transposeMatrix (rmatrixB2, rmatrix%RmatrixBlock(3,2),&
+    call lsyssc_transposeMatrix (rmatrixB2, rmatrix%RmatrixBlock(3,2),&
                                  LSYSSC_TR_VIRTUAL)
 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
-    CALL lsysbl_updateMatStrucInfo (rmatrix)
+    call lsysbl_updateMatStrucInfo (rmatrix)
 
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:
-    CALL lsysbl_createVecBlockIndMat (rmatrix,rrhs, .FALSE.)
-    CALL lsysbl_createVecBlockIndMat (rmatrix,rvector, .FALSE.)
+    call lsysbl_createVecBlockIndMat (rmatrix,rrhs, .false.)
+    call lsysbl_createVecBlockIndMat (rmatrix,rvector, .false.)
 
     ! The vector structure is ready but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
@@ -323,18 +323,18 @@ CONTAINS
     ! corresponding blocks.
     !
     ! Note that the vector is unsorted after calling this routine!
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                  rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+                  rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
 
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
-                  rlinform,.TRUE.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
+                  rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
-    CALL lsyssc_clearVector(rrhs%RvectorBlock(3))
+    call lsyssc_clearVector(rrhs%RvectorBlock(3))
                                 
     ! Clear the solution vector on the finest level.
-    CALL lsysbl_clearVector(rvector)
+    call lsysbl_clearVector(rvector)
 
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate
@@ -343,7 +343,7 @@ CONTAINS
     !
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
-    CALL bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteBC(rdiscreteBC)
     
     ! We first set up the boundary conditions for the X-velocity, then those
     ! of the Y-velocity.
@@ -356,7 +356,7 @@ CONTAINS
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
-    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     
     ! The endpoint of this segment should also be Dirichlet. We set this by
     ! changing the region properties in rboundaryRegion.
@@ -371,7 +371,7 @@ CONTAINS
     ! - Discretise the boundary condition so that the BC's can be applied
     !   to matrices and vectors
     ! - Add the calculated discrete BC's to rdiscreteBC for later use.
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
                              
@@ -382,27 +382,27 @@ CONTAINS
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
 
     ! Now continue with defining the boundary conditions of the Y-velocity:
     !
     ! Define edge 1.
-    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
     ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
                              
@@ -413,14 +413,14 @@ CONTAINS
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
 
@@ -439,9 +439,9 @@ CONTAINS
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    CALL vecfil_discreteBCrhs (rrhs)
-    CALL vecfil_discreteBCsol (rvector)
-    CALL matfil_discreteBC (rmatrix)
+    call vecfil_discreteBCrhs (rrhs)
+    call vecfil_discreteBCsol (rvector)
+    call matfil_discreteBC (rmatrix)
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -457,9 +457,9 @@ CONTAINS
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process.
     p_RfilterChain => RfilterChain
-    NULLIFY(p_rpreconditioner)
-    CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
-    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    nullify(p_rpreconditioner)
+    call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -476,22 +476,22 @@ CONTAINS
     ! This doesn't work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrix/)
-    CALL linsol_setMatrices(p_rsolverNode,Rmatrices)
+    call linsol_setMatrices(p_rsolverNode,Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    CALL linsol_initData (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
 
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
 
     ! The solution vector is probably not in the way GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -505,38 +505,38 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateBlockDiscr (rdiscretisation,rprjDiscretisation)
+    call spdiscr_duplicateBlockDiscr (rdiscretisation,rprjDiscretisation)
     
-    CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
+    call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(1))
 
-    CALL spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+    call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
-    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution (rvector,rprjVector)
+    call spdp_projectSolution (rvector,rprjVector)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation.
     !
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
-    CALL bcasm_initDiscreteBC(rprjDiscreteBC)
+    call bcasm_initDiscreteBC(rprjDiscreteBC)
     !
     ! Edge 1 of boundary component 1, X-velocity.
-    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
 
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
                              
@@ -547,25 +547,25 @@ CONTAINS
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
     ! Edge 1 of boundary component 1, Y-velocity.
-    CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
   
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
     ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
                              
@@ -576,14 +576,14 @@ CONTAINS
     !                                    getBoundaryValues_2D)
                              
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
@@ -593,21 +593,21 @@ CONTAINS
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the discrete boundary
     ! conditions.
-    CALL vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector)
     
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
         'gmv/u2d_0_simple.gmv')
 
     ! Write velocity field
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X- and Y-velocity at once to the ucd module.
-    CALL ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
 
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
@@ -615,49 +615,49 @@ CONTAINS
     !CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
         
     ! Write pressure
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
 
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !
     ! Release solver data and structure
-    CALL linsol_doneData (p_rsolverNode)
-    CALL linsol_doneStructure (p_rsolverNode)
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
     
     ! Release the solver node and all subnodes attached to it (if at all):
-    CALL linsol_releaseSolver (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the block matrix/vectors
-    CALL lsysbl_releaseVector (rprjVector)
-    CALL lsysbl_releaseVector (rtempBlock)
-    CALL lsysbl_releaseVector (rvector)
-    CALL lsysbl_releaseVector (rrhs)
-    CALL lsysbl_releaseMatrix (rmatrix)
+    call lsysbl_releaseVector (rprjVector)
+    call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rvector)
+    call lsysbl_releaseVector (rrhs)
+    call lsysbl_releaseMatrix (rmatrix)
     
     ! Release B1 and B2 matrix
-    CALL lsyssc_releaseMatrix (rmatrixB2)
-    CALL lsyssc_releaseMatrix (rmatrixB1)
+    call lsyssc_releaseMatrix (rmatrixB2)
+    call lsyssc_releaseMatrix (rmatrixB1)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (rprjDiscreteBC)
-    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+    call bcasm_releaseDiscreteBC (rprjDiscreteBC)
+    call bcasm_releaseDiscreteBC (rdiscreteBC)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rprjDiscretisation)
-    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
+    call spdiscr_releaseBlockDiscr(rprjDiscretisation)
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
     
     ! Release the triangulation. 
-    CALL tria_done (rtriangulation)
+    call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (rboundary)
+    call boundary_release (rboundary)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

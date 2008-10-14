@@ -16,39 +16,39 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccinitdomain
+module ccinitdomain
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE ccbasic
-  USE ccdomaincontrol
+  use ccbasic
+  use ccdomaincontrol
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initDomain (rproblem)
+  subroutine cc_initDomain (rproblem)
   
 !<description>
   ! This routine initialises the domain control and triangulation of the
@@ -59,70 +59,70 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
   
   ! Variable for a filename:  
-  CHARACTER(LEN=SYS_STRLEN) :: sString
-  CHARACTER(LEN=SYS_STRLEN) :: sTRIFile
+  character(LEN=SYS_STRLEN) :: sString
+  character(LEN=SYS_STRLEN) :: sTRIFile
   
   ! A pointer to the triangulation
-  TYPE(t_triangulation), POINTER :: p_rtria
+  type(t_triangulation), pointer :: p_rtria
   
     ! First of all, initialise the domain control
-    CALL ccdc_init(rproblem)
+    call ccdc_init(rproblem)
 
     ! Get a pointer to the coarse-most triangulation
     p_rtria => rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation
 
     ! Read in the .TRI filename from the parameter list
-    CALL parlst_getvalue_string (rproblem%rparamList,'DOMAIN',&
+    call parlst_getvalue_string (rproblem%rparamList,'DOMAIN',&
                                    'sMesh',sString)
-    READ (sString,*) sTRIFile
+    read (sString,*) sTRIFile
 
     ! And read the .TRI file
-    CALL tria_readTriFile3D (p_rtria, sTRIFile)
+    call tria_readTriFile3D (p_rtria, sTRIFile)
     
     ! Call the domain control to correct the mesh (if neccessary)
-    CALL ccdc_correctMesh(rproblem, p_rtria)
+    call ccdc_correctMesh(rproblem, p_rtria)
 
     ! Refine the mesh up to the minimum level
-    DO i = 1, rproblem%NLMIN-1
+    do i = 1, rproblem%NLMIN-1
       
       ! Refine it
-      CALL tria_quickRefine2LevelOrdering(1, p_rtria)
+      call tria_quickRefine2LevelOrdering(1, p_rtria)
       
       ! And call the mesh correction routine
-      CALL ccdc_correctMesh(rproblem, p_rtria)
+      call ccdc_correctMesh(rproblem, p_rtria)
     
-    END DO
+    end do
 
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
-    CALL tria_initStandardMeshFromRaw (p_rtria)
+    call tria_initStandardMeshFromRaw (p_rtria)
     
     ! Now, refine to level up to nlmax.
-    DO i=rproblem%NLMIN+1,rproblem%NLMAX
+    do i=rproblem%NLMIN+1,rproblem%NLMAX
       
       ! Get a pointer to the triangulation
       p_rtria => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Refine the mesh
-      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+      call tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
                                       p_rtria)
       
       ! And call the mesh correction routine
-      CALL ccdc_correctMesh(rproblem, p_rtria)
+      call ccdc_correctMesh(rproblem, p_rtria)
           
       ! And create all the information we need
-      CALL tria_initStandardMeshFromRaw (p_rtria)
+      call tria_initStandardMeshFromRaw (p_rtria)
       
-    END DO
+    end do
     
     ! Compress the level hierarchy.
     ! Share the vertex coordinates of all levels, so the coarse grid coordinates
@@ -130,18 +130,18 @@ CONTAINS
     ! 1.) Save some memory
     ! 2.) Every change in the fine grid coordinates also affects the coarse
     !     grid coordinates and vice versa.
-    DO i=rproblem%NLMAX-1,rproblem%NLMIN,-1
-      CALL tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
+    do i=rproblem%NLMAX-1,rproblem%NLMIN,-1
+      call tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneDomain (rproblem)
+  subroutine cc_doneDomain (rproblem)
   
 !<description>
   ! Releases the triangulation and domain control from the heap.
@@ -149,22 +149,22 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
     ! Release the triangulation on all levels
-    DO i = rproblem%NLMAX, rproblem%NLMIN,-1
-      CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
-    END DO
+    do i = rproblem%NLMAX, rproblem%NLMIN,-1
+      call tria_done (rproblem%RlevelInfo(i)%rtriangulation)
+    end do
     
     ! Release the domain control
-    CALL ccdc_done(rproblem)
+    call ccdc_done(rproblem)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

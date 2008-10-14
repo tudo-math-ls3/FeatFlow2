@@ -26,17 +26,17 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM codire
+program codire
 
-  USE codire_method3
-  USE codire_method5
+  use codire_method3
+  use codire_method5
   
-  IMPLICIT NONE
+  implicit none
   
-  INCLUDE 'cmem.inc'
-  INCLUDE 'cout.inc'
-  INCLUDE 'cerr.inc'
-  INCLUDE 'cfileout.inc'
+  include 'cmem.inc'
+  include 'cout.inc'
+  include 'cerr.inc'
+  include 'cfileout.inc'
 
   ! As we still use some FEAT 1.x routines, we have to initialise some
   ! output variables.
@@ -50,37 +50,37 @@ PROGRAM codire
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
+  call system_init()
 
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !
   ! 2.) Initialise FEAT 2.0 storage management:
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
 
   ! 3.) Initialise old FEAT 1.x storage management for compatibility.
-  CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
+  call ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
              'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve. 
-  PRINT *
-  PRINT *,'Calculating CoDiRe-Problem with method 3'
-  PRINT *,'----------------------------------------'
-  CALL codire3
+  print *
+  print *,'Calculating CoDiRe-Problem with method 3'
+  print *,'----------------------------------------'
+  call codire3
 
   ! Call the problem to solve - method 5 = multigrid
-  PRINT *
-  PRINT *,'Calculating CoDiRe-Problem with method 5'
-  PRINT *,'----------------------------------------'
-  CALL codire5
+  print *
+  print *,'Calculating CoDiRe-Problem with method 5'
+  print *,'----------------------------------------'
+  call codire5
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
-  CALL storage_info(.TRUE.)
+  print *
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

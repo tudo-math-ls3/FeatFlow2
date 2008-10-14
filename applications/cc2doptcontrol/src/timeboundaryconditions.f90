@@ -47,58 +47,58 @@
 !# </purpose>
 !##############################################################################
 
-MODULE timeboundaryconditions
+module timeboundaryconditions
 
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
-  USE paramlist
-  USE timestepping
-  USE l2projection
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
+  use paramlist
+  use timestepping
+  use l2projection
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
 
-  USE cc2dmediumm2nonlinearcore
-  USE cc2dmediumm2nonlinearcoreinit
-  USE cc2dmediumm2timeanalysis
-  USE cc2dmediumm2boundary
-  USE cc2dmediumm2discretisation
+  use cc2dmediumm2nonlinearcore
+  use cc2dmediumm2nonlinearcoreinit
+  use cc2dmediumm2timeanalysis
+  use cc2dmediumm2boundary
+  use cc2dmediumm2discretisation
   
-  USE timediscretisation
-  USE spacetimevectors
-  USE dofmapping
+  use timediscretisation
+  use spacetimevectors
+  use dofmapping
   
-  USE spacetimediscretisation
+  use spacetimediscretisation
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx,rtempVectorX)
+  subroutine tbc_implementBCsolution (rproblem,rspaceTimeDiscr,rx,rtempVectorX)
 
 !<description>
   ! Implements the boundary conditions of all timesteps into the solution rx.
@@ -106,52 +106,52 @@ CONTAINS
 
 !<input>
   ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the solution where the BC's should be implemented
   ! to.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+  type(t_spacetimeVector), intent(INOUT) :: rx
 
   ! OPTIONAL: A spatial solution vector. If not specified, a vector
   ! is automatically created.
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rtempVectorX
+  type(t_vectorBlock), intent(INOUT), optional :: rtempVectorX
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: isubstep
-    REAL(DP) :: dtstep
-    TYPE(t_vectorBlock) :: rtempVector
+    integer :: isubstep
+    real(DP) :: dtstep
+    type(t_vectorBlock) :: rtempVector
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata
 
-    IF (PRESENT(rtempVectorX)) THEN
-      CALL lsysbl_duplicateVector (&
+    if (present(rtempVectorX)) then
+      call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    ELSE
+    else
       ! Create a temp vector
-      CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
-    END IF
+      call lsysbl_createVecBlockByDiscr (&
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
+    end if
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
-    CALL lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
-    SELECT CASE (rspaceTimeDiscr%rtimeDiscr%ctype)
-    CASE (TDISCR_THETA)
+    select case (rspaceTimeDiscr%rtimeDiscr%ctype)
+    case (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
+      do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -162,64 +162,64 @@ CONTAINS
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rvector=rtempVector)
+        call cc_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
-      END DO
+      end do
       
-    CASE (TDISCR_DG0)
+    case (TDISCR_DG0)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals-1
+      do isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
             rproblem%rtimedependence%dtimeInit + &
-            (REAL(isubstep,DP)+0.5_DP)*dtstep
+            (real(isubstep,DP)+0.5_DP)*dtstep
         rproblem%rtimedependence%itimestep = isubstep
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rvector=rtempVector)
+        call cc_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
-      END DO
+      end do
 
-    CASE DEFAULT
+    case DEFAULT
         
-      CALL output_line ('Unsupported time discretisation.', &
+      call output_line ('Unsupported time discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tbc_implementBCsolution')
-      CALL sys_halt()
+      call sys_halt()
     
-    END SELECT
+    end select
     
     ! Release the temp vector
-    CALL lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rtempVector)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementBCRHS (rproblem,rspaceTimeDiscr,rb,rtempVectorX)
+  subroutine tbc_implementBCRHS (rproblem,rspaceTimeDiscr,rb,rtempVectorX)
 
 !<description>
   ! Implements the boundary conditions of all timesteps into the RHS vector rb.
@@ -227,52 +227,52 @@ CONTAINS
 
 !<input>
   ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 
   ! OPTIONAL: A spatial solution vector. If not specified, a vector
   ! is automatically created.
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rtempVectorX
+  type(t_vectorBlock), intent(INOUT), optional :: rtempVectorX
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the solution where the BC's should be implemented
   ! to.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+  type(t_spacetimeVector), intent(INOUT) :: rb
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: isubstep
-    REAL(DP) :: dtstep
-    TYPE(t_vectorBlock) :: rtempVector
+    integer :: isubstep
+    real(DP) :: dtstep
+    type(t_vectorBlock) :: rtempVector
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata
 
-    IF (PRESENT(rtempVectorX)) THEN
-      CALL lsysbl_duplicateVector (&
+    if (present(rtempVectorX)) then
+      call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    ELSE
+    else
       ! Create a temp vector
-      CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
-    END IF
+      call lsysbl_createVecBlockByDiscr (&
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
+    end if
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
-    CALL lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
-    SELECT CASE (rspaceTimeDiscr%rtimeDiscr%ctype)
-    CASE (TDISCR_THETA)
+    select case (rspaceTimeDiscr%rtimeDiscr%ctype)
+    case (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
+      do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -283,64 +283,64 @@ CONTAINS
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rvector=rtempVector)
+        call cc_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
-      END DO
+      end do
       
-    CASE (TDISCR_DG0)
+    case (TDISCR_DG0)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
+      do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
             rproblem%rtimedependence%dtimeInit + &
-            (REAL(isubstep,DP)+0.5_DP) * dtstep
+            (real(isubstep,DP)+0.5_DP) * dtstep
         rproblem%rtimedependence%itimestep = isubstep
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rvector=rtempVector)
+        call cc_implementBC (rproblem,rvector=rtempVector)
         
-        CALL sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
-      END DO
+      end do
 
-    CASE DEFAULT
+    case DEFAULT
         
-      CALL output_line ('Unsupported time discretisation.', &
+      call output_line ('Unsupported time discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tbc_implementBCRHS')
-      CALL sys_halt()
+      call sys_halt()
     
-    END SELECT
+    end select
 
     ! Release the temp vector
-    CALL lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rtempVector)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementBCdefect (rproblem,rspaceTimeDiscr,rd,rtempVectorX)
+  subroutine tbc_implementBCdefect (rproblem,rspaceTimeDiscr,rd,rtempVectorX)
 
 !<description>
   ! Implements the boundary conditions of all timesteps into the defect rd.
@@ -348,47 +348,47 @@ CONTAINS
 
 !<input>
   ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the solution where the BC's should be implemented
   ! to.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+  type(t_spacetimeVector), intent(INOUT) :: rd
 
   ! OPTIONAL: A spatial solution vector. If not specified, a vector
   ! is automatically created.
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rtempVectorX
+  type(t_vectorBlock), intent(INOUT), optional :: rtempVectorX
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP) :: dtstep
-    INTEGER :: isubstep
-    TYPE(t_vectorBlock) :: rtempVector
+    real(DP) :: dtstep
+    integer :: isubstep
+    type(t_vectorBlock) :: rtempVector
     
-    IF (PRESENT(rtempVectorX)) THEN
-      CALL lsysbl_duplicateVector (&
+    if (present(rtempVectorX)) then
+      call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    ELSE
+    else
       ! Create temp vectors
-      CALL lsysbl_createVecBlockByDiscr (&
-          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.TRUE.)
-    END IF
+      call lsysbl_createVecBlockByDiscr (&
+          rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
+    end if
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
-    SELECT CASE (rspaceTimeDiscr%rtimeDiscr%ctype)
-    CASE (TDISCR_THETA)
+    select case (rspaceTimeDiscr%rtimeDiscr%ctype)
+    case (TDISCR_THETA)
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
+      do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
@@ -399,14 +399,14 @@ CONTAINS
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rdefect=rtempVector)
+        call cc_implementBC (rproblem,rdefect=rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -416,33 +416,33 @@ CONTAINS
 !          CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
 !        END IF
         
-        CALL sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
-      END DO
+      end do
     
-    CASE (TDISCR_DG0)
+    case (TDISCR_DG0)
 
 
       ! Implement the bondary conditions into all initial solution vectors
-      DO isubstep = 0,rspaceTimeDiscr%NEQtime-1
+      do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
         rproblem%rtimedependence%dtime = &
             rproblem%rtimedependence%dtimeInit + &
-            (REAL(isubstep,DP)+0.5_DP) * dtstep
+            (real(isubstep,DP)+0.5_DP) * dtstep
         rproblem%rtimedependence%itimestep = isubstep
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-          CALL cc_updateDiscreteBC (rproblem)
-        END IF
+        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
         
         ! Implement the boundary conditions into the global solution vector.
-        CALL sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
+        call sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        CALL cc_implementBC (rproblem,rdefect=rtempVector)
+        call cc_implementBC (rproblem,rdefect=rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -452,27 +452,27 @@ CONTAINS
 !          CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
 !        END IF
         
-        CALL sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
+        call sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
-      END DO
+      end do
 
-    CASE DEFAULT
+    case DEFAULT
         
-      CALL output_line ('Unsupported time discretisation.', &
+      call output_line ('Unsupported time discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tbc_implementBCdefect')
-      CALL sys_halt()
+      call sys_halt()
     
-    END SELECT
+    end select
 
-    CALL lsysbl_releaseVector(rtempVector)
+    call lsysbl_releaseVector(rtempVector)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_pressureToL20 (rx,rtempVectorX)
+  subroutine tbc_pressureToL20 (rx,rtempVectorX)
 
 !<description>
   ! Normalises the primal and dual pressure in all time steps to have integral
@@ -482,48 +482,48 @@ CONTAINS
 
 !<inputoutput>
   ! A space-time vector where the pressure vectors whould be normalised.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+  type(t_spacetimeVector), intent(INOUT) :: rx
 
   ! OPTIONAL: A spatial solution vector. If not specified, a vector
   ! is automatically created.
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rtempVectorX
+  type(t_vectorBlock), intent(INOUT), optional :: rtempVectorX
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: isubstep
-    TYPE(t_vectorBlock) :: rtempVector
+    integer :: isubstep
+    type(t_vectorBlock) :: rtempVector
     
-    IF (PRESENT(rtempVectorX)) THEN
-      CALL lsysbl_duplicateVector (&
+    if (present(rtempVectorX)) then
+      call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    ELSE
+    else
       ! Create temp vectors
-      CALL lsysbl_createVecBlockByDiscr (&
-          rx%p_rblockDiscretisation,rtempVector,.TRUE.)
-    END IF
+      call lsysbl_createVecBlockByDiscr (&
+          rx%p_rblockDiscretisation,rtempVector,.true.)
+    end if
 
     ! Normalise the primal and dual pressure to zero.
-    DO isubstep = 0,rx%NEQtime-1
+    do isubstep = 0,rx%NEQtime-1
     
-      CALL sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
+      call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
       
-      CALL vecfil_subvectorToL20 (rtempVectorX,3)
-      CALL vecfil_subvectorToL20 (rtempVectorX,6)
+      call vecfil_subvectorToL20 (rtempVectorX,3)
+      call vecfil_subvectorToL20 (rtempVectorX,6)
       
-      CALL sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
+      call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
       
-    END DO
+    end do
   
-    CALL lsysbl_releaseVector(rtempVector)
+    call lsysbl_releaseVector(rtempVector)
 
-  END SUBROUTINE
+  end subroutine
 
   ! *************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementInitCondRHS (rproblem,rb,rinitCondRHS,rtempVectorD)
+  subroutine tbc_implementInitCondRHS (rproblem,rb,rinitCondRHS,rtempVectorD)
 
 !<description>
   ! Implements the initial condition into the RHS vector rb.
@@ -535,40 +535,40 @@ CONTAINS
 !<input>
   ! A problem structure that provides information on all
   ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the RHS. The initial condition is implemented into
   ! this vector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+  type(t_spacetimeVector), intent(INOUT) :: rb
 
   ! A vector containing the data for the initial condition of the RHS.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rinitCondRHS
+  type(t_vectorBlock), intent(INOUT) :: rinitCondRHS
 
   ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
+  type(t_vectorBlock), intent(INOUT) :: rtempVectorD
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP) :: dtheta
-    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
+    real(DP) :: dtheta
+    real(DP), dimension(:),pointer :: p_Dx, p_Db, p_Dd
     
     ! Overwrite the primal RHS with the initial primal solution vector.
     ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rb, 1+0, rtempVectorD)
-    CALL lsyssc_copyVector (rinitCondRHS%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_copyVector (rinitCondRHS%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-    CALL sptivec_setTimestepData(rb, 1+0, rtempVectorD)
+    call sptivec_getTimestepData(rb, 1+0, rtempVectorD)
+    call lsyssc_copyVector (rinitCondRHS%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+    call lsyssc_copyVector (rinitCondRHS%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+    call sptivec_setTimestepData(rb, 1+0, rtempVectorD)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementInitCond (rproblem,rx,rinitCondSol,rtempVector)
+  subroutine tbc_implementInitCond (rproblem,rx,rinitCondSol,rtempVector)
 
 !<description>
   ! Implements the initial condition into the vector rx.
@@ -580,19 +580,19 @@ CONTAINS
 !<input>
   ! A problem structure that provides information on all
   ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the RHS. The initial condition is implemented into
   ! this vector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+  type(t_spacetimeVector), intent(INOUT) :: rx
 
   ! A vector containing the data for the initial condition of the RHS.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rinitCondSol
+  type(t_vectorBlock), intent(INOUT) :: rinitCondSol
 
   ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
 !</inputoutput>
 
 !</subroutine>
@@ -605,13 +605,13 @@ CONTAINS
 !    CALL lsyssc_copyVector (rinitCondSol%RvectorBlock(2),rtempVector%RvectorBlock(2))
 !    CALL sptivec_setTimestepData(rx, 1+0, rtempVector)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementInitCondDefect (rspaceTimeDiscr, rd, rtempvectorD)
+  subroutine tbc_implementInitCondDefect (rspaceTimeDiscr, rd, rtempvectorD)
 
 !<description>
   ! Implements the initial and terminal condition into a defect vector rd.
@@ -622,35 +622,35 @@ CONTAINS
 
 !<inputoutput>
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 
   ! A space-time vector containing the defect in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+  type(t_spacetimeVector), intent(INOUT) :: rd
 
   ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
+  type(t_vectorBlock), intent(INOUT) :: rtempVectorD
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    real(DP), dimension(:),pointer :: p_Db
     
     ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+    call lsysbl_getbase_double (rtempVectorD,p_Db)
 
     ! Overwrite the primal defect with 0 -- as the solution must not be changed.
     ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rd, 1+0, rtempVectorD)
-    CALL tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
-    CALL sptivec_setTimestepData(rd, 1+0, rtempVectorD)
+    call sptivec_getTimestepData(rd, 1+0, rtempVectorD)
+    call tbc_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
+    call sptivec_setTimestepData(rd, 1+0, rtempVectorD)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementInitCondDefSingle (rspaceTimeDiscr, rd)
+  subroutine tbc_implementInitCondDefSingle (rspaceTimeDiscr, rd)
 
 !<description>
   ! Implements the initial condition into a defect vector rd,
@@ -661,30 +661,30 @@ CONTAINS
 
 !<inputoutput>
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 
   ! A vector containing the defect in the first subvector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+  type(t_vectorBlock), intent(INOUT) :: rd
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    real(DP), dimension(:),pointer :: p_Db
     
     ! DEBUG!!!    
-    CALL lsysbl_getbase_double (rd,p_Db)
+    call lsysbl_getbase_double (rd,p_Db)
     
 !    CALL lsyssc_clearVector(rd%RvectorBlock(1))
 !    CALL lsyssc_clearVector(rd%RvectorBlock(2))
 !    CALL lsyssc_clearVector(rd%RvectorBlock(3))
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementTermCondDefSingle (rspaceTimeDiscr, rd)
+  subroutine tbc_implementTermCondDefSingle (rspaceTimeDiscr, rd)
 
 !<description>
   ! Implements the terminal condition into a defect vector rd,
@@ -695,10 +695,10 @@ CONTAINS
 
 !<inputoutput>
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 
   ! A vector containing the defect in the last subvector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+  type(t_vectorBlock), intent(INOUT) :: rd
 !</inputoutput>
 
 !</subroutine>
@@ -738,13 +738,13 @@ CONTAINS
 !      
 !    END IF
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE tbc_implementSpatialBCtoRHS (rproblem, isubstep, dtime, rvector)
+  subroutine tbc_implementSpatialBCtoRHS (rproblem, isubstep, dtime, rvector)
   
 !<description>
   ! Implements the spatial boundary conditions into the spatial RHS vector
@@ -754,25 +754,25 @@ CONTAINS
 !<input>
   ! Time where the BC's should be implemented.
   ! Must not necessarily coincide with the start/end time of the timestep.
-  REAL(DP), INTENT(IN) :: dtime
+  real(DP), intent(IN) :: dtime
     
   ! Number of the substep where to implement the BC.
-  INTEGER, INTENT(IN) :: isubstep
+  integer, intent(IN) :: isubstep
 !</input>  
 
 !<inputoutput>  
   ! Problem structure.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Source and destination RHS vector
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
   
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata
   
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rvector,p_Ddata)
+    call lsysbl_getbase_double (rvector,p_Ddata)
 
     ! Set the time where we are at the moment
     rproblem%rtimedependence%dtime = dtime
@@ -781,30 +781,30 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
-    IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL cc_updateDiscreteBC (rproblem)
-    END IF
+    if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+      call cc_updateDiscreteBC (rproblem)
+    end if
 
     ! Implement the boundary conditions into the RHS.
     ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
     ! as Dirichlet values mustn't be multiplied with GAMMA!
-    CALL vecfil_discreteBCsol (rvector)
-    CALL vecfil_discreteFBCsol (rvector)      
+    call vecfil_discreteBCsol (rvector)
+    call vecfil_discreteFBCsol (rvector)      
   
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE tbc_implementSpatialBCdefect (rproblem,isubstep,dtime,rspaceTimeDiscr,rd)
+  subroutine tbc_implementSpatialBCdefect (rproblem,isubstep,dtime,rspaceTimeDiscr,rd)
 
 !<description>
   ! Implements the boundary conditions at timestep isubstep into the defect rd.
@@ -812,29 +812,29 @@ CONTAINS
 
 !<input>
   ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Discretisation structure that corresponds to rx.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 
   ! Time where the BC's should be implemented.
   ! Must not necessarily coincide with the start/end time of the timestep.
-  REAL(DP), INTENT(IN) :: dtime
+  real(DP), intent(IN) :: dtime
     
   ! Number of the substep where to implement the BC.
-  INTEGER, INTENT(IN) :: isubstep
+  integer, intent(IN) :: isubstep
 !</input>
 
 !<inputoutput>
   ! A space-time vector with the solution where the BC's should be implemented to.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+  type(t_vectorBlock), intent(INOUT) :: rd
 !</inputoutput>
 
 !</subroutine>
 
-    TYPE(t_vectorBlock) :: rtempVector
+    type(t_vectorBlock) :: rtempVector
     
-    CALL lsysbl_duplicateVector(rd,rtempVector,&
+    call lsysbl_duplicateVector(rd,rtempVector,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
 
@@ -845,11 +845,11 @@ CONTAINS
     ! -----
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!
-    IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-      CALL cc_updateDiscreteBC (rproblem)
-    END IF
+    if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+      call cc_updateDiscreteBC (rproblem)
+    end if
     
-    CALL cc_implementBC (rproblem,rdefect=rtempVector)
+    call cc_implementBC (rproblem,rdefect=rtempVector)
     
     ! In the very first time step, we have the initial condition for the
     ! solution. The defect is =0 there!
@@ -859,8 +859,8 @@ CONTAINS
 !      CALL lsyssc_clearVector (rd%RvectorBlock(3))
 !    END IF
     
-    CALL lsysbl_releaseVector(rtempVector)
+    call lsysbl_releaseVector(rtempVector)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

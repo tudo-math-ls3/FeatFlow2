@@ -40,47 +40,47 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccdomaincontrol
+module ccdomaincontrol
 
-  USE fsystem
-  USE paramlist
-  USE collection
-  USE triangulation
-  USE meshregion
+  use fsystem
+  use paramlist
+  use collection
+  use triangulation
+  use meshregion
     
-  USE ccbasic
+  use ccbasic
   
   ! Domain-Dependend includes
-  USE dom3d_cube
-  USE dom3d_c3d0
-  USE dom3d_c3d1
+  use dom3d_cube
+  use dom3d_c3d0
+  use dom3d_c3d1
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Domain Identifiers">
   
   ! Domain Identifier for CUBE-domain
-  INTEGER, PARAMETER :: CCDC_ID_DOM3D_CUBE = 1
+  integer, parameter :: CCDC_ID_DOM3D_CUBE = 1
   
   ! Domain Identifier for C3D0-domain
-  INTEGER, PARAMETER :: CCDC_ID_DOM3D_C3D0 = 2
+  integer, parameter :: CCDC_ID_DOM3D_C3D0 = 2
   
   ! Domain Identifier for C3D1-domain
-  INTEGER, PARAMETER :: CCDC_ID_DOM3D_C3D1 = 3
+  integer, parameter :: CCDC_ID_DOM3D_C3D1 = 3
 
 !</constantblock>
 
 !</constants>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE ccdc_init (rproblem)
+  subroutine ccdc_init (rproblem)
   
 !<description>
   ! This routine initialises the domain control.
@@ -91,32 +91,32 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT)                 :: rproblem
+  type(t_problem), intent(INOUT)                 :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: idomain
+  integer :: idomain
   
     ! Read in the domain identifier from the parameter list
-    CALL parlst_getvalue_int (rproblem%rparamList,'DOMAIN','iDomain',&
+    call parlst_getvalue_int (rproblem%rparamList,'DOMAIN','iDomain',&
                               idomain,-1)
 
     ! Store the domain id to the problem structure
     rproblem%idomain = idomain
     
     ! And store it to the collection structure
-    CALL collct_setvalue_int (rproblem%rcollection,'IDOMAIN',idomain,.TRUE.)
+    call collct_setvalue_int (rproblem%rcollection,'IDOMAIN',idomain,.true.)
     
     ! Place domain-dependent initialisation here...
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE ccdc_done (rproblem)
+  subroutine ccdc_done (rproblem)
   
 !<description>
   ! This routine releases the domain control.
@@ -127,7 +127,7 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT)                 :: rproblem
+  type(t_problem), intent(INOUT)                 :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -138,15 +138,15 @@ CONTAINS
     !                           idomain,-1)
 
     ! Now we can remove the domain identifier from the collection
-    CALL collct_deletevalue(rproblem%rcollection, 'IDOMAIN')
+    call collct_deletevalue(rproblem%rcollection, 'IDOMAIN')
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE ccdc_getNumRegions (rproblem, inumRegions)
+  subroutine ccdc_getNumRegions (rproblem, inumRegions)
   
 !<description>
   ! This routine returns the number of boundary regions of the domain that
@@ -155,40 +155,40 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT)                 :: rproblem
+  type(t_problem), intent(INOUT)                 :: rproblem
 !</inputoutput>
 
 !<output>
   ! The number of boundary regions of the domain
-  INTEGER, INTENT(OUT)                           :: inumRegions
+  integer, intent(OUT)                           :: inumRegions
 !</output>
 
 !</subroutine>
 
     ! What domain do we have here?
-    SELECT CASE(rproblem%idomain)
-    CASE (CCDC_ID_DOM3D_CUBE)
+    select case(rproblem%idomain)
+    case (CCDC_ID_DOM3D_CUBE)
       inumRegions = 6
       
-    CASE (CCDC_ID_DOM3D_C3D0)
+    case (CCDC_ID_DOM3D_C3D0)
       inumRegions = 7
     
-    CASE (CCDC_ID_DOM3D_C3D1)
+    case (CCDC_ID_DOM3D_C3D1)
       inumRegions = 7
     
-    CASE DEFAULT
-      PRINT *, 'ERROR: ccdc_getNumRegions: Unknown Domain identifier'
-      CALL sys_halt()
+    case DEFAULT
+      print *, 'ERROR: ccdc_getNumRegions: Unknown Domain identifier'
+      call sys_halt()
       
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE ccdc_calcBoundaryMeshRegion (rproblem, rmeshRegion, &
+  subroutine ccdc_calcBoundaryMeshRegion (rproblem, rmeshRegion, &
                                           rtriangulation, Iregions)
   
 !<description>
@@ -198,49 +198,49 @@ CONTAINS
 
 !<input>
   ! The triangulation on which the mesh region is to be defined.
-  TYPE(t_triangulation), TARGET, INTENT(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(IN)      :: rtriangulation
   
   ! An array holding the indices of all domain regions which should be added
   ! into the mesh region.
-  INTEGER, DIMENSION(:), INTENT(IN)              :: Iregions
+  integer, dimension(:), intent(IN)              :: Iregions
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT)                 :: rproblem
+  type(t_problem), intent(INOUT)                 :: rproblem
 !</inputoutput>
 
 !<output>
   ! The mesh region
-  TYPE(t_meshRegion), INTENT(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(OUT)                :: rmeshRegion
 !</output>
 
 !</subroutine>
 
     ! Call the corresponding routine
-    SELECT CASE(rproblem%idomain)
-    CASE (CCDC_ID_DOM3D_CUBE)
-      CALL dom3d_cube_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
+    select case(rproblem%idomain)
+    case (CCDC_ID_DOM3D_CUBE)
+      call dom3d_cube_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
     
-    CASE (CCDC_ID_DOM3D_C3D0)
-      CALL dom3d_c3d0_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
+    case (CCDC_ID_DOM3D_C3D0)
+      call dom3d_c3d0_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
     
-    CASE (CCDC_ID_DOM3D_C3D1)
-      CALL dom3d_c3d1_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
+    case (CCDC_ID_DOM3D_C3D1)
+      call dom3d_c3d1_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
 
-    CASE DEFAULT
-      PRINT *, 'ERROR: ccdc_calcBoundaryMeshRegion: Unknown Domain identifier'
-      CALL sys_halt()
+    case DEFAULT
+      print *, 'ERROR: ccdc_calcBoundaryMeshRegion: Unknown Domain identifier'
+      call sys_halt()
       
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE ccdc_correctMesh (rproblem, rtriangulation)
+  subroutine ccdc_correctMesh (rproblem, rtriangulation)
   
 !<description>
   ! This routine corrects a mesh after it has been read in from a .TRI file
@@ -249,31 +249,31 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT)                 :: rproblem
+  type(t_problem), intent(INOUT)                 :: rproblem
 
   ! The triangulation which is to be corrected.
-  TYPE(t_triangulation), INTENT(INOUT)           :: rtriangulation
+  type(t_triangulation), intent(INOUT)           :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
 
     ! Call the corresponding routine
-    SELECT CASE(rproblem%iDomain)
-    CASE (CCDC_ID_DOM3D_C3D0)
-      CALL dom3d_c3d0_correctMesh(rtriangulation)
+    select case(rproblem%iDomain)
+    case (CCDC_ID_DOM3D_C3D0)
+      call dom3d_c3d0_correctMesh(rtriangulation)
     
     ! We will not abort if the domain does not support mesh correction
     ! as most of the simple domains do not require any mesh corrections.
     
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE ccdc_calcParProfile (dvalue, iregion, dx, dy, dz, rcollection)
+  subroutine ccdc_calcParProfile (dvalue, iregion, dx, dy, dz, rcollection)
   
 !<description>
   ! This routine calculates the parabolic profile for a specified domain
@@ -283,48 +283,48 @@ CONTAINS
 !<input>
   ! Specifies the index of the boundary region of which the parabolic profile
   ! is to be calculated.
-  INTEGER, INTENT(IN)                            :: iregion
+  integer, intent(IN)                            :: iregion
   
   ! The coordinates of the point in which the parabolic profile is to be
   ! evaluated.
-  REAL(DP), INTENT(IN)                           :: dx, dy, dz
+  real(DP), intent(IN)                           :: dx, dy, dz
 !</input>
 
 !<inputoutput>
   ! A collection structure holding the domain identifier.
-  TYPE(t_collection), INTENT(INOUT)              :: rcollection
+  type(t_collection), intent(INOUT)              :: rcollection
 !</inputoutput>
 
 !<output>
   ! The result of the evaluation of the parabolic profile.
-  REAL(DP), INTENT(OUT)                          :: dvalue
+  real(DP), intent(OUT)                          :: dvalue
 !</output>
 
 !</subroutine>
 
   ! The domain id of the currently selection domain.
-  INTEGER(I32) :: idomain
+  integer(I32) :: idomain
     
     ! Get the index of the domain from the collection
     idomain = collct_getvalue_int(rcollection, 'IDOMAIN')
 
     ! And call the corresponding routine
-    SELECT CASE(idomain)
-    CASE (CCDC_ID_DOM3D_CUBE)
-      CALL dom3d_cube_calcParProfile(dvalue, iregion, dx, dy, dz)
+    select case(idomain)
+    case (CCDC_ID_DOM3D_CUBE)
+      call dom3d_cube_calcParProfile(dvalue, iregion, dx, dy, dz)
     
-    CASE (CCDC_ID_DOM3D_C3D0)
-      CALL dom3d_c3d0_calcParProfile(dvalue, iregion, dx, dy, dz)
+    case (CCDC_ID_DOM3D_C3D0)
+      call dom3d_c3d0_calcParProfile(dvalue, iregion, dx, dy, dz)
     
-    CASE (CCDC_ID_DOM3D_C3D1)
-      CALL dom3d_c3d1_calcParProfile(dvalue, iregion, dx, dy, dz)
+    case (CCDC_ID_DOM3D_C3D1)
+      call dom3d_c3d1_calcParProfile(dvalue, iregion, dx, dy, dz)
     
-    CASE DEFAULT
-      PRINT *, 'ERROR: ccdc_calcParProfile: Unknown Domain identifier'
-      CALL sys_halt()
+    case DEFAULT
+      print *, 'ERROR: ccdc_calcParProfile: Unknown Domain identifier'
+      call sys_halt()
     
-    END SELECT
+    end select
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

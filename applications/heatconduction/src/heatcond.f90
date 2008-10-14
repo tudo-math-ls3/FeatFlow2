@@ -28,50 +28,50 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM heatcond
+program heatcond
 
-  USE heatcond_method1
-  USE heatcond_method2
-  USE heatcond_method5
+  use heatcond_method1
+  use heatcond_method2
+  use heatcond_method5
   
-  IMPLICIT NONE
+  implicit none
 
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
+  call system_init()
 
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !
   ! 2.) Initialise FEAT 2.0 storage management:
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
 
   ! Call the problem to solve - method 1 = very basic
-  CALL output_lbrk()
-  CALL output_line('Calculating heatcond-Problem with method 1')
-  CALL output_line('------------------------------------------')
-  CALL heatcond1
+  call output_lbrk()
+  call output_line('Calculating heatcond-Problem with method 1')
+  call output_line('------------------------------------------')
+  call heatcond1
   
   ! Call the problem to solve - method 2 = very basic with precalculation
-  CALL output_lbrk()
-  CALL output_line('Calculating heatcond-Problem with method 2')
-  CALL output_line('------------------------------------------')
-  CALL heatcond2
+  call output_lbrk()
+  call output_line('Calculating heatcond-Problem with method 2')
+  call output_line('------------------------------------------')
+  call heatcond2
   
   ! Call the problem to solve - method 5 = multigrid
-  CALL output_lbrk()
-  CALL output_line('Calculating heatcond-Problem with method 5')
-  CALL output_line('------------------------------------------')
-  CALL heatcond5
+  call output_lbrk()
+  call output_line('Calculating heatcond-Problem with method 5')
+  call output_line('------------------------------------------')
+  call heatcond5
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  CALL output_lbrk()
-  CALL storage_info(.TRUE.)
+  call output_lbrk()
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

@@ -26,40 +26,40 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccboundarycondition
+module ccboundarycondition
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE ccbasic
-  USE ccboundaryconditionparser
-  USE cccallback
+  use ccbasic
+  use ccboundaryconditionparser
+  use cccallback
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initDiscreteBC (rproblem,rvector,rrhs)
+  subroutine cc_initDiscreteBC (rproblem,rvector,rrhs)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -68,42 +68,42 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! A vector structure for the solution vector. The discrete BC structures are 
   ! attached to that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 
   ! A vector structure for the RHS vector. The discrete BC structures are 
   ! attached to that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    integer :: i
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Pointer to structure for saving discrete BC's:
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
-    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
+    type(t_discreteFBC), pointer :: p_rdiscreteFBC
     
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    do i=rproblem%NLMIN,rproblem%NLMAX
     
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! Initialise the BC/FBC structures.
-      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      CALL bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      allocate(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       
-      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      CALL bcasm_initDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      allocate(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      call bcasm_initDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
       
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -119,7 +119,7 @@ CONTAINS
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
-    END DO
+    end do
 
     ! On the finest level, attach the discrete BC also
     ! to the solution and RHS vector. They need it to be compatible
@@ -135,15 +135,15 @@ CONTAINS
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
     
     ! Call the update routine to assemble the BC's.
-    CALL cc_updateDiscreteBC (rproblem)
+    call cc_updateDiscreteBC (rproblem)
                 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_updateDiscreteBC (rproblem)
+  subroutine cc_updateDiscreteBC (rproblem)
   
 !<description>
   ! This updates the discrete version of the boundary conditions. The BC's
@@ -152,53 +152,53 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    integer :: i
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    do i=rproblem%NLMIN,rproblem%NLMAX
     
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! Clear the last discretised BC's. We are reassembling them.
-      CALL bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      CALL bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      call bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      call bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
       
       ! Assemble boundary conditions
-      CALL cc_assembleBDconditions (rproblem,p_rdiscretisation,&
+      call cc_assembleBDconditions (rproblem,p_rdiscretisation,&
           rproblem%RlevelInfo(i)%p_rdiscreteBC,rproblem%rcollection)
       
       ! Assemble the boundary conditions of fictitious boundary components
-      CALL cc_assembleFBDconditions (rproblem,p_rdiscretisation,&
+      call cc_assembleFBDconditions (rproblem,p_rdiscretisation,&
           rproblem%RlevelInfo(i)%p_rdiscreteFBC,rproblem%rcollection)
 
-    END DO
+    end do
 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_implementBC (rproblem,rvector,rrhs,&
+  subroutine cc_implementBC (rproblem,rvector,rrhs,&
       bsolvector,brhsvector)
   
 !<description>
@@ -207,58 +207,58 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! A vector structure for the solution vector. The discrete BC's are implemented
   ! into that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 
   ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
   
   ! Whether to implement the BC's into the solution vector or not
-  LOGICAL, INTENT(IN) :: bsolvector
+  logical, intent(IN) :: bsolvector
 
   ! Whether to implement the BC's into the solution vector or not
-  LOGICAL, INTENT(IN) :: brhsvector
+  logical, intent(IN) :: brhsvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ilvmax
+    integer :: ilvmax
   
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%NLMAX
     
-    IF (bsolvector) THEN
+    if (bsolvector) then
     
       ! Implement discrete boundary conditions into solution vector by
       ! filtering the vector.
-      CALL vecfil_discreteBCsol (rvector)
+      call vecfil_discreteBCsol (rvector)
       
       ! Implement discrete boundary conditions of fictitioous boundary comnponents
       ! into solution vector by filtering the vector.
-      CALL vecfil_discreteFBCsol (rvector)
+      call vecfil_discreteFBCsol (rvector)
       
-    END IF
+    end if
     
-    IF (brhsvector) THEN
+    if (brhsvector) then
     
       ! Implement pressure drop boundary conditions into RHS vector
       ! if there are any.
-      CALL vecfil_discreteNLPDropBCrhs (rrhs)
+      call vecfil_discreteNLPDropBCrhs (rrhs)
       
       ! Implement discrete boundary conditions into RHS vector by 
       ! filtering the vector.
-      CALL vecfil_discreteBCrhs (rrhs)
+      call vecfil_discreteBCrhs (rrhs)
 
       ! Implement discrete boundary conditions of fictitious boundary components
       ! into RHS vector by filtering the vector.
-      CALL vecfil_discreteFBCrhs (rrhs)
+      call vecfil_discreteFBCrhs (rrhs)
 
-    END IF
+    end if
     
     ! Implementation of boundary conditions into matrices deactivated.
     ! It's simply not used as the global matrices are actually not used outside
@@ -278,13 +278,13 @@ CONTAINS
     !    
     !  END IF
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneBC (rproblem)
+  subroutine cc_doneBC (rproblem)
   
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
@@ -292,30 +292,30 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
     
       ! Release our discrete version of the boundary conditions
-      IF (ASSOCIATED(rproblem%RlevelInfo(i)%p_rdiscreteBC)) THEN
-        CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
-        DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      END IF
+      if (associated(rproblem%RlevelInfo(i)%p_rdiscreteBC)) then
+        call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+        deallocate(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      end if
       
       ! as well as the discrete version of the BC's for fictitious boundaries
-      IF (ASSOCIATED(rproblem%RlevelInfo(i)%p_rdiscreteFBC)) THEN
-        CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-        DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      END IF
+      if (associated(rproblem%RlevelInfo(i)%p_rdiscreteFBC)) then
+        call bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+        deallocate(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      end if
 
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

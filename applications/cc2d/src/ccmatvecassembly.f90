@@ -54,77 +54,77 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccmatvecassembly
+module ccmatvecassembly
 
-  USE fsystem
-  USE storage
-  USE linearsystemblock
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
-  USE trilinearformevaluation
-  USE matrixio
-  USE statistics
+  use fsystem
+  use storage
+  use linearsystemblock
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
+  use trilinearformevaluation
+  use matrixio
+  use statistics
   
-  USE convection
+  use convection
     
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
 
 !<constantblock description="Identifiers for the 'coperation' input parameter of the matrix assembly routine">
 
   ! Allocate memory if necessary.
-  INTEGER(I32), PARAMETER :: CCMASM_ALLOCMEM              = 1
+  integer(I32), parameter :: CCMASM_ALLOCMEM              = 1
   
   ! Compute all matrix entries.
-  INTEGER(I32), PARAMETER :: CCMASM_COMPUTE               = 2
+  integer(I32), parameter :: CCMASM_COMPUTE               = 2
   
   ! Allocate memory and compute matrix entries.
-  INTEGER(I32), PARAMETER :: CCMASM_ALLOCANDCOMPUTE       = 3
+  integer(I32), parameter :: CCMASM_ALLOCANDCOMPUTE       = 3
   
   ! Bypass memory allocation for matrices.
-  INTEGER(I32), PARAMETER :: CMASM_QUICKREFERENCES        = 4
+  integer(I32), parameter :: CMASM_QUICKREFERENCES        = 4
   
 !</constantblock>
 
 !<constantblock description="Identifiers for the IUPWIND parameter that specifies how to set up the nonlinearity or stabilisation.">
 
   ! Streamline diffusion; configured by dupsam
-  INTEGER, PARAMETER :: CCMASM_STAB_STREAMLINEDIFF    = 0
+  integer, parameter :: CCMASM_STAB_STREAMLINEDIFF    = 0
 
   ! 1st-order upwind; configured by dupsam
-  INTEGER, PARAMETER :: CCMASM_STAB_UPWIND            = 1
+  integer, parameter :: CCMASM_STAB_UPWIND            = 1
   
   ! Edge-oriented stabilisation; configured by dupsam as 'gamma'
-  INTEGER, PARAMETER :: CCMASM_STAB_EDGEORIENTED      = 2
+  integer, parameter :: CCMASM_STAB_EDGEORIENTED      = 2
 
 !</constantblock>
 
 !<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
 
   ! Standard matrix.
-  INTEGER, PARAMETER :: CCMASM_MTP_AUTOMATIC         = 0
+  integer, parameter :: CCMASM_MTP_AUTOMATIC         = 0
   
   ! Standard matrix with decoupled velocity blocks
-  INTEGER, PARAMETER :: CCMASM_MTP_DECOUPLED         = 1
+  integer, parameter :: CCMASM_MTP_DECOUPLED         = 1
   
   ! Extended 'full-tensor' matrix with submatrices A11, A12, A21, A22, all independent from
   ! each other.
-  INTEGER, PARAMETER :: CCMASM_MTP_FULLTENSOR        = 2
+  integer, parameter :: CCMASM_MTP_FULLTENSOR        = 2
 
 !</constantblock>
 
@@ -140,105 +140,105 @@ MODULE ccmatvecassembly
   ! do apply(!) the matrix to a vector or to evaluate it.
   ! ('Evaluate a nonlinear matrix' means: Using a given FE-function $y$,
   ! assemble the linear matrix A(y).)
-  TYPE t_nonlinearCCMatrix
+  type t_nonlinearCCMatrix
   
     ! ALPHA-parameter that controls the weight of the mass matrix in the
     ! core equation. =0.0 for stationary simulations.
-    REAL(DP) :: dalpha = 0.0_DP
+    real(DP) :: dalpha = 0.0_DP
     
     ! THETA-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
-    REAL(DP) :: dtheta = 0.0_DP
+    real(DP) :: dtheta = 0.0_DP
     
     ! GAMMA-parameter that controls the weight in front of the
     ! nonlinearity N(u). =1.0 for Navier-Stokes, =0.0 for Stokes equation.
-    REAL(DP) :: dgamma = 0.0_DP
+    real(DP) :: dgamma = 0.0_DP
 
     ! ETA-parameter that switch the B-term on/off in the matrix.
-    REAL(DP) :: deta = 0.0_DP
+    real(DP) :: deta = 0.0_DP
     
     ! TAU-parameter that switch the B^T-term on/off in the matrix.
-    REAL(DP) :: dtau = 0.0_DP
+    real(DP) :: dtau = 0.0_DP
 
     ! Weight for the Newton matrix N*(u).
     ! = 0.0 deactivates the Newton part.
-    REAL(DP) :: dnewton = 0.0_DP
+    real(DP) :: dnewton = 0.0_DP
 
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
-    INTEGER :: iupwind = CCMASM_STAB_STREAMLINEDIFF
+    integer :: iupwind = CCMASM_STAB_STREAMLINEDIFF
     
     ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
     ! a nonlinearity is set up.
-    REAL(DP) :: dnu = 0.0_DP
+    real(DP) :: dnu = 0.0_DP
     
     ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
     ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
     ! 0.0 deactivates any stabilisation.
-    REAL(DP) :: dupsam = 0.0_DP
+    real(DP) :: dupsam = 0.0_DP
     
     ! MATRIX RESTRICTION: Parameter to activate matrix restriction.
     ! Can be used to generate parts of the matrices on coarse grids where the
     ! aspect ratio of the cells is large. Only applicable for $\tilde Q_1$
     ! discretisations.
     ! Standard = 0 = deactivate matrix restriction
-    INTEGER :: iadaptiveMatrices = 0
+    integer :: iadaptiveMatrices = 0
     
     ! MATRIX RESTRICTION: Threshold parameter for adaptive matrix generation
     ! of coarse grid matrices (here: maximum aspect ratio). 
     ! Only applicable if iadaptiveMatrices <> 0.
     ! Standard = 20.0
-    REAL(DP) :: dadmatthreshold = 20.0_DP
+    real(DP) :: dadmatthreshold = 20.0_DP
     
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...).
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation => NULL()
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
     ! Pointer to a template FEM matrix that defines the structure of 
     ! Laplace/Stokes/... matrices. 
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM => null()
 
     ! A template FEM matrix that defines the structure of gradient
     ! matrices (B1/B2) matrices. 
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateGradient => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient => null()
 
     ! Pointer to Stokes matrix (=nu*Laplace). 
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
 
     ! Pointer to a B1-matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1 => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
 
     ! Pointer to a B2-matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2 => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
 
     ! Pointer to a B1^T-matrix.
     ! This pointer may point to NULL(). In this case, B1^T is created
     ! by 'virtually transposing' the B1 matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixD1 => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
 
     ! Pointer to a B2-matrix.
     ! This pointer may point to NULL(). In this case, B2^T is created
     ! by 'virtually transposing' the B2 matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixD2 => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
 
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
+    type(t_matrixScalar), pointer :: p_rmatrixMass => null()
 
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_assembleMatrix (coperation,cmatrixType,rmatrix,&
+  subroutine cc_assembleMatrix (coperation,cmatrixType,rmatrix,&
       rnonlinearCCMatrix,rvector,rfineMatrix)
 
 !<description>
@@ -284,7 +284,7 @@ CONTAINS
   !  vector without copying matrix data.)
   ! In this case, the caller MUST NOT CHANGE rmatrix in any way, otherwise
   ! the original (template) matrices would be changed!
-  INTEGER(I32), INTENT(IN) :: coperation
+  integer(I32), intent(IN) :: coperation
 
   ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
   ! constants.
@@ -295,7 +295,7 @@ CONTAINS
   !
   ! If the matrix already exists and only its entries are to be computed,
   ! CCMASM_MTP_AUTOMATIC should be specified here.
-  INTEGER, INTENT(IN) :: cmatrixType
+  integer, intent(IN) :: cmatrixType
 
   ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
   ! about how to set up the matrix. 
@@ -304,18 +304,18 @@ CONTAINS
   ! must be initialised as well as p_rdiscretisation!
   ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
   ! p_rdiscretisation. Memory is allocated automatically if it's missing.
-  TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+  type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity.
-  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector
+  type(t_vectorBlock), intent(IN), optional :: rvector
 
   ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
   ! usually done when assembling matrices on multiple levels. If specified, the
   ! routine will (if possible) try to include a level-dependent stabilisation
   ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
   ! Rannacher-Turek element if cells are too anisotropic).
-  TYPE(t_matrixBlock), INTENT(IN), OPTIONAL :: rfineMatrix
+  type(t_matrixBlock), intent(IN), optional :: rfineMatrix
   
 !</input>
 
@@ -326,32 +326,32 @@ CONTAINS
   ! was specified).
   ! If initialised, the existing matrix is updated or recreated, depending on
   ! coperation.
-  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(INOUT) :: rmatrix
   
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    LOGICAL :: ballocate
+    logical :: ballocate
     
-    ballocate = .FALSE.
-    IF ((rmatrix%NEQ .LE. 0) .OR. &
-        IAND(coperation,CCMASM_ALLOCMEM) .NE. 0) THEN
-      ballocate = .TRUE.
-    END IF
+    ballocate = .false.
+    if ((rmatrix%NEQ .le. 0) .or. &
+        iand(coperation,CCMASM_ALLOCMEM) .ne. 0) then
+      ballocate = .true.
+    end if
     
     ! What should we do? Allocate memory?
-    IF (ballocate) THEN
+    if (ballocate) then
     
       ! Release the matrix if present.
-      CALL lsysbl_releaseMatrix (rmatrix)
+      call lsysbl_releaseMatrix (rmatrix)
     
       ! Create a complete new matrix. 
-      CALL allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
-    END IF   
+      call allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
+    end if   
    
-    IF (IAND(coperation,CCMASM_COMPUTE) .NE. 0) THEN
+    if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
 
       ! The system matrix looks like:
       !          
@@ -365,7 +365,7 @@ CONTAINS
       !    ( A21  A22   .  ) 
       !    (  .    .    .  )
       
-      CALL assembleVelocityBlocks (&
+      call assembleVelocityBlocks (&
           rnonlinearCCMatrix,rmatrix,rvector,1.0_DP)
       
       ! Assemble the gradient submatrices
@@ -374,8 +374,8 @@ CONTAINS
       !    ( .    .    B2  ) 
       !    ( B1^T B2^T .   ) 
       
-      CALL assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,&
-        IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+      call assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,&
+        iand(coperation,CMASM_QUICKREFERENCES) .ne. 0)
 
       ! 2.) Initialise the weights for the B-matrices
       !
@@ -398,25 +398,25 @@ CONTAINS
       ! by a Galerkin approach using constant prolongation/restriction.
       ! This helps to stabilise the solver if there are elements in the
       ! mesh with high aspect ratio.
-      IF (PRESENT(rfineMatrix)) THEN
-        CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
+      if (present(rfineMatrix)) then
+        call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
             rmatrix%RmatrixBlock(1,1), &
             rnonlinearCCMatrix%iadaptiveMatrices, rnonlinearCCMatrix%dadmatthreshold)
             
-        IF (.NOT. lsyssc_isMatrixContentShared(rmatrix%RmatrixBlock(2,2))) THEN
-          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
+        if (.not. lsyssc_isMatrixContentShared(rmatrix%RmatrixBlock(2,2))) then
+          call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
               rmatrix%RmatrixBlock(2,2), &
               rnonlinearCCMatrix%iadaptiveMatrices, rnonlinearCCMatrix%dadmatthreshold)
-        END IF
-      END IF
+        end if
+      end if
       
-    END IF
+    end if
     
-  CONTAINS
+  contains
   
     ! -----------------------------------------------------
   
-    SUBROUTINE allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
+    subroutine allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
     
     ! Allocates memory for the system matrix. rnonlinearCCMatrix provides information
     ! about the submatrices that are 'plugged into' rmatrix.
@@ -424,32 +424,32 @@ CONTAINS
 
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
     ! constants.
-    INTEGER, INTENT(IN) :: cmatrixType
+    integer, intent(IN) :: cmatrixType
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    TYPE(t_nonlinearCCMatrix), INTENT(IN), TARGET :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(IN), target :: rnonlinearCCMatrix
 
     ! A block matrix that receives the basic system matrix.
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
     
       ! local variables
-      LOGICAL :: bdecoupled, bfulltensor
+      logical :: bdecoupled, bfulltensor
 
       ! A pointer to the system matrix and the RHS/solution vectors.
-      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM
+      type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM
 
       ! A pointer to the discretisation structure with the data.
-      TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+      type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
       ! Determine the shape of the matrix
-      bdecoupled = cmatrixType .EQ. CCMASM_MTP_DECOUPLED
-      bfulltensor = cmatrixType .EQ. CCMASM_MTP_FULLTENSOR
+      bdecoupled = cmatrixType .eq. CCMASM_MTP_DECOUPLED
+      bfulltensor = cmatrixType .eq. CCMASM_MTP_FULLTENSOR
       
-      IF (cmatrixType .EQ. CCMASM_MTP_AUTOMATIC) THEN
+      if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
         ! Should we assemble Newton? If yes, we have a full-tensor matrix.
-        bfulltensor = rnonlinearCCMatrix%dnewton .NE. 0.0_DP
-      END IF
+        bfulltensor = rnonlinearCCMatrix%dnewton .ne. 0.0_DP
+      end if
     
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rnonlinearCCMatrix%p_rdiscretisation
@@ -457,22 +457,22 @@ CONTAINS
       ! Get a pointer to the template FEM matrix. If that doesn't exist,
       ! take the Stokes matrix as template.
       p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixTemplateFEM
-      IF (.NOT. ASSOCIATED(p_rmatrixTemplateFEM)) &
+      if (.not. associated(p_rmatrixTemplateFEM)) &
         p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixStokes
-      IF (.NOT. ASSOCIATED(p_rmatrixTemplateFEM)) THEN
-        CALL output_line ('Cannot set up A matrices in system matrix!', &
+      if (.not. associated(p_rmatrixTemplateFEM)) then
+        call output_line ('Cannot set up A matrices in system matrix!', &
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      IF (ASSOCIATED(p_rdiscretisation)) THEN
-        CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
-      ELSE
+      if (associated(p_rdiscretisation)) then
+        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+      else
         ! No discretisation structure; create the matrix directly as 3x3 matrix.
-        CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
-      END IF
+        call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+      end if
         
       ! Let's consider the global system in detail. The standard matrix It has 
       ! roughly the following shape:
@@ -492,34 +492,34 @@ CONTAINS
       ! The structure of the matrix is shared with the template FEM matrix.
       ! For the content, a new empty array is allocated which will later receive
       ! the entries.
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
-      IF (.NOT. bdecoupled .AND. .NOT. bfulltensor) THEN     
+      if (.not. bdecoupled .and. .not. bfulltensor) then     
            
         ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
         ! structure and the content.
-        CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
+        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
                     rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                     
-      ELSE
+      else
       
         ! Otherwise, create another copy of the template matrix.
-        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+        call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                     rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
                     
-      END IF
+      end if
       
       ! Manually change the discretisation structure of the Y-velocity 
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
-      IF (bfulltensor) THEN
+      if (bfulltensor) then
 
         ! We have a matrix in the following shape:
         !
@@ -529,10 +529,10 @@ CONTAINS
         !
         ! Create A12 and A21.
       
-        IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat &
-            .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+        if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat &
+            .eq. LSYSSC_MATRIXUNDEFINED) then
             
-          CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
+          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
             rmatrix%RmatrixBlock(1,2), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
@@ -542,14 +542,14 @@ CONTAINS
           ! CALL lsyssc_allocEmptyMatrix (&
           !     p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
             
-        END IF
+        end if
 
-        IF (rmatrix%RmatrixBlock(2,1)%cmatrixFormat &
-            .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+        if (rmatrix%RmatrixBlock(2,1)%cmatrixFormat &
+            .eq. LSYSSC_MATRIXUNDEFINED) then
             
           ! Create a new matrix A21 in memory. create a new matrix
           ! using the template FEM matrix...
-          CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
+          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
             rmatrix%RmatrixBlock(2,1), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
@@ -559,9 +559,9 @@ CONTAINS
           ! CALL lsyssc_allocEmptyMatrix (&
           !     p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
             
-        END IF
+        end if
         
-      END IF
+      end if
 
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -570,21 +570,21 @@ CONTAINS
       ! block matrix, while we create empty space for the entries. 
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
                                     rmatrix%RmatrixBlock(1,3),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
                                     rmatrix%RmatrixBlock(2,3),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       ! Now, prepare D1 and D2.
       
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
                                     rmatrix%RmatrixBlock(3,1),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
                                     rmatrix%RmatrixBlock(3,2),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
@@ -592,13 +592,13 @@ CONTAINS
       !
       ! Update the structural information of the block matrix, as we manually
       ! changed the submatrices:
-      CALL lsysbl_updateMatStrucInfo (rmatrix)
+      call lsysbl_updateMatStrucInfo (rmatrix)
         
-    END SUBROUTINE
+    end subroutine
     
     ! -----------------------------------------------------
 
-    SUBROUTINE assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rvector,dvectorWeight)
+    subroutine assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rvector,dvectorWeight)
         
     ! Assembles the velocity matrix in the block matrix rmatrix at position (1,1):
     !
@@ -607,29 +607,29 @@ CONTAINS
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
     
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    TYPE(t_vectorBlock), OPTIONAL :: rvector
+    type(t_vectorBlock), optional :: rvector
     
     ! Weight for the velocity vector; standard = -1.
-    REAL(DP), INTENT(IN), OPTIONAL :: dvectorWeight
+    real(DP), intent(IN), optional :: dvectorWeight
     
     ! local variables
-    LOGICAL :: bshared
-    INTEGER :: iupwind
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    TYPE(T_jumpStabilisation) :: rjumpStabil
-    REAL(DP) :: dvecWeight
+    logical :: bshared
+    integer :: iupwind
+    type(t_convUpwind) :: rupwind
+    type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(T_jumpStabilisation) :: rjumpStabil
+    real(DP) :: dvecWeight
     
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
-      IF (PRESENT(dvectorWeight)) dvecWeight = dvectorWeight
+      if (present(dvectorWeight)) dvecWeight = dvectorWeight
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -638,97 +638,97 @@ CONTAINS
                     
       ! Allocate memory if necessary. Normally this should not be necessary...
       ! A11:
-      IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) THEN
-        CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
-      END IF
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
+        call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
+      end if
     
       ! A22:
-      IF (.NOT. bshared) THEN
-        IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) THEN
-          CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
-        END IF
-      END IF
+      if (.not. bshared) then
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
+        end if
+      end if
 
       ! A12/ A21:
-      IF (lsysbl_isSubmatrixPresent (rmatrix,1,2)) THEN
-        IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,2))) THEN
-          CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
-        END IF
-        IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,1))) THEN
-          CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
-        END IF
-      END IF
+      if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,2))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
+        end if
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,1))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
+        end if
+      end if
     
       ! ---------------------------------------------------
       ! Plug in the mass matrix?
-      IF (rnonlinearCCMatrix%dalpha .NE. 0.0_DP) THEN
+      if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
        
         ! Allocate memory if necessary. Normally this should not be necessary...
-        IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) THEN
-          CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
-        END IF
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
+        end if
       
-        CALL lsyssc_matrixLinearComb (&
+        call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rmatrixMass       ,rnonlinearCCMatrix%dalpha,&
             rmatrix%RmatrixBlock(1,1),0.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
-            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+            .false.,.false.,.true.,.true.)
             
-        IF (.NOT. bshared) THEN
+        if (.not. bshared) then
 
           ! Allocate memory if necessary. Normally this should not be necessary...
-          IF (.NOT. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) THEN
-            CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
-          END IF
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
+          end if
 
-          CALL lsyssc_matrixLinearComb (&
+          call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rmatrixMass     ,rnonlinearCCMatrix%dalpha,&
               rmatrix%RmatrixBlock(2,2),0.0_DP,&
               rmatrix%RmatrixBlock(2,2),&
-              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-        END IF
+              .false.,.false.,.true.,.true.)
+        end if
         
-      ELSE
+      else
       
         ! Otherwise, initialise the basic matrix with 0.0
-        CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
         
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
-        END IF
+        if (.not. bshared) then
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+        end if
           
-      END IF
+      end if
       
       ! ---------------------------------------------------
       ! Plug in the Stokes matrix?
-      IF (rnonlinearCCMatrix%dtheta .NE. 0.0_DP) THEN
-        CALL lsyssc_matrixLinearComb (&
+      if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
+        call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rmatrixStokes     ,rnonlinearCCMatrix%dtheta,&
             rmatrix%RmatrixBlock(1,1),1.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
-            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+            .false.,.false.,.true.,.true.)
             
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_matrixLinearComb (&
+        if (.not. bshared) then
+          call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(2,2),1.0_DP,&
               rmatrix%RmatrixBlock(2,2),&
-              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-        END IF
-      END IF
+              .false.,.false.,.true.,.true.)
+        end if
+      end if
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      IF (rnonlinearCCMatrix%dgamma .NE. 0.0_DP) THEN
+      if (rnonlinearCCMatrix%dgamma .ne. 0.0_DP) then
       
-        IF (.NOT. PRESENT(rvector)) THEN
-          CALL output_line ('Velocity vector not present!', &
+        if (.not. present(rvector)) then
+          call output_line ('Velocity vector not present!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
-          STOP
-        END IF
+          stop
+        end if
       
-        SELECT CASE (rnonlinearCCMatrix%iupwind)
-        CASE (CCMASM_STAB_STREAMLINEDIFF)
+        select case (rnonlinearCCMatrix%iupwind)
+        case (CCMASM_STAB_STREAMLINEDIFF)
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
@@ -742,31 +742,31 @@ CONTAINS
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          IF (rnonlinearCCMatrix%dnewton .EQ. 0.0_DP) THEN
+          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
           
             ! If the submatrices A12 and A21 exist, fill them with zero.
             ! If they don't exist, we don't have to do anything.
-            IF (lsysbl_isSubmatrixPresent (rmatrix,1,2)) THEN
-              CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            END IF
+            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            end if
             
-         ELSE
+         else
 
             ! Clear A12/A21 that may receive parts of the Newton matrix
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
-         END IF
+         end if
          
           ! Call the SD method to calculate the nonlinearity.
-          CALL conv_streamlineDiffusionBlk2d (&
+          call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix)
 
-        CASE (CCMASM_STAB_UPWIND)
+        case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%dnu
@@ -777,26 +777,26 @@ CONTAINS
           ! Matrix weight
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
           
-          IF (rnonlinearCCMatrix%dnewton .NE. 0.0_DP) THEN
-            CALL output_line ('Warning: Upwind does not support assembly '&
+          if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
+            call output_line ('Warning: Upwind does not support assembly '&
                 //'of the Newton matrix!',OU_CLASS_TRACE1)
-          END IF
+          end if
           
           ! Call the upwind method to calculate the nonlinear matrix.
-          CALL conv_upwind2d (rvector, rvector, &
+          call conv_upwind2d (rvector, rvector, &
                               dvecWeight, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1)) 
                               
-          IF (.NOT. bshared) THEN
+          if (.not. bshared) then
             ! Modify also the matrix block (2,2)
-            CALL conv_upwind2d (rvector, rvector, &
+            call conv_upwind2d (rvector, rvector, &
                                 dvecWeight, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2)) 
-          END IF     
+          end if     
 
-        CASE (CCMASM_STAB_EDGEORIENTED)
+        case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -813,29 +813,29 @@ CONTAINS
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          IF (rnonlinearCCMatrix%dnewton .EQ. 0.0_DP) THEN
+          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
 
             ! If the submatrices A12 and A21 exist, fill them with zero.
             ! If they don't exist, we don't have to do anything.
-            IF (lsysbl_isSubmatrixPresent (rmatrix,1,2)) THEN
-              CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            END IF
+            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            end if
             
-          ELSE
+          else
 
             ! Clear A12/A21 that receives parts of the Newton matrix
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
             ! Activate the submatrices A12 and A21 if they aren't.
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
            
-          END IF
+          end if
          
           ! Call the SD method to calculate the nonlinearity.
-          CALL conv_streamlineDiffusionBlk2d (&
+          call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
@@ -855,29 +855,29 @@ CONTAINS
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
-          CALL conv_jumpStabilisation2d (&
+          call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))   
 
-          IF (.NOT. bshared) THEN
-            CALL conv_jumpStabilisation2d (&
+          if (.not. bshared) then
+            call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
-          END IF
+          end if
 
-        CASE DEFAULT
-          CALL output_line ('Don''t know how to set up nonlinearity!?!', &
+        case DEFAULT
+          call output_line ('Don''t know how to set up nonlinearity!?!', &
               OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
-          CALL sys_halt()
+          call sys_halt()
         
-        END SELECT
+        end select
 
-      ELSE
+      else
       
         ! That's the Stokes-case. Jump stabilisation is possible...
       
-        SELECT CASE (rnonlinearCCMatrix%iupwind)
-        CASE (CCMASM_STAB_EDGEORIENTED)
+        select case (rnonlinearCCMatrix%iupwind)
+        case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
@@ -894,28 +894,28 @@ CONTAINS
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
-          CALL conv_jumpStabilisation2d (&
+          call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))   
 
-          IF (.NOT. bshared) THEN
-            CALL conv_jumpStabilisation2d (&
+          if (.not. bshared) then
+            call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
-          END IF
+          end if
 
-        CASE DEFAULT
+        case DEFAULT
           ! No stabilisation
         
-        END SELECT
+        end select
       
-      END IF ! gamma <> 0
+      end if ! gamma <> 0
     
-    END SUBROUTINE  
+    end subroutine  
       
     ! -----------------------------------------------------
     
-    SUBROUTINE assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,bsharedMatrix)
+    subroutine assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,bsharedMatrix)
     
     ! Initialises the gradient/divergence matrices with entries from
     ! the rnonlinearCCMatrix structure.
@@ -936,10 +936,10 @@ CONTAINS
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
     ! Block matrix where the B-matrices should be set up
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
 
     ! Whether or not the matrix entries of the source gradient-matrices 
     ! should be copied in memory. 
@@ -953,30 +953,30 @@ CONTAINS
     ! If set to TRUE, the entries of the source matrices in rnonlinearCCMatrix are
     ! copied, so the caller can change rmatrix afterwards (e.g. to implement
     ! boundary conditions).
-    LOGICAL, INTENT(IN) :: bsharedMatrix
+    logical, intent(IN) :: bsharedMatrix
 
       ! local variables
-      INTEGER :: idubStructure,idubContent
+      integer :: idubStructure,idubContent
       
       ! Initialise a copy flag that tells the duplicateMatrix-routine whether to
       ! copy the entries or to create references.
-      IF (bsharedMatrix) THEN
+      if (bsharedMatrix) then
       
         idubContent = LSYSSC_DUP_SHARE
         
         ! Normally we share entries -- except for if the submatrices belong to
         ! rmatrix! To avoid memory deallocation in this case, we copy
         ! the entries.
-        IF ((.NOT. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(1,3))) .OR.&
-            (.NOT. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(2,3)))) THEN
+        if ((.not. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(1,3))) .or.&
+            (.not. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(2,3)))) then
           idubContent = LSYSSC_DUP_COPY
-        END IF
+        end if
         
-      ELSE
+      else
       
         idubContent = LSYSSC_DUP_COPY
         
-      END IF
+      end if
       
       idubStructure = LSYSSC_DUP_SHARE
       
@@ -1002,34 +1002,34 @@ CONTAINS
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
                                     rmatrix%RmatrixBlock(1,3),&
                                     idubStructure,idubContent)
 
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
                                     rmatrix%RmatrixBlock(2,3),&
                                     idubStructure,idubContent)
       
       ! Now, prepare B1^T and B2^T. These matrices always share
       ! their data with the 'template' matrices as the data in these
       ! matrices is usually not overwritten by boundary conditions...
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
                                     rmatrix%RmatrixBlock(3,1),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
                                     rmatrix%RmatrixBlock(3,2),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                                     
-    END SUBROUTINE
+    end subroutine
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,dcx,dcd,ry)
+  subroutine cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,dcx,dcd,ry)
 
 !<description>
   ! This routine performs a matrix-vector multiplication with a nonlinear
@@ -1053,41 +1053,41 @@ CONTAINS
   ! or set the p_rmatrixTemplateXXXX as well as p_rdiscretisation to
   ! appropriate values. This is necessary for exploiting then structure
   ! of the matrix.
-  TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+  type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
   ! This vector specifies the 'x' that is multiplied to the matrix.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rx
+  type(t_vectorBlock), intent(IN), target :: rx
 
   ! Multiplication factor in front of the term 'A(ry) rx'.
-  REAL(DP), INTENT(IN) :: dcx
+  real(DP), intent(IN) :: dcx
 
   ! Multiplication factor in front of the term 'rd'.
-  REAL(DP), INTENT(IN) :: dcd
+  real(DP), intent(IN) :: dcd
 
   ! OPTIONAL: Point where to evaluate the nonlinearity. If not specified,
   ! ry=rx is assumed.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: ry
+  type(t_vectorBlock), intent(IN), target, optional :: ry
 
 !</input>
 
 !<inputoutput>
   ! Destination vector. cx*A(ry)*rx is subtracted from this vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+  type(t_vectorBlock), intent(INOUT) :: rd
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    TYPE(t_vectorBlock), POINTER :: p_ry
-    TYPE(t_matrixBlock) :: rmatrix
+    type(t_vectorBlock), pointer :: p_ry
+    type(t_matrixBlock) :: rmatrix
     
     p_ry => rx
-    IF (PRESENT(ry)) p_ry => ry
+    if (present(ry)) p_ry => ry
     
     ! Probably weight the input vector.
-    IF (dcd .NE. 1.0_DP) THEN
-      CALL lsysbl_scaleVector (rd,dcd)
-    END IF
+    if (dcd .ne. 1.0_DP) then
+      call lsysbl_scaleVector (rd,dcd)
+    end if
     
     ! The system matrix looks like:
     !          
@@ -1096,36 +1096,36 @@ CONTAINS
     !    ( B1^T B2^T .   ) 
     ! 
     ! Create a temporary matrix that covers this structure.
-    CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+    call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
     
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
         rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
         rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
-    IF (rnonlinearCCMatrix%dnewton .NE. 0.0_DP) THEN
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+    if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
           rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
           rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    END IF
+    end if
     
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1,&
         rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2,&
         rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1,&
         rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
         rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
-    CALL lsysbl_updateMatStrucInfo (rmatrix)
+    call lsysbl_updateMatStrucInfo (rmatrix)
     
     ! In the first step, we assemble the defect that arises in the velocity 
     ! components. This is characterised by the following submatrix:
@@ -1136,7 +1136,7 @@ CONTAINS
     !
     ! assembleVelocityDefect handles exactly these submatices.
 
-    CALL assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx)
+    call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx)
     
     ! Now, we treat all the remaining blocks. Let's see what is missing:
     !
@@ -1146,10 +1146,10 @@ CONTAINS
 
     ! To build the appropriate defect, we firat remove the velocity blocks:
     
-    CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,1))
-    CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))
-    CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,1))
-    CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,2))
+    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,1))
+    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))
+    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,1))
+    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,2))
 
     ! Initialise the weights for the B/B^T matrices
     rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
@@ -1164,14 +1164,14 @@ CONTAINS
     ! Note that no time step or whatever is included here; everything
     ! is initialised with the multiplication factors in the submatrices
     ! from above!
-    CALL lsysbl_blockMatVec (rmatrix, rx, rd, dcx, 1.0_DP)
+    call lsysbl_blockMatVec (rmatrix, rx, rd, dcx, 1.0_DP)
     
     ! Release the temporary matrix, we don't need it anymore.
-    CALL lsysbl_releaseMatrix (rmatrix)
+    call lsysbl_releaseMatrix (rmatrix)
 
-  CONTAINS
+  contains
 
-    SUBROUTINE assembleVelocityDefect (rnonlinearCCMatrix,&
+    subroutine assembleVelocityDefect (rnonlinearCCMatrix,&
         rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight)
         
     ! Assembles the velocity defect in the block matrix rmatrix at position
@@ -1189,72 +1189,72 @@ CONTAINS
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
     ! Reference to the system matrix. Only the structure of the matrix
     ! is used to reconstruct the structure of the discretisation.
     ! The content of the matrix is not changed or used.
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
     
     ! Solution vector.
-    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    type(t_vectorBlock), intent(IN) :: rvector
     
     ! On entry: RHS vector.
     ! Is overwritten by the defect vector in the velocity subsystem.
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
+    type(t_vectorBlock), intent(INOUT) :: rdefect
     
     ! Weight for the velocity vector; usually = 1.0
-    REAL(DP), INTENT(IN) :: dvectorWeight
+    real(DP), intent(IN) :: dvectorWeight
     
     ! Velocity vector field that should be used for the assembly of the
     ! nonlinearity. The first two blocks in that block vector are
     ! used as velocity field.
-    TYPE(t_vectorBlock), INTENT(IN) :: rvelocityVector
+    type(t_vectorBlock), intent(IN) :: rvelocityVector
 
     ! local variables
-    LOGICAL :: bshared
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    TYPE(T_jumpStabilisation) :: rjumpStabil
+    logical :: bshared
+    type(t_convUpwind) :: rupwind
+    type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(T_jumpStabilisation) :: rjumpStabil
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
-                    rmatrix%RmatrixBlock(2,2)) .OR.&
-                (.NOT. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(1,1)) .AND.&
-                 .NOT. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(2,2)))
+                    rmatrix%RmatrixBlock(2,2)) .or.&
+                (.not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(1,1)) .and.&
+                 .not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(2,2)))
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
-      IF (rnonlinearCCMatrix%dalpha .NE. 0.0_DP) THEN
-        CALL lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+      if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        CALL lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
-      END IF
+      end if
       
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
-      IF (rnonlinearCCMatrix%dtheta .NE. 0.0_DP) THEN
-        CALL lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+      if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-        CALL lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
-      END IF
+      end if
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      IF (rnonlinearCCMatrix%dgamma .NE. 0.0_DP) THEN
+      if (rnonlinearCCMatrix%dgamma .ne. 0.0_DP) then
       
         ! Type of stablilisation?
-        SELECT CASE (rnonlinearCCMatrix%iupwind)
-        CASE (0)
+        select case (rnonlinearCCMatrix%iupwind)
+        case (0)
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
@@ -1274,13 +1274,13 @@ CONTAINS
           ! As velocity field, we specify rvelocityVector here. The first two
           ! subvectors are used as velocity field.
           
-          CALL conv_streamlineDiffusionBlk2d (&
+          call conv_streamlineDiffusionBlk2d (&
                               rvelocityVector, rvelocityVector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rsolution=rvector,rdefect=rdefect)
                               
-        CASE (1)
+        case (1)
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%dnu
@@ -1292,18 +1292,18 @@ CONTAINS
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
           
           ! Call the upwind method to calculate the nonlinear defect.
-          CALL conv_upwind2d (rvector, rvector, &
+          call conv_upwind2d (rvector, rvector, &
                               dvectorWeight, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rvector,rdefect) 
                               
-          IF (.NOT. bshared) THEN
-            CALL output_line ('Upwind does not support independent A11/A22!', &
+          if (.not. bshared) then
+            call output_line ('Upwind does not support independent A11/A22!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-            CALL sys_halt()
-          END IF     
+            call sys_halt()
+          end if     
 
-        CASE (2)
+        case (2)
           ! Jump stabilisation.
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -1320,7 +1320,7 @@ CONTAINS
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          IF (rnonlinearCCMatrix%dnewton .EQ. 0.0_DP) THEN
+          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
 
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
             ! to 0.0. Whatever the content is (if there's content at all),
@@ -1329,20 +1329,20 @@ CONTAINS
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
             
-          ELSE
+          else
 
             ! Clear A12/A21 that receives parts of the Newton matrix
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
             ! Activate the submatrices A12 and A21 if they aren't.
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
            
-          END IF
+          end if
          
           ! Call the SD method to calculate the nonlinearity.
-          CALL conv_streamlineDiffusionBlk2d (&
+          call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
@@ -1362,32 +1362,32 @@ CONTAINS
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
-          CALL conv_jumpStabilisation2d (&
+          call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),&
                               rsolution=rvector,rdefect=rdefect)   
 
-          IF (.NOT. bshared) THEN
-            CALL output_line (&
+          if (.not. bshared) then
+            call output_line (&
                 'Edge oriented stabilisation does not support independent A11/A22!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-        CASE DEFAULT
-          CALL output_line ('Don''t know how to set up nonlinearity!?!', &
+        case DEFAULT
+          call output_line ('Don''t know how to set up nonlinearity!?!', &
               OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-          CALL sys_halt()
+          call sys_halt()
         
-        END SELECT
+        end select
       
-      ELSE
+      else
       
         ! That's the Stokes-case. Jump stabilisation is possible...
         !
         ! Type of stablilisation?
-        SELECT CASE (rnonlinearCCMatrix%iupwind)
-        CASE (2)
+        select case (rnonlinearCCMatrix%iupwind)
+        case (2)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
@@ -1404,20 +1404,20 @@ CONTAINS
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
-          CALL conv_jumpStabilisation2d (&
+          call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),&
                               rsolution=rvector,rdefect=rdefect)   
 
-        CASE DEFAULT
+        case DEFAULT
           ! No stabilisation
         
-        END SELECT
+        end select
       
-      END IF ! gamma <> 0
+      end if ! gamma <> 0
     
-    END SUBROUTINE
+    end subroutine
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

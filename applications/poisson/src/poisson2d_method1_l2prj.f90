@@ -15,77 +15,77 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson2d_method1_l2prj
+module poisson2d_method1_l2prj
 
-  USE fsystem
-  USE genoutput
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE ucd
-  USE pprocerror
-  USE genoutput
-  USE stdoperators
-  USE multileveloperators
+  use fsystem
+  use genoutput
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use ucd
+  use pprocerror
+  use genoutput
+  use stdoperators
+  use multileveloperators
     
-  USE poisson2d_callback
+  use poisson2d_callback
   
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
 
-  TYPE t_level
+  type t_level
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
-    TYPE(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation
     
     ! A system matrix for that specific level. The matrix will receive the 
     ! discrete Laplace operator.
-    TYPE(t_matrixBlock) :: rmatrix
+    type(t_matrixBlock) :: rmatrix
     
     ! A mass matrix for that specific level. This matrix is needed by the
     ! L2-projection multi-level operators and is defined on each level except
     ! for the coarse-most one.
-    TYPE(t_matrixScalar) :: rmatrixMass
+    type(t_matrixScalar) :: rmatrixMass
     
     ! A 2-Level-Mass matrix for that specific level. This matrix is needed by
     ! L2-projection multi-level operators and is defined on each level except
     ! for the coarse-most one.
-    TYPE(t_matrixScalar) :: rmatrix2Lvl
+    type(t_matrixScalar) :: rmatrix2Lvl
 
     ! An interlevel-projection structure for that specific level.
-    TYPE(t_interlevelProjectionBlock) :: rprojection
+    type(t_interlevelProjectionBlock) :: rprojection
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC) :: rdiscreteBC
+    type(t_discreteBC) :: rdiscreteBC
   
-  END TYPE
+  end type
   
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE poisson2d_1_l2prj
+  subroutine poisson2d_1_l2prj
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -111,68 +111,68 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), TARGET, ALLOCATABLE :: Rlevels
+    type(t_level), dimension(:), target, allocatable :: Rlevels
 
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
     ! A couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A variable that is used to specify a region on the boundary.
-    TYPE(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    type(t_matrixBlock), dimension(:), allocatable :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! One level of multigrid
-    TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
+    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
     
     ! NLMIN receives the level of the coarse grid.
-    INTEGER :: NLMIN
+    integer :: NLMIN
 
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror
+    integer :: ierror
     
     ! One spatial discretisation for the L2-projection of the solution
-    TYPE(t_spatialDiscretisation) :: rdiscrQ1
+    type(t_spatialDiscretisation) :: rdiscrQ1
     
     ! Two scalar matrices for the L2-projection
-    TYPE(t_matrixScalar) :: rmatrixMassPrj, rlumpedMassPrj
+    type(t_matrixScalar) :: rmatrixMassPrj, rlumpedMassPrj
     
     ! Three scalar vectors for the L2-projection
-    TYPE(t_vectorScalar) :: rvecSolQ1, rvecRhsQ1, rvecDefQ1
+    type(t_vectorScalar) :: rvecSolQ1, rvecRhsQ1, rvecDefQ1
     
     ! A real for the defect-correction-loop
-    REAL(DP) :: dres
+    real(DP) :: dres
     
     ! Error of FE function to reference function
-    REAL(DP) :: derror
+    real(DP) :: derror
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata
 
     ! A simple counter variable
-    INTEGER :: i
+    integer :: i
     
     ! Ok, let's start. 
     !
@@ -181,79 +181,79 @@ CONTAINS
     NLMAX = 6
     
     ! Allocate memory for all levels
-    ALLOCATE(Rlevels(NLMIN:NLMAX))
+    allocate(Rlevels(NLMIN:NLMAX))
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation into our coarse level.
-    CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
+    call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
                              './pre/QUAD.tri', rboundary)
     
     ! Refine it.
-    CALL tria_quickRefine2LevelOrdering (NLMIN-1,&
+    call tria_quickRefine2LevelOrdering (NLMIN-1,&
         Rlevels(NLMIN)%rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs
     ! from a triangulation.
-    CALL tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
+    call tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
         rboundary)
     
     ! Now refine the grid for the fine levels.
-    DO i = NLMIN+1, NLMAX
+    do i = NLMIN+1, NLMAX
 
       ! Refine the grid using the 2-Level-Ordering algorithm
-      CALL tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
+      call tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
           Rlevels(i)%rtriangulation,rboundary)
       
       ! Create a standard mesh
-      CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
+      call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
           rboundary)
     
-    END DO
+    end do
 
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     ! Do this for all levels
-    DO i = NLMIN, NLMAX
-      CALL spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
+    do i = NLMIN, NLMAX
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
                                    Rlevels(i)%rtriangulation, rboundary)
-    END DO
+    end do
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    DO i = NLMIN, NLMAX
-      CALL spdiscr_initDiscr_simple (&
+    do i = NLMIN, NLMAX
+      call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
           EL_EB30,CUB_G3X3,Rlevels(i)%rtriangulation, rboundary)
-    END DO
+    end do
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    DO i = NLMIN, NLMAX
+    do i = NLMIN, NLMAX
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (&
+      call lsysbl_createMatBlockByDiscr (&
           Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
-      CALL bilf_createMatrixStructure ( &
+      call bilf_createMatrixStructure ( &
            Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
       
       ! Update the structural information of the block matrix, as we manually
       ! changed one of the submatrices:
-      CALL lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
+      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
 
       ! And now to the entries of the matrix. For assembling of the entries,
       ! we need a bilinear form, which first has to be set up manually.
@@ -266,8 +266,8 @@ CONTAINS
       rform%Idescriptors(2,2) = DER_DERIV_Y
 
       ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = 1.0 
       rform%Dcoefficients(2)  = 1.0 
 
@@ -277,15 +277,15 @@ CONTAINS
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical
       ! data.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+      call bilf_buildMatrixScalar (rform,.true.,&
            Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
     
-    END DO
+    end do
       
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:
-    CALL lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .FALSE.)
+    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
 
     ! The vector structure is ready but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
@@ -299,36 +299,36 @@ CONTAINS
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
-    CALL linf_buildVectorScalar (&
+    call linf_buildVectorScalar (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-        rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
+        rlinform,.true.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
     
-    DO i = NLMIN, NLMAX
+    do i = NLMIN, NLMAX
     
       ! Initialise the discrete BC structure
-      CALL bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
+      call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
       ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
-      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
       ! Now to the edge 2 of boundary component 1 the domain. 
-      CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
@@ -337,9 +337,9 @@ CONTAINS
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
   
       ! Also implement the boundary conditions into the matrix.
-      CALL matfil_discreteBC (Rlevels(i)%rmatrix)
+      call matfil_discreteBC (Rlevels(i)%rmatrix)
       
-    END DO
+    end do
 
     ! Our right-hand-side also needs to know the boundary conditions.
     rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
@@ -348,8 +348,8 @@ CONTAINS
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
     ! Fill the solution vector with 0:
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -357,8 +357,8 @@ CONTAINS
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    CALL vecfil_discreteBCrhs (rrhsBlock)
-    CALL vecfil_discreteBCsol (rvectorBlock)
+    call vecfil_discreteBCrhs (rrhsBlock)
+    call vecfil_discreteBCsol (rvectorBlock)
     
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
@@ -373,46 +373,46 @@ CONTAINS
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Now we need to set up the (2-Level) mass matrices for all levels except
     ! for the coarse-most one.
-    DO i = NLMIN+1, NLMAX
+    do i = NLMIN+1, NLMAX
     
       ! Since the structure of the mass matrix is equal to the one of the
       ! Laplace matrix on the current level, we will simply create a shared
       ! copy of the structure.
-      CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
           Rlevels(i)%rmatrixMass, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       
       ! Assemble the mass matrix
-      CALL stdop_assembleSimpleMatrix(Rlevels(i)%rmatrixMass,&
+      call stdop_assembleSimpleMatrix(Rlevels(i)%rmatrixMass,&
                                       DER_FUNC, DER_FUNC)
 
       ! Now create the matrix structure of the 2-Level mass matrix.
-      CALL mlop_create2LvlMatrixStruct(&
+      call mlop_create2LvlMatrixStruct(&
           Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlevels(i)%rmatrix2Lvl)
       
       ! And assemble the entries of the 2-Level mass matrix:
-      CALL mlop_build2LvlMassMatrix (&
+      call mlop_build2LvlMassMatrix (&
           Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          .TRUE., Rlevels(i)%rmatrix2Lvl)
+          .true., Rlevels(i)%rmatrix2Lvl)
       
       ! Now set up an interlevel projecton structure for this level
       ! based on the Laplace matrix on this level.
-      CALL mlprj_initProjectionMat (Rlevels(i)%rprojection,&
+      call mlprj_initProjectionMat (Rlevels(i)%rprojection,&
                                     Rlevels(i)%rmatrix)
       
       ! And initialise the L2-projection
-      CALL mlprj_initL2Projection (&
+      call mlprj_initL2Projection (&
           Rlevels(i)%rprojection%RscalarProjection(1,1),&
           Rlevels(i)%rmatrix2Lvl, Rlevels(i)%rmatrixMass)
       
       Rlevels(i)%rprojection%RscalarProjection(1,1)%depsL2 = 1e-20_DP
       
-    END DO
+    end do
 
     ! And set up an interlevel projecton structure for the coarse-most level.
-    CALL mlprj_initProjectionMat (Rlevels(NLMIN)%rprojection,&
+    call mlprj_initProjectionMat (Rlevels(NLMIN)%rprojection,&
                                   Rlevels(NLMIN)%rmatrix)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -425,30 +425,30 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
     ! Set up a coarse grid solver.
-    CALL linsol_initUMFPACK4 (p_rcoarsegridSolver)
+    call linsol_initUMFPACK4 (p_rcoarsegridSolver)
 
     ! Add the coarse grid level.
-    CALL linsol_addMultiGridLevel(p_rlevelInfo, p_rsolverNode,&
-        Rlevels(NLMIN)%rprojection, NULL(), NULL(), p_rcoarseGridSolver)
+    call linsol_addMultiGridLevel(p_rlevelInfo, p_rsolverNode,&
+        Rlevels(NLMIN)%rprojection, null(), null(), p_rcoarseGridSolver)
 
     ! Now set up the other levels...
-    DO i = NLMIN+1, NLMAX
+    do i = NLMIN+1, NLMAX
     
       ! Create a Jacobi smoother
-      CALL linsol_initJacobi(p_rsmoother)
+      call linsol_initJacobi(p_rsmoother)
 
       ! We will use 4 smoothing steps with damping parameter 0.7
-      CALL linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
+      call linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
 
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      CALL linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,&
-          Rlevels(i)%rprojection, p_rsmoother, p_rsmoother, NULL())
+      call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,&
+          Rlevels(i)%rprojection, p_rsmoother, p_rsmoother, null())
       
-    END DO
+    end do
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -467,53 +467,53 @@ CONTAINS
     ! on all levels according to that array. Note that this does not
     ! allocate new memory, we create only 'links' to existing matrices
     ! into Rmatrices(:)!
-    ALLOCATE(Rmatrices(NLMIN:NLMAX))
-    DO i = NLMIN, NLMAX
-      CALL lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
+    allocate(Rmatrices(NLMIN:NLMAX))
+    do i = NLMIN, NLMAX
+      call lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    END DO
+    end do
     
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
+    call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
     ! We can release Rmatrices immediately -- as long as we don't
     ! release Rlevels(i)%rmatrix!
-    DO i=NLMIN,NLMAX
-      CALL lsysbl_releaseMatrix (Rmatrices(i))
-    END DO
-    DEALLOCATE(Rmatrices)
+    do i=NLMIN,NLMAX
+      call lsysbl_releaseMatrix (Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    CALL linsol_initData (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
       
     ! That's it, rvectorBlock now contains our solution.
 
     ! Calculate the error to the reference function.
-    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
+    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
                        getReferenceFunction_2D)
-    CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
+    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
                        getReferenceFunction_2D)
-    CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Perform L2-projection of solution into Q1 space
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    CALL output_lbrk()
-    CALL output_line('Performing L2-projection of solution to Q1 space')
-    CALL output_lbrk()
+    call output_lbrk()
+    call output_line('Performing L2-projection of solution to Q1 space')
+    call output_lbrk()
 
     ! We now have the solution vector, but unfortunately, it's a Q1~ solution
     ! vector and what we need are the function values in the vertices of the
@@ -560,35 +560,35 @@ CONTAINS
     ! Q1 solution v_h...
     !
     ! The first thing that we need is a Q1 discretisation on the fine mesh.
-    CALL spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, CUB_G3X3, &
+    call spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, CUB_G3X3, &
                                   Rlevels(NLMAX)%rtriangulation, rboundary)
 
     ! Now create the the matrix structure of N.
     ! The trial space is EB30 and the test space is Q1:
-    CALL bilf_createMatrixStructure (&
+    call bilf_createMatrixStructure (&
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         LSYSSC_MATRIX9, rmatrixMassPrj, rdiscrQ1)
 
     ! And assemble the mass matrix entries of N:
-    CALL stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
+    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
 
     ! We need to create the Q1 coefficient vector y:
-    CALL lsyssc_createVecByDiscr (rdiscrQ1, rvecSolQ1, .TRUE.)
+    call lsyssc_createVecByDiscr (rdiscrQ1, rvecSolQ1, .true.)
     
     ! And we also need a Q1 rhs vector r which recieves N*x
-    CALL lsyssc_createVecByDiscr (rdiscrQ1, rvecRhsQ1, .FALSE.)
+    call lsyssc_createVecByDiscr (rdiscrQ1, rvecRhsQ1, .false.)
     
     ! Calculate r := N*x
-    CALL lsyssc_scalarMatVec(rmatrixMassPrj, rvectorBlock%rvectorBlock(1),&
+    call lsyssc_scalarMatVec(rmatrixMassPrj, rvectorBlock%rvectorBlock(1),&
                              rvecRhsQ1, 1.0_DP, 0.0_DP)
     
     ! At this point we won't need the matrix N anymore, as we just needed
     ! it to get a rhs vector for our Q1 mass system - so we'll release it now.
-    CALL lsyssc_releaseMatrix(rmatrixMassPrj)
+    call lsyssc_releaseMatrix(rmatrixMassPrj)
 
     ! As rmatrixMassPrj is free now, we will use it to store M
-    CALL bilf_createMatrixStructure (rdiscrQ1,LSYSSC_MATRIX9,rmatrixMassPrj)
-    CALL stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
+    call bilf_createMatrixStructure (rdiscrQ1,LSYSSC_MATRIX9,rmatrixMassPrj)
+    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
     
     ! We now have assembled the Q1 mass matrix M, created a Q1 solution
     ! vector y and calculated the right-hand-side vector r := N*x.
@@ -619,129 +619,129 @@ CONTAINS
     ! So let's create a "lumped" mass matrix first...
     
     ! Create a copy of M
-    CALL lsyssc_duplicateMatrix(rmatrixMassPrj, rlumpedMassPrj,&
+    call lsyssc_duplicateMatrix(rmatrixMassPrj, rlumpedMassPrj,&
                                 LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
     
     ! And lump the copy to get L
-    CALL lsyssc_lumpMatrixScalar(rlumpedMassPrj, LSYSSC_LUMP_DIAG)
+    call lsyssc_lumpMatrixScalar(rlumpedMassPrj, LSYSSC_LUMP_DIAG)
     
     ! Furthermore we need a defect vector
-    CALL lsyssc_createVecIndMat(rmatrixMassPrj, rvecDefQ1)
+    call lsyssc_createVecIndMat(rmatrixMassPrj, rvecDefQ1)
     
     ! And let's start the Defect-Correction-Loop
-    DO i = 1, 50
+    do i = 1, 50
     
       ! Calculate current defect d_i := r - M * y_i
-      CALL lsyssc_copyVector(rvecRhsQ1, rvecDefQ1)
-      CALL lsyssc_scalarMatVec(rmatrixMassPrj, rvecSolQ1, rvecDefQ1,&
+      call lsyssc_copyVector(rvecRhsQ1, rvecDefQ1)
+      call lsyssc_scalarMatVec(rmatrixMassPrj, rvecSolQ1, rvecDefQ1,&
                                -1.0_DP, 1.0_DP)
       
       ! Calculate the current residual = || d_i ||_2
       dres = lsyssc_vectorNorm(rvecDefQ1, LINALG_NORML2)
       
       ! Print the residual to screen
-      CALL output_line('L2prj: Iteration ' // TRIM(sys_siL(i,10)) // &
-                       ',  !!RES!! = ' // TRIM(sys_sdEL(dres,15)))
+      call output_line('L2prj: Iteration ' // trim(sys_siL(i,10)) // &
+                       ',  !!RES!! = ' // trim(sys_sdEL(dres,15)))
       
       ! Is our L2-projection good enough?
-      IF (dres .LE. 1e-7_DP) EXIT
+      if (dres .le. 1e-7_DP) exit
       
       ! Otherwise multiply the defect by the inverse of L
-      CALL lsyssc_invertedDiagMatVec(rlumpedMassPrj, rvecDefQ1, 1.0_DP,&
+      call lsyssc_invertedDiagMatVec(rlumpedMassPrj, rvecDefQ1, 1.0_DP,&
                                      rvecDefQ1)
       
       ! And add it onto y_i
-      CALL lsyssc_vectorLinearComb(rvecDefQ1, rvecSolQ1, 1.0_DP, 1.0_DP)
+      call lsyssc_vectorLinearComb(rvecDefQ1, rvecSolQ1, 1.0_DP, 1.0_DP)
     
-    END DO
+    end do
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! L2-projection of solution into Q1 space done
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
         Rlevels(NLMAX)%rtriangulation,'gmv/u2d_1_l2prj.gmv')
     
     ! Add our Q1-solution to the UCD exporter:
-    CALL lsyssc_getbase_double (rvecSolQ1,p_Ddata)
-    CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rvecSolQ1,p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !
     ! Release the three Q1 vectors
-    CALL lsyssc_releaseVector(rvecDefQ1)
-    CALL lsyssc_releaseVector(rvecRhsQ1)
-    CALL lsyssc_releaseVector(rvecSolQ1)
+    call lsyssc_releaseVector(rvecDefQ1)
+    call lsyssc_releaseVector(rvecRhsQ1)
+    call lsyssc_releaseVector(rvecSolQ1)
     
     ! Release the Q1 mass matrix and its lumped version
-    CALL lsyssc_releaseMatrix(rlumpedMassPrj)
-    CALL lsyssc_releaseMatrix(rmatrixMassPrj)
+    call lsyssc_releaseMatrix(rlumpedMassPrj)
+    call lsyssc_releaseMatrix(rmatrixMassPrj)
     
     ! And release the Q1 discretisation
-    CALL spdiscr_releaseDiscr(rdiscrQ1)
+    call spdiscr_releaseDiscr(rdiscrQ1)
     
     ! That was all we used in the L2-projection of the solution and
     ! that has not been already released before.
     
     ! Release solver data and structure
-    CALL linsol_doneData (p_rsolverNode)
-    CALL linsol_doneStructure (p_rsolverNode)
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
 
     ! Release the solver node and all subnodes attached to it (if at all):
-    CALL linsol_releaseSolver (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the L2-projection
-    DO i = NLMAX, NLMIN+1, -1
+    do i = NLMAX, NLMIN+1, -1
     
       ! Release the projection structure itself
-      CALL mlprj_doneProjection(Rlevels(i)%rprojection)
+      call mlprj_doneProjection(Rlevels(i)%rprojection)
       
       ! Release the 2-Level-Mass matrix
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrix2Lvl)
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrix2Lvl)
       
       ! Release the mass matrix
-      CALL lsyssc_releaseMatrix (Rlevels(i)%rmatrixMass)
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatrixMass)
 
-    END DO
+    end do
     
     ! Release the projection structure on the coarse mesh
-    CALL mlprj_doneProjection(Rlevels(NLMIN)%rprojection)
+    call mlprj_doneProjection(Rlevels(NLMIN)%rprojection)
         
     ! Release the block matrix/vectors
-    CALL lsysbl_releaseVector (rtempBlock)
-    CALL lsysbl_releaseVector (rvectorBlock)
-    CALL lsysbl_releaseVector (rrhsBlock)
-    DO i = NLMAX, NLMIN, -1
-      CALL lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
-    END DO
+    call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rvectorBlock)
+    call lsysbl_releaseVector (rrhsBlock)
+    do i = NLMAX, NLMIN, -1
+      call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
+    end do
 
     ! Release our discrete version of the boundary conditions
-    DO i = NLMAX, NLMIN, -1
-      CALL bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
-    END DO
+    do i = NLMAX, NLMIN, -1
+      call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
+    end do
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    DO i = NLMAX, NLMIN, -1
-      CALL spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
-    END DO
+    do i = NLMAX, NLMIN, -1
+      call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
+    end do
     
     ! Release the triangulation. 
-    DO i = NLMAX, NLMIN, -1
-      CALL tria_done (Rlevels(i)%rtriangulation)
-    END DO
+    do i = NLMAX, NLMIN, -1
+      call tria_done (Rlevels(i)%rtriangulation)
+    end do
     
-    DEALLOCATE(Rlevels)
+    deallocate(Rlevels)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (rboundary)
+    call boundary_release (rboundary)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

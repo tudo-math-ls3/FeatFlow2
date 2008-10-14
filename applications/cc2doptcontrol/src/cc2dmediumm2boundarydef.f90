@@ -21,32 +21,32 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2boundarydef
+module cc2dmediumm2boundarydef
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
@@ -54,28 +54,28 @@ MODULE cc2dmediumm2boundarydef
 
   ! Section name of the section saving the boundary expressions, i.e. the
   ! expressions that are to be evaluated in each point on the boundary.
-  CHARACTER(LEN=COLLCT_MLSECTION), PARAMETER :: SEC_SBDEXPRESSIONS = 'BDEXPRESSIONS'
+  character(LEN=COLLCT_MLSECTION), parameter :: SEC_SBDEXPRESSIONS = 'BDEXPRESSIONS'
 
   ! Name of the parser object for boundary value expressions
-  CHARACTER(LEN=COLLCT_MLSECTION), PARAMETER :: BDC_BDPARSER = 'BDEXPRPARSER'
+  character(LEN=COLLCT_MLSECTION), parameter :: BDC_BDPARSER = 'BDEXPRPARSER'
 !</constantblock>
 
 !<constantblock description="The different types of boundary conditions supported by this module">
 
   ! User defined expression, evaluated by calling the callback routine
-  INTEGER, PARAMETER :: BDC_USERDEF = -2
+  integer, parameter :: BDC_USERDEF = -2
   
   ! Text expression, evaluated by parsing
-  INTEGER, PARAMETER :: BDC_EXPRESSION = -1
+  integer, parameter :: BDC_EXPRESSION = -1
   
   ! Fixed double precision value 
-  INTEGER, PARAMETER :: BDC_VALDOUBLE = 0
+  integer, parameter :: BDC_VALDOUBLE = 0
 
   ! Fixed integer value 
-  INTEGER, PARAMETER :: BDC_VALINT    = 1
+  integer, parameter :: BDC_VALINT    = 1
 
   ! Parabolic profile with prescribed maximum value
-  INTEGER, PARAMETER :: BDC_VALPARPROFILE = 2
+  integer, parameter :: BDC_VALPARPROFILE = 2
 !</constantblock>
 
 !<constantblock description="Variables in expressions">
@@ -91,20 +91,20 @@ MODULE cc2dmediumm2boundarydef
   !
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
-  CHARACTER(LEN=10), DIMENSION(7), PARAMETER :: SEC_EXPRVARIABLES = &
+  character(LEN=10), dimension(7), parameter :: SEC_EXPRVARIABLES = &
     (/'X    ','Y    ','Z    ','L    ','R    ','S    ','TIME '/)
 
 !</constantblock>
 
 !</constants>
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_assembleBDconditions (rproblem,rdiscretisation,rdiscreteBC,rcollection)
+  subroutine cc_assembleBDconditions (rproblem,rdiscretisation,rdiscreteBC,rcollection)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -120,54 +120,54 @@ CONTAINS
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
+  type(t_collection), intent(INOUT), target :: rcollection
   
   ! A t_discreteBC structure that receives a discretised version
   ! of the boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  TYPE(t_discreteBC), INTENT(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bNeumann
-    INTEGER :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds
-    INTEGER :: ibctyp,icount,iexptyp
-    INTEGER, DIMENSION(2) :: IminIndex,imaxIndex
-    INTEGER, DIMENSION(NDIM2D) :: IvelComp
-    REAL(DP) :: dvalue,dpar1,dpar2
-    CHARACTER(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2,sbdex3,sbdex4
-    CHARACTER(LEN=PARLST_MLNAME) :: cname
-    INTEGER, DIMENSION(NDIM2D) :: IvelEqns
-    TYPE(t_collection) :: rlocalCollection
+    logical :: bNeumann
+    integer :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds
+    integer :: ibctyp,icount,iexptyp
+    integer, dimension(2) :: IminIndex,imaxIndex
+    integer, dimension(NDIM2D) :: IvelComp
+    real(DP) :: dvalue,dpar1,dpar2
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2,sbdex3,sbdex4
+    character(LEN=PARLST_MLNAME) :: cname
+    integer, dimension(NDIM2D) :: IvelEqns
+    type(t_collection) :: rlocalCollection
     
     ! A local collection we use for storing named parameters during the
     ! parsing process.
-    TYPE(t_collection) :: rcoll
+    type(t_collection) :: rcoll
     
     ! Triangulation on currently highest level.
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation
 
     ! A set of variables describing the analytic boundary conditions.    
-    TYPE(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion
     
     ! A pointer to the domain
-    TYPE(t_boundary), POINTER :: p_rboundary
+    type(t_boundary), pointer :: p_rboundary
     
     ! A pointer to the section with the expressions and the boundary conditions
-    TYPE(t_parlstSection), POINTER :: p_rsection,p_rbdcond
+    type(t_parlstSection), pointer :: p_rsection,p_rbdcond
     
     ! A compiled expression for evaluation at runtime
-    TYPE(t_fparser), TARGET :: rparser
+    type(t_fparser), target :: rparser
     
     ! Get the domain from the problem structure
     p_rboundary => rproblem%rboundary
@@ -188,98 +188,98 @@ CONTAINS
     ! of the Y-velocity.
     !
     ! Get the expression/bc sections from the bondary condition block
-    CALL parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
-    CALL parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
+    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
+    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
     
     ! For intermediate storing of expression types, we use a local collection
-    CALL collct_init (rcoll)
+    call collct_init (rcoll)
     
     ! Add a section to the collection that accepts the boundary expressions
-    CALL collct_addsection (rcoll, SEC_SBDEXPRESSIONS)
+    call collct_addsection (rcoll, SEC_SBDEXPRESSIONS)
     
     ! Create a parser structure for as many expressions as configured
-    CALL fparser_create (rparser,&
+    call fparser_create (rparser,&
          parlst_querysubstrings_indir (p_rsection, 'bdExpressions'))
     
     ! Add the parser to the collection
-    CALL collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
-                                .TRUE., 0, SEC_SBDEXPRESSIONS)
+    call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
+                                .true., 0, SEC_SBDEXPRESSIONS)
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    DO i=1,parlst_querysubstrings_indir (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings_indir (p_rsection, 'bdExpressions')
     
-      CALL parlst_getvalue_string_indir (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string_indir (p_rsection, 'bdExpressions', cstr, '', i)
       
       ! Get the type and decide on the identifier how to save the expression.
-      READ(cstr,*) cname,ityp
+      read(cstr,*) cname,ityp
       
-      SELECT CASE (ityp)
-      CASE (BDC_USERDEF)
+      select case (ityp)
+      case (BDC_USERDEF)
         ! Name of a hardcoded expression realised in the callback routines
-        READ(cstr,*) cname,ityp,cexpr
-        CALL collct_setvalue_string (rcoll, cname, cexpr, .TRUE., &
+        read(cstr,*) cname,ityp,cexpr
+        call collct_setvalue_string (rcoll, cname, cexpr, .true., &
                                      0, SEC_SBDEXPRESSIONS)
 
-      CASE (BDC_EXPRESSION)
+      case (BDC_EXPRESSION)
         ! General expression; not implemented yet
-        READ(cstr,*) cname,ityp,cexpr
+        read(cstr,*) cname,ityp,cexpr
         
         ! Compile the expression; the expression gets number i
-        CALL fparser_parseFunction (rparser, i, cexpr, SEC_EXPRVARIABLES)
+        call fparser_parseFunction (rparser, i, cexpr, SEC_EXPRVARIABLES)
         
         ! Add the number of the function in the parser object to
         ! the collection with the name of the expression
-        CALL collct_setvalue_int (rcoll, cname, i, .TRUE., &
+        call collct_setvalue_int (rcoll, cname, i, .true., &
                                    0, SEC_SBDEXPRESSIONS)
         
-      CASE (BDC_VALDOUBLE)
+      case (BDC_VALDOUBLE)
         ! Real-value
-        READ(cstr,*) cname,ityp,dvalue
-        CALL collct_setvalue_real (rcoll, cname, dvalue, .TRUE., &
+        read(cstr,*) cname,ityp,dvalue
+        call collct_setvalue_real (rcoll, cname, dvalue, .true., &
                                    0, SEC_SBDEXPRESSIONS) 
-      CASE (BDC_VALINT)
+      case (BDC_VALINT)
         ! Integer-value
-        READ(cstr,*) cname,ityp,ivalue
-        CALL collct_setvalue_int (rcoll, cname, ivalue, .TRUE., &
+        read(cstr,*) cname,ityp,ivalue
+        call collct_setvalue_int (rcoll, cname, ivalue, .true., &
                                    0, SEC_SBDEXPRESSIONS)
                 
-      CASE (BDC_VALPARPROFILE)
+      case (BDC_VALPARPROFILE)
         ! Parabolic profile with specified maximum velocity
-        READ(cstr,*) cname,ityp,dvalue
-        CALL collct_setvalue_real (rcoll, cname, dvalue, .TRUE., &
+        read(cstr,*) cname,ityp,dvalue
+        call collct_setvalue_real (rcoll, cname, dvalue, .true., &
                                    0, SEC_SBDEXPRESSIONS) 
                                    
-      CASE DEFAULT
-        CALL output_line ('Expressions not implemented!', &
+      case DEFAULT
+        call output_line ('Expressions not implemented!', &
             OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
-        CALL sys_halt()
+        call sys_halt()
 
-      END SELECT
+      end select
       
       ! Put the type of the expression to the temporary collection section
-      CALL collct_setvalue_int (rcoll, cname, ityp, .TRUE.) 
+      call collct_setvalue_int (rcoll, cname, ityp, .true.) 
       
-    END DO
+    end do
     
-    bNeumann = .FALSE.
+    bNeumann = .false.
     
     ! Now to the actual boundary conditions.
     !    
     ! Put some information to the quick access arrays for access
     ! in the callback routine.
     rcoll%Iquickaccess(1) = rproblem%itimedependence
-    SELECT CASE (rproblem%itimedependence)
-    CASE (0)
+    select case (rproblem%itimedependence)
+    case (0)
       ! Stationary simulation
       rcoll%Dquickaccess(1) = 0.0_DP
       rcoll%Dquickaccess(2) = 0.0_DP
       rcoll%Dquickaccess(3) = 0.0_DP
-    CASE (1)
+    case (1)
       rcoll%Dquickaccess(1) = rproblem%rtimedependence%dtime
       rcoll%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
       rcoll%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
-    END SELECT
+    end select
     
     ! DquickAccess(4:) is reserved for BC specific information.
     !    
@@ -289,27 +289,27 @@ CONTAINS
     rcoll%p_rnextCollection => rcollection
 
     ! Loop through all boundary components we have.
-    DO ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
       
       ! Parse the parameter 'bdComponentX'
-      WRITE (cexpr,'(I10)') ibdComponent
-      cstr = 'bdComponent' // ADJUSTL(cexpr)
+      write (cexpr,'(I10)') ibdComponent
+      cstr = 'bdComponent' // adjustl(cexpr)
       
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
       i = parlst_queryvalue_indir (p_rbdcond, cstr)
-      IF (i .NE. 0) THEN
+      if (i .ne. 0) then
         ! Parameter exists. Get the values in there.
-        DO isegment = 1,parlst_querysubstrings_indir (p_rbdcond, cstr)
+        do isegment = 1,parlst_querysubstrings_indir (p_rbdcond, cstr)
           
-          CALL parlst_getvalue_string_fetch (p_rbdcond, &
+          call parlst_getvalue_string_fetch (p_rbdcond, &
                                             i, cstr, isubstring=isegment)
           ! Read the segment parameters
-          READ(cstr,*) dpar2,iintervalEnds,ibctyp
+          read(cstr,*) dpar2,iintervalEnds,ibctyp
           
           ! Form a boundary condition segment that covers that boundary part
-          IF (dpar2 .GE. dpar1) THEN
+          if (dpar2 .ge. dpar1) then
             
             rboundaryRegion%dminParam = dpar1
             rboundaryRegion%dmaxParam = dpar2
@@ -319,25 +319,25 @@ CONTAINS
             rboundaryRegion%iproperties = iintervalEnds
             
             ! Now, which type of BC is to be created?
-            SELECT CASE (ibctyp)
+            select case (ibctyp)
             
-            CASE (0)
+            case (0)
               ! Usually there's Neumann boundary in this region, but we can't be 
               ! sure. Check if, on the highest level, there's at least one edge
               ! of the triangulation belonging to the boundary. If yes, we
               ! have found Neumann boundary. If no, the segment is just too
               ! small to be considered as Neumann boundary.
               
-              CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
+              call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
                                             rboundaryRegion, &
                                             IminIndex,ImaxIndex,icount)
-              IF (icount .GT. 0) bNeumann = .TRUE.
+              if (icount .gt. 0) bNeumann = .true.
             
-            CASE (1)
+            case (1)
               ! Simple Dirichlet boundary.
               ! Prescribed primal velocity; dual velocity os always zero.
               ! Read the line again, get the expressions for X- and Y-velocity
-              READ(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
               
               ! For any string <> '', create the appropriate Dirichlet boundary
               ! condition and add it to the list of boundary conditions.
@@ -355,7 +355,7 @@ CONTAINS
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
-              IF (sbdex1 .NE. '') THEN
+              if (sbdex1 .ne. '') then
                 ! X-velocity
                 !
                 ! The 2nd element in IquickAccess saves the component number.
@@ -371,26 +371,26 @@ CONTAINS
                 
                 ! Dquickaccess(3) / IquickAccess(3) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,1,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
               
-              IF (sbdex2 .NE. '') THEN
+              if (sbdex2 .ne. '') then
               
                 ! Y-velocity
                 !
@@ -407,30 +407,30 @@ CONTAINS
                 
                 ! Dquickaccess(4) / IquickAccess(4) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
 
-              END IF
+              end if
               
               ! Now the same thing again, this time separately for primal and dual
               ! variables.
               ! If a primal velocity is specified, Dirichlet-0-boundary conditions are
               ! assumed for the corresponding dual.
-              IF (sbdex1 .NE. '') THEN
+              if (sbdex1 .ne. '') then
               
                 ! dual X-velocity if primal X-velocity exists
                 !
@@ -444,13 +444,13 @@ CONTAINS
                 rcoll%SquickAccess(1) = ''
                 
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,4,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
               
-              IF (sbdex2 .NE. '') THEN
+              if (sbdex2 .ne. '') then
               
                 ! dual Y-velocity if primal Y-velocity exists
                 !
@@ -464,17 +464,17 @@ CONTAINS
                 rcoll%SquickAccess(1) = ''
                 
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,5,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
               
-            CASE (2)
+            case (2)
             
               ! Pressure drop boundary conditions.
               ! Read the line again to get the actual parameters
-              READ(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
               
               ! For any string <> '', create the appropriate pressure drop boundary
               ! condition and add it to the list of boundary conditions.
@@ -488,7 +488,7 @@ CONTAINS
               ! The SquickAccess array is set up as follows:
               !  SquickAccess(1) = Name of the expression
               !
-              IF (sbdex1 .NE. '') THEN
+              if (sbdex1 .ne. '') then
               
                 ! IquickAccess(3) saves the type of the expression
                 iexptyp = collct_getvalue_int (rcoll, sbdex1)
@@ -500,37 +500,37 @@ CONTAINS
                 
                 ! Dquickaccess(3) / IquickAccess(2) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 IvelEqns = (/1,2/)
-                CALL bcasm_newPdropBConRealBd (&
+                call bcasm_newPdropBConRealBd (&
                     rdiscretisation,IvelEqns,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)     
-              END IF
+              end if
               
               
-            CASE (3)
+            case (3)
               
               ! Nonlinear slip boundary conditions.
               IvelComp = (/1,2/)
-              CALL bcasm_newSlipBConRealBd (&
+              call bcasm_newSlipBConRealBd (&
                   rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,rdiscreteBC)     
             
-            CASE (4)
+            case (4)
               ! Simple Dirichlet boundary, separate definition for all
               ! solution components.
               ! Read the line again, get the expressions for X- and Y-velocity
-              READ(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
               
               ! For any string <> '', create the appropriate Dirichlet boundary
               ! condition and add it to the list of boundary conditions.
@@ -548,7 +548,7 @@ CONTAINS
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
-              IF (sbdex1 .NE. '') THEN
+              if (sbdex1 .ne. '') then
                 ! X-velocity
                 !
                 ! The 2nd element in IquickAccess saves the component number.
@@ -564,26 +564,26 @@ CONTAINS
                 
                 ! Dquickaccess(3) / IquickAccess(3) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,1,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
               
-              IF (sbdex2 .NE. '') THEN
+              if (sbdex2 .ne. '') then
               
                 ! Y-velocity
                 !
@@ -600,31 +600,31 @@ CONTAINS
                 
                 ! Dquickaccess(4) / IquickAccess(4) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
 
-              END IF
+              end if
               
               ! Now the same thing again, this time separately for primal and dual
               ! variables.
               ! If a velocity is not specified, Dirichlet-0-boundary conditions are
               ! assumed.
               
-              IF (sbdex3 .NE. '') THEN
+              if (sbdex3 .ne. '') then
                 ! X-velocity
                 !
                 ! The 2nd element in IquickAccess saves the component number.
@@ -640,26 +640,26 @@ CONTAINS
                 
                 ! Dquickaccess(3) / IquickAccess(3) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll, sbdex3, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll, sbdex3, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,4,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
               
-              IF (sbdex4 .NE. '') THEN
+              if (sbdex4 .ne. '') then
               
                 ! Y-velocity
                 !
@@ -676,68 +676,68 @@ CONTAINS
                 
                 ! Dquickaccess(4) / IquickAccess(4) saves information
                 ! about the expression.
-                SELECT CASE (iexptyp)
-                CASE (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                   ! Constant or parabolic profile
                   rcoll%Dquickaccess(4) = &
                       collct_getvalue_real (rcoll,sbdex4, 0, SEC_SBDEXPRESSIONS)
-                CASE (BDC_EXPRESSION)
+                case (BDC_EXPRESSION)
                   ! Expression. Write the identifier for the expression
                   ! as itag into the boundary condition structure.
                   rcoll%IquickAccess(4) = &
                       collct_getvalue_int (rcoll,sbdex4, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
+                end select
               
                 ! Assemble the BC's.
-                CALL bcasm_newDirichletBConRealBD (&
+                call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,5,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll)
                     
-              END IF
+              end if
 
-            CASE DEFAULT
-              CALL output_line ('Unknown boundary condition!', &
+            case DEFAULT
+              call output_line ('Unknown boundary condition!', &
                   OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
-              CALL sys_halt()
-            END SELECT
+              call sys_halt()
+            end select
             
             ! Move on to the next parameter value
             dpar1 = dpar2
             
-          END IF
+          end if
                                             
-        END DO
+        end do
       
-      ELSE
+      else
         ! There is no parameter configuring the boundary condition on that 
         ! component - so we have Neumann boundary there.
-        bNeumann = .TRUE.
-      END IF
+        bNeumann = .true.
+      end if
       
-    END DO
+    end do
 
     ! Release the parser object with all the expressions to be evaluated
     ! on the boundary.
-    CALL fparser_release (rparser)
+    call fparser_release (rparser)
 
     ! Remove the boundary value parser from the collection
-    CALL collct_deletevalue (rcoll, BDC_BDPARSER)
+    call collct_deletevalue (rcoll, BDC_BDPARSER)
     
     ! Remove the boundary-expression section we added earlier,
     ! with all their content.
-    CALL collct_deletesection(rcoll,SEC_SBDEXPRESSIONS)
+    call collct_deletesection(rcoll,SEC_SBDEXPRESSIONS)
 
     ! Remove the temporary collection from memory.
-    CALL collct_done (rcoll)
+    call collct_done (rcoll)
 
     ! The setting in the DAT file may overwrite our guess about Neumann boundaries.
-    CALL parlst_getvalue_int_indir (p_rbdcond, 'ineumannBoundary', i, -1)
-    SELECT CASE (i)
-    CASE (0)
-      bNeumann = .FALSE.
-    CASE (1)
-      bNeumann = .TRUE.
-    END SELECT
+    call parlst_getvalue_int_indir (p_rbdcond, 'ineumannBoundary', i, -1)
+    select case (i)
+    case (0)
+      bNeumann = .false.
+    case (1)
+      bNeumann = .true.
+    end select
     
     ! Remember whether there is Neumann boundary or not.
     !
@@ -749,18 +749,18 @@ CONTAINS
     rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
         bNeumann
         
-  END SUBROUTINE  
+  end subroutine  
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_getBDconditions (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+  subroutine cc_getBDconditions (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                  cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
-  USE collection
-  USE spatialdiscretisation
-  USE discretebc
+  use collection
+  use spatialdiscretisation
+  use discretebc
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -780,23 +780,23 @@ CONTAINS
   !   Velocity components that are affected by the normal stress
   !   (usually "1 2" for x- and y-velocity while returned value must specify
   !   the pressure at the boundary)
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+  integer, dimension(:), intent(IN)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Boundary region that is currently being processed.
-  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
+  integer(I32), intent(IN)                                    :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  INTEGER, INTENT(IN)                                         :: cinfoNeeded
+  integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -815,7 +815,7 @@ CONTAINS
   !            should be computed
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   iwhere = Number of the edge where the normal stress should be computed.
-  INTEGER(I32), INTENT(IN)                                    :: iwhere
+  integer(I32), intent(IN)                                    :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -827,11 +827,11 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   dwhere = parameter value of the point on edge iwhere where the normal
   !            stress should be computed.
-  REAL(DP), INTENT(IN)                                        :: dwhere
+  real(DP), intent(IN)                                        :: dwhere
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
+  type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
@@ -844,23 +844,23 @@ CONTAINS
   ! The function may return SYS_INFINITY as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
-  REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
   
 !</subroutine>
 
-    INTEGER :: icomponent,iexprtyp
+    integer :: icomponent,iexprtyp
     
-    REAL(DP) :: dtime
+    real(DP) :: dtime
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     dtime = rcollection%Dquickaccess(1)
 
     ! Use boundary conditions from DAT files.
-    SELECT CASE (cinfoNeeded)
+    select case (cinfoNeeded)
     
-    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
+    case (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
           DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
       
       ! Dirichlet boundary conditions
@@ -897,83 +897,83 @@ CONTAINS
       ! Get the information from evalBoundary.
       ! Note: The information about the BC's can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
-      SELECT CASE (rcollection%IquickAccess(1))
-      CASE (1)
+      select case (rcollection%IquickAccess(1))
+      case (1)
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
             rcollection)
     
-      CASE (2)
+      case (2)
         ! Normal stress / pressure drop. Evaluate the  expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
             rcollection)
             
-      END SELECT
+      end select
       
-    END SELECT
+    end select
   
-  CONTAINS
+  contains
   
     ! Auxiliary function: Evaluate a scalar expression on the boundary.
     
-    REAL(DP) FUNCTION evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
+    real(DP) function evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
                                     ityp, ivalue, dvalue, dpar, stag, dtime, rcollection)
     
     ! Solution component for which the expression is evaluated.
     ! 1 = X-velocity, 2 = y-velocity,...
-    INTEGER, INTENT(IN) :: icomponent
+    integer, intent(IN) :: icomponent
     
     ! Discretisation structure of the underlying discretisation
-    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! Current boundary region
-    TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
     
     ! Type of expression to evaluate.
     ! One of the BDC_xxxx constants from ccboundaryconditionparser.f90.
-    INTEGER, INTENT(IN) :: ityp
+    integer, intent(IN) :: ityp
     
     ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
     ! the expression in the expression object to evaluate.
     ! Otherwise unused.
-    INTEGER, INTENT(IN) :: ivalue
+    integer, intent(IN) :: ivalue
     
     ! Double precision parameter for simple expressions
-    REAL(DP), INTENT(IN) :: dvalue
+    real(DP), intent(IN) :: dvalue
     
     ! Current parameter value of the point on the boundary.
     ! 0-1-parametrisation.
-    REAL(DP), INTENT(IN) :: dpar
+    real(DP), intent(IN) :: dpar
 
     ! String tag that defines more complicated BC's.
-    CHARACTER(LEN=*), INTENT(IN) :: stag
+    character(LEN=*), intent(IN) :: stag
     
     ! For nonstationary simulation: Simulation time.
     ! =0 for stationary simulations.
-    REAL(DP), INTENT(IN) :: dtime
+    real(DP), intent(IN) :: dtime
     
     ! A compiled expression for evaluation at runtime
-    TYPE(t_fparser), POINTER :: p_rparser
+    type(t_fparser), pointer :: p_rparser
     
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), OPTIONAL                  :: rcollection
+    type(t_collection), optional                  :: rcollection
 
       ! local variables
-      REAL(DP) :: d,dx,dy
-      CHARACTER(LEN=PARLST_MLDATA) :: sexpr
-      REAL(DP), DIMENSION(SIZE(SEC_EXPRVARIABLES)) :: Rval
+      real(DP) :: d,dx,dy
+      character(LEN=PARLST_MLDATA) :: sexpr
+      real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
       
-      SELECT CASE (ityp)
-      CASE (BDC_USERDEF)
+      select case (ityp)
+      case (BDC_USERDEF)
         ! This is a hardcoded, user-defined identifier.
         ! In stag, the name of the identifier is noted.
         ! Get the identifier itself from the collection.
-        CALL collct_getvalue_string (rcollection, stag, sexpr, &
+        call collct_getvalue_string (rcollection, stag, sexpr, &
                                      0, SEC_SBDEXPRESSIONS)
                                 
         ! Call the user defined callback routine to evaluate the expression.
@@ -982,17 +982,17 @@ CONTAINS
         ! to the application specific, global collection that may be of interest for
         ! callback routines. rcollection itself is actually a 'local' collection,
         ! a 'wrapper' for the rcollection of the application!
-        CALL getBoundaryValues (&
+        call getBoundaryValues (&
             stag,icomponent,rdiscretisation,rboundaryRegion,&
             dpar, d, rcollection%p_rnextCollection)     
         
         evalBoundary = d
       
-      CASE (BDC_VALDOUBLE)
+      case (BDC_VALDOUBLE)
         ! A simple constant, given by dvalue
         evalBoundary = dvalue
 
-      CASE (BDC_EXPRESSION)
+      case (BDC_EXPRESSION)
         ! A complex expression.
         ! Get the expression object from the collection.
         
@@ -1004,7 +1004,7 @@ CONTAINS
         ! by SEC_EXPRVARIABLES!
         Rval = 0.0_DP
         
-        CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+        call boundary_getCoords(rdiscretisation%p_rboundary, &
                                 rboundaryRegion%iboundCompIdx, &
                                 dpar, dx, dy)
         
@@ -1014,7 +1014,7 @@ CONTAINS
         ! although 0 <= dminpar <= max.par 
         !      and 0 <= dmaxpar <= max.par!
         d = dpar 
-        IF (d .LT. rboundaryRegion%dminParam) &
+        if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
@@ -1035,9 +1035,9 @@ CONTAINS
         
         ! Evaluate the expression. ivalue is the number of
         ! the expression to evaluate.
-        CALL fparser_evalFunction (p_rparser, ivalue, Rval, evalBoundary)
+        call fparser_evalFunction (p_rparser, ivalue, Rval, evalBoundary)
         
-      CASE (BDC_VALPARPROFILE)
+      case (BDC_VALPARPROFILE)
         ! A parabolic profile. dvalue expresses the
         ! maximum value of the profile. 
         !
@@ -1047,7 +1047,7 @@ CONTAINS
         ! although 0 <= dminpar <= max.par 
         !      and 0 <= dmaxpar <= max.par!
         d = dpar 
-        IF (d .LT. rboundaryRegion%dminParam) &
+        if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
@@ -1057,17 +1057,17 @@ CONTAINS
         d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
         
         evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
-      END SELECT
+      end select
     
-    END FUNCTION
+    end function
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_assembleFBDconditions (rproblem,rdiscretisation,rdiscreteFBC,rcollection)
+  subroutine cc_assembleFBDconditions (rproblem,rdiscretisation,rdiscreteFBC,rcollection)
 
 !<description>
   ! This parses the boundary conditions for fictitious boundary
@@ -1077,33 +1077,33 @@ CONTAINS
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
+  type(t_collection), intent(INOUT), target :: rcollection
   
   ! A t_discreteFBC structure that receives a discretised version
   ! of the fictitious boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  TYPE(t_discreteFBC), INTENT(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
 
     ! An identifier array for the equations to be tackled when discretising
     ! boundary conditions on fictitious boundary components
-    INTEGER, DIMENSION(2) :: Iequations
+    integer, dimension(2) :: Iequations
     
     ! A structure identifying the fictitious boundary component
-    TYPE(t_fictBoundaryRegion) :: rfictBoundaryRegion
+    type(t_fictBoundaryRegion) :: rfictBoundaryRegion
 
     ! A set of variables describing the analytic boundary conditions.    
-    TYPE(t_bcRegion), POINTER :: p_rbcRegion
+    type(t_bcRegion), pointer :: p_rbcRegion
     
     ! Add a new fictitious boundary object It should impose Dirichlet
     ! boundary conditions in the domain in the one and only solution component.
@@ -1114,6 +1114,6 @@ CONTAINS
     ! CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
     !     getBoundaryValuesFBC,rcollection)
 
-  END SUBROUTINE  
+  end subroutine  
   
-END MODULE
+end module

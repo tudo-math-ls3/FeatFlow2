@@ -125,51 +125,51 @@
 !#
 !##############################################################################
 
-MODULE spacetimelinearsystem
+module spacetimelinearsystem
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
-  USE paramlist
-  USE timestepping
-  USE l2projection
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
+  use paramlist
+  use timestepping
+  use l2projection
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
 
-  USE cc2dmediumm2nonlinearcore
-  USE cc2dmediumm2nonlinearcoreinit
-  USE cc2dmediumm2timeanalysis
-  USE cc2dmediumm2boundary
-  USE cc2dmediumm2discretisation
-  USE cc2dmediumm2matvecassembly
+  use cc2dmediumm2nonlinearcore
+  use cc2dmediumm2nonlinearcoreinit
+  use cc2dmediumm2timeanalysis
+  use cc2dmediumm2boundary
+  use cc2dmediumm2discretisation
+  use cc2dmediumm2matvecassembly
   
-  USE timediscretisation
-  USE spacetimediscretisation
-  USE spacetimevectors
-  USE timeboundaryconditions
+  use timediscretisation
+  use spacetimediscretisation
+  use spacetimevectors
+  use timeboundaryconditions
   
-  USE matrixio
+  use matrixio
     
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
@@ -177,20 +177,20 @@ MODULE spacetimelinearsystem
 
   ! Defines the basic shape of the supersystem which realises the coupling
   ! between all timesteps.
-  TYPE t_ccoptSpaceTimeMatrix
+  type t_ccoptSpaceTimeMatrix
   
     ! Type of the matrix.
     ! =0: Standard system matrix.
     ! =1: Newton matrix
-    INTEGER :: cmatrixType = 0
+    integer :: cmatrixType = 0
     
     ! Activate nonlinear projection operators in the matrix.
     ! =0: Matrix does not contain projection operators for u.
     ! =1: Matrix contains projection operators for u.
-    INTEGER :: ccontrolConstraints = 0
+    integer :: ccontrolConstraints = 0
   
     ! Pointer to the space time discretisation that corresponds to this matrix.
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation => NULL()
+    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscretisation => null()
   
     ! Pointer to a space-time solution vector that defines the point
     ! where the nonlinearity is evaluated when applying or calculating
@@ -198,9 +198,9 @@ MODULE spacetimelinearsystem
     ! If this points to NULL(), there is no global solution specified,
     ! so the matrix assembly/application routines use the vector that
     ! is specified in their input parameters.
-    TYPE(t_spacetimeVector), POINTER :: p_rsolution => NULL()
+    type(t_spacetimeVector), pointer :: p_rsolution => null()
     
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -211,19 +211,19 @@ MODULE spacetimelinearsystem
 !<constantblock description="Filter-ID's of the filters to be applied in a matrix vector multiplication">
 
   ! No filter
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_NONE  = 0
+  integer(I32), parameter :: SPTID_FILTER_NONE  = 0
 
   ! Filter the output vector for boundary conditions in the defect.
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_BCDEF = 2**0
+  integer(I32), parameter :: SPTID_FILTER_BCDEF = 2**0
   
   ! Filter the output vector for initial conditions in the defect
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_ICDEF = 2**1
+  integer(I32), parameter :: SPTID_FILTER_ICDEF = 2**1
 
   ! Filter the output vector for terminal conditions in the defect
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_TCDEF = 2**2
+  integer(I32), parameter :: SPTID_FILTER_TCDEF = 2**2
   
   ! Apply all filters that are typically applied to a defect vector
-  INTEGER(I32), PARAMETER :: SPTID_FILTER_DEFECT = SPTID_FILTER_BCDEF + &
+  integer(I32), parameter :: SPTID_FILTER_DEFECT = SPTID_FILTER_BCDEF + &
                                                    SPTID_FILTER_ICDEF + &
                                                    SPTID_FILTER_TCDEF
                                                    
@@ -231,14 +231,14 @@ MODULE spacetimelinearsystem
 
 !</constants>
 
-CONTAINS
+contains
 
   
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+  subroutine cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
       isubstep,irelpos,rmatrixComponents)
 
 !<description>
@@ -262,24 +262,24 @@ CONTAINS
 
 !<input>
   ! Problem structure
-  TYPE(t_problem), INTENT(IN) :: rproblem
+  type(t_problem), intent(IN) :: rproblem
   
   ! A t_ccoptSpaceTimeMatrix structure defining the discretisation of the
   ! coupled space-time matrix.
-  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN), TARGET :: rspaceTimeMatrix
+  type(t_ccoptSpaceTimeMatrix), intent(IN), target :: rspaceTimeMatrix
 
   ! Theta scheme identifier.
   ! = 0.5: Crank-Nicolson.
   ! = 1.0: Explicit Euler
-  REAL(DP), INTENT(IN) :: dtheta
+  real(DP), intent(IN) :: dtheta
   
   ! Substep in the time-dependent simulation = row in the supermatrix.
   ! Range 0..nsubsteps
-  INTEGER, INTENT(IN) :: isubstep
+  integer, intent(IN) :: isubstep
   
   ! Specifies the column in the supermatrix relative to the diagonal.
   ! =0: set matrix weights for the diagonal.
-  INTEGER, INTENT(IN) :: irelpos
+  integer, intent(IN) :: irelpos
 !</input>
 
 !<inputoutput>
@@ -287,27 +287,27 @@ CONTAINS
   ! equation. The weights that specify the submatrices of a small 6x6 
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
-  TYPE(t_ccmatrixComponents), INTENT(INOUT) :: rmatrixComponents
+  type(t_ccmatrixComponents), intent(INOUT) :: rmatrixComponents
 !</inputoutput>
 
 !</subroutine>
 
     ! If the following constant is set from 1.0 to 0.0, the primal system is
     ! decoupled from the dual system!
-    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
+    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
     
     ! If the following constant is set from 1.0 to 0.0, the dual system is
     ! decoupled from the primal system!
-    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
+    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
     
     ! If the following parameter is set from 1.0 to 0.0, the terminal
     ! condition between the primal and dual equation is decoupled, i.e.
     ! the dual equation gets independent from the primal one.
-    REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
+    real(DP), parameter :: dterminalCondDecoupled = 1.0_DP
     
     ! If the following parameter is set from 1.0 to 0.0, the time coupling
     ! is disabled, resulting in a stationary simulation in every timestep.
-    REAL(DP), PARAMETER :: dtimeCoupling = 1.0_DP
+    real(DP), parameter :: dtimeCoupling = 1.0_DP
     
     ! This constant defines the type of equation. There are two equivalent
     ! formulations of the dual equation which only differs in the sign
@@ -317,39 +317,39 @@ CONTAINS
     ! formulation with "-(y-z)" there.
     ! Note: If this is changed, a "-" sign must be implemented / removed from
     ! the RHS, too!
-    REAL(DP) :: dequationType
+    real(DP) :: dequationType
     
     ! Pointer to the space time discretisation structure.
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
-    REAL(DP) :: dnewton
-    REAL(DP) :: dtstep
-    LOGICAL :: bconvectionExplicit
+    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
+    real(DP) :: dnewton
+    real(DP) :: dtstep
+    logical :: bconvectionExplicit
     
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
     dequationType = 1.0_DP
-    IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
+    if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
 
     ! Treat the convection explicitely?
-    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .NE. 0
+    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .ne. 0
 
     ! What's the matrix type we should set up? If we have to set up a
     ! Newton matrix, we put dnewton to 1.0 so the Newton part in the
     ! primal velocity is assembled.
     dnewton = 0.0_DP
-    IF (rspaceTimeMatrix%cmatrixType .EQ. 1) THEN
-      IF (rproblem%iequation .EQ. 0) THEN
+    if (rspaceTimeMatrix%cmatrixType .eq. 1) then
+      if (rproblem%iequation .eq. 0) then
         ! Newton is only to be assembled in Navier-Stokes!
         dnewton = 1.0_DP
-      END IF
-    END IF
+      end if
+    end if
     
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! The first and last substep is a little bit special concerning
     ! the matrix!
-    IF (isubstep .EQ. 0) THEN
+    if (isubstep .eq. 0) then
       
       ! We are in the first substep
       !
@@ -358,7 +358,7 @@ CONTAINS
       ! Aii = Aii(x_i,lambda_i).
       ! Aii+1 = Aii+1(x_i,lambda_i+1)
     
-      IF (irelpos .EQ. 0) THEN
+      if (irelpos .eq. 0) then
       
         ! The diagonal matrix.
 !        rmatrixComponents%iprimalSol = 2
@@ -452,13 +452,13 @@ CONTAINS
 !        END IF
 
         ! The diagonal matrix.
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 2
-        ELSE
+        else
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 3
-        END IF
+        end if
 
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
@@ -472,18 +472,18 @@ CONTAINS
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
-              - dtheta * REAL(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
-                dtheta * REAL(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%iequation,DP)
                 
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = 0.0_DP
@@ -491,7 +491,7 @@ CONTAINS
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = 0.0_DP
         
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = 1.0_DP
@@ -505,33 +505,33 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
-          END IF
+          end if
           
-        ELSE
+        else
         
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
-          END IF
+          end if
         
-        END IF
+        end if
                   
-      ELSE IF (irelpos .EQ. 1) THEN
+      else if (irelpos .eq. 1) then
       
         ! Offdiagonal matrix on the right of the diagonal.
         !
@@ -561,26 +561,26 @@ CONTAINS
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
         
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = &
-              - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = &
-                (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
-        ELSE
+                (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+        else
 
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = &
-              - dtheta * REAL(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = &
-                dtheta * REAL(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%iequation,DP)
 
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -592,28 +592,28 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
-          END IF
+          end if
         
-        ELSE
+        else
 
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
         
-        END IF
+        end if
             
-      END IF
+      end if
     
-    ELSE IF (isubstep .LT. p_rspaceTimeDiscr%NEQtime-1) THEN
+    else if (isubstep .lt. p_rspaceTimeDiscr%NEQtime-1) then
       
       ! We are sonewhere in the middle of the matrix. There is a substep
       ! isubstep+1 and a substep isubstep-1!
@@ -625,7 +625,7 @@ CONTAINS
       ! Aii = Aii(x_i,lambda_i).
       ! Aii+1 = Aii+1(x_i,lambda_i+1)
 
-      IF (irelpos .EQ. -1) THEN
+      if (irelpos .eq. -1) then
       
         ! Matrix on the left of the diagonal.
 
@@ -647,27 +647,27 @@ CONTAINS
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = &
-              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = 0.0_DP
           
           rmatrixComponents%dnewton1 = &
               (1.0_DP-dtheta) * dnewton
           rmatrixComponents%dnewton2 = 0.0_DP
 
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = 0.0_DP
           
           rmatrixComponents%dnewton1 = &
               dtheta * dnewton
           rmatrixComponents%dnewton2 = 0.0_DP
         
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -682,16 +682,16 @@ CONTAINS
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
 
-      ELSE IF (irelpos .EQ. 0) THEN    
+      else if (irelpos .eq. 0) then    
 
         ! The diagonal matrix.
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 2
-        ELSE
+        else
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 3
-        END IF
+        end if
 
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
@@ -705,18 +705,18 @@ CONTAINS
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
-              - dtheta * REAL(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
-                dtheta * REAL(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%iequation,DP)
                 
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = 0.0_DP
@@ -724,7 +724,7 @@ CONTAINS
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = 0.0_DP
         
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = 1.0_DP
@@ -737,33 +737,33 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
             
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
-          END IF
+          end if
           
-        ELSE
+        else
         
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
-          END IF
+          end if
         
-        END IF
+        end if
 
-      ELSE IF (irelpos .EQ. 1) THEN
+      else if (irelpos .eq. 1) then
             
         ! Matrix on the right of the diagonal.
         !
@@ -791,27 +791,27 @@ CONTAINS
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = &
-              - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = &
-              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
               
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = &
-              - dtheta * REAL(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%iequation,DP)
           
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = &
-                dtheta * REAL(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%iequation,DP)
         
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -823,28 +823,28 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
         
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
-          END IF
+          end if
           
-        ELSE
+        else
         
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
           
-        END IF
+        end if
             
-      END IF
+      end if
     
-    ELSE
+    else
     
       ! We are in the last substep
       
@@ -853,7 +853,7 @@ CONTAINS
       ! Aii = Aii(x_i,lambda_i).
       ! Aii+1 = Aii+1(x_i,lambda_i+1)
 
-      IF (irelpos .EQ. -1) THEN
+      if (irelpos .eq. -1) then
       
         ! Matrix on the left of the diagonal.
         
@@ -875,25 +875,25 @@ CONTAINS
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = &
-              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = 0.0_DP
           
           rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
           rmatrixComponents%dnewton2 = 0.0_DP
           
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = 0.0_DP
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = 0.0_DP
           
-        END IF
+        end if
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -908,7 +908,7 @@ CONTAINS
         rmatrixComponents%dr21 = 0.0_DP
         rmatrixComponents%dr22 = 0.0_DP
 
-      ELSE IF (irelpos .EQ. 0) THEN    
+      else if (irelpos .eq. 0) then    
 
         ! The diagonal matrix.
         rmatrixComponents%iprimalSol = 2
@@ -932,18 +932,18 @@ CONTAINS
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
         
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
 
           rmatrixComponents%dgamma1 = &
-              dtheta * REAL(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%iequation,DP)
           rmatrixComponents%dgamma2 = &
-              - dtheta * REAL(1-rproblem%iequation,DP) 
+              - dtheta * real(1-rproblem%iequation,DP) 
           
           rmatrixComponents%dnewton1 = dtheta * dnewton
           rmatrixComponents%dnewton2 = &
-                dtheta * REAL(1-rproblem%iequation,DP) 
+                dtheta * real(1-rproblem%iequation,DP) 
                 
-        ELSE
+        else
         
           rmatrixComponents%dgamma1 = 0.0_DP
           rmatrixComponents%dgamma2 = 0.0_DP
@@ -951,7 +951,7 @@ CONTAINS
           rmatrixComponents%dnewton1 = 0.0_DP
           rmatrixComponents%dnewton2 = 0.0_DP
         
-        END IF        
+        end if        
 
         rmatrixComponents%deta1 = 1.0_DP
         rmatrixComponents%deta2 = 1.0_DP
@@ -964,28 +964,28 @@ CONTAINS
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
             (-dequationType) * dtheta * (1.0_DP + p_rspaceTimeDiscr%dgammaC / dtstep)
             
-        IF (.NOT. bconvectionExplicit) THEN
+        if (.not. bconvectionExplicit) then
         
           ! Weight the mass matrix by GAMMA instead of delta(T).
           ! That's the only difference to the implementation above!
-          IF (dnewton .EQ. 0.0_DP) THEN
+          if (dnewton .eq. 0.0_DP) then
             rmatrixComponents%dr21 = 0.0_DP
             rmatrixComponents%dr22 = 0.0_DP
-          ELSE
+          else
             rmatrixComponents%dr21 = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
             rmatrixComponents%dr22 = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
-          END IF
+          end if
 
-        ELSE
+        else
         
           rmatrixComponents%dr21 = 0.0_DP
           rmatrixComponents%dr22 = 0.0_DP
 
-        END IF
+        end if
 
-      END IF        
+      end if        
         
 !      IF (irelpos .EQ. -1) THEN
 !      
@@ -1062,7 +1062,7 @@ CONTAINS
 !
 !      END IF
 
-    END IF
+    end if
     
     ! The dumin/dumax parameters are the same for all equations. 
     rmatrixComponents%dumin1 = rproblem%roptcontrol%dumin1
@@ -1075,13 +1075,13 @@ CONTAINS
     rmatrixComponents%ccontrolConstraints = rspaceTimeMatrix%ccontrolConstraints
     rmatrixComponents%cmatrixType = rspaceTimeMatrix%cmatrixType
 
-  END SUBROUTINE  
+  end subroutine  
   
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, cx, cy, &
+  subroutine cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, cx, cy, &
       cfilter, dnorm, bprintRes)
 
 !<description>
@@ -1097,57 +1097,57 @@ CONTAINS
 !<input>
   ! A problem structure that provides information about matrices on all
   ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! A t_ccoptSpaceTimeMatrix structure defining the space-time matrix.
-  TYPE(t_ccoptSpaceTimeMatrix), INTENT(IN) :: rspaceTimeMatrix
+  type(t_ccoptSpaceTimeMatrix), intent(IN) :: rspaceTimeMatrix
 
   ! A space-time vector defining the current solution.
-  TYPE(t_spacetimeVector), INTENT(IN) :: rx
+  type(t_spacetimeVector), intent(IN) :: rx
   
   ! Type of filter to apply to the vectors. A combination of SPTID_FILTER_xxxx
   ! flags that specifies which type of filter is to be applied to the
   ! output vector during the matriux vector multiplication.
-  INTEGER(I32), INTENT(IN) :: cfilter
+  integer(I32), intent(IN) :: cfilter
   
   ! If set to TRUE and dnorm is present, too, the residuals are printed to the
   ! terminal.
-  LOGICAL, INTENT(IN), OPTIONAL :: bprintRes
+  logical, intent(IN), optional :: bprintRes
 !</input>
 
 !<inputoutput>
   ! A second space-time vector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+  type(t_spacetimeVector), intent(INOUT) :: rd
   
   ! Multiplication factor for rx
-  REAL(DP), INTENT(IN) :: cx
+  real(DP), intent(IN) :: cx
   
   ! Multiplication factor for rd
-  REAL(DP), INTENT(IN) :: cy
+  real(DP), intent(IN) :: cy
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: If specified, returns the $l_2$-norm of rd.
-  REAL(DP), INTENT(OUT), OPTIONAL :: dnorm
+  real(DP), intent(OUT), optional :: dnorm
 !<output>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ieqTime,ilevel,icp
-    TYPE(t_vectorBlock) :: rtempVectorD
-    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVector
-    TYPE(t_vectorBlock), DIMENSION(3) :: rtempVectorEval
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
-    REAL(DP) :: dtheta,dnormpart
-    TYPE(t_matrixBlock) :: rblockTemp
-    TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscretisation
-    REAL(DP) :: dtstep
+    integer :: ieqTime,ilevel,icp
+    type(t_vectorBlock) :: rtempVectorD
+    type(t_vectorBlock), dimension(3) :: rtempVector
+    type(t_vectorBlock), dimension(3) :: rtempVectorEval
+    type(t_blockDiscretisation), pointer :: p_rdiscr
+    real(DP) :: dtheta,dnormpart
+    type(t_matrixBlock) :: rblockTemp
+    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscretisation
+    real(DP) :: dtstep
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
-    REAL(DP), DIMENSION(:), POINTER :: p_DxE1,p_DxE2,p_DxE3
+    real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dx3,p_Db
+    real(DP), dimension(:), pointer :: p_DxE1,p_DxE2,p_DxE3
     
     ! Pointer to the space time discretisation
     p_rspaceTimeDiscretisation => rspaceTimeMatrix%p_rspaceTimeDiscretisation
@@ -1162,7 +1162,7 @@ CONTAINS
     
     ! Create a temp vector that contains the part of rd which is to be modified.
     p_rdiscr => p_rspaceTimeDiscretisation%p_RlevelInfo%rdiscretisation
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
+    call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.false.)
     
     ! The vector will be a defect vector. Assign the boundary conditions so
     ! that we can implement them.
@@ -1170,57 +1170,57 @@ CONTAINS
     rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
     
     ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(1),.FALSE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(2),.FALSE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(3),.FALSE.)
+    call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(1),.false.)
+    call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(2),.false.)
+    call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(3),.false.)
     
     ! Get the parts of the X-vector which are to be modified at first --
     ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
     ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
-    CALL sptivec_getTimestepData(rx, 1+0, rtempVector(2))
+    call sptivec_getTimestepData(rx, 1+0, rtempVector(2))
     
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
     ! account as the actual matrix multiplication routine cc_assembleDefect
     ! introduces another -1!
-    IF (cx .NE. -1.0_DP) THEN
-      CALL lsysbl_scaleVector (rtempVector(2),-cx)
-    END IF
+    if (cx .ne. -1.0_DP) then
+      call lsysbl_scaleVector (rtempVector(2),-cx)
+    end if
       
     ! Now what's the evaluation point where to evaluate the nonlinearity/ies?
     ! If the structure defines an evaluation point, we take that one, so
     ! we need another temp vector that holds the evaluation point.
     ! If not, we take the vector rx. This is archived by creating new
     ! vectors that share their information with rx.
-    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(1),.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(2),.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(3),.FALSE.)
-    ELSE
-      CALL lsysbl_duplicateVector (rtempVector(1),rtempVectorEval(1),&
+    if (associated(rspaceTimeMatrix%p_rsolution)) then
+      call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(1),.false.)
+      call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(2),.false.)
+      call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval(3),.false.)
+    else
+      call lsysbl_duplicateVector (rtempVector(1),rtempVectorEval(1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsysbl_duplicateVector (rtempVector(2),rtempVectorEval(2),&
+      call lsysbl_duplicateVector (rtempVector(2),rtempVectorEval(2),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsysbl_duplicateVector (rtempVector(3),rtempVectorEval(3),&
+      call lsysbl_duplicateVector (rtempVector(3),rtempVectorEval(3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    END IF
+    end if
 
     ! If a nonlinearity is involved, rtempVectorEval(1) contains the 'previous',
     ! rtempVectorEval(2) the 'current' and rtempVectorEval(3) the 'next'
     ! solution (relative to the current time step) where to evaluate
     ! the nonlinearity.
-    IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-      CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
+    if (associated(rspaceTimeMatrix%p_rsolution)) then
+      call sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
           1+0, rtempVectorEval(2))
-    END IF
+    end if
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rtempVector(1),p_Dx1)
-    CALL lsysbl_getbase_double (rtempVector(2),p_Dx2)
-    CALL lsysbl_getbase_double (rtempVector(3),p_Dx3)
-    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
-    CALL lsysbl_getbase_double (rtempVectorEval(1),p_DxE1)
-    CALL lsysbl_getbase_double (rtempVectorEval(2),p_DxE2)
-    CALL lsysbl_getbase_double (rtempVectorEval(3),p_DxE3)
+    call lsysbl_getbase_double (rtempVector(1),p_Dx1)
+    call lsysbl_getbase_double (rtempVector(2),p_Dx2)
+    call lsysbl_getbase_double (rtempVector(3),p_Dx3)
+    call lsysbl_getbase_double (rtempVectorD,p_Db)
+    call lsysbl_getbase_double (rtempVectorEval(1),p_DxE1)
+    call lsysbl_getbase_double (rtempVectorEval(2),p_DxE2)
+    call lsysbl_getbase_double (rtempVectorEval(3),p_DxE3)
     
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -1246,70 +1246,70 @@ CONTAINS
     rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
 
     ! If dnorm is specified, clear it.
-    IF (PRESENT(dnorm)) THEN
+    if (present(dnorm)) then
       dnorm = 0.0_DP
-    END IF
+    end if
 
     dtstep = p_rspaceTimeDiscretisation%rtimeDiscr%dtstep
     
     ! Loop through the substeps
     
-    DO ieqTime = 0,p_rspaceTimeDiscretisation%NEQtime-1
+    do ieqTime = 0,p_rspaceTimeDiscretisation%NEQtime-1
     
       ! Depending on the time step scheme, initialise the current time.
-      SELECT CASE (p_rspaceTimeDiscretisation%rtimeDiscr%ctype)
-      CASE (TDISCR_THETA)
+      select case (p_rspaceTimeDiscretisation%rtimeDiscr%ctype)
+      case (TDISCR_THETA)
         rproblem%rtimedependence%dtime = &
             rproblem%rtimedependence%dtimeInit + ieqTime*dtstep
-      CASE (TDISCR_DG0)
+      case (TDISCR_DG0)
         rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + (REAL(ieqTime,DP)+0.5_DP)*dtstep
-      END SELECT
+            rproblem%rtimedependence%dtimeInit + (real(ieqTime,DP)+0.5_DP)*dtstep
+      end select
 
       ! Get the part of rd which is to be modified.
-      IF (cy .NE. 0.0_DP) THEN
-        CALL sptivec_getTimestepData(rd, 1+ieqTime, rtempVectorD)
+      if (cy .ne. 0.0_DP) then
+        call sptivec_getTimestepData(rd, 1+ieqTime, rtempVectorD)
         
         ! If cy <> 1, multiply rtempVectorD by that.
-        IF (cy .NE. 1.0_DP) THEN
-          CALL lsysbl_scaleVector (rtempVectorD,cy)
-        END IF
-      ELSE
-        CALL lsysbl_clearVector (rtempVectorD)
-      END IF
+        if (cy .ne. 1.0_DP) then
+          call lsysbl_scaleVector (rtempVectorD,cy)
+        end if
+      else
+        call lsysbl_clearVector (rtempVectorD)
+      end if
       
-      IF (ieqTime .NE. p_rspaceTimeDiscretisation%NEQtime-1) THEN
+      if (ieqTime .ne. p_rspaceTimeDiscretisation%NEQtime-1) then
       
         ! Read the solution of the 'next' timestep and the 'next' evaluation
         ! point.
 
-        CALL sptivec_getTimestepData(rx, 1+ieqTime+1, rtempVector(3))
+        call sptivec_getTimestepData(rx, 1+ieqTime+1, rtempVector(3))
 
         ! If necesary, multiply the rtempVectorX. We have to take a -1 into
         ! account as the actual matrix multiplication routine cc_assembleDefect
         ! introduces another -1!
-        IF (cx .NE. -1.0_DP) THEN
-          CALL lsysbl_scaleVector (rtempVector(3),-cx)
-        END IF
+        if (cx .ne. -1.0_DP) then
+          call lsysbl_scaleVector (rtempVector(3),-cx)
+        end if
 
-        IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-          CALL sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
+        if (associated(rspaceTimeMatrix%p_rsolution)) then
+          call sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
               1+ieqTime+1, rtempVectorEval(3))
 
-        END IF
+        end if
 
-      END IF
+      end if
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
       ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL cc_updateDiscreteBC (rproblem)
-      END IF
+      if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+        call cc_updateDiscreteBC (rproblem)
+      end if
       
       ! The first and last substep is a little bit special concerning
       ! the matrix!
-      IF (ieqTime .EQ. 0) THEN
+      if (ieqTime .eq. 0) then
         
         ! We are in the first substep. Here, we have to handle the following
         ! part of the supersystem:
@@ -1326,11 +1326,11 @@ CONTAINS
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
           
         ! Subtract: rd = rd - A11 x1
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! -----
@@ -1340,17 +1340,17 @@ CONTAINS
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rmatrixComponents)
 
         ! Subtract: rd = rd - A12 x2
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
+        call lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE IF (ieqTime .LT. p_rspaceTimeDiscretisation%NEQtime-1) THEN
+      else if (ieqTime .lt. p_rspaceTimeDiscretisation%NEQtime-1) then
 
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! ieqTime+1 and a substep ieqTime-1!  Here, we have to handle the following
@@ -1371,17 +1371,17 @@ CONTAINS
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rmatrixComponents)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
+        call lsysbl_releaseMatrix (rblockTemp)
 
         ! -----      
 
@@ -1390,11 +1390,11 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii xi
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
             
         ! -----
@@ -1404,17 +1404,17 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rmatrixComponents)
           
         ! Subtract: rd = rd - Aii+1 xi+1
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
         
         ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
+        call lsysbl_releaseMatrix (rblockTemp)
 
-      ELSE 
+      else 
         
         ! We are in the last substep. Here, we have to handle the following
         ! part of the supersystem:
@@ -1433,13 +1433,13 @@ CONTAINS
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rmatrixComponents)
           
         ! Subtract: rd = rd - Ann-1 xn-1
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xn due to the discretisation scheme!!!
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
      
         ! -----
@@ -1449,92 +1449,92 @@ CONTAINS
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
+        call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rmatrixComponents)
 
         ! Subtract: rd = rd - Ann xn
-        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
       
-      END IF
+      end if
       
-      IF (IAND(cfilter,SPTID_FILTER_BCDEF) .NE. 0) THEN
+      if (iand(cfilter,SPTID_FILTER_BCDEF) .ne. 0) then
         ! Implement the boundary conditions into the defect.
-        CALL vecfil_discreteBCdef (rtempVectorD)
-        CALL vecfil_discreteFBCdef (rtempVectorD)      
-      END IF
+        call vecfil_discreteBCdef (rtempVectorD)
+        call vecfil_discreteFBCdef (rtempVectorD)      
+      end if
 
-      IF ((ieqTime .EQ. 0) .AND. (IAND(cfilter,SPTID_FILTER_ICDEF) .NE. 0)) THEN
+      if ((ieqTime .eq. 0) .and. (iand(cfilter,SPTID_FILTER_ICDEF) .ne. 0)) then
         ! Implement the initial conditions into the defect.
-        CALL tbc_implementInitCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
-      END IF
+        call tbc_implementInitCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
+      end if
 
-      IF ((ieqTime .EQ. p_rspaceTimeDiscretisation%NEQtime-1) .AND. &
-          (IAND(cfilter,SPTID_FILTER_TCDEF) .NE. 0)) THEN
+      if ((ieqTime .eq. p_rspaceTimeDiscretisation%NEQtime-1) .and. &
+          (iand(cfilter,SPTID_FILTER_TCDEF) .ne. 0)) then
         ! Implement the initial conditions into the defect.
-        CALL tbc_implementTermCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
-      END IF
+        call tbc_implementTermCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
+      end if
       
       ! Save the defect vector back to rd.
-      CALL sptivec_setTimestepData(rd, 1+ieqTime, rtempVectorD)
+      call sptivec_setTimestepData(rd, 1+ieqTime, rtempVectorD)
       
       ! If dnorm is specified, calculate the norm of the sub-defect vector and
       ! add it to dnorm.
-      IF (PRESENT(dnorm)) THEN
+      if (present(dnorm)) then
         dnormpart = lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)**2
         dnorm = dnorm + dnormpart
         
-        IF (PRESENT(bprintRes)) THEN
-          IF (bprintRes) THEN
-            CALL output_line ('||D_'//TRIM(sys_siL(1+ieqTime,10))//'|| = '//&
-                TRIM(sys_sdEL(SQRT(dnormpart),10)) )
-            DO icp=1,rtempVectorD%nblocks
-              CALL output_line ('  ||D_'//&
-                  TRIM(sys_siL(1+ieqTime,10))//'^'//TRIM(sys_siL(icp,2))&
+        if (present(bprintRes)) then
+          if (bprintRes) then
+            call output_line ('||D_'//trim(sys_siL(1+ieqTime,10))//'|| = '//&
+                trim(sys_sdEL(sqrt(dnormpart),10)) )
+            do icp=1,rtempVectorD%nblocks
+              call output_line ('  ||D_'//&
+                  trim(sys_siL(1+ieqTime,10))//'^'//trim(sys_siL(icp,2))&
                   //'|| = '//&
-                  TRIM(sys_sdEL(&
+                  trim(sys_sdEL(&
                       lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2),10)) )
-            END DO
-          END IF
-        END IF
-      END IF
+            end do
+          end if
+        end if
+      end if
       
       ! Cycle the solution vectors and the evaluation points: 1 <- 2 <- 3.
-      CALL lsysbl_copyVector (rtempVector(2),rtempVector(1))
-      CALL lsysbl_copyVector (rtempVector(3),rtempVector(2))
+      call lsysbl_copyVector (rtempVector(2),rtempVector(1))
+      call lsysbl_copyVector (rtempVector(3),rtempVector(2))
 
-      IF (ASSOCIATED(rspaceTimeMatrix%p_rsolution)) THEN
-        CALL lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(1))
-        CALL lsysbl_copyVector (rtempVectorEval(3),rtempVectorEval(2))
-      END IF
+      if (associated(rspaceTimeMatrix%p_rsolution)) then
+        call lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(1))
+        call lsysbl_copyVector (rtempVectorEval(3),rtempVectorEval(2))
+      end if
       
       ! Now, the 3rd subvector is again free to take the next vector.
       
-    END DO
+    end do
     
     ! If dnorm is specified, normalise it.
     ! It was calculated from rspaceTimeDiscr%niterations+1 subvectors.
-    IF (PRESENT(dnorm)) THEN
-      dnorm = SQRT(dnorm / REAL(p_rspaceTimeDiscretisation%NEQtime,DP))
-    END IF
+    if (present(dnorm)) then
+      dnorm = sqrt(dnorm / real(p_rspaceTimeDiscretisation%NEQtime,DP))
+    end if
     
     ! Release the temp vectors.
-    CALL lsysbl_releaseVector (rtempVectorEval(3))
-    CALL lsysbl_releaseVector (rtempVectorEval(2))
-    CALL lsysbl_releaseVector (rtempVectorEval(1))
-    CALL lsysbl_releaseVector (rtempVector(3))
-    CALL lsysbl_releaseVector (rtempVector(2))
-    CALL lsysbl_releaseVector (rtempVector(1))
-    CALL lsysbl_releaseVector (rtempVectorD)
+    call lsysbl_releaseVector (rtempVectorEval(3))
+    call lsysbl_releaseVector (rtempVectorEval(2))
+    call lsysbl_releaseVector (rtempVectorEval(1))
+    call lsysbl_releaseVector (rtempVector(3))
+    call lsysbl_releaseVector (rtempVector(2))
+    call lsysbl_releaseVector (rtempVector(1))
+    call lsysbl_releaseVector (rtempVectorD)
     
-  END SUBROUTINE 
+  end subroutine 
    
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_generateInitCondRHS (rproblem,rspaceTimeDiscr,rx,rb)
+  subroutine cc_generateInitCondRHS (rproblem,rspaceTimeDiscr,rx,rb)
 
 !<description>
   ! Generates the RHS vector used for the initial condition.
@@ -1542,10 +1542,10 @@ CONTAINS
 
 !<input>
   ! Problem structure of the main problem.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! Space-time discretisation structure of the level of the RHS.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
   
   ! Solution vector containing the solution of the first timestep.
   type(t_vectorBlock), intent(in) :: rx
@@ -1563,20 +1563,20 @@ CONTAINS
     ! local variables
     type(t_ccmatrixComponents) :: rmatrixComponents
     type(t_problem_lvl), pointer :: p_rlevelInfo
-    LOGICAL :: bconvectionExplicit
+    logical :: bconvectionExplicit
     real(DP) :: dtstep, dtheta,dequationType
     
     ! If the following constant is set from 1.0 to 0.0, the primal system is
     ! decoupled from the dual system!
-    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
+    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
     
     ! If the following constant is set from 1.0 to 0.0, the dual system is
     ! decoupled from the primal system!
-    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
+    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
     
     ! If the following parameter is set from 1.0 to 0.0, the time coupling
     ! is disabled, resulting in a stationary simulation in every timestep.
-    REAL(DP), PARAMETER :: dtimeCoupling = 1.0_DP
+    real(DP), parameter :: dtimeCoupling = 1.0_DP
     
     ! The initial condition is implemented as:
     !
@@ -1606,22 +1606,22 @@ CONTAINS
     ! We set up only the stuff for the primal equation; for setting up
     ! the RHS, there is no dual equation and also no coupling between the
     ! primal and dual solutions.
-    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .NE. 0
+    bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .ne. 0
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     dequationType = 1.0_DP
-    IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
+    if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
       
     rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
     rmatrixComponents%dtheta1 = dtheta
     
-    IF (.NOT. bconvectionExplicit) THEN
+    if (.not. bconvectionExplicit) then
       rmatrixComponents%dgamma1 = &
-          dtheta * REAL(1-rproblem%iequation,DP)
-    END IF
+          dtheta * real(1-rproblem%iequation,DP)
+    end if
 
     rmatrixComponents%deta1 = 1.0_DP
     rmatrixComponents%dtau1 = 1.0_DP
@@ -1630,7 +1630,7 @@ CONTAINS
     call lsysbl_clearVector (rb)
     call cc_assembleDefect (rmatrixComponents,rx,rb,-1.0_DP,rx,rx,rx)
 
-  END SUBROUTINE
+  end subroutine
 
 !  ! ***************************************************************************
 !  
@@ -1938,4 +1938,4 @@ CONTAINS
 !    
 !  END SUBROUTINE
   
-END MODULE
+end module

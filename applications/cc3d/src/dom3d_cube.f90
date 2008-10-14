@@ -31,42 +31,42 @@
 !# </purpose>
 !##############################################################################
 
-MODULE dom3d_cube
+module dom3d_cube
 
-  USE fsystem
-  USE paramlist
-  USE triangulation
-  USE meshregion
+  use fsystem
+  use paramlist
+  use triangulation
+  use meshregion
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Face identifiers">
 
   ! Identification flag for the bottom face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_BOTTOM = 2**0
+  integer(I32), parameter :: DOM3D_CUBE_REG_BOTTOM = 2**0
 
   ! Identification flag for the front face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_FRONT  = 2**1
+  integer(I32), parameter :: DOM3D_CUBE_REG_FRONT  = 2**1
 
   ! Identification flag for the right face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_RIGHT  = 2**2
+  integer(I32), parameter :: DOM3D_CUBE_REG_RIGHT  = 2**2
 
   ! Identification flag for the back face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_BACK   = 2**3
+  integer(I32), parameter :: DOM3D_CUBE_REG_BACK   = 2**3
 
   ! Identification flag for the left face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_LEFT   = 2**4
+  integer(I32), parameter :: DOM3D_CUBE_REG_LEFT   = 2**4
 
   ! Identification flag for the top face:
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_TOP    = 2**5
+  integer(I32), parameter :: DOM3D_CUBE_REG_TOP    = 2**5
   
   ! Frequently used: All faces except for the right one.
   ! This combination is often used in (Navier-)Stokes examples where
   ! every face is Dirichlet, except for the right one, which is left
   ! Neumann.
-  INTEGER(I32), PARAMETER :: DOM3D_CUBE_REG_STOKES = DOM3D_CUBE_REG_BOTTOM &
+  integer(I32), parameter :: DOM3D_CUBE_REG_STOKES = DOM3D_CUBE_REG_BOTTOM &
                      + DOM3D_CUBE_REG_FRONT + DOM3D_CUBE_REG_BACK&
                      + DOM3D_CUBE_REG_LEFT + DOM3D_CUBE_REG_TOP
 
@@ -74,18 +74,18 @@ MODULE dom3d_cube
 
 !</constants>
 
-INTERFACE dom3d_cube_calcMeshRegion
-  MODULE PROCEDURE dom3d_cube_calcMeshRegion_C
-  MODULE PROCEDURE dom3d_cube_calcMeshRegion_I
-END INTERFACE
+interface dom3d_cube_calcMeshRegion
+  module procedure dom3d_cube_calcMeshRegion_C
+  module procedure dom3d_cube_calcMeshRegion_I
+end interface
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_cube_calcMeshRegion_C(rmeshRegion,rtriangulation,cfaces)
+  subroutine dom3d_cube_calcMeshRegion_C(rmeshRegion,rtriangulation,cfaces)
 
 !<description>
   ! This routine calculates a mesh region containing all vertices, edges and
@@ -95,58 +95,58 @@ CONTAINS
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the 3D [0,1]^3 cube domain.
-  TYPE(t_triangulation), TARGET, INTENT(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(IN)      :: rtriangulation
   
   ! A combination of DOM3D_CUBE_REG_XXXX contants defined above specifying
   ! which faces should be in the mesh region.
-  INTEGER, INTENT(IN)                            :: cfaces
+  integer, intent(IN)                            :: cfaces
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  TYPE(t_meshRegion), INTENT(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(OUT)                :: rmeshRegion
 !<output>
 
 !<subroutine>
 
   ! Some local variables
-  INTEGER :: i
-  INTEGER, DIMENSION(6) :: Ifaces
+  integer :: i
+  integer, dimension(6) :: Ifaces
   
     ! First of all, set up the Ifaces array:
-    DO i = 1, 6
+    do i = 1, 6
       
       ! If the corresponding bit is set, we'll add the face, otherwise
       ! we will set the corresponding Ifaces entry to -1.
-      IF(IAND(cfaces, 2**(i-1)) .NE. 0) THEN
+      if(iand(cfaces, 2**(i-1)) .ne. 0) then
         ! Add the face
         Ifaces(i) = i
-      ELSE
+      else
         ! Ignore the face
         Ifaces(i) = -1
-      END IF
+      end if
       
-    END DO
+    end do
 
     ! Create a mesh-region holding all the faces, based on the hit-test
     ! routine below.
-    CALL mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
-         MSHREG_IDX_FACE, .TRUE., dom3d_cube_HitTest, Ifaces)
+    call mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
+         MSHREG_IDX_FACE, .true., dom3d_cube_HitTest, Ifaces)
     
     ! Now calculate the vertice and edge index arrays in the mesh region
     ! based on the face index array.
-    CALL mshreg_recalcVerticesFromFaces(rmeshRegion)
-    CALL mshreg_recalcEdgesFromFaces(rmeshRegion)
+    call mshreg_recalcVerticesFromFaces(rmeshRegion)
+    call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_cube_calcMeshRegion_I(rmeshRegion,rtriangulation,Ifaces)
+  subroutine dom3d_cube_calcMeshRegion_I(rmeshRegion,rtriangulation,Ifaces)
 
 !<description>
   ! This routine calculates a mesh region containing all vertices, edges and
@@ -156,41 +156,41 @@ CONTAINS
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the 3D [0,1]^3 cube domain.
-  TYPE(t_triangulation), TARGET, INTENT(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(IN)      :: rtriangulation
   
   ! An array holding the indices of the faces which should be in the mesh
   ! region.
-  INTEGER, DIMENSION(:), INTENT(IN)              :: Ifaces
+  integer, dimension(:), intent(IN)              :: Ifaces
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  TYPE(t_meshRegion), INTENT(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(OUT)                :: rmeshRegion
 !<output>
 
 !<subroutine>
 
     ! Create a mesh-region holding all the faces, based on the hit-test
     ! routine below.
-    CALL mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
-         MSHREG_IDX_FACE, .TRUE., dom3d_cube_HitTest, Ifaces)
+    call mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
+         MSHREG_IDX_FACE, .true., dom3d_cube_HitTest, Ifaces)
     
     ! Now calculate the vertice and edge index arrays in the mesh region
     ! based on the face index array.
-    CALL mshreg_recalcVerticesFromFaces(rmeshRegion)
-    CALL mshreg_recalcEdgesFromFaces(rmeshRegion)
+    call mshreg_recalcVerticesFromFaces(rmeshRegion)
+    call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_cube_HitTest(inumCells,Dcoords,Ihit,rcollection)
+  subroutine dom3d_cube_HitTest(inumCells,Dcoords,Ihit,rcollection)
   
-  USE collection
+  use collection
   
 !<description>
   ! This subroutine is called for hit-testing cells to decide whether a
@@ -202,78 +202,78 @@ CONTAINS
 !<input>
   ! Number of cells (i.e. vertices,edges,faces,etc.) for which the
   ! hit-test is to be performed.
-  INTEGER, INTENT(IN)                          :: inumCells
+  integer, intent(IN)                          :: inumCells
     
   ! Coordinates of the points for which the hit-test is to be performed.
   ! The dimension of the array is at least (1:idim,1:inumCells), where:
   ! -> idim is the dimension of the mesh, i.e. 1 for 1D, 2 for 2D, etc.
   ! -> inumCells is the parameter passed to this routine.
-  REAL(DP), DIMENSION(:,:), INTENT(IN)         :: Dcoords
+  real(DP), dimension(:,:), intent(IN)         :: Dcoords
 !</input>
 
 !<output>
   ! An array that recieves the result of the hit-test.
   ! The dimension of the array is at least (1:inumCells).
-  INTEGER, DIMENSION(:), INTENT(OUT)           :: Ihit
+  integer, dimension(:), intent(OUT)           :: Ihit
 !</output>
 
 !</inputoutput>
   ! OPTIONAL: A collection structure to provide additional information
   ! to the hit-test routine.
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL  :: rcollection
+  type(t_collection), intent(INOUT), optional  :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: i
+  integer :: i
   
   ! We will not check the coordinates to be <= 0 (or >= 1), but we will
   ! check them against a small tolerance to avoid that boundary cells
   ! are treated as "inside the domain" due to rounding errors.
-  REAL(DP), PARAMETER :: dzero = 0.0001_DP
-  REAL(DP), PARAMETER :: done = 0.9999_DP
+  real(DP), parameter :: dzero = 0.0001_DP
+  real(DP), parameter :: done = 0.9999_DP
   
     ! Loop through all cells
-    DO i = 1, inumCells
+    do i = 1, inumCells
       
       ! Bottom face?
-      IF      (Dcoords(3,i) .LT. dzero) THEN
+      if      (Dcoords(3,i) .lt. dzero) then
         Ihit(i) = 1
       
       ! Front face?
-      ELSE IF (Dcoords(2,i) .LT. dzero) THEN
+      else if (Dcoords(2,i) .lt. dzero) then
         Ihit(i) = 2
       
       ! Right face?
-      ELSE IF (Dcoords(1,i) .GT. done) THEN
+      else if (Dcoords(1,i) .gt. done) then
         Ihit(i) = 3
       
       ! Back face?
-      ELSE IF (Dcoords(2,i) .GT. done) THEN
+      else if (Dcoords(2,i) .gt. done) then
         Ihit(i) = 4
       
       ! Left face?
-      ELSE IF (Dcoords(1,i) .LT. dzero) THEN
+      else if (Dcoords(1,i) .lt. dzero) then
         Ihit(i) = 5
       
       ! Top face?
-      ELSE IF (Dcoords(3,i) .GT. done) THEN
+      else if (Dcoords(3,i) .gt. done) then
         Ihit(i) = 6
       
       ! Inner face? 
-      ELSE
+      else
         Ihit(i) = 0
-      END IF
+      end if
       
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE dom3d_cube_calcParProfile (dvalue, iregion, dx, dy, dz)
+  subroutine dom3d_cube_calcParProfile (dvalue, iregion, dx, dy, dz)
   
 !<description>
   ! This routine calculates the parabolic profile for a speicified domain
@@ -283,39 +283,39 @@ CONTAINS
 !<input>
   ! Specifies the index of the boundary region of which the parabolic profile
   ! is to be calculated.
-  INTEGER, INTENT(IN)                            :: iregion
+  integer, intent(IN)                            :: iregion
   
   ! The coordinates of the point in which the parabolic profile is to be
   ! evaluated.
-  REAL(DP), INTENT(IN)                           :: dx, dy, dz
+  real(DP), intent(IN)                           :: dx, dy, dz
 !</input>
 
 !<output>
   ! The result of the evaluation of the parabolic profile.
-  REAL(DP), INTENT(OUT)                          :: dvalue
+  real(DP), intent(OUT)                          :: dvalue
 !</output>
 
 !</subroutine>
 
-    SELECT CASE(iregion)
-    CASE (1,6)
+    select case(iregion)
+    case (1,6)
       ! X-Y-Profile
       dvalue = 16.0_DP*dx*(1.0_DP-dx)*dy*(1.0_DP-dy)
     
-    CASE (2,4)
+    case (2,4)
       ! X-Z-Profile
       dvalue = 16.0_DP*dx*(1.0_DP-dx)*dz*(1.0_DP-dz)
     
-    CASE (3,5)
+    case (3,5)
       ! Y-Z-Profile
       dvalue = 16.0_DP*dy*(1.0_DP-dy)*dz*(1.0_DP-dz)
       
-    CASE DEFAULT
+    case DEFAULT
       ! Invalid region
-      PRINT *, 'ERROR: dom3d_cube_calcParProfile: Invalid region'
-      CALL sys_halt()
-    END SELECT
+      print *, 'ERROR: dom3d_cube_calcParProfile: Invalid region'
+      call sys_halt()
+    end select
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

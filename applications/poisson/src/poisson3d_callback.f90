@@ -47,36 +47,36 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poisson3d_callback
+module poisson3d_callback
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Laplace_3D(rdiscretisationTrial,rdiscretisationTest,rform, &
+  subroutine coeff_Laplace_3D(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -93,44 +93,44 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
     
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
 
     ! The bilinear form which is currently being evaluated:
-    TYPE(t_bilinearForm), INTENT(IN)                            :: rform
+    type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -139,29 +139,29 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
 
     Dcoefficients = 1.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE coeff_RHS_3D (rdiscretisation,rform, &
+  subroutine coeff_RHS_3D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -178,35 +178,35 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -215,7 +215,7 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
@@ -232,22 +232,22 @@ CONTAINS
             Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)))
           
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE getReferenceFunction_3D (cderivative,rdiscretisation, &
+  subroutine getReferenceFunction_3D (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
   
-  USE basicgeometry
-  USE triangulation
-  USE collection
-  USE scalarpde
-  USE domainintegration
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
   
 !<description>
   ! This subroutine is called during the calculation of errors. It has to compute
@@ -265,37 +265,37 @@ CONTAINS
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  INTEGER, INTENT(IN)                                         :: cderivative
+  integer, intent(IN)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  INTEGER, INTENT(IN)                                         :: nelements
+  integer, intent(IN)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  integer, intent(IN)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   ! DIMENSION(dimension,npointsPerElement,nelements)
-  REAL(DP), DIMENSION(:,:,:), INTENT(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
 
@@ -304,52 +304,52 @@ CONTAINS
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
 !</output>
   
 !</subroutine>
 
-  SELECT CASE (cderivative)
-  CASE (DER_FUNC3D)
+  select case (cderivative)
+  case (DER_FUNC3D)
     !    u(x,y,z) = 64*x*(1-x)*y*(1-y)*z*(1-z)
     Dvalues(:,:) = 64.0_DP * Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:))&
                            * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))&
                            * Dpoints(3,:,:) * (1.0_DP - Dpoints(3,:,:))
-  CASE (DER_DERIV3D_X)
+  case (DER_DERIV3D_X)
     !    u(x,y,z) = 64*x*(1-x)*y*(1-y)*z*(1-z)
     ! => u_x(x,y,z) = 64*(1-2*x)*y*(1-y)*z*(1-z)
     Dvalues(:,:) = 64.0_DP * (1.0_DP - 2.0_DP * Dpoints(1,:,:))&
                            * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))&
                            * Dpoints(3,:,:) * (1.0_DP - Dpoints(3,:,:))
-  CASE (DER_DERIV3D_Y)
+  case (DER_DERIV3D_Y)
     !    u(x,y,z) = 64*x*(1-x)*y*(1-y)*z*(1-z)
     ! => u_y(x,y,z) = 64*(1-2*y)*x*(1-x)*z*(1-z)
     Dvalues(:,:) = 64.0_DP * (1.0_DP - 2.0_DP * Dpoints(2,:,:))&
                            * Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:))&
                            * Dpoints(3,:,:) * (1.0_DP - Dpoints(3,:,:))
-  CASE (DER_DERIV3D_Z)
+  case (DER_DERIV3D_Z)
     !    u(x,y,z) = 64*x*(1-x)*y*(1-y)*z*(1-z)
     ! => u_y(x,y,z) = 64*(1-2*z)*x*(1-x)*y*(1-y)
     Dvalues(:,:) = 64.0_DP * (1.0_DP - 2.0_DP * Dpoints(3,:,:))&
                            * Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:))&
                            * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))
-  CASE DEFAULT
+  case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
-  END SELECT
+  end select
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues_3D (Icomponents,rdiscretisation,rbcRegion,ielement, &
+  subroutine getBoundaryValues_3D (Icomponents,rdiscretisation,rbcRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
-  USE collection
-  USE spatialdiscretisation
-  USE discretebc
+  use collection
+  use spatialdiscretisation
+  use discretebc
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -364,27 +364,27 @@ CONTAINS
   !   Icomponents(1) defines the number of the boundary component, the value
   !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
   !   2=2nd solution component, e.g. Y-velocity,...)
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+  integer, dimension(:), intent(IN)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Boundary condition region that is currently being processed.
   ! (This e.g. defines the type of boundary conditions that are
   !  currently being calculated, as well as information about the current
   !  boundary segment 'where we are at the moment'.)
-  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
+  type(t_bcRegion), intent(IN)                                :: rbcRegion
   
   
   ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
+  integer(I32), intent(IN)                                    :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  INTEGER, INTENT(IN)                                         :: cinfoNeeded
+  integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -398,7 +398,7 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  INTEGER(I32), INTENT(IN)                                     :: iwhere
+  integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -407,11 +407,11 @@ CONTAINS
   !   dwhere = parameter value of the point where the value should be computed,
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   dwhere = 0 (not used)
-  REAL(DP), INTENT(IN)                                        :: dwhere
+  real(DP), intent(IN)                                        :: dwhere
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
+  type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
@@ -420,7 +420,7 @@ CONTAINS
   ! only needs one value, the computed quantity is put into Dvalues(1). 
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
   
 !</subroutine>
@@ -436,19 +436,19 @@ CONTAINS
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
   !<subroutine>
 
-  SUBROUTINE getBoundaryValuesMR_3D (Icomponents,rdiscretisation,rmeshRegion,&
+  subroutine getBoundaryValuesMR_3D (Icomponents,rdiscretisation,rmeshRegion,&
                                       cinfoNeeded,Iwhere,Dwhere,Dcoords,Dvalues,&
                                       rcollection)
   
-  USE collection
-  USE spatialdiscretisation
-  USE meshregion
+  use collection
+  use spatialdiscretisation
+  use meshregion
   
 !<description>
   ! This subroutine is called during the assembly of boundary conditions which
@@ -464,20 +464,20 @@ CONTAINS
   !   3=3rd solution component, e.g. pressure)
   ! For pressure drop boundary / normal stress:
   !   Velocity components that are affected by the normal stress
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+  integer, dimension(:), intent(IN)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Mesh region that is currently being processed.
-  TYPE(t_meshRegion), INTENT(IN)                              :: rmeshRegion
+  type(t_meshRegion), intent(IN)                              :: rmeshRegion
 
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  INTEGER, INTENT(IN)                                         :: cinfoNeeded
+  integer, intent(IN)                                         :: cinfoNeeded
   
   ! An array holding information about what type of DOF is currently processed.
   ! The information is build up as follows:
@@ -486,7 +486,7 @@ CONTAINS
   ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
   ! Iwhere(4) = currently processed element number.
   ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
-  INTEGER, DIMENSION(4), INTENT(IN)                           :: Iwhere
+  integer, dimension(4), intent(IN)                           :: Iwhere
   
   ! The coordinates of the point which is currently processed, given in
   ! reference coordinates of the currently processed cell type (edge,face,element).
@@ -494,15 +494,15 @@ CONTAINS
   ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
   ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
   ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
-  REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dwhere
+  real(DP), dimension(:), intent(IN)                          :: Dwhere
 
   ! The coordinates of the point for which the boundary values are to be
   ! calculated.
-  REAL(DP), DIMENSION(:), INTENT(IN)                          :: Dcoords
+  real(DP), dimension(:), intent(IN)                          :: Dcoords
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
+  type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
@@ -515,7 +515,7 @@ CONTAINS
   ! The function may return SYS_INFINITY as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
-  REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
   
 !</subroutine>
@@ -523,6 +523,6 @@ CONTAINS
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

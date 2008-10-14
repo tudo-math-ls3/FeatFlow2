@@ -18,43 +18,43 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM cc2dmini
+program cc2dmini
 
-  USE cc2dmini_method1
-  USE cc2dmini_method2
+  use cc2dmini_method1
+  use cc2dmini_method2
   
-  IMPLICIT NONE
+  implicit none
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
+  call system_init()
 
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !
   ! 2.) Initialise FEAT 2.0 storage management:
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
 
   ! Call the problem to solve. cc2d method 1:
-  PRINT *
-  PRINT *,'Calculating cc2dmini-Problem with method 1'
-  PRINT *,'------------------------------------------'
-  CALL cc2dmini1
+  print *
+  print *,'Calculating cc2dmini-Problem with method 1'
+  print *,'------------------------------------------'
+  call cc2dmini1
 
   ! Call the problem to solve. cc2d method 2:
-  PRINT *
-  PRINT *,'Calculating cc2dmini-Problem with method 2'
-  PRINT *,'------------------------------------------'
-  CALL cc2dmini2
+  print *
+  print *,'Calculating cc2dmini-Problem with method 2'
+  print *,'------------------------------------------'
+  call cc2dmini2
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
-  CALL storage_info(.TRUE.)
+  print *
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

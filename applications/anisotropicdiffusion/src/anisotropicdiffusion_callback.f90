@@ -52,37 +52,37 @@
 !# </purpose>
 !##############################################################################
 
-MODULE anisotropicdiffusion_callback
+module anisotropicdiffusion_callback
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE mprimitives
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use mprimitives
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Laplace (rdiscretisationTrial,rdiscretisationTest,rform, &
+  subroutine coeff_Laplace (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -99,44 +99,44 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
     
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
 
     ! The bilinear form which is currently being evaluated:
-    TYPE(t_bilinearForm), INTENT(IN)                            :: rform
+    type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -145,29 +145,29 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
 
     Dcoefficients = 1.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE coeff_RHS (rdiscretisation,rform, &
+  subroutine coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -184,35 +184,35 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -221,13 +221,13 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
 
-    INTEGER :: isolution
-    REAL(DP), DIMENSION(2,2) :: A
+    integer :: isolution
+    real(DP), dimension(2,2) :: A
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
@@ -237,8 +237,8 @@ CONTAINS
     A(2,1) = rcollection%DquickAccess(3) 
     A(2,2) = rcollection%DquickAccess(4) 
 
-    SELECT CASE (isolution)
-    CASE (0,2)
+    select case (isolution)
+    case (0,2)
 
       !    u(x,y) = 16*x*(1-x)*y*(1-y)
       ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
@@ -256,33 +256,33 @@ CONTAINS
         +16.0_DP*DPoints(1,:,:)*DPoints(2,:,:)) &
         -32.0_DP*A(2,2)*DPoints(1,:,:)*(1 - DPoints(1,:,:)) )
 
-    CASE (3)             
+    case (3)             
       Dcoefficients (1,:,:) = 32.0_DP * &
                       ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
                         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
                         
-    CASE DEFAULT
+    case DEFAULT
     
       Dcoefficients (1,:,:) = 0.0_DP
                         
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE getReferenceFunction (cderivative,rdiscretisation, &
+  subroutine getReferenceFunction (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
   
-  USE basicgeometry
-  USE triangulation
-  USE collection
-  USE scalarpde
-  USE domainintegration
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
   
 !<description>
   ! This subroutine is called during the calculation of errors. It has to compute
@@ -300,36 +300,36 @@ CONTAINS
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  INTEGER, INTENT(IN)                                         :: cderivative
+  integer, intent(IN)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  INTEGER, INTENT(IN)                                         :: nelements
+  integer, intent(IN)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  integer, intent(IN)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  REAL(DP), DIMENSION(:,:,:), INTENT(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
 
@@ -338,13 +338,13 @@ CONTAINS
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
 !</output>
   
 !</subroutine>
 
-    INTEGER :: isolution
-    REAL(DP), DIMENSION(2,2) :: A
+    integer :: isolution
+    real(DP), dimension(2,2) :: A
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
@@ -354,41 +354,41 @@ CONTAINS
     A(2,1) = rcollection%DquickAccess(3) 
     A(2,2) = rcollection%DquickAccess(4) 
 
-  SELECT CASE (cderivative)
-  CASE (DER_FUNC)
+  select case (cderivative)
+  case (DER_FUNC)
     ! u(x,y) = 16*x*(1-x)*y*(1-y)
     Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
                               Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-  CASE (DER_DERIV_X)
+  case (DER_DERIV_X)
     !    u(x,y)   = 16*x*(1-x)*y*(1-y)
     ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
     Dvalues (:,:) = 16.0_DP * ( &
         Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
         Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-  CASE (DER_DERIV_Y)
+  case (DER_DERIV_Y)
     !    u(x,y)   = 16*x*(1-x)*y*(1-y)
     ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
     Dvalues (:,:) = 16.0_DP * ( &
         Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
         Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-  CASE DEFAULT
+  case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
-  END SELECT
+  end select
   
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+  subroutine getBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
-  USE collection
-  USE spatialdiscretisation
-  USE discretebc
+  use collection
+  use spatialdiscretisation
+  use discretebc
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -403,23 +403,23 @@ CONTAINS
   !   Icomponents(1) defines the number of the boundary component, the value
   !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
   !   2=2nd solution component, e.g. Y-velocity,...)
-  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+  integer, dimension(:), intent(IN)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Boundary region that is currently being processed.
-  TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
+  integer(I32), intent(IN)                                    :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  INTEGER, INTENT(IN)                                         :: cinfoNeeded
+  integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -433,7 +433,7 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  INTEGER(I32), INTENT(IN)                                     :: iwhere
+  integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -442,11 +442,11 @@ CONTAINS
   !   dwhere = parameter value of the point where the value should be computed,
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   dwhere = 0 (not used)
-  REAL(DP), INTENT(IN)                                        :: dwhere
+  real(DP), intent(IN)                                        :: dwhere
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(IN), OPTIONAL      :: rcollection
+  type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
@@ -455,14 +455,14 @@ CONTAINS
   ! only needs one value, the computed quantity is put into Dvalues(1). 
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
   
 !</subroutine>
 
-    REAL(DP) :: dx,dy
-    INTEGER :: isolution
-    REAL(DP), DIMENSION(2,2) :: A
+    real(DP) :: dx,dy
+    integer :: isolution
+    real(DP), dimension(2,2) :: A
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
@@ -474,7 +474,7 @@ CONTAINS
 
     ! Get the X/Y-coordinates of the boundary point:
     !
-    CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    call boundary_getCoords(rdiscretisation%p_rboundary, &
         rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
 !    ! Return zero Dirichlet boundary values for all situations.
@@ -504,13 +504,13 @@ CONTAINS
 !    END SELECT
     Dvalues(1) = analyticalFunction (isolution,dx,dy)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<function>
 
-  REAL(DP) FUNCTION analyticalFunction (ifunction,dx,dy)
+  real(DP) function analyticalFunction (ifunction,dx,dy)
   
 !<description>
   ! Calculates the value of an analytical function in a point (dx,dy).
@@ -519,10 +519,10 @@ CONTAINS
   
 !<input>
   ! Identifier for the function to evaluate.
-  INTEGER, INTENT(IN) :: ifunction
+  integer, intent(IN) :: ifunction
 
   ! Point where to evaluate
-  REAL(DP), INTENT(IN) :: dx,dy
+  real(DP), intent(IN) :: dx,dy
 !</input>
 
 !<return>
@@ -531,63 +531,63 @@ CONTAINS
   
 !</subroutine>
 
-    REAL(DP) :: dvalue
+    real(DP) :: dvalue
 
     ! Return zero Dirichlet boundary values for all situations.
-    SELECT CASE (ifunction)
-    CASE (0)
+    select case (ifunction)
+    case (0)
       dvalue = 0.0_DP
       
-    CASE (1)
+    case (1)
       dvalue = 0.0_DP
-      IF (dy .EQ. 0.0_DP) THEN
-        IF ((dx .GE. 0.0_DP) .AND. (dx .LE. 0.2_DP)) dvalue = 1.0_DP
-        IF ((dx .GE. 0.2_DP) .AND. (dx .LE. 0.3_DP)) &
-          CALL mprim_linearRescale(dx,0.2_DP,0.3_DP,1.0_DP,0.5_DP,dvalue)
-        IF ((dx .GE. 0.3_DP) .AND. (dx .LE. 1.0_DP)) dvalue = 0.5_DP
-      ELSE IF (dx .EQ. 1.0_DP) THEN
-        IF ((dy .GE. 0.0_DP) .AND. (dy .LE. 0.7_DP)) dvalue = 0.5_DP
-        IF ((dy .GE. 0.7_DP) .AND. (dy .LE. 0.8_DP)) &
-          CALL mprim_linearRescale(dy,0.7_DP,0.8_DP,0.5_DP,0.0_DP,dvalue)
-        IF ((dy .GE. 0.8_DP) .AND. (dy .LE. 1.0_DP)) dvalue = 0.0_DP
-      ELSE IF (dy .EQ. 1.0_DP) THEN
-        IF ((dx .GE. 0.8_DP) .AND. (dx .LE. 1.0_DP)) dvalue = 0.0_DP
-        IF ((dx .GE. 0.7_DP) .AND. (dx .LE. 0.8_DP)) &
-          CALL mprim_linearRescale(dx,0.7_DP,0.8_DP,0.5_DP,0.0_DP,dvalue)
-        IF ((dx .GE. 0.0_DP) .AND. (dx .LE. 0.7_DP)) dvalue = 0.5_DP
-      ELSE IF (dx .EQ. 0.0_DP) THEN
-        IF ((dy .GE. 0.3_DP) .AND. (dy .LE. 1.0_DP)) dvalue = 0.5_DP
-        IF ((dy .GE. 0.2_DP) .AND. (dy .LE. 0.3_DP)) &
-          CALL mprim_linearRescale(dy,0.2_DP,0.3_DP,1.0_DP,0.5_DP,dvalue)
-        IF ((dy .GE. 0.0_DP) .AND. (dy .LE. 0.2_DP)) dvalue = 1.0_DP
-      END IF
-    CASE (2)
+      if (dy .eq. 0.0_DP) then
+        if ((dx .ge. 0.0_DP) .and. (dx .le. 0.2_DP)) dvalue = 1.0_DP
+        if ((dx .ge. 0.2_DP) .and. (dx .le. 0.3_DP)) &
+          call mprim_linearRescale(dx,0.2_DP,0.3_DP,1.0_DP,0.5_DP,dvalue)
+        if ((dx .ge. 0.3_DP) .and. (dx .le. 1.0_DP)) dvalue = 0.5_DP
+      else if (dx .eq. 1.0_DP) then
+        if ((dy .ge. 0.0_DP) .and. (dy .le. 0.7_DP)) dvalue = 0.5_DP
+        if ((dy .ge. 0.7_DP) .and. (dy .le. 0.8_DP)) &
+          call mprim_linearRescale(dy,0.7_DP,0.8_DP,0.5_DP,0.0_DP,dvalue)
+        if ((dy .ge. 0.8_DP) .and. (dy .le. 1.0_DP)) dvalue = 0.0_DP
+      else if (dy .eq. 1.0_DP) then
+        if ((dx .ge. 0.8_DP) .and. (dx .le. 1.0_DP)) dvalue = 0.0_DP
+        if ((dx .ge. 0.7_DP) .and. (dx .le. 0.8_DP)) &
+          call mprim_linearRescale(dx,0.7_DP,0.8_DP,0.5_DP,0.0_DP,dvalue)
+        if ((dx .ge. 0.0_DP) .and. (dx .le. 0.7_DP)) dvalue = 0.5_DP
+      else if (dx .eq. 0.0_DP) then
+        if ((dy .ge. 0.3_DP) .and. (dy .le. 1.0_DP)) dvalue = 0.5_DP
+        if ((dy .ge. 0.2_DP) .and. (dy .le. 0.3_DP)) &
+          call mprim_linearRescale(dy,0.2_DP,0.3_DP,1.0_DP,0.5_DP,dvalue)
+        if ((dy .ge. 0.0_DP) .and. (dy .le. 0.2_DP)) dvalue = 1.0_DP
+      end if
+    case (2)
       dvalue = 16.0_DP*dx*(1-dx)*dy*(1-dy)
-    CASE (4)
-      IF ((dx .EQ. 0.0_DP) .OR. (dy .EQ. 0.0_DP) .OR. & 
-          (dx .EQ. 1.0_DP) .OR. (dy .EQ. 1.0_DP)) THEN
+    case (4)
+      if ((dx .eq. 0.0_DP) .or. (dy .eq. 0.0_DP) .or. & 
+          (dx .eq. 1.0_DP) .or. (dy .eq. 1.0_DP)) then
         dvalue = 0.0_DP
-      ELSE
+      else
         dvalue = 2.0_DP
-      END IF
+      end if
       
-    CASE DEFAULT
+    case DEFAULT
       dvalue = 0.0_DP
       
-    END SELECT
+    end select
     
     analyticalFunction = dvalue
   
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,ieltype,ierrorestimator,rindicator)
+  subroutine getMonitorFunction(rtriangulation,rsolution,ieltype,ierrorestimator,rindicator)
   
-    USE pprocgradients
-    USE pprocerror
+    use pprocgradients
+    use pprocerror
 
 !<description>
   ! This routine defines a 'monitor function' for the adaptive grid refinement
@@ -599,16 +599,16 @@ CONTAINS
   
 !<input>
     ! The triangulation structure of the underlying mesh which is to be refined
-    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    type(t_triangulation), intent(IN) :: rtriangulation
 
     ! The solution vector
-    TYPE(t_vectorScalar), INTENT(INOUT)  :: rsolution
+    type(t_vectorScalar), intent(INOUT)  :: rsolution
 
     ! The type of element used for the FE solution
-    INTEGER(I32), INTENT(IN) :: ieltype
+    integer(I32), intent(IN) :: ieltype
 
     ! The type of error estimator
-    INTEGER, INTENT(IN) :: ierrorestimator
+    integer, intent(IN) :: ierrorestimator
 !</input>
     
 !</inputoutput>
@@ -617,144 +617,144 @@ CONTAINS
     ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
     ! in coarsening -- as specified during the initialisation of the
     ! mesh refinement in the main program.
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+    type(t_vectorScalar), intent(INOUT) :: rindicator
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_vectorBlock)         :: rgradient,rgradientRef
-    TYPE(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
-    REAL(DP)                    :: dsolutionError,dgradientError,daux
+    type(t_vectorBlock)         :: rgradient,rgradientRef
+    type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
+    real(DP)                    :: dsolutionError,dgradientError,daux
 
     ! Initialise block discretisations
-    CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
+    call spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
         rtriangulation, rsolution%p_rspatialdiscr%p_rboundary)
-    CALL spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
+    call spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
         rtriangulation, rsolution%p_rspatialdiscr%p_rboundary)
 
     ! What kind of element type is used for the FE solution
-    SELECT CASE(ieltype)
-    CASE(1)
+    select case(ieltype)
+    case(1)
       ! Initialise spatial discretisations for gradient with P0-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
       
-    CASE(2)
+    case(2)
       ! Initialise spatial discretisations for gradient with P1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P2-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
-    CASE(11)
+    case(11)
       ! Initialise spatial discretisations for gradient with Q0-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
-    CASE(13)
+    case(13)
       ! Initialise spatial discretisations for gradient with Q1-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q2-elements
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscr,&
           EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
 
-    CASE(-1)
+    case(-1)
       ! Initialise spatial discretisations for gradient with P0/Q0-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1/Q1-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%RspatialDiscr(2))
       
-    CASE(-2)
+    case(-2)
       ! Initialise spatial discretisations for gradient with P1/Q1-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%RspatialDiscr(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P2/Q2-elements
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%RspatialDiscr(1))
-      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
+      call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscr,&
           EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%RspatialDiscr(2))
 
-    CASE DEFAULT
-      CALL output_line('Unsupproted element type!',&
+    case DEFAULT
+      call output_line('Unsupproted element type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
     
     ! Create block vector for gradient values
-    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock,   rgradient,    .TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rdiscrBlockRef,rgradientRef, .TRUE.)
+    call lsysbl_createVecBlockByDiscr (rdiscrBlock,   rgradient,    .true.)
+    call lsysbl_createVecBlockByDiscr (rdiscrBlockRef,rgradientRef, .true.)
 
     ! Recover consistent gradient
-    CALL ppgrd_calcGradient (rsolution, rgradient)
+    call ppgrd_calcGradient (rsolution, rgradient)
 
     ! Recover smoothed gradient
-    SELECT CASE(ierrorestimator)
-    CASE (1)
-      CALL ppgrd_calcGradient (rsolution, rgradientRef)
+    select case(ierrorestimator)
+    case (1)
+      call ppgrd_calcGradient (rsolution, rgradientRef)
 
-    CASE (2)
-      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
+    case (2)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
 
-    CASE (3)
-      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
+    case (3)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
 
-    CASE (4)
-      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+    case (4)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
 
-    CASE DEFAULT
-      CALL output_line('Invalid type of error estimator!',&
+    case DEFAULT
+      call output_line('Invalid type of error estimator!',&
           OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
     ! Compute gradient error
-    CALL pperr_blockErrorEstimate(rgradient,rgradientRef,&
+    call pperr_blockErrorEstimate(rgradient,rgradientRef,&
         PPERR_L2ERROR, dgradientError,relementError=rindicator)
 
     ! rindicator is currently the absolute error. If the relative error
@@ -767,15 +767,15 @@ CONTAINS
     ! daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
     ! CALL lsyssc_scaleVector(rindicator,1._DP/daux)
 
-    CALL output_line('!!gradient error!! = '//TRIM(sys_sdEL(dgradientError,10)))
+    call output_line('!!gradient error!! = '//trim(sys_sdEL(dgradientError,10)))
     
     ! Release temporal discretisation structure
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+    call spdiscr_releaseBlockDiscr(rdiscrBlock)
+    call spdiscr_releaseBlockDiscr(rdiscrBlockRef)
     
     ! Release vectors
-    CALL lsysbl_releaseVector(rgradient)
-    CALL lsysbl_releaseVector(rgradientRef)
-  END SUBROUTINE
+    call lsysbl_releaseVector(rgradient)
+    call lsysbl_releaseVector(rgradientRef)
+  end subroutine
 
-END MODULE
+end module

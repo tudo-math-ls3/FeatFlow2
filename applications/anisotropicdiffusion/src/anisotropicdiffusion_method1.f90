@@ -21,42 +21,42 @@
 !# </purpose>
 !##############################################################################
 
-MODULE anisotropicdiffusion_method1
+module anisotropicdiffusion_method1
 
-  USE fsystem
-  USE genoutput
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE ucd
-  USE genoutput
-  USE statistics
-  USE paramlist
-  USE collection
-  USE meshmodification
-  USE spdiscprojection
+  use fsystem
+  use genoutput
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use ucd
+  use genoutput
+  use statistics
+  use paramlist
+  use collection
+  use meshmodification
+  use spdiscprojection
   
-  USE jumpstabilisation
+  use jumpstabilisation
     
-  USE anisotropicdiffusion_callback
+  use anisotropicdiffusion_callback
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE anisotropicdiffusion1
+  subroutine anisotropicdiffusion1
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -80,89 +80,89 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rrhs
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rrhs
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_matrixBlock) :: rmatrixBlock
-    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_matrixBlock) :: rmatrixBlock
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
+    type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Rotation angle, X-/Y-diffusion
-    REAL(DP) :: dtheta,ddiffusionA11,ddiffusionA12
-    REAL(DP) :: ddiffusionA21,ddiffusionA22
+    real(DP) :: dtheta,ddiffusionA11,ddiffusionA12
+    real(DP) :: ddiffusionA21,ddiffusionA22
     
     ! Type of solution
-    INTEGER :: isolution
+    integer :: isolution
     
     ! Stabilisation
-    REAL(DP) :: dgamma
-    INTEGER :: istabilisation
+    real(DP) :: dgamma
+    integer :: istabilisation
     
     ! Mesh distortion
-    REAL(DP) :: dmeshDistortion
+    real(DP) :: dmeshDistortion
     
     ! Element type of the discretisation
-    INTEGER :: ieltype
+    integer :: ieltype
     
     ! Whether to convert to triangle mesh
-    INTEGER :: iconvertToTriangleMesh
+    integer :: iconvertToTriangleMesh
     
     ! Final diffusion matrix after rotation
-    REAL(DP), DIMENSION(2,2) :: DdiffusionMatrix 
+    real(DP), dimension(2,2) :: DdiffusionMatrix 
     
     ! PRM/TRI file
-    CHARACTER(LEN=SYS_STRLEN) :: sstring,sfilePRM,sfileTRI
+    character(LEN=SYS_STRLEN) :: sstring,sfilePRM,sfileTRI
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror   
+    integer :: ierror   
     
     ! Error of FE function to reference function
-    REAL(DP) :: dmin, dmax
-    INTEGER :: i
+    real(DP) :: dmin, dmax
+    integer :: i
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_DdataQ1
-    TYPE(t_discreteBC), TARGET :: rdiscreteBCPostProc
-    TYPE(t_vectorScalar) :: rvectorPostProc
-    TYPE(t_vectorBlock) :: rvectorPostProcBlock
-    TYPE(t_blockDiscretisation) :: rdiscretisationPostProc
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataQ1
+    type(t_discreteBC), target :: rdiscreteBCPostProc
+    type(t_vectorScalar) :: rvectorPostProc
+    type(t_vectorBlock) :: rvectorPostProcBlock
+    type(t_blockDiscretisation) :: rdiscretisationPostProc
     
     ! Structure for saving parameters from the DAT file
-    TYPE (t_parlist) :: rparams
+    type (t_parlist) :: rparams
     
     ! Collection structure for setting up the RHS
-    TYPE(t_collection) :: rcollection
+    type(t_collection) :: rcollection
 
     ! Ok, let's start. 
     !
@@ -171,61 +171,61 @@ CONTAINS
     ! +------------------------------------------------------------------------
     !
     ! Initialise the parameter structure and read the DAT file.
-    CALL parlst_init(rparams)
-    CALL parlst_readfromfile (rparams, './dat/anisotropicdiffusion.dat')
+    call parlst_init(rparams)
+    call parlst_readfromfile (rparams, './dat/anisotropicdiffusion.dat')
     
     ! Get the parameters...
     !
     ! PRM file
-    CALL parlst_getvalue_string (rparams, '', &
+    call parlst_getvalue_string (rparams, '', &
                                  'sfilePRM', sstring)
-    READ(sstring,*) sfilePRM
+    read(sstring,*) sfilePRM
                                  
     ! TRI file
-    CALL parlst_getvalue_string (rparams, '', &
+    call parlst_getvalue_string (rparams, '', &
                                  'sfileTRI', sstring)
-    READ(sstring,*) sfileTRI
+    read(sstring,*) sfileTRI
 
     ! Whether to convert to a triangle mesh
-    CALL parlst_getvalue_int (rparams, '', &
+    call parlst_getvalue_int (rparams, '', &
       'iconvertToTriangleMesh', iconvertToTriangleMesh, 0)
 
     ! Mesh distortion
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
       'dmeshDistortion', dmeshDistortion, 0.0_DP)
 
     ! Element type
-    CALL parlst_getvalue_int (rparams, '', &
+    call parlst_getvalue_int (rparams, '', &
                               'ielementType', ieltype, 7)
                               
     ! Type of stabilisation
-    CALL parlst_getvalue_int (rparams, '', &
+    call parlst_getvalue_int (rparams, '', &
       'istabilisation', istabilisation, 0)
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
       'dgamma', dgamma, 0.01_DP)
 
     ! Maximum level
-    CALL parlst_getvalue_int (rparams, '', &
+    call parlst_getvalue_int (rparams, '', &
                                      'NLMAX', NLMAX, 7)
 
     ! Rotation angle
-    CALL parlst_getvalue_double (rparams, '', 'dtheta', dtheta, 0.0_DP)
+    call parlst_getvalue_double (rparams, '', 'dtheta', dtheta, 0.0_DP)
     
     ! in rad...
     dtheta = 2.0_DP*SYS_PI*dtheta/360.0_DP
     
     ! diffusion matrix
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
         'ddiffusionA11', ddiffusionA11, 1.0_DP)
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
         'ddiffusionA12', ddiffusionA12, 0.0_DP)
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
         'ddiffusionA21', ddiffusionA21, 0.0_DP)
-    CALL parlst_getvalue_double (rparams, '', &
+    call parlst_getvalue_double (rparams, '', &
         'ddiffusionA22', ddiffusionA22, 1.0_DP)
         
     ! solution
-    CALL parlst_getvalue_int (rparams, '', &
+    call parlst_getvalue_int (rparams, '', &
                               'isolution', isolution, 0)
     
     ! Create the actual diffusion matrix:
@@ -255,27 +255,27 @@ CONTAINS
     !
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    CALL boundary_read_prm(rboundary, sfilePRM)
+    call boundary_read_prm(rboundary, sfilePRM)
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, sfileTRI, rboundary)
+    call tria_readTriFile2D (rtriangulation, sfileTRI, rboundary)
     
     ! Convert to triangle mesh?
-    IF (iconvertToTriangleMesh .EQ. 1) THEN
-      CALL tria_rawGridToTri(rtriangulation)
-    END IF
+    if (iconvertToTriangleMesh .eq. 1) then
+      call tria_rawGridToTri(rtriangulation)
+    end if
     
     ! Refine it.
-    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
 
     ! Mesh distortion?
-    IF (dmeshDistortion .NE. 0.0_DP) THEN
-      CALL meshmod_disturbMesh (rtriangulation,dmeshDistortion)
-    END IF
+    if (dmeshDistortion .ne. 0.0_DP) then
+      call meshmod_disturbMesh (rtriangulation,dmeshDistortion)
+    end if
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
     
     ! +------------------------------------------------------------------------
     ! | SETUP OF THE DISCRETISATION
@@ -284,52 +284,52 @@ CONTAINS
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
+    call spdiscr_initBlockDiscr2D (rdiscretisation,1,&
                                    rtriangulation, rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    SELECT CASE (ieltype)
-    CASE (1)
-      CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    select case (ieltype)
+    case (1)
+      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
         EL_E001,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
-    CASE (11)
-      CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    case (11)
+      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
         EL_E011,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
-    CASE (13)
-      CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    case (13)
+      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
         EL_E013,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
-    CASE (-30)
-      CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    case (-30)
+      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
         EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, rboundary)
-    CASE (-1)
-      CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
+    case (-1)
+      call spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
           EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
           rtriangulation,rboundary)
-    CASE (-2)
-      CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
+    case (-2)
+      call spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscr(1), &
           EL_E002,EL_E013,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
           rtriangulation,rboundary)
-    END SELECT
+    end select
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    SELECT CASE (istabilisation)
-    CASE (1)
+    select case (istabilisation)
+    case (1)
       ! Jump stabilisation. Needs an extended matrix stencil.
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
           rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9,rmatrix,cconstrType=BILF_MATC_EDGEBASED)
-    CASE DEFAULT
+    case DEFAULT
       ! No stabilisation
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
           rdiscretisation%RspatialDiscr(1),&
           LSYSSC_MATRIX9,rmatrix)
-    END SELECT
+    end select
     
     ! +------------------------------------------------------------------------
     ! | DISCRETISATION OF MATRICES/VECTORS
@@ -354,8 +354,8 @@ CONTAINS
     rform%Idescriptors(2,4) = DER_DERIV_Y
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = DdiffusionMatrix(1,1)
     rform%Dcoefficients(2)  = DdiffusionMatrix(1,2)
     rform%Dcoefficients(3)  = DdiffusionMatrix(2,1)
@@ -367,20 +367,20 @@ CONTAINS
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
-    SELECT CASE (istabilisation)
-    CASE (1)
+    select case (istabilisation)
+    case (1)
       ! Jump stabilisation. CReate the Laplace matrix and add the
       ! stabilisation
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-      CALL jstab_calcUEOJumpStabilisation (&
+      call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
+      call jstab_calcUEOJumpStabilisation (&
           rmatrix,dgamma,dgamma,1.0_DP,CUB_G3_1D,1.0_DP)
-    CASE DEFAULT    
+    case DEFAULT    
       ! No stabilisation. Create the Laplace matrix directly.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-    END SELECT
+      call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
+    end select
     
     ! Create a collection; used for passing parameters to the RHS.
-    CALL collct_init (rcollection)
+    call collct_init (rcollection)
     
     ! Put the parameters to the quick-access array
     rcollection%IquickAccess(1) = isolution
@@ -399,15 +399,15 @@ CONTAINS
     ! discretisation structure.
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
-    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                 rlinform,.TRUE.,rrhs,coeff_RHS,rcollection)
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+                                 rlinform,.true.,rrhs,coeff_RHS,rcollection)
     
     ! The linear solver only works for block matrices/vectors - but above,
     ! we created scalar ones. So the next step is to make a 1x1 block
     ! system from the matrices/vectors above which the linear solver
     ! understands.
-    CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
-    CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
+    call lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
     
     ! +------------------------------------------------------------------------
     ! | DISCRETISATION AND IMPLEMENTATION OF BOUNDARY CONDITIONS
@@ -423,10 +423,10 @@ CONTAINS
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
 
-    CALL bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteBC(rdiscreteBC)
 
     ! Now discretise the boundary conditions. The result is saved to rdiscreteBC.
-    CALL ad1_discretiseBC (isolution,rdiscretisation,rcollection,rdiscreteBC)
+    call ad1_discretiseBC (isolution,rdiscretisation,rcollection,rdiscreteBC)
 
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
@@ -438,8 +438,8 @@ CONTAINS
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
     ! Fill the solution vector with 0:
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -447,16 +447,16 @@ CONTAINS
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    CALL vecfil_discreteBCrhs (rrhsBlock)
-    CALL vecfil_discreteBCsol (rvectorBlock)
-    CALL matfil_discreteBC (rmatrixBlock)
+    call vecfil_discreteBCrhs (rrhsBlock)
+    call vecfil_discreteBCsol (rvectorBlock)
+    call matfil_discreteBC (rmatrixBlock)
     
     ! +------------------------------------------------------------------------
     ! | INVOKE THE SOLVER
     ! +------------------------------------------------------------------------
     !
     ! Initialise the solver
-    CALL linsol_initUMFPACK4 (p_rsolverNode)
+    call linsol_initUMFPACK4 (p_rsolverNode)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -470,22 +470,22 @@ CONTAINS
     ! This doesn't work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrixBlock/)
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
+    call linsol_setMatrices(p_RsolverNode,Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    CALL linsol_initData (p_rsolverNode, ierror)
-    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,&
+    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,&
         rrhsBlock,rtempBlock)
     
     ! +------------------------------------------------------------------------
@@ -495,82 +495,82 @@ CONTAINS
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
 
-    CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
+    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     dmin = p_Ddata(1)
     dmax = dmin
 
     ! Start UCD export to GMV file:
-    SELECT CASE (ieltype)
-    CASE (-1,1,11)
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-    CASE (2)
-      CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+    select case (ieltype)
+    case (-1,1,11)
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    case (2)
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
-    CASE (-2)
-      CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u2.gmv')
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+    case (-2)
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u2.gmv')
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
           p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:))
-    CASE (13)
-      CALL ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+    case (13)
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
           p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:&
             rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NEL))
-    CASE (-30)
+    case (-30)
       !CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
-      CALL ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,'gmv/u1.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,'gmv/u1.gmv')
       
       ! Project the solution to P1/Q1 -> rvectorPostProc
-      CALL spdiscr_initBlockDiscr2D (rdiscretisationPostProc,1,&
+      call spdiscr_initBlockDiscr2D (rdiscretisationPostProc,1,&
           rtriangulation, rboundary)
-      CALL spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
+      call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
           rvectorPostProc,rdiscretisationPostProc%RspatialDiscr(1))
           
       ! Discretise the boundary conditions and include them into the Q1
       ! solution vector rvectorPostProc using the corresponding vector filter.
       
-      CALL bcasm_initDiscreteBC (rdiscreteBCPostProc)
-      CALL ad1_discretiseBC(isolution,rdiscretisationPostProc,rcollection,&
+      call bcasm_initDiscreteBC (rdiscreteBCPostProc)
+      call ad1_discretiseBC(isolution,rdiscretisationPostProc,rcollection,&
           rdiscreteBCPostProc)
 
       ! Implement the discrete BC into the projected solution vector.
-      CALL lsysbl_createVecFromScalar(rvectorPostProc,rvectorPostProcBlock)
-      CALL vecfil_discreteBCsol (rvectorPostProcBlock,1.0_DP,rdiscreteBCPostProc)
-      CALL bcasm_releaseDiscreteBC (rdiscreteBCPostProc)
+      call lsysbl_createVecFromScalar(rvectorPostProc,rvectorPostProcBlock)
+      call vecfil_discreteBCsol (rvectorPostProcBlock,1.0_DP,rdiscreteBCPostProc)
+      call bcasm_releaseDiscreteBC (rdiscreteBCPostProc)
           
       ! Put the vector to the postprocessing file
-      CALL lsyssc_getbase_double (rvectorPostProc,p_DdataQ1)
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
+      call lsyssc_getbase_double (rvectorPostProc,p_DdataQ1)
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
          p_DdataQ1,p_Ddata)
 
-      DO i=1,SIZE(p_DdataQ1)
-        dmin = MIN(dmin,p_DdataQ1(i))
-        dmax = MAX(dmax,p_DdataQ1(i))
-      END DO
+      do i=1,size(p_DdataQ1)
+        dmin = min(dmin,p_DdataQ1(i))
+        dmax = max(dmax,p_DdataQ1(i))
+      end do
          
       ! Release the allocated information
-      CALL lsysbl_releaseVector (rvectorPostProcBlock)
-      CALL lsyssc_releaseVector (rvectorPostProc)
-      CALL spdiscr_releaseBlockDiscr (rdiscretisationPostProc)
-    END SELECT
+      call lsysbl_releaseVector (rvectorPostProcBlock)
+      call lsyssc_releaseVector (rvectorPostProc)
+      call spdiscr_releaseBlockDiscr (rdiscretisationPostProc)
+    end select
     
     ! Write the file to disc, that's it.
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
     
-    DO i=1,SIZE(p_Ddata)
-      dmin = MIN(dmin,p_Ddata(i))
-      dmax = MAX(dmax,p_Ddata(i))
-    END DO
+    do i=1,size(p_Ddata)
+      dmin = min(dmin,p_Ddata(i))
+      dmax = max(dmax,p_Ddata(i))
+    end do
     
-    CALL output_line ("Min: "//sys_sdEL(dmin,10))
-    CALL output_line ("Max: "//sys_sdEL(dmax,10))
+    call output_line ("Min: "//sys_sdEL(dmin,10))
+    call output_line ("Max: "//sys_sdEL(dmax,10))
     
     ! +------------------------------------------------------------------------
     ! | CLEANUP
@@ -580,51 +580,51 @@ CONTAINS
     ! Now, clean up so that all the memory is available again.
     !
     ! Release solver data and structure
-    CALL linsol_doneData (p_rsolverNode)
-    CALL linsol_doneStructure (p_rsolverNode)
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
     
     ! Release the solver node and all subnodes attached to it (if at all):
-    CALL linsol_releaseSolver (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the block matrix/vectors
-    CALL lsysbl_releaseVector (rtempBlock)
-    CALL lsysbl_releaseVector (rvectorBlock)
-    CALL lsysbl_releaseVector (rrhsBlock)
-    CALL lsysbl_releaseMatrix (rmatrixBlock)
+    call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rvectorBlock)
+    call lsysbl_releaseVector (rrhsBlock)
+    call lsysbl_releaseMatrix (rmatrixBlock)
 
     ! Release the scalar matrix/rhs vector which were used to create
     ! the block matrices/vectors. These must exist as long as the
     ! block matrices/vectors exist, as the block matrices/vectors are
     ! only 'copies' of the scalar ones, sharing the same handles!
-    CALL lsyssc_releaseVector (rrhs)
-    CALL lsyssc_releaseMatrix (rmatrix)
+    call lsyssc_releaseVector (rrhs)
+    call lsyssc_releaseMatrix (rmatrix)
     
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+    call bcasm_releaseDiscreteBC (rdiscreteBC)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
     
     ! Release the triangulation. 
-    CALL tria_done (rtriangulation)
+    call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (rboundary)
+    call boundary_release (rboundary)
 
     ! Release the collection
-    CALL collct_done (rcollection)
+    call collct_done (rcollection)
 
     ! Release the parameters from the DAT file.
-    CALL parlst_done(rparams)
+    call parlst_done(rparams)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ---------------------------------------------------------------------------
   
 !<subroutine>
   
-  SUBROUTINE ad1_discretiseBC (isolution,rdiscretisation,rcollection,rdiscreteBC)
+  subroutine ad1_discretiseBC (isolution,rdiscretisation,rcollection,rdiscreteBC)
   
 !<description>
   ! Discretises the current boundary conditions.
@@ -632,26 +632,26 @@ CONTAINS
   
 !<input>
   ! Type of solution.
-  INTEGER, INTENT(IN) :: isolution
+  integer, intent(IN) :: isolution
   
   ! Current discretisation
-  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN), target :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A collection structure with problem specific parameters. This structure
   ! is passed to the callback function that defines the values on the boundary.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  type(t_collection), intent(INOUT) :: rcollection
 
   ! Structure that receives the discrete boundary conditions.
-  TYPE(t_discreteBC), INTENT(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_boundary), POINTER :: p_rboundary
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundary), pointer :: p_rboundary
     
     ! Get a pointer to the domain
     p_rboundary => rdiscretisation%p_rboundary
@@ -660,14 +660,14 @@ CONTAINS
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     
-    SELECT CASE (isolution)
-    CASE (0,1,3)
+    select case (isolution)
+    case (0,1,3)
       
       ! We ask the bondary routines to create a 'boundary region' - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      call boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
       
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
@@ -678,79 +678,79 @@ CONTAINS
       ! - Discretise the boundary condition so that the BC's can be applied
       !   to matrices and vectors
       ! - Add the calculated discrete BC's to rdiscreteBC for later use.
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Now to the edge 2 of boundary component 1 the domain. 
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
-    CASE (2,4)
+    case (2,4)
 
       ! Edge 1 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 2 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
       ! Edge 4 of boundary component 1. 
-      CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
 
       ! Edge 1 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,2,1,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,2,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 2 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,2,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,2,2,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
       ! Edge 3 of boundary component 2.
-      CALL boundary_createRegion(p_rboundary,2,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,2,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
       ! Edge 4 of boundary component 2. 
-      CALL boundary_createRegion(p_rboundary,2,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(p_rboundary,2,4,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
 
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
   
-END MODULE
+end module

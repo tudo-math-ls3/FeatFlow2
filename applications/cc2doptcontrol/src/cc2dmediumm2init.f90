@@ -22,40 +22,40 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2init
+module cc2dmediumm2init
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmediumm2nonstationary
+  use cc2dmediumm2basic
+  use cc2dmediumm2nonstationary
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initOutput (rproblem)
+  subroutine cc_initOutput (rproblem)
   
 !<description>
   ! Initialises basic output settings based on the parameters in the DAT file.
@@ -63,26 +63,26 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
 
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initParameters (rproblem)
+  subroutine cc_initParameters (rproblem)
   
 !<description>
   ! Initialises the structure rproblem with data from the initialisation
@@ -95,33 +95,33 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP) :: dnu,d1
-    INTEGER :: ilvmin,ilvmax,i1
+    real(DP) :: dnu,d1
+    integer :: ilvmin,ilvmax,i1
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
 
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',dnu,1000.0_DP)
 
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
     
     ! Add the (global) viscosity parameter
-    CALL collct_setvalue_real(rproblem%rcollection,'NU',dnu,.TRUE.)
+    call collct_setvalue_real(rproblem%rcollection,'NU',dnu,.true.)
 
     ! Get min/max level from the parameter file.
     !
@@ -129,67 +129,67 @@ CONTAINS
     ! the solution process.
     ! ilvmax receives the level where we want to solve.
     
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMIN',ilvmin,2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMAX',ilvmax,4)
-    IF (ilvmin .LE. 0) ilvmin = ilvmax+ilvmin
+    if (ilvmin .le. 0) ilvmin = ilvmax+ilvmin
 
     ! Initialise the level in the problem structure
-    ilvmin = MIN(ilvmin,ilvmax)
-    ilvmax = MAX(ilvmin,ilvmax)
+    ilvmin = min(ilvmin,ilvmax)
+    ilvmax = max(ilvmin,ilvmax)
     rproblem%NLMIN = ilvmin
     rproblem%NLMAX = ilvmax
 
     ! Allocate memory for the levels
-    ALLOCATE(rproblem%RlevelInfo(1:ilvmax))
+    allocate(rproblem%RlevelInfo(1:ilvmax))
     
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',i1,0)
     rproblem%iequation = i1
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'isubEquation',i1,0)
     rproblem%isubEquation = i1
 
     ! Stabilisation of nonlinearity
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iUpwind1',i1,0)
-    CALL collct_setvalue_int( rproblem%rcollection,'IUPWIND1',i1,.TRUE.)
+    call collct_setvalue_int( rproblem%rcollection,'IUPWIND1',i1,.true.)
 
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'dUpsam1',d1,0.0_DP)
-    CALL collct_setvalue_real (rproblem%rcollection,'UPSAM1',d1,.TRUE.)
+    call collct_setvalue_real (rproblem%rcollection,'UPSAM1',d1,.true.)
 
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iUpwind2',i1,0)
-    CALL collct_setvalue_int( rproblem%rcollection,'IUPWIND2',i1,.TRUE.)
+    call collct_setvalue_int( rproblem%rcollection,'IUPWIND2',i1,.true.)
 
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'dUpsam2',d1,0.0_DP)
-    CALL collct_setvalue_real (rproblem%rcollection,'UPSAM2',d1,.TRUE.)
+    call collct_setvalue_real (rproblem%rcollection,'UPSAM2',d1,.true.)
 
     ! Type of boundary conditions
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iBoundary',i1,0)
-    CALL collct_setvalue_int( rproblem%rcollection,'IBOUNDARY',i1,.TRUE.)
+    call collct_setvalue_int( rproblem%rcollection,'IBOUNDARY',i1,.true.)
 
     ! Time dependence
-    CALL cc_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+    call cc_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
         rproblem%rparamList)
         
     ! Optimal control
-    CALL cc_initOptControl(rproblem)
+    call cc_initOptControl(rproblem)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneParameters (rproblem)
+  subroutine cc_doneParameters (rproblem)
   
 !<description>
   ! Cleans up parameters read from the DAT files. Removes all references to
@@ -199,40 +199,40 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! Optimal control
-    CALL cc_doneOptControl(rproblem)
+    call cc_doneOptControl(rproblem)
 
     ! Release memory of the level specification
-    DEALLOCATE(rproblem%RlevelInfo)
+    deallocate(rproblem%RlevelInfo)
 
     ! Remove information about boundary conditions
-    CALL collct_deleteValue(rproblem%rcollection,'IBOUNDARY')
+    call collct_deleteValue(rproblem%rcollection,'IBOUNDARY')
     
     ! Remove information about stabilisation
-    CALL collct_deleteValue(rproblem%rcollection,'UPSAM1')
-    CALL collct_deleteValue(rproblem%rcollection,'IUPWIND1')
+    call collct_deleteValue(rproblem%rcollection,'UPSAM1')
+    call collct_deleteValue(rproblem%rcollection,'IUPWIND1')
 
-    CALL collct_deleteValue(rproblem%rcollection,'UPSAM2')
-    CALL collct_deleteValue(rproblem%rcollection,'IUPWIND2')
+    call collct_deleteValue(rproblem%rcollection,'UPSAM2')
+    call collct_deleteValue(rproblem%rcollection,'IUPWIND2')
 
     ! Remove type of problem to discretise
-    CALL collct_deleteValue(rproblem%rcollection,'ISTOKES')
+    call collct_deleteValue(rproblem%rcollection,'ISTOKES')
 
     ! Remove the viscosity parameter
-    CALL collct_deletevalue(rproblem%rcollection,'NU')
+    call collct_deletevalue(rproblem%rcollection,'NU')
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initParamTriang (rproblem)
+  subroutine cc_initParamTriang (rproblem)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -243,78 +243,78 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,imeshType,ncellsX
+  integer :: i,imeshType,ncellsX
   
     ! Variable for a filename:  
-    CHARACTER(LEN=256) :: sString
-    CHARACTER(LEN=60) :: sPRMFile, sTRIFile
+    character(LEN=256) :: sString
+    character(LEN=60) :: sPRMFile, sTRIFile
 
     ! Get the .prm and the .tri file from the parameter list.
     ! note that parlst_getvalue_string returns us exactly what stands
     ! in the parameter file, so we have to apply READ to get rid of
     ! probable ''!
-    CALL parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
+    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
                                  'sParametrisation',sString)
-    READ (sString,*) sPRMFile
+    read (sString,*) sPRMFile
                               
-    CALL parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
+    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
                                  'sMesh',sString)
-    READ (sString,*) sTRIFile
+    read (sString,*) sTRIFile
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
-    CALL boundary_read_prm(rproblem%rboundary, sPrmFile)
+    call boundary_read_prm(rproblem%rboundary, sPrmFile)
         
     ! Now set up the basic triangulation. Which type of triangulation should
     ! be set up?
-    CALL parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
+    call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
                               'imeshType',imeshType,0)
-    SELECT CASE (imeshType)
-    CASE (0)
+    select case (imeshType)
+    case (0)
       ! Standard mesh, specified by a TRI file.
-      CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
+      call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
           sTRIFile, rproblem%rboundary)
-    CASE (1)
+    case (1)
       ! Sliced QUAD mesh with ncellsX cells on the coarse grid.
-      CALL parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
+      call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
                                 'ncellsX',ncellsX,1)
-      CALL cc_generateSlicedQuadMesh(rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,&
+      call cc_generateSlicedQuadMesh(rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,&
           ncellsX)
-    CASE DEFAULT
-      CALL output_line ('Unknown mesh type!', &
+    case DEFAULT
+      call output_line ('Unknown mesh type!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
-      CALL sys_halt()
-    END SELECT
+      call sys_halt()
+    end select
 
     ! Refine the mesh up to the minimum level
-    CALL tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
+    call tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
         rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
 
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
-    CALL tria_initStandardMeshFromRaw (&
+    call tria_initStandardMeshFromRaw (&
         rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
     
     ! Now, refine to level up to nlmax.
-    DO i=rproblem%NLMIN+1,rproblem%NLMAX
-      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+    do i=rproblem%NLMIN+1,rproblem%NLMAX
+      call tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-      CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
+      call tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
           rproblem%rboundary)
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneParamTriang (rproblem)
+  subroutine cc_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -322,29 +322,29 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
     ! Release the triangulation on all levels
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
-    END DO
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+      call tria_done (rproblem%RlevelInfo(i)%rtriangulation)
+    end do
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%rboundary)
+    call boundary_release (rproblem%rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_generateSlicedQuadMesh (rtriangulation,ncellsX)
+  subroutine cc_generateSlicedQuadMesh (rtriangulation,ncellsX)
   
 !<description>
   ! This routine generates a standard [0,1]^2 QUAD mesh with ncellsX cells in
@@ -353,23 +353,23 @@ CONTAINS
   
 !<input>
   ! Number of cells in X-direction.
-  INTEGER, INTENT(IN) :: ncellsX
+  integer, intent(IN) :: ncellsX
 !</input>
     
 !<output>
   ! Triangulation structure that receives the triangulation.
-  TYPE(t_triangulation), INTENT(OUT) :: rtriangulation
+  type(t_triangulation), intent(OUT) :: rtriangulation
 !</output>
     
     ! local variables
-    INTEGER :: nbdVertives,nverticexX
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
-    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
-    INTEGER(I32) :: ivt, iel
-    INTEGER :: idim, ive
-    INTEGER(I32), DIMENSION(2) :: Isize
+    integer :: nbdVertives,nverticexX
+    real(DP), dimension(:,:), pointer :: p_Ddata2D
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer(I32), dimension(:,:), pointer :: p_Idata2D
+    integer(I32), dimension(:), pointer :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
+    integer(I32) :: ivt, iel
+    integer :: idim, ive
+    integer(I32), dimension(2) :: Isize
     
     ! Initialise the basic mesh
     rtriangulation%ndim = NDIM2D
@@ -384,52 +384,52 @@ CONTAINS
     
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
-    Isize = (/NDIM2D,INT(rtriangulation%NVT,I32)/)
-    CALL storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+    Isize = (/NDIM2D,int(rtriangulation%NVT,I32)/)
+    call storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
-    CALL storage_getbase_double2D(&
+    call storage_getbase_double2D(&
         rtriangulation%h_DvertexCoords,p_Ddata2D)
     
     ! Initialise the point coordinates.
     ! Odd vertices on the bottom, even vertices on top of the QUAD mesh,
     ! numbered from left to right.
-    DO ivt=0,ncellsX
-      p_Ddata2D(1,2*ivt+1) = REAL(ivt,DP)/REAL(ncellsX,DP)
+    do ivt=0,ncellsX
+      p_Ddata2D(1,2*ivt+1) = real(ivt,DP)/real(ncellsX,DP)
       p_Ddata2D(2,2*ivt+1) = 0.0_DP
 
-      p_Ddata2D(1,2*ivt+2) = REAL(ivt,DP)/REAL(ncellsX,DP)
+      p_Ddata2D(1,2*ivt+2) = real(ivt,DP)/real(ncellsX,DP)
       p_Ddata2D(2,2*ivt+2) = 1.0_DP
-    END DO
+    end do
     
     ! Allocate memory for IverticesAtElement
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
-    Isize = (/rtriangulation%NNVE,INT(rtriangulation%NEL,I32)/)
-    CALL storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+    Isize = (/rtriangulation%NNVE,int(rtriangulation%NEL,I32)/)
+    call storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
-    CALL storage_getbase_int2D(&
+    call storage_getbase_int2D(&
         rtriangulation%h_IverticesAtElement,p_Idata2D)
 
     ! Initialise the connectivity for the cells.
-    DO iel=0,ncellsX-1
+    do iel=0,ncellsX-1
       p_Idata2D(1,iel+1) = 2*iel+1
       p_Idata2D(2,iel+1) = 2*iel+3
       p_Idata2D(3,iel+1) = 2*iel+4
       p_Idata2D(4,iel+1) = 2*iel+2
-    END DO
+    end do
     
     ! Allocate memory for InodalProperty 
-    CALL storage_new ('tria_read_tri2D', 'KNPR', &
-        INT(rtriangulation%NVT,I32), ST_INT, &
+    call storage_new ('tria_read_tri2D', 'KNPR', &
+        int(rtriangulation%NVT,I32), ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
-    CALL storage_getbase_int(&
+    call storage_getbase_int(&
         rtriangulation%h_InodalProperty,p_Idata)
 
     ! All vertices are on the boundary
@@ -439,21 +439,21 @@ CONTAINS
     rtriangulation%NVBD = rtriangulation%NVT
     
     ! Allocate memory for IverticesAtBoundary.
-    CALL storage_new ('tria_generateBasicBoundary', &
-        'KVBD', INT(rtriangulation%NVBD,I32), &
+    call storage_new ('tria_generateBasicBoundary', &
+        'KVBD', int(rtriangulation%NVBD,I32), &
         ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
-    CALL storage_new ('tria_generateBasicBoundary', &
-        'KBCT', INT(rtriangulation%NBCT+1,I32), &
+    call storage_new ('tria_generateBasicBoundary', &
+        'KBCT', int(rtriangulation%NBCT+1,I32), &
         ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
-    CALL storage_getbase_int (&
+    call storage_getbase_int (&
         rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
         
-    CALL storage_getbase_int (&
+    call storage_getbase_int (&
         rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
     
     ! The first element in p_IboundaryCpIdx is (as the head) always =1.
@@ -461,31 +461,31 @@ CONTAINS
     p_IboundaryCpIdx(2) = 1 + rtriangulation%NVBD
 
     ! Initialise the numbers of the vertices on the boundary
-    DO ivt=0,ncellsX
+    do ivt=0,ncellsX
       p_IverticesAtBoundary (ivt+1) = 2*ivt+1
       p_IverticesAtBoundary (2*(ncellsX+1)-ivt) = 2*ivt+2
-    END DO
+    end do
     
     ! Allocate memory for  and DvertexParameterValue
-    CALL storage_new ('tria_generateBasicBoundary', &
-        'DVBDP', INT(rtriangulation%NVBD,I32), &
+    call storage_new ('tria_generateBasicBoundary', &
+        'DVBDP', int(rtriangulation%NVBD,I32), &
         ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
     
     ! Get the array where to store boundary parameter values.
-    CALL storage_getbase_double (&
+    call storage_getbase_double (&
         rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
-    CALL storage_getbase_double2D(&
+    call storage_getbase_double2D(&
         rtriangulation%h_DvertexCoords,p_Ddata2D)
         
     ! Initialise the parameter values of the vertices. For the bottommost
     ! edge, they coincide wit the coordinate. For the topmost edge,
     ! that's 3 - x-coordinate.
-    DO ivt=1,ncellsX+1
+    do ivt=1,ncellsX+1
       p_DvertexParameterValue (ivt) = p_Ddata2D(1,p_IverticesAtBoundary(ivt))
       p_DvertexParameterValue (ncellsX+1+ivt) = &
           3.0_DP - p_Ddata2D(1,p_IverticesAtBoundary(ncellsX+1+ivt))
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

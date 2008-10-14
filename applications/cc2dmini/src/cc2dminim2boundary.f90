@@ -26,40 +26,40 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dminim2boundary
+module cc2dminim2boundary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dminim2basic
-  USE cc2dmini_callback
+  use cc2dminim2basic
+  use cc2dmini_callback
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_discretiseBC (rdiscretisation,rdiscreteBC)
+  subroutine c2d2_discretiseBC (rdiscretisation,rdiscreteBC)
   
 !<description>
   ! This routine discretises the current boundary conditions for
@@ -68,19 +68,19 @@ CONTAINS
 
 !<input>
   ! A discretisation structure specifying the current discretisation.
-  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A structuree that receives the discretised boundary conditions.
-  TYPE(t_discreteBC), INTENT(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_boundaryRegion) :: rboundaryRegion    
-    TYPE(t_boundary), POINTER :: p_rboundary
+    type(t_boundaryRegion) :: rboundaryRegion    
+    type(t_boundary), pointer :: p_rboundary
     
     p_rboundary => rdiscretisation%p_rboundary
 
@@ -95,7 +95,7 @@ CONTAINS
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
     
     ! The endpoint of this segment should also be Dirichlet. We set this by
     ! changing the region properties in rboundaryRegion.
@@ -110,7 +110,7 @@ CONTAINS
     ! - Discretise the boundary condition so that the BC's can be applied
     !   to matrices and vectors
     ! - Add the calculated discrete BC's to rdiscreteBC for later use.
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
                               
@@ -121,35 +121,35 @@ CONTAINS
     !                                    getBoundaryValues)
                               
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
 
     ! The whole 2nd boundary component - if it exists.
-    IF (boundary_igetNBoundComp(p_rboundary) .GE. 2) THEN
-      CALL boundary_createRegion(p_rboundary,2,0,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+    if (boundary_igetNBoundComp(p_rboundary) .ge. 2) then
+      call boundary_createRegion(p_rboundary,2,0,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
-    END IF
+    end if
 
     ! Now continue with defining the boundary conditions of the Y-velocity:
     !
     ! Define edge 1.
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+    call boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
     
     ! Edge with start- and endpoint.
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
     ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
                               
@@ -160,32 +160,32 @@ CONTAINS
     !                                    getBoundaryValues)
                               
     ! Edge 3 of boundary component 1.
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
     
     ! Edge 4 of boundary component 1. That's it.
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues)
 
     ! The whole 2nd boundary component - if it exists.
-    IF (boundary_igetNBoundComp(p_rboundary) .GE. 2) THEN
-      CALL boundary_createRegion(p_rboundary,2,0,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+    if (boundary_igetNBoundComp(p_rboundary) .ge. 2) then
+      call boundary_createRegion(p_rboundary,2,0,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initDiscreteBC (rproblem)
+  subroutine c2d2_initDiscreteBC (rproblem)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -194,24 +194,24 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
   ! A pointer to the system matrix and the RHS vector as well as 
   ! the discretisation
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix
-  TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+  type(t_matrixBlock), pointer :: p_rmatrix
+  type(t_vectorBlock), pointer :: p_rrhs,p_rvector
+  type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
   ! Pointer to structure for saving discrete BC's:
-  TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+  type(t_discreteBC), pointer :: p_rdiscreteBC
     
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    do i=rproblem%NLMIN,rproblem%NLMAX
     
       ! Get our velocity matrix from the problem structure.
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
@@ -227,10 +227,10 @@ CONTAINS
       !
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
-      CALL bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
+      call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
       
       ! Discretise the boundary conditions.
-      CALL c2d2_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%rdiscreteBC)
+      call c2d2_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%rdiscreteBC)
 
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -244,7 +244,7 @@ CONTAINS
       ! This allows us to filter this vector when we create it.
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
       
-    END DO
+    end do
 
     ! On the finest level, attach the discrete BC also
     ! to the solution and RHS vector. They need it to be compatible
@@ -257,13 +257,13 @@ CONTAINS
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
     p_rvector%p_rdiscreteBC => p_rdiscreteBC
                 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_implementBC (rproblem)
+  subroutine c2d2_implementBC (rproblem)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -271,18 +271,18 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,ilvmax
+  integer :: i,ilvmax
   
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
+    type(t_matrixBlock), pointer :: p_rmatrix
+    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
@@ -292,28 +292,28 @@ CONTAINS
     
     ! Implement discrete boundary conditions into RHS vector by 
     ! filtering the vector.
-    CALL vecfil_discreteBCrhs (p_rrhs)
+    call vecfil_discreteBCrhs (p_rrhs)
 
     ! Implement discrete boundary conditions into solution vector by
     ! filtering the vector.
-    CALL vecfil_discreteBCsol (p_rvector)
+    call vecfil_discreteBCsol (p_rvector)
     
     ! Implement discrete boundary conditions into the matrices on all 
     ! levels, too.
     ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     ! later and must then be modified again!
-    DO i=rproblem%NLMIN ,rproblem%NLMAX
+    do i=rproblem%NLMIN ,rproblem%NLMAX
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      CALL matfil_discreteBC (p_rmatrix)
-    END DO
+      call matfil_discreteBC (p_rmatrix)
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneBC (rproblem)
+  subroutine c2d2_doneBC (rproblem)
   
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
@@ -321,19 +321,19 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! Release our discrete version of the boundary conditions
-      CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%rdiscreteBC)
-    END DO
+      call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%rdiscreteBC)
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

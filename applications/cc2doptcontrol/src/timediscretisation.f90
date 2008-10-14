@@ -23,22 +23,22 @@
 !# </purpose>
 !##############################################################################
 
-MODULE timediscretisation
+module timediscretisation
 
-  USE fsystem
-  USE genoutput
+  use fsystem
+  use genoutput
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Time discretisation type identifiers">
 
   ! Theta-scheme (implicit/explicit Euler, Crank Nicolson)
-  INTEGER, PARAMETER :: TDISCR_THETA           = 0
+  integer, parameter :: TDISCR_THETA           = 0
   
   ! The dG(0) scheme.
-  INTEGER, PARAMETER :: TDISCR_DG0             = 1
+  integer, parameter :: TDISCR_DG0             = 1
 
 !</constantblock>
 
@@ -50,42 +50,42 @@ MODULE timediscretisation
 
   ! This block realises a time discretisation structure which contains all
   ! parameters that are necessary for the time discretisation of an ODE.
-  TYPE t_timeDiscretisation
+  type t_timeDiscretisation
   
     ! A TDISCR_xxxx-Flag that identifies the time discretisation scheme.
-    INTEGER :: ctype = TDISCR_THETA
+    integer :: ctype = TDISCR_THETA
     
     ! Number of time intervals
-    INTEGER :: nintervals          = 0
+    integer :: nintervals          = 0
 
     ! Absolute start time of the simulation
-    REAL(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP     
     
     ! Maximum time of the simulation
-    REAL(DP) :: dtimeMax           = 0.0_DP
+    real(DP) :: dtimeMax           = 0.0_DP
     
     ! Time step length of the time discretisation
-    REAL(DP) :: dtstep             = 0.0_DP
+    real(DP) :: dtstep             = 0.0_DP
 
     ! If ctype=TDISCR_THETA: theta parameter that identifies the Theta scheme.
     !  =0.0: Forward Euler,
     !  =1.0: Backward Euler (Standard),
     !  =0.5: Crank Nicolson.
-    REAL(DP) :: dtheta = 1.0_DP
+    real(DP) :: dtheta = 1.0_DP
   
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tdiscr_initTheta (dstart, dend, nintervals, dtheta, rtimediscr)
+  subroutine tdiscr_initTheta (dstart, dend, nintervals, dtheta, rtimediscr)
   
 !<description>
   ! Initialises a time discretisation structure for the discretisation with
@@ -94,24 +94,24 @@ CONTAINS
 
 !<input>
   ! Start point of the time interval.
-  REAL(DP), INTENT(IN) :: dstart
+  real(DP), intent(IN) :: dstart
   
   ! End point of the time interval
-  REAL(DP), INTENT(IN) :: dend
+  real(DP), intent(IN) :: dend
   
   ! Number of subintervals
-  INTEGER, INTENT(IN) :: nintervals
+  integer, intent(IN) :: nintervals
   
   ! Theta scheme parameter
   !  =0.0: Forward Euler,
   !  =1.0: Backward Euler (Standard),
   !  =0.5: Crank Nicolson.
-  REAL(DP), INTENT(IN) :: dtheta
+  real(DP), intent(IN) :: dtheta
 !</input>
 
 !<output>
   ! The time discrtisation structure to be initialised.
-  TYPE(t_timeDiscretisation), INTENT(OUT) :: rtimediscr
+  type(t_timeDiscretisation), intent(OUT) :: rtimediscr
 !</output>
 
     !IF (dtheta .NE. 1.0_DP) THEN
@@ -125,16 +125,16 @@ CONTAINS
     rtimediscr%dtimeInit = dstart
     rtimediscr%dtimeMax = dend
     rtimediscr%nintervals = nintervals
-    rtimediscr%dtstep = (dend-dstart)/REAL(nintervals,DP)
+    rtimediscr%dtstep = (dend-dstart)/real(nintervals,DP)
     rtimediscr%dtheta = dtheta
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tdiscr_initdG0(dstart, dend, nintervals, rtimediscr)
+  subroutine tdiscr_initdG0(dstart, dend, nintervals, rtimediscr)
   
 !<description>
   ! Initialises a time discretisation structure for the discretisation with
@@ -143,18 +143,18 @@ CONTAINS
 
 !<input>
   ! Start point of the time interval.
-  REAL(DP), INTENT(IN) :: dstart
+  real(DP), intent(IN) :: dstart
   
   ! End point of the time interval
-  REAL(DP), INTENT(IN) :: dend
+  real(DP), intent(IN) :: dend
   
   ! Number of subintervals
-  INTEGER, INTENT(IN) :: nintervals
+  integer, intent(IN) :: nintervals
 !</input>
 
 !<output>
   ! The time discrtisation structure to be initialised.
-  TYPE(t_timeDiscretisation), INTENT(OUT) :: rtimediscr
+  type(t_timeDiscretisation), intent(OUT) :: rtimediscr
 !</output>
 
     ! Initialise the parameters of the structure.
@@ -162,15 +162,15 @@ CONTAINS
     rtimediscr%dtimeInit = dstart
     rtimediscr%dtimeMax = dend
     rtimediscr%nintervals = nintervals
-    rtimediscr%dtstep = (dend-dstart)/REAL(nintervals,DP)
+    rtimediscr%dtstep = (dend-dstart)/real(nintervals,DP)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<function>  
 
-  INTEGER FUNCTION tdiscr_igetNDofGlob(rtimediscr)
+  integer function tdiscr_igetNDofGlob(rtimediscr)
 
 !<description>
   ! This function returns for a given time discretisation the number of 
@@ -179,7 +179,7 @@ CONTAINS
 
 !<input>    
   ! The tiome discretisation structure that specifies the time discretisation.
-  TYPE(t_timeDiscretisation), INTENT(IN) :: rtimediscr
+  type(t_timeDiscretisation), intent(IN) :: rtimediscr
 !</input>
 
 !<result>
@@ -191,25 +191,25 @@ CONTAINS
     tdiscr_igetNDofGlob = 0
     
     ! Cancel if the structure is not initialised.
-    IF (rtimediscr%nintervals .EQ. 0) RETURN
+    if (rtimediscr%nintervals .eq. 0) return
 
-    SELECT CASE(rtimediscr%ctype)
-    CASE (TDISCR_THETA)
+    select case(rtimediscr%ctype)
+    case (TDISCR_THETA)
       ! One step scheme. We have as many DOF's as intervals + 1.
       tdiscr_igetNDofGlob = rtimediscr%nintervals + 1
-      RETURN
+      return
 
-    CASE (TDISCR_DG0)
+    case (TDISCR_DG0)
       ! dG(0). The DOF's are in the interval midpoints.
       tdiscr_igetNDofGlob = rtimediscr%nintervals
-      RETURN
+      return
 
-    END SELECT
+    end select
     
-    CALL output_line ('Unsupported time discretisation.', &
+    call output_line ('Unsupported time discretisation.', &
                       OU_CLASS_ERROR,OU_MODE_STD,'tdiscr_igetNDofGlob')
-    CALL sys_halt()
+    call sys_halt()
     
-  END FUNCTION
+  end function
 
-END MODULE
+end module

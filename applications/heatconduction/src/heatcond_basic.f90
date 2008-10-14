@@ -9,122 +9,122 @@
 !# </purpose>
 !##############################################################################
 
-MODULE heatcond_basic
+module heatcond_basic
 
-  USE fsystem
-  USE linearsolver
-  USE boundary
-  USE matrixfilters
-  USE vectorfilters
-  USE triangulation
-  USE spatialdiscretisation
-  USE sortstrategy
-  USE timestepping
+  use fsystem
+  use linearsolver
+  use boundary
+  use matrixfilters
+  use vectorfilters
+  use triangulation
+  use spatialdiscretisation
+  use sortstrategy
+  use timestepping
   
-  USE collection
-  USE paramlist
+  use collection
+  use paramlist
     
-  IMPLICIT NONE
+  implicit none
   
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
 
-  TYPE t_problem_lvl
+  type t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (trial/test functions,...)
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
     ! The static matrix (containing Laplace, convection,...) which does not
     ! change in time.
-    TYPE(t_matrixBlock) :: rmatrixStatic
+    type(t_matrixBlock) :: rmatrixStatic
     
     ! The mass matrix
-    TYPE(t_matrixBlock) :: rmatrixMass
+    type(t_matrixBlock) :: rmatrixMass
 
     ! System matrix. May change during the time iteration    
-    TYPE(t_matrixBlock) :: rmatrix
+    type(t_matrixBlock) :: rmatrix
     
     ! A variable describing the discrete boundary conditions.
     ! The variable points to NULL until the first boundary conditions
     ! are assembled.
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC => NULL()
+    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
   
-  END TYPE
+  end type
   
 !</typeblock>
 
 !<typeblock description="Configuration block for the time stepping.">
 
-  TYPE t_problem_nonst
+  type t_problem_nonst
   
     ! Configuration block of the time stepping scheme.
-    TYPE(t_explicitTimeStepping)        :: rtimestepping
+    type(t_explicitTimeStepping)        :: rtimestepping
     
     ! Number of current time step
-    INTEGER                             :: iiteration
+    integer                             :: iiteration
     
     ! Maximum number of time steps
-    INTEGER                             :: niterations
+    integer                             :: niterations
     
     ! Start time
-    REAL(DP)                            :: dtimemin
+    real(DP)                            :: dtimemin
     
     ! Current time
-    REAL(DP)                            :: dtime
+    real(DP)                            :: dtime
     
     ! Maximum time
-    REAL(DP)                            :: dtimemax
+    real(DP)                            :: dtimemax
   
-  END TYPE
+  end type
 
 !</typeblock>
 
 !<typeblock description="Application-specific type block for heatcond problem">
 
-  TYPE t_problem
+  type t_problem
   
     ! Minimum refinement level; = Level i in RlevelInfo
-    INTEGER :: ilvmin
+    integer :: ilvmin
     
     ! Maximum refinement level
-    INTEGER :: ilvmax
+    integer :: ilvmax
 
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
 
     ! A RHS vector on the finest level used for solving linear systems
-    TYPE(t_vectorBlock) :: rrhs
+    type(t_vectorBlock) :: rrhs
     
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
-    TYPE(t_interlevelProjectionBlock) :: rprojection
+    type(t_interlevelProjectionBlock) :: rprojection
 
     ! A filter chain to filter vectors during the solution process
-    TYPE(t_filterChain), DIMENSION(1) :: RfilterChain
+    type(t_filterChain), dimension(1) :: RfilterChain
 
     ! A parameter block for everything that controls the time dependence.
-    TYPE(t_problem_nonst) :: rtimedependence
+    type(t_problem_nonst) :: rtimedependence
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by NLMAX!
-    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
+    type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
     ! callback routines.
-    TYPE(t_collection) :: rcollection
+    type(t_collection) :: rcollection
     
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-END MODULE
+end module

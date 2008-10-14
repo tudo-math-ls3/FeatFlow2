@@ -18,55 +18,55 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM cc2d
+program cc2d
 
-  USE ccmainproblem
+  use ccmainproblem
   
-  IMPLICIT NONE
+  implicit none
   
-  CHARACTER(LEN=SYS_STRLEN) :: slogfile,serrorfile
+  character(LEN=SYS_STRLEN) :: slogfile,serrorfile
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
-  CALL system_init()
+  call system_init()
   
   ! General output init - temporary until we read in the output settings
-  CALL output_init ()
+  call output_init ()
   
   ! Read the name of the message and error log file.
-  CALL cc_getLogFiles (slogfile,serrorfile)
+  call cc_getLogFiles (slogfile,serrorfile)
   
   ! Release output stuff
-  CALL output_done()
+  call output_done()
   
   ! Initialise log file for output.
-  CALL output_init (slogfile,serrorfile)
+  call output_init (slogfile,serrorfile)
   
   ! Now we can really start!
   ! 
   ! Initialise the storage management: 
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
   
   ! Initialise the parser
-  CALL fparser_init ()
+  call fparser_init ()
 
   ! Call the problem to solve. 
-  CALL output_lbrk ()
-  CALL output_line ('Calculating cc2d-Problem')
-  CALL output_separator (OU_SEP_MINUS)
+  call output_lbrk ()
+  call output_line ('Calculating cc2d-Problem')
+  call output_separator (OU_SEP_MINUS)
   
-  CALL cc2dmain ()
+  call cc2dmain ()
 
   ! Release the parser
-  CALL fparser_done ()
+  call fparser_done ()
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  CALL output_lbrk ()
-  CALL storage_info(.TRUE.)
+  call output_lbrk ()
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

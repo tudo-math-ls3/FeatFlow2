@@ -18,54 +18,54 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2nonstationary
+module cc2dmediumm2nonstationary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
-  USE paramlist
-  USE timestepping
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
+  use paramlist
+  use timestepping
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
 
-  USE cc2dmediumm2nonlinearcore
-  USE cc2dmediumm2nonlinearcoreinit
-  USE cc2dmediumm2stationary
-  USE cc2dmediumm2timeanalysis
-  USE cc2dmediumm2boundary
-  USE cc2dmediumm2discretisation
-  USE cc2dmediumm2postprocessing
-  USE cc2dmediumm2oneshot
-  USE cc2dmediumm2discretisation
+  use cc2dmediumm2nonlinearcore
+  use cc2dmediumm2nonlinearcoreinit
+  use cc2dmediumm2stationary
+  use cc2dmediumm2timeanalysis
+  use cc2dmediumm2boundary
+  use cc2dmediumm2discretisation
+  use cc2dmediumm2postprocessing
+  use cc2dmediumm2oneshot
+  use cc2dmediumm2discretisation
     
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initParTimeDependence (rproblem,ssection,rparams)
+  subroutine cc_initParTimeDependence (rproblem,ssection,rparams)
   
 !<description>
   ! Initialises parameters in the problem structure according to whether the
@@ -79,43 +79,43 @@ CONTAINS
 !<input>
   ! A parameter list from a DAT file containing parameters that configure the
   ! time dependence.
-  TYPE(t_parlist), INTENT(IN) :: rparams
+  type(t_parlist), intent(IN) :: rparams
   
   ! The name of the section in the parameter list containing the parameters
   ! for the time dependent simulation.
-  CHARACTER(LEN=*), INTENT(IN) :: ssection
+  character(LEN=*), intent(IN) :: ssection
 !</input>
 
 !<inputoutput>
   ! The problem structure to be initialised.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
   
 !</subroutine>
 
     ! Fetch the parameters. Initialise with standard settings if they don't 
     ! exist.
-    CALL parlst_getvalue_int (rparams,ssection,'itimedependence',  &
+    call parlst_getvalue_int (rparams,ssection,'itimedependence',  &
         rproblem%itimedependence, 0)
-    CALL parlst_getvalue_int (rparams,ssection,'niterations',     &
+    call parlst_getvalue_int (rparams,ssection,'niterations',     &
         rproblem%rtimedependence%niterations, 1000)
-    CALL parlst_getvalue_double (rparams,ssection,'dtimestart',   &
+    call parlst_getvalue_double (rparams,ssection,'dtimestart',   &
         rproblem%rtimedependence%dtimeInit, 0.0_DP)
-    CALL parlst_getvalue_double (rparams,ssection,'dtimemax',     &
+    call parlst_getvalue_double (rparams,ssection,'dtimemax',     &
         rproblem%rtimedependence%dtimeMax, 20.0_DP)
-    CALL parlst_getvalue_int (rparams, ssection,'ctimeStepScheme', &
+    call parlst_getvalue_int (rparams, ssection,'ctimeStepScheme', &
           rproblem%rtimedependence%ctimeStepScheme, 0)
-    CALL parlst_getvalue_double (rparams,ssection,'dtimeStepTheta',    &
+    call parlst_getvalue_double (rparams,ssection,'dtimeStepTheta',    &
         rproblem%rtimedependence%dtimeStepTheta, 1.0_DP)
     rproblem%rtimedependence%itimeStep = 0
 
-  END SUBROUTINE  
+  end subroutine  
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE cc_solveNonstationaryDirect (rproblem,rvector)
+  subroutine cc_solveNonstationaryDirect (rproblem,rvector)
   
 !<description>
   ! Solve the nonstationary optimal control problem. This allocates
@@ -127,127 +127,127 @@ CONTAINS
 
 !<input>
   ! OPTIONAL: A block vector that serves as stationary initial condition.
-  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rvector
+  type(t_vectorBlock), intent(IN), optional :: rvector
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), POINTER :: RspaceTimeDiscr
-    TYPE(t_spacetimeVector) :: rx,rd,rb
-    INTEGER :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
-    INTEGER :: nmaxSimulRefLevel,icurrentspace,icurrenttime
-    REAL(DP) :: dspacetimeRefFactor,dcurrentfactor
-    INTEGER :: ctypePreconditioner
-    INTEGER(I32) :: TIMENLMIN,TIMENLMAX,istep
-    INTEGER, DIMENSION(:,:), ALLOCATABLE :: Ispacetimelevel
+    type(t_ccoptSpaceTimeDiscretisation), dimension(:), pointer :: RspaceTimeDiscr
+    type(t_spacetimeVector) :: rx,rd,rb
+    integer :: i,ispacelevelcoupledtotimelevel,cspaceTimeSolverType
+    integer :: nmaxSimulRefLevel,icurrentspace,icurrenttime
+    real(DP) :: dspacetimeRefFactor,dcurrentfactor
+    integer :: ctypePreconditioner
+    integer(I32) :: TIMENLMIN,TIMENLMAX,istep
+    integer, dimension(:,:), allocatable :: Ispacetimelevel
 
     call output_lbrk()
 
     ! Get the minimum and maximum time level from the parameter list    
-    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMIN',TIMENLMIN,1)
-    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMAX',TIMENLMAX,1)
                               
     ! Values <= 0 result in a relativ minimum level.
-    IF (TIMENLMIN .LE. 0) TIMENLMIN = TIMENLMAX+TIMENLMIN
+    if (TIMENLMIN .le. 0) TIMENLMIN = TIMENLMAX+TIMENLMIN
 
     ! Allocate memory for the space-time discretisation structures
     ! on all levels. Initialis the maximum level such that it represents
     ! the finest time level as well as the finest space level.
-    ALLOCATE(RspaceTimeDiscr(1:TIMENLMAX))
+    allocate(RspaceTimeDiscr(1:TIMENLMAX))
     
     call output_line ('Initialising space-time discretisation of the maximum level...')
     
-    CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
+    call sptidis_initDiscretisation (rproblem,TIMENLMAX,&
         rproblem%NLMAX,RspaceTimeDiscr(TIMENLMAX))
         
-    CALL sptivec_initVector (rx,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+    call sptivec_initVector (rx,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
-    CALL sptivec_initVector (rb,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+    call sptivec_initVector (rb,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
-    CALL sptivec_initVector (rd,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
+    call sptivec_initVector (rd,RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr,&
         RspaceTimeDiscr(TIMENLMAX)%p_rlevelInfo%rdiscretisation)
         
     ! If a start vector is given, propagate it to all timesteps.
-    IF (PRESENT(rvector)) THEN
+    if (present(rvector)) then
       call output_line ('Propagating start vector...')
-      DO istep = 1,rx%NEQtime
-        CALL sptivec_setTimestepData(rx,istep,rvector)
-      END DO
-    END IF
+      do istep = 1,rx%NEQtime
+        call sptivec_setTimestepData(rx,istep,rvector)
+      end do
+    end if
 
     call output_line ('Reading target flow...')
 
     ! Read the target flow -- stationary or nonstationary
-    CALL cc_initTargetFlow (rproblem,&
+    call cc_initTargetFlow (rproblem,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeInit,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeMax,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals)
         
     ! Figure out which type of solver we should use to solve
     ! the problem. 
-    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
+    call parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
                               'cspaceTimeSolverType',cspaceTimeSolverType,0)
                               
     ! Get the preconditioner type which is to be used in the nonlinear
     ! solver.
-    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
+    call parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
                               'ctypePreconditioner',ctypePreconditioner,1)
 
     ! Call the solver for the space/time coupled system.
-    SELECT CASE (cspaceTimeSolverType)
-    CASE (0)
+    select case (cspaceTimeSolverType)
+    case (0)
       ! 1-level (in time) Gauss elimination solver.
       call output_line ('Invoking Gauss elimination solver...')
-      CALL cc_solveSupersystemDirect (rproblem, &
+      call cc_solveSupersystemDirect (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd)
 
-    CASE (1)
+    case (1)
       ! 1-level (in time) defect correction solver with a preconditioner
       ! in space. 
       !
       ! Call the defect correction solver      
       call output_line ('Invoking defect correction solver...')
-      CALL cc_solveSupersystemDefCorr (rproblem, &
+      call cc_solveSupersystemDefCorr (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd, ctypePreconditioner)
       
-    CASE (2)
+    case (2)
       ! Space-time multigrid solver in space and/or time.
       !
       ! Should we couple space and time coarsening/refinement?
-      CALL parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
+      call parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
           'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
 
       ! Parameters of the refinement?
-      CALL parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
+      call parlst_getvalue_int (rproblem%rparamList,'TIME-MULTIGRID',&
           'nmaxSimulRefLevel',nmaxSimulRefLevel,0)
       
-      IF (nmaxSimulRefLevel .LE. 0) THEN
+      if (nmaxSimulRefLevel .le. 0) then
         nmaxSimulRefLevel = TIMENLMAX+nmaxSimulRefLevel
-      END IF
-      nmaxSimulRefLevel = MIN(TIMENLMAX,MAX(TIMENLMIN,nmaxSimulRefLevel))
+      end if
+      nmaxSimulRefLevel = min(TIMENLMAX,max(TIMENLMIN,nmaxSimulRefLevel))
           
-      CALL parlst_getvalue_double (rproblem%rparamList,'TIME-MULTIGRID',&
+      call parlst_getvalue_double (rproblem%rparamList,'TIME-MULTIGRID',&
           'dspacetimeRefFactor',dspacetimeRefFactor,1.0_DP)
 
       call output_line ('Initialising space-time discretisation of the lower levels...')
       
       ! Initialise the supersystem on all levels below the topmost one
-      SELECT CASE (ispacelevelcoupledtotimelevel)
-      CASE (0)
+      select case (ispacelevelcoupledtotimelevel)
+      case (0)
         ! Everywhere the same space level
-        DO i=TIMENLMIN,TIMENLMAX-1
-          CALL sptidis_initDiscretisation (rproblem,i,&
+        do i=TIMENLMIN,TIMENLMAX-1
+          call sptidis_initDiscretisation (rproblem,i,&
               rproblem%NLMAX,RspaceTimeDiscr(i))
-        END DO
+        end do
         
-      CASE (1) 
+      case (1) 
         ! Space level NLMAX-i = Time level TIMENLMAX-i.
         !
         ! But this is modified by nmaxSimulRefLevel and dspacetimeRefFactor!
@@ -259,119 +259,119 @@ CONTAINS
         ! the levels in advance. Allocate an array Ispacetimelevel
         ! and fill it: Ispacetimelevel(1,:) all the space levels,
         ! Ispacetimelevel(2,:) all the corresponding time levels.
-        ALLOCATE(Ispacetimelevel(2,TIMENLMAX))
+        allocate(Ispacetimelevel(2,TIMENLMAX))
         
         icurrentspace = rproblem%NLMAX
         icurrenttime = TIMENLMAX
         dcurrentfactor = 0.0_DP
-        DO i=TIMENLMAX, TIMENLMIN,-1
+        do i=TIMENLMAX, TIMENLMIN,-1
           Ispacetimelevel(1,i) = icurrentspace
           Ispacetimelevel(2,i) = icurrenttime
           
           ! Reduce space and/or time level.
-          IF (dspacetimeRefFactor .GE. 1.0_DP) THEN
+          if (dspacetimeRefFactor .ge. 1.0_DP) then
             ! Time coarsened as usual, space probably delayed
             icurrenttime = icurrenttime - 1
-            IF (i .LE. nmaxSimulRefLevel) THEN
+            if (i .le. nmaxSimulRefLevel) then
               ! Space coarsening allowed.
               dcurrentfactor = dcurrentfactor + 1.0_DP/dspacetimeRefFactor
-              IF (dcurrentfactor .GE. 1.0_DP) THEN
+              if (dcurrentfactor .ge. 1.0_DP) then
                 ! Coarsening in space
-                IF (icurrentspace .GT. rproblem%NLMIN) &
+                if (icurrentspace .gt. rproblem%NLMIN) &
                     icurrentspace = icurrentspace - 1
-                dcurrentfactor = MOD(dcurrentfactor,1.0_DP)
-              END IF
+                dcurrentfactor = mod(dcurrentfactor,1.0_DP)
+              end if
               ! Otherwise no coarsening in space.
-            END IF
-          ELSE
+            end if
+          else
             ! Space coarsened as usual, time probably delayed
-            IF (icurrentspace .GT. rproblem%NLMIN) &
+            if (icurrentspace .gt. rproblem%NLMIN) &
                 icurrentspace = icurrentspace - 1
-            IF (i .LE. nmaxSimulRefLevel) THEN
+            if (i .le. nmaxSimulRefLevel) then
               ! Time coarsening allowed.
               dcurrentfactor = dcurrentfactor + dspacetimeRefFactor
-              IF (dcurrentfactor .GE. 1.0_DP) THEN
+              if (dcurrentfactor .ge. 1.0_DP) then
                 ! Coarsening in space
-                IF (icurrenttime .GT. TIMENLMIN) icurrenttime = icurrenttime - 1
-                dcurrentfactor = MOD(dcurrentfactor,1.0_DP)
-              END IF
+                if (icurrenttime .gt. TIMENLMIN) icurrenttime = icurrenttime - 1
+                dcurrentfactor = mod(dcurrentfactor,1.0_DP)
+              end if
               ! Otherwise no coarsening in time.
-            END IF
-          END IF
-        END DO
+            end if
+          end if
+        end do
         
         ! Now initialise the level hierarchy
-        DO i=TIMENLMIN,TIMENLMAX-1
+        do i=TIMENLMIN,TIMENLMAX-1
           !CALL sptidis_initDiscretisation (rproblem,i,&
           !    MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
           !    RspaceTimeDiscr(i))
-          CALL sptidis_initDiscretisation (rproblem,Ispacetimelevel(2,i),&
+          call sptidis_initDiscretisation (rproblem,Ispacetimelevel(2,i),&
               Ispacetimelevel(1,i),RspaceTimeDiscr(i))
-        END DO
+        end do
         
-        DEALLOCATE (Ispacetimelevel)
+        deallocate (Ispacetimelevel)
         
-      CASE (2)
+      case (2)
         ! Space level NLMAX-i = Time level TIMENLMAX-i,
         ! but no restriction in time
-        DO i=TIMENLMIN,TIMENLMAX-1
-          CALL sptidis_initDiscretisation (rproblem,TIMENLMAX,&
-              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+        do i=TIMENLMIN,TIMENLMAX-1
+          call sptidis_initDiscretisation (rproblem,TIMENLMAX,&
+              max(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
               RspaceTimeDiscr(i))
-        END DO
-      END SELECT
+        end do
+      end select
       
       ! Print some statistical information about the discretisation
-      CALL output_lbrk ()
-      CALL output_line ('Triangulation')
-      CALL output_line ('-------------')
-      DO i=rproblem%NLMIN,rproblem%NLMAX
-        CALL tria_infoStatistics (rproblem%RlevelInfo(i)%rtriangulation,&
-          i .EQ. rproblem%NLMIN,i)
-      END DO
+      call output_lbrk ()
+      call output_line ('Triangulation')
+      call output_line ('-------------')
+      do i=rproblem%NLMIN,rproblem%NLMAX
+        call tria_infoStatistics (rproblem%RlevelInfo(i)%rtriangulation,&
+          i .eq. rproblem%NLMIN,i)
+      end do
       
-      CALL output_lbrk ()
-      CALL output_line ('Time discretisation')
-      CALL output_line ('-------------------')
-      DO i=TIMENLMIN,TIMENLMAX
-        CALL output_line ('Level: '//sys_siL(i,10))
-        CALL sptidis_infoDiscretisation (RspaceTimeDiscr(i))
-        CALL output_lbrk ()
-      END DO
+      call output_lbrk ()
+      call output_line ('Time discretisation')
+      call output_line ('-------------------')
+      do i=TIMENLMIN,TIMENLMAX
+        call output_line ('Level: '//sys_siL(i,10))
+        call sptidis_infoDiscretisation (RspaceTimeDiscr(i))
+        call output_lbrk ()
+      end do
       
       ! Call the multigrid solver to solve on all these levels
       call output_line ('Invoking nonlinear space-time solver...')
-      CALL cc_solveSupersystemMultigrid (rproblem, &
+      call cc_solveSupersystemMultigrid (rproblem, &
           RspaceTimeDiscr(TIMENLMIN:TIMENLMAX), rx, rb, rd, ctypePreconditioner)
-    END SELECT
+    end select
     
     call output_line ('Postprocessing...')
     
     ! POSTPROCESSING
     !
-    CALL cc_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
+    call cc_spacetimepostproc (rproblem,RspaceTimeDiscr(TIMENLMAX),rx)
     
     call output_line ('Cleaning up...')
     
-    CALL cc_doneTargetFlow (rproblem)
+    call cc_doneTargetFlow (rproblem)
     
-    DO i=TIMENLMIN,TIMENLMAX-1
-      CALL sptidis_doneDiscretisation (RspaceTimeDiscr(i))
-    END DO
+    do i=TIMENLMIN,TIMENLMAX-1
+      call sptidis_doneDiscretisation (RspaceTimeDiscr(i))
+    end do
     
-    DEALLOCATE(RspaceTimeDiscr)
+    deallocate(RspaceTimeDiscr)
     
-    CALL sptivec_releaseVector (rb)
-    CALL sptivec_releaseVector (rd)
-    CALL sptivec_releaseVector (rx)
+    call sptivec_releaseVector (rb)
+    call sptivec_releaseVector (rd)
+    call sptivec_releaseVector (rx)
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_spacetimepostproc (rproblem,rspacetimediscr,rvector)
+  subroutine cc_spacetimepostproc (rproblem,rspacetimediscr,rvector)
   
 !<description>
   ! Performs postprocessing of the space time solution vector rvector.
@@ -379,34 +379,34 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !<input>
   ! The space-time solution vector on which postprocessing should be applied.
-  TYPE(t_spacetimevector), INTENT(IN) :: rvector
+  type(t_spacetimevector), intent(IN) :: rvector
   
   ! The space-time discretisation structure belonging to that vector.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 !</input>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
-    CHARACTER(SYS_STRLEN) :: stemp,sfileName
-    TYPE(t_vectorBlock) :: rvectorTmp
+    integer :: i
+    character(SYS_STRLEN) :: stemp,sfileName
+    type(t_vectorBlock) :: rvectorTmp
     
     ! Create a temp vector
-    CALL lsysbl_createVecBlockByDiscr (&
-        rspacetimediscr%p_rlevelInfo%rdiscretisation,rvectorTmp,.TRUE.)
+    call lsysbl_createVecBlockByDiscr (&
+        rspacetimediscr%p_rlevelInfo%rdiscretisation,rvectorTmp,.true.)
 
     ! Attach the boundary conditions to that vector
     rvectorTmp%p_rdiscreteBC => rspacetimediscr%p_rlevelInfo%p_rdiscreteBC
     rvectorTmp%p_rdiscreteBCfict => rspacetimediscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! Postprocessing of all solution vectors.
-    DO i = 0,tdiscr_igetNDofGlob(rvector%p_rtimeDiscretisation)-1
+    do i = 0,tdiscr_igetNDofGlob(rvector%p_rtimeDiscretisation)-1
     
       rproblem%rtimedependence%dtime = &
           rvector%p_rtimeDiscretisation%dtimeInit + &
@@ -417,24 +417,24 @@ CONTAINS
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
-      CALL tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
+      call tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
     
-      CALL cc_postprocessingNonstat (rproblem,rvectorTmp)  
+      call cc_postprocessingNonstat (rproblem,rvectorTmp)  
       
-    END DO
+    end do
     
     ! If there's a ´filename for the solution file given,
     ! write out the current solution.
-    CALL parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
+    call parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
                                         'sfinalSolutionFileName', stemp, '')
-    READ (stemp,*) sfileName
-    IF (sfilename .NE. '') THEN
-      stemp = '('''//TRIM(ADJUSTL(sfilename))//'.'',I5.5)'
-      CALL sptivec_saveToFileSequence(rvector,stemp,.TRUE.)
-    END IF
+    read (stemp,*) sfileName
+    if (sfilename .ne. '') then
+      stemp = '('''//trim(adjustl(sfilename))//'.'',I5.5)'
+      call sptivec_saveToFileSequence(rvector,stemp,.true.)
+    end if
     
-    CALL lsysbl_releaseVector(rvectorTmp);
+    call lsysbl_releaseVector(rvectorTmp);
     
-  END SUBROUTINE
+  end subroutine
   
-END MODULE
+end module

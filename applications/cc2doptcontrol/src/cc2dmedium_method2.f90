@@ -34,46 +34,46 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmedium_method2
+module cc2dmedium_method2
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmediumm2init
-  USE cc2dmediumm2boundary
-  USE cc2dmediumm2discretisation
-  USE cc2dmediumm2postprocessing
-  USE cc2dmediumm2stationary
+  use cc2dmediumm2basic
+  use cc2dmediumm2init
+  use cc2dmediumm2boundary
+  use cc2dmediumm2discretisation
+  use cc2dmediumm2postprocessing
+  use cc2dmediumm2stationary
   
-  USE externalstorage
+  use externalstorage
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_getLogFiles (slogfile,serrorfile)
+  subroutine cc2dmedium2_getLogFiles (slogfile,serrorfile)
   
 !<description>
   ! Temporarily reads the output DAT file to get the names of the output
@@ -82,42 +82,42 @@ CONTAINS
 
 !<output>
   ! Name of the message log file.
-  CHARACTER(LEN=*), INTENT(OUT) :: slogfile
+  character(LEN=*), intent(OUT) :: slogfile
   
   ! Name of the error log file.
-  CHARACTER(LEN=*), INTENT(OUT) :: serrorfile
+  character(LEN=*), intent(OUT) :: serrorfile
 !</output>
 
 !</subroutine>
 
-    TYPE(t_parlist) :: rparlist
-    CHARACTER(LEN=SYS_STRLEN) :: sstring
+    type(t_parlist) :: rparlist
+    character(LEN=SYS_STRLEN) :: sstring
 
     ! Init parameter list that accepts parameters for output files
-    CALL parlst_init (rparlist)
+    call parlst_init (rparlist)
 
     ! Read parameters that configure the output
-    CALL parlst_readfromfile (rparlist, TRIM(DIR_DATA)//'/output.dat')
+    call parlst_readfromfile (rparlist, trim(DIR_DATA)//'/output.dat')
     
     ! Now the real initialisation of the output including log file stuff!
-    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
                                 'smsgLog',sstring,'')
-    READ(sstring,*) slogfile
+    read(sstring,*) slogfile
 
-    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
                                 'serrorLog',sstring,'')
-    READ(sstring,*) serrorfile
+    read(sstring,*) serrorfile
     
     ! That temporary parameter list is not needed anymore.
-    CALL parlst_done (rparlist)
+    call parlst_done (rparlist)
     
-    END SUBROUTINE
+    end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_evalParameters ()
+  subroutine cc2dmedium2_evalParameters ()
   
 !<description>
   ! Evaluates command line parameters.
@@ -134,34 +134,34 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_parlist) :: rparamList
-    LOGICAL :: bexists
-    CHARACTER(SYS_STRLEN) :: sdata
+    type(t_parlist) :: rparamList
+    logical :: bexists
+    character(SYS_STRLEN) :: sdata
 
     ! Figure out if the file exists.
-    INQUIRE(file='./cmdline.dat', exist=bexists)
+    inquire(file='./cmdline.dat', exist=bexists)
     
-    IF (bexists) THEN
+    if (bexists) then
       ! Read the file
-      CALL parlst_init (rparamList)
-      CALL parlst_readfromfile (rparamList, './cmdline.dat')
+      call parlst_init (rparamList)
+      call parlst_readfromfile (rparamList, './cmdline.dat')
       
       ! Evaluate parameters
-      CALL parlst_getvalue_string_direct ( &
+      call parlst_getvalue_string_direct ( &
           rparamList, '','datdirectory', sdata, DIR_DATA)
-      READ(sdata,*) DIR_DATA
+      read(sdata,*) DIR_DATA
 
-      CALL parlst_done (rparamList)
+      call parlst_done (rparamList)
       
-    END IF
+    end if
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_getDAT (rparamList)
+  subroutine cc2dmedium2_getDAT (rparamList)
   
 !<description>
   ! Reads in all DAT files into the parameter list rparlist
@@ -171,7 +171,7 @@ CONTAINS
   ! The parameter list where the values of the DAT files should be stored.
   ! The structure must have been initialised, the parameters are just added
   ! to the list.
-  TYPE(t_parlist), INTENT(INOUT) :: rparamList
+  type(t_parlist), intent(INOUT) :: rparamList
 !</inputoutput>
 
 !</subroutine>
@@ -181,31 +181,31 @@ CONTAINS
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
-    inquire(file=TRIM(DIR_DATA)//'/master.dat', exist=bexists)
+    inquire(file=trim(DIR_DATA)//'/master.dat', exist=bexists)
     
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
       ! contains references to subfiles with data.
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/master.dat',TRIM(DIR_DATA))
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/master.dat',trim(DIR_DATA))
     else
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'/discretisation.dat')
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//linsol_cc2d.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/discretisation.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//linsol_cc2d.dat')
       ! CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//nonlinsol_cc2d.dat')
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//output.dat')
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//paramtriang.dat')
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//bdconditions.dat')
-      CALL parlst_readfromfile (rparamList, TRIM(DIR_DATA)//'//timediscr.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//output.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//paramtriang.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//bdconditions.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//timediscr.dat')
     end if
   
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2optc
+  subroutine cc2dmedium2optc
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -232,149 +232,149 @@ CONTAINS
 !</subroutine>
 
     ! A problem structure for our problem
-    TYPE(t_problem), POINTER :: p_rproblem
+    type(t_problem), pointer :: p_rproblem
     
     ! A structure for the solution vector and the RHS vector of the problem.
-    TYPE(t_vectorBlock) :: rvector,rrhs
+    type(t_vectorBlock) :: rvector,rrhs
     
-    INTEGER :: i
+    integer :: i
     
     ! Ok, let's start. 
     !
     ! Initialise the external storage management.
     
-    CALL exstor_init (999,100)
+    call exstor_init (999,100)
     !CALL exstor_attachDirectory('./ff2storage')
     
     ! Allocate memory for the problem; it's rather large.
-    ALLOCATE (p_rproblem)
+    allocate (p_rproblem)
     
     ! Initialise the collection
-    CALL collct_init (p_rproblem%rcollection)
+    call collct_init (p_rproblem%rcollection)
 
     ! Initialise the parameter list object. This creates an empty parameter list.
-    CALL parlst_init (p_rproblem%rparamList)
+    call parlst_init (p_rproblem%rparamList)
     
     ! Read parameters from the INI/DAT files into the parameter list. 
-    CALL cc2dmedium2_getDAT (p_rproblem%rparamList)
+    call cc2dmedium2_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.
-    CALL cc_initOutput (p_rproblem)
+    call cc_initOutput (p_rproblem)
     OU_LINE_LENGTH = 132
     
     ! Print the parameters 
-    CALL parlst_info (p_rproblem%rparamList)
+    call parlst_info (p_rproblem%rparamList)
     
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
-    CALL cc_initParameters (p_rproblem)
+    call cc_initParameters (p_rproblem)
     
-    DO i=1,p_rproblem%NLMAX
-      CALL collct_addlevel_all (p_rproblem%rcollection)
-    END DO
+    do i=1,p_rproblem%NLMAX
+      call collct_addlevel_all (p_rproblem%rcollection)
+    end do
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL cc_initParamTriang (p_rproblem)
-    CALL cc_initDiscretisation (p_rproblem)    
-    CALL cc_allocMatVec (p_rproblem,rvector,rrhs)   
+    call cc_initParamTriang (p_rproblem)
+    call cc_initDiscretisation (p_rproblem)    
+    call cc_allocMatVec (p_rproblem,rvector,rrhs)   
     
     ! Print information about the discretisation
-    CALL output_line ('Discretisation statistics:')
-    CALL output_line ('--------------------------')
-    DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-      CALL output_lbrk ()
-      CALL output_line ('Level '//sys_siL(i,10))
-      CALL output_line ('---------')
-      CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.FALSE.)
-    END DO
+    call output_line ('Discretisation statistics:')
+    call output_line ('--------------------------')
+    do i=p_rproblem%NLMIN,p_rproblem%NLMAX
+      call output_lbrk ()
+      call output_line ('Level '//sys_siL(i,10))
+      call output_line ('---------')
+      call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
+    end do
      
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
-    CALL cc_generateBasicMatrices (p_rproblem)
+    call cc_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
-    CALL cc_initInitialSolution (p_rproblem,rvector)
+    call cc_initInitialSolution (p_rproblem,rvector)
     
     ! Now choose the algorithm. Stationary or time-dependent simulation?
-    IF (p_rproblem%itimedependence .EQ. 0) THEN
+    if (p_rproblem%itimedependence .eq. 0) then
     
       ! Stationary simulation
 
       ! Read the (stationary) target flow.
-      CALL cc_initTargetFlow (p_rproblem)
+      call cc_initTargetFlow (p_rproblem)
 
       ! Generate the RHS vector.
-      CALL cc_generateBasicRHS (p_rproblem,rrhs)
+      call cc_generateBasicRHS (p_rproblem,rrhs)
       
       ! Generate discrete boundary conditions
-      CALL cc_initDiscreteBC (p_rproblem,rvector,rrhs)
+      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL cc_implementBC (p_rproblem,rvector=rvector,rrhs=rrhs)
+      call cc_implementBC (p_rproblem,rvector=rvector,rrhs=rrhs)
     
       ! Solve the problem
-      CALL cc_solve (p_rproblem,rvector,rrhs)
+      call cc_solve (p_rproblem,rvector,rrhs)
     
       ! Postprocessing
-      CALL cc_postprocessingStationary (p_rproblem,rvector)
+      call cc_postprocessingStationary (p_rproblem,rvector)
       
       ! Release the target flow
-      CALL cc_doneTargetFlow (p_rproblem)
+      call cc_doneTargetFlow (p_rproblem)
       
-    ELSE
+    else
     
       ! Time dependent simulation with explicit time stepping.
       
       ! Initialise the boundary conditions for the 0th time step, but 
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
-      CALL cc_initDiscreteBC (p_rproblem,rvector,rrhs)
+      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Don't read the target flow, this is done in 
       ! cc_solveNonstationaryDirect!
 
       ! Call the nonstationary solver to solve the problem.
-      CALL cc_solveNonstationaryDirect (p_rproblem,rvector)
+      call cc_solveNonstationaryDirect (p_rproblem,rvector)
       
-    END IF
+    end if
     
     ! (Probably) write final solution vector
-    CALL cc_writeSolution (p_rproblem,rvector)
+    call cc_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
-    CALL cc_doneMatVec (p_rproblem,rvector,rrhs)
-    CALL cc_doneBC (p_rproblem)
-    CALL cc_doneDiscretisation (p_rproblem)
-    CALL cc_doneParamTriang (p_rproblem)
+    call cc_doneMatVec (p_rproblem,rvector,rrhs)
+    call cc_doneBC (p_rproblem)
+    call cc_doneDiscretisation (p_rproblem)
+    call cc_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
-    CALL cc_doneParameters (p_rproblem)
+    call cc_doneParameters (p_rproblem)
 
     ! Release the parameter list
-    CALL parlst_done (p_rproblem%rparamList)
+    call parlst_done (p_rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
-    CALL output_lbrk ()
-    CALL output_line ('Remaining collection statistics:')
-    CALL output_line ('--------------------------------')
-    CALL output_lbrk ()
-    CALL collct_printStatistics (p_rproblem%rcollection)
+    call output_lbrk ()
+    call output_line ('Remaining collection statistics:')
+    call output_line ('--------------------------------')
+    call output_lbrk ()
+    call collct_printStatistics (p_rproblem%rcollection)
     
     ! Finally release the collection and the problem structure.
-    CALL collct_done (p_rproblem%rcollection)
+    call collct_done (p_rproblem%rcollection)
     
-    DEALLOCATE(p_rproblem)
+    deallocate(p_rproblem)
     
     ! Information about external storage usage
-    CALL output_lbrk ()
-    CALL exstor_info ()
+    call output_lbrk ()
+    call exstor_info ()
     
     ! Clean up the external storage management
-    CALL exstor_done ()
+    call exstor_done ()
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

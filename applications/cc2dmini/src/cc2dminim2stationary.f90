@@ -37,34 +37,34 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dminim2stationary
+module cc2dminim2stationary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dminim2basic
-  USE cc2dmini_callback
+  use cc2dminim2basic
+  use cc2dmini_callback
   
-  IMPLICIT NONE
+  implicit none
   
 !<types>
 
@@ -73,47 +73,47 @@ MODULE cc2dminim2stationary
   ! Preconditioner structure for CCxD. This structure saves the configuration of the
   ! preconditioner that is used during the nonlinear iteration. 
   
-  TYPE t_ccPreconditioner
+  type t_ccPreconditioner
   
     ! Type of preconditioner.
     ! =0: Preconditioning with inverse mass matrix (not yet implemented),
     ! =1: Preconditioning by linear solver, solving the linearised system,
     ! =2: Preconditioning by Newton-Iteration (not yet implemented),
-    INTEGER :: itypePreconditioning
+    integer :: itypePreconditioning
     
     ! Pointer to linear solver node if a linear solver is the preconditioner
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode
     
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
-    TYPE(t_filterChain), DIMENSION(1) :: RfilterChain
+    type(t_filterChain), dimension(1) :: RfilterChain
     
     ! An interlevel projection structure for changing levels
-    TYPE(t_interlevelProjectionBlock) :: rprojection
+    type(t_interlevelProjectionBlock) :: rprojection
 
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
-    TYPE(t_vectorScalar) :: rtempVectorSc
+    type(t_vectorScalar) :: rtempVectorSc
 
     ! Temporary scalar vector; used for calculating the optimal damping
     ! parameter.
-    TYPE(t_vectorScalar) :: rtempVectorSc2
+    type(t_vectorScalar) :: rtempVectorSc2
 
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
   
-CONTAINS
+contains
   
   ! ***************************************************************************
   !<subroutine>
   
-    SUBROUTINE c2d2_getDefect (ite,rx,rb,rd,p_rcollection)
+    subroutine c2d2_getDefect (ite,rx,rb,rd,p_rcollection)
   
-    USE linearsystemblock
-    USE collection
+    use linearsystemblock
+    use collection
     
   !<description>
     ! FOR NONLINEAR ITERATION:
@@ -126,36 +126,36 @@ CONTAINS
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    INTEGER, INTENT(IN)                           :: ite
+    integer, intent(IN)                           :: ite
 
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN),TARGET        :: rx
+    type(t_vectorBlock), intent(IN),target        :: rx
 
     ! Right hand side vector of the equation.
-    TYPE(t_vectorBlock), INTENT(IN)               :: rb
+    type(t_vectorBlock), intent(IN)               :: rb
   !</input>
                
   !<inputoutput>
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), POINTER                   :: p_rcollection
+    type(t_collection), pointer                   :: p_rcollection
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+    type(t_vectorBlock), intent(INOUT)            :: rd
   !</inputoutput>
   
   !</subroutine>
 
     ! local variables
-    INTEGER :: ilvmax
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
-    TYPE(t_matrixBlock) :: rmatrixLaplaceBlock
-    TYPE(t_convUpwind) :: rupwind
+    integer :: ilvmax
+    type(t_matrixBlock), pointer :: p_rmatrix
+    type(t_matrixScalar), pointer :: p_rmatrixLaplace
+    type(t_matrixBlock) :: rmatrixLaplaceBlock
+    type(t_convUpwind) :: rupwind
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
 
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -172,24 +172,24 @@ CONTAINS
       ! ( B1^T B2^T 0  )
       !
       !
-      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixLaplaceBlock,&
+      call lsysbl_duplicateMatrix (p_rmatrix,rmatrixLaplaceBlock,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
           
-      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+      call lsyssc_duplicateMatrix (p_rmatrixLaplace,&
           rmatrixLaplaceBlock%RmatrixBlock(1,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+      call lsyssc_duplicateMatrix (p_rmatrixLaplace,&
           rmatrixLaplaceBlock%RmatrixBlock(2,2),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - (-nu * Laplace(.))*solution
-      CALL lsysbl_copyVector (rb,rd)
-      CALL lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
+      call lsysbl_copyVector (rb,rd)
+      call lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
       
       ! Release the temporary matrix again.
-      CALL lsysbl_releaseMatrix (rmatrixLaplaceBlock)
+      call lsysbl_releaseMatrix (rmatrixLaplaceBlock)
       
       ! For the final defect
       !
@@ -208,15 +208,15 @@ CONTAINS
       ! As the filter consists only of an implementation filter for
       ! boundary conditions, this implements the boundary conditions
       ! into the defect vector.
-      CALL filter_applyFilterChainVec (rd, RfilterChain)
+      call filter_applyFilterChainVec (rd, RfilterChain)
       
       ! Should we discretise the Navier-Stokes nonlinearity?
-      IF (collct_getvalue_int (p_rcollection,'ISTOKES') .EQ. 0) THEN
+      if (collct_getvalue_int (p_rcollection,'ISTOKES') .eq. 0) then
       
         ! Which type of stabilisation/strategy for setting up the nonlinearity
         ! do we use?
-        SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
-        CASE (1)
+        select case (collct_getvalue_int (p_rcollection,'IUPWIND'))
+        case (1)
       
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
@@ -227,32 +227,32 @@ CONTAINS
           
           ! Call the upwind method to calculate the nonlinear defect.
           ! As we calculate only the defect, the matrix is ignored!
-          CALL conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
+          call conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
                               p_rmatrix%RmatrixBlock(1,1), rx, rd)      
                   
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
+        case DEFAULT
+          print *,'Don''t know how to set up nonlinearity!?!'
+          stop
           
-        END SELECT
+        end select
         
         ! Apply the filter chain to the defect vector again - since the
         ! implementation of the nonlinearity usually changes the Dirichlet
         ! nodes in the vector!
-        CALL filter_applyFilterChainVec (rd, RfilterChain)
+        call filter_applyFilterChainVec (rd, RfilterChain)
         
-      END IF
+      end if
 
       ! That's it
       
-    END SUBROUTINE
+    end subroutine
     
   ! ***************************************************************************
 
   !<subroutine>
 
-    SUBROUTINE c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,domega,p_rcollection)
+    subroutine c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,domega,p_rcollection)
   
   !<description>
     ! This subroutine is called inside of the nonlinear loop, to be precise,
@@ -275,43 +275,43 @@ CONTAINS
 
   !<input>
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN)               :: rx
+    type(t_vectorBlock), intent(IN)               :: rx
 
     ! Current RHS vector of the nonlinear equation
-    TYPE(t_vectorBlock), INTENT(IN)               :: rb
+    type(t_vectorBlock), intent(IN)               :: rb
 
     ! Defect vector b-A(x)x. 
-    TYPE(t_vectorBlock), INTENT(IN)               :: rd
+    type(t_vectorBlock), intent(IN)               :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), POINTER                   :: p_rcollection
+    type(t_collection), pointer                   :: p_rcollection
   !</input>
 
   !<inputoutput>
     ! A temporary vector in the structure of rx
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rtemp1
+    type(t_vectorBlock), intent(INOUT)            :: rtemp1
 
     ! A 2nd temporary vector in the structure of rx
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rtemp2
+    type(t_vectorBlock), intent(INOUT)            :: rtemp2
 
     ! Damping parameter. On entry: an initial value given e.g. by the
     ! previous step.
     ! On return: The new damping parameter.
-    REAL(DP), INTENT(INOUT)                       :: domega
+    real(DP), intent(INOUT)                       :: domega
   !</inputoutput>
   
   !</subroutine>
 
     ! local variables
-    INTEGER :: ilvmax
-    REAL(DP) :: domegaMin, domegaMax,dskv1,dskv2
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
-    TYPE(t_convUpwind) :: rupwind
+    integer :: ilvmax
+    real(DP) :: domegaMin, domegaMax,dskv1,dskv2
+    type(t_matrixBlock), pointer :: p_rmatrix
+    type(t_matrixScalar), pointer :: p_rmatrixLaplace
+    type(t_convUpwind) :: rupwind
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
 
 !    DEBUG!!!:
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
@@ -333,11 +333,11 @@ CONTAINS
       domegaMax = collct_getvalue_real (p_rcollection,'OMEGAMAX')
       
       ! Is there anything to do?
-      IF (domegaMin .GE. domegaMax) THEN
+      if (domegaMin .ge. domegaMax) then
         ! No - cancel.
         domega = domegaMin
-        RETURN
-      END IF
+        return
+      end if
 
       ! Get the system and the Laplace matrix on the maximum level
       p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
@@ -401,19 +401,19 @@ CONTAINS
       ! At first, calculate the point rtemp1 = u_n+omegaold*Y where
       ! to evaluate the matrix.
 
-      CALL lsysbl_copyVector(rd,rtemp1)
-      CALL lsysbl_vectorLinearComb (rx,rtemp1,1.0_DP,domega)
+      call lsysbl_copyVector(rd,rtemp1)
+      call lsysbl_vectorLinearComb (rx,rtemp1,1.0_DP,domega)
 
       ! Should we discretise the Navier-Stokes nonlinearity?
       ! Would mean to rebuild the system matrix. Otherwise we can reuse
       ! our previous diffusion matrix without rebuilding it.
       
-      IF (collct_getvalue_int (p_rcollection,'ISTOKES') .EQ. 0) THEN
+      if (collct_getvalue_int (p_rcollection,'ISTOKES') .eq. 0) then
       
         ! Which type of stabilisation/strategy for setting up the nonlinearity
         ! do we use?
-        SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
-        CASE (1)
+        select case (collct_getvalue_int (p_rcollection,'IUPWIND'))
+        case (1)
       
           ! Construct the linear part of the nonlinear matrix on the maximum
           ! level. 
@@ -429,7 +429,7 @@ CONTAINS
           ! So at first, initialise the A-matrix with the Laplace contribution.
           ! We ignore the structure and simply overwrite the content of the
           ! system submatrices with the Laplace matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          call lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
           ! Set up the upwind structure for the creation of the defect.
@@ -441,46 +441,46 @@ CONTAINS
           
           ! Call the upwind method to evaluate nonlinearity part of the matrix
           ! in the point rtemp1.
-          CALL conv_upwind2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
+          call conv_upwind2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
                                     
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
+        case DEFAULT
+          print *,'Don''t know how to set up nonlinearity!?!'
+          stop
           
-        END SELECT
+        end select
         
         ! Apply the filter chain to the matrix.
         ! As the filter consists only of an implementation filter for
         ! boundary conditions, this implements the boundary conditions
         ! into the system matrix.
-        CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+        call filter_applyFilterChainMat (p_rmatrix, RfilterChain)
           
-      END IF
+      end if
         
       ! ==================================================================
       ! Second term of the scalar product in the nominator
       ! Calculate the defect rtemp2 = F-T*u_n.
       ! ==================================================================
 
-      CALL lsysbl_copyVector (rb,rtemp2)
-      CALL lsysbl_blockMatVec (p_rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
+      call lsysbl_copyVector (rb,rtemp2)
+      call lsysbl_blockMatVec (p_rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
       
       ! This is a defect vector - filter it! This e.g. implements boundary
       ! conditions.
-      CALL filter_applyFilterChainVec (rtemp2, RfilterChain)
+      call filter_applyFilterChainVec (rtemp2, RfilterChain)
       
       ! ==================================================================
       ! For all terms in the fraction:
       ! Calculate the value  rtemp1 = T*Y
       ! ==================================================================
 
-      CALL lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
+      call lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
       ! This is a defect vector against 0 - filter it! This e.g. 
       ! implements boundary conditions.
-      CALL filter_applyFilterChainVec (rtemp1, RfilterChain)
+      call filter_applyFilterChainVec (rtemp1, RfilterChain)
       
       ! ==================================================================
       ! Calculation of the fraction terms.
@@ -491,12 +491,12 @@ CONTAINS
       dskv1 = lsysbl_scalarProduct (rtemp1, rtemp2)
       dskv2 = lsysbl_scalarProduct (rtemp1, rtemp1)
       
-      IF (dskv2 .LT. 1.0E-40_DP) THEN
-        PRINT *,'Error in c2d2_getOptimalDamping. dskv2 nearly zero.'
-        PRINT *,'Optimal damping parameter singular.'
-        PRINT *,'Is the triangulation ok??? .tri-file destroyed?'
-        STOP
-      END IF
+      if (dskv2 .lt. 1.0E-40_DP) then
+        print *,'Error in c2d2_getOptimalDamping. dskv2 nearly zero.'
+        print *,'Optimal damping parameter singular.'
+        print *,'Is the triangulation ok??? .tri-file destroyed?'
+        stop
+      end if
       
       ! Ok, we have the nominator and the denominator. Divide them
       ! by each other to calculate the new OMEGA.
@@ -509,16 +509,16 @@ CONTAINS
       
       ! That's it, we have our new Omega.
   
-    END SUBROUTINE
+    end subroutine
 
   ! ***************************************************************************
 
   !<subroutine>
 
-    SUBROUTINE c2d2_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
+    subroutine c2d2_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
-    USE linearsystemblock
-    USE collection
+    use linearsystemblock
+    use collection
     
   !<description>
     ! FOR NONLINEAR ITERATION:
@@ -531,14 +531,14 @@ CONTAINS
 
   !<inputoutput>
     ! Number of current iteration. 
-    INTEGER, INTENT(IN)                           :: ite
+    integer, intent(IN)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+    type(t_vectorBlock), intent(INOUT)            :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), POINTER                   :: p_rcollection
+    type(t_collection), pointer                   :: p_rcollection
     
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
@@ -547,45 +547,45 @@ CONTAINS
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
-    REAL(DP), INTENT(INOUT)                       :: domega
+    real(DP), intent(INOUT)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    LOGICAL, INTENT(INOUT)                        :: bsuccess
+    logical, intent(INOUT)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
+    type(t_vectorBlock), intent(IN), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
+    type(t_vectorBlock), intent(IN), target       :: rb
   !</input>
   
   !</subroutine>
   
     ! local variables
-    INTEGER :: istokes, iupwind,iadaptivematrix
-    REAL(DP) :: dadmatthreshold
+    integer :: istokes, iupwind,iadaptivematrix
+    real(DP) :: dadmatthreshold
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
-    TYPE(t_vectorScalar), POINTER :: p_rvectorTemp,p_rvectorTemp2
-    TYPE(t_vectorBlock) :: rtemp1,rtemp2
-    INTEGER :: ierror,NLMAX,NLMIN, ilev
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
+    type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
+    type(t_matrixScalar), pointer :: p_rmatrixLaplace
+    type(t_vectorScalar), pointer :: p_rvectorTemp,p_rvectorTemp2
+    type(t_vectorBlock) :: rtemp1,rtemp2
+    integer :: ierror,NLMAX,NLMIN, ilev
+    type(t_linsolNode), pointer :: p_rsolverNode
+    type(t_convUpwind) :: rupwind
+    type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse
 
     ! An interlevel projection structure for changing levels
-    TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
 
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
 !    call lsysbl_getbase_double (rd,p_def)
@@ -620,12 +620,12 @@ CONTAINS
       
       istokes = collct_getvalue_int (p_rcollection,'ISTOKES')
       
-      IF (istokes .EQ. 0) THEN
+      if (istokes .eq. 0) then
       
         iupwind = collct_getvalue_int (p_rcollection,'IUPWIND')
       
-        SELECT CASE (iupwind)
-        CASE (1)
+        select case (iupwind)
+        case (1)
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rupwind%dnu = collct_getvalue_real (p_rcollection,'NU')
@@ -633,18 +633,18 @@ CONTAINS
           ! Set stabilisation parameter
           rupwind%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
           
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
+        case DEFAULT
+          print *,'Don''t know how to set up nonlinearity!?!'
+          stop
         
-        END SELECT
-      END IF
+        end select
+      end if
       
       ! On all levels, we have to set up the nonlinear system matrix,
       ! so that the linear solver can be applied to it.
 
-      NULLIFY(p_rmatrix)
-      DO ilev=NLMAX,NLMIN,-1
+      nullify(p_rmatrix)
+      do ilev=NLMAX,NLMIN,-1
       
         ! Get the system matrix and the Laplace matrix
         p_rmatrixFine => p_rmatrix
@@ -655,40 +655,40 @@ CONTAINS
         ! matrix. On lower levels, we have to create a solution
         ! on that level from a fine-grid solution before we can use
         ! it to build the matrix!
-        IF (ilev .EQ. NLMAX) THEN
+        if (ilev .eq. NLMAX) then
           p_rvectorCoarse => rx
-        ELSE
+        else
           ! Get the temporary vector on level i. Will receive the solution
           ! vector on that level. 
           p_rvectorCoarse => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev)
           
           ! Get the solution vector on level i+1. This is either the temporary
           ! vector on that level, or the solution vector on the maximum level.
-          IF (ilev .LT. NLMAX-1) THEN
+          if (ilev .lt. NLMAX-1) then
             p_rvectorFine => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev+1)
-          ELSE
+          else
             p_rvectorFine => rx
-          END IF
+          end if
 
           ! Interpolate the solution from the finer grid to the coarser grid.
           ! The interpolation is configured in the interlevel projection
           ! structure we got from the collection.
-          CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
+          call mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
                                            p_rvectorFine,p_rvectorTemp)
 
           ! Apply the filter chain to the temp vector.
           ! This implements the boundary conditions that are attached to it.
-          CALL filter_applyFilterChainVec (p_rvectorCoarse, RfilterChain)
+          call filter_applyFilterChainVec (p_rvectorCoarse, RfilterChain)
 
-        END IF
+        end if
         
         ! Should we discretise the Navier-Stokes nonlinearity?
-        IF (istokes .EQ. 0) THEN
+        if (istokes .eq. 0) then
         
           ! Which type of stabilisation/strategy for setting up the nonlinearity
           ! do we use?
-          SELECT CASE (iupwind)
-          CASE (1)
+          select case (iupwind)
+          case (1)
         
             ! The system matrix looks like:
             !   (  A    0   B1 )
@@ -701,21 +701,21 @@ CONTAINS
             ! So at first, initialise the A-matrix with the Laplace contribution.
             ! We ignore the structure and simply overwrite the content of the
             ! system submatrices with the Laplace matrix.
-            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+            call lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
             ! Call the upwind method to calculate the nonlinear matrix.
-            CALL conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+            call conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 p_rmatrix%RmatrixBlock(1,1))      
                                          
-          CASE DEFAULT
-            PRINT *,'Don''t know how to set up nonlinearity!?!'
-            STOP
+          case DEFAULT
+            print *,'Don''t know how to set up nonlinearity!?!'
+            stop
             
-          END SELECT
+          end select
         
-        ELSE
+        else
           ! The system matrix looks like:
           !   (  A    0   B1 )
           !   (  0    A   B2 )
@@ -725,10 +725,10 @@ CONTAINS
           !
           ! Copy the Laplace matrix to A and filter it according to the boundary
           ! conditions - this gives then the system matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          call lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
-        END IF
+        end if
 
         ! For the construction of matrices on lower levels, call the matrix
         ! restriction. In case we have a uniform discretisation with Q1~,
@@ -736,19 +736,19 @@ CONTAINS
         ! by a Galerkin approach using constant prolongation/restriction.
         ! This helps to stabilise the solver if there are elements in the
         ! mesh with high aspect ratio.
-        IF (ilev .LT. NLMAX) THEN
-          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1),&
+        if (ilev .lt. NLMAX) then
+          call mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1),&
                                             p_rmatrix%RmatrixBlock(1,1),&
                                             iadaptivematrix, dadmatthreshold)
-        END IF
+        end if
       
         ! Apply the filter chain to the matrix.
         ! As the filter consists only of an implementation filter for
         ! boundary conditions, this implements the boundary conditions
         ! into the system matrix.
-        CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+        call filter_applyFilterChainMat (p_rmatrix, RfilterChain)
         
-      END DO
+      end do
       
       ! Our 'parent' (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
@@ -758,8 +758,8 @@ CONTAINS
 
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
-      CALL linsol_initData (p_rsolverNode, ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      call linsol_initData (p_rsolverNode, ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
       
       
       ! Finally solve the system. As we want to solve Ax=b with
@@ -767,12 +767,12 @@ CONTAINS
       ! we use linsol_solveAdaptively. If b is a defect
       ! RHS and x a defect update to be added to a solution vector,
       ! we would have to use linsol_precondDefect instead.
-      CALL linsol_precondDefect (p_rsolverNode,rd)
+      call linsol_precondDefect (p_rsolverNode,rd)
 
       ! Release the numeric factorisation of the matrix.
       ! We don't release the symbolic factorisation, as we can use them
       ! for the next iteration.
-      CALL linsol_doneData (p_rsolverNode)
+      call linsol_doneData (p_rsolverNode)
 
       ! Finally calculate a new damping parameter domega.
       !
@@ -786,29 +786,29 @@ CONTAINS
       ! structure of rx/rb. Derive block vectors in that structure that
       ! share their memory with the scalar temp vectors. Note that the
       ! temp vectors are created large enough by our parent!
-      CALL lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
-      CALL lsysbl_enforceStructure (rb,rtemp1)
+      call lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
+      call lsysbl_enforceStructure (rb,rtemp1)
 
-      CALL lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
-      CALL lsysbl_enforceStructure (rb,rtemp2)
+      call lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
+      call lsysbl_enforceStructure (rb,rtemp2)
 
       ! Calculate the omega
-      CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
+      call c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
                                    domega,p_rcollection)
 
       ! Release the temp block vectors. This only cleans up the structure.
       ! The data is not released from heap as it belongs to the
       ! scalar temp vectors.
-      CALL lsysbl_releaseVector (rtemp2)
-      CALL lsysbl_releaseVector (rtemp1)
+      call lsysbl_releaseVector (rtemp2)
+      call lsysbl_releaseVector (rtemp1)
 
-    END SUBROUTINE
+    end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_getProlRest (rprojection, rparamList, sname)
+  subroutine c2d2_getProlRest (rprojection, rparamList, sname)
   
 !<description>
   ! Initialises an existing interlevel projection structure rprojection
@@ -818,93 +818,93 @@ CONTAINS
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  TYPE(t_parlist), INTENT(IN) :: rparamList
+  type(t_parlist), intent(IN) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the prolongation/restriction.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
 !</input>
 
 !<output>
   ! An interlevel projection block structure containing an initial
   ! configuration of prolongation/restriction. The structure is modified
   ! according to the parameters in the INI/DAT file(s).
-  TYPE(t_interlevelProjectionBlock), INTENT(INOUT) :: rprojection
+  type(t_interlevelProjectionBlock), intent(INOUT) :: rprojection
 !</output>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_parlstSection), POINTER :: p_rsection
-    INTEGER :: i1
-    REAL(DP) :: d1
+    type(t_parlstSection), pointer :: p_rsection
+    integer :: i1
+    real(DP) :: d1
 
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    CALL parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection) 
 
-    IF (.NOT. ASSOCIATED(p_rsection)) THEN
+    if (.not. associated(p_rsection)) then
       ! We use the default configuration; stop here.
-      RETURN
-    END IF
+      return
+    end if
     
     ! Now take a look which parameters appear in that section.
 
     ! Prolongation/restriction order for velocity components
-    CALL parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
+    call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
     
-    IF (i1 .NE. -1) THEN
+    if (i1 .ne. -1) then
       ! Initialise order of prolongation/restriction for velocity components
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolongationOrder  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestrictionOrder   = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%iinterpolationOrder = i1
-    END IF
+    end if
 
     ! Prolongation/restriction order for pressure
-    CALL parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
+    call parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
     
-    IF (i1 .NE. -1) THEN
+    if (i1 .ne. -1) then
       ! Initialise order of prolongation/restriction for velocity components
       rprojection%RscalarProjection(:,NDIM2D+1)%iprolongationOrder  = i1
       rprojection%RscalarProjection(:,NDIM2D+1)%irestrictionOrder   = i1
       rprojection%RscalarProjection(:,NDIM2D+1)%iinterpolationOrder = i1
-    END IF
+    end if
     
     ! Prolongation/restriction variant for velocity components
     ! in case of Q1~ discretisation
-    CALL parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
+    call parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
     
-    IF (i1 .NE. -1) THEN
+    if (i1 .ne. -1) then
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestVariant  = i1
-    END IF
+    end if
     
     ! Aspect-ratio indicator in case of Q1~ discretisation
     ! with extended prolongation/restriction
-    CALL parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
+    call parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
     
-    IF (i1 .NE. 1) THEN
+    if (i1 .ne. 1) then
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestARIndicatorEX3Y  = i1
-    END IF
+    end if
 
     ! Aspect-ratio bound for switching to constant prolongation/restriction
     ! in case of Q1~ discretisation with extended prolongation/restriction
-    CALL parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
+    call parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
     
-    IF (d1 .NE. 20.0_DP) THEN
+    if (d1 .ne. 20.0_DP) then
       rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
       rprojection%RscalarProjection(:,1:NDIM2D)%drestARboundEX3Y  = d1
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
     
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_preparePreconditioner (rproblem,rpreconditioner)
+  subroutine c2d2_preparePreconditioner (rproblem,rpreconditioner)
   
 !<description>
   ! This routine prepares the preconditioner that us used during the
@@ -915,46 +915,46 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !<output>
   ! A preconditioner structure for the CCxD problem. Will be initialised
   ! with data.
-  TYPE(t_ccPreconditioner), INTENT(OUT), TARGET :: rpreconditioner
+  type(t_ccPreconditioner), intent(OUT), target :: rpreconditioner
 !</output>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: NLMIN,NLMAX
-    INTEGER :: i
-    REAL(DP) :: d
-    INTEGER(PREC_VECIDX) :: imaxmem
-    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+    integer :: NLMIN,NLMAX
+    integer :: i
+    real(DP) :: d
+    integer(PREC_VECIDX) :: imaxmem
+    character(LEN=PARLST_MLDATA) :: ssolverName,sstring
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
 
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    integer :: ierror    
   
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
+    type(t_matrixBlock), pointer :: p_rmatrix
+    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    type(t_matrixBlock), dimension(NNLEV) :: Rmatrices
     
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                      'itypePreconditioning', &
                                      rpreconditioner%itypePreconditioning, 1)
     
-    SELECT CASE (rpreconditioner%itypePreconditioning)
-    CASE (1)
+    select case (rpreconditioner%itypePreconditioning)
+    case (1)
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
       
@@ -981,36 +981,36 @@ CONTAINS
       ! Figure out the name of the section that contains the information
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file
       ! for the 'slinearSolver' value
-      CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
+      call parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                   'slinearSolver', sstring, '')
       ssolverName = ''
-      IF (sstring .NE. '') READ (sstring,*) ssolverName
-      IF (ssolverName .EQ. '') THEN
-        PRINT *,'No linear subsolver!'
-        STOP
-      END IF
+      if (sstring .ne. '') read (sstring,*) ssolverName
+      if (ssolverName .eq. '') then
+        print *,'No linear subsolver!'
+        stop
+      end if
                                     
       ! Initialise a standard interlevel projection structure. We
       ! can use the same structure for all levels. Therefore it's enough
       ! to initialise one structure using the RHS vector on the finest
       ! level to specify the shape of the PDE-discretisation.
-      CALL mlprj_initProjectionVec (rpreconditioner%rprojection,rproblem%rrhs)
+      call mlprj_initProjectionVec (rpreconditioner%rprojection,rproblem%rrhs)
       
       ! Initialise the projection structure with data from the INI/DAT
       ! files. This allows to configure prolongation/restriction.
-      CALL c2d2_getProlRest (rpreconditioner%rprojection, rproblem%rparamList, &
+      call c2d2_getProlRest (rpreconditioner%rprojection, rproblem%rparamList, &
                              'CC-PROLREST')
       
       ! Add the interlevel projection structure to the collection; we can
       ! use it later for setting up nonlinear matrices.
-      CALL collct_setvalue_ilvp(rproblem%rcollection,'ILVPROJECTION',&
-                                rpreconditioner%rprojection,.TRUE.)
+      call collct_setvalue_ilvp(rproblem%rcollection,'ILVPROJECTION',&
+                                rpreconditioner%rprojection,.true.)
       
       ! Initialise the linear subsolver using the parameters from the INI/DAT
       ! files, the prepared filter chain and the interlevel projection structure.
       ! This gives us the linear solver node rpreconditioner%p_rsolverNode
       ! which identifies the linear solver.
-      CALL linsolinit_initFromFile (rpreconditioner%p_rsolverNode,&
+      call linsolinit_initFromFile (rpreconditioner%p_rsolverNode,&
                                     rproblem%rparamList,ssolverName,&
                                     NLMAX-NLMIN+1,rpreconditioner%RfilterChain,&
                                     rpreconditioner%rprojection)
@@ -1021,29 +1021,29 @@ CONTAINS
       ! We need temporary memory for this purpose...
 
       imaxmem = 0
-      DO i=NLMIN+1,NLMAX
+      do i=NLMIN+1,NLMAX
         ! Pass the system metrices on the coarse/fine grid to 
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
-        imaxmem = MAX(imaxmem,mlprj_getTempMemoryMat (rpreconditioner%rprojection,&
+        imaxmem = max(imaxmem,mlprj_getTempMemoryMat (rpreconditioner%rprojection,&
                               rproblem%RlevelInfo(i-1)%rmatrix,&
                               rproblem%RlevelInfo(i)%rmatrix))
-      END DO
+      end do
       
       ! Set up a scalar temporary vector that we need for building up nonlinear
       ! matrices. It must be at least as large as MAXMEM and NEQ(finest level),
       ! as we use it for resorting vectors, too.
-      CALL lsyssc_createVector (rpreconditioner%rtempVectorSc,&
-                                MAX(imaxmem,rproblem%rrhs%NEQ),.FALSE.)
-      CALL collct_setvalue_vecsca(rproblem%rcollection,'RTEMPSCALAR',&
-                                  rpreconditioner%rtempVectorSc,.TRUE.)
+      call lsyssc_createVector (rpreconditioner%rtempVectorSc,&
+                                max(imaxmem,rproblem%rrhs%NEQ),.false.)
+      call collct_setvalue_vecsca(rproblem%rcollection,'RTEMPSCALAR',&
+                                  rpreconditioner%rtempVectorSc,.true.)
       
       ! Set up a second temporary vector that we need for calculating
       ! the optimal defect correction.
-      CALL lsyssc_createVector (rpreconditioner%rtempVectorSc2,&
-                                rproblem%rrhs%NEQ,.FALSE.,ST_DOUBLE)
-      CALL collct_setvalue_vecsca(rproblem%rcollection,'RTEMP2SCALAR',&
-                                  rpreconditioner%rtempVectorSc2,.TRUE.)
+      call lsyssc_createVector (rpreconditioner%rtempVectorSc2,&
+                                rproblem%rrhs%NEQ,.false.,ST_DOUBLE)
+      call collct_setvalue_vecsca(rproblem%rcollection,'RTEMP2SCALAR',&
+                                  rpreconditioner%rtempVectorSc2,.true.)
       
       ! Attach the system matrices to the solver.
       !
@@ -1051,58 +1051,58 @@ CONTAINS
       ! to the setMatrices routines. This intitialises then the matrices
       ! on all levels according to that array.
       Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rmatrix
-      CALL linsol_setMatrices(rpreconditioner%p_rsolverNode,Rmatrices(NLMIN:NLMAX))
+      call linsol_setMatrices(rpreconditioner%p_rsolverNode,Rmatrices(NLMIN:NLMAX))
       
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      CALL linsol_initStructure (rpreconditioner%p_rsolverNode,ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      call linsol_initStructure (rpreconditioner%p_rsolverNode,ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
       
       ! Put the prepared solver node to the collection for later use.
       ! Remember, it's our preconditioner we need during the nonlinear
       ! iteration!
-      CALL collct_setvalue_linsol(rproblem%rcollection,'LINSOLVER',&
-                                  rpreconditioner%p_rsolverNode,.TRUE.)
+      call collct_setvalue_linsol(rproblem%rcollection,'LINSOLVER',&
+                                  rpreconditioner%p_rsolverNode,.true.)
       
       ! Add information about adaptive matrix generation from INI/DAT files
       ! to the collection.
-      CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                 'iAdaptiveMatrix', i, 0)
                                 
       ! Switch off adaptive matrix generation if our discretisation is not a 
       ! uniform Q1~ discretisation - the matrix restriction does not support
       ! other cases.
       p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscr(1)
-      IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-          ((p_rdiscr%RelementDistr(1)%celement .NE. EL_E030) .AND. &
-           (p_rdiscr%RelementDistr(1)%celement .NE. EL_E031) .AND. &
-           (p_rdiscr%RelementDistr(1)%celement .NE. EL_EM30) .AND. &
-           (p_rdiscr%RelementDistr(1)%celement .NE. EL_EM31))) THEN
+      if ((p_rdiscr%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+          ((p_rdiscr%RelementDistr(1)%celement .ne. EL_E030) .and. &
+           (p_rdiscr%RelementDistr(1)%celement .ne. EL_E031) .and. &
+           (p_rdiscr%RelementDistr(1)%celement .ne. EL_EM30) .and. &
+           (p_rdiscr%RelementDistr(1)%celement .ne. EL_EM31))) then
         i = 0
-      END IF
+      end if
       
-      CALL collct_setvalue_int(rproblem%rcollection,'IADAPTIVEMATRIX',i,.TRUE.)
+      call collct_setvalue_int(rproblem%rcollection,'IADAPTIVEMATRIX',i,.true.)
                                 
-      CALL parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
                                  'dAdMatThreshold', d, 20.0_DP)
-      CALL collct_setvalue_real(rproblem%rcollection,'DADMATTHRESHOLD',d,.TRUE.)
+      call collct_setvalue_real(rproblem%rcollection,'DADMATTHRESHOLD',d,.true.)
       
-    CASE DEFAULT
+    case DEFAULT
       
       ! Unknown preconditioner
-      PRINT *,'Unknown preconditioner for nonlinear iteration!'
-      STOP
+      print *,'Unknown preconditioner for nonlinear iteration!'
+      stop
       
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_releasePreconditioner (rproblem,rpreconditioner)
+  subroutine c2d2_releasePreconditioner (rproblem,rpreconditioner)
   
 !<description>
   ! This routine releases the preconditioner for the nonlinear iteration
@@ -1114,59 +1114,59 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! The preconditioner structure for the CCxD problem. 
-  TYPE(t_ccPreconditioner), INTENT(INOUT), TARGET :: rpreconditioner
+  type(t_ccPreconditioner), intent(INOUT), target :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
 
     ! Which preconditioner do we have?    
-    SELECT CASE (rpreconditioner%itypePreconditioning)
-    CASE (1)
+    select case (rpreconditioner%itypePreconditioning)
+    case (1)
       ! Preconditioner was a linear solver structure.
       !
       ! Release the temporary vector(s)
-      CALL lsyssc_releaseVector (rpreconditioner%rtempVectorSc)
-      CALL lsyssc_releaseVector (rpreconditioner%rtempVectorSc2)
+      call lsyssc_releaseVector (rpreconditioner%rtempVectorSc)
+      call lsyssc_releaseVector (rpreconditioner%rtempVectorSc2)
       
       ! Remove the solver node from the collection - not needed anymore there
-      CALL collct_deletevalue(rproblem%rcollection,'LINSOLVER')
+      call collct_deletevalue(rproblem%rcollection,'LINSOLVER')
       
       ! Remove the temporary vector from the collection
-      CALL collct_deletevalue(rproblem%rcollection,'RTEMPSCALAR')
-      CALL collct_deletevalue(rproblem%rcollection,'RTEMP2SCALAR')
+      call collct_deletevalue(rproblem%rcollection,'RTEMPSCALAR')
+      call collct_deletevalue(rproblem%rcollection,'RTEMP2SCALAR')
       
       ! Remove the interlevel projection structure
-      CALL collct_deletevalue(rproblem%rcollection,'ILVPROJECTION')
+      call collct_deletevalue(rproblem%rcollection,'ILVPROJECTION')
       
       ! Remove parameters for adaptive matrix generation
-      CALL collct_deletevalue(rproblem%rcollection,'DADMATTHRESHOLD')
-      CALL collct_deletevalue(rproblem%rcollection,'IADAPTIVEMATRIX')
+      call collct_deletevalue(rproblem%rcollection,'DADMATTHRESHOLD')
+      call collct_deletevalue(rproblem%rcollection,'IADAPTIVEMATRIX')
 
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
-      CALL linsol_releaseSolver (rpreconditioner%p_rsolverNode)
+      call linsol_releaseSolver (rpreconditioner%p_rsolverNode)
       
       ! Release the ultilevel projection structure.
-      CALL mlprj_doneProjection (rpreconditioner%rprojection)
+      call mlprj_doneProjection (rpreconditioner%rprojection)
       
-    CASE DEFAULT
+    case DEFAULT
       
       ! Unknown preconditioner
-      PRINT *,'Unknown preconditioner for nonlinear iteration!'
-      STOP
+      print *,'Unknown preconditioner for nonlinear iteration!'
+      stop
       
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_getNonlinearSolver (rnlSolver, rparamList, sname)
+  subroutine c2d2_getNonlinearSolver (rnlSolver, rparamList, sname)
   
 !<description>
   ! Creates a nonlinear solver node rnlSolver and initialises it with parameters
@@ -1177,73 +1177,73 @@ CONTAINS
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  TYPE(t_parlist), INTENT(IN) :: rparamList
+  type(t_parlist), intent(IN) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
 !</input>
 
 !<output>
   ! A t_nlsolNode structure that contains the configuration of the nonlinear
   ! solver. The parameters are initialised according to the information
   ! in the section sname of the parameter list rparamList
-  TYPE(t_nlsolNode) :: rnlSolver
+  type(t_nlsolNode) :: rnlSolver
 !</output>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_parlstSection), POINTER :: p_rsection
+    type(t_parlstSection), pointer :: p_rsection
 
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    CALL parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection) 
 
-    IF (.NOT. ASSOCIATED(p_rsection)) THEN
-      PRINT *,'Cannot create nonlinear solver; no section '''&
-              //TRIM(sname)//'''!'
-      STOP
-    END IF
+    if (.not. associated(p_rsection)) then
+      print *,'Cannot create nonlinear solver; no section '''&
+              //trim(sname)//'''!'
+      stop
+    end if
     
     ! Parse the given parameters now to initialise the solver node.
     ! This is now CCxD-specific!
     
-    CALL parlst_getvalue_int (p_rsection, 'nminIterations', &
+    call parlst_getvalue_int (p_rsection, 'nminIterations', &
                               rnlSolver%nminIterations, rnlSolver%nminIterations)
 
-    CALL parlst_getvalue_int (p_rsection, 'nmaxIterations', &
+    call parlst_getvalue_int (p_rsection, 'nmaxIterations', &
                               rnlSolver%nmaxIterations, rnlSolver%nmaxIterations)
 
-    CALL parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+    call parlst_getvalue_int (p_rsection, 'ioutputLevel', &
                               rnlSolver%ioutputLevel, rnlSolver%ioutputLevel)
 
-    CALL parlst_getvalue_double (p_rsection, 'depsUR', &
+    call parlst_getvalue_double (p_rsection, 'depsUR', &
                                  rnlSolver%DepsRel(1), rnlSolver%DepsRel(1))
     rnlSolver%DepsRel(2) = rnlSolver%DepsRel(1)
 
-    CALL parlst_getvalue_double (p_rsection, 'depsPR', &
+    call parlst_getvalue_double (p_rsection, 'depsPR', &
                                  rnlSolver%DepsRel(3), rnlSolver%DepsRel(3))
 
-    CALL parlst_getvalue_double (p_rsection, 'depsD', &
+    call parlst_getvalue_double (p_rsection, 'depsD', &
                                  rnlSolver%DepsAbs(1), rnlSolver%DepsAbs(1))
     rnlSolver%DepsAbs(2) = rnlSolver%DepsAbs(1)
 
-    CALL parlst_getvalue_double (p_rsection, 'depsDiv', &
+    call parlst_getvalue_double (p_rsection, 'depsDiv', &
                                  rnlSolver%DepsAbs(3), rnlSolver%DepsAbs(3))
 
     ! Initial damping parameter.
-    CALL parlst_getvalue_double (p_rsection, 'domegaIni', &
+    call parlst_getvalue_double (p_rsection, 'domegaIni', &
                                  rnlSolver%domega, rnlSolver%domega)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_solve (rproblem)
+  subroutine c2d2_solve (rproblem)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
@@ -1252,61 +1252,61 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_ccPreconditioner) :: rpreconditioner    
-    TYPE(t_vectorBlock), TARGET :: rtempBlock
-    REAL(DP) :: d1
+    type(t_ccPreconditioner) :: rpreconditioner    
+    type(t_vectorBlock), target :: rtempBlock
+    real(DP) :: d1
 
     ! The nonlinear solver configuration
-    TYPE(t_nlsolNode) :: rnlSol
+    type(t_nlsolNode) :: rnlSol
     
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,rpreconditioner)
+    call c2d2_preparePreconditioner (rproblem,rpreconditioner)
     
     ! Add the minimum/maximum damping parameter to the collection
-    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                  'domegaMin', d1, 0.0_DP)
-    CALL collct_setvalue_real(rproblem%rcollection,'OMEGAMIN',d1,.TRUE.)
+    call collct_setvalue_real(rproblem%rcollection,'OMEGAMIN',d1,.true.)
     
-    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                  'domegaMax', d1, 0.0_DP)
-    CALL collct_setvalue_real(rproblem%rcollection,'OMEGAMAX',d1,.TRUE.)
+    call collct_setvalue_real(rproblem%rcollection,'OMEGAMAX',d1,.true.)
     
     ! Create a temporary vector we need for the nonliner iteration.
-    CALL lsysbl_createVecBlockIndirect (rproblem%rrhs, rtempBlock, .FALSE.)
+    call lsysbl_createVecBlockIndirect (rproblem%rrhs, rtempBlock, .false.)
 
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
-    CALL c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
+    call c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
 
     ! Call the nonlinear solver. For preconditioning and defect calculation,
     ! the solver calls our callback routines.
-    CALL nlsol_performSolve(rnlSol,rproblem%rvector,rproblem%rrhs,rtempBlock,&
+    call nlsol_performSolve(rnlSol,rproblem%rvector,rproblem%rrhs,rtempBlock,&
                             c2d2_getDefect,c2d2_precondDefect,&
                             rcollection=rproblem%rcollection)
                             
     ! Delete min./max. damping parameters from the collection
-    CALL collct_deletevalue (rproblem%rcollection,'OMEGAMAX')
-    CALL collct_deletevalue (rproblem%rcollection,'OMEGAMIN')
+    call collct_deletevalue (rproblem%rcollection,'OMEGAMAX')
+    call collct_deletevalue (rproblem%rcollection,'OMEGAMIN')
 
     ! Release the temporary vector
-    CALL lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rtempBlock)
     
     ! Release the preconditioner
-    CALL c2d2_releasePreconditioner (rproblem,rpreconditioner)
+    call c2d2_releasePreconditioner (rproblem,rpreconditioner)
     
-    PRINT *
-    PRINT *,'Nonlinear solver statistics'
-    PRINT *,'---------------------------'
-    PRINT *,'Intial defect: ',rnlSol%DinitialDefect(1)
-    PRINT *,'Final defect:  ',rnlSol%DfinalDefect(1)
-    PRINT *,'#Iterations:   ',rnlSol%iiterations
+    print *
+    print *,'Nonlinear solver statistics'
+    print *,'---------------------------'
+    print *,'Intial defect: ',rnlSol%DinitialDefect(1)
+    print *,'Final defect:  ',rnlSol%DfinalDefect(1)
+    print *,'#Iterations:   ',rnlSol%iiterations
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

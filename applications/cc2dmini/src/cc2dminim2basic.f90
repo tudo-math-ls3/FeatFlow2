@@ -10,109 +10,109 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dminim2basic
+module cc2dminim2basic
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
+  use collection
     
-  IMPLICIT NONE
+  implicit none
   
   ! Maximum allowed level in this application; must be =9 for 
   ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
+  integer, parameter :: NNLEV = 9
   
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
 
-  TYPE t_problem_lvl
+  type t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
     ! A system matrix for that specific level. 
-    TYPE(t_matrixBlock) :: rmatrix
+    type(t_matrixBlock) :: rmatrix
 
     ! Laplace matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixLaplace
+    type(t_matrixScalar) :: rmatrixLaplace
 
     ! B1-matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixB1
+    type(t_matrixScalar) :: rmatrixB1
 
     ! B2-matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixB2
+    type(t_matrixScalar) :: rmatrixB2
 
     ! A temporary vector for building the solution when assembling the
     ! matrix on lower levels.
-    TYPE(t_vectorBlock) :: rtempVector
+    type(t_vectorBlock) :: rtempVector
 
     ! A variable describing the discrete boundary conditions fo the velocity
-    TYPE(t_discreteBC) :: rdiscreteBC
+    type(t_discreteBC) :: rdiscreteBC
   
-  END TYPE
+  end type
   
 !</typeblock>
 
 
 !<typeblock description="Application-specific type block for Nav.St. problem">
 
-  TYPE t_problem
+  type t_problem
   
     ! Minimum refinement level; = Level i in RlevelInfo
-    INTEGER :: NLMIN
+    integer :: NLMIN
     
     ! Maximum refinement level
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Viscosity parameter nu = 1/Re
-    REAL(DP) :: dnu
+    real(DP) :: dnu
 
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
 
     ! A solution vector and a RHS vector on the finest level. 
-    TYPE(t_vectorBlock) :: rvector,rrhs
+    type(t_vectorBlock) :: rvector,rrhs
 
     ! A variable describing the analytic boundary conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
+    type(t_boundaryConditions), pointer :: p_rboundaryConditions
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by NLMAX!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    type(t_problem_lvl), dimension(NNLEV) :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
     ! callback routines.
-    TYPE(t_collection) :: rcollection
+    type(t_collection) :: rcollection
     
     ! A param list that saves all parameters from the DAT/INI file(s).
-    TYPE(t_parlist) :: rparamList
+    type(t_parlist) :: rparamList
 
-  END TYPE
+  end type
 
 !</typeblock>
 
@@ -209,4 +209,4 @@ MODULE cc2dminim2basic
 !                       | for coarse grid matrices
 ! DADMATTHRESHOLD       | Threshold parameter dor adaptive matrix construction
   
-END MODULE
+end module

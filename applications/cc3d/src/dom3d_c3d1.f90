@@ -44,67 +44,67 @@
 !##############################################################################
 
 
-MODULE dom3d_c3d1
+module dom3d_c3d1
 
-  USE fsystem
-  USE triangulation
-  USE meshregion
+  use fsystem
+  use triangulation
+  use meshregion
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Domain parametrisation">
   
   ! X-Coordinate ranges
-  REAL(DP), PARAMETER :: DOM3D_C3D1_X_MIN  = 0.0_DP
-  REAL(DP), PARAMETER :: DOM3D_C3D1_X_MAX  = 2.5_DP
+  real(DP), parameter :: DOM3D_C3D1_X_MIN  = 0.0_DP
+  real(DP), parameter :: DOM3D_C3D1_X_MAX  = 2.5_DP
   
   ! Y-Coordinate ranges
-  REAL(DP), PARAMETER :: DOM3D_C3D1_Y_MIN  = 0.0_DP
-  REAL(DP), PARAMETER :: DOM3D_C3D1_Y_MAX  = 0.41_DP
+  real(DP), parameter :: DOM3D_C3D1_Y_MIN  = 0.0_DP
+  real(DP), parameter :: DOM3D_C3D1_Y_MAX  = 0.41_DP
   
   ! Z-Coordinate ranges
-  REAL(DP), PARAMETER :: DOM3D_C3D1_Z_MIN  = 0.0_DP
-  REAL(DP), PARAMETER :: DOM3D_C3D1_Z_MAX  = 0.41_DP
+  real(DP), parameter :: DOM3D_C3D1_Z_MIN  = 0.0_DP
+  real(DP), parameter :: DOM3D_C3D1_Z_MAX  = 0.41_DP
   
   ! Obstacle midpoint coordinates
-  REAL(DP), PARAMETER :: DOM3D_C3D1_X_MID  = 0.5_DP
-  REAL(DP), PARAMETER :: DOM3D_C3D1_Y_MID  = 0.2_DP
+  real(DP), parameter :: DOM3D_C3D1_X_MID  = 0.5_DP
+  real(DP), parameter :: DOM3D_C3D1_Y_MID  = 0.2_DP
   
   ! Edge length of the hexahedral obstacle
-  REAL(DP), PARAMETER :: DOM3D_C3D1_EDGE   = 0.05_DP
+  real(DP), parameter :: DOM3D_C3D1_EDGE   = 0.05_DP
 
 !</constantblock>
 
 !<constantblock description="Region identifiers">
 
   ! Identification flag for the bottom face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_BOTTOM   = 2**0
+  integer(I32), parameter :: DOM3D_C3D1_REG_BOTTOM   = 2**0
 
   ! Identification flag for the front face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_FRONT    = 2**1
+  integer(I32), parameter :: DOM3D_C3D1_REG_FRONT    = 2**1
 
   ! Identification flag for the right face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_RIGHT    = 2**2
+  integer(I32), parameter :: DOM3D_C3D1_REG_RIGHT    = 2**2
 
   ! Identification flag for the back face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_BACK     = 2**3
+  integer(I32), parameter :: DOM3D_C3D1_REG_BACK     = 2**3
 
   ! Identification flag for the left face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_LEFT     = 2**4
+  integer(I32), parameter :: DOM3D_C3D1_REG_LEFT     = 2**4
 
   ! Identification flag for the top face:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_TOP      = 2**5
+  integer(I32), parameter :: DOM3D_C3D1_REG_TOP      = 2**5
   
   ! Identification flag for the cylinder:
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_OBSTACLE = 2**6
+  integer(I32), parameter :: DOM3D_C3D1_REG_OBSTACLE = 2**6
   
   ! Frequently used: All regions except for the right face.
   ! This combination is often used in (Navier-)Stokes examples where
   ! every region (including the cylinder) is Dirichlet, except for the
   ! right face, which is left Neumann.
-  INTEGER(I32), PARAMETER :: DOM3D_C3D1_REG_STOKES = DOM3D_C3D1_REG_BOTTOM &
+  integer(I32), parameter :: DOM3D_C3D1_REG_STOKES = DOM3D_C3D1_REG_BOTTOM &
                      + DOM3D_C3D1_REG_FRONT + DOM3D_C3D1_REG_BACK &
                      + DOM3D_C3D1_REG_LEFT + DOM3D_C3D1_REG_TOP &
                      + DOM3D_C3D1_REG_OBSTACLE
@@ -113,18 +113,18 @@ MODULE dom3d_c3d1
 
 !</constants>
 
-INTERFACE dom3d_c3d1_calcMeshRegion
-  MODULE PROCEDURE dom3d_c3d1_calcMeshRegion_C
-  MODULE PROCEDURE dom3d_c3d1_calcMeshRegion_I
-END INTERFACE
+interface dom3d_c3d1_calcMeshRegion
+  module procedure dom3d_c3d1_calcMeshRegion_C
+  module procedure dom3d_c3d1_calcMeshRegion_I
+end interface
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_c3d1_calcMeshRegion_C(rmeshRegion,rtriangulation,cregions)
+  subroutine dom3d_c3d1_calcMeshRegion_C(rmeshRegion,rtriangulation,cregions)
 
 !<description>
   ! This routine calculates a mesh region containing all vertices, edges and
@@ -134,58 +134,58 @@ CONTAINS
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the "flow around a cylinder" domain.
-  TYPE(t_triangulation), TARGET, INTENT(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(IN)      :: rtriangulation
   
   ! A combination of DOM3D_C3D1_REG_XXXX contants defined above specifying
   ! which regions should be in the mesh region.
-  INTEGER, INTENT(IN)                            :: cregions
+  integer, intent(IN)                            :: cregions
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  TYPE(t_meshRegion), INTENT(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(OUT)                :: rmeshRegion
 !<output>
 
 !<subroutine>
 
   ! Some local variables
-  INTEGER :: i
-  INTEGER, DIMENSION(7) :: Iregions
+  integer :: i
+  integer, dimension(7) :: Iregions
   
     ! First of all, set up the Iregions array:
-    DO i = 1, 7
+    do i = 1, 7
       
       ! If the corresponding bit is set, we'll add the region, otherwise
       ! we will set the corresponding Iregions entry to -1.
-      IF(IAND(cregions, 2**(i-1)) .NE. 0) THEN
+      if(iand(cregions, 2**(i-1)) .ne. 0) then
         ! Add the region
         Iregions(i) = i
-      ELSE
+      else
         ! Ignore the region
         Iregions(i) = -1
-      END IF
+      end if
       
-    END DO
+    end do
 
     ! Create a mesh-region holding all the regions, based on the hit-test
     ! routine below.
-    CALL mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
-         MSHREG_IDX_FACE, .TRUE., dom3d_c3d1_HitTest, Iregions)
+    call mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
+         MSHREG_IDX_FACE, .true., dom3d_c3d1_HitTest, Iregions)
     
     ! Now calculate the vertice and edge index arrays in the mesh region
     ! based on the face index array.
-    CALL mshreg_recalcVerticesFromFaces(rmeshRegion)
-    CALL mshreg_recalcEdgesFromFaces(rmeshRegion)
+    call mshreg_recalcVerticesFromFaces(rmeshRegion)
+    call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_c3d1_calcMeshRegion_I(rmeshRegion,rtriangulation,Iregions)
+  subroutine dom3d_c3d1_calcMeshRegion_I(rmeshRegion,rtriangulation,Iregions)
 
 !<description>
   ! This routine calculates a mesh region containing all vertices, edges and
@@ -195,41 +195,41 @@ CONTAINS
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the "flow around a cylinder" domain.
-  TYPE(t_triangulation), TARGET, INTENT(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(IN)      :: rtriangulation
   
   ! An array holding the indices of the domain regions which should be in
   ! the mesh region.
-  INTEGER, DIMENSION(:), INTENT(IN)              :: Iregions
+  integer, dimension(:), intent(IN)              :: Iregions
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  TYPE(t_meshRegion), INTENT(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(OUT)                :: rmeshRegion
 !<output>
 
 !<subroutine>
 
     ! Create a mesh-region holding all the regions, based on the hit-test
     ! routine below.
-    CALL mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
-         MSHREG_IDX_FACE, .TRUE., dom3d_c3d1_HitTest, Iregions)
+    call mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
+         MSHREG_IDX_FACE, .true., dom3d_c3d1_HitTest, Iregions)
     
     ! Now calculate the vertice and edge index arrays in the mesh region
     ! based on the face index array.
-    CALL mshreg_recalcVerticesFromFaces(rmeshRegion)
-    CALL mshreg_recalcEdgesFromFaces(rmeshRegion)
+    call mshreg_recalcVerticesFromFaces(rmeshRegion)
+    call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
     ! That's it
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE dom3d_c3d1_HitTest(inumCells,Dcoords,Ihit,rcollection)
+  subroutine dom3d_c3d1_HitTest(inumCells,Dcoords,Ihit,rcollection)
   
-  USE collection
+  use collection
   
 !<description>
   ! This subroutine is called for hit-testing cells to decide whether a
@@ -241,82 +241,82 @@ CONTAINS
 !<input>
   ! Number of cells (i.e. vertices,edges,faces,etc.) for which the
   ! hit-test is to be performed.
-  INTEGER, INTENT(IN)                          :: inumCells
+  integer, intent(IN)                          :: inumCells
     
   ! Coordinates of the points for which the hit-test is to be performed.
   ! The dimension of the array is at least (1:idim,1:inumCells), where:
   ! -> idim is the dimension of the mesh, i.e. 1 for 1D, 2 for 2D, etc.
   ! -> inumCells is the parameter passed to this routine.
-  REAL(DP), DIMENSION(:,:), INTENT(IN)         :: Dcoords
+  real(DP), dimension(:,:), intent(IN)         :: Dcoords
 !</input>
 
 !<output>
   ! An array that recieves the result of the hit-test.
   ! The dimension of the array is at least (1:inumCells).
-  INTEGER, DIMENSION(:), INTENT(OUT)           :: Ihit
+  integer, dimension(:), intent(OUT)           :: Ihit
 !</output>
 
 !</inputoutput>
   ! OPTIONAL: A collection structure to provide additional information
   ! to the hit-test routine.
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL  :: rcollection
+  type(t_collection), intent(INOUT), optional  :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
   ! Some local variables
-  INTEGER :: i
-  REAL(DP) :: dl
+  integer :: i
+  real(DP) :: dl
   
-  REAL(DP), PARAMETER :: tol = 0.0001_DP
+  real(DP), parameter :: tol = 0.0001_DP
   
     ! Loop through all cells
-    DO i = 1, inumCells
+    do i = 1, inumCells
       
       ! Bottom face?
-      IF      ((Dcoords(3,i) - DOM3D_C3D1_Z_MIN) .LT. tol) THEN
+      if      ((Dcoords(3,i) - DOM3D_C3D1_Z_MIN) .lt. tol) then
         Ihit(i) = 1
       
       ! Front face?
-      ELSE IF ((Dcoords(2,i) - DOM3D_C3D1_Y_MIN) .LT. tol) THEN
+      else if ((Dcoords(2,i) - DOM3D_C3D1_Y_MIN) .lt. tol) then
         Ihit(i) = 2
       
       ! Right face?
-      ELSE IF ((Dcoords(1,i) - DOM3D_C3D1_X_MAX) .GT. -tol) THEN
+      else if ((Dcoords(1,i) - DOM3D_C3D1_X_MAX) .gt. -tol) then
         Ihit(i) = 3
       
       ! Back face?
-      ELSE IF ((Dcoords(2,i) - DOM3D_C3D1_Y_MAX) .GT. -tol) THEN
+      else if ((Dcoords(2,i) - DOM3D_C3D1_Y_MAX) .gt. -tol) then
         Ihit(i) = 4
       
       ! Left face?
-      ELSE IF ((Dcoords(1,i) - DOM3D_C3D1_X_MIN) .LT. tol) THEN
+      else if ((Dcoords(1,i) - DOM3D_C3D1_X_MIN) .lt. tol) then
         Ihit(i) = 5
       
       ! Top face?
-      ELSE IF ((Dcoords(3,i) - DOM3D_C3D1_Z_MAX) .GT. -tol) THEN
+      else if ((Dcoords(3,i) - DOM3D_C3D1_Z_MAX) .gt. -tol) then
         Ihit(i) = 6
       
       ! Hexahedral obstacle?
-      ELSE IF ((ABS(Dcoords(1,i) - DOM3D_C3D1_X_MID) &
-                  - DOM3D_C3D1_EDGE .LT. tol) .AND. &
-               (ABS(Dcoords(2,i) - DOM3D_C3D1_Y_MID) &
-                  - DOM3D_C3D1_EDGE .LT. tol)) THEN
+      else if ((abs(Dcoords(1,i) - DOM3D_C3D1_X_MID) &
+                  - DOM3D_C3D1_EDGE .lt. tol) .and. &
+               (abs(Dcoords(2,i) - DOM3D_C3D1_Y_MID) &
+                  - DOM3D_C3D1_EDGE .lt. tol)) then
         Ihit(i) = 7
 
-      ELSE
+      else
         Ihit(i) = 0
-      END IF
+      end if
       
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE dom3d_c3d1_calcParProfile (dvalue, iregion, dx, dy, dz)
+  subroutine dom3d_c3d1_calcParProfile (dvalue, iregion, dx, dy, dz)
   
 !<description>
   ! This routine calculates the parabolic profile for a specified domain
@@ -326,51 +326,51 @@ CONTAINS
 !<input>
   ! Specifies the index of the boundary region of which the parabolic profile
   ! is to be calculated.
-  INTEGER, INTENT(IN)                            :: iregion
+  integer, intent(IN)                            :: iregion
   
   ! The coordinates of the point in which the parabolic profile is to be
   ! evaluated.
-  REAL(DP), INTENT(IN)                           :: dx, dy, dz
+  real(DP), intent(IN)                           :: dx, dy, dz
 !</input>
 
 !<output>
   ! The result of the evaluation of the parabolic profile.
-  REAL(DP), INTENT(OUT)                          :: dvalue
+  real(DP), intent(OUT)                          :: dvalue
 !</output>
 
 !</subroutine>
 
   ! Relative X-, Y- and Z-coordinates
-  REAL(DP) :: x,y,z
+  real(DP) :: x,y,z
     
     ! Convert coordinates to be in range [0,1]
     x = (dx - DOM3D_C3D1_X_MIN) / (DOM3D_C3D1_X_MAX - DOM3D_C3D1_X_MIN)
     y = (dy - DOM3D_C3D1_Y_MIN) / (DOM3D_C3D1_Y_MAX - DOM3D_C3D1_Y_MIN)
     z = (dz - DOM3D_C3D1_Z_MIN) / (DOM3D_C3D1_Z_MAX - DOM3D_C3D1_Z_MIN)
 
-    SELECT CASE(iregion)
-    CASE (1,6)
+    select case(iregion)
+    case (1,6)
       ! X-Y-Profile
       dvalue = 16.0_DP*x*(1.0_DP-x)*y*(1.0_DP-y)
     
-    CASE (2,4)
+    case (2,4)
       ! X-Z-Profile
       dvalue = 16.0_DP*x*(1.0_DP-x)*z*(1.0_DP-z)
     
-    CASE (3,5)
+    case (3,5)
       ! Y-Z-Profile
       dvalue = 16.0_DP*y*(1.0_DP-y)*z*(1.0_DP-z)
     
-    CASE (7)
+    case (7)
       ! Z-Profile on the boundary of the hexahedral obstacle
       dvalue = 2.0_DP*z*(1.0_DP-z)
 
-    CASE DEFAULT
+    case DEFAULT
       ! Invalid region
-      PRINT *, 'ERROR: dom3d_c3d0_calcParProfile: Invalid region'
-      CALL sys_halt()
-    END SELECT
+      print *, 'ERROR: dom3d_c3d0_calcParProfile: Invalid region'
+      call sys_halt()
+    end select
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

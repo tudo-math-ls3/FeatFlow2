@@ -27,66 +27,66 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM stokes
+program stokes
 
-  USE stokes2d_method0_simple
-  USE stokes2d_method1_mg
-  USE stokes2d_method2_sv
-  USE stokes2d_method2_gv
-  USE stokes3d_method0_simple
-  USE stokes3d_method1_mg
+  use stokes2d_method0_simple
+  use stokes2d_method1_mg
+  use stokes2d_method2_sv
+  use stokes2d_method2_gv
+  use stokes3d_method0_simple
+  use stokes3d_method1_mg
   
-  USE navst3d_method1_mg
+  use navst3d_method1_mg
   
-  IMPLICIT NONE
+  implicit none
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
-  CALL output_init()
+  call system_init()
+  call output_init()
 
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !
   ! 2.) Initialise FEAT 2.0 storage management:
-  CALL storage_init(999, 100)
+  call storage_init(999, 100)
 
   ! Call the problem to solve. 2d stokes 0:
-  CALL output_lbrk()
-  CALL output_line('Calculating 2D Stokes-Problem 0 - simple')
-  CALL output_line('----------------------------------------')
-  CALL stokes2d_0_simple
+  call output_lbrk()
+  call output_line('Calculating 2D Stokes-Problem 0 - simple')
+  call output_line('----------------------------------------')
+  call stokes2d_0_simple
 
   ! Call the problem to solve. 2d stokes 1:
-  CALL output_lbrk()
-  CALL output_line('Calculating 2D Stokes-Problem 1 - multigrid')
-  CALL output_line('-------------------------------------------')
-  CALL stokes2d_1_mg
+  call output_lbrk()
+  call output_line('Calculating 2D Stokes-Problem 1 - multigrid')
+  call output_line('-------------------------------------------')
+  call stokes2d_1_mg
 
   ! Call the problem to solve. 2d stokes 2:
-  CALL output_lbrk()
-  CALL output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
-  CALL output_line('----------------------------------------------')
-  CALL stokes2d_2_sv
+  call output_lbrk()
+  call output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
+  call output_line('----------------------------------------------')
+  call stokes2d_2_sv
 
   ! Call the problem to solve. 2d stokes 2:
-  CALL output_lbrk()
-  CALL output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
-  CALL output_line('-----------------------------------------------')
-  CALL stokes2d_2_gv
+  call output_lbrk()
+  call output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
+  call output_line('-----------------------------------------------')
+  call stokes2d_2_gv
 
   ! Call the problem to solve. 3d stokes 0:
-  CALL output_lbrk()
-  CALL output_line('Calculating 3D Stokes-Problem 0 - simple')
-  CALL output_line('----------------------------------------')
-  CALL stokes3d_0_simple
+  call output_lbrk()
+  call output_line('Calculating 3D Stokes-Problem 0 - simple')
+  call output_line('----------------------------------------')
+  call stokes3d_0_simple
 
   ! Call the problem to solve. 3d stokes 1:
-  CALL output_lbrk()
-  CALL output_line('Calculating 3D Stokes-Problem 1 - multigrid')
-  CALL output_line('-------------------------------------------')
-  CALL stokes3d_1_mg
+  call output_lbrk()
+  call output_line('Calculating 3D Stokes-Problem 1 - multigrid')
+  call output_line('-------------------------------------------')
+  call stokes3d_1_mg
 
   ! Call the problem to solve. 3d navier-stokes 1:
   !CALL output_lbrk()
@@ -97,10 +97,10 @@ PROGRAM stokes
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  CALL output_lbrk()
-  CALL storage_info(.TRUE.)
+  call output_lbrk()
+  call storage_info(.true.)
   
   ! Clean up the storage management, finish
-  CALL storage_done()
+  call storage_done()
   
-END PROGRAM
+end program

@@ -19,42 +19,42 @@
 !# </purpose>
 !##############################################################################
 
-MODULE heatcond_matvec
+module heatcond_matvec
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE sortstrategy
-  USE coarsegridcorrection
-  USE ucd
-  USE timestepping
-  USE genoutput
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use sortstrategy
+  use coarsegridcorrection
+  use ucd
+  use timestepping
+  use genoutput
   
-  USE collection
-  USE paramlist
+  use collection
+  use paramlist
     
-  USE heatcond_callback
+  use heatcond_callback
   
-  USE heatcond_basic
+  use heatcond_basic
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hc5_initMatVec (rproblem,rparams)
+  subroutine hc5_initMatVec (rproblem,rparams)
   
 !<description>
   ! Calculates the matrices of the linear system
@@ -66,35 +66,35 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! A parameter list with informations from the DAT file.
-  TYPE(t_parlist), INTENT(IN) :: rparams
+  type(t_parlist), intent(IN) :: rparams
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
   
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform,rformmass
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform,rformmass
+    type(t_linearForm) :: rlinform
     
     ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixStatic,p_rmatrixMass,p_rmatrix
-    TYPE(t_vectorBlock), POINTER :: p_rrhs
+    type(t_matrixBlock), pointer :: p_rmatrixStatic,p_rmatrixMass,p_rmatrix
+    type(t_vectorBlock), pointer :: p_rrhs
 
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Arrays for the Cuthill McKee renumbering strategy
-    INTEGER, DIMENSION(1) :: H_Iresort 
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
+    integer, dimension(1) :: H_Iresort 
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
 
     ! Parameters from the DAT file
-    REAL(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
-    CHARACTER(LEN=10) :: Sstr
+    real(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
+    character(LEN=10) :: Sstr
   
   
     ! And now to the entries of the matrix. For assembling of the entries,
@@ -129,24 +129,24 @@ CONTAINS
     rform%Idescriptors(2,7) = DER_FUNC
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     
     ! get the coefficients from the parameter list
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA11', Sstr, '1.0')
-    READ(Sstr,*) alpha11
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA12', Sstr, '0.0')
-    READ(Sstr,*) alpha12
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA21', Sstr, '0.0')
-    READ(Sstr,*) alpha21
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA22', Sstr, '1.0')
-    READ(Sstr,*) alpha22
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'BETA1', Sstr, '0.0')
-    READ(Sstr,*) beta1
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'BETA2', Sstr, '0.0')
-    READ(Sstr,*) beta2
-    CALL parlst_getvalue_string (rparams, 'EQUATION', 'GAMMA', Sstr, '0.0')
-    READ(Sstr,*) gamma
+    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA11', Sstr, '1.0')
+    read(Sstr,*) alpha11
+    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA12', Sstr, '0.0')
+    read(Sstr,*) alpha12
+    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA21', Sstr, '0.0')
+    read(Sstr,*) alpha21
+    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA22', Sstr, '1.0')
+    read(Sstr,*) alpha22
+    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA1', Sstr, '0.0')
+    read(Sstr,*) beta1
+    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA2', Sstr, '0.0')
+    read(Sstr,*) beta2
+    call parlst_getvalue_string (rparams, 'EQUATION', 'GAMMA', Sstr, '0.0')
+    read(Sstr,*) gamma
     
     rform%Dcoefficients(1)  = alpha11
     rform%Dcoefficients(2)  = alpha12
@@ -168,7 +168,7 @@ CONTAINS
     ! The coefficient in front of the term of the mass matrix
     rformmass%Dcoefficients(1)  = 1.0_DP
 
-    DO i = rproblem%ilvmin, rproblem%ilvmax
+    do i = rproblem%ilvmin, rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
     
@@ -179,23 +179,23 @@ CONTAINS
     
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixStatic)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixStatic)    
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      CALL collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrixStatic,.TRUE.,i)
+      call collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrixStatic,.true.,i)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixStatic%RmatrixBlock(1,1))
     
       ! Update the structural information of the block matrix, as we manually
       ! changed one of the submatrices:
-      CALL lsysbl_updateMatStrucInfo (p_rmatrixStatic)
+      call lsysbl_updateMatStrucInfo (p_rmatrixStatic)
     
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_heatcond for the coefficients.
@@ -206,7 +206,7 @@ CONTAINS
       ! We pass our collection structure as well to this routine, 
       ! so the callback routine has access to everything what is
       ! in the collection.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+      call bilf_buildMatrixScalar (rform,.true.,&
                                    p_rmatrixStatic%RmatrixBlock(1,1),coeff_heatcond,&
                                    rproblem%rcollection)
 
@@ -217,24 +217,24 @@ CONTAINS
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)    
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      CALL collct_setvalue_mat(rproblem%rcollection,'MASS',p_rmatrixMass,.TRUE.,i)
+      call collct_setvalue_mat(rproblem%rcollection,'MASS',p_rmatrixMass,.true.,i)
       
       ! The structure of the mass matrix is the same as the system matrix.
       ! Initialise the structure as "shared" with the system matrix.
       ! Reserve memory for the entries.
-      CALL lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
            p_rmatrixMass%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
       ! Update the structural information of the block matrix, as we manually
       ! changed one of the submatrices:
-      CALL lsysbl_updateMatStrucInfo (p_rmatrixMass)
+      call lsysbl_updateMatStrucInfo (p_rmatrixMass)
 
       ! Now we can build the matrix entries of the mass matrix.
-      CALL bilf_buildMatrixScalar (rformmass,.TRUE.,&
+      call bilf_buildMatrixScalar (rformmass,.true.,&
                                    p_rmatrixMass%RmatrixBlock(1,1))
 
       ! -------------------------------------------------------------
@@ -244,23 +244,23 @@ CONTAINS
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      CALL collct_setvalue_mat(rproblem%rcollection,'SYSTEM',p_rmatrix,.TRUE.,i)
+      call collct_setvalue_mat(rproblem%rcollection,'SYSTEM',p_rmatrix,.true.,i)
       
       ! The structure of the mass matrix is the same as the system matrix.
       ! Initialise the structure as "shared" with the static matrix.
       ! Reserve memory for the entries.
-      CALL lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
            p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
       ! Update the structural information of the block matrix, as we manually
       ! changed one of the submatrices:
-      CALL lsysbl_updateMatStrucInfo (p_rmatrix)
+      call lsysbl_updateMatStrucInfo (p_rmatrix)
 
-    END DO
+    end do
 
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
@@ -270,55 +270,55 @@ CONTAINS
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
-    CALL collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.TRUE.)
+    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
 
     ! Reserve memory for all the vectors on the finest level.
-    CALL lsysbl_createVecBlockIndMat (p_rmatrixStatic,p_rrhs, .FALSE.)
+    call lsysbl_createVecBlockIndMat (p_rmatrixStatic,p_rrhs, .false.)
 
     ! -------------------------------------------------------------
     ! Matrix resorting
     
     ! Finally, sort the matrices on all levels. We dfo this after the
     ! creation of the vectors, so the vectors stay unsorted!
-    DO i = rproblem%ilvmin, rproblem%ilvmax
+    do i = rproblem%ilvmin, rproblem%ilvmax
     
       p_rmatrixStatic => rproblem%RlevelInfo(i)%rmatrixStatic
       p_rmatrixMass => rproblem%RlevelInfo(i)%rmatrixMass
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
       
       ! Allocate an array for holding the resorting strategy.
-      CALL storage_new ('hc5_initMatVec', 'Iresort', &
+      call storage_new ('hc5_initMatVec', 'Iresort', &
             p_rmatrixStatic%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), &
             ST_NEWBLOCK_ZERO)
-      CALL storage_getbase_int(h_Iresort(1),p_Iresort)
+      call storage_getbase_int(h_Iresort(1),p_Iresort)
       
       ! Calculate the resorting strategy.
-      CALL sstrat_calcCuthillMcKee (p_rmatrixStatic%RmatrixBlock(1,1),p_Iresort)
+      call sstrat_calcCuthillMcKee (p_rmatrixStatic%RmatrixBlock(1,1),p_Iresort)
       
       ! Save the handle of the resorting strategy to the collection.
-      CALL collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.,i)
+      call collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.true.,i)
       
       ! Resort the matrices according to the sorting strategy.
       ! Note that as we share the structure between all matrices, we first
       ! have to sort the 'child' matrices...
-      CALL lsyssc_sortMatrix (p_rmatrixMass%RmatrixBlock(1,1),.TRUE.,&
+      call lsyssc_sortMatrix (p_rmatrixMass%RmatrixBlock(1,1),.true.,&
                               SSTRAT_CM,h_Iresort(1))
-      CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
+      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
                               SSTRAT_CM,h_Iresort(1))
 
       ! ...before sorting the 'parent' matrix!
-      CALL lsyssc_sortMatrix (p_rmatrixStatic%RmatrixBlock(1,1),.TRUE.,&
+      call lsyssc_sortMatrix (p_rmatrixStatic%RmatrixBlock(1,1),.true.,&
                               SSTRAT_CM,h_Iresort(1))
                               
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hc5_calcRHS (rproblem,rrhs)
+  subroutine hc5_calcRHS (rproblem,rrhs)
   
 !<description>
   ! Calculates the RHS vector at the current point in time.
@@ -326,29 +326,29 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! A pointer to the RHS vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
   
     ! A linear form describing the analytic problem to solve
-    TYPE(t_linearForm) :: rlinform
+    type(t_linearForm) :: rlinform
     
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
     rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime 
-    CALL collct_setvalue_real(rproblem%rcollection,'TIME',&
-         rproblem%rtimedependence%dtime,.TRUE.)
+    call collct_setvalue_real(rproblem%rcollection,'TIME',&
+         rproblem%rtimedependence%dtime,.true.)
 
     ! The vector structure is done but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
@@ -366,21 +366,21 @@ CONTAINS
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
-    CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
+    call linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
               rrhs%RvectorBlock(1),coeff_RHS,&
               rproblem%rcollection)
     
     ! Remove the "TIME"-parameter from the collection again.
-    CALL collct_deletevalue (rproblem%rcollection,'TIME')
+    call collct_deletevalue (rproblem%rcollection,'TIME')
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE hc5_doneMatVec (rproblem)
+  subroutine hc5_doneMatVec (rproblem)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -388,42 +388,42 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: ihandle,i
+    integer :: ihandle,i
 
     ! Release matrices and vectors on all levels
-    DO i=rproblem%ilvmax,rproblem%ilvmin,-1
+    do i=rproblem%ilvmax,rproblem%ilvmin,-1
 
       ! Delete the variables from the collection.
-      CALL collct_deletevalue (rproblem%rcollection,'SYSTEM',i)
-      CALL collct_deletevalue (rproblem%rcollection,'LAPLACE',i)
-      CALL collct_deletevalue (rproblem%rcollection,'MASS',i)
+      call collct_deletevalue (rproblem%rcollection,'SYSTEM',i)
+      call collct_deletevalue (rproblem%rcollection,'LAPLACE',i)
+      call collct_deletevalue (rproblem%rcollection,'MASS',i)
 
       ! Delete the system matrix
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+      call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
       
       ! Delete the mass matrix
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
+      call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
 
       ! Delete the matrix
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStatic)
+      call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStatic)
 
       ! Release the permutation for sorting matrix/vectors
       ihandle = collct_getvalue_int (rproblem%rcollection,'LAPLACE-CM',i)
-      CALL storage_free (ihandle)
-      CALL collct_deletevalue (rproblem%rcollection,'LAPLACE-CM',i)
-    END DO
+      call storage_free (ihandle)
+      call collct_deletevalue (rproblem%rcollection,'LAPLACE-CM',i)
+    end do
 
     ! Delete solution/RHS vector
-    CALL lsysbl_releaseVector (rproblem%rrhs)
+    call lsysbl_releaseVector (rproblem%rrhs)
 
     ! Delete the variables from the collection.
-    CALL collct_deletevalue (rproblem%rcollection,'RHS')
+    call collct_deletevalue (rproblem%rcollection,'RHS')
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

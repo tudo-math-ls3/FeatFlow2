@@ -76,20 +76,20 @@
 !# </purpose>
 !##############################################################################
 
-MODULE spacetimevectors
+module spacetimevectors
 
-  USE fsystem
-  USE genoutput
-  USE externalstorage
-  USE spatialdiscretisation
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE collection
-  USE vectorio
+  use fsystem
+  use genoutput
+  use externalstorage
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
+  use collection
+  use vectorio
   
-  USE timediscretisation
+  use timediscretisation
 
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
@@ -103,59 +103,59 @@ MODULE spacetimevectors
   ! The vector can be accessed in two ways: On the one hand, one can read a
   ! specific time step by its number. On the other hand, one can access the
   ! content by a time stamp.
-  TYPE t_spacetimeVector
+  type t_spacetimeVector
   
     ! Whether this vector shares its data with another vector.
-    LOGICAL :: bisCopy = .FALSE.
+    logical :: bisCopy = .false.
   
     ! This flag defines a scaling factor for each substep. The scaling is applied
     ! when a subvector is read and is reset to 1.0 if a subvector is saved.
     ! The whole vector is zero if it's new and if it's cleared by clearVector.
-    REAL(DP), DIMENSION(:), POINTER :: p_Dscale => NULL()
+    real(DP), dimension(:), pointer :: p_Dscale => null()
     
     ! Pointer to a time discretisation structure that defines the
     ! discretisation in time.
-    TYPE(t_timeDiscretisation), POINTER :: p_rtimeDiscretisation => NULL()
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscretisation => null()
     
     ! Pointer to the underlying block discretisation that defines the
     ! spatial discretisation.
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation => NULL()
+    type(t_blockDiscretisation), pointer :: p_rblockDiscretisation => null()
     
     ! Whether to use the test space of the spatial discretisation for the
     ! shape of the spatial vectors or nor.
-    LOGICAL :: btestfctSpace = .FALSE.
+    logical :: btestfctSpace = .false.
     
     ! Number of equations in each subvector of the 'global time-step vector'.
-    INTEGER(PREC_VECIDX) :: NEQ = 0
+    integer(PREC_VECIDX) :: NEQ = 0
     
     ! Number of subvectors saved in p_IdataHandleList.
-    INTEGER :: NEQtime = 0
+    integer :: NEQtime = 0
     
     ! A list of handles (dimension 1:NEQtime) to double-precision arrays 
     ! which save the data of the ntimesteps+1 data subvectors. 
     ! A value ST_NOHANDLE indicates that there is currently no data stored
     ! at that timestep.
-    INTEGER, DIMENSION(:), POINTER :: p_IdataHandleList => NULL()
+    integer, dimension(:), pointer :: p_IdataHandleList => null()
     
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-  INTERFACE sptivec_initVector
-    MODULE PROCEDURE sptivec_initVectorPlain
-    MODULE PROCEDURE sptivec_initVectorDirect 
-    MODULE PROCEDURE sptivec_initVectorDiscr
-  END INTERFACE
+  interface sptivec_initVector
+    module procedure sptivec_initVectorPlain
+    module procedure sptivec_initVectorDirect 
+    module procedure sptivec_initVectorDiscr
+  end interface
     
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVectorPlain (rspaceTimeVector,NEQ,NEQtime)
+  subroutine sptivec_initVectorPlain (rspaceTimeVector,NEQ,NEQtime)
 
 !<description>
   ! Initialises a space time vector. NEQ defines the size of each spatial
@@ -166,44 +166,44 @@ CONTAINS
 
 !<input>
   ! Number of equations in the vectors
-  INTEGER(PREC_VECIDX), INTENT(IN) :: NEQ
+  integer(PREC_VECIDX), intent(IN) :: NEQ
   
   ! Number of DOF's in time to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
-  INTEGER, INTENT(IN) :: NEQtime
+  integer, intent(IN) :: NEQtime
 !</input>
 
 !<output>
   ! Space-time vector structure to be initialised.
-  TYPE(t_spacetimeVector), INTENT(OUT) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(OUT) :: rspaceTimeVector
 !</output>
 
 !</subroutine>
 
-    INTEGER :: i
+    integer :: i
 
     ! Initialise the data.
     rspaceTimeVector%NEQtime = NEQtime
-    ALLOCATE(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
-    ALLOCATE(rspaceTimeVector%p_Dscale(1:NEQtime))
+    allocate(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
+    allocate(rspaceTimeVector%p_Dscale(1:NEQtime))
     rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
     rspaceTimeVector%p_Dscale(:) = 0.0_DP
     
     rspaceTimeVector%NEQ = NEQ
     
     ! Allocate memory for every subvector
-    DO i=1,NEQtime
-      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+    do i=1,NEQtime
+      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
         NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), ST_NEWBLOCK_ZERO)
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVectorDirect (rspaceTimeVector,NEQtime,rblockDiscr)
+  subroutine sptivec_initVectorDirect (rspaceTimeVector,NEQtime,rblockDiscr)
 
 !<description>
   ! Initialises a space time vector. rblockDiscr is a block discretisation 
@@ -215,27 +215,27 @@ CONTAINS
 !<input>
   ! Number of DOF's in time to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
-  INTEGER, INTENT(IN) :: NEQtime
+  integer, intent(IN) :: NEQtime
 
   ! Block discretisation structure of the spatial discretisation.
   ! A pointer to this structure is saved in the space time vector.
-  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+  type(t_blockDiscretisation), intent(IN), target :: rblockDiscr
   
 !</input>
 
 !<output>
   ! Space-time vector structure to be initialised.
-  TYPE(t_spacetimeVector), INTENT(OUT) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(OUT) :: rspaceTimeVector
 !</output>
 
 !</subroutine>
 
-    INTEGER :: i
+    integer :: i
 
     ! Initialise the data.
     rspaceTimeVector%NEQtime = NEQtime
-    ALLOCATE(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
-    ALLOCATE(rspaceTimeVector%p_Dscale(1:NEQtime))
+    allocate(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
+    allocate(rspaceTimeVector%p_Dscale(1:NEQtime))
     rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
     rspaceTimeVector%p_Dscale(:) = 0.0_DP
     
@@ -245,19 +245,19 @@ CONTAINS
     rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr)
     
     ! Allocate memory for every subvector
-    DO i=1,NEQtime
-      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+    do i=1,NEQtime
+      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
         rspaceTimeVector%NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), &
         ST_NEWBLOCK_ZERO)
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_initVectorDiscr (rspaceTimeVector,rtimeDiscr,rblockDiscr)
+  subroutine sptivec_initVectorDiscr (rspaceTimeVector,rtimeDiscr,rblockDiscr)
 
 !<description>
   ! Initialises a space time vector according to a time discretisation
@@ -270,22 +270,22 @@ CONTAINS
 
   ! Time discretisation structure that defines the discrtetisation
   ! in time. A pointer to this is saved to rspaceTimeVector.
-  TYPE(t_timeDiscretisation), INTENT(IN), TARGET :: rtimeDiscr
+  type(t_timeDiscretisation), intent(IN), target :: rtimeDiscr
 
   ! Block discretisation structure of the spatial discretisation.
   ! A pointer to this structure is saved in the space time vector.
-  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+  type(t_blockDiscretisation), intent(IN), target :: rblockDiscr
   
 !</input>
 
 !<output>
   ! Space-time vector structure to be initialised.
-  TYPE(t_spacetimeVector), INTENT(OUT) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(OUT) :: rspaceTimeVector
 !</output>
 
 !</subroutine>
 
-    INTEGER :: i,NEQtime
+    integer :: i,NEQtime
 
     ! Initialise the data.
 
@@ -295,8 +295,8 @@ CONTAINS
     rspaceTimeVector%NEQtime = NEQtime
     rspaceTimeVector%p_rtimeDiscretisation => rtimeDiscr 
     
-    ALLOCATE(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
-    ALLOCATE(rspaceTimeVector%p_Dscale(1:NEQtime))
+    allocate(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
+    allocate(rspaceTimeVector%p_Dscale(1:NEQtime))
     rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
     rspaceTimeVector%p_Dscale(:) = 0.0_DP
     
@@ -306,19 +306,19 @@ CONTAINS
     rspaceTimeVector%NEQ = dof_igetNDofGlobBlock(rblockDiscr)
     
     ! Allocate memory for every subvector
-    DO i=1,NEQtime
-      CALL exstor_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
+    do i=1,NEQtime
+      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
         rspaceTimeVector%NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), &
         ST_NEWBLOCK_ZERO)
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_releaseVector (rspaceTimeVector)
+  subroutine sptivec_releaseVector (rspaceTimeVector)
 
 !<description>
   ! Releases a space-time vector. All allocated memory is released. Temporary data
@@ -327,45 +327,45 @@ CONTAINS
 
 !<inputoutput>
   ! Space-time vector structure to be initialised.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(INOUT) :: rspaceTimeVector
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables -- initialised by Fortran default initialisation!
-    TYPE(t_spacetimeVector) :: rspaceTimeVectorTempl
-    INTEGER :: i
+    type(t_spacetimeVector) :: rspaceTimeVectorTempl
+    integer :: i
 
-    IF (.NOT. ASSOCIATED(rspaceTimeVector%p_IdataHandleList)) THEN
-      CALL output_line('Warning: Releasing unused vector!',&
+    if (.not. associated(rspaceTimeVector%p_IdataHandleList)) then
+      call output_line('Warning: Releasing unused vector!',&
           ssubroutine='sptivec_releaseVector')
-      RETURN
-    END IF
+      return
+    end if
 
     ! Deallocate data -- if the data is not shared with another vector
-    IF (.NOT. rspaceTimeVector%bisCopy) THEN
-      DO i=1,rspaceTimeVector%NEQtime
-        IF (rspaceTimeVector%p_IdataHandleList(i) .NE. ST_NOHANDLE) THEN
+    if (.not. rspaceTimeVector%bisCopy) then
+      do i=1,rspaceTimeVector%NEQtime
+        if (rspaceTimeVector%p_IdataHandleList(i) .ne. ST_NOHANDLE) then
         
-          CALL exstor_free (rspaceTimeVector%p_IdataHandleList(i))
+          call exstor_free (rspaceTimeVector%p_IdataHandleList(i))
           
-        END IF
-      END DO
-    END IF
+        end if
+      end do
+    end if
 
-    DEALLOCATE(rspaceTimeVector%p_IdataHandleList)
-    DEALLOCATE(rspaceTimeVector%p_Dscale)
+    deallocate(rspaceTimeVector%p_IdataHandleList)
+    deallocate(rspaceTimeVector%p_Dscale)
 
     ! Initialise with default values.
     rspaceTimeVector = rspaceTimeVectorTempl
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_setTimestepData (rspaceTimeVector, isubvector, rvector)
+  subroutine sptivec_setTimestepData (rspaceTimeVector, isubvector, rvector)
 
 !<description>
   ! Stores the data of rvector at timestep itimestep in the rspaceTimeVector.
@@ -375,54 +375,54 @@ CONTAINS
 !<input>
   ! Number of the subvector that corresponds to rvector. >= 1, <= NEQtime from
   ! the initialisation of rspaceTimeVector.
-  INTEGER, INTENT(IN) :: isubvector
+  integer, intent(IN) :: isubvector
   
   ! Vector with data that should be associated to timestep itimestep.
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
 !</input>
 
 !<inputoutput>
   ! Space-time vector structure where to save the data.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(INOUT) :: rspaceTimeVector
 !</inputoutput>
 
 !</subroutine>
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Dsource
+    real(DP), dimension(:), pointer :: p_Dsource
 
     ! Make sure we can store the timestep data.
-    IF ((isubvector .LT. 1) .OR. (isubvector .GT. rspaceTimeVector%NEQtime)) THEN
-      CALL output_line('Invalid timestep number!',&
+    if ((isubvector .lt. 1) .or. (isubvector .gt. rspaceTimeVector%NEQtime)) then
+      call output_line('Invalid timestep number!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rvector%NEQ .NE. rspaceTimeVector%NEQ) THEN
-      CALL output_line('Vector size invalid!',&
+    if (rvector%NEQ .ne. rspaceTimeVector%NEQ) then
+      call output_line('Vector size invalid!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Save the vector data. If necessary, new memory is allocated -- as the
     ! default value of the handle in the handle list is ST_NOHANDLE.
     !
     ! Don't use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
-    CALL lsysbl_getbase_double (rvector,p_Dsource)
+    call lsysbl_getbase_double (rvector,p_Dsource)
     !CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
     !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-    CALL exstor_setdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Dsource)
+    call exstor_setdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Dsource)
 
     ! After a setTimestepData, the scale factor is 1.0.
     rspaceTimeVector%p_Dscale(isubvector) = 1.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_getTimestepData (rspaceTimeVector, isubvector, rvector)
+  subroutine sptivec_getTimestepData (rspaceTimeVector, isubvector, rvector)
 
 !<description>
   ! Restores the data of timestep itimestep into the vector rvector.
@@ -431,40 +431,40 @@ CONTAINS
 !<input>
   ! Number of the subvector that corresponds to rvector. >= 1, <= NEQtime from
   ! the initialisation of rspaceTimeVector.
-  INTEGER, INTENT(IN) :: isubvector
+  integer, intent(IN) :: isubvector
   
   ! Space-time vector structure where to save the data.
-  TYPE(t_spacetimeVector), INTENT(IN) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(IN) :: rspaceTimeVector
 !</input>
 
 !<inputoutput>
   ! Vector with data that should receive the data.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddest
+    real(DP), dimension(:), pointer :: p_Ddest
 
     ! Make sure we can store the timestep data.
-    IF ((isubvector .LT. 1) .OR. (isubvector .GT. rspaceTimeVector%NEQtime)) THEN
-      CALL output_line('Invalid timestep number!',&
+    if ((isubvector .lt. 1) .or. (isubvector .gt. rspaceTimeVector%NEQtime)) then
+      call output_line('Invalid timestep number!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rvector%NEQ .NE. rspaceTimeVector%NEQ) THEN
-      CALL output_line('Vector size invalid!',&
+    if (rvector%NEQ .ne. rspaceTimeVector%NEQ) then
+      call output_line('Vector size invalid!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rspaceTimeVector%p_Dscale(isubvector) .EQ. 0.0_DP) THEN
+    if (rspaceTimeVector%p_Dscale(isubvector) .eq. 0.0_DP) then
      ! The vector is a zero vector
-      CALL lsysbl_clearVector (rvector)
-      RETURN
-    END IF
+      call lsysbl_clearVector (rvector)
+      return
+    end if
 
     ! Get the vector data. 
     !
@@ -472,22 +472,22 @@ CONTAINS
     ! behind the handle is longer than the vector!
     !CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),&
     !    p_Dsource)
-    CALL lsysbl_getbase_double (rvector,p_Ddest)
+    call lsysbl_getbase_double (rvector,p_Ddest)
     !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
+    call exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
     
     ! Scale the vector?
-    IF (rspaceTimeVector%p_Dscale(isubvector) .NE. 1.0_DP) THEN
-      CALL lalg_scaleVectorDble (p_Ddest,rspaceTimeVector%p_Dscale(isubvector))
-    END IF
+    if (rspaceTimeVector%p_Dscale(isubvector) .ne. 1.0_DP) then
+      call lalg_scaleVectorDble (p_Ddest,rspaceTimeVector%p_Dscale(isubvector))
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_getTimestepDataByTime (rspaceTimeVector, dtimestamp, rvector)
+  subroutine sptivec_getTimestepDataByTime (rspaceTimeVector, dtimestamp, rvector)
 
 !<description>
   ! Restores the data of a timestep into the vector rvector. dtimestamp is a time
@@ -499,123 +499,123 @@ CONTAINS
 
 !<input>
   ! Time stamp of the vector whose data should be retrieved.
-  REAL(DP), INTENT(IN) :: dtimestamp
+  real(DP), intent(IN) :: dtimestamp
   
   ! Space-time vector structure where to save the data.
-  TYPE(t_spacetimeVector), INTENT(IN) :: rspaceTimeVector
+  type(t_spacetimeVector), intent(IN) :: rspaceTimeVector
 !</input>
 
 !<inputoutput>
   ! Vector with data that should receive the data.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddest
-    INTEGER :: itimestep1,itimestep2,itimestep3
-    REAL(DP) :: dreltime,dabstime
-    INTEGER :: i
-    REAL(DP) :: dscal1,dscal2,dscal3
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_Dsource
+    real(DP), dimension(:), pointer :: p_Ddest
+    integer :: itimestep1,itimestep2,itimestep3
+    real(DP) :: dreltime,dabstime
+    integer :: i
+    real(DP) :: dscal1,dscal2,dscal3
+    real(DP), dimension(:,:), allocatable :: p_Dsource
 
     ! Make sure we can store the timestep data.
-    IF ((dtimestamp .LT. 0.0_DP) .OR. (dtimestamp .GT. 1.0_DP)) THEN
-      CALL output_line('Invalid time stamp!',&
+    if ((dtimestamp .lt. 0.0_DP) .or. (dtimestamp .gt. 1.0_DP)) then
+      call output_line('Invalid time stamp!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepDataByTime')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rvector%NEQ .NE. rspaceTimeVector%NEQ) THEN
-      CALL output_line('Vector size invalid!',&
+    if (rvector%NEQ .ne. rspaceTimeVector%NEQ) then
+      call output_line('Vector size invalid!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the time step which is closest to the time stamp.
     ! Rescale dtimestamp to the interval [1..NEQtime].
-    dabstime = dtimestamp*REAL(rspaceTimeVector%NEQtime-1,DP)+1.0_DP
-    itimestep2 = INT(dabstime + 0.5_DP)
+    dabstime = dtimestamp*real(rspaceTimeVector%NEQtime-1,DP)+1.0_DP
+    itimestep2 = int(dabstime + 0.5_DP)
     
-    IF (dabstime .EQ. REAL(itimestep2,DP)) THEN
+    if (dabstime .eq. real(itimestep2,DP)) then
       ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we 
       ! can call the routine to get that timestep; this saves us some
       ! time as the interpolation can be omitted.
-      CALL sptivec_getTimestepData (rspaceTimeVector, itimestep2, rvector)
-      RETURN
-    END IF
+      call sptivec_getTimestepData (rspaceTimeVector, itimestep2, rvector)
+      return
+    end if
     
-    IF (rspaceTimeVector%NEQtime .EQ. 2) THEN
+    if (rspaceTimeVector%NEQtime .eq. 2) then
       ! Special case: only one timestep!
       itimestep1 = 0
       itimestep2 = 0
       itimestep3 = 1
-    ELSE
+    else
       ! Is this the first or the last timestep?
-      IF (itimestep2 .EQ. 1) THEN
+      if (itimestep2 .eq. 1) then
         ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
         ! near timestep 0.
         itimestep1 = 0
         itimestep2 = 1
         itimestep3 = 2
-      ELSE IF (itimestep2 .EQ. rspaceTimeVector%NEQtime) THEN
+      else if (itimestep2 .eq. rspaceTimeVector%NEQtime) then
         ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
         ! near timestep n.
         itimestep1 = rspaceTimeVector%NEQtime-2
         itimestep2 = rspaceTimeVector%NEQtime-1
         itimestep3 = rspaceTimeVector%NEQtime
-      ELSE
+      else
         ! Somewhere in the inner. Get the number of the previous and next timestep
         itimestep1 = itimestep2-1
         itimestep3 = itimestep2+1
-      END IF
-    END IF
+      end if
+    end if
 
     ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
     ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
     ! This will be used to evaluate the quadratic polynomial.
-    dreltime = dabstime-1.0_DP-REAL(itimestep2,DP)
+    dreltime = dabstime-1.0_DP-real(itimestep2,DP)
     
     ! Get the vector data of the three timesteps
-    ALLOCATE(p_Dsource(rspaceTimeVector%NEQ,3))
+    allocate(p_Dsource(rspaceTimeVector%NEQ,3))
     
-    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep1),&
+    call exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep1),&
         p_Dsource(:,1))
-    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep2),&
+    call exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep2),&
         p_Dsource(:,2))
-    CALL exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep3),&
+    call exstor_getdata_double (rspaceTimeVector%p_IdataHandleList(itimestep3),&
         p_Dsource(:,3))
 
-    CALL lsysbl_getbase_double (rvector,p_Ddest)
+    call lsysbl_getbase_double (rvector,p_Ddest)
 
     ! Calculate the quadratic interpolation of the three arrays.
     dscal1 = rspaceTimeVector%p_Dscale(itimestep1)
     dscal2 = rspaceTimeVector%p_Dscale(itimestep2)
     dscal3 = rspaceTimeVector%p_Dscale(itimestep3)
-    IF (rspaceTimeVector%NEQtime .EQ. 2) THEN
+    if (rspaceTimeVector%NEQtime .eq. 2) then
       ! Special case: only 1 timestep. Linear interpolation. dreltime is in [0..1]!
-      DO i=1,SIZE(p_Ddest)
+      do i=1,size(p_Ddest)
         p_Ddest(i) = (1.0_DP-dreltime) * dscal2*p_Dsource(i,2) + &
                      dreltime*dscal3*p_Dsource(i,3)
-      END DO
-    ELSE
+      end do
+    else
       ! Quadratic interpolation
-      DO i=1,SIZE(p_Ddest)
-        CALL mprim_quadraticInterpolation (dreltime,&
+      do i=1,size(p_Ddest)
+        call mprim_quadraticInterpolation (dreltime,&
             dscal1*p_Dsource(i,1),dscal2*p_Dsource(i,2),dscal3*p_Dsource(i,3),p_Ddest(i))
-      END DO
-    END IF
+      end do
+    end if
     
-    DEALLOCATE(p_Dsource)
+    deallocate(p_Dsource)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_vectorLinearComb (rx,ry,cx,cy)
+  subroutine sptivec_vectorLinearComb (rx,ry,cx,cy)
 
 !<description>
   ! Performs a linear combination of space-time vectors: ry = cx * rx  +  cy * ry
@@ -623,73 +623,73 @@ CONTAINS
 
 !<input>
   ! First source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
   
   ! Scaling factor for Dx
-  REAL(DP), INTENT(IN)               :: cx
+  real(DP), intent(IN)               :: cx
 
   ! Scaling factor for Dy
-  REAL(DP), INTENT(IN)               :: cy
+  real(DP), intent(IN)               :: cy
 !</input>
 
 !<inputoutput>
   ! Second source vector; also receives the result
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: ry
+  type(t_spacetimeVector), intent(INOUT) :: ry
 !</inputoutput>
   
 !</subroutine>
 
-    INTEGER :: i
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    integer :: i
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock,ryBlock
 
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
-    IF (rx%NEQ .NE. ry%NEQ) THEN
-      CALL output_line('Space-time vectors have different size!',&
+    if (rx%NEQ .ne. ry%NEQ) then
+      call output_line('Space-time vectors have different size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rx%NEQtime .NE. ry%NEQtime) THEN
-      CALL output_line('Space-time vectors have different number of timesteps!',&
+    if (rx%NEQtime .ne. ry%NEQtime) then
+      call output_line('Space-time vectors have different number of timesteps!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
-    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
-    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
 
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rxBlock,p_Dx)
-    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+    call lsysbl_getbase_double (ryBlock,p_Dy)
 
     ! Loop through the substeps, load the data in, perform the linear combination
     ! and write out again.
-    DO i=1,rx%NEQtime
-      CALL sptivec_getTimestepData (rx, i, rxBlock)
-      CALL sptivec_getTimestepData (ry, i, ryBlock)
+    do i=1,rx%NEQtime
+      call sptivec_getTimestepData (rx, i, rxBlock)
+      call sptivec_getTimestepData (ry, i, ryBlock)
       
-      CALL lsysbl_vectorLinearComb (rxBlock,ryBlock,cx,cy)
+      call lsysbl_vectorLinearComb (rxBlock,ryBlock,cx,cy)
 
-      CALL sptivec_setTimestepData (ry, i, ryBlock)
-    END DO
+      call sptivec_setTimestepData (ry, i, ryBlock)
+    end do
 
     ! Release temp memory    
-    CALL lsysbl_releaseVector (ryBlock)
-    CALL lsysbl_releaseVector (rxBlock)
+    call lsysbl_releaseVector (ryBlock)
+    call lsysbl_releaseVector (rxBlock)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_copyVector (rx,ry)
+  subroutine sptivec_copyVector (rx,ry)
 
 !<description>
   ! Copys a vector: ry := rx.
@@ -697,77 +697,77 @@ CONTAINS
 
 !<input>
   ! Source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: ry
+  type(t_spacetimeVector), intent(INOUT) :: ry
 !</inputoutput>
   
 !</subroutine>
 
-    INTEGER :: i
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    integer :: i
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock,ryBlock
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
-    IF ((ry%NEQ .EQ. 0) .AND. (ry%NEQtime .EQ. 0)) THEN
+    if ((ry%NEQ .eq. 0) .and. (ry%NEQtime .eq. 0)) then
       ! Destination vector does not exist. Create it.
-      CALL sptivec_initVector (ry,rx%NEQtime,rx%p_rblockDiscretisation)
-    END IF
+      call sptivec_initVector (ry,rx%NEQtime,rx%p_rblockDiscretisation)
+    end if
     
-    IF (rx%NEQ .NE. ry%NEQ) THEN
-      CALL output_line('Space-time vectors have different size!',&
+    if (rx%NEQ .ne. ry%NEQ) then
+      call output_line('Space-time vectors have different size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rx%NEQtime .NE. ry%NEQtime) THEN
-      CALL output_line('Space-time vectors have different number of timesteps!',&
+    if (rx%NEQtime .ne. ry%NEQtime) then
+      call output_line('Space-time vectors have different number of timesteps!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
-    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
-    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rxBlock,p_Dx)
-    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+    call lsysbl_getbase_double (ryBlock,p_Dy)
 
     ! Loop through the substeps, load the data in, perform the linear combination
     ! and write out again.
-    DO i=1,rx%NEQtime
+    do i=1,rx%NEQtime
       
-      IF (rx%p_Dscale(i) .EQ. 0.0_DP) THEN
+      if (rx%p_Dscale(i) .eq. 0.0_DP) then
         ry%p_Dscale(i) = 0.0_DP
-      ELSE
-        CALL sptivec_getTimestepData (rx, i, rxBlock)
+      else
+        call sptivec_getTimestepData (rx, i, rxBlock)
 
-        CALL lsysbl_copyVector (rxBlock,ryBlock)
+        call lsysbl_copyVector (rxBlock,ryBlock)
 
-        CALL sptivec_setTimestepData (ry, i, ryBlock)
-      END IF
+        call sptivec_setTimestepData (ry, i, ryBlock)
+      end if
 
-    END DO
+    end do
 
     ! Release temp memory    
-    CALL lsysbl_releaseVector (ryBlock)
-    CALL lsysbl_releaseVector (rxBlock)
+    call lsysbl_releaseVector (ryBlock)
+    call lsysbl_releaseVector (rxBlock)
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<function>
   
-  REAL(DP) FUNCTION sptivec_scalarProduct (rx, ry)
+  real(DP) function sptivec_scalarProduct (rx, ry)
   
 !<description>
   ! Calculates a scalar product of two block vectors.
@@ -777,10 +777,10 @@ CONTAINS
 
 !<input>
   ! First source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
 
   ! Second source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: ry
+  type(t_spacetimeVector), intent(IN)   :: ry
 !</input>
 
 !<result>
@@ -789,62 +789,62 @@ CONTAINS
 
 !</function>
 
-    INTEGER :: i
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    REAL(DP) :: dres
-    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    integer :: i
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    real(DP) :: dres
+    type(t_vectorBlock) :: rxBlock,ryBlock
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
-    IF (rx%NEQ .NE. ry%NEQ) THEN
-      CALL output_line('Space-time vectors have different size!',&
+    if (rx%NEQ .ne. ry%NEQ) then
+      call output_line('Space-time vectors have different size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rx%NEQtime .NE. ry%NEQtime) THEN
-      CALL output_line('Space-time vectors have different number of timesteps!',&
+    if (rx%NEQtime .ne. ry%NEQtime) then
+      call output_line('Space-time vectors have different number of timesteps!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
-    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
-    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rxBlock,p_Dx)
-    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+    call lsysbl_getbase_double (ryBlock,p_Dy)
 
     ! Loop through the substeps, load the data in, perform the scalar product.
     dres = 0.0_DP
-    DO i=1,rx%NEQtime
+    do i=1,rx%NEQtime
       
-      IF ((rx%p_Dscale(i) .NE. 0.0_DP) .AND. (ry%p_Dscale(i) .NE. 0.0_DP)) THEN
-        CALL sptivec_getTimestepData (rx, i, rxBlock)
-        CALL sptivec_getTimestepData (ry, i, ryBlock)
+      if ((rx%p_Dscale(i) .ne. 0.0_DP) .and. (ry%p_Dscale(i) .ne. 0.0_DP)) then
+        call sptivec_getTimestepData (rx, i, rxBlock)
+        call sptivec_getTimestepData (ry, i, ryBlock)
         
         dres = dres + lsysbl_scalarProduct (rxBlock,ryBlock)
-      END IF
+      end if
 
-    END DO
+    end do
 
     ! Release temp memory    
-    CALL lsysbl_releaseVector (ryBlock)
-    CALL lsysbl_releaseVector (rxBlock)
+    call lsysbl_releaseVector (ryBlock)
+    call lsysbl_releaseVector (rxBlock)
       
     sptivec_scalarProduct = dres
       
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
   
-  REAL(DP) FUNCTION sptivec_scalarProductWeighted (rx, ry, Dweights)
+  real(DP) function sptivec_scalarProductWeighted (rx, ry, Dweights)
   
 !<description>
   ! Calculates a weighted scalar product of two block vectors.
@@ -854,15 +854,15 @@ CONTAINS
 
 !<input>
   ! First source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
 
   ! Second source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: ry
+  type(t_spacetimeVector), intent(IN)   :: ry
   
   ! An array with weights for each component of a solution
   ! vector in a timestep. Dweights(i) is multiplied to
   ! the i'th solution component of each timestep.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dweights
+  real(DP), dimension(:), intent(IN) :: Dweights
 !</input>
 
 !<result>
@@ -871,70 +871,70 @@ CONTAINS
 
 !</function>
 
-    INTEGER :: i,irow
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    REAL(DP) :: dres,a
-    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    integer :: i,irow
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    real(DP) :: dres,a
+    type(t_vectorBlock) :: rxBlock,ryBlock
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
-    IF (rx%NEQ .NE. ry%NEQ) THEN
-      CALL output_line('Space-time vectors have different size!',&
+    if (rx%NEQ .ne. ry%NEQ) then
+      call output_line('Space-time vectors have different size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rx%NEQtime .NE. ry%NEQtime) THEN
-      CALL output_line('Space-time vectors have different number of timesteps!',&
+    if (rx%NEQtime .ne. ry%NEQtime) then
+      call output_line('Space-time vectors have different number of timesteps!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
-    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
-    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rxBlock,p_Dx)
-    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+    call lsysbl_getbase_double (ryBlock,p_Dy)
 
     ! Loop through the substeps, load the data in, perform the scalar product.
     dres = 0.0_DP
-    DO i=1,rx%NEQtime
+    do i=1,rx%NEQtime
       
-      IF ((rx%p_Dscale(i) .NE. 0.0_DP) .AND. (ry%p_Dscale(i) .NE. 0.0_DP)) THEN
-        CALL sptivec_getTimestepData (rx, i, rxBlock)
-        CALL sptivec_getTimestepData (ry, i, ryBlock)
+      if ((rx%p_Dscale(i) .ne. 0.0_DP) .and. (ry%p_Dscale(i) .ne. 0.0_DP)) then
+        call sptivec_getTimestepData (rx, i, rxBlock)
+        call sptivec_getTimestepData (ry, i, ryBlock)
         
         ! Calculate a weighted scalar product using the equation weights.
         a = 0.0_DP
-        DO irow = 1,rxBlock%nblocks
+        do irow = 1,rxBlock%nblocks
           a = a + Dweights(irow) * &
               lsyssc_scalarProduct(rxBlock%RvectorBlock(irow),&
                                    ryBlock%RvectorBlock(irow))
-        END DO
+        end do
         
         dres = dres + a
-      END IF
+      end if
 
-    END DO
+    end do
 
     ! Release temp memory    
-    CALL lsysbl_releaseVector (ryBlock)
-    CALL lsysbl_releaseVector (rxBlock)
+    call lsysbl_releaseVector (ryBlock)
+    call lsysbl_releaseVector (rxBlock)
       
     sptivec_scalarProductWeighted = dres
       
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<function>
 
-  REAL(DP) FUNCTION sptivec_vectorNorm (rx,cnorm)
+  real(DP) function sptivec_vectorNorm (rx,cnorm)
 
 !<description>
   ! Calculates the norm of the vector rx.
@@ -942,10 +942,10 @@ CONTAINS
 
 !<input>
   ! Source vector
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
 
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  INTEGER, INTENT(IN) :: cnorm
+  integer, intent(IN) :: cnorm
 !</input>
 
 !<result>
@@ -954,52 +954,52 @@ CONTAINS
   
 !</function>
 
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    TYPE(t_vectorBlock) :: rxBlock
-    REAL(DP) :: dnorm
-    INTEGER :: i
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock
+    real(DP) :: dnorm
+    integer :: i
 
     Isize(1) = rx%NEQ
 
     ! Allocate a 'little bit' of memory for the subvectors
-    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     
     dnorm = 0.0_DP
     
     ! Loop through the substeps, load the data in, sum up to the norm.
-    DO i=1,rx%NEQtime
-      IF (rx%p_Dscale(i) .NE. 0.0_DP) THEN
-        CALL sptivec_getTimestepData (rx, i, rxBlock)
+    do i=1,rx%NEQtime
+      if (rx%p_Dscale(i) .ne. 0.0_DP) then
+        call sptivec_getTimestepData (rx, i, rxBlock)
         
-        SELECT CASE (cnorm)
-        CASE (LINALG_NORML2)
+        select case (cnorm)
+        case (LINALG_NORML2)
           dnorm = dnorm + lsysbl_vectorNorm (rxBlock,cnorm)**2
-        CASE DEFAULT
+        case DEFAULT
           dnorm = dnorm + lsysbl_vectorNorm (rxBlock,cnorm)
-        END SELECT
-      END IF
-    END DO
+        end select
+      end if
+    end do
 
     ! Release temp memory    
-    CALL lsysbl_releaseVector (rxBlock)
+    call lsysbl_releaseVector (rxBlock)
     
     ! Calculate the actual norm.
-    SELECT CASE (cnorm)
-    CASE (LINALG_NORML1)
+    select case (cnorm)
+    case (LINALG_NORML1)
       sptivec_vectorNorm = dnorm / (rx%NEQtime)
-    CASE (LINALG_NORML2)
-      sptivec_vectorNorm = SQRT(dnorm / (rx%NEQtime))
-    CASE DEFAULT
+    case (LINALG_NORML2)
+      sptivec_vectorNorm = sqrt(dnorm / (rx%NEQtime))
+    case DEFAULT
       sptivec_vectorNorm = dnorm
-    END SELECT
+    end select
 
-  END FUNCTION
+  end function
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_clearVector (rx)
+  subroutine sptivec_clearVector (rx)
 
 !<description>
   ! Initialises a vector with zero.
@@ -1007,7 +1007,7 @@ CONTAINS
 
 !<inputoutput>
   ! Vector to be cleared.
-  TYPE(t_spacetimeVector), INTENT(INOUT)   :: rx
+  type(t_spacetimeVector), intent(INOUT)   :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1028,15 +1028,15 @@ CONTAINS
     ! Simply set the "empty" flag to TRUE.
     ! When restoreing data with getTimestepData, that routine will return a zero vector.
     ! rx%p_Dscale(:) = 0.0_DP
-    CALL lalg_clearVectorDble (rx%p_Dscale(:))
+    call lalg_clearVectorDble (rx%p_Dscale(:))
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_scaleVector (rx,dscale)
+  subroutine sptivec_scaleVector (rx,dscale)
 
 !<description>
   ! Scales a vector by dscale.
@@ -1044,12 +1044,12 @@ CONTAINS
 
 !<input>
   ! Scaling factor.
-  REAL(DP), INTENT(IN) :: dscale
+  real(DP), intent(IN) :: dscale
 !</input>
 
 !<inputoutput>
   ! Vector to be scaled.
-  TYPE(t_spacetimeVector), INTENT(INOUT)   :: rx
+  type(t_spacetimeVector), intent(INOUT)   :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1069,15 +1069,15 @@ CONTAINS
 
     ! Scale the scaling factors of all subvectors with dscale.
     ! rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
-    CALL lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
+    call lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_convertSupervecToVector (rxsuper, rx)
+  subroutine sptivec_convertSupervecToVector (rxsuper, rx)
 
 !<description>
   ! Converts a space-time coupled vector into a usual block vector.
@@ -1088,53 +1088,53 @@ CONTAINS
 
 !<input>
   ! Space time vector to be converted.
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rxsuper
+  type(t_spacetimeVector), intent(IN)   :: rxsuper
 !</input>
 
 !<inputoutput>
   ! Destination block vector that should receive the result.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rx
+  type(t_vectorBlock), intent(INOUT) :: rx
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER(PREC_VECIDX), DIMENSION(:), ALLOCATABLE :: Isize
-    TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata1,p_Ddata2
+    integer(PREC_VECIDX), dimension(:), allocatable :: Isize
+    type(t_vectorBlock) :: rvectorTmp
+    integer :: i
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
     
     ! Create a complete new vector
-    IF (rx%NEQ .NE. 0) CALL lsysbl_releaseVector (rx)
+    if (rx%NEQ .ne. 0) call lsysbl_releaseVector (rx)
   
     ! Create a vector in the correct size
-    ALLOCATE(Isize(rxsuper%NEQtime))
+    allocate(Isize(rxsuper%NEQtime))
     Isize(:) = rxsuper%NEQ
-    CALL lsysbl_createVecBlockDirect (rx,Isize,.FALSE.)
+    call lsysbl_createVecBlockDirect (rx,Isize,.false.)
 
     ! Create a 1-block temp vector for the data    
-    CALL lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.FALSE.)
-    CALL lsysbl_getbase_double (rvectorTmp,p_Ddata1)
+    call lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.false.)
+    call lsysbl_getbase_double (rvectorTmp,p_Ddata1)
     
     ! Load the subvectors and write them to the global vector.
-    DO i=1,rxsuper%NEQtime
-      CALL sptivec_getTimestepData (rxsuper, i, rvectorTmp)
+    do i=1,rxsuper%NEQtime
+      call sptivec_getTimestepData (rxsuper, i, rvectorTmp)
       
-      CALL lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata2)
-      CALL lalg_copyVectorDble (p_Ddata1,p_Ddata2)
-    END DO
+      call lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata2)
+      call lalg_copyVectorDble (p_Ddata1,p_Ddata2)
+    end do
     
     ! Release the temp vector
-    CALL lsysbl_releaseVector (rvectorTmp)
+    call lsysbl_releaseVector (rvectorTmp)
     
-    DEALLOCATE(Isize)
+    deallocate(Isize)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_convertVectorToSupervec (rx,rxsuper)
+  subroutine sptivec_convertVectorToSupervec (rx,rxsuper)
 
 !<description>
   ! Converts a usual block vector into a space-time coupled vector.
@@ -1143,44 +1143,44 @@ CONTAINS
 
 !<input>
   ! Block vector to be converted.
-  TYPE(t_vectorBlock), INTENT(IN)   :: rx
+  type(t_vectorBlock), intent(IN)   :: rx
 !</input>
 
 !<inputoutput>
   ! Destination space-time vector that should receive the result.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rxsuper
+  type(t_spacetimeVector), intent(INOUT) :: rxsuper
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
-    TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata1,p_Ddata2
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    type(t_vectorBlock) :: rvectorTmp
+    integer :: i
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
     
     ! Create a 1-block temp vector for the data    
     Isize(1) = rxsuper%NEQ
-    CALL lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.FALSE.)
-    CALL lsysbl_getbase_double (rvectorTmp,p_Ddata2)
+    call lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.false.)
+    call lsysbl_getbase_double (rvectorTmp,p_Ddata2)
     
     ! Load the subvectors and write them to the global vector.
-    DO i=1,rxsuper%NEQtime
-      CALL lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata1)
-      CALL lalg_copyVectorDble (p_Ddata1,p_Ddata2)
+    do i=1,rxsuper%NEQtime
+      call lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata1)
+      call lalg_copyVectorDble (p_Ddata1,p_Ddata2)
 
-      CALL sptivec_setTimestepData (rxsuper, i, rvectorTmp)
-    END DO
+      call sptivec_setTimestepData (rxsuper, i, rvectorTmp)
+    end do
     
     ! Release the temp vector
-    CALL lsysbl_releaseVector (rvectorTmp)
+    call lsysbl_releaseVector (rvectorTmp)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_saveToCollection (rx,rcollection,sname,ilevel,ssection)
+  subroutine sptivec_saveToCollection (rx,rcollection,sname,ilevel,ssection)
 
 !<description>
   ! Saves a space-time vector to a collection.
@@ -1188,49 +1188,49 @@ CONTAINS
 
 !<input>
   ! Space-time vector to be saved.
-  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+  type(t_spacetimeVector), intent(IN)   :: rx
   
   ! Name that the vector should be given in the collection.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
 
   ! OPTIONAL: Name of the section in the collection where to save the vector to.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssection
+  character(LEN=*), intent(IN), optional :: ssection
   
   ! OPTIONAL: Level in the collection where to save the vector to.
-  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+  integer, intent(IN), optional :: ilevel
 !</input>
 
 !<inputoutput>
   ! Collection structure. The vector is saved to this.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
     ! Save the content of the structure    
-    CALL collct_setvalue_int (rcollection,TRIM(sname)//'_NEQ',&
-        rx%NEQ,.TRUE.,ilevel,ssection)
+    call collct_setvalue_int (rcollection,trim(sname)//'_NEQ',&
+        rx%NEQ,.true.,ilevel,ssection)
   
-    CALL collct_setvalue_int (rcollection,TRIM(sname)//'_NTST',&
-        rx%NEQtime,.TRUE.,ilevel,ssection)
+    call collct_setvalue_int (rcollection,trim(sname)//'_NTST',&
+        rx%NEQtime,.true.,ilevel,ssection)
 
-    IF (rx%NEQtime .NE. 0) THEN
-      CALL collct_setvalue_intarr (rcollection,TRIM(sname)//'_NTST',&
-          rx%p_IdataHandleList,.TRUE.,ilevel,ssection)
+    if (rx%NEQtime .ne. 0) then
+      call collct_setvalue_intarr (rcollection,trim(sname)//'_NTST',&
+          rx%p_IdataHandleList,.true.,ilevel,ssection)
       
-      CALL collct_setvalue_realarr (rcollection,TRIM(sname)//'_SCALE',&
-          rx%p_Dscale,.TRUE.,ilevel,ssection)
+      call collct_setvalue_realarr (rcollection,trim(sname)//'_SCALE',&
+          rx%p_Dscale,.true.,ilevel,ssection)
 
       ! Otherwise the pointers are NULL()!
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_restoreFromCollection (rx,rcollection,sname,ilevel,ssection)
+  subroutine sptivec_restoreFromCollection (rx,rcollection,sname,ilevel,ssection)
 
 !<description>
   ! Restores a space-time vector from a collection.
@@ -1241,54 +1241,54 @@ CONTAINS
 
 !<input>
   ! Collection structure where to restore rx from.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  type(t_collection), intent(INOUT) :: rcollection
 
   ! Name that the vector should be given in the collection.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
 
   ! OPTIONAL: Name of the section in the collection where to save the vector to.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssection
+  character(LEN=*), intent(IN), optional :: ssection
   
   ! OPTIONAL: Level in the collection where to save the vector to.
-  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+  integer, intent(IN), optional :: ilevel
 !</input>
 
 !<inputoutput>
   ! Space-time vector that receives the data.
-  TYPE(t_spacetimeVector), INTENT(OUT)   :: rx
+  type(t_spacetimeVector), intent(OUT)   :: rx
 !</inputoutput>
 
 !</subroutine>
     
     ! The vector is a copy of another one, so the releaseVector routine
     ! will not release the content.
-    rx%bisCopy = .TRUE.
+    rx%bisCopy = .true.
 
     ! Get the content of the structure    
-    rx%NEQ = collct_getvalue_int (rcollection,TRIM(sname)//'_NEQ',&
+    rx%NEQ = collct_getvalue_int (rcollection,trim(sname)//'_NEQ',&
         ilevel,ssection)
   
-    rx%NEQtime = collct_getvalue_int (rcollection,TRIM(sname)//'_NTST',&
+    rx%NEQtime = collct_getvalue_int (rcollection,trim(sname)//'_NTST',&
         ilevel,ssection)
         
-    IF (rx%NEQtime .NE. 0) THEN
+    if (rx%NEQtime .ne. 0) then
       ! For the handle list, we need to allocate some memory...
-      ALLOCATE(rx%p_IdataHandleList(rx%NEQtime))
+      allocate(rx%p_IdataHandleList(rx%NEQtime))
 
-      CALL collct_getvalue_intarr (rcollection,TRIM(sname)//'_NTST',&
+      call collct_getvalue_intarr (rcollection,trim(sname)//'_NTST',&
           rx%p_IdataHandleList,ilevel,ssection)
 
-      CALL collct_getvalue_realarr (rcollection,TRIM(sname)//'_SCALE',&
+      call collct_getvalue_realarr (rcollection,trim(sname)//'_SCALE',&
           rx%p_Dscale,ilevel,ssection)
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_removeFromCollection (rcollection,sname,ilevel,ssection)
+  subroutine sptivec_removeFromCollection (rcollection,sname,ilevel,ssection)
 
 !<description>
   ! Removes a space-time vector from a collection.
@@ -1296,45 +1296,45 @@ CONTAINS
 
 !<input>
   ! Name that the vector should be given in the collection.
-  CHARACTER(LEN=*), INTENT(IN) :: sname
+  character(LEN=*), intent(IN) :: sname
 
   ! OPTIONAL: Name of the section in the collection where to save the vector to.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssection
+  character(LEN=*), intent(IN), optional :: ssection
   
   ! OPTIONAL: Level in the collection where to save the vector to.
-  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+  integer, intent(IN), optional :: ilevel
 !</input>
 
 !<inputoutput>
   ! Collection structure where to remove sname from.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
     ! Remove all entries
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_DIR',&
+    call collct_deleteValue (rcollection,trim(sname)//'_DIR',&
         ilevel,ssection)
 
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_SCALE',&
+    call collct_deleteValue (rcollection,trim(sname)//'_SCALE',&
         ilevel,ssection)
   
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_NEQ',&
+    call collct_deleteValue (rcollection,trim(sname)//'_NEQ',&
         ilevel,ssection)
   
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_NTST',&
+    call collct_deleteValue (rcollection,trim(sname)//'_NTST',&
         ilevel,ssection)
         
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_NTST',&
+    call collct_deleteValue (rcollection,trim(sname)//'_NTST',&
         ilevel,ssection)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
+  subroutine sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
       bformatted,brepeatLast,rblockDiscretisation)
 
 !<description>
@@ -1358,20 +1358,20 @@ CONTAINS
 
 !<input>
   ! Filename pattern + path where to form a filename from.
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  character(LEN=*), intent(IN) :: sfilename
 
   ! Number of the first file to be read in
-  INTEGER, INTENT(IN) :: istart
+  integer, intent(IN) :: istart
   
   ! Number of the last file to be read in
-  INTEGER, INTENT(IN) :: iend
+  integer, intent(IN) :: iend
   
   ! Delta parameter that specifies how to increase the filename suffix.
   ! Standard is =1.
-  INTEGER, INTENT(IN) :: idelta
+  integer, intent(IN) :: idelta
   
   ! Whether to read formatted or unformatted data from disc.
-  LOGICAL, INTENT(IN) :: bformatted
+  logical, intent(IN) :: bformatted
 
   ! OPTIONAL: Repetition of last solution.
   ! If this value is set to TRUE and there are not enough solutions
@@ -1383,12 +1383,12 @@ CONTAINS
   ! to the last one.
   !
   ! Standard value = false = missing solutions are set to zero.
-  LOGICAL, OPTIONAL :: brepeatLast
+  logical, optional :: brepeatLast
   
   ! OPTIONAL: A block discretisation structure that defines the shape of the spatial
   ! vectors. If not specified, the vectors will be read in as pure data vectors
   ! without a discretisation attached.
-  TYPE(t_blockDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(IN), target, optional :: rblockDiscretisation
 
 !</input>
 
@@ -1397,109 +1397,109 @@ CONTAINS
   ! If empty, the vector is created from the scratch.
   ! If the vector is not empty, it must be large enough to hold all data.
   ! The content is ovrwritten.
-  TYPE(t_spaceTimeVector), INTENT(INOUT) :: rx
+  type(t_spaceTimeVector), intent(INOUT) :: rx
 !</inputoutput>
 
 !</subroutine>
 
     ! Local variables
-    TYPE(t_vectorBlock) :: rvector
-    TYPE(t_vectorScalar) :: rvectorScalar
-    CHARACTER(SYS_STRLEN) :: sfile,sarray
-    INTEGER :: i,ilast
-    LOGICAL :: bexists,brepeat
+    type(t_vectorBlock) :: rvector
+    type(t_vectorScalar) :: rvectorScalar
+    character(SYS_STRLEN) :: sfile,sarray
+    integer :: i,ilast
+    logical :: bexists,brepeat
     
-    brepeat = .FALSE.
-    IF (PRESENT(brepeatLast)) brepeat = brepeatLast
+    brepeat = .false.
+    if (present(brepeatLast)) brepeat = brepeatLast
     
     ilast = 0
 
     ! Loop over the files
-    DO i=istart,iend
+    do i=istart,iend
     
       ! Form the filename
-      WRITE(sfile,sfilename) i*idelta
+      write(sfile,sfilename) i*idelta
       
       ! Is the file there?
-      INQUIRE(file=trim(sfile), exist=bexists)
+      inquire(file=trim(sfile), exist=bexists)
       
-      IF (bexists) THEN
+      if (bexists) then
         ! Remember this solution as the last available one
         ilast = i
       
-        IF (.NOT. PRESENT(rblockDiscretisation)) THEN
+        if (.not. present(rblockDiscretisation)) then
           ! Read the file into rvector. The first read command creates rvector
           ! in the correct size.
-          CALL vecio_readVectorHR (rvectorScalar, sarray, .FALSE.,&
+          call vecio_readVectorHR (rvectorScalar, sarray, .false.,&
             0, sfile, bformatted)
 
-          IF ((i .EQ. istart) .AND. (rx%NEQtime .EQ. 0)) THEN
+          if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
-            CALL sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart+1)
-          END IF         
+            call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart+1)
+          end if         
 
           ! Save the data
-          CALL exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
+          call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
     
-        ELSE
+        else
   
-          CALL vecio_readBlockVectorHR (rvector, sarray, .FALSE.,&
+          call vecio_readBlockVectorHR (rvector, sarray, .false.,&
             0, sfile, bformatted)
 
-          IF (i .EQ. istart) THEN
+          if (i .eq. istart) then
             ! At the first file, create a space-time vector holding the data.
-            CALL sptivec_initVector (rx,1+iend-istart,rblockDiscretisation)
-          END IF         
+            call sptivec_initVector (rx,1+iend-istart,rblockDiscretisation)
+          end if         
           ! Save the data
-          CALL exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvector%h_Ddata)
+          call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvector%h_Ddata)
           
-        END IF
+        end if
         
-      ELSE
-        IF (i .EQ. istart) THEN
+      else
+        if (i .eq. istart) then
           ! The first file must exist!
-          CALL output_line ('The first file must exist!', &
+          call output_line ('The first file must exist!', &
               ssubroutine='sptivec_loadFromFileSequence')
-        END IF         
+        end if         
 
-        IF (brepeat) THEN
-          CALL output_line ('Warning: Unable to load file "'//TRIM(sfile) &
+        if (brepeat) then
+          call output_line ('Warning: Unable to load file "'//trim(sfile) &
               //'". Repeating last solution!', &
               ssubroutine='sptivec_loadFromFileSequence')
         
           ! Copy the data from the last known solution to the current one.
-          CALL exstor_copy (&
+          call exstor_copy (&
               rx%p_IdataHandleList(1+ilast),&
               rx%p_IdataHandleList(1+i))
-        ELSE
-          CALL output_line ('Warning: Unable to load file "'//TRIM(sfile) &
+        else
+          call output_line ('Warning: Unable to load file "'//trim(sfile) &
               //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
         
           ! Clear that array. Zero solution.
-          CALL exstor_clear (rx%p_IdataHandleList(1+i))
-        END IF
-      END IF
+          call exstor_clear (rx%p_IdataHandleList(1+i))
+        end if
+      end if
     
-    END DO
+    end do
     
     ! The vector is scaled by 1.0.
     ! rx%p_Dscale(:) = 1.0_DP
-    CALL lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
+    call lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
-    IF (PRESENT(rblockDiscretisation)) THEN
-      CALL lsysbl_releaseVector (rvector)
-    ELSE
-      CALL lsyssc_releaseVector (rvectorScalar)
-    END IF
+    if (present(rblockDiscretisation)) then
+      call lsysbl_releaseVector (rvector)
+    else
+      call lsyssc_releaseVector (rvectorScalar)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_saveToFileSequence (rx,sfilename,bformatted,&
+  subroutine sptivec_saveToFileSequence (rx,sfilename,bformatted,&
       rtempVector,sformat)
 
 !<description>
@@ -1517,84 +1517,84 @@ CONTAINS
 
 !<input>
   ! Space-time vector to be written to disc.
-  TYPE(t_spaceTimeVector), INTENT(IN) :: rx
+  type(t_spaceTimeVector), intent(IN) :: rx
 
   ! Filename pattern + path where to form a filename from.
-  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  character(LEN=*), intent(IN) :: sfilename
 
   ! Whether to read formatted or unformatted data from disc.
-  LOGICAL, INTENT(IN) :: bformatted
+  logical, intent(IN) :: bformatted
   
   ! OPTIONAL: Format string that is used for exporting data to files.
   ! E.g. '(E20.10)'.
-  CHARACTER(LEN=SYS_STRLEN), INTENT(IN), OPTIONAL :: sformat
+  character(LEN=SYS_STRLEN), intent(IN), optional :: sformat
 !</input>
 
 !<inputoutput>
   ! Temporary vector. This vector must prescribe the block structure of the
   ! subvectors in the space-time vector. If not specified, the data is written
   ! out without a block structure.
-  TYPE(t_vectorBlock), INTENT(INOUT), TARGET, OPTIONAL :: rtempVector
+  type(t_vectorBlock), intent(INOUT), target, optional :: rtempVector
 !</inputoutput>
 
 !</subroutine>
 
     ! Local variables
-    CHARACTER(SYS_STRLEN) :: sfile
-    INTEGER :: i
+    character(SYS_STRLEN) :: sfile
+    integer :: i
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx
-    TYPE(t_vectorBlock), POINTER :: p_rx
-    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    real(DP), dimension(:), pointer :: p_Dx
+    type(t_vectorBlock), pointer :: p_rx
+    integer(PREC_VECIDX), dimension(1) :: Isize
     
-    IF (PRESENT(rtempVector)) THEN
+    if (present(rtempVector)) then
       p_rx => rtempVector
-    ELSE
+    else
       ! Create a 1-block temp vector for the data    
-      ALLOCATE(p_rx)
+      allocate(p_rx)
       Isize(1) = rx%NEQ
-      CALL lsysbl_createVecBlockDirect (p_rx,Isize(1:1),.FALSE.)
-    END IF
+      call lsysbl_createVecBlockDirect (p_rx,Isize(1:1),.false.)
+    end if
 
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (p_rx,p_Dx)
+    call lsysbl_getbase_double (p_rx,p_Dx)
 
     ! Loop over the files
-    DO i=0,rx%NEQtime-1
+    do i=0,rx%NEQtime-1
     
       ! Get the data from the space-time vector.
-      CALL sptivec_getTimestepData (rx, 1+i, p_rx)
+      call sptivec_getTimestepData (rx, 1+i, p_rx)
       
       ! Form the filename
-      WRITE(sfile,sfilename) i
+      write(sfile,sfilename) i
       
       ! Save that to disc.
-      IF (.NOT. bformatted) THEN
-        CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
+      if (.not. bformatted) then
+        call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
                                       0, sfile)
-      ELSE IF (.NOT. PRESENT(sformat)) THEN
-          CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
+      else if (.not. present(sformat)) then
+          call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
                                         0, sfile, '(E24.16)')
-      ELSE
-        CALL vecio_writeBlockVectorHR (p_rx, 'vector', .TRUE.,&
+      else
+        call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
                                        0, sfile, sformat)
-      END IF
+      end if
     
-    END DO
+    end do
     
-    IF (.NOT. PRESENT(rtempVector)) THEN
-      CALL lsysbl_releaseVector (p_rx)
-      DEALLOCATE(p_rx)
-    END IF
+    if (.not. present(rtempVector)) then
+      call lsysbl_releaseVector (p_rx)
+      deallocate(p_rx)
+    end if
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE sptivec_setConstant (rx,dvalue)
+  subroutine sptivec_setConstant (rx,dvalue)
 
 !<description>
   ! Sets the whole space-time vector to a constant value.
@@ -1602,37 +1602,37 @@ CONTAINS
 
 !<input>
   ! Value which should be written to the whole space-time vector.
-  REAL(DP), INTENT(IN) :: dvalue
+  real(DP), intent(IN) :: dvalue
 !</input>
 
 !<inputoutput>
   ! Space-time vector to modify
-  TYPE(t_spaceTimeVector), INTENT(INOUT) :: rx
+  type(t_spaceTimeVector), intent(INOUT) :: rx
 !</inputoutput>
 
 !</subroutine>
 
     ! Local variables
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: p_Ddata
-    INTEGER :: i
+    real(DP), dimension(:), allocatable :: p_Ddata
+    integer :: i
     
     ! Allocate memory for intermediate values
-    ALLOCATE(p_Ddata(rx%NEQ))
+    allocate(p_Ddata(rx%NEQ))
 
     ! Loop over the files
-    DO i=1,rx%NEQtime
+    do i=1,rx%NEQtime
     
       ! Get the data and set to a defined value.
-      CALL exstor_getdata_double (rx%p_IdataHandleList(i),p_Ddata)
+      call exstor_getdata_double (rx%p_IdataHandleList(i),p_Ddata)
       p_Ddata(:) = dvalue
-      CALL exstor_setdata_double (rx%p_IdataHandleList(i),p_Ddata)
+      call exstor_setdata_double (rx%p_IdataHandleList(i),p_Ddata)
 
       rx%p_Dscale(i) = 1.0_DP
 
-    END DO
+    end do
     
-    DEALLOCATE(p_Ddata)
+    deallocate(p_Ddata)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

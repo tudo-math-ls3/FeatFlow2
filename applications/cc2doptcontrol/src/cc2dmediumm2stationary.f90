@@ -13,47 +13,47 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2stationary
+module cc2dmediumm2stationary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
   
-  USE cc2dmediumm2matvecassembly
-  USE cc2dmediumm2nonlinearcore
-  USE cc2dmediumm2nonlinearcoreinit
-  USE cc2dmediumm2postprocessing
+  use cc2dmediumm2matvecassembly
+  use cc2dmediumm2nonlinearcore
+  use cc2dmediumm2nonlinearcoreinit
+  use cc2dmediumm2postprocessing
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_solve (rproblem,rvector,rrhs)
+  subroutine cc_solve (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
@@ -71,16 +71,16 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
   ! iteration. After the iteration, this is replaced by the new solution vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !<input>
   ! The right-hand-side vector to use in the equation
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
 !</input>
 
 !</subroutine>
@@ -233,6 +233,6 @@ CONTAINS
 !    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
 !    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
 !    
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

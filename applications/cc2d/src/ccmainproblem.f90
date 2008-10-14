@@ -21,47 +21,47 @@
 !# </purpose>
 !##############################################################################
 
-MODULE ccmainproblem
+module ccmainproblem
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE statistics
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use statistics
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE ccbasic
-  USE ccinitgeneralparameters
-  USE ccinitparamtriang
-  USE ccgeneraldiscretisation
-  USE ccpostprocessing
-  USE ccstationary
-  USE ccnonstationary
-  USE ccboundarycondition
+  use ccbasic
+  use ccinitgeneralparameters
+  use ccinitparamtriang
+  use ccgeneraldiscretisation
+  use ccpostprocessing
+  use ccstationary
+  use ccnonstationary
+  use ccboundarycondition
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmain
+  subroutine cc2dmain
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -88,305 +88,305 @@ CONTAINS
 !</subroutine>
 
     ! A problem structure for our problem
-    TYPE(t_problem), POINTER :: p_rproblem
+    type(t_problem), pointer :: p_rproblem
     
     ! A structure for the solution vector and the RHS vector of the problem.
-    TYPE(t_vectorBlock) :: rvector,rrhs
+    type(t_vectorBlock) :: rvector,rrhs
     
     ! A structure for the postprocessing.
-    TYPE(t_c2d2postprocessing) :: rpostprocessing
+    type(t_c2d2postprocessing) :: rpostprocessing
     
     ! Timer objects for stopping time
-    TYPE(t_timer) :: rtimerTotal
-    TYPE(t_timer) :: rtimerGridGeneration
-    TYPE(t_timer) :: rtimerMatrixGeneration
-    TYPE(t_timer) :: rtimerSolver
+    type(t_timer) :: rtimerTotal
+    type(t_timer) :: rtimerGridGeneration
+    type(t_timer) :: rtimerMatrixGeneration
+    type(t_timer) :: rtimerSolver
     
-    INTEGER :: i
+    integer :: i
     
     ! Ok, let's start. 
     
     ! Initialise the timers by zero:
-    CALL stat_clearTimer(rtimerTotal)
-    CALL stat_clearTimer(rtimerGridGeneration)
-    CALL stat_clearTimer(rtimerMatrixGeneration)
-    CALL stat_clearTimer(rtimerSolver)
+    call stat_clearTimer(rtimerTotal)
+    call stat_clearTimer(rtimerGridGeneration)
+    call stat_clearTimer(rtimerMatrixGeneration)
+    call stat_clearTimer(rtimerSolver)
 
     ! Start the timer
-    CALL stat_startTimer(rtimerTotal)
+    call stat_startTimer(rtimerTotal)
     
     ! Allocate memory fo rthe problem structure -- it's rather large!
-    ALLOCATE (p_rproblem)
+    allocate (p_rproblem)
     
     ! Initialise the collection
-    CALL collct_init (p_rproblem%rcollection)
+    call collct_init (p_rproblem%rcollection)
     
     ! Initialise the parameter list object. This creates an empty parameter list.
-    CALL parlst_init (p_rproblem%rparamList)
+    call parlst_init (p_rproblem%rparamList)
     
     ! Read parameters from the INI/DAT files into the parameter list. 
-    CALL cc2d_getDAT (p_rproblem%rparamList)
+    call cc2d_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.
-    CALL cc_initOutput (p_rproblem)
+    call cc_initOutput (p_rproblem)
     
     ! Print the configuration to the terminal
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_line ('Parameters:')
-      CALL parlst_info (p_rproblem%rparamList)
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_line ('Parameters:')
+      call parlst_info (p_rproblem%rparamList)
+    end if
     
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
-    CALL cc_initParameters (p_rproblem)
+    call cc_initParameters (p_rproblem)
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
     !
     ! Parametrisation & Triangulation
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising parametrisation / triangulation...')
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising parametrisation / triangulation...')
+    end if
     
-    CALL stat_startTimer(rtimerGridGeneration)
+    call stat_startTimer(rtimerGridGeneration)
     
-    CALL cc_initParamTriang (p_rproblem)
+    call cc_initParamTriang (p_rproblem)
     
-    CALL stat_stopTimer(rtimerGridGeneration)
-    CALL output_lbrk ()
-    CALL output_line ("Time for mesh generation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call stat_stopTimer(rtimerGridGeneration)
+    call output_lbrk ()
+    call output_line ("Time for mesh generation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
       
     p_rproblem%rstatistics%dtimeGridGeneration = &
       p_rproblem%rstatistics%dtimeGridGeneration + rtimerGridGeneration%delapsedReal
     
     ! Print mesh information
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_lbrk ()
-      CALL output_line ('Mesh statistics:')
-      CALL output_lbrk ()
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
-            i .EQ. p_rproblem%NLMIN,i)
-      END DO
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Mesh statistics:')
+      call output_lbrk ()
+      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        call tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
+            i .eq. p_rproblem%NLMIN,i)
+      end do
+    end if
     
     ! Discretisation
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising discretisation...')
-    END IF
-    CALL cc_initDiscretisation (p_rproblem)    
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising discretisation...')
+    end if
+    call cc_initDiscretisation (p_rproblem)    
 
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_lbrk ()
-      CALL output_line ('Discretisation statistics:')
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL output_lbrk ()
-        CALL output_line ('Level '//sys_siL(i,5))
-        CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.FALSE.)
-      END DO
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Discretisation statistics:')
+      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        call output_lbrk ()
+        call output_line ('Level '//sys_siL(i,5))
+        call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
+      end do
+    end if
     
     ! And all the other stuff...
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising postprocessing...')
-    END IF
-    CALL cc_initPostprocessing (p_rproblem,rpostprocessing)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising postprocessing...')
+    end if
+    call cc_initPostprocessing (p_rproblem,rpostprocessing)
     
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising matrices/vectors...')
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising matrices/vectors...')
+    end if
     
-    CALL stat_startTimer(rtimerMatrixGeneration)
+    call stat_startTimer(rtimerMatrixGeneration)
     
-    CALL cc_allocMatVec (p_rproblem,rvector,rrhs)    
+    call cc_allocMatVec (p_rproblem,rvector,rrhs)    
     
-    CALL stat_stopTimer(rtimerMatrixGeneration)
-    CALL output_lbrk ()
-    CALL output_line ("Time for matrix initialisation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call stat_stopTimer(rtimerMatrixGeneration)
+    call output_lbrk ()
+    call output_line ("Time for matrix initialisation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
 
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Generating basic matrices...')
-    END IF
-    CALL cc_generateBasicMatrices (p_rproblem)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Generating basic matrices...')
+    end if
+    call cc_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising initial solution vector...')
-    END IF
-    CALL cc_initInitialSolution (p_rproblem,rvector)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising initial solution vector...')
+    end if
+    call cc_initInitialSolution (p_rproblem,rvector)
 
     ! Now choose the algorithm. Stationary or time-dependent simulation?
-    IF (p_rproblem%itimedependence .EQ. 0) THEN
+    if (p_rproblem%itimedependence .eq. 0) then
     
       ! Stationary simulation
       !
       ! Generate the RHS vector.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating RHS vector...')
-      END IF
-      CALL cc_generateBasicRHS (p_rproblem,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating RHS vector...')
+      end if
+      call cc_generateBasicRHS (p_rproblem,rrhs)
       
       ! Generate discrete boundary conditions
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating discrete boundary conditions...')
-      END IF
-      CALL cc_initDiscreteBC (p_rproblem,rvector,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating discrete boundary conditions...')
+      end if
+      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL cc_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.)
+      call cc_implementBC (p_rproblem,rvector,rrhs,.true.,.true.)
     
       ! Solve the problem
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Invoking stationary solver...')
-        CALL output_separator (OU_SEP_MINUS)
-      END IF
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Invoking stationary solver...')
+        call output_separator (OU_SEP_MINUS)
+      end if
       
-      CALL stat_startTimer(rtimerSolver)
+      call stat_startTimer(rtimerSolver)
       
-      CALL cc_solveStationary (p_rproblem,rvector,rrhs)
+      call cc_solveStationary (p_rproblem,rvector,rrhs)
       
-      CALL stat_stopTimer(rtimerSolver)
+      call stat_stopTimer(rtimerSolver)
     
       ! Postprocessing
-      CALL cc_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
+      call cc_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
       
-    ELSE
+    else
     
       ! Time dependent simulation with explicit time stepping.
       !
       ! Generate the RHS vector for the first time step.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating RHS vector...')
-      END IF
-      CALL cc_generateBasicRHS (p_rproblem,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating RHS vector...')
+      end if
+      call cc_generateBasicRHS (p_rproblem,rrhs)
       
       ! Initialise the boundary conditions, but 
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating discrete boundary conditions of first time step...')
-      END IF
-      CALL cc_initDiscreteBC (p_rproblem,rvector,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating discrete boundary conditions of first time step...')
+      end if
+      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Call the nonstationary solver to solve the problem.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Invoking nonstationary solver...')
-        CALL output_separator (OU_SEP_MINUS)
-      END IF
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Invoking nonstationary solver...')
+        call output_separator (OU_SEP_MINUS)
+      end if
       
-      CALL stat_startTimer(rtimerSolver)
+      call stat_startTimer(rtimerSolver)
       
-      CALL cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
+      call cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
       
-      CALL stat_stopTimer(rtimerSolver)
+      call stat_stopTimer(rtimerSolver)
       
-    END IF
+    end if
     
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
     
     ! (Probably) write final solution vector
-    CALL cc_writeSolution (p_rproblem,rvector)
+    call cc_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
-    CALL cc_doneMatVec (p_rproblem,rvector,rrhs)
-    CALL cc_doneBC (p_rproblem)
-    CALL cc_doneDiscretisation (p_rproblem)
-    CALL cc_donepostprocessing (rpostprocessing)    
-    CALL cc_doneParamTriang (p_rproblem)
+    call cc_doneMatVec (p_rproblem,rvector,rrhs)
+    call cc_doneBC (p_rproblem)
+    call cc_doneDiscretisation (p_rproblem)
+    call cc_donepostprocessing (rpostprocessing)    
+    call cc_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
-    CALL cc_doneParameters (p_rproblem)
+    call cc_doneParameters (p_rproblem)
 
     ! Release the parameter list
-    CALL parlst_done (p_rproblem%rparamList)
+    call parlst_done (p_rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
-    CALL output_lbrk ()
-    CALL output_line ('Remaining collection statistics:')
-    CALL output_line ('--------------------------------')
-    CALL output_lbrk ()
-    CALL collct_printStatistics (p_rproblem%rcollection)
+    call output_lbrk ()
+    call output_line ('Remaining collection statistics:')
+    call output_line ('--------------------------------')
+    call output_lbrk ()
+    call collct_printStatistics (p_rproblem%rcollection)
     
     ! Finally release the collection and the problem structure.
-    CALL collct_done (p_rproblem%rcollection)
+    call collct_done (p_rproblem%rcollection)
     
     ! Stop the timer
-    CALL stat_stopTimer(rtimerTotal)
+    call stat_stopTimer(rtimerTotal)
 
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeTotal = &
       p_rproblem%rstatistics%dtimeTotal + rtimerTotal%delapsedReal
     
     ! Print the time for the total computation
-    CALL output_lbrk ()
-    CALL output_line ("Total time:                             "//&
-        TRIM(sys_sdL(p_rproblem%rstatistics%dtimeTotal,10)))
+    call output_lbrk ()
+    call output_line ("Total time:                             "//&
+        trim(sys_sdL(p_rproblem%rstatistics%dtimeTotal,10)))
 
-    CALL output_line ("Time for initial mesh generation:       "//&
-        TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call output_line ("Time for initial mesh generation:       "//&
+        trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
         
-    CALL output_line ("Time for initial matrix assembly:       "//&
-      TRIM(sys_sdL(rtimerMatrixGeneration%delapsedReal,10)))
+    call output_line ("Time for initial matrix assembly:       "//&
+      trim(sys_sdL(rtimerMatrixGeneration%delapsedReal,10)))
       
-    CALL output_line ("Total time for grid generation:         "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeGridGeneration,10)))
+    call output_line ("Total time for grid generation:         "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeGridGeneration,10)))
       
-    CALL output_line ("Total time for complete solver:         "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeSolver,10)))
+    call output_line ("Total time for complete solver:         "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeSolver,10)))
       
-    CALL output_line ("Total time for nonlinear solver:        "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeNonlinearSolver,10)))
+    call output_line ("Total time for nonlinear solver:        "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeNonlinearSolver,10)))
       
-    CALL output_line ("Total time for defect calculation:      "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeDefectCalculation,10)))
+    call output_line ("Total time for defect calculation:      "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeDefectCalculation,10)))
 
-    CALL output_line ("Total time for optimal damping:         "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeOptimalCorrection,10)))
+    call output_line ("Total time for optimal damping:         "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeOptimalCorrection,10)))
       
-    CALL output_line ("Total time for matrix assembly:         "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeMatrixAssembly,10)))
+    call output_line ("Total time for matrix assembly:         "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeMatrixAssembly,10)))
       
-    CALL output_line ("Total time for linear solver:           "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolver,10)))
+    call output_line ("Total time for linear solver:           "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolver,10)))
       
-    CALL output_line ("Total time for factorisation:           "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolverFactorisation,10)))
+    call output_line ("Total time for factorisation:           "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeLinearSolverFactorisation,10)))
 
-    CALL output_line ("Total time for postprocessing:          "//&
-      TRIM(sys_sdL(p_rproblem%rstatistics%dtimePostprocessing,10)))
+    call output_line ("Total time for postprocessing:          "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimePostprocessing,10)))
       
-    CALL output_line ("Total #iterations nonlinear solver:     "//&
-      TRIM(sys_siL(p_rproblem%rstatistics%nnonlinearIterations,10)))
+    call output_line ("Total #iterations nonlinear solver:     "//&
+      trim(sys_siL(p_rproblem%rstatistics%nnonlinearIterations,10)))
       
-    CALL output_line ("Total #iterations linear solver:        "//&
-      TRIM(sys_siL(p_rproblem%rstatistics%nlinearIterations,10)))
+    call output_line ("Total #iterations linear solver:        "//&
+      trim(sys_siL(p_rproblem%rstatistics%nlinearIterations,10)))
 
-    CALL output_line ("Total number of calculated timesteps:   "//&
-      TRIM(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
+    call output_line ("Total number of calculated timesteps:   "//&
+      trim(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
 
     ! That's it.    
-    DEALLOCATE(p_rproblem)
+    deallocate(p_rproblem)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

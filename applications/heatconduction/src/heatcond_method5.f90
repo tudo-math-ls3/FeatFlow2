@@ -44,47 +44,47 @@
 !# </purpose>
 !##############################################################################
 
-MODULE heatcond_method5
+module heatcond_method5
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE sortstrategy
-  USE coarsegridcorrection
-  USE ucd
-  USE timestepping
-  USE genoutput
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use sortstrategy
+  use coarsegridcorrection
+  use ucd
+  use timestepping
+  use genoutput
   
-  USE collection
-  USE paramlist
+  use collection
+  use paramlist
     
-  USE heatcond_callback
+  use heatcond_callback
   
-  USE heatcond_basic
-  USE heatcond_matvec
-  USE heatcond_boundarycondition
-  USE heatcond_partridiscr
-  USE heatcond_solver
-  USE heatcond_timeloop
+  use heatcond_basic
+  use heatcond_matvec
+  use heatcond_boundarycondition
+  use heatcond_partridiscr
+  use heatcond_solver
+  use heatcond_timeloop
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE heatcond5
+  subroutine heatcond5
   
 !<description>
   ! This is a 'separated' heatcond solver for solving a nonstationary heat 
@@ -111,94 +111,94 @@ CONTAINS
 !</subroutine>
 
     ! A paramlist structure with parameters from the dat file
-    TYPE(t_parlist) :: rparams
+    type(t_parlist) :: rparams
 
     ! A problem structure for our problem
-    TYPE(t_problem), TARGET :: rproblem
+    type(t_problem), target :: rproblem
     
     ! An initial RHS vector and a solution vector
-    TYPE(t_vectorBlock) :: rrhs,rvector
+    type(t_vectorBlock) :: rrhs,rvector
     
-    INTEGER :: i
+    integer :: i
     
     ! Initialise the parameter list
-    CALL parlst_init(rparams)
+    call parlst_init(rparams)
     
     ! Initialise the collection.
-    CALL collct_init (rproblem%rcollection)
-    CALL collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .TRUE.)
+    call collct_init (rproblem%rcollection)
+    call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
     
     ! Read in the parameters from the DAT file and initialise the basic
     ! structures with these.
-    CALL hc5_initparameters (rparams,rproblem)
+    call hc5_initparameters (rparams,rproblem)
 
     ! Add space for level information in the collection
-    DO i=1,rproblem%ilvmax
-      CALL collct_addlevel_all (rproblem%rcollection)
-    END DO
+    do i=1,rproblem%ilvmax
+      call collct_addlevel_all (rproblem%rcollection)
+    end do
     
     ! Allocate memory for the level information
-    ALLOCATE (rproblem%RlevelInfo(rproblem%ilvmax))
+    allocate (rproblem%RlevelInfo(rproblem%ilvmax))
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL hc5_initParamTriang (rproblem%ilvmin,rproblem%ilvmax,rproblem)
-    CALL hc5_initDiscretisation (rproblem)    
-    CALL hc5_initMatVec (rproblem,rparams)    
+    call hc5_initParamTriang (rproblem%ilvmin,rproblem%ilvmax,rproblem)
+    call hc5_initDiscretisation (rproblem)    
+    call hc5_initMatVec (rproblem,rparams)    
 
     ! Use the auxiliary RHS vector on the finest level to create an
     ! initial RHS and solution vector, which we pass later to the timeloop.
-    CALL lsysbl_createVecBlockIndirect (rproblem%rrhs,rrhs,.FALSE.)
-    CALL lsysbl_createVecBlockIndirect (rproblem%rrhs,rvector,.TRUE.)
+    call lsysbl_createVecBlockIndirect (rproblem%rrhs,rrhs,.false.)
+    call lsysbl_createVecBlockIndirect (rproblem%rrhs,rvector,.true.)
 
     ! Calculate the initial RHS, don't incorporate any BC's.
-    CALL hc5_calcRHS (rproblem,rrhs)  
+    call hc5_calcRHS (rproblem,rrhs)  
     
     ! Discretise the boundary conditions
-    CALL hc5_initDiscreteBC (rproblem)
+    call hc5_initDiscreteBC (rproblem)
     
     ! Implement them into the initial solution vector, as we have a zero
     ! vector as initial solution.
     rvector%p_rdiscreteBC => rproblem%rrhs%p_rdiscreteBC
-    CALL vecfil_discreteBCsol (rvector)
+    call vecfil_discreteBCsol (rvector)
     
     ! Initialise the solver
-    CALL hc5_initSolver (rproblem)
+    call hc5_initSolver (rproblem)
     
     ! Call the timeloop to solve the problem
-    CALL hc5_timeloop (rproblem,rvector,rrhs)
+    call hc5_timeloop (rproblem,rvector,rrhs)
     
     ! Release the solver, we donÄt need it anymore
-    CALL hc5_doneSolver (rproblem)
+    call hc5_doneSolver (rproblem)
     
     ! Cleanup
-    CALL hc5_doneMatVec (rproblem)
-    CALL hc5_doneBC (rproblem)
-    CALL hc5_doneDiscretisation (rproblem)
-    CALL hc5_doneParamTriang (rproblem)
+    call hc5_doneMatVec (rproblem)
+    call hc5_doneBC (rproblem)
+    call hc5_doneDiscretisation (rproblem)
+    call hc5_doneParamTriang (rproblem)
     
     ! Release memory for level information
-    DEALLOCATE (rproblem%RlevelInfo)
+    deallocate (rproblem%RlevelInfo)
     
     ! Release parameter list
-    CALL collct_deletevalue (rproblem%rcollection,'PARAMS')
-    CALL parlst_done (rparams)
+    call collct_deletevalue (rproblem%rcollection,'PARAMS')
+    call parlst_done (rparams)
     
     ! Release RHS and solution vector
-    CALL lsysbl_releaseVector (rvector)
-    CALL lsysbl_releaseVector (rrhs)
+    call lsysbl_releaseVector (rvector)
+    call lsysbl_releaseVector (rrhs)
 
     ! Print some statistical data about the collection - anything forgotten?
-    CALL output_lbrk ()
-    CALL output_line ('Remaining collection statistics:')
-    CALL output_line ('--------------------------------')
-    CALL output_lbrk ()
-    CALL collct_printStatistics (rproblem%rcollection)
+    call output_lbrk ()
+    call output_line ('Remaining collection statistics:')
+    call output_line ('--------------------------------')
+    call output_lbrk ()
+    call collct_printStatistics (rproblem%rcollection)
     
     ! Finally release the collection.
-    CALL collct_done (rproblem%rcollection)
+    call collct_done (rproblem%rcollection)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

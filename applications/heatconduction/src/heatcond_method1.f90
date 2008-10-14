@@ -31,36 +31,36 @@
 !# </purpose>
 !##############################################################################
 
-MODULE heatcond_method1
+module heatcond_method1
 
-  USE fsystem
-  USE genoutput
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE ucd
-  USE pprocerror
-  USE genoutput
+  use fsystem
+  use genoutput
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use ucd
+  use pprocerror
+  use genoutput
     
-  USE heatcond_callback
+  use heatcond_callback
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE heatcond1
+  subroutine heatcond1
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -84,64 +84,64 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rrhs,rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rrhs,rvector
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_matrixBlock) :: rmatrixBlock
-    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_matrixBlock) :: rmatrixBlock
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A set of variables describing the analytic and discrete boundary
     ! conditions.    
-    TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_discreteBC), TARGET :: rdiscreteBC
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
+    type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX
+    integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    integer :: ierror    
     
     ! Output block for UCD output to GMV file
-    TYPE(t_ucdExport) :: rexport
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata
     
     ! Time step size, number of timesteps.
-    REAL(DP) :: dtstep
-    INTEGER :: ntimesteps
+    real(DP) :: dtstep
+    integer :: ntimesteps
 
     ! Time and time step counter
-    REAL(DP) :: dtime
-    INTEGER :: itimestep
+    real(DP) :: dtime
+    integer :: itimestep
     
     ! Ok, let's start. 
     !
@@ -157,53 +157,53 @@ CONTAINS
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
     
     ! Refine it.
-    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
+    call spdiscr_initBlockDiscr2D (rdiscretisation,1,&
                                    rtriangulation, rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2,rtriangulation, rboundary)
                                    
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrix)
                                      
     ! Use the discretisation to create a solution vector.
     ! Fill it with zero -- that's out initial condition!
-    CALL lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),&
-        rvector,.TRUE.)             
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),&
+        rvector,.true.)             
     
     ! Start the timeloop
-    DO itimestep=1,ntimesteps
+    do itimestep=1,ntimesteps
        
       ! Next time step.
       dtime = dtime + dtstep
       
-      CALL output_separator(OU_SEP_MINUS)
-      CALL output_line ('Time step '//TRIM(sys_siL(itimestep,6))// &
-                        '     Time '//TRIM(sys_sdL(dtime,5)))
-      CALL output_lbrk ()
+      call output_separator(OU_SEP_MINUS)
+      call output_line ('Time step '//trim(sys_siL(itimestep,6))// &
+                        '     Time '//trim(sys_sdL(dtime,5)))
+      call output_lbrk ()
 
       ! STEP 1: Form the right hand side:  dtimestep*f + M u_{old}
       !
@@ -215,8 +215,8 @@ CONTAINS
       ! Discretise the RHS. We simply create a scalar vector 
       ! based on the one and only discretisation structure.
       ! The result is rrhs!
-      CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.TRUE.,rrhs,coeff_RHS)   
+      call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+                                  rlinform,.true.,rrhs,coeff_RHS)   
                                   
 
       ! And now to the entries of the mass matrix. 
@@ -228,14 +228,14 @@ CONTAINS
       rform%Idescriptors(1,1) = DER_FUNC
       rform%Idescriptors(2,1) = DER_FUNC
       
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = 1.0 
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix)
+      call bilf_buildMatrixScalar (rform,.true.,rmatrix)
       
       ! Now form the actual RHS by matrix vector multiplication!
       ! dtimestep*f + M u_{old}
-      CALL lsyssc_scalarMatVec(rmatrix,rvector,rrhs,1.0_DP,dtstep)
+      call lsyssc_scalarMatVec(rmatrix,rvector,rrhs,1.0_DP,dtstep)
       
       ! STEP 2: Assemble the system matrix (M + dtimestep*Laplace)
       !
@@ -248,8 +248,8 @@ CONTAINS
       rform%Idescriptors(2,2) = DER_DERIV_Y
 
       ! In the standard case, we have constant coefficients.
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = dtstep
       rform%Dcoefficients(2)  = dtstep 
 
@@ -258,7 +258,7 @@ CONTAINS
       ! is added to the existing (!) mass matrix!
       ! So this results in (M + dtstep*Laplace), as we set 
       ! the coefficient rform%Dcoefficients to dtstep above!
-      CALL bilf_buildMatrixScalar (rform,.FALSE.,rmatrix)
+      call bilf_buildMatrixScalar (rform,.false.,rmatrix)
       
       ! STEP 3: Create block vectors and boundary conditions.
       !      
@@ -266,9 +266,9 @@ CONTAINS
       ! we created scalar ones. So the next step is to make a 1x1 block
       ! system from the matrices/vectors above which the linear solver
       ! understands.
-      CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
-      CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
-      CALL lsysbl_createVecFromScalar (rvector,rvectorBlock,rdiscretisation)
+      call lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
+      call lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
+      call lsysbl_createVecFromScalar (rvector,rvectorBlock,rdiscretisation)
       
       ! Now we have the raw problem. What is missing is the definition of the boudary
       ! conditions.
@@ -279,7 +279,7 @@ CONTAINS
       !
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
-      CALL bcasm_initDiscreteBC(rdiscreteBC)
+      call bcasm_initDiscreteBC(rdiscreteBC)
       !
       ! We 'know' already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
@@ -289,7 +289,7 @@ CONTAINS
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
-      CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
@@ -300,25 +300,25 @@ CONTAINS
       ! - Discretise the boundary condition so that the BC's can be applied
       !   to matrices and vectors
       ! - Add the calculated discrete BC's to rdiscreteBC for later use.
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
                                
       ! Now to the edge 2 of boundary component 1 the domain.
-      CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
                                
       ! Edge 3 of boundary component 1.
-      CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
       
       ! Edge 4 of boundary component 1. That's it.
-      CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-      CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+      call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues)
 
@@ -334,7 +334,7 @@ CONTAINS
       ! temporary data. Create them using the RHS as template.
       ! Fill the solution vector with 0:
       !CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
-      CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
+      call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
       
       ! Next step is to implement boundary conditions into the RHS,
       ! solution and matrix. This is done using a vector/matrix filter
@@ -342,9 +342,9 @@ CONTAINS
       ! The discrete boundary conditions are already attached to the
       ! vectors/matrix. Call the appropriate vector/matrix filter that
       ! modifies the vectors/matrix according to the boundary conditions.
-      CALL vecfil_discreteBCrhs (rrhsBlock)
-      CALL vecfil_discreteBCsol (rvectorBlock)
-      CALL matfil_discreteBC (rmatrixBlock)
+      call vecfil_discreteBCrhs (rrhsBlock)
+      call vecfil_discreteBCsol (rvectorBlock)
+      call matfil_discreteBC (rmatrixBlock)
       
       ! STEP 6: Solve the system
       !
@@ -360,8 +360,8 @@ CONTAINS
       ! to the solver, so that the solver automatically filters
       ! the vector during the solution process.
       p_RfilterChain => RfilterChain
-      NULLIFY(p_rpreconditioner)
-      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+      nullify(p_rpreconditioner)
+      call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
       
       ! Set the output level of the solver to 2 for some output
       p_rsolverNode%ioutputLevel = 2
@@ -375,79 +375,79 @@ CONTAINS
       ! This doesn't work on all compilers, since the compiler would have
       ! to create a temp array on the stack - which does not always work!
       Rmatrices = (/rmatrixBlock/)
-      CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
+      call linsol_setMatrices(p_RsolverNode,Rmatrices)
       
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      CALL linsol_initStructure (p_rsolverNode, ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-      CALL linsol_initData (p_rsolverNode, ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      call linsol_initStructure (p_rsolverNode, ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      call linsol_initData (p_rsolverNode, ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
       
       ! Finally solve the system. As we want to solve Ax=b with
       ! b being the real RHS and x being the real solution vector,
       ! we use linsol_solveAdaptively. If b is a defect
       ! RHS and x a defect update to be added to a solution vector,
       ! we would have to use linsol_precondDefect instead.
-      CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
+      call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
       
       ! STEP 7: Postprocessing
       !
       ! That's it, rvectorBlock now contains our solution. We can now
       ! start the postprocessing. 
       ! Start UCD export to GMV file:
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                        'gmv/u1.gmv.'//TRIM(sys_si0L(itimestep,5)))
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                        'gmv/u1.gmv.'//trim(sys_si0L(itimestep,5)))
       
-      CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
       
       ! Write the file to disc, that's it.
-      CALL ucd_write (rexport)
-      CALL ucd_release (rexport)
+      call ucd_write (rexport)
+      call ucd_release (rexport)
       
       ! We are finished - but not completely!
       ! Now, clean up so that all the memory is available again.
       !
       ! Release solver data and structure
-      CALL linsol_doneData (p_rsolverNode)
-      CALL linsol_doneStructure (p_rsolverNode)
+      call linsol_doneData (p_rsolverNode)
+      call linsol_doneStructure (p_rsolverNode)
       
       ! Release the solver node and all subnodes attached to it (if at all):
-      CALL linsol_releaseSolver (p_rsolverNode)
+      call linsol_releaseSolver (p_rsolverNode)
       
       ! Release the block matrix/vectors
-      CALL lsysbl_releaseVector (rtempBlock)
-      CALL lsysbl_releaseVector (rvectorBlock)
-      CALL lsysbl_releaseVector (rrhsBlock)
-      CALL lsysbl_releaseMatrix (rmatrixBlock)
+      call lsysbl_releaseVector (rtempBlock)
+      call lsysbl_releaseVector (rvectorBlock)
+      call lsysbl_releaseVector (rrhsBlock)
+      call lsysbl_releaseMatrix (rmatrixBlock)
 
       ! Release the scalar matrix/rhs vector which were used to create
       ! the block matrices/vectors. These must exist as long as the
       ! block matrices/vectors exist, as the block matrices/vectors are
       ! only 'copies' of the scalar ones, sharing the same handles!
-      CALL lsyssc_releaseVector (rrhs)
+      call lsyssc_releaseVector (rrhs)
       
       ! Release our discrete version of the boundary conditions
-      CALL bcasm_releaseDiscreteBC (rdiscreteBC)
+      call bcasm_releaseDiscreteBC (rdiscreteBC)
 
-    END DO
+    end do
     
     ! Release the preallocated matrix and the solution vector.
-    CALL lsyssc_releaseMatrix (rmatrix)
-    CALL lsyssc_releaseVector (rvector)
+    call lsyssc_releaseMatrix (rmatrix)
+    call lsyssc_releaseVector (rvector)
     
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
     
     ! Release the triangulation. 
-    CALL tria_done (rtriangulation)
+    call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
-    CALL boundary_release (rboundary)
+    call boundary_release (rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

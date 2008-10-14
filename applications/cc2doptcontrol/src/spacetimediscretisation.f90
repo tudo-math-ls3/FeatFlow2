@@ -17,36 +17,36 @@
 !#     -> Clean up a space-time discretisation structure.
 !##############################################################################
 
-MODULE spacetimediscretisation
+module spacetimediscretisation
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
-  USE paramlist
-  USE timestepping
-  USE l2projection
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
+  use paramlist
+  use timestepping
+  use l2projection
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
+  use cc2dmediumm2basic
 
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
@@ -54,10 +54,10 @@ MODULE spacetimediscretisation
 
   ! Defines the basic shape of the supersystem which realises the coupling
   ! between all timesteps.
-  TYPE t_ccoptSpaceTimeDiscretisation
+  type t_ccoptSpaceTimeDiscretisation
   
     ! Spatial refinement level of this matrix.
-    INTEGER :: ilevel = 0
+    integer :: ilevel = 0
   
     ! Number of time steps
     !INTEGER :: niterations         = 0
@@ -72,12 +72,12 @@ MODULE spacetimediscretisation
     !REAL(DP) :: dtstep
 
     ! Defines the discretisation in time
-    TYPE(t_timeDiscretisation) :: rtimeDiscr
+    type(t_timeDiscretisation) :: rtimeDiscr
     
     ! Number of time-DOF's. For Theta-schemes, this coincides with
     ! the number of intervals, but for more complicated schemes,
     ! this may differ.
-    INTEGER :: NEQtime = 0
+    integer :: NEQtime = 0
 
     ! Time-stepping scheme;
     ! 0=one step FD scheme (Euler, CN)
@@ -90,30 +90,30 @@ MODULE spacetimediscretisation
     
     ! Regularisation parameter for the control $\alpha$. Must be <> 0.
     ! A value of 0.0 disables the terminal condition.
-    REAL(DP) :: dalphaC = 1.0_DP
+    real(DP) :: dalphaC = 1.0_DP
     
     ! Regularisation parameter for the terminal condition 
     ! $\gamma/2*||y(T)-z(T)||$.
     ! A value of 0.0 disables the terminal condition.
-    REAL(DP) :: dgammaC = 0.0_DP
+    real(DP) :: dgammaC = 0.0_DP
     
     ! Problem-related structure that provides the templates for
     ! matrices/vectors on the spatial level of the matrix.
-    TYPE(t_problem_lvl), POINTER :: p_rlevelInfo
+    type(t_problem_lvl), pointer :: p_rlevelInfo
 
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE sptidis_initDiscretisation (rproblem,ilevelTime,ilevelSpace,&
+  subroutine sptidis_initDiscretisation (rproblem,ilevelTime,ilevelSpace,&
       rspaceTimeDiscr)
   
 !<description>
@@ -123,66 +123,66 @@ CONTAINS
 
 !<input>
   ! The problem structure describing the whole problem.
-  TYPE(t_problem), INTENT(IN), TARGET :: rproblem
+  type(t_problem), intent(IN), target :: rproblem
   
   ! 'Refinement level in time'. =1: Initialise as described in
   ! rproblem. >1: Refine (irefineInTime-1) times regularly in time.
   ! (-> #timesteps * 2**(irefineInTime-1) )
-  INTEGER, INTENT(IN) :: ilevelTime
+  integer, intent(IN) :: ilevelTime
 
   ! 'Refinement level in space'. =1: Calculate on the coarse mesh
   ! >0: calculate on level ilevelSpace. Must be <= rproblem%NLMAX,
   ! >= rproblem%NLMIN.
-  INTEGER, INTENT(IN) :: ilevelSpace
+  integer, intent(IN) :: ilevelSpace
 !</input>
 
 !<inputoutput>
   ! Supersystem-structure to be initialised.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(OUT) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(OUT) :: rspaceTimeDiscr
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: niterations
+    integer :: niterations
 
     ! Copy most relevant data from the problem structure.
     rspaceTimeDiscr%ilevel          = ilevelSpace
     rspaceTimeDiscr%p_rlevelInfo    => rproblem%RlevelInfo(ilevelSpace)
-    niterations = rproblem%rtimedependence%niterations * 2**MAX(0,ilevelTime-1)
+    niterations = rproblem%rtimedependence%niterations * 2**max(0,ilevelTime-1)
     
     ! Initialise the time discretisation
-    SELECT CASE (rproblem%rtimedependence%ctimeStepScheme)
-    CASE (0) 
-      CALL tdiscr_initTheta(&
+    select case (rproblem%rtimedependence%ctimeStepScheme)
+    case (0) 
+      call tdiscr_initTheta(&
           rproblem%rtimedependence%dtimeInit,&
           rproblem%rtimedependence%dtimeMax,&
           niterations,rproblem%rtimedependence%dtimeStepTheta,&
           rspaceTimeDiscr%rtimeDiscr)
-    CASE (2)
-      CALL tdiscr_initdG0(rproblem%rtimedependence%dtimeInit,&
+    case (2)
+      call tdiscr_initdG0(rproblem%rtimedependence%dtimeInit,&
           rproblem%rtimedependence%dtimeMax,&
           niterations, rspaceTimeDiscr%rtimeDiscr)
-    CASE DEFAULT
-      PRINT *,'cc_initParamsSupersystem: Unsupported time discretisation.'
-      CALL sys_halt()
-    END SELECT
+    case DEFAULT
+      print *,'cc_initParamsSupersystem: Unsupported time discretisation.'
+      call sys_halt()
+    end select
     
     ! Save the number of time-DOF's
     rspaceTimeDiscr%NEQtime = tdiscr_igetNDofGlob(rspaceTimeDiscr%rtimeDiscr)
     
-    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+    call parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dalphaC',rspaceTimeDiscr%dalphaC,1.0_DP)
-    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+    call parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dgammaC',rspaceTimeDiscr%dgammaC,0.0_DP)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE sptidis_doneDiscretisation (rspaceTimeDiscr)
+  subroutine sptidis_doneDiscretisation (rspaceTimeDiscr)
   
 !<description>
   ! Cleans up a given space time discrtisation structure.
@@ -190,20 +190,20 @@ CONTAINS
 
 !<inputoutput>
   ! Supersystem-structure to be cleaned up.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(OUT) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(OUT) :: rspaceTimeDiscr
 !</inputoutput>
 
 !</subroutine>
 
     ! Currently there is nothing to do!
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE sptidis_infoDiscretisation (rspaceTimeDiscr)
+  subroutine sptidis_infoDiscretisation (rspaceTimeDiscr)
   
 !<description>
   ! Prints statistical information about a time discretisation.
@@ -211,15 +211,15 @@ CONTAINS
 
 !<inputoutput>
   ! Supersystem-structure to be cleaned up.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
 !</inputoutput>
 
 !</subroutine>
     
-    CALL output_line ('NEQ in time   : '//sys_siL(rspaceTimeDiscr%NEQTime,10))
-    CALL output_line ('NEQ in space  : '//&
+    call output_line ('NEQ in time   : '//sys_siL(rspaceTimeDiscr%NEQTime,10))
+    call output_line ('NEQ in space  : '//&
       sys_siL(dof_igetNDofGlobBlock(rspaceTimeDiscr%p_rlevelInfo%rdiscretisation),10))
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
