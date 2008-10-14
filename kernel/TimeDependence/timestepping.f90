@@ -90,22 +90,22 @@
 !# </purpose>
 !##############################################################################
 
-MODULE timestepping
+module timestepping
 
-  USE fsystem
-  USE genoutput
+  use fsystem
+  use genoutput
 
-  IMPLICIT NONE
+  implicit none
   
 !<constants>
 
 !<constantblock description="Identifiers for time step schemes">
 
   ! Identifier for one step scheme (e.g. Explicit Euler)
-  INTEGER, PARAMETER :: TSCHM_ONESTEP        = 0
+  integer, parameter :: TSCHM_ONESTEP        = 0
   
   ! Identifier for Fractional Step scheme
-  INTEGER, PARAMETER :: TSCHM_FRACTIONALSTEP = 1
+  integer, parameter :: TSCHM_FRACTIONALSTEP = 1
 
 !</constantblock>
 
@@ -146,37 +146,37 @@ MODULE timestepping
   !    = dweightNewRHS*f_n    +  dweightOldRHS*f_n
   !    = dweightStationaryRHS*f_n                    $$
 
-  TYPE t_explicitTimeStepping
+  type t_explicitTimeStepping
   
     ! Time step scheme identifier. One of the TSCHM_xxxx-constants.
     ! Usually TSCHM_ONESTEP for one step schemes
-    INTEGER                  :: ctimestepType = -1
+    integer                  :: ctimestepType = -1
     
     ! Current substep in time step scheme. Normally =1.
     ! For time stepping schemes with multiple substeps (Fractional Step),
     ! this counts the current substep 1..nsubsteps.
-    INTEGER                  :: isubstep
+    integer                  :: isubstep
     
     ! Number of substeps of the time stepping scheme. Normally =1.
     ! For time stepping schemes with multiple substeps (Fractional Step),
     ! this is the number of substeps.
-    INTEGER                  :: nsubsteps
+    integer                  :: nsubsteps
     
     ! Current simulation time, this structure represents
-    REAL(DP)                 :: dcurrentTime
+    real(DP)                 :: dcurrentTime
     
     ! Current simulation time of the macrostep. For standard $\theta$-schemes,
     ! there is dcurrentTime=dtimeMacrostep. For schemes with multiple substeps
     ! like Fractional-Step, dcurrentTime is the current time of the substep, 
     ! while dtimeMacrostep saves the 'last' simulation time stamp with 
     ! "isubstep=1", i.e. the beginning of the 'macrostep'.
-    REAL(DP)                 :: dtimeMacrostep
+    real(DP)                 :: dtimeMacrostep
     
     ! Length of the next time step
-    REAL(DP)                 :: dtstep
+    real(DP)                 :: dtstep
     
     ! Main configuration parameter of the Theta scheme
-    REAL(DP)                 :: dtheta
+    real(DP)                 :: dtheta
     
     ! Theta-scheme identifier for the substeps of the step.
     ! For 1-step schemes:
@@ -184,59 +184,59 @@ MODULE timestepping
     !  =1: Backward Euler,
     !  =0.5: Crank Nicolson.
     ! Special values for Fractional Step.
-    REAL(DP)                 :: dthStep
+    real(DP)                 :: dthStep
     
     ! Weight in front of the matrix on the LHS.
-    REAL(DP)                 :: dweightMatrixLHS
+    real(DP)                 :: dweightMatrixLHS
 
     ! Weight in front of the matrix on the RHS.
-    REAL(DP)                 :: dweightMatrixRHS
+    real(DP)                 :: dweightMatrixRHS
     
     ! Weight to be used in the current time step for the "new" RHS $f_{n+1}$.
-    REAL(DP)                 :: dweightNewRHS
+    real(DP)                 :: dweightNewRHS
 
     ! Weight to be used in the current time step for the "old" RHS $f_{n}$.
-    REAL(DP)                 :: dweightOldRHS
+    real(DP)                 :: dweightOldRHS
     
     ! Weight to be used in the current time step if a stationary RHS is used
     ! (instead of a combination of dweightNewRHS and dweightOldRHS).
-    REAL(DP)                 :: dweightStationaryRHS
+    real(DP)                 :: dweightStationaryRHS
     
     ! "Adjungated" parameter Theta' of the Theta scheme.
     ! Only used internally in the Fractional Step scheme.
     ! Standard = 0.0 = no fractional step used.
-    REAL(DP)                 :: dthetaPrime = 0.0
+    real(DP)                 :: dthetaPrime = 0.0
 
     ! ALPHA-parameter for fractional step. Not used for standard
     ! time stepping scheme.
     ! Only used internally in the Fractional Step scheme.
     ! Standard = 0.0 = no fractional step used.
-    REAL(DP)                 :: dalpha = 0.0
+    real(DP)                 :: dalpha = 0.0
     
     ! BETA-parameter for fractional step. Not used for standard
     ! time stepping scheme.
     ! Only used internally in the Fractional Step scheme.
     ! Standard = 0.0 = no fractional step used.
-    REAL(DP)                 :: dbeta = 0.0
+    real(DP)                 :: dbeta = 0.0
     
     ! Length of the next time step when using an equidistant time
     ! discretisation.
     ! Only used internally.
-    REAL(DP)                 :: dtstepFixed
+    real(DP)                 :: dtstepFixed
     
-  END TYPE
+  end type
 
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   !****************************************************************************
 
 !<function>
 
-  PURE INTEGER FUNCTION timstp_getOrder (rtstepScheme) RESULT(iorder)
+  pure integer function timstp_getOrder (rtstepScheme) result(iorder)
   
 !<description>
   ! This routine analyses the time stepping structure rtstepScheme and returns
@@ -246,7 +246,7 @@ CONTAINS
 
 !<input>
   ! Time stepping structure that describes an explicit time stepping scheme.
-  TYPE(t_explicitTimeStepping), INTENT(IN) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(IN) :: rtstepScheme
 !</input>
 
 !<result>
@@ -255,27 +255,27 @@ CONTAINS
   
 !</function>
 
-    SELECT CASE (rtstepScheme%ctimestepType)
-    CASE (TSCHM_FRACTIONALSTEP)
+    select case (rtstepScheme%ctimestepType)
+    case (TSCHM_FRACTIONALSTEP)
       iorder = 2
-    CASE (TSCHM_ONESTEP)
-      IF (rtstepScheme%dthStep .EQ. 0.5_DP) THEN
+    case (TSCHM_ONESTEP)
+      if (rtstepScheme%dthStep .eq. 0.5_DP) then
         iorder = 2
-      ELSE
+      else
         iorder = 1
-      END IF
-    CASE DEFAULT
+      end if
+    case DEFAULT
       ! Error case
       iorder = 0
-    END SELECT
+    end select
 
-  END FUNCTION
+  end function
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE timstp_init (rtstepScheme, ctimestepType, dtime, dtstep, dtheta)
+  subroutine timstp_init (rtstepScheme, ctimestepType, dtime, dtstep, dtheta)
   
 !<description>
   ! Initialisation of the time stepping scheme. This routine initialises
@@ -285,16 +285,16 @@ CONTAINS
 !<input>
   ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme
   ! or TSCHM_FRACTIONALSTEP for Fractional Step.
-  INTEGER, INTENT(IN)    :: ctimestepType
+  integer, intent(IN)    :: ctimestepType
   
   ! The initial simulational time. 
-  REAL(DP), INTENT(IN)   :: dtime
+  real(DP), intent(IN)   :: dtime
     
   ! (Theoretical) Time step length of the simulation / 'base' step length of the
   ! time stepping scheme.
   ! Might vary from the real time step size by the type of the
   ! scheme. The real time step size is found in rtstepScheme%dtstep.
-  REAL(DP), INTENT(IN)   :: dtstep
+  real(DP), intent(IN)   :: dtstep
 
   ! OPTIONAL: Theta scheme identifier. 
   ! Only used for ctimestepType=TSCHM_ONESTEP.
@@ -303,28 +303,28 @@ CONTAINS
   !  =0.5: Crank Nicolson
   ! Ignored for Fractional step. If not specified, dtheta=1.0 (Backward Euler)
   ! is used in one-step schemes.
-  REAL(DP), INTENT(IN), OPTIONAL   :: dtheta
+  real(DP), intent(IN), optional   :: dtheta
 !</input>
 
 !<output>
   ! The time stepping structure. This is initialised to perform the first
   ! time step.
-  TYPE(t_explicitTimeStepping), INTENT(OUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(OUT) :: rtstepScheme
 !</output>
 
 !</subroutine>
 
-    REAL(DP) :: dtheta1,dthetp1,dalpha,dbeta
+    real(DP) :: dtheta1,dthetp1,dalpha,dbeta
 
     dtheta1 = 1.0
-    IF (PRESENT(dtheta)) dtheta1 = dtheta
+    if (present(dtheta)) dtheta1 = dtheta
 
     ! Standard initialisation of the structure.
     rtstepScheme%isubstep         = 1
     rtstepScheme%dcurrentTime     = dtime
     rtstepScheme%dtimeMacrostep   = dtime
     
-    IF (ctimestepType .NE. TSCHM_FRACTIONALSTEP) THEN
+    if (ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
       
       rtstepScheme%ctimestepType    = TSCHM_ONESTEP
       
@@ -336,7 +336,7 @@ CONTAINS
       rtstepScheme%dtheta           = dtheta1
       rtstepScheme%dthStep          = dtstep * dtheta1
       
-    ELSE
+    else
     
       rtstepScheme%ctimestepType    = TSCHM_FRACTIONALSTEP
 
@@ -363,19 +363,19 @@ CONTAINS
       rtstepScheme%dalpha           = dalpha
       rtstepScheme%dbeta            = dbeta
       
-    END IF
+    end if
 
     ! Initialise the weights for the first time step by calling
     ! timstp_setBaseSteplength with time step length = dtstep
-    CALL timstp_setBaseSteplength (rtstepScheme, dtstep)
+    call timstp_setBaseSteplength (rtstepScheme, dtstep)
     
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE timstp_setBaseSteplength (rtstepScheme, dtstep)
+  subroutine timstp_setBaseSteplength (rtstepScheme, dtstep)
   
 !<description>
   ! Modifies the base step length of the time stepping scheme in rtstepScheme
@@ -390,24 +390,24 @@ CONTAINS
   ! (Theoretical) Time step length of the simulation.
   ! Might vary from the real time step size by the type of the
   ! scheme, which is indicated by rtstepScheme%dtstep
-  REAL(DP), INTENT(IN)   :: dtstep
+  real(DP), intent(IN)   :: dtstep
 !</input>
 
 !<output>
   ! The time stepping structure. This is initialised according to the
   ! new time step length.
-  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
 !</output>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dtheta1,dthetp1,dalpha,dbeta
+    real(DP) :: dtheta1,dthetp1,dalpha,dbeta
     
     ! Set the new step length
     rtstepScheme%dtstepFixed        = dtstep
 
-    IF (rtstepScheme%ctimestepType .NE. TSCHM_FRACTIONALSTEP) THEN
+    if (rtstepScheme%ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
       ! Standard time stepping scheme.
       rtstepScheme%dtstep = dtstep
 
@@ -425,7 +425,7 @@ CONTAINS
       rtstepScheme%dweightOldRHS    = dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightStationaryRHS = dtstep
     
-    ELSE
+    else
 
       ! In case of Fractional step, we have to modify the length of the
       ! current time step according to the substep:
@@ -443,7 +443,7 @@ CONTAINS
       dalpha  = rtstepScheme%dalpha           
       dbeta   = rtstepScheme%dbeta    
       
-      IF (rtstepScheme%isubstep .NE. 2) THEN     
+      if (rtstepScheme%isubstep .ne. 2) then     
 
         ! 1st and 3rd substep
         
@@ -455,7 +455,7 @@ CONTAINS
         rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dbeta * dtheta1
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
 
-      ELSE
+      else
       
         ! 2nd substep
 
@@ -467,17 +467,17 @@ CONTAINS
         rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dalpha * dthetp1
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dthetp1
       
-      END IF
+      end if
       
-    END IF
+    end if
     
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE timstp_nextSubstep (rtstepScheme)
+  subroutine timstp_nextSubstep (rtstepScheme)
   
 !<description>
   ! Advances in time. In rtstepScheme, the current simulation time is increased
@@ -487,22 +487,22 @@ CONTAINS
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>
 
     ! Update simulation time and weights, right after each other.
-    CALL timstp_nextSubstepTime (rtstepScheme)
-    CALL timstp_nextSubstepWeights (rtstepScheme)
+    call timstp_nextSubstepTime (rtstepScheme)
+    call timstp_nextSubstepWeights (rtstepScheme)
 
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE timstp_nextSubstepTime (rtstepScheme)
+  subroutine timstp_nextSubstepTime (rtstepScheme)
   
 !<description>
   ! Advances in time. In rtstepScheme, the current simulation time is increased
@@ -514,25 +514,25 @@ CONTAINS
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>
 
-    IF (rtstepScheme%ctimestepType .LT. 0) THEN
-      CALL output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
-    END IF
+    if (rtstepScheme%ctimestepType .lt. 0) then
+      call output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
+    end if
 
     ! Increase the simulation time
     rtstepScheme%dcurrentTime = rtstepScheme%dcurrentTime + rtstepScheme%dtstep
     
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE timstp_nextSubstepWeights (rtstepScheme)
+  subroutine timstp_nextSubstepWeights (rtstepScheme)
   
 !<description>
   ! Advances the weights of the time step scheme in time. The number of the 
@@ -543,31 +543,31 @@ CONTAINS
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>
 
-    IF (rtstepScheme%ctimestepType .LT. 0) THEN
-      CALL output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
-    END IF
+    if (rtstepScheme%ctimestepType .lt. 0) then
+      call output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
+    end if
 
     ! Increase number of current substep
     rtstepScheme%isubstep = rtstepScheme%isubstep + 1
     
-    IF (rtstepScheme%isubstep .GT. rtstepScheme%nsubsteps) THEN
+    if (rtstepScheme%isubstep .gt. rtstepScheme%nsubsteps) then
       rtstepScheme%isubstep = 1
       ! Set the time with a slightly different approach to prevent rounding errors.
       rtstepScheme%dtimeMacrostep = rtstepScheme%dtimeMacrostep + &
-          REAL(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+          real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
       rtstepScheme%dcurrentTime = rtstepScheme%dtimeMacrostep
-    END IF
+    end if
     
     ! Initialise all weights by calling the timstp_setBaseSteplength routine
     ! with time step length = current time step length, saved in the dtstepFixed
     ! variable of rtstepScheme.
-    CALL timstp_setBaseSteplength (rtstepScheme, rtstepScheme%dtstepFixed)
+    call timstp_setBaseSteplength (rtstepScheme, rtstepScheme%dtstepFixed)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
