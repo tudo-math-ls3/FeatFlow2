@@ -8,18 +8,18 @@
 !# </purpose>
 !##############################################################################
 
-MODULE interpolation
+module interpolation
 
-  USE fsystem
-  USE triangulation
+  use fsystem
+  use triangulation
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
 !<subroutine>
 
-  SUBROUTINE Interpol_Press(DpEl,DpMid,rtriangulation,ipar)
+  subroutine Interpol_Press(DpEl,DpMid,rtriangulation,ipar)
 
   !<description>
     ! This subroutine enables the interpolation of the pressure
@@ -30,9 +30,9 @@ CONTAINS
   !</description>
 
   !<input>
-    TYPE (t_triangulation), INTENT(IN) :: rtriangulation
-    REAL(DP), INTENT(INOUT), DIMENSION(:) :: DpEl,DpMid
-    INTEGER(I32),INTENT(IN) ::  ipar
+    type (t_triangulation), intent(IN) :: rtriangulation
+    real(DP), intent(INOUT), dimension(:) :: DpEl,DpMid
+    integer(I32),intent(IN) ::  ipar
   !</input>
   
   !<output>
@@ -42,41 +42,41 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Kmid, p_Kadj
+  integer(I32), dimension(:,:), pointer :: p_Kmid, p_Kadj
 
-  INTEGER(I32) :: iel,iadj,imid,ive
-  REAL(DP) :: dph
+  integer(I32) :: iel,iadj,imid,ive
+  real(DP) :: dph
 
-  CALL storage_getbase_int2D(rtriangulation%h_IedgesAtElement,p_Kmid)
-  CALL storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,p_Kadj)
+  call storage_getbase_int2D(rtriangulation%h_IedgesAtElement,p_Kmid)
+  call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,p_Kadj)
 
-  IF (ipar == 0) THEN
+  if (ipar == 0) then
 
-    DO iel=1,rtriangulation%NEL
+    do iel=1,rtriangulation%NEL
       dph = DpEl(iel)
 
-      DO ive=1,4
+      do ive=1,4
         iadj=p_Kadj(ive,iel)
         imid=p_Kmid(ive,iel)-rtriangulation%NVT
 
-        IF (iadj == 0) DpMid(imid)=dph
-        IF (iadj >iel) DpMid(imid)=0.5d0*(dph+DpEl(iadj))
+        if (iadj == 0) DpMid(imid)=dph
+        if (iadj >iel) DpMid(imid)=0.5d0*(dph+DpEl(iadj))
 
-      END DO
-    END DO
+      end do
+    end do
 
-  ELSE
+  else
 
-    DO iel=1,rtriangulation%NEL
+    do iel=1,rtriangulation%NEL
       DpEl(iel)=0.25d0*(DpMid(p_Kmid(1,iel)-rtriangulation%NVT)+ &
                         DpMid(p_Kmid(2,iel)-rtriangulation%NVT)+ &
                         DpMid(p_Kmid(3,iel)-rtriangulation%NVT)+ &
                         DpMid(p_Kmid(4,iel)-rtriangulation%NVT))
-    END DO
+    end do
 
-  ENDIF  
+  endif  
 
-  END SUBROUTINE Interpol_Press
+  end subroutine Interpol_Press
 
-END MODULE
+end module
 

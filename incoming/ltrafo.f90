@@ -11,17 +11,17 @@
 !# </purpose>
 !#########################################################################
 
-MODULE transform_basicRoutines
+module transform_basicRoutines
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE  
+  implicit none  
 
-  CONTAINS 
+  contains 
 
 !<function>  
   !REAL(DP) FUNCTION DPO2SG(dpx,dpy,Pstart,Pend)   
-  REAL(DP) FUNCTION pdist_point_StrghtLineSeg(dpx,dpy,Pstart,Pend)     
+  real(DP) function pdist_point_StrghtLineSeg(dpx,dpy,Pstart,Pend)     
       
   !<description>
   ! Determine minimum (Euclidean) distance from a point (dpx,dpy) to 
@@ -33,29 +33,29 @@ MODULE transform_basicRoutines
   !<input>
 
   ! dpx - x-coodinate of point
-  REAL(DP), INTENT(IN) :: dpx 
+  real(DP), intent(IN) :: dpx 
 
   ! dpy - y-coodinate of point
-  REAL(DP), INTENT(IN) :: dpy 
+  real(DP), intent(IN) :: dpy 
 
   ! Pstart - starting point of the line segment.
   !          Pstart(1) = x-coordinate
   !          Pstart(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Pstart 
+  real(DP), dimension(:), intent(IN) :: Pstart 
 
   ! Pend - endpoint of the line segment.
   !        Pend(1) = x-coordinate
   !        Pend(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Pend
+  real(DP), dimension(:), intent(IN) :: Pend
 
   !</input>
   
 !</function>
 
   ! local variables
-  REAL(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
-  REAL(DP) :: dbx,dby,db
-  REAL(DP) :: dvl,dpl
+  real(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
+  real(DP) :: dbx,dby,db
+  real(DP) :: dvl,dpl
 
   dsx1 = Pstart(1)
   dsy1 = Pstart(2)  
@@ -65,7 +65,7 @@ MODULE transform_basicRoutines
   ! Vector Pstart -> Pend and its length
   dvx = dsx2-dsx1
   dvy = dsy2-dsy1
-  dvl = SQRT(dvx*dvx+dvy*dvy)
+  dvl = sqrt(dvx*dvx+dvy*dvy)
 
   ! Vector Pstart -> (dpx,dpy) 
   dwx = dpx-dsx1
@@ -83,26 +83,26 @@ MODULE transform_basicRoutines
   !                
   ! Relative Length >= 1
   ! => Connection between Pend and (dpx,dpy) is shortest distance
-  IF (db.LE.0D0) THEN
-    pdist_point_StrghtLineSeg = SQRT((dpx-dsx1)**2+(dpy-dsy1)**2)
-  ELSE IF (db.GE.1D0) THEN
-    pdist_point_StrghtLineSeg = SQRT((dpx-dsx2)**2+(dpy-dsy2)**2)
-  ELSE
+  if (db.le.0D0) then
+    pdist_point_StrghtLineSeg = sqrt((dpx-dsx1)**2+(dpy-dsy1)**2)
+  else if (db.ge.1D0) then
+    pdist_point_StrghtLineSeg = sqrt((dpx-dsx2)**2+(dpy-dsy2)**2)
+  else
     ! Calculate the projection and the distance to that point.
     ! Remember to take the square root of the distances as they 
     ! are squared...
     dbx = dsx1+dvx*db
     dby = dsy1+dvy*db
-    pdist_point_StrghtLineSeg = SQRT((dpx-dbx)**2+(dpy-dby)**2)
-  ENDIF
+    pdist_point_StrghtLineSeg = sqrt((dpx-dbx)**2+(dpy-dby)**2)
+  endif
 
-  END FUNCTION pdist_point_StrghtLineSeg
+  end function pdist_point_StrghtLineSeg
 
 
 
 !<subroutine>  
   !SUBROUTINE PPO2SG(dpx,dpy,Pstart,Pend,DPARM,DPROJ)
-  SUBROUTINE pproj_point_StrghtLineSeg(dpx,dpy,Pstart,Pend,dparm,Dproj)
+  subroutine pproj_point_StrghtLineSeg(dpx,dpy,Pstart,Pend,dparm,Dproj)
       
   !<description>
   ! Project a point (dpx,dpy) onto a line segment.
@@ -111,20 +111,20 @@ MODULE transform_basicRoutines
   !<input>
 
   ! dpx - x-coodinate of point
-  REAL(DP), INTENT(IN) :: dpx 
+  real(DP), intent(IN) :: dpx 
 
   ! dpy - y-coodinate of point
-  REAL(DP), INTENT(IN) :: dpy 
+  real(DP), intent(IN) :: dpy 
 
   ! Pstart - starting point of the line segment.
   !          Pstart(1) = x-coordinate
   !          Pstart(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Pstart 
+  real(DP), dimension(:), intent(IN) :: Pstart 
 
   ! Pend - endpoint of the line segment.
   !        Pend(1) = x-coordinate
   !        Pend(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Pend
+  real(DP), dimension(:), intent(IN) :: Pend
 
   !</input>
   
@@ -133,20 +133,20 @@ MODULE transform_basicRoutines
   ! Dproj - Projection of (dpx,dpy) onto the line segment.
   !         Dproj(1) = x-coordinate
   !         Dproj(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
 
   ! dparm  - Parameter value of the projected point along the line
   !          segment. Values in [0,1].
   !          Dproj = Pstart + dparm*(Pend-Pstart)
-  REAL(DP), INTENT(OUT) :: dparm  
+  real(DP), intent(OUT) :: dparm  
 
   !</output>
 
 ! </subroutine>
 
   ! local variables
-  REAL(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
-  REAL(DP) :: dvl, dpl
+  real(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
+  real(DP) :: dvl, dpl
 
   dsx1 = Pstart(1)
   dsy1 = Pstart(2)
@@ -156,7 +156,7 @@ MODULE transform_basicRoutines
   ! Vector Pstart -> Pend and its length
   dvx = dsx2-dsx1
   dvy = dsy2-dsy1
-  dvl = SQRT(dvx*dvx+dvy*dvy)
+  dvl = sqrt(dvx*dvx+dvy*dvy)
 
   ! Vector Pstart -> (dpx,dpy) 
   dwx = dpx-dsx1
@@ -174,28 +174,28 @@ MODULE transform_basicRoutines
   !                
   ! Length >= 1
   ! => Point is projected onto the endpoint Pend
-  IF (dparm.LE.0D0) THEN
+  if (dparm.le.0D0) then
     dparm = 0D0
     Dproj(1)=dsx1
     Dproj(2)=dsy1
-  ELSE IF (dparm.GE.1D0) THEN
+  else if (dparm.ge.1D0) then
     dparm = 1D0
     Dproj(1)=dsx2
     Dproj(2)=dsy2
-  ELSE
+  else
     ! Calculate the projection and the distance to that point.
     ! Remember to take the square root of the distances as they 
     ! are squared...
     Dproj(1) = dsx1+dvx*dparm
     Dproj(2) = dsy1+dvy*dparm
-  ENDIF
+  endif
 
-  END SUBROUTINE pproj_point_StrghtLineSeg
+  end subroutine pproj_point_StrghtLineSeg
 
 
 !<function>  
   !REAL(DP) FUNCTION DPO2SL(dpx,dpy,PPT1,PPT2)
-  REAL(DP) FUNCTION pdist_point_StrghtLine(dpx,dpy,Ppt1,Ppt2)
+  real(DP) function pdist_point_StrghtLine(dpx,dpy,Ppt1,Ppt2)
 
   !<description>
   ! Determine minimum (Euclidean) distance from a point (dpx,dpy) to 
@@ -210,29 +210,29 @@ MODULE transform_basicRoutines
   !<input>
 
   ! dpx - x-coodinate of point
-  REAL(DP), INTENT(IN) :: dpx 
+  real(DP), intent(IN) :: dpx 
 
   ! dpy - y-coodinate of point
-  REAL(DP), INTENT(IN) :: dpy 
+  real(DP), intent(IN) :: dpy 
 
   ! Ppt1 - one point of the line segment.
   !          Ppt1(1) = x-coordinate
   !          Ppt1(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt1 
+  real(DP), dimension(:), intent(IN) :: Ppt1 
 
   ! Ppt2   - another point of the line segment. 
   !          Ppt2(1) = x-coordinate
   !          Ppt2(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt2
+  real(DP), dimension(:), intent(IN) :: Ppt2
 
   !</input>
 
 !</function>
        
   ! local variables
-  REAL(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
-  REAL(DP) :: db,dbx,dby
-  REAL(DP) :: dvl,dpl
+  real(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
+  real(DP) :: db,dbx,dby
+  real(DP) :: dvl,dpl
 
   dsx1 = Ppt1(1)
   dsy1 = Ppt1(2)
@@ -242,13 +242,13 @@ MODULE transform_basicRoutines
   ! Vector Pstart -> Pend and its length DC2
   dvx = dsx2-dsx1
   dvy = dsy2-dsy1
-  dvl = SQRT(dvx*dvx+dvy*dvy)
+  dvl = sqrt(dvx*dvx+dvy*dvy)
       
   ! Stop calculation if both points are the same.
-  IF (dvl.EQ.0D0) THEN
+  if (dvl.eq.0D0) then
     pdist_point_StrghtLine = -1
-    RETURN
-  END IF
+    return
+  end if
 
   ! Vector Pstart -> (dpx,dpy) 
    dwx = dpx-dsx1
@@ -261,14 +261,14 @@ MODULE transform_basicRoutines
    db  = dpl/dvl
    dbx = dsx1+dvx*db
    dby = dsy1+dvy*db
-   pdist_point_StrghtLine = SQRT((dpx-dby)**2+(dpy-dby)**2)
+   pdist_point_StrghtLine = sqrt((dpx-dby)**2+(dpy-dby)**2)
 
-   END FUNCTION pdist_point_StrghtLine
+   end function pdist_point_StrghtLine
 
 
 !<subroutine>  
   !SUBROUTINE PPO2SL(dpx,dpy,Ppt1,Ppt2,dparm,Dproj)
-  SUBROUTINE pproj_point_StrghtLine(dpx,dpy,Ppt1,Ppt2,dparm,Dproj)      
+  subroutine pproj_point_StrghtLine(dpx,dpy,Ppt1,Ppt2,dparm,Dproj)      
 
   !<description>
   ! In contrast to pproj_point_StrghtLineSeg the line has no starting/ending point!
@@ -277,20 +277,20 @@ MODULE transform_basicRoutines
   !<input>
 
   ! dpx - x-coodinate of point
-  REAL(DP), INTENT(IN) :: dpx 
+  real(DP), intent(IN) :: dpx 
 
   ! dpy - y-coodinate of point
-  REAL(DP), INTENT(IN) :: dpy 
+  real(DP), intent(IN) :: dpy 
 
   ! Ppt1 - one point of the line segment.
   !          Ppt1(1) = x-coordinate
   !          Ppt1(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt1 
+  real(DP), dimension(:), intent(IN) :: Ppt1 
 
   ! Ppt2   - another point of the line segment. 
   !          Ppt2(1) = x-coordinate
   !          Ppt2(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt2
+  real(DP), dimension(:), intent(IN) :: Ppt2
 
   !</input>
   
@@ -299,20 +299,20 @@ MODULE transform_basicRoutines
   ! Dproj - Projection of (dpx,dpy) onto the line segment.
   !         Dproj(1) = x-coordinate
   !         Dproj(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  real(DP), dimension(:), intent(OUT) :: Dproj
 
   ! dparm  - Parameter value of the projected point along the line
   !          segment. Values in [0,1].
   !          Dproj = Pstart + dparm*(Pend-Pstart)
-  REAL(DP), INTENT(OUT) :: dparm  
+  real(DP), intent(OUT) :: dparm  
 
   !</output>
 
 ! </subroutine>     
 
   ! local variables
-  REAL(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
-  REAL(DP) :: dvl,dpl
+  real(DP) :: dsx1,dsy1,dsx2,dsy2,dvx,dvy,dwx,dwy
+  real(DP) :: dvl,dpl
 
   dsx1 = Ppt1(1)
   dsy1 = Ppt1(2)
@@ -322,13 +322,13 @@ MODULE transform_basicRoutines
   ! Vector Pstart -> Pend and its length DC2
   dvx = dsx2-dsx1
   dvy = dsy2-dsy1
-  dvl = SQRT(dvx*dvx+dvy*dvy)
+  dvl = sqrt(dvx*dvx+dvy*dvy)
 
   ! Stop calculation if both points are the same.
-  IF (dvl.EQ.0D0) THEN
+  if (dvl.eq.0D0) then
     dparm = 1D99
-    RETURN
-  END IF
+    return
+  end if
 
   ! Vector Pstart -> (dpx,dpy) 
   dwx = dpx-dsx1
@@ -342,12 +342,12 @@ MODULE transform_basicRoutines
   Dproj(1) = dsx1+dvx*dparm
   Dproj(2) = dsy1+dvy*dparm
       
-  END SUBROUTINE pproj_point_StrghtLine
+  end subroutine pproj_point_StrghtLine
 
 
 !<function> 
   !INTEGER FUNCTION PTROLN (dpx,dpy,Ppt1,Ppt2)
-  INTEGER FUNCTION ptest_pointRightLeftOnLine(dpx,dpy,Ppt1,Ppt2)
+  integer function ptest_pointRightLeftOnLine(dpx,dpy,Ppt1,Ppt2)
 
   !<description>
   ! Test if a point is right-side of a line
@@ -368,25 +368,25 @@ MODULE transform_basicRoutines
   !<input>
 
   ! dpx - x-coodinate of point
-  REAL(DP), INTENT(IN) :: dpx 
+  real(DP), intent(IN) :: dpx 
 
   ! dpy - y-coodinate of point
-  REAL(DP), INTENT(IN) :: dpy 
+  real(DP), intent(IN) :: dpy 
 
   ! Ppt1 - one point of the line segment.
   !          Ppt1(1) = x-coordinate
   !          Ppt1(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt1 
+  real(DP), dimension(:), intent(IN) :: Ppt1 
 
   ! Ppt2   - another point of the line segment. 
   !          Ppt2(1) = x-coordinate
   !          Ppt2(2) = y-coordinate
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ppt2
+  real(DP), dimension(:), intent(IN) :: Ppt2
 
   !</input>
 
   ! local variables    
-  REAL(DP) :: dnx,dny
+  real(DP) :: dnx,dny
 
   ! To distinguish where the point is, relative to the line, we check
   ! the vector Ppt1->point in relation to the normal vector of the line.
@@ -405,6 +405,6 @@ MODULE transform_basicRoutines
   ! and thus a candidate to serve as a return value of this function!
   ptest_pointRightLeftOnLine = dnx*(dpx-Ppt1(1)) + dny*(dpy-Ppt1(2))
       
-  END FUNCTION ptest_pointRightLeftOnLine 
+  end function ptest_pointRightLeftOnLine 
       
-END MODULE transform_basicRoutines
+end module transform_basicRoutines

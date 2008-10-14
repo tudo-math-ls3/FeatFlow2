@@ -34,25 +34,25 @@
 !# </purpose>
 !#########################################################################
 
-MODULE sort
+module sort
 
-  USE fsystem
+  use fsystem
   
-  IMPLICIT NONE
+  implicit none
   
   !<constants>
   !<constantblock description="">
   
   ! Auxiliary column array size
-  INTEGER, PARAMETER :: SORT_BUFFERSIZE = 100
+  integer, parameter :: SORT_BUFFERSIZE = 100
   
   !</constantblock>
   !</constants>
   
-  CONTAINS
+  contains
 
 !<subroutine>
-  SUBROUTINE sort_vecSort_double (Dx, Dd, Itr, neq)
+  subroutine sort_vecSort_double (Dx, Dd, Itr, neq)
   
   !<description>
     ! Resorts the entries in the vector Dx corresponding to Itr.
@@ -62,33 +62,33 @@ MODULE sort
   !<input>
 
     ! Number of equations
-    INTEGER(I32) :: neq
+    integer(I32) :: neq
   
     ! Source vector to be sorted
-    REAL(DP), DIMENSION(neq), INTENT(IN) :: Dx
+    real(DP), dimension(neq), intent(IN) :: Dx
     
     ! Array with permutation of 1..neq
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr
+    integer(I32), dimension(neq), intent(IN) :: Itr
   !</input>
     
   !<output>
     ! The resorted vector
-    REAL(DP), DIMENSION(neq), INTENT(OUT) :: Dd
+    real(DP), dimension(neq), intent(OUT) :: Dd
   !</output>
     
 !</subroutine>
     
     ! local variable
-    INTEGER(I32) :: ieq
+    integer(I32) :: ieq
     
-    DO ieq=1, neq
+    do ieq=1, neq
       Dd(ieq) = Dx(Itr(ieq))
-    END DO
+    end do
   
-  END SUBROUTINE sort_vecSort_double
+  end subroutine sort_vecSort_double
 
 !<subroutine>
-  SUBROUTINE sort_vecSort_single (Fx, Fd, Itr, neq)
+  subroutine sort_vecSort_single (Fx, Fd, Itr, neq)
   
   !<description>
     ! Resorts the entries in the vector Fx corresponding to Itr.
@@ -98,33 +98,33 @@ MODULE sort
   !<input>
 
     ! Number of equations
-    INTEGER(I32) :: neq
+    integer(I32) :: neq
   
     ! Source vector to be sorted
-    REAL(SP), DIMENSION(neq), INTENT(IN) :: Fx
+    real(SP), dimension(neq), intent(IN) :: Fx
     
     ! Array with permutation of 1..neq
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr
+    integer(I32), dimension(neq), intent(IN) :: Itr
   !</input>
     
   !<output>
     ! The resorted vector
-    REAL(SP), DIMENSION(neq), INTENT(OUT) :: Fd
+    real(SP), dimension(neq), intent(OUT) :: Fd
   !</output>
     
 !</subroutine>
     
     ! local variable
-    INTEGER(I32) :: ieq
+    integer(I32) :: ieq
     
-    DO ieq=1, neq
+    do ieq=1, neq
       Fd(ieq) = Fx(Itr(ieq))
-    END DO
+    end do
   
-  END SUBROUTINE sort_vecSort_single
+  end subroutine sort_vecSort_single
 
 !<subroutine>
-  SUBROUTINE sort_matSort_double (Da, DaH, Icol, IcolH, &
+  subroutine sort_matSort_double (Da, DaH, Icol, IcolH, &
                                   Ild, IldH, Itr1, Itr2, neq)
   
   !<description>
@@ -135,46 +135,46 @@ MODULE sort
   !<input>
     
     ! Number of equations
-    INTEGER(I32), INTENT(IN) :: neq
+    integer(I32), intent(IN) :: neq
     
     ! Source matrix
-    REAL(DP), DIMENSION(:), INTENT(IN) :: DaH
+    real(DP), dimension(:), intent(IN) :: DaH
     
     ! Column structure of source matrix
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IcolH
+    integer(I32), dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(IN) :: IldH
+    integer(I32), dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr1
+    integer(I32), dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr2
+    integer(I32), dimension(neq), intent(IN) :: Itr2
 
   !</input>
     
   !<output>
 
     ! Destination matrix
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: Da
+    real(DP), dimension(:), intent(OUT) :: Da
 
     ! Column structure of destination matrix
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Icol
+    integer(I32), dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(OUT) :: Ild
+    integer(I32), dimension(neq+1), intent(OUT) :: Ild
     
   !</output>
     
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    INTEGER(I32), DIMENSION(SORT_BUFFERSIZE) :: Ih1, Ih2
+    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer(I32), dimension(SORT_BUFFERSIZE) :: Ih1, Ih2
   
     ildIdx = 1
-    DO i=1, neq
+    do i=1, neq
       iidx = Itr1(i)
       Da(ildIdx) = DaH(IldH(iidx))
       Ild(i) = ildIdx
@@ -184,23 +184,23 @@ MODULE sort
       ih1Idx = IldH(iidx)+1
       ih2Idx = IldH(iidx+1)-1
       isize = ih2Idx - ih1Idx + 1
-      DO j=ih1Idx, ih2Idx
+      do j=ih1Idx, ih2Idx
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
-      END DO
-      CALL sort_crSort(Ih1,Ih2,isize)
-      DO j=1, isize
+      end do
+      call sort_crSort(Ih1,Ih2,isize)
+      do j=1, isize
         Da(ildIdx) = DaH(Ih2(j))
         Icol(ildIdx) = Ih1(j) !Achtung: Ist dies so richtig ? Ih1(j)->Ih2(j) ?
         ildIdx = ildIdx + 1
-      END DO
-    END DO
+      end do
+    end do
     Ild(neq+1) = IldH(neq+1)
 
-  END SUBROUTINE sort_matSort_double
+  end subroutine sort_matSort_double
 
 !<subroutine>
-  SUBROUTINE sort_matSort_single (Fa, FaH, Icol, IcolH, &
+  subroutine sort_matSort_single (Fa, FaH, Icol, IcolH, &
                                   Ild, IldH, Itr1, Itr2, neq)
   
   !<description>
@@ -211,46 +211,46 @@ MODULE sort
   !<input>
     
     ! Number of equations
-    INTEGER(I32), INTENT(IN) :: neq
+    integer(I32), intent(IN) :: neq
     
     ! Source matrix
-    REAL(SP), DIMENSION(:), INTENT(IN) :: FaH
+    real(SP), dimension(:), intent(IN) :: FaH
     
     ! Column structure of source matrix
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IcolH
+    integer(I32), dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(IN) :: IldH
+    integer(I32), dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr1
+    integer(I32), dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr2
+    integer(I32), dimension(neq), intent(IN) :: Itr2
 
   !</input>
     
   !<output>
 
     ! Destination matrix
-    REAL(SP), DIMENSION(:), INTENT(OUT) :: Fa
+    real(SP), dimension(:), intent(OUT) :: Fa
 
     ! Column structure of destination matrix
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Icol
+    integer(I32), dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(OUT) :: Ild
+    integer(I32), dimension(neq+1), intent(OUT) :: Ild
     
   !</output>
     
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    INTEGER(I32), DIMENSION(SORT_BUFFERSIZE) :: Ih1, Ih2
+    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer(I32), dimension(SORT_BUFFERSIZE) :: Ih1, Ih2
   
     ildIdx = 1
-    DO i=1, neq
+    do i=1, neq
       iidx = Itr1(i)
       Fa(ildIdx) = FaH(IldH(iidx))
       Ild(i) = ildIdx
@@ -260,23 +260,23 @@ MODULE sort
       ih1Idx = IldH(iidx)+1
       ih2Idx = IldH(iidx+1)-1
       isize = ih2Idx - ih1Idx + 1
-      DO j=ih1Idx, ih2Idx
+      do j=ih1Idx, ih2Idx
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
-      END DO
-      CALL sort_crSort(Ih1,Ih2,isize)
-      DO j=1, isize
+      end do
+      call sort_crSort(Ih1,Ih2,isize)
+      do j=1, isize
         Fa(ildIdx) = FaH(Ih2(j))
         Icol(ildIdx) = Ih1(j) !Achtung: Ist dies so richtig ? Ih1(j)->Ih2(j) ?
         ildIdx = ildIdx + 1
-      END DO
-    END DO
+      end do
+    end do
     Ild(neq+1) = IldH(neq+1)
 
-  END SUBROUTINE sort_matSort_single
+  end subroutine sort_matSort_single
 
 !<subroutine>
-  SUBROUTINE sort_matResort (Icol, IcolH, Ild, IldH, Itr1, Itr2, neq)
+  subroutine sort_matResort (Icol, IcolH, Ild, IldH, Itr1, Itr2, neq)
   
   !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2:
@@ -288,39 +288,39 @@ MODULE sort
   !<input>
 
     ! Number of equations
-    INTEGER(I32) , INTENT(IN) :: neq
+    integer(I32) , intent(IN) :: neq
 
     ! Permutation of 1..neq describing how to resort
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr1
+    integer(I32), dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing how to sort
-    INTEGER(I32), DIMENSION(neq), INTENT(IN) :: Itr2
+    integer(I32), dimension(neq), intent(IN) :: Itr2
 
   !</input>
     
   !<inputoutput>
 
     ! Column description of matrix
-    INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Icol
+    integer(I32), dimension(:), intent(INOUT) :: Icol
 
     ! Row description of matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(INOUT) :: Ild
+    integer(I32), dimension(neq+1), intent(INOUT) :: Ild
     
     ! Column structure of source matrix -> resorted matrix
-    INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: IcolH
+    integer(I32), dimension(:), intent(INOUT) :: IcolH
     
     ! Row positions of source matrix -> resorted matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(INOUT) :: IldH
+    integer(I32), dimension(neq+1), intent(INOUT) :: IldH
     
   !</inputoutput>
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    INTEGER(I32), DIMENSION(SORT_BUFFERSIZE) :: Ih1, Ih2
+    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer(I32), dimension(SORT_BUFFERSIZE) :: Ih1, Ih2
     
     ildIdx = 1
-    DO i=1, neq
+    do i=1, neq
       iidx = Itr2(i)
       Ild(i) = ildIdx
       Icol(ildIdx) = i
@@ -328,22 +328,22 @@ MODULE sort
       ih1Idx = IldH(iidx)+1
       ih2Idx = IldH(iidx+1)-1
       isize = ih2Idx-ih1Idx+1
-      DO j=ih1Idx, Ih2Idx
+      do j=ih1Idx, Ih2Idx
         Ih1(j-ih1Idx+1)=Itr1(IcolH(j))
         Ih2(j-ih1Idx+1)=j
-      END DO
-      CALL sort_crSort(Ih1,Ih2,isize)
-      DO j=1, isize
+      end do
+      call sort_crSort(Ih1,Ih2,isize)
+      do j=1, isize
         Icol(ildIdx) = Ih1(j)
         ildIdx = ildIdx+1
-      END DO
-    END DO
+      end do
+    end do
     Ild(neq+1) = IldH(neq+1) 
   
-  END SUBROUTINE sort_matResort
+  end subroutine sort_matResort
 
 !<subroutine>
-  SUBROUTINE sort_crSort (Ih1, Ih2, nsize)
+  subroutine sort_crSort (Ih1, Ih2, nsize)
   
   !<description>
     ! Performs bubble sort for the vector Ih1 and does the
@@ -353,44 +353,44 @@ MODULE sort
   !<input>
     
     ! number of elements to sort
-    INTEGER(I32), INTENT(IN) :: nsize
+    integer(I32), intent(IN) :: nsize
     
   !</input>
     
   !<inputoutput>
       
     ! column vector
-    INTEGER(I32), DIMENSION(SORT_BUFFERSIZE), INTENT(INOUT) :: Ih1
+    integer(I32), dimension(SORT_BUFFERSIZE), intent(INOUT) :: Ih1
       
     ! row vector
-    INTEGER(I32), DIMENSION(SORT_BUFFERSIZE), INTENT(INOUT) :: Ih2
+    integer(I32), dimension(SORT_BUFFERSIZE), intent(INOUT) :: Ih2
       
   !</inputoutput>
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: iaux, icomp
-    LOGICAL :: bmore
+    integer(I32) :: iaux, icomp
+    logical :: bmore
     
-    bmore = .TRUE.
+    bmore = .true.
     ! While there are swaps necessary...
-    DO WHILE (bmore)
-      bmore = .FALSE.
+    do while (bmore)
+      bmore = .false.
       ! Test for all elements minus the last one
-      DO icomp=1, nsize-1
+      do icomp=1, nsize-1
         ! If the order is correct, othewise swap entries
-        IF (Ih1(icomp) .GT. Ih1(icomp+1)) THEN
+        if (Ih1(icomp) .gt. Ih1(icomp+1)) then
           iaux = Ih1(icomp)
           Ih1(icomp) = Ih1(icomp+1)
           Ih1(icomp+1) = iaux
           iaux = Ih2(icomp)
           Ih2(icomp) = Ih2(icomp+1)
           Ih2(icomp+1) = iaux
-          bmore = .TRUE.
-        ENDIF
-      END DO  
-    END DO
+          bmore = .true.
+        endif
+      end do  
+    end do
   
-  END SUBROUTINE sort_crSort
+  end subroutine sort_crSort
 
-END MODULE
+end module

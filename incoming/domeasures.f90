@@ -1,17 +1,17 @@
-MODULE domeasures
+module domeasures
 
-  USE fsystem
-  USE triangulation
+  use fsystem
+  use triangulation
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE GetMeasure(Nel,Done,Dmeasure)
+  subroutine GetMeasure(Nel,Done,Dmeasure)
 
   !<description>
   ! This subroutine is used in the grid adaption for measuring the  
@@ -20,71 +20,71 @@ CONTAINS
 
   !<input>
   ! Number of elements
-  INTEGER, INTENT(IN) :: Nel
+  integer, intent(IN) :: Nel
   ! Array of element areas
-  REAL(DP), DIMENSION(:), INTENT (IN) :: Done
+  real(DP), dimension(:), intent (IN) :: Done
   !</input>
   
   !<output>
   ! area of the domain
-  REAL(DP), INTENT(OUT) :: Dmeasure
+  real(DP), intent(OUT) :: Dmeasure
   !</output>
 
 !</subroutine>
 
   ! local variables
-  INTEGER(I32) :: i
+  integer(I32) :: i
 
     Dmeasure=0D0
-    DO i=1,Nel
+    do i=1,Nel
       Dmeasure=Dmeasure+Done(i)
-    END DO
+    end do
       
-  END SUBROUTINE GetMeasure
+  end subroutine GetMeasure
 
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE GetAvgSizeElems(rtriangulation,Kcount,Dsize,Dsizem,Dratio)
+  subroutine GetAvgSizeElems(rtriangulation,Kcount,Dsize,Dsizem,Dratio)
 
 !<description>
   ! Calculates the average size of elements surrounding a node and 
   ! normalize it such that 1d0 is the max. over the whole vector dsize
 !</description>
 
- INCLUDE 'cout.inc'
+ include 'cout.inc'
 
 !<input>
-    TYPE (t_triangulation), INTENT(IN) :: rtriangulation
+    type (t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
 !<output>
   ! area of the domain
-  REAL(DP), INTENT(OUT), DIMENSION(:) :: Dratio,Dsizem,Dsize
-  INTEGER(I32), INTENT(OUT), DIMENSION(:):: Kcount
+  real(DP), intent(OUT), dimension(:) :: Dratio,Dsizem,Dsize
+  integer(I32), intent(OUT), dimension(:):: Kcount
 !</output>
 
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Dcorvg
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Kvert
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Kadj
-  INTEGER(I32) :: iel, ivt, ive, jel
-  REAL(DP) :: dax, day, dnx, dny, dnrmn, dpx, dpy, dist, dist2
-  REAL(DP) :: dmaxs, dmins, dquot
+  real(DP), dimension(:,:), pointer :: p_Dcorvg
+  integer(I32), dimension(:,:), pointer :: p_Kvert
+  integer(I32), dimension(:,:), pointer :: p_Kadj
+  integer(I32) :: iel, ivt, ive, jel
+  real(DP) :: dax, day, dnx, dny, dnrmn, dpx, dpy, dist, dist2
+  real(DP) :: dmaxs, dmins, dquot
   
-    CALL storage_getbase_int2D(rtriangulation%h_IverticesAtElement,p_Kvert)
-    CALL storage_getbase_double2D(rtriangulation%h_DcornerCoordinates,p_Dcorvg)
-    CALL storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,p_Kadj)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,p_Kvert)
+    call storage_getbase_double2D(rtriangulation%h_DcornerCoordinates,p_Dcorvg)
+    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,p_Kadj)
 
     ! Initialise the arrays with 0
-    CALL lalg_vectorClearDble (Dsize)
-    CALL lalg_vectorClearInt (Kcount)
+    call lalg_vectorClearDble (Dsize)
+    call lalg_vectorClearInt (Kcount)
 
-    DO iel=1,rtriangulation%NEL
+    do iel=1,rtriangulation%NEL
 
       ! Get first point in quad-element
       dax=p_Dcorvg(1,p_Kvert(1,iel))
@@ -101,12 +101,12 @@ CONTAINS
       ! triangle 1,2,3
       dpx=p_dcorvg(1,p_kvert(2,iel))
       dpy=p_dcorvg(2,p_kvert(2,iel))
-      dist=ABS(dnx*dpx+dny*dpy-dnx*dax-dny*day)
+      dist=abs(dnx*dpx+dny*dpy-dnx*dax-dny*day)
 
       ! triangle 1,3,4
       dpx=p_dcorvg(1,p_kvert(4,iel))
       dpy=p_dcorvg(2,p_kvert(4,iel))
-      dist2=ABS(dnx*dpx+dny*dpy-dnx*dax-dny*day)
+      dist2=abs(dnx*dpx+dny*dpy-dnx*dax-dny*day)
         
       ! Calculate size of the element
       Dsizem(iel)=0.5d0*dnrmn*(dist+dist2)
@@ -123,7 +123,7 @@ CONTAINS
       Kcount(p_Kvert(3,iel))=Kcount(p_Kvert(3,iel))+1
       Kcount(p_Kvert(4,iel))=Kcount(p_Kvert(4,iel))+1
 
-    END DO      
+    end do      
 
     ! Build the average size of the elements around each vertex:
 
@@ -132,35 +132,35 @@ CONTAINS
 
     dmaxs=0d0
     dmins=1d0
-    DO ivt=1,rtriangulation%NVT
-      Dsize(ivt)=Dsize(ivt)/DBLE(Kcount(ivt))
+    do ivt=1,rtriangulation%NVT
+      Dsize(ivt)=Dsize(ivt)/dble(Kcount(ivt))
       dmaxs=max(dmaxs,Dsize(ivt))
       dmins=min(dmins,Dsize(ivt))
-    END DO
+    end do
 
-    DO ivt=1,rtriangulation%NVT
+    do ivt=1,rtriangulation%NVT
       Dsize(ivt)=Dsize(ivt)/dmaxs
-    END DO
+    end do
 
     ! Build the vector with the ratio between the area of each element
     ! and its surrounding elements
 
-    DO iel=1,rtriangulation%NEL
+    do iel=1,rtriangulation%NEL
       Dratio(iel)=0d0
-      DO ive=1,4
+      do ive=1,4
         jel=p_Kadj(ive,iel)
-        IF (jel.ne.0) THEN
+        if (jel.ne.0) then
           ! ratio between area of current and its neighbour element
           dquot=Dsizem(iel)/Dsizem(jel)
-          IF (dquot.lt.1d0) dquot=1d0/dquot
+          if (dquot.lt.1d0) dquot=1d0/dquot
           ! find the maximum ratio
-          IF (dquot.gt.Dratio(iel)) Dratio(iel)=dquot
-        END IF
-      END DO
-    END DO
+          if (dquot.gt.Dratio(iel)) Dratio(iel)=dquot
+        end if
+      end do
+    end do
 
-  END SUBROUTINE GetAvgSizeElems
+  end subroutine GetAvgSizeElems
 
-END MODULE 
+end module 
     
 

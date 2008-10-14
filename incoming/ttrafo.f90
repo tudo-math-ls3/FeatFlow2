@@ -17,16 +17,16 @@
 !# </purpose>
 !#########################################################################
 
-MODULE ttrafo
+module ttrafo
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
   
-  CONTAINS
+  contains
   
 !<subroutine>
-  SUBROUTINE ttrafo_calcBaryCoord (Dcoord, dbary1, dbary2, dbary3, &
+  subroutine ttrafo_calcBaryCoord (Dcoord, dbary1, dbary2, dbary3, &
                                    ddet, dx, dy)
   
   !<description>
@@ -65,24 +65,24 @@ MODULE ttrafo
     
   !<input>
     ! coordinates of the element vertices
-    REAL(DP), DIMENSION(2,3), INTENT(IN) :: Dcoord
+    real(DP), dimension(2,3), intent(IN) :: Dcoord
     
     ! coordinated of the evaluation point
-    REAL(DP), INTENT(IN) :: dx, dy
+    real(DP), intent(IN) :: dx, dy
   !</input>
     
   !<output>
     ! barycentric coordinate values of (x,y)
-    REAL(DP), INTENT(OUT) :: dbary1, dbary2, dbary3
+    real(DP), intent(OUT) :: dbary1, dbary2, dbary3
     
     ! determinant for triangle
-    REAL(DP), INTENT(OUT) :: ddet
+    real(DP), intent(OUT) :: ddet
   !</output>
     
 !</subroutine>
     
     !local variables
-    REAL(DP) :: dax, day, dbx, dby, dcx, dcy, ddetInv
+    real(DP) :: dax, day, dbx, dby, dcx, dcy, ddetInv
     
     dax = Dcoord(1, 1) 
     day = Dcoord(2, 1)
@@ -95,10 +95,10 @@ MODULE ttrafo
     ! http://home.t-online.de/home/nagel.klaus/matdir/bary.htm 
 	
     ddet = dax*(dby-dcy) + dbx*(dcy-day) + dcx*(day-dby)
-    IF (ddet .EQ. 0.0_DP) THEN
-      PRINT *, 'ttrafo_calcBaryCoord: Critical error! Determinant is zero.'
-      STOP
-    END IF
+    if (ddet .eq. 0.0_DP) then
+      print *, 'ttrafo_calcBaryCoord: Critical error! Determinant is zero.'
+      stop
+    end if
     
     ddetInv = 1.0_DP / ddet
     dbary1 = (dx *(dby-dcy)+dbx*(dcy-dx )+dcx*(dy -dby)) * ddetInv 
@@ -106,6 +106,6 @@ MODULE ttrafo
     dbary3 = (dax*(dby-dy )+dbx*(dy -day)+dx *(day-dby)) * ddetInv
 
        
-  END SUBROUTINE ttrafo_calcBaryCoord
+  end subroutine ttrafo_calcBaryCoord
 
-END MODULE
+end module

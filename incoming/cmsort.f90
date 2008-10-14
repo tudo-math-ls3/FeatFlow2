@@ -22,16 +22,16 @@
 !# </purpose>
 !#########################################################################
 
-MODULE cmsort
+module cmsort
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
   
-  CONTAINS
+  contains
 
 !<subroutine>
-  SUBROUTINE cmsort_calcColumnNumbering (Ild, Icol, Icon, Ideg, neq, ndeg)
+  subroutine cmsort_calcColumnNumbering (Ild, Icol, Icon, Ideg, neq, ndeg)
   
     !<description>
     ! Purpose: Cuthill McKee matrix renumbering
@@ -50,21 +50,21 @@ MODULE cmsort
   !<input>
   
     ! Number of equations
-    INTEGER(I32),INTENT(IN)                    :: neq
+    integer(I32),intent(IN)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    INTEGER(I32), INTENT(IN)                   :: ndeg    
+    integer(I32), intent(IN)                   :: ndeg    
    
     ! Row description of matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(IN) :: Ild
+    integer(I32), dimension(neq+1), intent(IN) :: Ild
   
     ! Column description of matrix
-    INTEGER(I32), DIMENSION(:), INTENT(IN)     :: Icol
+    integer(I32), dimension(:), intent(IN)     :: Icol
     
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
     ! INTENT(IN) would create here compiler errors
-    INTEGER(I32), DIMENSION(ndeg)              :: Ideg
+    integer(I32), dimension(ndeg)              :: Ideg
   
   !</input>
   
@@ -74,41 +74,41 @@ MODULE cmsort
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    INTEGER(I32), DIMENSION(:), INTENT(INOUT)  :: Icon
+    integer(I32), dimension(:), intent(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
-    INTEGER(I32) :: idegMin, iidxMin
+    integer(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
+    integer(I32) :: idegMin, iidxMin
   
     ! Clear auxiliary vector
-    DO idegIdx=1, ndeg
+    do idegIdx=1, ndeg
       Ideg(idegIdx) = 0
-    END DO
+    end do
     
     ! Later in the algorithm the column numbers of the non-diagonal
     ! entries are changed. The numbers of the diagonal entries are not
     ! touched. Therefore we copy the column numbers of the diagonal
     ! entries directly.
-    DO ieq=1, neq
+    do ieq=1, neq
       Icon(Ild(ieq)) = Icol(Ild(ieq))
-    END DO
+    end do
     
     ! Loop about all rows in the matrix: ieq = current row.
     ! Every row corresponds to an entry in the solution vector = a node
     ! in the graph of the matrix.
-    DO ieq=1, neq
+    do ieq=1, neq
     
       ! Copy the column numbers of the non-diagonal entries in the current
       ! column to the auxiliary vector Ideg. Ideg contains always the
       ! following nodes of the current node ieq, which are not processed yet.
       ! The entries of the vector are set to 0 one after the other in the
       ! order of the degree of the following nodes.
-      DO ildIdx=Ild(ieq)+1, Ild(ieq+1)-1
+      do ildIdx=Ild(ieq)+1, Ild(ieq+1)-1
         Ideg(ildIdx-Ild(ieq)) = Icol(ildIdx)
-      END DO
+      end do
       
       ! Loop about every column in the current row. The entries in the
       ! row (=column numbers) of the matrix represent the node numbers of
@@ -124,7 +124,7 @@ MODULE cmsort
       ! It's only necessary to search in the non-diagonal entries,
       ! because we want to sort the adjacent nodes of the current one
       ! for increasing degree.
-      DO idegIdx1=1, Ild(ieq+1)-Ild(ieq)-1
+      do idegIdx1=1, Ild(ieq+1)-Ild(ieq)-1
       
         ! iidxMin will receive the index in the Ideg-array of the node with
 	! the smallest degree. We start with node 1 in the current column:
@@ -141,15 +141,15 @@ MODULE cmsort
 	! Otherwise idegMin receives the degree of the node described by
 	! iidxMin, which is calculated by the number of elements in Icol,
 	! i.e. the difference of the indices in the Ild array.
-	IF (Ideg(iidxMin) .EQ. 0) THEN
+	if (Ideg(iidxMin) .eq. 0) then
 	  idegMin = neq
-	ELSE
+	else
 	  idegMin = Ild(Ideg(iidxMin)+1)-Ild(Ideg(iidxMin))-1
-	ENDIF
+	endif
 	
 	! Compare iidxMin with every node in that line to find that with
 	! minimum degree:
-	DO idegIdx2=1, Ild(ieq+1)-Ild(ieq)-1
+	do idegIdx2=1, Ild(ieq+1)-Ild(ieq)-1
 
           ! If Ideg(idegIdx2)=0, idegIdx2 has already been processed. Set
 	  ! idegIdx=neq ; here a lower bound to prevent the current node
@@ -157,20 +157,20 @@ MODULE cmsort
 	  
 	  ! Otherwise set idegIdx to the degree of the node with index
 	  ! idegIdx2
-	  IF (Ideg(idegIdx2) .EQ. 0) THEN
+	  if (Ideg(idegIdx2) .eq. 0) then
 	    idegIdx = neq
-	  ELSE
+	  else
 	    idegIdx = Ild(Ideg(idegIdx2)+1)-Ild(Ideg(idegIdx2))-1
-          ENDIF
+          endif
          
 	  ! If now idegIdx=grad(iidxMin) < grad(idegIdx2)=idegMin set
 	  ! iidxMin to the new node with smaller degree.
-	  IF (idegIdx .LT. idegMin) THEN
+	  if (idegIdx .lt. idegMin) then
 	    iidxMin=idegIdx2
 	    idegMin=idegIdx
-	  ENDIF
+	  endif
 
-	END DO
+	end do
 	
 	! At this point, iidxMin contains the index in Ideg of that node with
 	! minimal degree, which has not yet been processed.
@@ -187,22 +187,22 @@ MODULE cmsort
 	! searching process for nodes with minimum degree.
 	Ideg(iidxMin) = 0
 	
-      END DO
+      end do
       
       ! Clear auxiliary vector; only some entries were used. This is only for
       ! reasons of safetyness, as if the upper loops are processed correctly,
       ! (no nodes were forgotten), all Ideg-arrays should already be 0.
-      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)
+      do idegIdx=1, Ild(ieq+1)-Ild(ieq)
         Ideg(idegIdx) = 0
-      END DO
+      end do
       
     ! Process next line:  
-    END DO 
+    end do 
   
-  END SUBROUTINE cmsort_calcColumnNumbering
+  end subroutine cmsort_calcColumnNumbering
 
 !<subroutine>
-  SUBROUTINE cmsort_calcPermutation (Ild, Icon, neq, Itr1, Itr2)
+  subroutine cmsort_calcPermutation (Ild, Icon, neq, Itr1, Itr2)
   
     !<description>
     !Purpose: Cuthill McKee matrix renumbering
@@ -222,30 +222,30 @@ MODULE cmsort
     !<input>
     
     ! Number of equations
-    INTEGER(I32), INTENT(IN)                   :: neq
+    integer(I32), intent(IN)                   :: neq
     
     ! Row description of matrix
-    INTEGER(I32), DIMENSION(neq+1), INTENT(IN) :: Ild
+    integer(I32), dimension(neq+1), intent(IN) :: Ild
     
     ! Auxiliary vector, calculated with cmsort_calcColumnNumbering
-    INTEGER(I32), DIMENSION(:), INTENT(IN)     :: Icon
+    integer(I32), dimension(:), intent(IN)     :: Icon
     !</input>
     
     !<output>
     
     ! The permutation vector that describes how the solution vector
     ! has to be restored
-    INTEGER(I32), DIMENSION(neq), INTENT(OUT) :: Itr1
+    integer(I32), dimension(neq), intent(OUT) :: Itr1
     
     ! Describes how a resorted vector can be sorted back 
-    INTEGER(I32), DIMENSION(neq), INTENT(OUT) :: Itr2
+    integer(I32), dimension(neq), intent(OUT) :: Itr2
 
     !</output>    
 
   !</subroutine>
     
     ! local variables
-    INTEGER(I32) :: ineqIdx, icount, ildIdx, icolIdx
+    integer(I32) :: ineqIdx, icount, ildIdx, icolIdx
     
 !    DO icount=1, neq
 !      IF (Itr1(icount) .EQ. 0) Itr1(icount) = icount
@@ -293,7 +293,7 @@ MODULE cmsort
     ! Now loop over all nodes (=lines in the matrix). The following loop
     ! processes every node in a kind of quere exactly one time, so it
     ! has neq passes:
-    DO icount=1, neq
+    do icount=1, neq
 
       ! Look at line Itr1(icount) (=0, if a new matrix block starts, like
       ! in the beginning). We look at every element in that line and save
@@ -308,7 +308,7 @@ MODULE cmsort
       ! (i.e. we give the next free number directly), and continue with
       ! processing the neighbours of the corresponding node in the graph
       ! of the matrix.
-      IF (Itr1(icount) .EQ. 0) THEN
+      if (Itr1(icount) .eq. 0) then
 
         ! New block. all previous blocks are contained in line 1..icount-1.
         ! The next line number to fix is therefore icount.          
@@ -327,11 +327,11 @@ MODULE cmsort
         ! The inverse of the entry is calculated in the DO-loop below,
         ! which also increments ineqIdx appropriately.
 
-      END IF
+      end if
 
       ! Now loop about the elements in the line and collect the neighbours
       ! of the corresponding node in the graph:        
-      DO ildIdx=Ild(Itr1(icount)), Ild(Itr1(icount)+1)-1
+      do ildIdx=Ild(Itr1(icount)), Ild(Itr1(icount)+1)-1
 
         ! Collect the column numbers in the current line in the order of
         ! increasing degree of the nodes. icolIdx will receive the column
@@ -341,7 +341,7 @@ MODULE cmsort
         ! Test if we already calculated the permutation for the current node.
         ! For that purpose analyze if the Itr2-entry of the currently
         ! processed neighbour contains a value:
-        IF (Itr2(icolIdx) .EQ. 0) THEN
+        if (Itr2(icolIdx) .eq. 0) then
 
           ! This is a new node, which follows our current node Itr1(icount).
           ! Give it the next free number.
@@ -360,13 +360,13 @@ MODULE cmsort
           ! accessed.
           Itr1(ineqIdx) = icolIdx
 
-        END IF  
+        end if  
 
-      END DO
+      end do
           
-    END DO
+    end do
 
-  END SUBROUTINE cmsort_calcPermutation	  
+  end subroutine cmsort_calcPermutation	  
         
 
-END MODULE
+end module

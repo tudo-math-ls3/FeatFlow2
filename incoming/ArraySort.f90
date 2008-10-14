@@ -15,42 +15,42 @@
 !# </purpose>
 !#########################################################################
 
-MODULE ArraySort
+module ArraySort
 
-  USE fsystem
+  use fsystem
   
-  IMPLICIT NONE
+  implicit none
   
   !<constants>
   !<constantblock description="">
   
   ! Cutoff value for Quicksort and Mergesort
-  INTEGER, PARAMETER :: SORT_CUTOFF = 20
+  integer, parameter :: SORT_CUTOFF = 20
   
   ! Heapsort (bottom up). Dependable allrounder (default)
-  INTEGER, PARAMETER :: SORT_HEAP = 0
+  integer, parameter :: SORT_HEAP = 0
   
   ! Quicksort (randomized, with cutoff), then Insertionsort
-  INTEGER, PARAMETER :: SORT_QUICK = 1
+  integer, parameter :: SORT_QUICK = 1
   
   ! Insertionsort (stable, for small or presorted problems)
-  INTEGER, PARAMETER :: SORT_INSERT = 2
+  integer, parameter :: SORT_INSERT = 2
   
   ! Mergesort (stable)
-  INTEGER, PARAMETER :: SORT_MERGE = 3
+  integer, parameter :: SORT_MERGE = 3
   
   ! Stable sorting algorithm
   ! Defaults to mergesort, but this can change in the future
-  INTEGER, PARAMETER :: SORT_STABLE = 10
+  integer, parameter :: SORT_STABLE = 10
     
   !</constantblock>
   !</constants>
   
-  CONTAINS
+  contains
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex (Ielem, iindex, nnode, nindex, cmethod)
+  subroutine arraySort_sortByIndex (Ielem, iindex, nnode, nindex, cmethod)
     
-    IMPLICIT NONE
+    implicit none
     
   !<description>
     ! Sorting routine for a 2D array Ielem(1..nindex,1..nnode) by
@@ -60,182 +60,182 @@ MODULE ArraySort
     
   !<input>
     ! Number of nodes
-    INTEGER(I32), INTENT(IN) :: nnode
+    integer(I32), intent(IN) :: nnode
     
     ! Number of indices per node
-    INTEGER(I32), INTENT(IN) :: nindex
+    integer(I32), intent(IN) :: nindex
     
     ! Index number by which to sort the nodes
-    INTEGER(I32), INTENT(IN) :: iindex
+    integer(I32), intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+    integer(I32), optional, intent(IN) :: cmethod
   !</input>
         
   !<inputoutput>
     ! 2D array containing the n nodes Ielem(1..nindex,inode)
-    INTEGER(I32), DIMENSION(nindex,nnode), INTENT(INOUT) :: Ielem
+    integer(I32), dimension(nindex,nnode), intent(INOUT) :: Ielem
   !</inputoutput>
 !</subroutine>
         
-    IF (PRESENT(cmethod)) THEN
-      SELECT CASE (cmethod)
-        CASE (SORT_HEAP)
-          CALL heapSort
-        CASE (SORT_QUICK)
-          CALL RANDOM_SEED
-          CALL quickSort(1,nnode)
-          CALL insertSort(1,nnode)
-        CASE (SORT_INSERT)
-          CALL insertSort(1,nnode)
-        CASE (SORT_MERGE,SORT_STABLE)
-          CALL mergeSort(1,nnode)
-        CASE DEFAULT
-          STOP 'arraySort_sortByIndex: unknown Method:' // sys_i6(cmethod)
-      END SELECT
-    ELSE
-      CALL heapSort
-    END IF
+    if (present(cmethod)) then
+      select case (cmethod)
+        case (SORT_HEAP)
+          call heapSort
+        case (SORT_QUICK)
+          call RANDOM_SEED
+          call quickSort(1,nnode)
+          call insertSort(1,nnode)
+        case (SORT_INSERT)
+          call insertSort(1,nnode)
+        case (SORT_MERGE,SORT_STABLE)
+          call mergeSort(1,nnode)
+        case DEFAULT
+          stop 'arraySort_sortByIndex: unknown Method:' // sys_i6(cmethod)
+      end select
+    else
+      call heapSort
+    end if
     
-    CONTAINS
+    contains
 
-    SUBROUTINE reheap(istart, istop)
-      INTEGER(I32), INTENT(IN) :: istart, istop
-      INTEGER(I32)::ielem1, ielem2
-      INTEGER(I32)::i,j, k, idx
+    subroutine reheap(istart, istop)
+      integer(I32), intent(IN) :: istart, istop
+      integer(I32)::ielem1, ielem2
+      integer(I32)::i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
-      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+      do while ((j .le. istop) .and. (j .gt. 0))
         ! Go one level up
         i = j
         ! Sole child => exit loop
-        IF(i .EQ. istop) EXIT
+        if(i .eq. istop) exit
         ! Path of bigger child
-        if(Ielem(iindex,i+1) .GT. Ielem(iindex,i)) i=i+1
+        if(Ielem(iindex,i+1) .gt. Ielem(iindex,i)) i=i+1
         j=ishft(i,1)
-      END DO
+      end do
       ! Search for the correct position along the path
-      DO WHILE ((i .GT. istart) .AND. &
-                (Ielem(iindex,i) .LT. Ielem(iindex,istart)))
+      do while ((i .gt. istart) .and. &
+                (Ielem(iindex,i) .lt. Ielem(iindex,istart)))
         i=ishft(i,-1)
-      END DO
+      end do
       ! Move the nodes
       k=i
-      DO idx=1, nindex
+      do idx=1, nindex
         ielem1=Ielem(idx,istart)
-        DO WHILE (i .GE. istart)
+        do while (i .ge. istart)
           ielem2=Ielem(idx,i)
           Ielem(idx,i)=ielem1
           ielem1=ielem2
           i=ishft(i,-1)
-        END DO
+        end do
         i=k
-      END DO
-    END SUBROUTINE reheap
+      end do
+    end subroutine reheap
 
-    SUBROUTINE heapsort()
+    subroutine heapsort()
     
-      INTEGER(I32) :: i, t
+      integer(I32) :: i, t
       
       ! Heap creation phase (Maxheap)
-      DO i=ishft(nnode,-1), 1, -1
-         CALL reheap(i,nnode)
-      END DO
+      do i=ishft(nnode,-1), 1, -1
+         call reheap(i,nnode)
+      end do
       ! Selection phase
-      DO i=nnode, 2, -1
-        CALL swapNode(1,i)
+      do i=nnode, 2, -1
+        call swapNode(1,i)
         call reheap(1,i-1)
-      END DO
+      end do
     
-    END SUBROUTINE heapsort
+    end subroutine heapsort
     
-    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    recursive subroutine quicksort (ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: l, u, i, j, t
-      REAL(DP) :: r
+      integer(I32) :: l, u, i, j, t
+      real(DP) :: r
       
       l = ilower
       u = iupper
       
-      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+      do while ((u-l) .ge. SORT_CUTOFF)
         ! 1.) Choose pivot
-        CALL RANDOM_NUMBER(r)
-        i = l+FLOOR(r*(u-l+1))
+        call random_number(r)
+        i = l+floor(r*(u-l+1))
         t = Ielem(iindex,i)
-        CALL swapNode(l,i)
+        call swapNode(l,i)
         ! 2.) Partition the field and reposition pivot at index j
         i = l
         j = u
-        DO
+        do
           i = i+1
-          DO WHILE ((i .LT. u) .AND. (Ielem(iindex,i) .LT. t))
+          do while ((i .lt. u) .and. (Ielem(iindex,i) .lt. t))
             i = i+1
-          END DO
-          DO WHILE (Ielem(iindex,j) .GT. t)
+          end do
+          do while (Ielem(iindex,j) .gt. t)
             j = j-1
-          END DO
-          IF (i .GE. j) EXIT
-          CALL swapNode(i,j)
+          end do
+          if (i .ge. j) exit
+          call swapNode(i,j)
           j = j-1
-        END DO
-        CALL swapNode(l,j)
+        end do
+        call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
-        IF ((j-l) .GT. (u-j)) THEN
-          CALL quicksort(j+1,u)
+        if ((j-l) .gt. (u-j)) then
+          call quicksort(j+1,u)
           u = j-1
-        ELSE
-          CALL quicksort(l,j-1)
+        else
+          call quicksort(l,j-1)
           l = j+1
-        END IF
-      END DO
+        end if
+      end do
       
-    END SUBROUTINE quicksort
+    end subroutine quicksort
     
-    SUBROUTINE insertSort(ilower, iupper)
-      INTEGER(I32), INTENT(IN) :: ilower, iupper
+    subroutine insertSort(ilower, iupper)
+      integer(I32), intent(IN) :: ilower, iupper
       
-      INTEGER(I32) :: i, j, k, idx, t, istop
+      integer(I32) :: i, j, k, idx, t, istop
       
       istop = ilower-1
-      DO i=ilower+1, iupper
+      do i=ilower+1, iupper
         t = Ielem(iindex,i)
         j = i-1
-        DO WHILE (Ielem(iindex,j) .GT. t)
+        do while (Ielem(iindex,j) .gt. t)
           j = j-1
-          IF (j .EQ. istop) EXIT
-        END DO
+          if (j .eq. istop) exit
+        end do
         j = j+1
         ! Ringshift of Ielem(:,j:i) to the right
-        CALL circShiftRight(j,i)
+        call circShiftRight(j,i)
         
-      END DO
+      end do
     
-    END SUBROUTINE insertSort
+    end subroutine insertSort
     
-    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    recursive subroutine mergesort(ilow, ihigh)
     
       ! A modification of an algorithm by
       ! Jason Harrison, University of
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      integer(I32), intent(IN) :: ilow, ihigh
       
-      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
       
       
       ! Nothing to sort
-      IF (ilow .GE. ihigh) RETURN
+      if (ilow .ge. ihigh) return
       
-      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+      if ((ihigh-ilow) .lt. SORT_CUTOFF) then
         call insertsort(ilow, ihigh)
-	RETURN
-      ENDIF
+	return
+      endif
       
       ilo = ilow
       ihi = ihigh
@@ -244,56 +244,56 @@ MODULE ArraySort
       imid = (ilo+ihi)/2
       
       ! Recursive sorting with mergesort
-      CALL mergesort(ilow,      imid)
-      CALL mergesort(imid+1, ihigh )
+      call mergesort(ilow,      imid)
+      call mergesort(imid+1, ihigh )
       
       ! Merge the two sorted lists in a stable way
       istart_hi = imid+1
       iend_lo = imid
-      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
-        IF (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) THEN
+      do while ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+        if (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) then
 	  ilo = ilo+1
-	ELSE
-	  CALL circShiftRight(ilo, istart_hi)
+	else
+	  call circShiftRight(ilo, istart_hi)
 	  ilo = ilo+1
 	  iend_lo = iend_lo+1
 	  istart_hi = istart_hi+1
-	ENDIF
-      END DO
+	endif
+      end do
     
-    END SUBROUTINE mergesort
+    end subroutine mergesort
 
-    SUBROUTINE swapNode(i,j)
+    subroutine swapNode(i,j)
       ! Swaps node Ielem(:,i) and Ielem(:,j)
       
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: idx, t
+      integer(I32) :: idx, t
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t            = Ielem(idx,i)
         Ielem(idx,i) = Ielem(idx,j)
         Ielem(idx,j) = t
-      END DO
+      end do
       
-    END SUBROUTINE swapNode
+    end subroutine swapNode
 
-    SUBROUTINE circShiftRight(j,i)
+    subroutine circShiftRight(j,i)
       ! Circular shift of Ielem(:,j:i) one to the right
-      INTEGER(I32), INTENT(IN) :: i, j
+      integer(I32), intent(IN) :: i, j
       
-      INTEGER(I32) :: k, t, idx
+      integer(I32) :: k, t, idx
       
-      DO idx=1, nindex
+      do idx=1, nindex
         t = Ielem(idx,i)
-        DO k=i, j+1, -1
+        do k=i, j+1, -1
           Ielem(idx,k) = Ielem(idx,k-1)
-        END DO
+        end do
         Ielem(idx,j) = t
-      END DO 
+      end do 
       
-    END SUBROUTINE circShiftRight
+    end subroutine circShiftRight
 
-  END SUBROUTINE arraySort_sortByIndex
+  end subroutine arraySort_sortByIndex
 
-END MODULE
+end module

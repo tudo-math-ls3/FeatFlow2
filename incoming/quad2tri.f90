@@ -4,19 +4,19 @@
 ! 2) KVERT - its analog
 ! 3) create a module => include
 
-MODULE quad2tri
+module quad2tri
 
-  USE triangulation
+  use triangulation
 
-  IMPLICIT NONE  
+  implicit none  
 
   ! include statement
-  INCLUDE 'cbasictria.inc'
+  include 'cbasictria.inc'
 
-  CONTAINS 
+  contains 
 
 !<subroutine>    
-  SUBROUTINE quadToTriang_aux1 (nel, Kvert_quad, Kvert_triang)
+  subroutine quadToTriang_aux1 (nel, Kvert_quad, Kvert_triang)
 
     !<description>
     ! Purpose: Convert quad mesh to triangular mesh
@@ -28,30 +28,30 @@ MODULE quad2tri
 
   !<input>
     !nel    : Number of quad elements
-    INTEGER,INTENT(IN)                    :: nel	
+    integer,intent(IN)                    :: nel	
 
     !Kvert_quad : array [1..4,1..nel] of integer
     !         KVERT structure of the quad mesh
-    INTEGER(I32), DIMENSION(:,:), INTENT(IN)  :: Kvert_quad
+    integer(I32), dimension(:,:), intent(IN)  :: Kvert_quad
   !</input>
 
   !<output>
     !Kvert_triang : array [1..4,1..2*nel] of integer
     !         KVERT structure of the tri mesh
-    INTEGER(I32), DIMENSION(:,:), INTENT(OUT)  :: Kvert_triang
+    integer(I32), dimension(:,:), intent(OUT)  :: Kvert_triang
   !</output>
 !</subroutine>
   
     ! local variables
-    INTEGER :: i
+    integer :: i
       
     ! Copy the old KVERT two times, once to the first half and
     ! once to the second half of Kvert_triang:
-    CALL LCP3(Kvert_quad,Kvert_triang,TRIA_MAXNVE2D*nel)
-    CALL LCP3(Kvert_quad,Kvert_triang(1,nel+1),TRIA_MAXNVE2D*nel)
+    call LCP3(Kvert_quad,Kvert_triang,TRIA_MAXNVE2D*nel)
+    call LCP3(Kvert_quad,Kvert_triang(1,nel+1),TRIA_MAXNVE2D*nel)
 
     ! Correct both halfes of Kvert_triang:
-    DO i=1,nel
+    do i=1,nel
       !Set the 4th entry in the first half of Kvert_triang to 0.
       !So the first triangle in each QUAD element consists of the
       !first three vertices 1..3.
@@ -65,8 +65,8 @@ MODULE quad2tri
       Kvert_triang(4,nel+i) = 0
         
       !That's it.
-    END DO
+    end do
       
-  END SUBROUTINE quadToTriang_aux1 
+  end subroutine quadToTriang_aux1 
 
-END MODULE quad2tri
+end module quad2tri

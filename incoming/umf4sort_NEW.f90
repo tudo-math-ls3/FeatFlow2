@@ -11,17 +11,17 @@
 !# </purpose>
 !##############################################################################
 
-MODULE umf4sort
+module umf4sort
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
 !<subroutine>
 
-  SUBROUTINE sortCSR (Da, Kcol, Kld, neq)
+  subroutine sortCSR (Da, Kcol, Kld, neq)
 
 !<description>
 
@@ -37,38 +37,38 @@ CONTAINS
 
   ! On input:  the matrix entries/column numbers to be resorted
   ! On output: the resorted matrix entries/column numbers
-  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da
-  INTEGER(PREC_MATRIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
-  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
+  real(DP), dimension(:), intent(INOUT) :: Da
+  integer(PREC_MATRIDX), dimension(:), intent(INOUT) :: Kcol
+  integer(PREC_VECIDX), dimension(:), intent(IN) :: Kld
 
   ! Dimension of the matrix
-  INTEGER(I32), INTENT(IN) :: neq
+  integer(I32), intent(IN) :: neq
 
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: aux
-  INTEGER(I32) :: i, j
+  real(DP) :: aux
+  integer(I32) :: i, j
 
   ! loop through each row
-  DO i = 1, neq
+  do i = 1, neq
 
     ! Take the diagonal element
     aux = Da(Kld(i))
 
     ! Loop through each column in this row.
     ! Shift every entry until the diagonal is reached.
-    DO j = Kld(i)+1, Kld(i+1)-1
+    do j = Kld(i)+1, Kld(i+1)-1
 
       ! Check if we reached the position of the diagonal entry...
-      IF (Kcol(J)>i) EXIT
+      if (Kcol(J)>i) exit
 
         Kcol(j-1) = KCOL(j)
         Da(j-1) = Da(j)
 
-    END DO
+    end do
 
     ! If we have reached the diagonal, we can stop and save our
     ! diagonal entry from the first position there. The rest of the
@@ -78,15 +78,15 @@ CONTAINS
     Kcol(j-1) = i
     Da(j-1) = aux
 
-  END DO
+  end do
           
-  END SUBROUTINE
+  end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE M7IDSH (Kcol,Kld,neq)
+  subroutine M7IDSH (Kcol,Kld,neq)
 
 !<description>
 
@@ -100,34 +100,34 @@ CONTAINS
 
   ! On input:  the matrix column/row numbers to be shifted
   ! On output: the shifted matrix column/row numbers
-  INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Kcol, Kld
+  integer(I32), dimension(:), intent(INOUT) :: Kcol, Kld
 
   ! Dimension of the matrix
-  INTEGER(I32), INTENT(IN) :: neq
+  integer(I32), intent(IN) :: neq
 
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER(I32) :: i, na
+  integer(I32) :: i, na
        
     na = Kld(neq+1)-1
       
-    DO I=1,na
+    do I=1,na
     Kcol (i) = Kcol(i)-1
-    END DO
+    end do
 
-    DO i=1,neq+1
+    do i=1,neq+1
     Kld(i) = Kld(i)-1
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
       
 
 !<subroutine>
 
-  SUBROUTINE M7IDSB (KCOL,KLD,NEQ)
+  subroutine M7IDSB (KCOL,KLD,NEQ)
 
 !<description>
 
@@ -141,28 +141,28 @@ CONTAINS
 
   ! On input:  the matrix column/row numbers to be shifted
   ! On output: the shifted matrix column/row numbers
-  INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Kcol, Kld
+  integer(I32), dimension(:), intent(INOUT) :: Kcol, Kld
 
   ! Dimension of the matrix
-  INTEGER(I32), INTENT(IN) :: neq
+  integer(I32), intent(IN) :: neq
 
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER(I32) :: i, na
+  integer(I32) :: i, na
 
   na = Kld(neq+1)
 
-  DO i=1,na
+  do i=1,na
     Kcol (i) = Kcol(i)+1
-  END DO
+  end do
 
-  DO i=1,neq+1
+  do i=1,neq+1
     Kld(i) = Kld(i)+1
-  END DO
+  end do
 
-  END SUBROUTINE
+  end subroutine
   
-  END MODULE
+  end module

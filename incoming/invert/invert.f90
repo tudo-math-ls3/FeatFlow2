@@ -1,13 +1,13 @@
-MODULE inv
-  IMPLICIT NONE
+module inv
+  implicit none
 
-  INTEGER, PARAMETER :: DP=8
+  integer, parameter :: DP=8
 
-CONTAINS
+contains
 
 !<subroutine>
 
-SUBROUTINE invert(Da,Df,Dx,ndim,ipar)
+subroutine invert(Da,Df,Dx,ndim,ipar)
   
   !<description>
   
@@ -25,22 +25,22 @@ SUBROUTINE invert(Da,Df,Dx,ndim,ipar)
 
   !<input>
 
-  REAL(DP), DIMENSION(ndim), INTENT(IN) :: Df
-  INTEGER, INTENT(IN) :: ndim,ipar
+  real(DP), dimension(ndim), intent(IN) :: Df
+  integer, intent(IN) :: ndim,ipar
 
   !</input>
 
 
   !<inputoutput>
   
-  REAL(DP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Da
+  real(DP), dimension(ndim,ndim), intent(INOUT) :: Da
 
   !</inputoutput>
 
 
   !<output>
   
-  REAL(DP), DIMENSION(ndim), INTENT(OUT) :: Dx
+  real(DP), dimension(ndim), intent(OUT) :: Dx
   
   !</output>
 
@@ -48,108 +48,108 @@ SUBROUTINE invert(Da,Df,Dx,ndim,ipar)
 
 
   ! local variables
-  REAL(DP), DIMENSION(ndim,ndim) :: Db
-  REAL(DP), DIMENSION(ndim) :: Dpiv
-  INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+  real(DP), dimension(ndim,ndim) :: Db
+  real(DP), dimension(ndim) :: Dpiv
+  integer, dimension(ndim) :: Kindx,Kindy
   
-  REAL(DP) :: dpivot,daux
-  INTEGER :: idim1,idim2,idim3,ix,iy,indx,indy,info
+  real(DP) :: dpivot,daux
+  integer :: idim1,idim2,idim3,ix,iy,indx,indy,info
     
-  SELECT CASE (ipar)
-  CASE (0)
+  select case (ipar)
+  case (0)
      ! Perform factorization of matrix Da
      
      ! Initialization
      Kindx=0;  Kindy=0
      
-     DO idim1=1,ndim
+     do idim1=1,ndim
         
         ! Determine pivotal element
         dpivot=0
         
-        DO iy=1,ndim
-           IF (Kindy(iy) /= 0) CYCLE
+        do iy=1,ndim
+           if (Kindy(iy) /= 0) cycle
            
-           DO ix=1,ndim
-              IF (Kindx(ix) /= 0) CYCLE
+           do ix=1,ndim
+              if (Kindx(ix) /= 0) cycle
               
-              IF (ABS(Da(ix,iy)) .LE. ABS(dpivot)) CYCLE
+              if (abs(Da(ix,iy)) .le. abs(dpivot)) cycle
               dpivot=Da(ix,iy);  indx=ix;  indy=iy
-           END DO
-        END DO
+           end do
+        end do
         
         ! Return if pivotal element is zero
-        IF (ABS(dpivot) .LE. 0._DP) RETURN
+        if (abs(dpivot) .le. 0._DP) return
         
         Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP/dpivot
         
-        DO idim2=1,ndim
-           IF (idim2 == indy) CYCLE 
+        do idim2=1,ndim
+           if (idim2 == indy) cycle 
            Da(1:indx-1,   idim2)=Da(1:indx-1,   idim2)-Da(1:indx-1,   indy)*Da(indx,idim2)/dpivot
            Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim,indy)*Da(indx,idim2)/dpivot
-        END DO
+        end do
         
-        DO ix=1,ndim
-           IF (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
-        END DO
+        do ix=1,ndim
+           if (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
+        end do
         
-        DO iy=1,ndim
-           IF (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
-        END DO
-     END DO
+        do iy=1,ndim
+           if (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
+        end do
+     end do
      
-     DO ix=1,ndim
-        IF (Kindx(ix) == ix) CYCLE
+     do ix=1,ndim
+        if (Kindx(ix) == ix) cycle
         
-        DO iy=1,ndim
-           IF (Kindx(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+           if (Kindx(iy) == ix) exit
+        end do
         
-        DO idim1=1,ndim
+        do idim1=1,ndim
            daux=Da(ix,idim1);  Da(ix,idim1)=Da(iy,idim1);  Da(iy,idim1)=daux
-        END DO
+        end do
         
         Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
-     END DO
+     end do
         
-     DO ix=1,ndim
-        IF (Kindy(ix) == ix) CYCLE
+     do ix=1,ndim
+        if (Kindy(ix) == ix) cycle
         
-        DO iy=1,ndim
-           IF (Kindy(iy) == ix) EXIT
-        END DO
+        do iy=1,ndim
+           if (Kindy(iy) == ix) exit
+        end do
         
-        DO idim1=1,ndim
+        do idim1=1,ndim
            daux=Da(idim1,ix);  Da(idim1,ix)=Da(idim1,iy);  Da(idim1,iy)=daux
-        END DO
+        end do
         
         Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
-     END DO
+     end do
          
 
-  CASE (1)    
+  case (1)    
      ! Perform inversion of Da to solve the Da * Dx = Df
-     DO idim1=1,ndim
+     do idim1=1,ndim
         Dx(idim1)=0
-        DO idim2=1,ndim
+        do idim2=1,ndim
            Dx(idim1)=Dx(idim1)+Da(idim1,idim2)*Df(idim2)
-        END DO
-     END DO
+        end do
+     end do
 
-  CASE (2)
+  case (2)
      ! Solve the dense linear system Ax=f calling LAPACK routine
      
-     SELECT CASE(ndim)
-     CASE (2)
+     select case(ndim)
+     case (2)
         ! Explicit formula for 2x2 system
         Db(1,1)= Da(2,2)
         Db(2,1)=-Da(2,1)
         Db(1,2)=-Da(1,2)
         Db(2,2)= Da(1,1)
         daux=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-        Dx=MATMUL(Db,Df)/daux
+        Dx=matmul(Db,Df)/daux
         
-     CASE (3)
+     case (3)
         ! Explicit formula for 3x3 system
         Db(1,1)=Da(2,2)*Da(3,3)-Da(2,3)*Da(3,2)
         Db(2,1)=Da(2,3)*Da(3,1)-Da(2,1)*Da(3,3)
@@ -163,9 +163,9 @@ SUBROUTINE invert(Da,Df,Dx,ndim,ipar)
         daux=Da(1,1)*Da(2,2)*Da(3,3)+Da(2,1)*Da(3,2)*Da(1,3)+ &
              Da(3,1)*Da(1,2)*Da(2,3)-Da(1,1)*Da(3,2)*Da(2,3)- &
              Da(3,1)*Da(2,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
-        Dx=MATMUL(Db,Df)/daux
+        Dx=matmul(Db,Df)/daux
 
-     CASE (4)
+     case (4)
         ! Explicit formula for 4x4 system
         Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2,4)*Da(3,2)*Da(4,3)- &
              Da(2,2)*Da(3,4)*Da(4,3)-Da(2,3)*Da(3,2)*Da(4,4)-Da(2,4)*Da(3,3)*Da(4,2)
@@ -207,15 +207,15 @@ SUBROUTINE invert(Da,Df,Dx,ndim,ipar)
              Da(1,2)*Da(2,1)*Da(3,3)*Da(4,4)-Da(1,2)*Da(2,3)*Da(3,4)*Da(4,1)-Da(1,2)*Da(2,4)*Da(3,1)*Da(4,3)- &
              Da(1,3)*Da(2,1)*Da(3,4)*Da(4,2)-Da(1,3)*Da(2,2)*Da(3,1)*Da(4,4)-Da(1,3)*Da(2,4)*Da(3,2)*Da(4,1)- &
              Da(1,4)*Da(2,1)*Da(3,2)*Da(4,3)-Da(1,4)*Da(2,2)*Da(3,3)*Da(4,1)-Da(1,4)*Da(2,3)*Da(3,1)*Da(4,2)
-        Dx=MATMUL(Db,Df)/daux
+        Dx=matmul(Db,Df)/daux
                  
-     CASE DEFAULT
+     case DEFAULT
         ! Use LAPACK routine for general NxN system, where N>4
         Dpiv=0; Dx=Df
-        CALL DGESV(ndim,1,Da,ndim,Dpiv,Dx,ndim,info)
+        call DGESV(ndim,1,Da,ndim,Dpiv,Dx,ndim,info)
 
-     END SELECT
-  END SELECT
-END SUBROUTINE invert
+     end select
+  end select
+end subroutine invert
 
-END MODULE inv
+end module inv

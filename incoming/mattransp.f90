@@ -25,16 +25,16 @@
 !# </purpose>
 !#########################################################################
 
-MODULE mattransp
+module mattransp
 
-  USE fsystem
+  use fsystem
   
-  IMPLICIT NONE
+  implicit none
   
-  CONTAINS
+  contains
   
 !<subroutine>
-  SUBROUTINE mattransp_transposeMatrixStructure (nrow, ncol, Icol, Irow, &
+  subroutine mattransp_transposeMatrixStructure (nrow, ncol, Icol, Irow, &
                                                  Itmp, IcolDest, IrowDest)
   
   !<description>
@@ -47,68 +47,68 @@ MODULE mattransp
     
   !<input>
     ! Number of rows in the source matrix
-    INTEGER(I32), INTENT(IN) :: nrow
+    integer(I32), intent(IN) :: nrow
     
     ! Number of columns in the source matrix
-    INTEGER(I32), INTENT(IN) :: ncol
+    integer(I32), intent(IN) :: ncol
     
     ! Column structure of the source matrix
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Icol
+    integer(I32), dimension(:), intent(IN) :: Icol
     
     ! Row structure of the source matrix
-    INTEGER(I32), DIMENSION(nrow+1), INTENT(IN) :: Irow
+    integer(I32), dimension(nrow+1), intent(IN) :: Irow
   !</input>
     
   !<output>
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IcolDest
+    integer(I32), dimension(:), intent(OUT) :: IcolDest
 
     ! Row structure of the destination matrix
-    INTEGER(I32), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
+    integer(I32), dimension(ncol+1), intent(OUT) :: IrowDest
   !</output>
     
   !<inputoutput>
     ! Auxiliary array of size ncol
-    INTEGER(I32), DIMENSION(ncol), INTENT(INOUT) :: Itmp
+    integer(I32), dimension(ncol), intent(INOUT) :: Itmp
   !</inputoutput>
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, isize, icolumn, ncolumn
+    integer(I32) :: i, j, isize, icolumn, ncolumn
     
     ! determin the number of matrix entries
     isize = Irow(nrow+1)-1
     
     ! clear row struxture of the destination matrix
-    DO i=1, ncol+1
+    do i=1, ncol+1
       IrowDest(i) = 0
-    END DO
+    end do
     
     ! Count how many entries <> 0 are in each column. Note this into
     ! the IrowDest array shifted by 1.
-    DO i=1, isize
+    do i=1, isize
       IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
-    END DO
+    end do
     
     ! Now build the final IrowDest by adding up the IrowDest entries.
     IrowDest(1) = 1
-    DO i=1, ncol+1
+    do i=1, ncol+1
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
-    END DO
+    end do
     
     ! Now IcolDest must be created. This requires another loop trough
     ! the matrix structure. Itmp receives the index of how many entries
     ! have been written to each row.
     
     ! clear auxiliary vector
-    DO i=1, ncol
+    do i=1, ncol
       Itmp(i) = 0
-    END DO
+    end do
 
-    DO i=1, nrow
+    do i=1, nrow
       ncolumn = Irow(i+1)-Irow(i)
-      DO j=1, ncolumn
+      do j=1, ncolumn
         ! Get the column of the item in question -> new row number.
         icolumn = Icol(Irow(i)+j-1)
         ! Rows get columns by transposing, therefore note i as column
@@ -116,13 +116,13 @@ MODULE mattransp
         IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
         ! Increment running index of that row
         Itmp(icolumn) = Itmp(icolumn)+1
-      END DO
-    END DO
+      end do
+    end do
     
-  END SUBROUTINE mattransp_transposeMatrixStructure
+  end subroutine mattransp_transposeMatrixStructure
 
 !<subroutine>
-  SUBROUTINE mattransp_transposeMatrix (nrow, ncol, Da, Icol, Irow, &
+  subroutine mattransp_transposeMatrix (nrow, ncol, Da, Icol, Irow, &
                                         Itmp, DaDest, IcolDest, IrowDest)
   
   !<description>
@@ -135,75 +135,75 @@ MODULE mattransp
     
   !<input>
     ! Number of rows in the source matrix
-    INTEGER(I32), INTENT(IN) :: nrow
+    integer(I32), intent(IN) :: nrow
     
     ! Number of columns in the source matrix
-    INTEGER(I32), INTENT(IN) :: ncol
+    integer(I32), intent(IN) :: ncol
     
     ! The entries of the source matrix
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Da
+    real(DP), dimension(:), intent(IN) :: Da
     
     ! Column structure of the source matrix
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Icol
+    integer(I32), dimension(:), intent(IN) :: Icol
     
     ! Row structure of the source matrix
-    INTEGER(I32), DIMENSION(nrow+1), INTENT(IN) :: Irow
+    integer(I32), dimension(nrow+1), intent(IN) :: Irow
   !</input>
     
   !<output>
     ! The entries of the destination matrix
     ! The array must be of the same size as Da or Icol
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: DaDest
+    real(DP), dimension(:), intent(OUT) :: DaDest
     
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IcolDest
+    integer(I32), dimension(:), intent(OUT) :: IcolDest
 
     ! Row structure of the destination matrix
-    INTEGER(I32), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
+    integer(I32), dimension(ncol+1), intent(OUT) :: IrowDest
   !</output>
     
   !<inputoutput>
     ! Auxiliary array of size ncol
-    INTEGER(I32), DIMENSION(ncol), INTENT(INOUT) :: Itmp
+    integer(I32), dimension(ncol), intent(INOUT) :: Itmp
   !</inputoutput>
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, isize, icolumn, ncolumn
+    integer(I32) :: i, j, isize, icolumn, ncolumn
     
     ! determin the number of matrix entries
     isize = Irow(nrow+1)-1
     
     ! clear row struxture of the destination matrix
-    DO i=1, ncol+1
+    do i=1, ncol+1
       IrowDest(i) = 0
-    END DO
+    end do
     
     ! Count how many entries <> 0 are in each column. Note this into
     ! the IrowDest array shifted by 1.
-    DO i=1, isize
+    do i=1, isize
       IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
-    END DO
+    end do
     
     ! Now build the final IrowDest by adding up the IrowDest entries.
     IrowDest(1) = 1
-    DO i=1, ncol+1
+    do i=1, ncol+1
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
-    END DO
+    end do
     
     ! Now IcolDest must be created. This requires another loop trough
     ! the matrix structure. Itmp receives the index of how many entries
     ! have been written to each row.
     
     ! clear auxiliary vector
-    DO i=1, ncol
+    do i=1, ncol
       Itmp(i) = 0
-    END DO
+    end do
 
-    DO i=1, nrow
+    do i=1, nrow
       ncolumn = Irow(i+1)-Irow(i)
-      DO j=1, ncolumn
+      do j=1, ncolumn
         ! Get the column of the item in question -> new row number.
         icolumn = Icol(Irow(i)+j-1)
         ! Rows get columns by transposing, therefore note i as column
@@ -213,13 +213,13 @@ MODULE mattransp
         DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
         ! Increment running index of that row
         Itmp(icolumn) = Itmp(icolumn)+1
-      END DO
-    END DO
+      end do
+    end do
     
-  END SUBROUTINE mattransp_transposeMatrix
+  end subroutine mattransp_transposeMatrix
 
 !<subroutine>
-  SUBROUTINE mattransp_pivotizeMatrix (neq, Da, Icol, Irow, berror)
+  subroutine mattransp_pivotizeMatrix (neq, Da, Icol, Irow, berror)
   
   !<description>
     ! This routine repivots a matrix in structure 7: The diagonal element
@@ -228,59 +228,59 @@ MODULE mattransp
     
   !<input>
     ! Number of rows/columns/equations
-    INTEGER(I32), INTENT(IN) :: neq
+    integer(I32), intent(IN) :: neq
   !</input>
   
   !<output>
     ! If .TRUE. a diagonal element was not found
-    LOGICAL, OPTIONAL, INTENT(OUT) :: berror
+    logical, optional, intent(OUT) :: berror
   !</output>
         
   !<inputoutput>
     ! Matrix entries
-    REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da
+    real(DP), dimension(:), intent(INOUT) :: Da
     
     ! Matrix column structure
-    INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Icol
+    integer(I32), dimension(:), intent(INOUT) :: Icol
     
     ! Matrix row structure
-    INTEGER(I32), DIMENSION(neq+1), INTENT(INOUT) :: Irow
+    integer(I32), dimension(neq+1), intent(INOUT) :: Irow
   !</inputoutput>
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j
-    LOGICAL :: bnodiag
+    integer(I32) :: i, j
+    logical :: bnodiag
     
-    bnodiag = .FALSE.
+    bnodiag = .false.
     
     ! Loop through the rows
-    DO i=1, neq
+    do i=1, neq
       ! Is the line already pivoted? Most unlikely, but we test for sure
-      IF (Icol(Irow(i)) .NE. i) THEN
+      if (Icol(Irow(i)) .ne. i) then
 
         ! Find the position of the diagonal element
-        bnodiag = .TRUE.
-        DO j=Irow(i), Irow(i+1)-1
-          IF (j .EQ. i) THEN
-            bnodiag = .FALSE.
-            EXIT
-          END IF
-        END DO
+        bnodiag = .true.
+        do j=Irow(i), Irow(i+1)-1
+          if (j .eq. i) then
+            bnodiag = .false.
+            exit
+          end if
+        end do
         ! Oops, diagonal element not found - cancel
-        IF (bnodiag) EXIT
+        if (bnodiag) exit
         
         ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
         ! This puts the diagonal element to the front
         ! The same operation is also done for Da(Irow(i):j)
-        Icol(Irow(i):j) = CSHIFT(Icol(Irow(i):j),-1)
-        Da  (Irow(i):j) = CSHIFT(Da  (Irow(i):j),-1)
-      END IF
-    END DO
+        Icol(Irow(i):j) = cshift(Icol(Irow(i):j),-1)
+        Da  (Irow(i):j) = cshift(Da  (Irow(i):j),-1)
+      end if
+    end do
 
     ! Report error status
-    IF (PRESENT(berror)) berror = bnodiag    
+    if (present(berror)) berror = bnodiag    
   
-  END SUBROUTINE mattransp_pivotizeMatrix
+  end subroutine mattransp_pivotizeMatrix
 
-END MODULE
+end module
