@@ -419,6 +419,10 @@ CONTAINS
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
+    rnonlinearCCMatrix%p_rmatrixD1 => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD1
+    rnonlinearCCMatrix%p_rmatrixD2 => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
         
