@@ -856,13 +856,11 @@ CONTAINS
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           CALL conv_jumpStabilisation2d (&
-                              rvector, rvector, dvecWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))   
 
           IF (.NOT. bshared) THEN
             CALL conv_jumpStabilisation2d (&
-                                rvector, rvector, dvecWeight, 0.0_DP,&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
           END IF
@@ -897,13 +895,11 @@ CONTAINS
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           CALL conv_jumpStabilisation2d (&
-                              rvector, rvector, dvecWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))   
 
           IF (.NOT. bshared) THEN
             CALL conv_jumpStabilisation2d (&
-                                rvector, rvector, dvecWeight, 0.0_DP,&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
           END IF
@@ -1367,7 +1363,6 @@ CONTAINS
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           CALL conv_jumpStabilisation2d (&
-                              rvector, rvector, dvectorWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),&
                               rsolution=rvector,rdefect=rdefect)   
@@ -1410,18 +1405,9 @@ CONTAINS
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           CALL conv_jumpStabilisation2d (&
-                              rvector, rvector, dvectorWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),&
                               rsolution=rvector,rdefect=rdefect)   
-
-          IF (.NOT. bshared) THEN
-            CALL conv_jumpStabilisation2d (&
-                                rvector, rvector, dvectorWeight, 0.0_DP,&
-                                rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(2,2),&
-                                rsolution=rvector,rdefect=rdefect)   
-          END IF
 
         CASE DEFAULT
           ! No stabilisation
