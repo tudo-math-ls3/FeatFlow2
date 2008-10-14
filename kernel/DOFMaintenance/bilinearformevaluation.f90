@@ -167,15 +167,19 @@ contains
         
       case (BILF_MATC_EDGEBASED)
       
-        if (rdiscretisationTest%ccomplexity .eq. SPDISC_UNIFORM) then
-          call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
-            rdiscretisationTest,imem)
-        else
-          call output_line ('Edge-based matrix constrution only for'//&
-                  ' uniform discr., supported.', &
-                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
-          call sys_halt()
+        if (present(rdiscretisationTest)) then
+      
+          if (rdiscretisationTest%ccomplexity .ne. SPDISC_UNIFORM) then
+            call output_line ('Edge-based matrix constrution only for'//&
+                    ' uniform discr., supported.', &
+                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+            call sys_halt()
+          end if
+        
         end if
+
+        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+            rdiscretisationTest,imem)
         
       case DEFAULT
         call output_line ('Invalid matrix construction method.', &
@@ -195,15 +199,17 @@ contains
 
       case (BILF_MATC_EDGEBASED)
       
-        if (rdiscretisationTest%ccomplexity .eq. SPDISC_UNIFORM) then
-          call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
-            rdiscretisationTest,imem)
-        else
-          call output_line ('Edge-based matrix constrution only for'//&
-                  ' uniform discr., supported.', &
-                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
-          call sys_halt()
+        if (present(rdiscretisationTest)) then
+          if (rdiscretisationTest%ccomplexity .eq. SPDISC_UNIFORM) then
+            call output_line ('Edge-based matrix constrution only for'//&
+                    ' uniform discr., supported.', &
+                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+            call sys_halt()
+          end if
         end if
+        
+        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+          rdiscretisationTest,imem)
         
       case DEFAULT
         call output_line ('Invalid matrix construction method.', &
@@ -1266,7 +1272,7 @@ contains
     rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
     rmatrixScalar%bidenticalTrialAndTest = .false.
   else
-    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTrial
     rmatrixScalar%bidenticalTrialAndTest = .true.
   end if
   rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9

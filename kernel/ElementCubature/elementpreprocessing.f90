@@ -135,20 +135,25 @@ contains
   integer, intent(IN) :: ctrafoType
   
   ! OPTIONAL: A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the 
-  ! points where to evaluate. These coordinates define on the reference the 
-  ! coordinates of the cubature points where to evaluate the element.
+  ! points where to evaluate. These coordinates define on the reference element 
+  ! the coordinates of the cubature points where to evaluate the element.
   ! DIMENSION(ndimension,npointsPerElement)
+  ! This array specifies the evaluation points for exactly one element
+  ! and can be used if the coordinates of the evaluation points are the
+  ! same for all elements. In contrast, DpointsRef may specify different points
+  ! on all elements.
   ! Ignored if EL_EVLTAG_REFPOINTS is not specified in cevaluationTag.
   real(DP), dimension(:,:), optional :: Dpoints
   
-  ! OPTIONAL: An array with coordinates of the points where to evaluate,
-  ! on the reference element. For each element, a set of points can be
-  ! specified here.
+  ! OPTIONAL: An array with coordinates of all points for all the elements
+  ! where to evaluate -- relative to the reference element. 
+  ! For each element, a set of points can be specified here.
   ! A pointer to this array is saved in the revalElementSet structure. The array
   ! is assumed to be maintained by the caller.
   !
   ! If not specified, the routine will automatically set up that array
-  ! using Dpoints.
+  ! using Dpoints (i.e. the coordinates of Dpoints are 'distributed' to
+  ! all elements described by DpointsRef).
   real(DP), dimension(:,:,:), target, optional :: DpointsRef
 
   ! OPTIONAL: An array with coordinates of the points where to evaluate,
@@ -181,6 +186,7 @@ contains
     integer :: ndimRef,ndim,nverticesPerElement,nelements,npointsPerElement
     integer(I32), dimension(:), pointer :: p_ItwistIndexEdge
     integer(PREC_ELEMENTIDX) :: iel,ielidx
+    logical :: bemptyArray
     
     ! Fetch some information
     ndimRef = trafo_igetReferenceDimension(ctrafoType)
@@ -331,18 +337,30 @@ contains
     ! Coordinates on the reference element are always necessary.
     if ((iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) .or. &   
         (iand(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .ne. 0)) then
+        
+      ! Create an empty array for the points if necessary.
       if (.not. associated(revalElementSet%p_DpointsRef)) then
         allocate(revalElementSet%p_DpointsRef(ndimRef,npointsPerElement,nelements))
+        bemptyArray = .true.
+      else 
+        bemptyArray = .false.
       end if
       
-      ! Calculate the coordinates on the reference element
+      ! Calculate the coordinates on the reference element if not given.
       if (iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) then
-        if (.not. present(Dpoints)) then
+        if (present(Dpoints)) then
+          ! Distribute the given points from Dpoints to the array DpointsRef
+          call calc_refCoords (&
+              revalElementSet%p_DpointsRef,Dpoints,npointsPerElement,nelements)
+        else if (bemptyArray) then
+          ! That is a mistake by the programmer!
+          ! If we have just created revalElementSet%p_DpointsRef,
+          ! the Dpoints array must be given, otherwise the memory
+          ! would stay uninitialised!
           call output_line ('Dpoints not specified!', &
               OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
+          call sys_halt()
         end if
-        call calc_refCoords (&
-            revalElementSet%p_DpointsRef,Dpoints,npointsPerElement,nelements)
       end if
     end if
     

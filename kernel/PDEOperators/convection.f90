@@ -31,59 +31,54 @@
 !#        Extended method compared to conv_streamlinediffusion3d.
 !#        Allows to assemble the Newton matrix directly.
 !#
-!# Some auxiliary routines:
-!#
-!# 1.) conv_ueoJumpStabil_double_uni
-!#     -> Adds the Unified Edge Oriented stabilisation to a scalar matrix
-!#        which is discretised based on a uniform discretisation.
-!#
 !# </purpose>
 !##############################################################################
 
-MODULE convection
+module convection
 
-  USE fsystem
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE cubature
-  USE vectorio
-  USE matrixio
-  USE domainintegration
-  USE bilinearformevaluation
-  USE statistics
-  USE geometryaux
+  use fsystem
+  use linearsystemscalar
+  use linearsystemblock
+  use cubature
+  use vectorio
+  use matrixio
+  use domainintegration
+  use bilinearformevaluation
+  use statistics
+  use geometryaux
+  use jumpstabilisation
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Constants for cdef parameter of convection routine">
 
   ! Modify the matrix
-  INTEGER, PARAMETER :: CONV_MODMATRIX = 2**0
+  integer, parameter :: CONV_MODMATRIX = 2**0
   
   ! Set up defect vector
-  INTEGER, PARAMETER :: CONV_MODDEFECT = 2**1
+  integer, parameter :: CONV_MODDEFECT = 2**1
   
   ! Set up both, matrix and defect vector
-  INTEGER, PARAMETER :: CONV_MODBOTH   = CONV_MODMATRIX+CONV_MODDEFECT
+  integer, parameter :: CONV_MODBOTH   = CONV_MODMATRIX+CONV_MODDEFECT
 
 !</constantblock>
 
 !<constantblock description="Constants that define the upwind type">
 
   ! Standard Samarskji or simple upwind.
-  INTEGER, PARAMETER :: CONV_UPW_SAMARSKJI = 0
+  integer, parameter :: CONV_UPW_SAMARSKJI = 0
   
 !</constantblock>
 
 !<constantblock description="Constants that define the jump stabilisation type">
 
   ! No jump stabilisation
-  INTEGER, PARAMETER :: CONV_JUMP_NONE        = 0
+  integer, parameter :: CONV_JUMP_NONE        = 0
   
   ! Unified edge jump stabilisation
-  INTEGER, PARAMETER :: CONV_JUMP_UNIFIEDEDGE = 1
+  integer, parameter :: CONV_JUMP_UNIFIEDEDGE = 1
   
 !</constantblock>
 
@@ -94,79 +89,79 @@ MODULE convection
 !<typeblock>
   
   ! Configuration block for standard UPWIND scheme.
-  TYPE t_convUpwind
+  type t_convUpwind
   
     ! Type of upwind. One of the CONV_UPW_xxxx constants.
     ! CONV_UPW_SAMARSKJI: Standard Samarskji or simple-type upwind
-    INTEGER :: cupwType = CONV_UPW_SAMARSKJI
+    integer :: cupwType = CONV_UPW_SAMARSKJI
     
     ! Stabilisation parameter.
     ! If cupwType=CONV_UPW_SAMARSKJI:
     !  -1.0 = simple Upwind,
     !  >= 0:  Samarskji upwind with parameter $\theta=$ dupsam.
     !         Standard value = 0.1.
-    REAL(DP) :: dupsam = 0.1_DP
+    real(DP) :: dupsam = 0.1_DP
     
     ! Whether the viscosity is constant.
-    LOGICAL :: bconstViscosity = .TRUE.
+    logical :: bconstViscosity = .TRUE.
     
     ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant.
     ! We set this to infinity, what quickly leads to a program crash if the
     ! application does not initialise that properly!
-    REAL(DP) :: dnu = SYS_INFINITY
+    real(DP) :: dnu = SYS_INFINITY
     
     ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
     ! For time-dependent problems, this can be set to the step size
     ! in the $\Theta$-scheme.
-    REAL(DP) :: dtheta = 1.0_DP
+    real(DP) :: dtheta = 1.0_DP
     
     ! Whether to use the ALE method for computing the convective operator.
-    LOGICAL :: bALE = .FALSE.
+    logical :: bALE = .FALSE.
     
-  END TYPE
+  end type
   
 !</typeblock>
 
 !<typeblock>
   
   ! Configuration block for Streamline Diffusion discretisation scheme
-  TYPE t_convStreamlineDiffusion
+  type t_convStreamlineDiffusion
   
     ! Stabilisation parameter.
     ! Standard value = 1.0_DP
     ! Note: A value of 0.0_DP sets up the convection part without
     ! any stabilisation (central-difference like discretisation).
-    REAL(DP) :: dupsam = 1.0_DP
+    real(DP) :: dupsam = 1.0_DP
     
     ! Whether the viscosity is constant.
-    LOGICAL :: bconstViscosity = .TRUE.
+    logical :: bconstViscosity = .TRUE.
     
     ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-    REAL(DP) :: dnu = 1.0_DP
+    real(DP) :: dnu = 1.0_DP
     
     ! Weighting factor for the mass matrix.
     ! =0.0: don't incorporate mass matrix into the operator.
-    REAL(DP) :: dalpha = 0.0_DP
+    real(DP) :: dalpha = 0.0_DP
     
     ! Weighting factor for the Stokes matrix. (Stokes matrix = dnu*Laplace)
     ! =0.0: don't incorporate Stokes matrix into the operator.
-    REAL(DP) :: dbeta = 0.0_DP
+    real(DP) :: dbeta = 0.0_DP
     
     ! Weighting factor for the convective part.
     ! =0.0: don't incorporate convective part (=Stokes problem)
     ! =1.0: incorporate full convective part (=Navier Stokes problem)
-    REAL(DP) :: ddelta = 1.0_DP
+    real(DP) :: ddelta = 1.0_DP
     
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
     ! in the $\Theta$-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
-    REAL(DP) :: dtheta = 1.0_DP
+    real(DP) :: dtheta = 1.0_DP
     
     ! Weighting factor for the Newton matrix (Frechet derivative $\cdot\Nabla u$ of
     ! the convective operator $u\Nabla u$, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
-    REAL(DP) :: dnewton = 0.0_DP
+    real(DP) :: dnewton = 0.0_DP
     
     ! Calculation of local H.
     ! In 3D, there are 2 different methods to calculate the local H which
@@ -174,68 +169,68 @@ MODULE convection
     ! =0: Use the cube-root of the volume of the hexahedron as local H
     ! =1: Use the length of the way that a particle travels through
     !     the hexahedron in direction of the flow
-    INTEGER :: clocalH = 1
+    integer :: clocalH = 1
     
     ! Whether to use the ALE method for computing the convective operator.
-    LOGICAL :: bALE = .FALSE.
+    logical :: bALE = .FALSE.
     
-  END TYPE
+  end type
   
 !</typeblock>
 
 !<typeblock>
 
   ! Parameter block for Jump stabilisation
-  TYPE t_jumpStabilisation
+  type t_jumpStabilisation
   
     ! Whether the viscosity is constant.
-    LOGICAL :: bconstViscosity = .TRUE.
+    logical :: bconstViscosity = .TRUE.
     
     ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-    REAL(DP) :: dnu            = 1.0_DP
+    real(DP) :: dnu            = 1.0_DP
     
     ! Line integral cubature formula for discretising the Jump.
     ! One of the CUB_xxxx_1D-constants of the cubature.f90 module.
     ! Standard is Gauss 2-point formula.
-    INTEGER               :: ccubType = CUB_G2_1D
+    integer               :: ccubType = CUB_G2_1D
   
     ! Type of Jump stabilisation.
     ! One of the CONV_JUMP_xxxx-constants. Standard is unified edge
     ! stabilisation.
-    INTEGER               :: cjump = CONV_JUMP_UNIFIEDEDGE
+    integer               :: cjump = CONV_JUMP_UNIFIEDEDGE
   
     ! 1st Relaxation parameter for the Jump stabilisation.
     ! =0.0: No Jump stabilisation
     ! >0.0: Add Jump stabilisation with relaxation parameter dgamma=djump.
-    REAL(DP)              :: dgamma = 0.01_DP
+    real(DP)              :: dgamma = 0.01_DP
 
     ! 2nd Relaxation parameter for the Jump stabilisation.
     ! =0.0: No Jump stabilisation
     ! >0.0: Add Jump stabilisation with relaxation parameter dgammastar
-    REAL(DP)              :: dgammastar = 0.01_DP
+    real(DP)              :: dgammastar = 0.01_DP
   
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
     ! in the $\Theta$-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
-    REAL(DP)              :: dtheta = 1.0_DP
+    real(DP)              :: dtheta = 1.0_DP
     
-  END TYPE
+  end type
 !</typeblock>
 
 !</types>
 
-  PRIVATE :: getLocalMeshWidthQuad,getLocalDeltaQuad,intersectLines2D
-  PRIVATE :: getLocalMeshWidthHexa,getHexaVolume
-  PRIVATE :: getLocalDeltaHexaVol, getLocalDeltaHexaRay
+  private :: getLocalMeshWidthQuad,getLocalDeltaQuad,intersectLines2D
+  private :: getLocalMeshWidthHexa,getHexaVolume
+  private :: getLocalDeltaHexaVol, getLocalDeltaHexaRay
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
- SUBROUTINE conv_upwind2d (rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
+ subroutine conv_upwind2d (rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
                            IvelocityComp)
@@ -272,19 +267,19 @@ CONTAINS
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
+  type(t_vectorBlock), intent(IN), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
+  type(t_vectorBlock), intent(IN), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
+  real(DP), intent(IN) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
+  real(DP), intent(IN) :: dsecWeight
   
   ! Configuration block for the upwind scheme
-  TYPE(t_convUpwind), INTENT(IN) :: rconfig
+  type(t_convUpwind), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -293,22 +288,22 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
   
-  ! OPTIONAL: Mesh velocity field.
+  ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
 
-  ! OPTIONAL: 
+  ! optional: 
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
   ! rsolution / rdefect is the X-velocity and which one is the Y-velocity.
   !  IvelocityComp(1) gives the number of the X-velocity (usually = 1),
@@ -316,7 +311,7 @@ CONTAINS
   ! If not present, IvelocityComp=(/1,2/) is assumed, thus the X-velocity
   ! must be in rsolution\%RvectorBlock(1) and the Y-velocity in
   ! rsolution\%RvectorBlock(2).
-  INTEGER, DIMENSION(2), INTENT(IN), OPTIONAL :: IvelocityComp
+  integer, dimension(2), intent(IN), optional :: IvelocityComp
 !</input>
 
 !<inputoutput>
@@ -324,162 +319,162 @@ CONTAINS
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX) :: i
-    INTEGER, DIMENSION(2) :: Icomp
-    TYPE(t_vectorScalar), POINTER :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
-    TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
-    REAL(DP), DIMENSION(:), POINTER :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
+    integer(PREC_ELEMENTIDX) :: i
+    integer, dimension(2) :: Icomp
+    type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
+    type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
+    real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
+    real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
     
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'UPWIND: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (rconfig%bALE) THEN
-      IF (.NOT. PRESENT(DmeshVelocity)) THEN
+    if (rconfig%bALE) then
+      if (.NOT. PRESENT(DmeshVelocity)) then
         PRINT *,'UPWIND: Mesh velocity vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get the actual subvectors from the velocity vectors that define
     ! the X- and Y-velocity.
-    IF (PRESENT(IvelocityComp)) THEN
+    if (PRESENT(IvelocityComp)) then
       Icomp = IvelocityComp
-    ELSE
+    else
       Icomp = (/1,2/)
-    END IF
+    end if
     
     p_rvelX1 => rvecPrimary%RvectorBlock(Icomp(1))
     p_rvelY1 => rvecPrimary%RvectorBlock(Icomp(2))
     p_rvelX2 => rvecSecondary%RvectorBlock(Icomp(1))
     p_rvelY2 => rvecSecondary%RvectorBlock(Icomp(2))
     
-    IF (PRESENT(rsolution)) THEN
+    if (PRESENT(rsolution)) then
       p_rsolX => rsolution%RvectorBlock(Icomp(1))
       p_rsolY => rsolution%RvectorBlock(Icomp(2))
-    ELSE
-      NULLIFY(p_rsolX)
-      NULLIFY(p_rsolY)
-    END IF
+    else
+      nullify(p_rsolX)
+      nullify(p_rsolY)
+    end if
     
-    IF (PRESENT(rdefect)) THEN
+    if (PRESENT(rdefect)) then
       p_rdefectX => rdefect%RvectorBlock(Icomp(1))
       p_rdefectY => rdefect%RvectorBlock(Icomp(2))
-    ELSE
-      NULLIFY(p_rdefectX)
-      NULLIFY(p_rdefectY)
-    END IF
+    else
+      nullify(p_rdefectX)
+      nullify(p_rdefectY)
+    end if
       
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'UPWIND: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
-    IF ((rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-        (elem_getPrimaryElement(i) .NE. EL_Q1T)) THEN
+    if ((rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
+        (elem_getPrimaryElement(i) .NE. EL_Q1T)) then
       PRINT *,'UPWIND: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-        (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+        (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
       PRINT *,'UPWIND: Unsupported vector data type in velocity.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (PRESENT(rdefect)) THEN
-      IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-          (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    if (PRESENT(rdefect)) then
+      if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+          (rdefect%cdataType .NE. ST_DOUBLE)) then
         PRINT *,'UPWIND: Unsupported vector data type in solution/defect'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'UPWIND: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'UPWIND: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Call the actual calculation routine.
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
-    CALL lsyssc_getbase_double (p_rvelX1,p_DvelX1)
-    CALL lsyssc_getbase_double (p_rvelY1,p_DvelY1)
-    CALL lsyssc_getbase_double (p_rvelX2,p_DvelX2)
-    CALL lsyssc_getbase_double (p_rvelY2,p_DvelY2)
+    call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
+    call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
+    call lsyssc_getbase_double (p_rvelX2,p_DvelX2)
+    call lsyssc_getbase_double (p_rvelY2,p_DvelY2)
     
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !CALL vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !CALL vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
     
-    IF (PRESENT(rdefect)) THEN
-      CALL lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
-      CALL lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
-      CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
-      CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
+    if (PRESENT(rdefect)) then
+      call lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
+      call lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
+      call lsyssc_getbase_double (p_rdefectX,p_DdefectX)
+      call lsyssc_getbase_double (p_rdefectY,p_DdefectY)
       
-      CALL conv_upwind2dALE_Q1Tdouble ( &
+      call conv_upwind2dALE_Q1Tdouble ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
                     rconfig%bALE, &
                     p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
-    ELSE
+    else
     
-      CALL conv_upwind2dALE_Q1Tdouble ( &
+      call conv_upwind2dALE_Q1Tdouble ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
                     rconfig%bALE, DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
-      !CALL matio_writeMatrixHR (rmatrix, 'matrix',&
+      !call matio_writeMatrixHR (rmatrix, 'matrix',&
       !                          .TRUE., 0, 'matrixL.txt', '(D10.3)')
                     
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_upwind2dALE_Q1Tdouble ( &
+  subroutine conv_upwind2dALE_Q1Tdouble ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,rtriangulation,cdef, &
                   dupsam,dnu,dtheta, bALE, &
@@ -552,16 +547,16 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -570,103 +565,103 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
   ! Triangulation structure specifying the underlying mesh.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
 
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
+  real(DP), dimension(:), intent(IN), optional :: Du2
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixScalar), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
   
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_EDGEIDX), DIMENSION(4) :: Iedge
-    INTEGER(PREC_MATIDX) :: IlocalMatrix(4,4)
-    REAL(DP), DIMENSION(4) :: Dflux(4),Duu1(4),Duu2(4),XV(4),YV(4)
-    REAL(DP), DIMENSION(4,4) :: DlocalMatrix(4,4)
+    integer(PREC_EDGEIDX), dimension(4) :: Iedge
+    integer(PREC_MATIDX) :: IlocalMatrix(4,4)
+    real(DP), dimension(4) :: Dflux(4),Duu1(4),Duu2(4),XV(4),YV(4)
+    real(DP), dimension(4,4) :: DlocalMatrix(4,4)
 
-    REAL(DP) :: dcenterX, dcenterY, XN, YN, G1, G2, dupsre, ELMH
-    REAL(DP) :: DL0, DL2, H00, H22, dflux0, dflux2
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX) :: iv, ivt1,ivt2
-    INTEGER(PREC_EDGEIDX) :: im1, im0, im2
-    INTEGER I,II
-    INTEGER ia1, ia2, J, JJ, ia
-    REAL(DP), DIMENSION(4) :: DuALE1,DuALE2
+    real(DP) :: dcenterX, dcenterY, XN, YN, G1, G2, dupsre, ELMH
+    real(DP) :: DL0, DL2, H00, H22, dflux0, dflux2
+    integer(PREC_ELEMENTIDX) :: iel
+    integer(PREC_VERTEXIDX) :: iv, ivt1,ivt2
+    integer(PREC_EDGEIDX) :: im1, im0, im2
+    integer I,II
+    integer ia1, ia2, J, JJ, ia
+    real(DP), dimension(4) :: DuALE1,DuALE2
 
-    REAL(DP), DIMENSION(:), POINTER :: p_Da
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    real(DP), dimension(:), pointer :: p_Da
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
     
-    INTEGER(PREC_VERTEXIDX) :: NVT
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Kvert
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Kmid
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcorvg
+    integer(PREC_VERTEXIDX) :: NVT
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_Kvert
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_Kmid
+    real(DP), dimension(:,:), pointer :: p_Dcorvg
     
     ! There is no additional type/completeness check in the parameters here. 
     ! This routine should never be called from outside, otherwise the main 
     ! application may have problems if the parameters are not specified correctly!
     !
     ! Get a pointer to the matrix entries and the matrix structure
-    IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
+    if (rmatrix%h_DA .NE. ST_NOHANDLE) then
       ! The entries may be undefined - allowed if cdef=CONV_MODDEFECT!
-      CALL lsyssc_getbase_double (rmatrix,p_Da)
-    END IF
-    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_double (rmatrix,p_Da)
+    end if
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Get a pointer to triangulation arrays.
-    CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_Kvert)
-    CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_Kmid)
-    CALL storage_getbase_double2D (rtriangulation%h_DvertexCoords,p_Dcorvg)
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_Kvert)
+    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_Kmid)
+    call storage_getbase_double2D (rtriangulation%h_DvertexCoords,p_Dcorvg)
     NVT = rtriangulation%NVT
 
     !********************************************************************
@@ -769,7 +764,7 @@ CONTAINS
     ! dupsre: Weight the dupsam-parameter by 1/nu.
     ! This is needed later...
 
-    IF (dupsam .GE. 0.0_DP) dupsre = dupsam / dnu
+    if (dupsam .GE. 0.0_DP) dupsre = dupsam / dnu
     
     ! Set dUale to 0, which is the standard contribution of ALE to the
     ! discretisation. If ALE is activated, this is changed on each cell later
@@ -783,7 +778,7 @@ CONTAINS
     ! Loop over all elements in the current grid. The data is
     ! elementwise collected and added to the matrix.
 
-    DO iel=1,rtriangulation%NEL
+    do iel=1,rtriangulation%NEL
 
       ! dcenterX,dcenterY will be coordinates of the center of the element
 
@@ -792,8 +787,8 @@ CONTAINS
       
       ! ALE handling on the current element.
       ! Loop over all 4 nodes to calculate the contribution of ALE:
-      IF (bALE) THEN
-        DO II=1,4
+      if (bALE) then
+        do II=1,4
           ! In the ALE-equation, the nonlinear part is slightly modified:
           !
           !           u * grad(u)    --->    (u-v) * grad(u)
@@ -813,13 +808,13 @@ CONTAINS
 
           DuALE1(II) = 0.5_DP * ( DmeshVelocity (1,ivt1) + DmeshVelocity(1,ivt2) )
           DuALE2(II) = 0.5_DP * ( DmeshVelocity (2,ivt1) + DmeshVelocity(2,ivt2) )
-        END DO      
-      END IF
+        end do      
+      end if
       
       ! Loop over all 4 U-nodes.
       ! Calculate Iedge,XV,YV,dcenterX,dcenterY,Duu1,Duu2
 
-      DO II=1,4
+      do II=1,4
         
         ! Get the number of the II'th edge - which is at the same time the
         ! DOF in the velocity vector(s).
@@ -856,7 +851,7 @@ CONTAINS
         Duu1(II) = dweight1*u1Xvel(I)+dweight2*u2Xvel(I) - DuALE1(II)
         Duu2(II) = dweight1*u1Yvel(I)+dweight2*u2Yvel(I) - DuALE2(II)
         
-      END DO
+      end do
 
       ! Divide dcenterX/dcenterY by 4 - so dcenterX/dcenterY receives the coordinate
       ! of the element midpoint
@@ -890,13 +885,13 @@ CONTAINS
       
       DlocalMatrix = 0.0_DP
 
-      DO II=1,4
+      do II=1,4
 
         ! II1 corresponds to the current node in question.
         ! im1=II-1 MOD 4 receives the predecessor of II1 in an anticlockwise
         ! sense:
         im1=II-1
-        IF (im1.LT.1) im1=4
+        if (im1.LT.1) im1=4
       
         ! Calculation of the flux Dflux(II)
         !
@@ -945,7 +940,7 @@ CONTAINS
           
         ! Loop over the edges of the element
           
-        dofsearch: DO JJ=1,4
+        dofsearch: do JJ=1,4
 
           ! In the current row, search for column J=Iedge(JJ).
           ! We know from FE-Theory, that our current node I interacts
@@ -965,8 +960,8 @@ CONTAINS
 
           J=Iedge(JJ)
 
-          DO ia=ia1,ia2
-            IF (p_Kcol(ia) .EQ. J) THEN
+          do ia=ia1,ia2
+            if (p_Kcol(ia) .EQ. J) then
               ! Save the matrix index in IlocalMatrix(II,JJ) so we can find 
               ! the matrix entry later without searching for it.
 
@@ -975,17 +970,17 @@ CONTAINS
               ! Next DOF, no error
               CYCLE dofsearch
 
-            END IF
-          END DO
+            end if
+          end do
 
           ! Error case
 
           PRINT *,'ERROR in UPWIND: entry index ia not found'
           RETURN
 
-        END DO dofsearch ! JJ
+        end do dofsearch ! JJ
         
-      END DO ! II
+      end do ! II
         
       ! What have we calculated up to here? Let's collect...
       !
@@ -999,16 +994,16 @@ CONTAINS
       !
       ! Loop over the nodes to calculate DlocalMatrix:
 
-      DO II=1,4
+      do II=1,4
       
         ! Set im1=predecessor of II, im2=successor of II,
         ! in counterclockwise sense.
 
         im0=II
         im1=II-1
-        IF (im1.LT.1) im1=4
+        if (im1.LT.1) im1=4
         im2=II+1
-        IF (im2.GT.4) im2=1
+        if (im2.GT.4) im2=1
 
         ! We interpret II here as the local number of the edge
         ! (rather than the corner), following the corner II.
@@ -1037,7 +1032,7 @@ CONTAINS
         ! dupsam>0: Samarskji-Upwind
         ! dupsam<0: Simple upwind
 
-        IF (dupsam .GE. 0.0_DP) THEN
+        if (dupsam .GE. 0.0_DP) then
 
           ! The user wants Samarskji-Upwind.
           ! Take dupsre, the dupsam-parameter, weighted by 1/nu.
@@ -1052,19 +1047,19 @@ CONTAINS
           ! corresponding to II, DL2 that of the triangle edge
           ! corresponding to  im2.
 
-          IF (dflux0 .GE. 0.0_DP) THEN
+          if (dflux0 .GE. 0.0_DP) then
             DL0=PHIP(dupsre*dflux0)
-          ELSE
+          else
             DL0=PHIM(dupsre*dflux0)
-          ENDIF
+          end if
 
-          IF (dflux2 .GE. 0.0_DP) THEN
+          if (dflux2 .GE. 0.0_DP) then
             DL2=PHIP(dupsre*dflux2)
-          ELSE
+          else
             DL2=PHIM(dupsre*dflux2)
-          ENDIF
+          end if
 
-        ELSE
+        else
 
           ! Simple Upwinding scheme.
           ! The corresponding lambda (wighting factor of the
@@ -1074,10 +1069,10 @@ CONTAINS
 
           DL0=0.0_DP
           DL2=0.0_DP
-          IF (dflux0 .GE. 0.0_DP) DL0=1.0_DP
-          IF (dflux2 .GE. 0.0_DP) DL2=1.0_DP
+          if (dflux0 .GE. 0.0_DP) DL0=1.0_DP
+          if (dflux2 .GE. 0.0_DP) DL2=1.0_DP
 
-        ENDIF
+        end if
 
         ! Calculate the local element matrix with the integrals
         ! being evaluated by 1-point Gauss rule in the midpoint
@@ -1092,7 +1087,7 @@ CONTAINS
         DlocalMatrix(im0,im2) =      H22
         DlocalMatrix(im0,im1) = -H00
         
-      END DO ! II
+      end do ! II
       
       ! We are nearly done. Now we only have to incorporate
       ! the local element matrix DlocalMatrix into the global matrix.
@@ -1121,21 +1116,21 @@ CONTAINS
       ! Then incorporate the local matrix into the global matrix
       ! and/or the global defect.
       
-      IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
 
-        DO JJ=1,4
-          DO II=1,4
+        do JJ=1,4
+          do II=1,4
             ia       = IlocalMatrix(II,JJ)
             p_Da(ia) = p_Da(ia) + DlocalMatrix(II,JJ)
-          END DO ! II
-        END DO ! JJ
+          end do ! II
+        end do ! JJ
 
-      END IF
+      end if
       
-      IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
       
-        DO II=1,4
-          DO JJ=1,4
+        do II=1,4
+          do JJ=1,4
             ! Accessing the matrix via (II,1..4) is slower than accessing it
             ! via (1..4,JJ) would be, but we have no choice. Otherwise, we would 
             ! 'jump' through the memory in the defect creation process below 
@@ -1149,34 +1144,34 @@ CONTAINS
 
             Ddef1(Iedge(II)) = Ddef1(Iedge(II)) - ELMH*Du1(Iedge(JJ))
             Ddef2(Iedge(II)) = Ddef2(Iedge(II)) - ELMH*Du2(Iedge(JJ))
-          END DO ! JJ
-        END DO ! II
+          end do ! JJ
+        end do ! II
         
-      END IF
+      end if
       
-    END DO ! IEL
+    end do ! IEL
 
-  CONTAINS
+  contains
 
     ! Auxiliary function 1
-    ELEMENTAL REAL(DP) FUNCTION PHIP(x)
-    REAL(DP), INTENT(IN) :: x
+    elemental real(DP) function PHIP(x)
+    real(DP), intent(IN) :: x
       PHIP = (0.5_DP+x)/(1.0_DP+x)
-    END FUNCTION
+    end function
     
     ! Auxiliary function 2
-    ELEMENTAL REAL(DP) FUNCTION PHIM(x)
-    REAL(DP), INTENT(IN) :: x
+    elemental real(DP) function PHIM(x)
+    real(DP), intent(IN) :: x
       PHIM = 0.5_DP/(1.0_DP-x)
-    END FUNCTION
+    end function
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_streamlineDiffusion2d ( &
+  subroutine conv_streamlineDiffusion2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity)
@@ -1219,19 +1214,19 @@ CONTAINS
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
+  type(t_vectorBlock), intent(IN), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
+  type(t_vectorBlock), intent(IN), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
+  real(DP), intent(IN) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
+  real(DP), intent(IN) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  TYPE(t_convStreamlineDiffusion), INTENT(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -1240,20 +1235,20 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
   
-  ! OPTIONAL: Mesh velocity field.
+  ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
 !</input>
 
 !<inputoutput>
@@ -1261,113 +1256,113 @@ CONTAINS
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i,icomponent
-    REAL(DP), DIMENSION(:), POINTER :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
+    integer :: i,icomponent
+    real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
+    real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
     
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'SD: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (rconfig%bALE) THEN
-      IF (.NOT. PRESENT(DmeshVelocity)) THEN
+    if (rconfig%bALE) then
+      if (.NOT. PRESENT(DmeshVelocity)) then
         PRINT *,'SD: Mesh velocity vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
-    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    if (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) then
       PRINT *,'SD: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-        (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+        (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (PRESENT(rdefect)) THEN
-      IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-          (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    if (PRESENT(rdefect)) then
+      if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+          (rdefect%cdataType .NE. ST_DOUBLE)) then
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
-    CALL lsyssc_getbase_double (rvecPrimary%RvectorBlock(1),p_DvelX1)
-    CALL lsyssc_getbase_double (rvecPrimary%RvectorBlock(2),p_DvelY1)
-    CALL lsyssc_getbase_double (rvecSecondary%RvectorBlock(1),p_DvelX2)
-    CALL lsyssc_getbase_double (rvecSecondary%RvectorBlock(2),p_DvelY2)
+    call lsyssc_getbase_double (rvecPrimary%RvectorBlock(1),p_DvelX1)
+    call lsyssc_getbase_double (rvecPrimary%RvectorBlock(2),p_DvelY1)
+    call lsyssc_getbase_double (rvecSecondary%RvectorBlock(1),p_DvelX2)
+    call lsyssc_getbase_double (rvecSecondary%RvectorBlock(2),p_DvelY2)
     
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !CALL vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !CALL vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
     
-    IF (PRESENT(rdefect)) THEN
+    if (PRESENT(rdefect)) then
     
-      IF (rdefect%nblocks .EQ. 2) THEN
+      if (rdefect%nblocks .EQ. 2) then
     
         ! Special 2D variant.
-        CALL lsyssc_getbase_double (rsolution%RvectorBlock(1),p_DsolX)
-        CALL lsyssc_getbase_double (rsolution%RvectorBlock(2),p_DsolY)
-        CALL lsyssc_getbase_double (rdefect%RvectorBlock(1),p_DdefectX)
-        CALL lsyssc_getbase_double (rdefect%RvectorBlock(2),p_DdefectY)
+        call lsyssc_getbase_double (rsolution%RvectorBlock(1),p_DsolX)
+        call lsyssc_getbase_double (rsolution%RvectorBlock(2),p_DsolY)
+        call lsyssc_getbase_double (rdefect%RvectorBlock(1),p_DdefectX)
+        call lsyssc_getbase_double (rdefect%RvectorBlock(2),p_DdefectY)
         
-        CALL conv_strdiff2dALE_double ( &
+        call conv_strdiff2dALE_double ( &
                       p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                       rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                       rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                       rconfig%bALE, &
                       p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
-      ELSE
+      else
       
         ! Apply the operator to all blocks in the vector, block by block.
         !
@@ -1377,43 +1372,43 @@ CONTAINS
         !   b2   =  b2    -      A        x2
         !   ...     ...             ...   ...
         !
-        DO icomponent = 1,rdefect%nblocks
+        do icomponent = 1,rdefect%nblocks
         
-          CALL lsyssc_getbase_double (rsolution%RvectorBlock(icomponent),p_DsolX)
-          CALL lsyssc_getbase_double (rdefect%RvectorBlock(icomponent),p_DdefectX)
+          call lsyssc_getbase_double (rsolution%RvectorBlock(icomponent),p_DsolX)
+          call lsyssc_getbase_double (rdefect%RvectorBlock(icomponent),p_DdefectX)
           
-          CALL conv_strdiff2dALEsingle_double ( &
+          call conv_strdiff2dALEsingle_double ( &
                         p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                         rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                         rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                         rconfig%bALE, &
                         p_DsolX,p_DdefectX, DmeshVelocity)
-        END DO
+        end do
       
-      END IF
+      end if
                     
-    ELSE
+    else
     
       ! Calculate only the matrix. "The" matrix is used by the caller
       ! on all diagonal blocks of a block matrix!
-      CALL conv_strdiff2dALEsingle_double ( &
+      call conv_strdiff2dALEsingle_double ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%bALE, DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
-      !CALL matio_writeMatrixHR (rmatrix, 'matrix',&
+      !call matio_writeMatrixHR (rmatrix, 'matrix',&
       !                          .TRUE., 0, 'matrixL.txt', '(D10.3)')
                     
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE conv_strdiff2dALEsingle_double ( &
+  subroutine conv_strdiff2dALEsingle_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
@@ -1491,16 +1486,16 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -1509,137 +1504,137 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  REAL(DP), INTENT(IN) :: dalpha
+  real(DP), intent(IN) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  REAL(DP), INTENT(IN) :: dbeta
+  real(DP), intent(IN) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  REAL(DP), INTENT(IN) :: ddelta
+  real(DP), intent(IN) :: ddelta
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
-  ! OPTIONAL: velocity vector $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: velocity vector $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixScalar), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  INTEGER(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  INTEGER(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderALE
-  REAL(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
-  REAL(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
-  INTEGER :: NVE
+  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
+  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  logical, dimension(EL_MAXNDER) :: Bder,BderALE
+  real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
+  real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
+  integer :: NVE
   
   ! Matrix structure arrays
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(DP), dimension(:,:), ALLOCATABLE :: p_DcubPtsRef
 
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
   
   ! Triangulation
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
+  type(t_triangulation), pointer :: p_rtriangulation
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
 
   ! One and only element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
 
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: Idofs, IdofsALE
+  integer(PREC_DOFIDX), dimension(:,:), ALLOCATABLE, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dbas,DbasALE
+  real(DP), dimension(:,:,:,:), ALLOCATABLE, target :: Dbas,DbasALE
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry
+  real(DP), dimension(:,:), ALLOCATABLE :: Dentry
 
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvelocity
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dvelocity
   
   ! An array with local DELTA's, each DELTA for one element
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
+  real(DP), dimension(:), ALLOCATABLE :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
   
     ! Initialise the derivative flags
     Bder = .FALSE.
@@ -1660,11 +1655,11 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                    p_DvertexCoords)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
     ! Get the number of local DOF's for trial/test functions.
@@ -1687,78 +1682,78 @@ CONTAINS
     !     D = RHS - A*U                                         
     ! In this case, the defect(rhs vectors must be present
     
-    IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-      IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Du1) )) THEN
+    if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+      if (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Du1) )) then
         PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+    if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       ! Get matrix arrays
-      CALL lsyssc_getbase_double (rmatrix,p_Da)
-    END IF
-    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_double (rmatrix,p_Da)
+    end if
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,UBOUND(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
-    !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(Idofs(indof,nelementsPerBlock))
+    allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
-    ALLOCATE(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
+    allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsALE(indofALE,nelementsPerBlock))
+    allocate(IdofsALE(indofALE,nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    ALLOCATE(DlocalDelta(nelementsPerBlock))
+    allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
-    ALLOCATE(Dentry(indof,indof))
+    allocate(Kentry(indof,indof,nelementsPerBlock))
+    allocate(Dentry(indof,indof))
     
     ! Allocate memory for the velocity in the cubature points.
-    ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
+    allocate(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(revalElementSet)
+    call elprep_init(revalElementSet)
 
     ! What is the reciprocal of nu? We need it later.
-    IF (dnu .NE. 0.0_DP) THEN
+    if (dnu .NE. 0.0_DP) then
       dre = 1.0_DP/dnu
       
       ! dny gets the actual multiplier for the Laplace matrix.
@@ -1766,51 +1761,51 @@ CONTAINS
       ! This may be =0.0 if the Stokes operator should not be included into
       ! the matrix.
       dny = dbeta*dnu
-    ELSE
+    else
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
-    IF ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) THEN
-      CALL lalg_clearVectorDble (DlocalDelta)
-    END IF
+    if ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) then
+      call lalg_clearVectorDble (DlocalDelta)
+    end if
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
 
     dumax=0.0_DP
-    IF (dweight2 .EQ. 0.0_DP) THEN
-      DO IEQ=1,SIZE(u1Xvel)
+    if (dweight2 .EQ. 0.0_DP) then
+      do IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(DUMAX,DUNORM)
-      END DO
-    ELSE       
-      DO ieq=1,SIZE(u1Xvel)
+      end do
+    else       
+      do ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(dumax,dunorm)
-      END DO
-    ENDIF       
+      end do
+    end if       
 
-    IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
+    if (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
     
     ! Loop over the elements - blockwise.
-    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -1843,15 +1838,15 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
-      IF (bALE) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+      if (bALE) then
+        call dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
                                     IdofsALE)
-      END IF
+      end if
       
       ! Calculate local DELTA's for streamline diffusion method.
       ! (cf. p. 121 in Turek's CFD book).
@@ -1863,14 +1858,14 @@ CONTAINS
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
-      IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        DO IEL=1,IELmax-IELset+1
-          CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
+      if ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))then
+        do IEL=1,IELmax-IELset+1
+          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
-        END DO ! IEL
-      END IF
+        end do ! IEL
+      end if
                                    
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
@@ -1896,12 +1891,12 @@ CONTAINS
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        DO IDOFE=1,indof
+        do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -1917,7 +1912,7 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO JDOFE=1,indof
+          do JDOFE=1,indof
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -1927,11 +1922,11 @@ CONTAINS
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
+            ! Jump out of the do loop if we find the column.
             
-            DO JCOL=JCOL0,rmatrix%NA
-              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
-            END DO
+            do JCOL=JCOL0,rmatrix%NA
+              if (p_KCOL(JCOL) .EQ. JDFG) EXIT
+            end do
 
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
@@ -1948,11 +1943,11 @@ CONTAINS
             
             Kentry(JDOFE,IDOFE,IEL)=JCOL
             
-          END DO ! IDOFE
+          end do ! IDOFE
           
-        END DO ! JDOFE
+        end do ! JDOFE
         
-      END DO ! IEL
+      end do ! IEL
       
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
@@ -1967,22 +1962,22 @@ CONTAINS
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      if (IELset .EQ. 1) then
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -2016,19 +2011,19 @@ CONTAINS
       ! velocities in U1Lx, otherwise we have to sum up
       ! dweight1*u1vel + dweight2*u2vel
       
-      IF (dweight2 .EQ. 0.0_DP) THEN
+      if (dweight2 .EQ. 0.0_DP) then
       
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
@@ -2039,28 +2034,28 @@ CONTAINS
               du1loc = du1loc + u1Xvel(JDFG)*db
               du2loc = du2loc + u1Yvel(JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = dweight1*du1loc
             Dvelocity(2,ICUBP,IEL) = dweight1*du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
           
-      ELSE
+      else
 
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               ! phi_i in the cubature point:
@@ -2071,17 +2066,17 @@ CONTAINS
               du1loc = du1loc + (dweight1*u1Xvel(JDFG) + dweight2*u2Xvel(JDFG))*db
               du2loc = du2loc + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = du1loc
             Dvelocity(2,ICUBP,IEL) = du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
       
-      END IF
+      end if
       
       ! If ALE is not active, calculate 
       !
@@ -2101,24 +2096,24 @@ CONTAINS
       ! we have to substract the mesh velocity field in the cubature
       ! points.
       
-      IF (bALE) THEN
+      if (bALE) then
         
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
-        CALL elem_generic_sim2 (EL_Q1, &
+        call elem_generic_sim2 (EL_Q1, &
             revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               db= Dbas(JDOFE,1,ICUBP,IEL)
@@ -2128,30 +2123,30 @@ CONTAINS
               du1loc = du1loc + DmeshVelocity(1,JDFG)*db
               du2loc = du2loc + DmeshVelocity(2,JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
               
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = Dvelocity(1,ICUBP,IEL) - du1loc
             Dvelocity(2,ICUBP,IEL) = Dvelocity(2,ICUBP,IEL) - du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a biliinear form!
       !
       ! Loop over the elements in the current set.
 
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
         
         ! Clear the local matrix
         Dentry = 0.0_DP
         
         ! Loop over all cubature points on the current element
-        DO ICUBP = 1, ncubp
+        do ICUBP = 1, ncubp
 
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
@@ -2197,7 +2192,7 @@ CONTAINS
           ! Outer loop over the DOF's i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
-          DO IDOFE=1,indof
+          do IDOFE=1,indof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
             ! (our "O")  for function value and first derivatives for the 
@@ -2228,9 +2223,9 @@ CONTAINS
             ! Inner loop over the DOF's j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
               
-              IF (IDOFE.EQ.JDOFE) THEN
+              if (IDOFE.EQ.JDOFE) then
               
                 ! Short version of the evaluation of the matrix
                 ! contribution - see below for a more detailed
@@ -2240,7 +2235,7 @@ CONTAINS
                     + dny*(HBASI2**2+HBASI3**2) &
                     + dalpha*HBASI1**2
     
-              ELSE
+              else
               
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -2303,7 +2298,7 @@ CONTAINS
                     + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3) &
                     + dalpha*HBASI1*HBASJ1
     
-              ENDIF ! (IDOFE.EQ.JDOFE)
+              end if ! (IDOFE.EQ.JDOFE)
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
@@ -2312,11 +2307,11 @@ CONTAINS
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
               
-            END DO ! IDOFE
+            end do ! IDOFE
             
-          END DO ! JDOFE
+          end do ! JDOFE
 
-        END DO ! ICUBP 
+        end do ! ICUBP 
         
         ! Now we have set up a "local" system matrix. We can either    
         ! include it into the real matrix or we can use it to simply   
@@ -2334,14 +2329,14 @@ CONTAINS
         ! nonstationary simulation. For stationary simulations, dtheta is typically
         ! 1.0 which includes the local matrix into the global one directly.)
         
-        IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
-          DO IDOFE=1,indof
-            DO JDOFE=1,indof
+        if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
+          do IDOFE=1,indof
+            do JDOFE=1,indof
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                 dtheta * Dentry(JDOFE,IDOFE)
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
         ! For cdef containing CONV_MODDEFECT, build the defect vector                     
         !     D = RHS - A*U                                         
@@ -2351,45 +2346,45 @@ CONTAINS
         ! entry and will be updated to be the defect vector when    
         ! this routine is left.                                     
         
-        IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-          DO IDOFE=1,indof
+        if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+          do IDOFE=1,indof
 
             IDFG=Idofs(IDOFE,IEL)
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               denth = dtheta*Dentry(JDOFE,IDOFE)         
     
               JDFG=Idofs(JDOFE,IEL)
               Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
 
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
-      END DO ! IEL
+      end do ! IEL
 
-    END DO ! IELset
+    end do ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
-    DEALLOCATE(DlocalDelta)
-    DEALLOCATE(Dvelocity)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(IdofsALE)
-    DEALLOCATE(Idofs)
-    DEALLOCATE(DbasALE)
-    DEALLOCATE(Dbas)
+    deallocate(p_DcubPtsRef)
+    deallocate(DlocalDelta)
+    deallocate(Dvelocity)
+    deallocate(Dentry)
+    deallocate(Kentry)
+    deallocate(IdofsALE)
+    deallocate(Idofs)
+    deallocate(DbasALE)
+    deallocate(Dbas)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE conv_strdiff2dALE_double ( &
+  subroutine conv_strdiff2dALE_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
@@ -2462,16 +2457,16 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -2480,145 +2475,145 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  REAL(DP), INTENT(IN) :: dalpha
+  real(DP), intent(IN) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  REAL(DP), INTENT(IN) :: dbeta
+  real(DP), intent(IN) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  REAL(DP), INTENT(IN) :: ddelta
+  real(DP), intent(IN) :: ddelta
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
+  real(DP), dimension(:), intent(IN), optional :: Du2
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixScalar), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
   
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  INTEGER(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  INTEGER(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderALE
-  REAL(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
-  REAL(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
-  INTEGER :: NVE
+  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
+  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  logical, dimension(EL_MAXNDER) :: Bder,BderALE
+  real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
+  real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
+  integer :: NVE
   
   ! Matrix structure arrays
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(DP), dimension(:,:), ALLOCATABLE :: p_DcubPtsRef
 
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
   
   ! Triangulation
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
+  type(t_triangulation), pointer :: p_rtriangulation
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
 
   ! One and only element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
 
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: Idofs, IdofsALE
+  integer(PREC_DOFIDX), dimension(:,:), ALLOCATABLE, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dbas,DbasALE
+  real(DP), dimension(:,:,:,:), ALLOCATABLE, target :: Dbas,DbasALE
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry
+  real(DP), dimension(:,:), ALLOCATABLE :: Dentry
 
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvelocity
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dvelocity
   
   ! An array with local DELTA's, each DELTA for one element
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
+  real(DP), dimension(:), ALLOCATABLE :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
   
     ! Initialise the derivative flags
     Bder = .FALSE.
@@ -2639,11 +2634,11 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                    p_DvertexCoords)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
     ! Get the number of local DOF's for trial/test functions.
@@ -2666,79 +2661,79 @@ CONTAINS
     !     D = RHS - A*U                                         
     ! In this case, the defect(rhs vectors must be present
     
-    IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-      IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
-                 PRESENT(Du1) .AND. PRESENT(Du2))) THEN
+    if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+      if (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
+                 PRESENT(Du1) .AND. PRESENT(Du2))) then
         PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+    if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       ! Get matrix arrays
-      CALL lsyssc_getbase_double (rmatrix,p_Da)
-    END IF
-    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_double (rmatrix,p_Da)
+    end if
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,UBOUND(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
-    !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(Idofs(indof,nelementsPerBlock))
+    allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
-    ALLOCATE(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
+    allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsALE(indofALE,nelementsPerBlock))
+    allocate(IdofsALE(indofALE,nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    ALLOCATE(DlocalDelta(nelementsPerBlock))
+    allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
-    ALLOCATE(Dentry(indof,indof))
+    allocate(Kentry(indof,indof,nelementsPerBlock))
+    allocate(Dentry(indof,indof))
     
     ! Allocate memory for the velocity in the cubature points.
-    ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
+    allocate(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(revalElementSet)
+    call elprep_init(revalElementSet)
 
     ! What is the reciprocal of nu? We need it later.
-    IF (dnu .NE. 0.0_DP) THEN
+    if (dnu .NE. 0.0_DP) then
       dre = 1.0_DP/dnu
       
       ! dny gets the actual multiplier for the Laplace matrix.
@@ -2746,51 +2741,51 @@ CONTAINS
       ! This may be =0.0 if the Stokes operator should not be included into
       ! the matrix.
       dny = dbeta*dnu
-    ELSE
+    else
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
-    IF ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) THEN
-      CALL lalg_clearVectorDble (DlocalDelta)
-    END IF
+    if ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) then
+      call lalg_clearVectorDble (DlocalDelta)
+    end if
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
 
     dumax=0.0_DP
-    IF (dweight2 .EQ. 0.0_DP) THEN
-      DO IEQ=1,SIZE(u1Xvel)
+    if (dweight2 .EQ. 0.0_DP) then
+      do IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(DUMAX,DUNORM)
-      END DO
-    ELSE       
-      DO ieq=1,SIZE(u1Xvel)
+      end do
+    else       
+      do ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(dumax,dunorm)
-      END DO
-    ENDIF       
+      end do
+    end if       
 
-    IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
+    if (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
     
     ! Loop over the elements - blockwise.
-    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -2823,15 +2818,15 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
-      IF (bALE) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+      if (bALE) then
+        call dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
                                     IdofsALE)
-      END IF
+      end if
       
       ! Calculate local DELTA's for streamline diffusion method.
       ! (cf. p. 121 in Turek's CFD book).
@@ -2843,14 +2838,14 @@ CONTAINS
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
-      IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        DO IEL=1,IELmax-IELset+1
-          CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
+      if ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))then
+        do IEL=1,IELmax-IELset+1
+          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
-        END DO ! IEL
-      END IF
+        end do ! IEL
+      end if
                                    
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
@@ -2876,12 +2871,12 @@ CONTAINS
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        DO IDOFE=1,indof
+        do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -2897,7 +2892,7 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO JDOFE=1,indof
+          do JDOFE=1,indof
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -2907,11 +2902,11 @@ CONTAINS
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
+            ! Jump out of the do loop if we find the column.
             
-            DO JCOL=JCOL0,rmatrix%NA
-              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
-            END DO
+            do JCOL=JCOL0,rmatrix%NA
+              if (p_KCOL(JCOL) .EQ. JDFG) EXIT
+            end do
 
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
@@ -2928,11 +2923,11 @@ CONTAINS
             
             Kentry(JDOFE,IDOFE,IEL)=JCOL
             
-          END DO ! IDOFE
+          end do ! IDOFE
           
-        END DO ! JDOFE
+        end do ! JDOFE
         
-      END DO ! IEL
+      end do ! IEL
       
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
@@ -2947,22 +2942,22 @@ CONTAINS
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      if (IELset .EQ. 1) then
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -2996,19 +2991,19 @@ CONTAINS
       ! velocities in U1Lx, otherwise we have to sum up
       ! dweight1*u1vel + dweight2*u2vel
       
-      IF (dweight2 .EQ. 0.0_DP) THEN
+      if (dweight2 .EQ. 0.0_DP) then
       
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
@@ -3019,28 +3014,28 @@ CONTAINS
               du1loc = du1loc + u1Xvel(JDFG)*db
               du2loc = du2loc + u1Yvel(JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = dweight1*du1loc
             Dvelocity(2,ICUBP,IEL) = dweight1*du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
           
-      ELSE
+      else
 
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               ! phi_i in the cubature point:
@@ -3051,17 +3046,17 @@ CONTAINS
               du1loc = du1loc + (dweight1*u1Xvel(JDFG) + dweight2*u2Xvel(JDFG))*db
               du2loc = du2loc + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = du1loc
             Dvelocity(2,ICUBP,IEL) = du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
       
-      END IF
+      end if
       
       ! If ALE is not active, calculate 
       !
@@ -3081,24 +3076,24 @@ CONTAINS
       ! we have to substract the mesh velocity field in the cubature
       ! points.
       
-      IF (bALE) THEN
+      if (bALE) then
         
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
-        CALL elem_generic_sim2 (EL_Q1, &
+        call elem_generic_sim2 (EL_Q1, &
             revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               db= Dbas(JDOFE,1,ICUBP,IEL)
@@ -3108,30 +3103,30 @@ CONTAINS
               du1loc = du1loc + DmeshVelocity(1,JDFG)*db
               du2loc = du2loc + DmeshVelocity(2,JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
               
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = Dvelocity(1,ICUBP,IEL) - du1loc
             Dvelocity(2,ICUBP,IEL) = Dvelocity(2,ICUBP,IEL) - du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a biliinear form!
       !
       ! Loop over the elements in the current set.
 
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
         
         ! Clear the local matrix
         Dentry = 0.0_DP
         
         ! Loop over all cubature points on the current element
-        DO ICUBP = 1, ncubp
+        do ICUBP = 1, ncubp
 
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
@@ -3177,7 +3172,7 @@ CONTAINS
           ! Outer loop over the DOF's i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
-          DO IDOFE=1,indof
+          do IDOFE=1,indof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
             ! (our "O")  for function value and first derivatives for the 
@@ -3208,9 +3203,9 @@ CONTAINS
             ! Inner loop over the DOF's j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
               
-              IF (IDOFE.EQ.JDOFE) THEN
+              if (IDOFE.EQ.JDOFE) then
               
                 ! Short version of the evaluation of the matrix
                 ! contribution - see below for a more detailed
@@ -3220,7 +3215,7 @@ CONTAINS
                     + dny*(HBASI2**2+HBASI3**2) &
                     + dalpha*HBASI1**2
     
-              ELSE
+              else
               
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -3283,7 +3278,7 @@ CONTAINS
                     + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3) &
                     + dalpha*HBASI1*HBASJ1
     
-              ENDIF ! (IDOFE.EQ.JDOFE)
+              end if ! (IDOFE.EQ.JDOFE)
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
@@ -3292,11 +3287,11 @@ CONTAINS
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
               
-            END DO ! IDOFE
+            end do ! IDOFE
             
-          END DO ! JDOFE
+          end do ! JDOFE
 
-        END DO ! ICUBP 
+        end do ! ICUBP 
         
         ! Now we have set up a "local" system matrix. We can either    
         ! include it into the real matrix or we can use it to simply   
@@ -3314,14 +3309,14 @@ CONTAINS
         ! nonstationary simulation. For stationary simulations, dtheta is typically
         ! 1.0 which includes the local matrix into the global one directly.)
         
-        IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
-          DO IDOFE=1,indof
-            DO JDOFE=1,indof
+        if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
+          do IDOFE=1,indof
+            do JDOFE=1,indof
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                 dtheta * Dentry(JDOFE,IDOFE)
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
         ! For cdef containing CONV_MODDEFECT, build the defect vector                     
         !     D = RHS - A*U                                         
@@ -3331,12 +3326,12 @@ CONTAINS
         ! entry and will be updated to be the defect vector when    
         ! this routine is left.                                     
         
-        IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-          DO IDOFE=1,indof
+        if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+          do IDOFE=1,indof
 
             IDFG=Idofs(IDOFE,IEL)
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               denth = dtheta*Dentry(JDOFE,IDOFE)         
     
@@ -3344,34 +3339,34 @@ CONTAINS
               Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
               Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
 
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
-      END DO ! IEL
+      end do ! IEL
 
-    END DO ! IELset
+    end do ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
-    DEALLOCATE(DlocalDelta)
-    DEALLOCATE(Dvelocity)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(IdofsALE)
-    DEALLOCATE(Idofs)
-    DEALLOCATE(DbasALE)
-    DEALLOCATE(Dbas)
+    deallocate(p_DcubPtsRef)
+    deallocate(DlocalDelta)
+    deallocate(Dvelocity)
+    deallocate(Dentry)
+    deallocate(Kentry)
+    deallocate(IdofsALE)
+    deallocate(Idofs)
+    deallocate(DbasALE)
+    deallocate(Dbas)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_streamlineDiffusionBlk2d ( &
+  subroutine conv_streamlineDiffusionBlk2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity)
@@ -3412,19 +3407,19 @@ CONTAINS
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
+  type(t_vectorBlock), intent(IN), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
+  type(t_vectorBlock), intent(IN), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
+  real(DP), intent(IN) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
+  real(DP), intent(IN) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  TYPE(t_convStreamlineDiffusion), INTENT(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -3433,20 +3428,20 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
   
-  ! OPTIONAL: Mesh velocity field.
+  ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
 
 
 
@@ -3459,40 +3454,40 @@ CONTAINS
   ! The nonlinear operator is added to the matrix.
   ! The blocks A11,A12,A21 and A22 of this matrix are tackled by streamline
   ! diffusion.
-  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
-    TYPE(t_vectorScalar), POINTER :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
-    TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
-    REAL(DP), DIMENSION(:), POINTER :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
+    integer :: i
+    type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
+    type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
+    real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
+    real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
     
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'SD: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (rconfig%bALE) THEN
-      IF (.NOT. PRESENT(DmeshVelocity)) THEN
+    if (rconfig%bALE) then
+      if (.NOT. PRESENT(DmeshVelocity)) then
         PRINT *,'SD: Mesh velocity vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get the actual subvectors from the velocity vectors that define
     ! the X- and Y-velocity.
@@ -3501,151 +3496,151 @@ CONTAINS
     p_rvelX2 => rvecSecondary%RvectorBlock(1)
     p_rvelY2 => rvecSecondary%RvectorBlock(2)
     
-    IF (PRESENT(rsolution)) THEN
+    if (PRESENT(rsolution)) then
       p_rsolX => rsolution%RvectorBlock(1)
       p_rsolY => rsolution%RvectorBlock(2)
-    ELSE
-      NULLIFY(p_rsolX)
-      NULLIFY(p_rsolY)
-    END IF
+    else
+      nullify(p_rsolX)
+      nullify(p_rsolY)
+    end if
     
-    IF (PRESENT(rdefect)) THEN
+    if (PRESENT(rdefect)) then
       p_rdefectX => rdefect%RvectorBlock(1)
       p_rdefectY => rdefect%RvectorBlock(2)
-    ELSE
-      NULLIFY(p_rdefectX)
-      NULLIFY(p_rdefectY)
-    END IF
+    else
+      nullify(p_rdefectX)
+      nullify(p_rdefectY)
+    end if
       
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! If Newton must be calculated, make sure A12 and A21 exists and that
     ! all A11, A12, A21 and A22 are independent of each other!
-    IF (rconfig%dnewton .NE. 0.0_DP) THEN
-      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2) .OR. &
-          .NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
+    if (rconfig%dnewton .NE. 0.0_DP) then
+      if (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2) .OR. &
+          .NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) then
         PRINT *,'SD: For the Newton matrix, A12 and A21 must be defined!'
-        CALL sys_halt()
-      END IF
-      IF (lsyssc_isMatrixContentShared ( &
+        call sys_halt()
+      end if
+      if (lsyssc_isMatrixContentShared ( &
               rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) .OR. &
           lsyssc_isMatrixContentShared ( &
-              rmatrix%RmatrixBlock(1,2),rmatrix%RmatrixBlock(2,1)) ) THEN
+              rmatrix%RmatrixBlock(1,2),rmatrix%RmatrixBlock(2,1)) ) then
         PRINT *,'SD: For the Newton matrix, the matrix blocks must be indepentent!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
 
     i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
                 RelementDistr(1)%celement
-    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
-        .NE. SPDISC_UNIFORM) THEN
+    if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
+        .NE. SPDISC_UNIFORM) then
       PRINT *,'SD: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-        (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+        (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (PRESENT(rdefect)) THEN
-      IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-          (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    if (PRESENT(rdefect)) then
+      if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+          (rdefect%cdataType .NE. ST_DOUBLE)) then
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
-    CALL lsyssc_getbase_double (p_rvelX1,p_DvelX1)
-    CALL lsyssc_getbase_double (p_rvelY1,p_DvelY1)
-    CALL lsyssc_getbase_double (p_rvelX2,p_DvelX2)
-    CALL lsyssc_getbase_double (p_rvelY2,p_DvelY2)
+    call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
+    call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
+    call lsyssc_getbase_double (p_rvelX2,p_DvelX2)
+    call lsyssc_getbase_double (p_rvelY2,p_DvelY2)
     
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !CALL vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !CALL vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
     
-    IF (PRESENT(rdefect)) THEN
-      CALL lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
-      CALL lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
-      CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
-      CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
+    if (PRESENT(rdefect)) then
+      call lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
+      call lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
+      call lsyssc_getbase_double (p_rdefectX,p_DdefectX)
+      call lsyssc_getbase_double (p_rdefectY,p_DdefectY)
       
-      CALL conv_strdiff2dALEblk_double ( &
+      call conv_strdiff2dALEblk_double ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%bALE, &
                     p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
-    ELSE
+    else
     
-      CALL conv_strdiff2dALEblk_double ( &
+      call conv_strdiff2dALEblk_double ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%bALE, DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
-      !CALL matio_writeMatrixHR (rmatrix, 'matrix',&
+      !call matio_writeMatrixHR (rmatrix, 'matrix',&
       !                          .TRUE., 0, 'matrixL.txt', '(D10.3)')
                     
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -3656,7 +3651,7 @@ CONTAINS
 !                Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
 
 !<subroutine>
-  SUBROUTINE conv_strdiff2dALEblk_double ( &
+  subroutine conv_strdiff2dALEblk_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, bALE, &
@@ -3732,16 +3727,16 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -3750,58 +3745,58 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  REAL(DP), INTENT(IN) :: dalpha
+  real(DP), intent(IN) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  REAL(DP), INTENT(IN) :: dbeta
+  real(DP), intent(IN) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  REAL(DP), INTENT(IN) :: ddelta
+  real(DP), intent(IN) :: ddelta
 
   
   
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
-  REAL(DP), INTENT(IN) :: dnewton
+  real(DP), intent(IN) :: dnewton
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
+  real(DP), dimension(:), intent(IN), optional :: Du2
   
 !</input>
 
@@ -3810,113 +3805,113 @@ CONTAINS
   ! A11, A12, A21 and A22 and must be in matrix format 7 or 9.
   ! A11 and A22 must have the same structure. A12 and A21 must have
   ! the same structure.
-  TYPE(t_matrixBlock), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixBlock), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
   
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  INTEGER(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  INTEGER(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderALE
-  REAL(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
-  REAL(DP) :: du1locx,du2locx,du1locy,du2locy,dbx,dby
-  REAL(DP) :: AH11,AH12,AH21,AH22
-  REAL(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
-  INTEGER :: NVE
+  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
+  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  logical, dimension(EL_MAXNDER) :: Bder,BderALE
+  real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
+  real(DP) :: du1locx,du2locx,du1locy,du2locy,dbx,dby
+  real(DP) :: AH11,AH12,AH21,AH22
+  real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
+  integer :: NVE
   
   ! Matrix structure arrays
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  REAL(DP), DIMENSION(:), POINTER :: p_Da11,p_Da22
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da11,p_Da22
 
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol12
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld12
-  REAL(DP), DIMENSION(:), POINTER :: p_Da12,p_Da21
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol12
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld12
+  real(DP), dimension(:), pointer :: p_Da12,p_Da21
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcubPtsRef
+  real(DP), dimension(:,:), pointer :: p_DcubPtsRef
 
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
   
   ! Triangulation
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
+  type(t_triangulation), pointer :: p_rtriangulation
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
 
   ! One and only element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
 
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
-  LOGICAL :: bcubPtsInitialised
+  logical :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: Idofs, IdofsALE
+  integer(PREC_DOFIDX), dimension(:,:), ALLOCATABLE, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dbas,DbasALE
+  real(DP), dimension(:,:,:,:), ALLOCATABLE, target :: Dbas,DbasALE
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dentry
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dentry
   
   ! Additional contributions for the submatrices A11, A12, A21, A22 stemming from Newton.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry12
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA11
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA12
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA21
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA22
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry12
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA11
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA12
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA21
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA22
 
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvelocity
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dvelocity
   
   ! Pointer to the velocity X- and Y-derivative in the cubature points
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DvelocityUderiv
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DvelocityVderiv
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DvelocityUderiv
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DvelocityVderiv
   
   ! An array with local DELTA's, each DELTA for one element
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
+  real(DP), dimension(:), ALLOCATABLE :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
  
     ! Initialise the derivative flags
     Bder = .FALSE.
@@ -3940,11 +3935,11 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                    p_DvertexCoords)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
     ! Get the number of local DOF's for trial/test functions.
@@ -3967,63 +3962,63 @@ CONTAINS
     !     D = RHS - A*U                                         
     ! In this case, the defect(rhs vectors must be present
     
-    IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-      IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
-                 PRESENT(Du1) .AND. PRESENT(Du2))) THEN
+    if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+      if (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
+                 PRESENT(Du1) .AND. PRESENT(Du2))) then
         PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get pointers to the matrix content (if necessary)
-    IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+    if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       ! Get matrix arrays
-      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
-      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
       
-      IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
-      ELSE
-        NULLIFY(p_Da12,p_Da21)
-      END IF
-    END IF
+      if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
+      else
+        nullify(p_Da12,p_Da21)
+      end if
+    end if
     
     ! Get pointers to the matrix structure(s).
-    CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_Kld)
+    call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_Kld)
     
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-      CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,2),p_Kcol12)
-      CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,2),p_Kld12)
-    ELSE
-      NULLIFY(p_Kcol12,p_Kld12)
-    END IF
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+      call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,2),p_Kcol12)
+      call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,2),p_Kld12)
+    else
+      nullify(p_Kcol12,p_Kld12)
+    end if
    
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,UBOUND(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Open-MP-Extension: Open threads here.
     ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
         
-    !$OMP PARALLEL PRIVATE( &
+    !$OMP PARALLEL private( &
     !$OMP p_Ddetj, i,k,Dbas,Idofs,DbasALE, &
     !$OMP IdofsALE,DlocalDelta,Kentry,Kentry12,Dentry, &
     !$OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
@@ -4036,25 +4031,25 @@ CONTAINS
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
-    !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
     
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(Idofs(indof,nelementsPerBlock))
+    allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
-    ALLOCATE(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
+    allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsALE(indofALE,nelementsPerBlock))
+    allocate(IdofsALE(indofALE,nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    ALLOCATE(DlocalDelta(nelementsPerBlock))
+    allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
@@ -4066,42 +4061,42 @@ CONTAINS
     ! in the submatrices A11 and A22.
     ! KentryA12 (:,:,:) defines the positions of the local matrices
     ! in the submatrices A12 and A21.
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
+    allocate(Kentry(indof,indof,nelementsPerBlock))
     
-    IF (dnewton .NE. 0.0_DP) THEN
-      ALLOCATE(Kentry12(indof,indof,nelementsPerBlock))
-    END IF
+    if (dnewton .NE. 0.0_DP) then
+      allocate(Kentry12(indof,indof,nelementsPerBlock))
+    end if
     
     ! Dentry (:,:,:) fetches the 'main' matrix entries (Laplace, Mass,
     ! Convection).
     ! DentryA11, DentryA12, DentryA21 and DentryA22 fetches additional entries in 
     ! A11, A12, A21 and A22 of the Newton matrix, which is not always calculated
     ! and therefore not always used!
-    ALLOCATE(Dentry(indof,indof,nelementsPerBlock))
+    allocate(Dentry(indof,indof,nelementsPerBlock))
     
-    IF (dnewton .NE. 0.0_DP) THEN
-      ALLOCATE(DentryA11(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA12(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA21(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA22(indof,indof,nelementsPerBlock))
-    END IF
+    if (dnewton .NE. 0.0_DP) then
+      allocate(DentryA11(indof,indof,nelementsPerBlock))
+      allocate(DentryA12(indof,indof,nelementsPerBlock))
+      allocate(DentryA21(indof,indof,nelementsPerBlock))
+      allocate(DentryA22(indof,indof,nelementsPerBlock))
+    end if
     
     ! Allocate memory for the velocity in the cubature points.
-    ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
+    allocate(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
     
     ! Initialisation of the element set.
-    CALL elprep_init(revalElementSet)
+    call elprep_init(revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
     
-    IF (dnewton .NE. 0.0_DP) THEN
-      ALLOCATE(DvelocityUderiv(NDIM2D,ncubp,nelementsPerBlock))
-      ALLOCATE(DvelocityVderiv(NDIM2D,ncubp,nelementsPerBlock))
-    END IF
+    if (dnewton .NE. 0.0_DP) then
+      allocate(DvelocityUderiv(NDIM2D,ncubp,nelementsPerBlock))
+      allocate(DvelocityVderiv(NDIM2D,ncubp,nelementsPerBlock))
+    end if
     
     ! What is the reciprocal of nu? We need it later.
-    IF (dnu .NE. 0.0_DP) THEN
+    if (dnu .NE. 0.0_DP) then
       dre = 1.0_DP/dnu
       
       ! dny gets the actual multiplier for the Laplace matrix.
@@ -4109,54 +4104,54 @@ CONTAINS
       ! This may be =0.0 if the Stokes operator should not be included into
       ! the matrix.
       dny = dbeta*dnu
-    ELSE
+    else
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
-    IF ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) THEN
-      CALL lalg_clearVectorDble (DlocalDelta)
-    END IF
+    if ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) then
+      call lalg_clearVectorDble (DlocalDelta)
+    end if
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
     !$OMP SINGLE
     dumax=0.0_DP
-    IF (dweight2 .EQ. 0.0_DP) THEN
+    if (dweight2 .EQ. 0.0_DP) then
 
       
-      DO IEQ=1,SIZE(u1Xvel)
+      do IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(DUMAX,DUNORM)
-      END DO
+      end do
   
-    ELSE
+    else
 
-      DO ieq=1,SIZE(u1Xvel)
+      do ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(dumax,dunorm)
-      END DO
+      end do
 
-    ENDIF
+    end if
            
     !print *,"dumax: ",dumax
-    IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
+    if (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
-    !$OMP END SINGLE
+    !$OMP end SINGLE
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
 
 
@@ -4166,8 +4161,8 @@ CONTAINS
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !$OMP DO SCHEDULE(dynamic,1)
-    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+    !$OMP do SCHEDULE(dynamic,1)
+    do IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -4200,15 +4195,15 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
-      IF (bALE) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+      if (bALE) then
+        call dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
                                     IdofsALE)
-      END IF
+      end if
       
       ! Calculate local DELTA's for streamline diffusion method.
       ! (cf. p. 121 in Turek's CFD book).
@@ -4220,14 +4215,14 @@ CONTAINS
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
-      IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        DO IEL=1,IELmax-IELset+1
-          CALL getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
+      if ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))then
+        do IEL=1,IELmax-IELset+1
+          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
-        END DO ! IEL
-      END IF
+        end do ! IEL
+      end if
                                    
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
@@ -4253,12 +4248,12 @@ CONTAINS
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        DO IDOFE=1,indof
+        do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -4274,7 +4269,7 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO JDOFE=1,indof
+          do JDOFE=1,indof
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -4284,11 +4279,11 @@ CONTAINS
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
+            ! Jump out of the do loop if we find the column.
             
-            DO JCOL=JCOL0,rmatrix%RmatrixBlock(1,1)%NA
-              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
-            END DO
+            do JCOL=JCOL0,rmatrix%RmatrixBlock(1,1)%NA
+              if (p_KCOL(JCOL) .EQ. JDFG) EXIT
+            end do
             
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
@@ -4305,28 +4300,28 @@ CONTAINS
             
             Kentry(JDOFE,IDOFE,IEL)=JCOL
             
-          END DO ! IDOFE
+          end do ! IDOFE
           
-        END DO ! JDOFE
+        end do ! JDOFE
         
-      END DO ! IEL
+      end do ! IEL
       
       ! If the Newton part is to be calculated, we also need the matrix positions
       ! in A12 and A21. We can skip this part if the column structure is
       ! exactly the same!
-      IF (dnewton .NE. 0.0_DP) THEN
-        IF (ASSOCIATED(p_Kcol,p_Kcol12)) THEN
+      if (dnewton .NE. 0.0_DP) then
+        if (ASSOCIATED(p_Kcol,p_Kcol12)) then
         
           Kentry12(:,:,:) = Kentry(:,:,:)
           
-        ELSE
+        else
 
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! For building the local matrices, we have first to
             ! loop through the test functions (the "O"'s), as these
             ! define the rows in the matrix.
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Row IDOFE of the local matrix corresponds 
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -4342,7 +4337,7 @@ CONTAINS
               ! and will therefore give an additive value to the global
               ! matrix.
               
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Get the global DOF of the "X" which interacts with 
                 ! our "O".
@@ -4352,11 +4347,11 @@ CONTAINS
                 ! Starting in JCOL0 (which points to the beginning of
                 ! the line initially), loop through the elements in
                 ! the row to find the position of column IDFG.
-                ! Jump out of the DO loop if we find the column.
+                ! Jump out of the do loop if we find the column.
                 
-                DO JCOL=JCOL0,rmatrix%RmatrixBlock(1,2)%NA
-                  IF (p_KCOL12(JCOL) .EQ. JDFG) EXIT
-                END DO
+                do JCOL=JCOL0,rmatrix%RmatrixBlock(1,2)%NA
+                  if (p_KCOL12(JCOL) .EQ. JDFG) EXIT
+                end do
 
                 ! Because columns in the global matrix are sorted 
                 ! ascendingly (except for the diagonal element),
@@ -4373,15 +4368,15 @@ CONTAINS
                 
                 Kentry(JDOFE,IDOFE,IEL)=JCOL
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
             
-          END DO ! IEL
+          end do ! IEL
           
-        END IF
+        end if
       
-      END IF ! dnewton != 0
+      end if ! dnewton != 0
 
       
       ! Ok, we found the positions of the local matrix entries
@@ -4400,22 +4395,22 @@ CONTAINS
       ! In all later loops, use the precalculated information.
       !
       ! Note: Why not using
-      !   IF (IELset .EQ. 1) THEN
+      !   if (IELset .EQ. 1) then
       ! here, but this strange concept with the boolean variable?
-      ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
+      ! Because the if-command does not work with OpenMP! bcubPtsInitialised
       ! is a local variable and will therefore ensure that every thread
       ! is initialising its local set of cubature points!
-      IF (.NOT. bcubPtsInitialised) THEN
+      if (.NOT. bcubPtsInitialised) then
         bcubPtsInitialised = .TRUE.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
       
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => revalElementSet%p_Ddetj
@@ -4425,7 +4420,7 @@ CONTAINS
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
@@ -4460,20 +4455,20 @@ CONTAINS
       ! dweight1*u1vel + dweight2*u2vel
       
       ! only primary velocity field
-      IF (dweight2 .EQ. 0.0_DP) THEN
+      if (dweight2 .EQ. 0.0_DP) then
 !      print *,"dweight2 .EQ. 0.0"
       
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
@@ -4486,23 +4481,23 @@ CONTAINS
               du1loc = du1loc +u1Xvel(JDFG)*db
               du2loc = du2loc +u1Yvel(JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = dweight1*du1loc
             Dvelocity(2,ICUBP,IEL) = dweight1*du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
         ! Compute X- and Y-derivative of the velocity?
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -4510,7 +4505,7 @@ CONTAINS
               du2locy = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -4524,7 +4519,7 @@ CONTAINS
                 du2locx = du2locx + u1Yvel(JDFG)*dbx
                 du2locy = du2locy + u1Yvel(JDFG)*dby
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               
               ! Save the computed velocity derivative
@@ -4533,24 +4528,24 @@ CONTAINS
               DvelocityVderiv(1,ICUBP,IEL) = dweight1*du2locx
               DvelocityVderiv(2,ICUBP,IEL) = dweight1*du2locy
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
         
-      ELSE
+      else
 !        print *,"dweight2 .ne. 0"
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               ! phi_i in the cubature point:
@@ -4561,23 +4556,23 @@ CONTAINS
               du1loc = du1loc + (dweight1*u1Xvel(JDFG) + dweight2*u2Xvel(JDFG))*db
               du2loc = du2loc + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = du1loc
             Dvelocity(2,ICUBP,IEL) = du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
       
         ! Compute X- and Y-derivative of the velocity?
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -4585,7 +4580,7 @@ CONTAINS
               du2locy = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -4599,7 +4594,7 @@ CONTAINS
                 du2locx = du2locx + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*dbx
                 du2locy = du2locy + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*dby
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               ! Save the computed velocity derivative
               DvelocityUderiv(1,ICUBP,IEL) = du1locx
@@ -4607,13 +4602,13 @@ CONTAINS
               DvelocityVderiv(1,ICUBP,IEL) = du2locx
               DvelocityVderiv(2,ICUBP,IEL) = du2locy
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
       
-      END IF
+      end if
       
       ! If ALE is not active, calculate 
       !
@@ -4633,24 +4628,24 @@ CONTAINS
       ! we have to substract the mesh velocity field in the cubature
       ! points.
       
-      IF (bALE) THEN
+      if (bALE) then
         
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
-        CALL elem_generic_sim2 (EL_Q1, &
+        call elem_generic_sim2 (EL_Q1, &
             revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               db= Dbas(JDOFE,1,ICUBP,IEL)
@@ -4660,24 +4655,24 @@ CONTAINS
               du1loc = du1loc + DmeshVelocity(1,JDFG)*db
               du2loc = du2loc + DmeshVelocity(2,JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
               
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = Dvelocity(1,ICUBP,IEL) - du1loc
             Dvelocity(2,ICUBP,IEL) = Dvelocity(2,ICUBP,IEL) - du2loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
         ! Subtract the X- and Y-derivative of the mesh velocity to the
         ! velocity derivative field if Newton is active.
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -4685,7 +4680,7 @@ CONTAINS
               du2locy = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -4699,7 +4694,7 @@ CONTAINS
                 du2locx = du2locx + DmeshVelocity(2,JDFG)*dbx
                 du2locy = du2locy + DmeshVelocity(2,JDFG)*dby
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               ! Subtract the velocity derivative to the previously calculated one.
               DvelocityUderiv(1,ICUBP,IEL) = DvelocityUderiv(1,ICUBP,IEL)-du1locx
@@ -4707,38 +4702,38 @@ CONTAINS
               DvelocityVderiv(1,ICUBP,IEL) = DvelocityVderiv(1,ICUBP,IEL)-du2locx
               DvelocityVderiv(2,ICUBP,IEL) = DvelocityVderiv(2,ICUBP,IEL)-du2locy
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
         
-      END IF
+      end if
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a bilinear form!
       !
       ! Clear the local matrices. If the Newton part is to be calculated,
       ! we must clear everything, otherwise only Dentry.
-      IF (dnewton .NE. 0) THEN
+      if (dnewton .NE. 0) then
         Dentry = 0.0_DP
         DentryA11 = 0.0_DP
         DentryA12 = 0.0_DP
         DentryA21 = 0.0_DP
         DentryA22 = 0.0_DP
-      ELSE
+      else
         Dentry = 0.0_DP
-      END IF
+      end if
       
       ! If ddelta != 0, set up the nonlinearity U*grad(u), probably with
       ! streamline diffusion stabilisation.
-      IF (ddelta .NE. 0.0_DP) THEN
+      if (ddelta .NE. 0.0_DP) then
     
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
       
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -4784,7 +4779,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -4815,7 +4810,7 @@ CONTAINS
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -4877,27 +4872,27 @@ CONTAINS
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
 
 
      
       ! If dny != 0 or dalpha != 0, add the Laplace/Mass matrix to the
       ! local matrices.
-      IF ((dalpha .NE. 0.0_DP) .OR. (dny .NE. 0.0_DP)) THEN
+      if ((dalpha .NE. 0.0_DP) .OR. (dny .NE. 0.0_DP)) then
       
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
 
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -4918,7 +4913,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -4931,7 +4926,7 @@ CONTAINS
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -4958,24 +4953,24 @@ CONTAINS
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
       
       ! Should we assemble the Newton matrices?
-      IF (dnewton .NE. 0.0_DP) THEN
+      if (dnewton .NE. 0.0_DP) then
       
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
 
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -4998,7 +4993,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -5009,7 +5004,7 @@ CONTAINS
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -5064,15 +5059,15 @@ CONTAINS
                 DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
                 DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
 
-      END IF
+      end if
 
 
         
@@ -5092,48 +5087,48 @@ CONTAINS
       ! nonstationary simulation. For stationary simulations, dtheta is typically
       ! 1.0 which includes the local matrix into the global one directly.)
 
-      IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       
         ! With or without Newton?
-        IF (dnewton .EQ. 0.0_DP) THEN
+        if (dnewton .EQ. 0.0_DP) then
         
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22.
           !$OMP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
-              DO JDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
+              do JDOFE=1,indof
                 p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * Dentry(JDOFE,IDOFE,IEL)
-              END DO
-            END DO
-          END DO
-          !$OMP END CRITICAL
+              end do
+            end do
+          end do
+          !$OMP end CRITICAL
           
-          IF (.NOT. ASSOCIATED(p_Da11,p_Da22)) THEN
+          if (.NOT. ASSOCIATED(p_Da11,p_Da22)) then
             !$OMP CRITICAL
-            DO IEL=1,IELmax-IELset+1
-              DO IDOFE=1,indof
-                DO JDOFE=1,indof
+            do IEL=1,IELmax-IELset+1
+              do IDOFE=1,indof
+                do JDOFE=1,indof
                   p_Da22(Kentry(JDOFE,IDOFE,IEL)) = &
                       p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                       dtheta * Dentry(JDOFE,IDOFE,IEL)
-                END DO
-              END DO
-            END DO
-            !$OMP END CRITICAL
+                end do
+              end do
+            end do
+            !$OMP end CRITICAL
 
-          END IF
+          end if
 
-        ELSE
+        else
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
           !$OMP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
-              DO JDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
+              do JDOFE=1,indof
                 ! Kentry (:,:,:) -> positions of local matrix in A11 and A22.
                 !
                 ! DentryA11 (:,:,:) -> Newton part of A11
@@ -5145,16 +5140,16 @@ CONTAINS
                 p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
                                dnewton*DentryA22(JDOFE,IDOFE,IEL) )
-              END DO
-            END DO
-          END DO
-          !$OMP END CRITICAL
+              end do
+            end do
+          end do
+          !$OMP end CRITICAL
           
           !$OMP CRITICAL
           ! Include the local Newton matrix parts into A12 and A21.
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
-              DO JDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
+              do JDOFE=1,indof
                 ! Kentry12 (:,:,:) -> positions of local matrix in A12 and A21.
                 !
                 ! Dentry (:,:,:) -> Newton part of A12
@@ -5164,14 +5159,14 @@ CONTAINS
                 ! Dentry (:,:,:) -> Newton part of A21
                 p_Da21(Kentry12(JDOFE,IDOFE,IEL)) = p_Da21(Kentry12(JDOFE,IDOFE,IEL)) + &
                     dtheta * dnewton * DentryA21(JDOFE,IDOFE,IEL) 
-              END DO
-            END DO
-          END DO
-          !$OMP END CRITICAL
+              end do
+            end do
+          end do
+          !$OMP end CRITICAL
 
-        END IF        
+        end if        
         
-      END IF
+      end if
       
       ! For cdef containing CONV_MODDEFECT, build the defect vector                     
       !     D = RHS - A*U                                         
@@ -5181,17 +5176,17 @@ CONTAINS
       ! entry and will be updated to be the defect vector when    
       ! this routine is left.                                     
 
-      IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
         
         ! With or without Newton?
-        IF (dnewton .EQ. 0.0_DP) THEN
+        if (dnewton .EQ. 0.0_DP) then
           !$OMP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
 
               IDFG=Idofs(IDOFE,IEL)
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
@@ -5199,18 +5194,18 @@ CONTAINS
                 Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
                 Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
 
-              END DO
-            END DO
-          END DO
-          !$OMP END CRITICAL
-        ELSE
+              end do
+            end do
+          end do
+          !$OMP end CRITICAL
+        else
           !$OMP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
 
               IDFG=Idofs(IDOFE,IEL)
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
@@ -5226,46 +5221,46 @@ CONTAINS
                            - dtheta*dnewton*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
                            - dtheta*dnewton*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
 
-              END DO
-            END DO
-          END DO
-          !$OMP END CRITICAL          
-        END IF
+              end do
+            end do
+          end do
+          !$OMP end CRITICAL          
+        end if
 
-      END IF
+      end if
             
 
-    END DO ! IELset
-    !$OMP END DO 
+    end do ! IELset
+    !$OMP end do 
     
     ! Release memory
-    CALL elprep_releaseElementSet(revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
-    DEALLOCATE(DlocalDelta)
-    IF (dnewton .NE. 0.0_DP) THEN
-      DEALLOCATE(DentryA22)
-      DEALLOCATE(DentryA21)
-      DEALLOCATE(DentryA12)
-      DEALLOCATE(DentryA11)
-      DEALLOCATE(Kentry12)
-      DEALLOCATE(DvelocityUderiv)
-      DEALLOCATE(DvelocityVderiv)
-    END IF
-    DEALLOCATE(Dvelocity)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(IdofsALE)
-    DEALLOCATE(Idofs)
-    DEALLOCATE(DbasALE)
-    DEALLOCATE(Dbas)
-    !$OMP END PARALLEL
-    DEALLOCATE(p_DcubPtsRef)
+    deallocate(DlocalDelta)
+    if (dnewton .NE. 0.0_DP) then
+      deallocate(DentryA22)
+      deallocate(DentryA21)
+      deallocate(DentryA12)
+      deallocate(DentryA11)
+      deallocate(Kentry12)
+      deallocate(DvelocityUderiv)
+      deallocate(DvelocityVderiv)
+    end if
+    deallocate(Dvelocity)
+    deallocate(Dentry)
+    deallocate(Kentry)
+    deallocate(IdofsALE)
+    deallocate(Idofs)
+    deallocate(DbasALE)
+    deallocate(Dbas)
+    !$OMP end PARALLEL
+    deallocate(p_DcubPtsRef)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ----------------------------------------------------------------------
 
-  PURE SUBROUTINE getLocalDeltaQuad (U1L1,U1L2,U2L1,U2L2,A1L,A2L,IEL,&
+  pure subroutine getLocalDeltaQuad (U1L1,U1L2,U2L1,U2L2,A1L,A2L,IEL,&
                       duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 
   ! This routine calculates a local ddelta=DELTA_T for a finite element
@@ -5280,52 +5275,52 @@ CONTAINS
   ! velocity field to weight more.
   
   ! Main velocity field.
-  REAL(DP), DIMENSION(*), INTENT(IN) :: U1L1,U1L2
+  real(DP), dimension(*), intent(IN) :: U1L1,U1L2
   
   ! Secondary velocity field. 
-  REAL(DP), DIMENSION(*), INTENT(IN) :: U2L1,U2L2
+  real(DP), dimension(*), intent(IN) :: U2L1,U2L2
   
   ! weighting factor for U1L1/U1L2
-  REAL(DP), INTENT(IN) :: A1L
+  real(DP), intent(IN) :: A1L
   
   ! weighting factor for U2L1/U2L2
-  REAL(DP), INTENT(IN) :: A2L
+  real(DP), intent(IN) :: A2L
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  REAL(DP), INTENT(IN) :: duMaxR
+  real(DP), intent(IN) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  REAL(DP), INTENT(IN) :: NUREC
+  real(DP), intent(IN) :: NUREC
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  REAL(DP), INTENT(IN) :: UPSAM
+  real(DP), intent(IN) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: IEL
+  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
   
   ! Number of degrees of freedom on element IEL
-  INTEGER, INTENT(IN) :: IDFL
+  integer, intent(IN) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  INTEGER(PREC_DOFIDX), DIMENSION(*), INTENT(IN) :: KDFG
+  integer(PREC_DOFIDX), dimension(*), intent(IN) :: KDFG
   
-  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
-  REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN) :: Dcorvg
+  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
+  real(DP), dimension(NDIM2D,*), intent(IN) :: Dcorvg
 
   ! local ddelta
-  REAL(DP), INTENT(OUT) :: ddelta
+  real(DP), intent(OUT) :: ddelta
 
   ! local variables
-  REAL(DP) :: dlocalH,DU1,DU2,dunorm,RELOC
-  INTEGER(PREC_DOFIDX) :: idof
+  real(DP) :: dlocalH,DU1,DU2,dunorm,RELOC
+  integer(PREC_DOFIDX) :: idof
 
     ! Loop through the local degrees of freedom on element IEL.
     ! Sum up the velocities on these DOF's. This will result
@@ -5339,10 +5334,10 @@ CONTAINS
 
     DU1=0.0_DP
     DU2=0.0_DP
-    DO idof=1,IDFL
+    do idof=1,IDFL
       DU1=DU1+(A1L*U1L1(KDFG(idof))+A2L*U2L1(KDFG(idof)))
       DU2=DU2+(A1L*U1L2(KDFG(idof))+A2L*U2L2(KDFG(idof)))
-    END DO
+    end do
 
     ! Calculate the norm of that local velocity:
 
@@ -5355,27 +5350,27 @@ CONTAINS
     ! which results in central difference in the streamline diffusion
     ! matrix assembling:
 
-    IF (dunorm.LE.1D-8) THEN
+    if (dunorm.LE.1D-8) then
     
       ddelta = 0.0_DP
 
-    ELSE
+    else
 
       ! u_T defines the "slope" of the velocity through
       ! the element T. At next, calculate the local mesh width
       ! dlocalH = h = h_T on our element T=IEL:
 
-      CALL getLocalMeshWidthQuad (dlocalH,dunorm, DU1, DU2, IEL, Kvert,Dcorvg)
+      call getLocalMeshWidthQuad (dlocalH,dunorm, DU1, DU2, IEL, Kvert,Dcorvg)
 
       ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
 
-      IF (UPSAM.LT.0.0_DP) THEN
+      if (UPSAM.LT.0.0_DP) then
 
         ! For UPSAM<0, we use simple calculation of ddelta:        
       
         ddelta = ABS(UPSAM)*dlocalH
         
-      ELSE
+      else
       
         ! For UPSAM >= 0, we use standard Samarskji-like calculation
         ! of ddelta. At first calculate the local Reynolds number
@@ -5387,40 +5382,40 @@ CONTAINS
         
         ddelta = UPSAM * dlocalH*duMaxR * 2.0_DP*(RELOC/(1.0_DP+RELOC))
         
-      ENDIF ! (UPSAM.LT.0.0)
+      end if ! (UPSAM.LT.0.0)
       
-    END IF ! (dunorm.LE.1D-8)
+    end if ! (dunorm.LE.1D-8)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ----------------------------------------------------------------------
 
-  PURE SUBROUTINE getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
+  pure subroutine getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
                       XBETA2, JEL,Kvert,Dcorvg)
   
   ! Determine the local mesh width for an element JEL of a 
   ! triangulation.
   
   ! Element where the local h should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN)               :: JEL
+  integer(PREC_ELEMENTIDX), intent(IN)               :: JEL
   
-  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
-  REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN)          :: Dcorvg
+  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
+  real(DP), dimension(NDIM2D,*), intent(IN)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
-  REAL(DP), INTENT(IN)  :: dunorm
+  real(DP), intent(IN)  :: dunorm
   
   ! mean velocity u_T = (xbeta1,xbeta2) through element T=JEL
-  REAL(DP), INTENT(IN)  :: XBETA1, XBETA2
+  real(DP), intent(IN)  :: XBETA1, XBETA2
   
   ! local mesh width
-  REAL(DP), INTENT(OUT) :: dlocalH
+  real(DP), intent(OUT) :: dlocalH
   
   ! local variables
-  REAL(DP) :: dlambda
-  INTEGER(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
-  REAL(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
-  REAL(DP) :: dalphaMax, dalpha
+  real(DP) :: dlambda
+  integer(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
+  real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
+  real(DP) :: dalphaMax, dalpha
 
     ! Fetch the numbers of the four corners of element JEL
 
@@ -5485,44 +5480,44 @@ CONTAINS
     ! -----------------------------------------------------------------
     ! Check the first corner:
 
-    CALL intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
                 X3,Y3,dlambda,X2,Y2)
     dalphaMax=MAX(dalpha,dalphaMax)
 
-    CALL intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
                 X3,Y3,dlambda,X4,Y4)
     dalphaMax=MAX(dalpha,dalphaMax)
     
     ! -----------------------------------------------------------------
     ! The second one...
     
-    CALL intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
                 X4,Y4,dlambda,X1,Y1)
     dalphaMax=MAX(dalpha,dalphaMax)
 
-    CALL intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
                 X4,Y4,dlambda,X3,Y3)
     dalphaMax=MAX(dalpha,dalphaMax)
     
     ! -----------------------------------------------------------------
     ! The third one...
     
-    CALL intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
                 X1,Y1,dlambda,X2,Y2)
     dalphaMax=MAX(dalpha,dalphaMax)
 
-    CALL intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
                 X1,Y1,dlambda,X4,Y4)
     dalphaMax=MAX(dalpha,dalphaMax)
     
     ! -----------------------------------------------------------------
     ! And the fourth=last one...
     
-    CALL intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
                 X2,Y2,dlambda,X1,Y1)
     dalphaMax=MAX(dalpha,dalphaMax)
 
-    CALL intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
+    call intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
                 X2,Y2,dlambda,X3,Y3)
     dalphaMax=MAX(dalpha,dalphaMax)
 
@@ -5538,32 +5533,32 @@ CONTAINS
 
     dlocalH=dalphaMax*4.0_DP*dunorm
 
-  END SUBROUTINE
+  end subroutine
   
   ! ----------------------------------------------------------------------
 
-  PURE SUBROUTINE intersectLines2D (XO,YO,dalpha,BETA1,BETA2, &
+  pure subroutine intersectLines2D (XO,YO,dalpha,BETA1,BETA2, &
                       XA,YA,dlambda,XB,YB)
 
   ! Intersect two lines in R^2
 
   ! Origin of line 1
-  REAL(DP), INTENT(IN) :: XO,YO
+  real(DP), intent(IN) :: XO,YO
   
   ! Direction of line 1
-  REAL(DP), INTENT(IN) :: BETA1,BETA2
+  real(DP), intent(IN) :: BETA1,BETA2
   
   ! One point on the second line
-  REAL(DP), INTENT(IN) :: XA,YA
+  real(DP), intent(IN) :: XA,YA
   
   ! Another point on the second line
-  REAL(DP), INTENT(IN) :: XB,YB
+  real(DP), intent(IN) :: XB,YB
   
   ! Parameter value of the intersection point on line 1.
   ! =0.0, if there is no intersection point
-  REAL(DP), INTENT(OUT) :: dalpha
+  real(DP), intent(OUT) :: dalpha
   
-  REAL(DP), INTENT(OUT) :: dlambda
+  real(DP), intent(OUT) :: dlambda
   
   ! local variables
   DOUBLE PRECISION :: dsp
@@ -5572,12 +5567,12 @@ CONTAINS
     ! counterclockwise normal n1 of (beta1,beta2)
     dsp=BETA2*(XB-XA)-BETA1*(YB-YA)
     
-    IF (dsp.eq.0.0_DP) THEN
+    if (dsp.eq.0.0_DP) then
     
       ! beta and the vector are parallel
       dalpha=0.0_DP
       
-    ELSE  
+    else  
 
       ! Scalar product of (beta1,beta2) with the (inner) normal vector n2
       ! of the line (xo,yo)->(xa,ya). 
@@ -5602,29 +5597,29 @@ CONTAINS
       ! reference?)
 
       ! is the intersection point inside of the element?
-      IF ((dlambda.GE.-1E-1_DP).AND.(dlambda.LE.1.11E0_DP)) THEN
-        IF (BETA1 .NE. 0.0_DP) THEN
+      if ((dlambda.GE.-1E-1_DP).AND.(dlambda.LE.1.11E0_DP)) then
+        if (BETA1 .NE. 0.0_DP) then
           dalpha=((XA-XO)+dlambda*(XB-XA))/BETA1
-        ELSE
-          IF (BETA2 .NE. 0.0_DP) THEN
+        else
+          if (BETA2 .NE. 0.0_DP) then
             dalpha=((YA-YO)+dlambda*(YB-YA))/BETA2
-          ELSE
+          else
             dalpha=0.0_DP
-          ENDIF
-        ENDIF
-      ELSE
+          end if
+        end if
+      else
         dalpha=0.0_DP
-      ENDIF
+      end if
       
-    ENDIF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_streamlineDiffusion3d ( &
+  subroutine conv_streamlineDiffusion3d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
@@ -5662,19 +5657,19 @@ CONTAINS
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
+  type(t_vectorBlock), intent(IN), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
+  type(t_vectorBlock), intent(IN), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
+  real(DP), intent(IN) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
+  real(DP), intent(IN) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  TYPE(t_convStreamlineDiffusion), INTENT(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -5683,13 +5678,13 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
   
-  ! OPTIONAL: Mesh velocity field.
+  ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -5698,16 +5693,16 @@ CONTAINS
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
 
-  ! OPTIONAL: 
+  ! optional: 
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
   ! rsolution / rdefect is the X-, Y- and Z-velocity.
   !  IvelocityComp(1) gives the number of the X-velocity (usually = 1),
   !  IvelocityComp(2) gives the number of the Y-velocity (usually = 2).
   !  IvelocityComp(3) gives the number of the Z-velocity (usually = 3).
   ! If not present, IvelocityComp=(/1,2,3/) is assumed.
-  INTEGER, DIMENSION(3), INTENT(IN), OPTIONAL :: IvelocityComp
+  integer, dimension(3), intent(IN), optional :: IvelocityComp
 !</input>
 
 !<inputoutput>
@@ -5715,53 +5710,53 @@ CONTAINS
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
-    INTEGER, DIMENSION(3) :: Icomp
-    TYPE(t_vectorScalar), POINTER :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
+    integer :: i
+    integer, dimension(3) :: Icomp
+    type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
-    TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY,&
+    type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY,&
                                      p_rsolZ,p_rdefectZ
-    REAL(DP), DIMENSION(:), POINTER :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2,&
+    real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2,&
                                        p_DvelZ1,p_DvelZ2
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY,&
+    real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY,&
                                        p_DsolZ,p_DdefectZ
     
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'SD: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (rconfig%bALE) THEN
-      IF (.NOT. PRESENT(DmeshVelocity)) THEN
+    if (rconfig%bALE) then
+      if (.NOT. PRESENT(DmeshVelocity)) then
         PRINT *,'SD: Mesh velocity vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get the actual subvectors from the velocity vectors that define
     ! the X- and Y-velocity.
-    IF (PRESENT(IvelocityComp)) THEN
+    if (PRESENT(IvelocityComp)) then
       Icomp = IvelocityComp
-    ELSE
+    else
       Icomp = (/1,2,3/)
-    END IF
+    end if
     
     p_rvelX1 => rvecPrimary%RvectorBlock(Icomp(1))
     p_rvelY1 => rvecPrimary%RvectorBlock(Icomp(2))
@@ -5770,107 +5765,107 @@ CONTAINS
     p_rvelY2 => rvecSecondary%RvectorBlock(Icomp(2))
     p_rvelZ2 => rvecSecondary%RvectorBlock(Icomp(3))
     
-    IF (PRESENT(rsolution)) THEN
+    if (PRESENT(rsolution)) then
       p_rsolX => rsolution%RvectorBlock(Icomp(1))
       p_rsolY => rsolution%RvectorBlock(Icomp(2))
       p_rsolZ => rsolution%RvectorBlock(Icomp(3))
-    ELSE
-      NULLIFY(p_rsolX)
-      NULLIFY(p_rsolY)
-      NULLIFY(p_rsolZ)
-    END IF
+    else
+      nullify(p_rsolX)
+      nullify(p_rsolY)
+      nullify(p_rsolZ)
+    end if
     
-    IF (PRESENT(rdefect)) THEN
+    if (PRESENT(rdefect)) then
       p_rdefectX => rdefect%RvectorBlock(Icomp(1))
       p_rdefectY => rdefect%RvectorBlock(Icomp(2))
       p_rdefectZ => rdefect%RvectorBlock(Icomp(3))
-    ELSE
-      NULLIFY(p_rdefectX)
-      NULLIFY(p_rdefectY)
-      NULLIFY(p_rdefectZ)
-    END IF
+    else
+      nullify(p_rdefectX)
+      nullify(p_rdefectY)
+      nullify(p_rdefectZ)
+    end if
       
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
-    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    if (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) then
       PRINT *,'SD: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-        (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+        (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (PRESENT(rdefect)) THEN
-      IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-          (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    if (PRESENT(rdefect)) then
+      if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+          (rdefect%cdataType .NE. ST_DOUBLE)) then
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
-    CALL lsyssc_getbase_double (p_rvelX1,p_DvelX1)
-    CALL lsyssc_getbase_double (p_rvelY1,p_DvelY1)
-    CALL lsyssc_getbase_double (p_rvelZ1,p_DvelZ1)
-    CALL lsyssc_getbase_double (p_rvelX2,p_DvelX2)
-    CALL lsyssc_getbase_double (p_rvelY2,p_DvelY2)
-    CALL lsyssc_getbase_double (p_rvelZ2,p_DvelZ2)
+    call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
+    call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
+    call lsyssc_getbase_double (p_rvelZ1,p_DvelZ1)
+    call lsyssc_getbase_double (p_rvelX2,p_DvelX2)
+    call lsyssc_getbase_double (p_rvelY2,p_DvelY2)
+    call lsyssc_getbase_double (p_rvelZ2,p_DvelZ2)
     
-    IF (PRESENT(rsolution) .AND. PRESENT(rdefect)) THEN
-      CALL lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
-      CALL lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
-      CALL lsyssc_getbase_double (p_rsolZ   ,p_DsolZ   )
-      CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
-      CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
-      CALL lsyssc_getbase_double (p_rdefectZ,p_DdefectZ)
+    if (PRESENT(rsolution) .AND. PRESENT(rdefect)) then
+      call lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
+      call lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
+      call lsyssc_getbase_double (p_rsolZ   ,p_DsolZ   )
+      call lsyssc_getbase_double (p_rdefectX,p_DdefectX)
+      call lsyssc_getbase_double (p_rdefectY,p_DdefectY)
+      call lsyssc_getbase_double (p_rdefectZ,p_DdefectZ)
       
-      CALL conv_strdiff3dALE_double ( &
+      call conv_strdiff3dALE_double ( &
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,p_DsolX,p_DsolY,&
                     p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
                     
-    ELSE
+    else
     
-      CALL conv_strdiff3dALE_double ( &
+      call conv_strdiff3dALE_double ( &
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,&
                     DmeshVelocity=DmeshVelocity)
 
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE conv_strdiff3dALE_double ( &
+  subroutine conv_strdiff3dALE_double ( &
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                   dweight1,dweight2,rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta,ddelta,clocalH,bALE, &
@@ -5944,22 +5939,22 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Primary Z-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Zvel
+  real(DP), dimension(:), intent(IN) :: u1Zvel
 
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Secondary Z-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Zvel
+  real(DP), dimension(:), intent(IN) :: u2Zvel
 
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -5968,156 +5963,156 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  REAL(DP), INTENT(IN) :: dalpha
+  real(DP), intent(IN) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  REAL(DP), INTENT(IN) :: dbeta
+  real(DP), intent(IN) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  REAL(DP), INTENT(IN) :: ddelta
+  real(DP), intent(IN) :: ddelta
   
   ! How to calculate local H?
-  INTEGER, INTENT(IN) :: clocalH
+  integer, intent(IN) :: clocalH
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
-  ! OPTIONAL: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
+  real(DP), dimension(:), intent(IN), optional :: Du2
   
-  ! OPTIONAL: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du3
+  real(DP), dimension(:), intent(IN), optional :: Du3
 
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixScalar), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
   
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
 
-  ! OPTIONAL: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef3
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef3
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  INTEGER(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  INTEGER(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderALE
-  REAL(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
-  REAL(DP) :: HBASI1,HBASI2,HBASI3,HBASI4,HBASJ1,HBASJ2,HBASJ3,HBASJ4,HSUMI,HSUMJ
-  INTEGER :: NVE
+  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
+  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  logical, dimension(EL_MAXNDER) :: Bder,BderALE
+  real(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
+  real(DP) :: HBASI1,HBASI2,HBASI3,HBASI4,HBASJ1,HBASJ2,HBASJ3,HBASJ4,HSUMI,HSUMJ
+  integer :: NVE
   
   ! Matrix structure arrays
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(DP), dimension(:,:), ALLOCATABLE :: p_DcubPtsRef
 
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
   
   ! Triangulation
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  type(t_triangulation), pointer :: p_rtriangulation
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
 
   ! One and only element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
 
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
 
   ! Arrays for saving Jacobian determinants 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: Idofs, IdofsALE
+  integer(PREC_DOFIDX), dimension(:,:), ALLOCATABLE, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dbas,DbasALE
+  real(DP), dimension(:,:,:,:), ALLOCATABLE, target :: Dbas,DbasALE
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry
+  real(DP), dimension(:,:), ALLOCATABLE :: Dentry
 
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvelocity
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dvelocity
   
   ! An array with local DELTA's, each DELTA for one element
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
+  real(DP), dimension(:), ALLOCATABLE :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
   
     ! Initialise the derivative flags
     Bder = .FALSE.
@@ -6139,11 +6134,11 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                    p_DvertexCoords)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
-    !CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
+    !call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
     !                            p_IedgesAtElement)
     
     ! Get the number of local DOF's for trial/test functions.
@@ -6166,80 +6161,80 @@ CONTAINS
     !     D = RHS - A*U                                         
     ! In this case, the defect(rhs vectors must be present
     
-    IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-      IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
+    if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+      if (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
                  PRESENT(Ddef3) .AND. PRESENT(Du1) .AND. &
-                 PRESENT(Du2) .AND. PRESENT(Du3))) THEN
+                 PRESENT(Du2) .AND. PRESENT(Du3))) then
         PRINT *,'conv_strdiff3dALE_double: Necessary arguments missing!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+    if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       ! Get matrix arrays
-      CALL lsyssc_getbase_double (rmatrix,p_Da)
-    END IF
-    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_double (rmatrix,p_Da)
+    end if
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,UBOUND(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
-    !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(Idofs(indof,nelementsPerBlock))
+    allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
-    ALLOCATE(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
+    allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsALE(indofALE,nelementsPerBlock))
+    allocate(IdofsALE(indofALE,nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    ALLOCATE(DlocalDelta(nelementsPerBlock))
+    allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
-    ALLOCATE(Dentry(indof,indof))
+    allocate(Kentry(indof,indof,nelementsPerBlock))
+    allocate(Dentry(indof,indof))
     
     ! Allocate memory for the velocity in the cubature points.
-    ALLOCATE(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
+    allocate(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
 
     ! Initialisation of the element set.
-    CALL elprep_init(revalElementSet)
+    call elprep_init(revalElementSet)
     
     ! What is the reciprocal of nu? We need it later.
-    IF (dnu .NE. 0.0_DP) THEN
+    if (dnu .NE. 0.0_DP) then
       dre = 1.0_DP/dnu
       
       ! dny gets the actual multiplier for the Laplace matrix.
@@ -6247,53 +6242,53 @@ CONTAINS
       ! This may be =0.0 if the Stokes operator should not be included into
       ! the matrix.
       dny = dbeta*dnu
-    ELSE
+    else
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
-    IF ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) THEN
-      CALL lalg_clearVectorDble (DlocalDelta)
-    END IF
+    if ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) then
+      call lalg_clearVectorDble (DlocalDelta)
+    end if
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
 
     dumax=0.0_DP
-    IF (dweight2 .EQ. 0.0_DP) THEN
-      DO IEQ=1,SIZE(u1Xvel)
+    if (dweight2 .EQ. 0.0_DP) then
+      do IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         du3loc = dweight1*u1Zvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2+du3loc**2)
         dumax = MAX(DUMAX,DUNORM)
-      END DO
-    ELSE       
-      DO ieq=1,SIZE(u1Xvel)
+      end do
+    else       
+      do ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         du3loc = dweight1*u1Zvel(IEQ)+dweight2*u2Zvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2+du3loc**2)
         dumax = MAX(dumax,dunorm)
-      END DO
-    ENDIF       
+      end do
+    end if       
 
-    IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
+    if (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
     
     ! Loop over the elements - blockwise.
-    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -6326,15 +6321,15 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
-      IF (bALE) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+      if (bALE) then
+        call dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
                                     IdofsALE)
-      END IF
+      end if
       
       ! Calculate local DELTA's for streamline diffusion method.
       ! (cf. p. 121 in Turek's CFD book).
@@ -6346,26 +6341,26 @@ CONTAINS
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
-      IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
+      if ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))then
         ! How do we calculate the local H?
-        IF (clocalH .EQ. 1) THEN
+        if (clocalH .EQ. 1) then
           ! Use length of the way a particle travels
-          DO IEL=1,IELmax-IELset+1
-            CALL getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+          do IEL=1,IELmax-IELset+1
+            call getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                         dweight1,dweight2,INT(IEL+IELset-1,PREC_ELEMENTIDX),&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
                         p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
-          END DO ! IEL
-        ELSE
+          end do ! IEL
+        else
           ! Use volume of the cell
-          DO IEL=1,IELmax-IELset+1
-            CALL getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+          do IEL=1,IELmax-IELset+1
+            call getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                         dweight1,dweight2,INT(IEL+IELset-1,PREC_ELEMENTIDX),&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
                         p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
-          END DO ! IEL
-        END IF
-      END IF
+          end do ! IEL
+        end if
+      end if
                                    
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
@@ -6391,12 +6386,12 @@ CONTAINS
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        DO IDOFE=1,indof
+        do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -6412,7 +6407,7 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO JDOFE=1,indof
+          do JDOFE=1,indof
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -6422,11 +6417,11 @@ CONTAINS
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
+            ! Jump out of the do loop if we find the column.
             
-            DO JCOL=JCOL0,rmatrix%NA
-              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
-            END DO
+            do JCOL=JCOL0,rmatrix%NA
+              if (p_KCOL(JCOL) .EQ. JDFG) EXIT
+            end do
 
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
@@ -6443,11 +6438,11 @@ CONTAINS
             
             Kentry(JDOFE,IDOFE,IEL)=JCOL
             
-          END DO ! IDOFE
+          end do ! IDOFE
           
-        END DO ! JDOFE
+        end do ! JDOFE
         
-      END DO ! IEL
+      end do ! IEL
       
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
@@ -6463,22 +6458,22 @@ CONTAINS
                       
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
-      IF (IELset .EQ. 1) THEN
+      if (IELset .EQ. 1) then
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
@@ -6512,20 +6507,20 @@ CONTAINS
       ! velocities in U1Lx, otherwise we have to sum up
       ! dweight1*u1vel + dweight2*u2vel
       
-      IF (dweight2 .EQ. 0.0_DP) THEN
+      if (dweight2 .EQ. 0.0_DP) then
       
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
@@ -6537,30 +6532,30 @@ CONTAINS
               du2loc = du2loc + u1Yvel(JDFG)*db
               du3loc = du3loc + u1Zvel(JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = dweight1*du1loc
             Dvelocity(2,ICUBP,IEL) = dweight1*du2loc
             Dvelocity(3,ICUBP,IEL) = dweight1*du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
           
-      ELSE
+      else
 
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               ! phi_i in the cubature point:
@@ -6572,18 +6567,18 @@ CONTAINS
               du2loc = du2loc + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*db
               du3loc = du3loc + (dweight1*u1Zvel(JDFG) + dweight2*u2Zvel(JDFG))*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = du1loc
             Dvelocity(2,ICUBP,IEL) = du2loc
             Dvelocity(3,ICUBP,IEL) = du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
       
-      END IF
+      end if
       
       ! If ALE is not active, calculate 
       !
@@ -6603,25 +6598,25 @@ CONTAINS
       ! we have to substract the mesh velocity field in the cubature
       ! points.
       
-      IF (bALE) THEN
+      if (bALE) then
         
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
-        CALL elem_generic_sim2 (EL_Q1_3D, &
+        call elem_generic_sim2 (EL_Q1_3D, &
             revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               db= Dbas(JDOFE,1,ICUBP,IEL)
@@ -6632,31 +6627,31 @@ CONTAINS
               du2loc = du2loc + DmeshVelocity(2,JDFG)*db
               du3loc = du3loc + DmeshVelocity(3,JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
               
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = Dvelocity(1,ICUBP,IEL) - du1loc
             Dvelocity(2,ICUBP,IEL) = Dvelocity(2,ICUBP,IEL) - du2loc
             Dvelocity(3,ICUBP,IEL) = Dvelocity(3,ICUBP,IEL) - du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a biliinear form!
       !
       ! Loop over the elements in the current set.
 
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
         
         ! Clear the local matrix
         Dentry = 0.0_DP
         
         ! Loop over all cubature points on the current element
-        DO ICUBP = 1, ncubp
+        do ICUBP = 1, ncubp
 
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
@@ -6700,7 +6695,7 @@ CONTAINS
           ! Outer loop over the DOF's i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
-          DO IDOFE=1,indof
+          do IDOFE=1,indof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
             ! (our "O")  for function value and first derivatives for the 
@@ -6732,9 +6727,9 @@ CONTAINS
             ! Inner loop over the DOF's j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
               
-              !IF (IDOFE.EQ.JDOFE) THEN
+              !if (IDOFE.EQ.JDOFE) then
               
                 ! Short version of the evaluation of the matrix
                 ! contribution - see below for a more detailed
@@ -6744,7 +6739,7 @@ CONTAINS
               !      + dny*(HBASI2**2+HBASI3**2+HBASI4**2) &
               !      + dalpha*HBASI1**2
     
-              !ELSE
+              !else
               
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -6808,7 +6803,7 @@ CONTAINS
                     + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3+HBASI4*HBASJ4) &
                     + dalpha*HBASI1*HBASJ1
     
-              !ENDIF ! (IDOFE.EQ.JDOFE)
+              !end if ! (IDOFE.EQ.JDOFE)
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
@@ -6817,11 +6812,11 @@ CONTAINS
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
               
-            END DO ! IDOFE
+            end do ! IDOFE
             
-          END DO ! JDOFE
+          end do ! JDOFE
 
-        END DO ! ICUBP 
+        end do ! ICUBP 
         
         ! Now we have set up a "local" system matrix. We can either    
         ! include it into the real matrix or we can use it to simply   
@@ -6839,14 +6834,14 @@ CONTAINS
         ! nonstationary simulation. For stationary simulations, dtheta is typically
         ! 1.0 which includes the local matrix into the global one directly.)
         
-        IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
-          DO IDOFE=1,indof
-            DO JDOFE=1,indof
+        if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
+          do IDOFE=1,indof
+            do JDOFE=1,indof
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                 dtheta * Dentry(JDOFE,IDOFE)
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
         ! For cdef containing CONV_MODDEFECT, build the defect vector                     
         !     D = RHS - A*U                                         
@@ -6856,12 +6851,12 @@ CONTAINS
         ! entry and will be updated to be the defect vector when    
         ! this routine is left.                                     
         
-        IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-          DO IDOFE=1,indof
+        if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+          do IDOFE=1,indof
 
             IDFG=Idofs(IDOFE,IEL)
 
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               denth = dtheta*Dentry(JDOFE,IDOFE)         
     
@@ -6870,34 +6865,34 @@ CONTAINS
               Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
               Ddef3(IDFG)= Ddef3(IDFG) - denth*Du3(JDFG)
 
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
         
-      END DO ! IEL
+      end do ! IEL
 
-    END DO ! IELset
+    end do ! IELset
     
     ! Release memory
-    CALL elprep_releaseElementSet(revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
-    DEALLOCATE(p_DcubPtsRef)
-    DEALLOCATE(DlocalDelta)
-    DEALLOCATE(Dvelocity)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(IdofsALE)
-    DEALLOCATE(Idofs)
-    DEALLOCATE(DbasALE)
-    DEALLOCATE(Dbas)
+    deallocate(p_DcubPtsRef)
+    deallocate(DlocalDelta)
+    deallocate(Dvelocity)
+    deallocate(Dentry)
+    deallocate(Kentry)
+    deallocate(IdofsALE)
+    deallocate(Idofs)
+    deallocate(DbasALE)
+    deallocate(Dbas)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_streamlineDiffusionBlk3d (rvecPrimary, rvecSecondary,&
+  subroutine conv_streamlineDiffusionBlk3d (rvecPrimary, rvecSecondary,&
                                    dprimWeight, dsecWeight, rconfig, cdef, &
                                    rmatrix, rsolution, rdefect, DmeshVelocity)
 
@@ -6937,19 +6932,19 @@ CONTAINS
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
+  type(t_vectorBlock), intent(IN), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
+  type(t_vectorBlock), intent(IN), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
+  real(DP), intent(IN) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
+  real(DP), intent(IN) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  TYPE(t_convStreamlineDiffusion), INTENT(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -6958,13 +6953,13 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
   
-  ! OPTIONAL: Mesh velocity field.
+  ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -6973,7 +6968,7 @@ CONTAINS
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
 
 
 
@@ -6986,44 +6981,44 @@ CONTAINS
   ! The nonlinear operator is added to the matrix.
   ! The blocks A11,A12,A21 and A22 of this matrix are tackled by streamline
   ! diffusion.
-  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
-    TYPE(t_vectorScalar), POINTER :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
+    integer :: i
+    type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
-    TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rsolZ,&
+    type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rsolZ,&
                                      p_rdefectX,p_rdefectY,p_rdefectZ
-    REAL(DP), DIMENSION(:), POINTER :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2,&
+    real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2,&
                                        p_DvelZ1,p_DvelZ2
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DsolZ,&
+    real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DsolZ,&
                                        p_DdefectX,p_DdefectY,p_DdefectZ
     
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'SD: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (rconfig%bALE) THEN
-      IF (.NOT. PRESENT(DmeshVelocity)) THEN
+    if (rconfig%bALE) then
+      if (.NOT. PRESENT(DmeshVelocity)) then
         PRINT *,'SD: Mesh velocity vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get the actual subvectors from the velocity vectors that define
     ! the X-, Y- and Z-velocity.
@@ -7034,102 +7029,102 @@ CONTAINS
     p_rvelY2 => rvecSecondary%RvectorBlock(2)
     p_rvelZ2 => rvecSecondary%RvectorBlock(3)
     
-    IF (PRESENT(rsolution)) THEN
+    if (PRESENT(rsolution)) then
       p_rsolX => rsolution%RvectorBlock(1)
       p_rsolY => rsolution%RvectorBlock(2)
       p_rsolZ => rsolution%RvectorBlock(3)
-    ELSE
-      NULLIFY(p_rsolX)
-      NULLIFY(p_rsolY)
-      NULLIFY(p_rsolZ)
-    END IF
+    else
+      nullify(p_rsolX)
+      nullify(p_rsolY)
+      nullify(p_rsolZ)
+    end if
     
-    IF (PRESENT(rdefect)) THEN
+    if (PRESENT(rdefect)) then
       p_rdefectX => rdefect%RvectorBlock(1)
       p_rdefectY => rdefect%RvectorBlock(2)
       p_rdefectZ => rdefect%RvectorBlock(3)
-    ELSE
-      NULLIFY(p_rdefectX)
-      NULLIFY(p_rdefectY)
-      NULLIFY(p_rdefectZ)
-    END IF
+    else
+      nullify(p_rdefectX)
+      nullify(p_rdefectY)
+      nullify(p_rdefectZ)
+    end if
       
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(3,3)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%RmatrixBlock(3,3)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,3) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,3) .AND. &
         (rmatrix%RmatrixBlock(1,3)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(1,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(1,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,1) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,1) .AND. &
         (rmatrix%RmatrixBlock(3,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(3,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(3,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,2,3) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,2,3) .AND. &
         (rmatrix%RmatrixBlock(2,3)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(2,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(2,3)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,2) .AND. &
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,2) .AND. &
         (rmatrix%RmatrixBlock(3,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%RmatrixBlock(3,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+        (rmatrix%RmatrixBlock(3,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'SD: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! If Newton must be calculated, make sure A12,A21,A13,A31,A23,A32 exists
     ! and that all Aij are independent of each other!
-    IF (rconfig%dnewton .NE. 0.0_DP) THEN
-      IF ((.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2)) .OR. &
+    if (rconfig%dnewton .NE. 0.0_DP) then
+      if ((.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2)) .OR. &
           (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) .OR. &
           (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,3)) .OR. &
           (.NOT. lsysbl_isSubmatrixPresent(rmatrix,3,1)) .OR. &
           (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,3)) .OR. &
-          (.NOT. lsysbl_isSubmatrixPresent(rmatrix,3,2))) THEN
+          (.NOT. lsysbl_isSubmatrixPresent(rmatrix,3,2))) then
         PRINT *,'SD: For the Newton matrix, A12 and A21 must be defined!'
-        CALL sys_halt()
-      END IF
-      IF (lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(1,1),&
+        call sys_halt()
+      end if
+      if (lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(1,1),&
                                         rmatrix%RmatrixBlock(2,2)) .OR. &
           lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(1,1),&
                                         rmatrix%RmatrixBlock(3,3)) .OR. &
@@ -7140,81 +7135,81 @@ CONTAINS
           lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(1,3),&
                                         rmatrix%RmatrixBlock(3,1)) .OR. &
           lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(2,3),&
-                                        rmatrix%RmatrixBlock(3,2))) THEN
+                                        rmatrix%RmatrixBlock(3,2))) then
         PRINT *,'SD: For the Newton matrix, the matrix blocks must be indepentent!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
 
     i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
                 RelementDistr(1)%celement
-    IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
-        .NE. SPDISC_UNIFORM) THEN
+    if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
+        .NE. SPDISC_UNIFORM) then
       PRINT *,'SD: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-        (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+        (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (PRESENT(rdefect)) THEN
-      IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-          (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    if (PRESENT(rdefect)) then
+      if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+          (rdefect%cdataType .NE. ST_DOUBLE)) then
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
-    CALL lsyssc_getbase_double (p_rvelX1,p_DvelX1)
-    CALL lsyssc_getbase_double (p_rvelY1,p_DvelY1)
-    CALL lsyssc_getbase_double (p_rvelZ1,p_DvelZ1)
-    CALL lsyssc_getbase_double (p_rvelX2,p_DvelX2)
-    CALL lsyssc_getbase_double (p_rvelY2,p_DvelY2)
-    CALL lsyssc_getbase_double (p_rvelZ2,p_DvelZ2)
+    call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
+    call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
+    call lsyssc_getbase_double (p_rvelZ1,p_DvelZ1)
+    call lsyssc_getbase_double (p_rvelX2,p_DvelX2)
+    call lsyssc_getbase_double (p_rvelY2,p_DvelY2)
+    call lsyssc_getbase_double (p_rvelZ2,p_DvelZ2)
     
-    IF (PRESENT(rdefect)) THEN
-      CALL lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
-      CALL lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
-      CALL lsyssc_getbase_double (p_rsolZ   ,p_DsolZ   )
-      CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
-      CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
-      CALL lsyssc_getbase_double (p_rdefectZ,p_DdefectZ)
+    if (PRESENT(rdefect)) then
+      call lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
+      call lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
+      call lsyssc_getbase_double (p_rsolZ   ,p_DsolZ   )
+      call lsyssc_getbase_double (p_rdefectX,p_DdefectX)
+      call lsyssc_getbase_double (p_rdefectY,p_DdefectY)
+      call lsyssc_getbase_double (p_rdefectZ,p_DdefectZ)
       
-      CALL conv_strdiff3dALEblk_double (&
+      call conv_strdiff3dALEblk_double (&
               p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2, &
               dprimWeight, dsecWeight, rmatrix,cdef, rconfig%dupsam, &
               rconfig%dnu, rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
               rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE, &
               p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
                     
-    ELSE
+    else
     
-      CALL conv_strdiff3dALEblk_double ( &
+      call conv_strdiff3dALEblk_double ( &
                     p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
                     dprimWeight,dsecWeight, rmatrix, cdef, rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
                     rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE,&
                     DmeshVelocity=DmeshVelocity)
 
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -7225,7 +7220,7 @@ CONTAINS
 !                Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
 
 !<subroutine>
-  SUBROUTINE conv_strdiff3dALEblk_double (&
+  subroutine conv_strdiff3dALEblk_double (&
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,dweight1,dweight2,&
                   rmatrix,cdef,dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
                   clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity)
@@ -7300,22 +7295,22 @@ CONTAINS
 !<input>
 
   ! Primary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Xvel
+  real(DP), dimension(:), intent(IN) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Yvel
+  real(DP), dimension(:), intent(IN) :: u1Yvel
   
   ! Primary Z-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u1Zvel
+  real(DP), dimension(:), intent(IN) :: u1Zvel
   
   ! Secondary X-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Xvel
+  real(DP), dimension(:), intent(IN) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Yvel
+  real(DP), dimension(:), intent(IN) :: u2Yvel
   
   ! Secondary Z-velocity of $u_1$
-  REAL(DP), DIMENSION(:), INTENT(IN) :: u2Zvel
+  real(DP), dimension(:), intent(IN) :: u2Zvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -7324,66 +7319,66 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  REAL(DP), INTENT(IN) :: dweight1
+  real(DP), intent(IN) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  REAL(DP), INTENT(IN) :: dweight2
+  real(DP), intent(IN) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  REAL(DP), INTENT(IN) :: dupsam
+  real(DP), intent(IN) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  REAL(DP), INTENT(IN) :: dnu 
+  real(DP), intent(IN) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  REAL(DP), INTENT(IN) :: dalpha
+  real(DP), intent(IN) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  REAL(DP), INTENT(IN) :: dbeta
+  real(DP), intent(IN) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  REAL(DP), INTENT(IN) :: dtheta 
+  real(DP), intent(IN) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  REAL(DP), INTENT(IN) :: ddelta
+  real(DP), intent(IN) :: ddelta
 
   
   
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
-  REAL(DP), INTENT(IN) :: dnewton
+  real(DP), intent(IN) :: dnewton
   
   ! How to calculate the local H?
-  INTEGER, INTENT(IN) :: clocalH
+  integer, intent(IN) :: clocalH
       
   ! Whether or not to use the ALE method
-  LOGICAL, INTENT(IN) :: bALE
+  logical, intent(IN) :: bALE
       
-  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
+  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity,
   ! DmeshVelocity(3,:) gives the Z-velocity.
-  REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
   
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
+  real(DP), dimension(:), intent(IN), optional :: Du1
   
-  ! OPTIONAL: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
+  real(DP), dimension(:), intent(IN), optional :: Du2
   
-  ! OPTIONAL: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du3
+  real(DP), dimension(:), intent(IN), optional :: Du3
   
 !</input>
 
@@ -7392,121 +7387,121 @@ CONTAINS
   ! A11, A12, A21 and A22 and must be in matrix format 7 or 9.
   ! A11 and A22 must have the same structure. A12 and A21 must have
   ! the same structure.
-  TYPE(t_matrixBlock), INTENT(INOUT), TARGET :: rmatrix
+  type(t_matrixBlock), intent(INOUT), target :: rmatrix
   
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
   
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
 
-  ! OPTIONAL: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef3
+  real(DP), dimension(:), intent(INOUT), optional :: Ddef3
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  INTEGER(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  INTEGER(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderALE
-  REAL(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
-  REAL(DP) :: du1locx,du2locx,du3locx,du1locy,du2locy,du3locy,&
+  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
+  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  logical, dimension(EL_MAXNDER) :: Bder,BderALE
+  real(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
+  real(DP) :: du1locx,du2locx,du3locx,du1locy,du2locy,du3locy,&
               du1locz,du2locz,du3locz,dbx,dby,dbz
-  REAL(DP) :: AH11,AH12,AH13,AH21,AH22,AH23,AH31,AH32,AH33
-  REAL(DP) :: HBASI1,HBASI2,HBASI3,HBASI4,HBASJ1,HBASJ2,HBASJ3,HBASJ4,HSUMI,HSUMJ
-  INTEGER :: NVE
+  real(DP) :: AH11,AH12,AH13,AH21,AH22,AH23,AH31,AH32,AH33
+  real(DP) :: HBASI1,HBASI2,HBASI3,HBASI4,HBASJ1,HBASJ2,HBASJ3,HBASJ4,HSUMI,HSUMJ
+  integer :: NVE
   
   ! Matrix structure arrays
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  REAL(DP), DIMENSION(:), POINTER :: p_Da11,p_Da12,p_Da13,&
+  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da11,p_Da12,p_Da13,&
                  p_Da21,p_Da22,p_Da23,p_Da31,p_Da32,p_Da33
 
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcubPtsRef
+  real(DP), dimension(:,:), pointer :: p_DcubPtsRef
 
   ! The discretisation - for easier access
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
   
   ! Triangulation
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement,&
+  type(t_triangulation), pointer :: p_rtriangulation
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IfacesAtElement,&
                                     p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
 
   ! One and only element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
 
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
-  LOGICAL :: bcubPtsInitialised
+  logical :: bcubPtsInitialised
 
   ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: Idofs, IdofsALE
+  integer(PREC_DOFIDX), dimension(:,:), ALLOCATABLE, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dbas,DbasALE
+  real(DP), dimension(:,:,:,:), ALLOCATABLE, target :: Dbas,DbasALE
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dentry
+  integer(PREC_DOFIDX), dimension(:,:,:), ALLOCATABLE :: Kentry
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dentry
   
   ! Additional contributions for the submatrices Aij stemming from Newton.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA11
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA12
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA13
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA21
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA22
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA23
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA31
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA32
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA33
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA11
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA12
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA13
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA21
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA22
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA23
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA31
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA32
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DentryA33
 
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(I32), dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvelocity
+  real(DP), dimension(:,:,:), ALLOCATABLE :: Dvelocity
   
   ! Pointer to the velocity X-, Y- and Z-derivative in the cubature points
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DvelocityUderiv
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DvelocityVderiv
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DvelocityWderiv
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DvelocityUderiv
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DvelocityVderiv
+  real(DP), dimension(:,:,:), ALLOCATABLE :: DvelocityWderiv
   
   ! An array with local DELTA's, each DELTA for one element
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
+  real(DP), dimension(:), ALLOCATABLE :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(I32) :: cevaluationTag
  
     ! Initialise the derivative flags
     Bder = .FALSE.
@@ -7531,11 +7526,11 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                    p_DvertexCoords)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IfacesAtElement,&
+    call storage_getbase_int2d (p_rtriangulation%h_IfacesAtElement,&
                                 p_IfacesAtElement)
     
     ! Get the number of local DOF's for trial/test functions.
@@ -7558,59 +7553,59 @@ CONTAINS
     !     D = RHS - A*U                                         
     ! In this case, the defect(rhs vectors must be present
     
-    IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-      IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. PRESENT(Ddef3) .AND. &
-                 PRESENT(Du1) .AND. PRESENT(Du2) .AND. PRESENT(Du3))) THEN
+    if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
+      if (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. PRESENT(Ddef3) .AND. &
+                 PRESENT(Du1) .AND. PRESENT(Du2) .AND. PRESENT(Du3))) then
         PRINT *,'conv_strdiff3dALE_double: Necessary arguments missing!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
     ! Get pointers to the matrix content (if necessary)
-    IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+    if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       ! Get matrix arrays
-      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
-      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
-      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(3,3),p_Da33)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,3),p_Da33)
       
-      IF (dnewton .NE. 0.0_DP) THEN
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),p_Da13)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(3,1),p_Da31)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,3),p_Da23)
-        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(3,2),p_Da32)
-      ELSE
-        NULLIFY(p_Da12,p_Da21,p_Da13,p_Da31,p_Da23,p_Da32)
-      END IF
-    END IF
+      if (dnewton .NE. 0.0_DP) then
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),p_Da13)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,1),p_Da31)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,3),p_Da23)
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,2),p_Da32)
+      else
+        nullify(p_Da12,p_Da21,p_Da13,p_Da31,p_Da23,p_Da32)
+      end if
+    end if
     
     ! Get pointers to the matrix structure(s).
-    CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_Kcol)
-    CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_Kld)
+    call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_Kld)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,UBOUND(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
         
-    !別MP PARALLEL PRIVATE(csysTrial, p_DcubPtsReal, &
+    !別MP PARALLEL private(csysTrial, p_DcubPtsReal, &
     !別MP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
     !別MP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
     !別MP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
@@ -7623,24 +7618,24 @@ CONTAINS
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
-    !  ALLOCATE(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(Idofs(indof,nelementsPerBlock))
+    allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
-    ALLOCATE(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
+    allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsALE(indofALE,nelementsPerBlock))
+    allocate(IdofsALE(indofALE,nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    ALLOCATE(DlocalDelta(nelementsPerBlock))
+    allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
@@ -7650,44 +7645,44 @@ CONTAINS
     !
     ! Kentry (:,:,:) defines the positions of the local matrices
     ! in the submatrices Aij.
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
+    allocate(Kentry(indof,indof,nelementsPerBlock))
     
     ! Dentry (:,:,:) fetches the 'main' matrix entries (Laplace, Mass,
     ! Convection).
     ! DentryA11, DentryA12, DentryA21 and DentryA22 fetches additional entries in 
     ! A11, A12, A21 and A22 of the Newton matrix, which is not always calculated
     ! and therefore not always used!
-    ALLOCATE(Dentry(indof,indof,nelementsPerBlock))
+    allocate(Dentry(indof,indof,nelementsPerBlock))
     
-    IF (dnewton .NE. 0.0_DP) THEN
-      ALLOCATE(DentryA11(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA12(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA13(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA21(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA22(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA23(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA31(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA32(indof,indof,nelementsPerBlock))
-      ALLOCATE(DentryA33(indof,indof,nelementsPerBlock))
-    END IF
+    if (dnewton .NE. 0.0_DP) then
+      allocate(DentryA11(indof,indof,nelementsPerBlock))
+      allocate(DentryA12(indof,indof,nelementsPerBlock))
+      allocate(DentryA13(indof,indof,nelementsPerBlock))
+      allocate(DentryA21(indof,indof,nelementsPerBlock))
+      allocate(DentryA22(indof,indof,nelementsPerBlock))
+      allocate(DentryA23(indof,indof,nelementsPerBlock))
+      allocate(DentryA31(indof,indof,nelementsPerBlock))
+      allocate(DentryA32(indof,indof,nelementsPerBlock))
+      allocate(DentryA33(indof,indof,nelementsPerBlock))
+    end if
     
     ! Allocate memory for the velocity in the cubature points.
-    ALLOCATE(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
+    allocate(Dvelocity(NDIM3D,ncubp,nelementsPerBlock))
     
-    IF (dnewton .NE. 0.0_DP) THEN
-      ALLOCATE(DvelocityUderiv(NDIM3D,ncubp,nelementsPerBlock))
-      ALLOCATE(DvelocityVderiv(NDIM3D,ncubp,nelementsPerBlock))
-      ALLOCATE(DvelocityWderiv(NDIM3D,ncubp,nelementsPerBlock))
-    END IF
+    if (dnewton .NE. 0.0_DP) then
+      allocate(DvelocityUderiv(NDIM3D,ncubp,nelementsPerBlock))
+      allocate(DvelocityVderiv(NDIM3D,ncubp,nelementsPerBlock))
+      allocate(DvelocityWderiv(NDIM3D,ncubp,nelementsPerBlock))
+    end if
     
     ! Initialisation of the element set.
-    CALL elprep_init(revalElementSet)
+    call elprep_init(revalElementSet)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
     
     ! What is the reciprocal of nu? We need it later.
-    IF (dnu .NE. 0.0_DP) THEN
+    if (dnu .NE. 0.0_DP) then
       dre = 1.0_DP/dnu
       
       ! dny gets the actual multiplier for the Laplace matrix.
@@ -7695,56 +7690,56 @@ CONTAINS
       ! This may be =0.0 if the Stokes operator should not be included into
       ! the matrix.
       dny = dbeta*dnu
-    ELSE
+    else
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
-    IF ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) THEN
-      CALL lalg_clearVectorDble (DlocalDelta)
-    END IF
+    if ((ddelta .EQ. 0.0_DP) .OR. (dupsam .EQ. 0.0_DP)) then
+      call lalg_clearVectorDble (DlocalDelta)
+    end if
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
     !別MP SINGLE
     dumax=0.0_DP
-    IF (dweight2 .EQ. 0.0_DP) THEN
+    if (dweight2 .EQ. 0.0_DP) then
 
       
-      DO IEQ=1,SIZE(u1Xvel)
+      do IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         du3loc = dweight1*u1Zvel(IEQ)
         dunorm = SQRT(du1loc**2 + du2loc**2 + du3loc**2)
         dumax = MAX(DUMAX,DUNORM)
-      END DO
+      end do
   
-    ELSE
+    else
 
-      DO ieq=1,SIZE(u1Xvel)
+      do ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         du3loc = dweight1*u1Zvel(IEQ)+dweight2*u2Zvel(IEQ)
         dunorm = SQRT(du1loc**2 + du2loc**2 + du3loc**2)
         dumax = MAX(dumax,dunorm)
-      END DO
+      end do
 
-    ENDIF
+    end if
            
     !print *,"dumax: ",dumax
-    IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
+    if (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
-    !別MP END SINGLE
+    !別MP end SINGLE
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
 
 
@@ -7754,8 +7749,8 @@ CONTAINS
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !別MP DO SCHEDULE(dynamic,1)
-    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+    !別MP do SCHEDULE(dynamic,1)
+    do IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -7788,15 +7783,15 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
       ! In case ALE is used, do this also for the ALE stuff.
-      IF (bALE) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
+      if (bALE) then
+        call dof_locGlobMapping_mult(p_rdiscretisation, &
                                     p_IelementList(IELset:IELmax), &
                                     IdofsALE)
-      END IF
+      end if
       
       ! Calculate local DELTA's for streamline diffusion method.
       ! (cf. p. 121 in Turek's CFD book).
@@ -7808,23 +7803,23 @@ CONTAINS
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
-      IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
-        IF (clocalH .EQ. 1) THEN
-          DO IEL=1,IELmax-IELset+1
-            CALL getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+      if ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))then
+        if (clocalH .EQ. 1) then
+          do IEL=1,IELmax-IELset+1
+            call getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                         dweight1,dweight2, INT(IEL+IELset-1,PREC_ELEMENTIDX),&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
                         p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
-          END DO ! IEL
-        ELSE
-          DO IEL=1,IELmax-IELset+1
-            CALL getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
+          end do ! IEL
+        else
+          do IEL=1,IELmax-IELset+1
+            call getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                         dweight1,dweight2, INT(IEL+IELset-1,PREC_ELEMENTIDX),&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
                         p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
-          END DO ! IEL
-        ENDIF
-      END IF
+          end do ! IEL
+        end if
+      end if
                                    
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
@@ -7850,12 +7845,12 @@ CONTAINS
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        DO IDOFE=1,indof
+        do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -7871,7 +7866,7 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO JDOFE=1,indof
+          do JDOFE=1,indof
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -7881,11 +7876,11 @@ CONTAINS
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
-            ! Jump out of the DO loop if we find the column.
+            ! Jump out of the do loop if we find the column.
             
-            DO JCOL=JCOL0,rmatrix%RmatrixBlock(1,1)%NA
-              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
-            END DO
+            do JCOL=JCOL0,rmatrix%RmatrixBlock(1,1)%NA
+              if (p_KCOL(JCOL) .EQ. JDFG) EXIT
+            end do
             
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
@@ -7902,11 +7897,11 @@ CONTAINS
             
             Kentry(JDOFE,IDOFE,IEL)=JCOL
             
-          END DO ! IDOFE
+          end do ! IDOFE
           
-        END DO ! JDOFE
+        end do ! JDOFE
         
-      END DO ! IEL
+      end do ! IEL
       
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
@@ -7925,22 +7920,22 @@ CONTAINS
       ! In all later loops, use the precalculated information.
       !
       ! Note: Why not using
-      !   IF (IELset .EQ. 1) THEN
+      !   if (IELset .EQ. 1) then
       ! here, but this strange concept with the boolean variable?
-      ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
+      ! Because the if-command does not work with OpenMP! bcubPtsInitialised
       ! is a local variable and will therefore ensure that every thread
       ! is initialising its local set of cubature points!
-      IF (.NOT. bcubPtsInitialised) THEN
+      if (.NOT. bcubPtsInitialised) then
         bcubPtsInitialised = .TRUE.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
       
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
+      call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => revalElementSet%p_Ddetj
@@ -7950,7 +7945,7 @@ CONTAINS
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a 
       ! parametric or nonparametric element.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
             
       ! We want to set up the nonlinear part of the matrix
@@ -7985,21 +7980,21 @@ CONTAINS
       ! dweight1*u1vel + dweight2*u2vel
       
       ! only primary velocity field
-      IF (dweight2 .EQ. 0.0_DP) THEN
+      if (dweight2 .EQ. 0.0_DP) then
 !      print *,"dweight2 .EQ. 0.0"
       
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
@@ -8013,24 +8008,24 @@ CONTAINS
               du2loc = du2loc +u1Yvel(JDFG)*db
               du3loc = du3loc +u1Zvel(JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = dweight1*du1loc
             Dvelocity(2,ICUBP,IEL) = dweight1*du2loc
             Dvelocity(3,ICUBP,IEL) = dweight1*du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
         ! Compute X-, Y- and Z-derivative of the velocity?
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -8043,7 +8038,7 @@ CONTAINS
               du3locz = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -8063,7 +8058,7 @@ CONTAINS
                 du3locy = du3locy + u1Zvel(JDFG)*dby
                 du3locz = du3locz + u1Zvel(JDFG)*dbz
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               ! Save the computed velocity derivative
               DvelocityUderiv(1,ICUBP,IEL) = dweight1*du1locx
@@ -8076,25 +8071,25 @@ CONTAINS
               DvelocityWderiv(2,ICUBP,IEL) = dweight1*du3locy
               DvelocityWderiv(3,ICUBP,IEL) = dweight1*du3locz
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
         
-      ELSE
+      else
 
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               ! phi_i in the cubature point:
@@ -8106,24 +8101,24 @@ CONTAINS
               du2loc = du2loc + (dweight1*u1Yvel(JDFG) + dweight2*u2Yvel(JDFG))*db
               du3loc = du3loc + (dweight1*u1Zvel(JDFG) + dweight2*u2Zvel(JDFG))*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
             
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = du1loc
             Dvelocity(2,ICUBP,IEL) = du2loc
             Dvelocity(3,ICUBP,IEL) = du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
       
         ! Compute X-, Y- and Z-derivative of the velocity?
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -8136,7 +8131,7 @@ CONTAINS
               du3locz = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -8156,7 +8151,7 @@ CONTAINS
                 du3locy = du3locy + (dweight1*u1Zvel(JDFG) + dweight2*u2Zvel(JDFG))*dby
                 du3locz = du3locz + (dweight1*u1Zvel(JDFG) + dweight2*u2Zvel(JDFG))*dbz
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               ! Save the computed velocity derivative
               DvelocityUderiv(1,ICUBP,IEL) = du1locx
@@ -8169,13 +8164,13 @@ CONTAINS
               DvelocityWderiv(2,ICUBP,IEL) = du3locy
               DvelocityWderiv(3,ICUBP,IEL) = du3locz
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
       
-      END IF
+      end if
       
       ! If ALE is not active, calculate 
       !
@@ -8195,25 +8190,25 @@ CONTAINS
       ! we have to substract the mesh velocity field in the cubature
       ! points.
       
-      IF (bALE) THEN
+      if (bALE) then
         
         ! Calculate the values of the basis functions in all the points
         ! on all the elements
-        CALL elem_generic_sim2 (EL_Q1_3D, &
+        call elem_generic_sim2 (EL_Q1_3D, &
             revalElementSet, Bder, DbasALE)
         
         ! Loop over all elements in the current set
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
           
             du1loc = 0.0_DP
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
             ! Perform a loop through the trial DOF's.
-            DO JDOFE=1,indof
+            do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
               db= Dbas(JDOFE,1,ICUBP,IEL)
@@ -8224,25 +8219,25 @@ CONTAINS
               du2loc = du2loc + DmeshVelocity(2,JDFG)*db
               du3loc = du3loc + DmeshVelocity(3,JDFG)*db
 
-            END DO ! JDOFE
+            end do ! JDOFE
               
             ! Save the computed velocity
             Dvelocity(1,ICUBP,IEL) = Dvelocity(1,ICUBP,IEL) - du1loc
             Dvelocity(2,ICUBP,IEL) = Dvelocity(2,ICUBP,IEL) - du2loc
             Dvelocity(3,ICUBP,IEL) = Dvelocity(3,ICUBP,IEL) - du3loc
           
-          END DO ! ICUBP
+          end do ! ICUBP
           
-        END DO ! IEL
+        end do ! IEL
         
         ! Subtract the X-, Y- and Z-derivative of the mesh velocity to the
         ! velocity derivative field if Newton is active.
-        IF (dnewton .NE. 0.0_DP) THEN
+        if (dnewton .NE. 0.0_DP) then
         
-          DO IEL=1,IELmax-IELset+1
+          do IEL=1,IELmax-IELset+1
           
             ! Loop over all cubature points on the current element
-            DO ICUBP = 1, ncubp
+            do ICUBP = 1, ncubp
             
               du1locx = 0.0_DP
               du1locy = 0.0_DP
@@ -8255,7 +8250,7 @@ CONTAINS
               du3locz = 0.0_DP
             
               ! Perform a loop through the trial DOF's.
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
                 ! phi_i in the cubature point:
@@ -8275,7 +8270,7 @@ CONTAINS
                 du3locy = du3locy + DmeshVelocity(3,JDFG)*dby
                 du3locz = du3locz + DmeshVelocity(3,JDFG)*dbz
 
-              END DO ! JDOFE
+              end do ! JDOFE
               
               ! Subtract the velocity derivative to the previously calculated one.
               DvelocityUderiv(1,ICUBP,IEL) = DvelocityUderiv(1,ICUBP,IEL)-du1locx
@@ -8288,13 +8283,13 @@ CONTAINS
               DvelocityWderiv(2,ICUBP,IEL) = DvelocityWderiv(2,ICUBP,IEL)-du3locy
               DvelocityWderiv(3,ICUBP,IEL) = DvelocityWderiv(3,ICUBP,IEL)-du3locz
             
-            END DO ! ICUBP
+            end do ! ICUBP
             
-          END DO ! IEL
+          end do ! IEL
         
-        END IF ! dnewton != 0
+        end if ! dnewton != 0
         
-      END IF
+      end if
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a bilinear form!
@@ -8302,7 +8297,7 @@ CONTAINS
       ! Clear the local matrices. If the Newton part is to be calculated,
       ! we must clear everything, otherwise only Dentry.
       Dentry = 0.0_DP
-      IF (dnewton .NE. 0) THEN
+      if (dnewton .NE. 0) then
         DentryA11 = 0.0_DP
         DentryA12 = 0.0_DP
         DentryA13 = 0.0_DP
@@ -8312,17 +8307,17 @@ CONTAINS
         DentryA31 = 0.0_DP
         DentryA32 = 0.0_DP
         DentryA33 = 0.0_DP
-      END IF
+      end if
       
       ! If ddelta != 0, set up the nonlinearity U*grad(u), probably with
       ! streamline diffusion stabilisation.
-      IF (ddelta .NE. 0.0_DP) THEN
+      if (ddelta .NE. 0.0_DP) then
     
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
       
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -8369,7 +8364,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -8401,7 +8396,7 @@ CONTAINS
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -8464,25 +8459,25 @@ CONTAINS
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL) + OM*AH
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
 
       ! If dny != 0 or dalpha != 0, add the Laplace/Mass matrix to the
       ! local matrices.
-      IF ((dalpha .NE. 0.0_DP) .OR. (dny .NE. 0.0_DP)) THEN
+      if ((dalpha .NE. 0.0_DP) .OR. (dny .NE. 0.0_DP)) then
       
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
 
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -8504,7 +8499,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -8518,7 +8513,7 @@ CONTAINS
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -8546,24 +8541,24 @@ CONTAINS
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL) + OM*AH
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
         
-      END IF
+      end if
       
       ! Should we assemble the Newton matrices?
-      IF (dnewton .NE. 0.0_DP) THEN
+      if (dnewton .NE. 0.0_DP) then
       
         ! Loop over the elements in the current set.
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
 
           ! Loop over all cubature points on the current element
-          DO ICUBP = 1, ncubp
+          do ICUBP = 1, ncubp
 
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -8586,7 +8581,7 @@ CONTAINS
             ! Outer loop over the DOF's i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
-            DO IDOFE=1,indof
+            do IDOFE=1,indof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! (our "O")  for function value and first derivatives for the 
@@ -8595,7 +8590,7 @@ CONTAINS
              
               ! Inner loop over the DOF's j=1..indof, which corresponds to
               ! the basis function Phi_j:
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! (out "X") for function value and first derivatives for the 
@@ -8674,15 +8669,15 @@ CONTAINS
                 DentryA32(JDOFE,IDOFE,IEL) = DentryA32(JDOFE,IDOFE,IEL)+OM*AH32
                 DentryA33(JDOFE,IDOFE,IEL) = DentryA33(JDOFE,IDOFE,IEL)+OM*AH33
                 
-              END DO ! IDOFE
+              end do ! IDOFE
               
-            END DO ! JDOFE
+            end do ! JDOFE
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
         
-        END DO ! IEL
+        end do ! IEL
 
-      END IF
+      end if
 
 
         
@@ -8702,54 +8697,54 @@ CONTAINS
       ! nonstationary simulation. For stationary simulations, dtheta is typically
       ! 1.0 which includes the local matrix into the global one directly.)
 
-      IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODMATRIX) .NE. 0) then
       
         ! With or without Newton?
-        IF (dnewton .EQ. 0.0_DP) THEN
+        if (dnewton .EQ. 0.0_DP) then
         
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22 and A33.
           !別MP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
-              DO JDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
+              do JDOFE=1,indof
                 p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * Dentry(JDOFE,IDOFE,IEL)
-              END DO
-            END DO
-          END DO
-          IF (.NOT. ASSOCIATED(p_Da22,p_Da11)) THEN
-            DO IEL=1,IELmax-IELset+1
-              DO IDOFE=1,indof
-                DO JDOFE=1,indof
+              end do
+            end do
+          end do
+          if (.NOT. ASSOCIATED(p_Da22,p_Da11)) then
+            do IEL=1,IELmax-IELset+1
+              do IDOFE=1,indof
+                do JDOFE=1,indof
                   p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                       dtheta * Dentry(JDOFE,IDOFE,IEL)
-                END DO
-              END DO
-            END DO
-          END IF
-          IF ((.NOT. ASSOCIATED(p_Da33,p_Da11)) .AND. &
-              (.NOT. ASSOCIATED(p_Da33,p_Da22))) THEN
-            DO IEL=1,IELmax-IELset+1
-              DO IDOFE=1,indof
-                DO JDOFE=1,indof
+                end do
+              end do
+            end do
+          end if
+          if ((.NOT. ASSOCIATED(p_Da33,p_Da11)) .AND. &
+              (.NOT. ASSOCIATED(p_Da33,p_Da22))) then
+            do IEL=1,IELmax-IELset+1
+              do IDOFE=1,indof
+                do JDOFE=1,indof
                   p_Da33(Kentry(JDOFE,IDOFE,IEL)) = p_Da33(Kentry(JDOFE,IDOFE,IEL)) + &
                       dtheta * Dentry(JDOFE,IDOFE,IEL)
-                END DO
-              END DO
-            END DO
-          END IF
-          !別MP END CRITICAL
+                end do
+              end do
+            end do
+          end if
+          !別MP end CRITICAL
 
-        ELSE
+        else
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
           !別MP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
-              DO JDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
+              do JDOFE=1,indof
                 ! Kentry (:,:,:) -> positions of local matrix in A11 and A22.
                 !
                 ! DentryA11 (:,:,:) -> Newton part of A11
@@ -8785,14 +8780,14 @@ CONTAINS
                 ! Dentry32 (:,:,:) -> Newton part of A32
                 p_Da32(Kentry(JDOFE,IDOFE,IEL)) = p_Da32(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * dnewton * DentryA32(JDOFE,IDOFE,IEL) 
-              END DO
-            END DO
-          END DO
-          !別MP END CRITICAL
+              end do
+            end do
+          end do
+          !別MP end CRITICAL
 
-        END IF        
+        end if        
         
-      END IF
+      end if
       
       ! For cdef containing CONV_MODDEFECT, build the defect vector                     
       !     D = RHS - A*U                                         
@@ -8802,17 +8797,17 @@ CONTAINS
       ! entry and will be updated to be the defect vector when    
       ! this routine is left.                                     
 
-      IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
+      if (IAND(cdef,CONV_MODDEFECT) .NE. 0) then
         
         ! With or without Newton?
-        IF (dnewton .EQ. 0.0_DP) THEN
+        if (dnewton .EQ. 0.0_DP) then
           !別MP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
 
               IDFG=Idofs(IDOFE,IEL)
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
@@ -8821,18 +8816,18 @@ CONTAINS
                 Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
                 Ddef3(IDFG)= Ddef3(IDFG) - denth*Du3(JDFG)
 
-              END DO
-            END DO
-          END DO
-          !別MP END CRITICAL
-        ELSE
+              end do
+            end do
+          end do
+          !別MP end CRITICAL
+        else
           !別MP CRITICAL
-          DO IEL=1,IELmax-IELset+1
-            DO IDOFE=1,indof
+          do IEL=1,IELmax-IELset+1
+            do IDOFE=1,indof
 
               IDFG=Idofs(IDOFE,IEL)
 
-              DO JDOFE=1,indof
+              do JDOFE=1,indof
 
                 denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
@@ -8855,52 +8850,52 @@ CONTAINS
                            - dtheta*dnewton*DentryA32(JDOFE,IDOFE,IEL)*Du2(JDFG) &
                            - dtheta*dnewton*DentryA33(JDOFE,IDOFE,IEL)*Du3(JDFG)
 
-              END DO
-            END DO
-          END DO
-          !別MP END CRITICAL          
-        END IF
+              end do
+            end do
+          end do
+          !別MP end CRITICAL          
+        end if
 
-      END IF
+      end if
             
 
-    END DO ! IELset
-    !別MP END DO 
+    end do ! IELset
+    !別MP end do 
     
     ! Release memory
-    CALL elprep_releaseElementSet(revalElementSet)
+    call elprep_releaseElementSet(revalElementSet)
 
-    DEALLOCATE(DlocalDelta)
-    IF (dnewton .NE. 0.0_DP) THEN
-      DEALLOCATE(DentryA33)
-      DEALLOCATE(DentryA32)
-      DEALLOCATE(DentryA31)
-      DEALLOCATE(DentryA23)
-      DEALLOCATE(DentryA22)
-      DEALLOCATE(DentryA21)
-      DEALLOCATE(DentryA13)
-      DEALLOCATE(DentryA12)
-      DEALLOCATE(DentryA11)
-      DEALLOCATE(DvelocityWderiv)
-      DEALLOCATE(DvelocityVderiv)
-      DEALLOCATE(DvelocityUderiv)
-    END IF
-    DEALLOCATE(Dvelocity)
-    DEALLOCATE(Dentry)
-    DEALLOCATE(Kentry)
-    DEALLOCATE(IdofsALE)
-    DEALLOCATE(Idofs)
-    DEALLOCATE(DbasALE)
-    DEALLOCATE(Dbas)
-    !別MP END PARALLEL
-    DEALLOCATE(p_DcubPtsRef)
-  END SUBROUTINE
+    deallocate(DlocalDelta)
+    if (dnewton .NE. 0.0_DP) then
+      deallocate(DentryA33)
+      deallocate(DentryA32)
+      deallocate(DentryA31)
+      deallocate(DentryA23)
+      deallocate(DentryA22)
+      deallocate(DentryA21)
+      deallocate(DentryA13)
+      deallocate(DentryA12)
+      deallocate(DentryA11)
+      deallocate(DvelocityWderiv)
+      deallocate(DvelocityVderiv)
+      deallocate(DvelocityUderiv)
+    end if
+    deallocate(Dvelocity)
+    deallocate(Dentry)
+    deallocate(Kentry)
+    deallocate(IdofsALE)
+    deallocate(Idofs)
+    deallocate(DbasALE)
+    deallocate(Dbas)
+    !別MP end PARALLEL
+    deallocate(p_DcubPtsRef)
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE getLocalDeltaHexaRay (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
+  pure subroutine getLocalDeltaHexaRay (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
            A1L,A2L,IEL,duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 !<description>
   ! This routine calculates a local ddelta=DELTA_T for a hexahedral finite
@@ -8917,61 +8912,61 @@ CONTAINS
 
 !<input>
   ! Main velocity field.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: U1L1,U1L2,U1L3
+  real(DP), dimension(:), intent(IN) :: U1L1,U1L2,U1L3
   
   ! Secondary velocity field. 
-  REAL(DP), DIMENSION(:), INTENT(IN) :: U2L1,U2L2,U2L3
+  real(DP), dimension(:), intent(IN) :: U2L1,U2L2,U2L3
   
   ! weighting factor for U1L1/U1L2
-  REAL(DP), INTENT(IN) :: A1L
+  real(DP), intent(IN) :: A1L
   
   ! weighting factor for U2L1/U2L2
-  REAL(DP), INTENT(IN) :: A2L
+  real(DP), intent(IN) :: A2L
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  REAL(DP), INTENT(IN) :: duMaxR
+  real(DP), intent(IN) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  REAL(DP), INTENT(IN) :: NUREC
+  real(DP), intent(IN) :: NUREC
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  REAL(DP), INTENT(IN) :: UPSAM
+  real(DP), intent(IN) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: IEL
+  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
   
   ! Number of degrees of freedom on element IEL
-  INTEGER, INTENT(IN) :: IDFL
+  integer, intent(IN) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  INTEGER(PREC_DOFIDX), DIMENSION(:), INTENT(IN) :: KDFG
+  integer(PREC_DOFIDX), dimension(:), intent(IN) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: Kvert
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: Kvert
   
   ! The DvertexCoords array from the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcorvg
+  real(DP), dimension(:,:), intent(IN) :: Dcorvg
 !</input>
 
 !<output>
   ! The local delta for this quadrilateral
-  REAL(DP), INTENT(OUT) :: ddelta
+  real(DP), intent(OUT) :: ddelta
 
 !</output>
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: dlocalH,dunorm,RELOC
-  REAL(DP), DIMENSION(3) :: Du
-  INTEGER(PREC_DOFIDX) :: idof
+  real(DP) :: dlocalH,dunorm,RELOC
+  real(DP), dimension(3) :: Du
+  integer(PREC_DOFIDX) :: idof
 
     ! Loop through the local degrees of freedom on element IEL.
     ! Sum up the velocities on these DOF's. This will result
@@ -8983,11 +8978,11 @@ CONTAINS
     ! along an egde/on the midpoint of each edge, so U1/U2 is
     ! clearly an approximation to the velocity in element T.
     Du = 0.0_DP
-    DO idof=1, IDFL
+    do idof=1, IDFL
       Du(1) = Du(1) + (A1L*U1L1(KDFG(idof)) + A2L*U2L1(KDFG(idof)))
       Du(2) = Du(2) + (A1L*U1L2(KDFG(idof)) + A2L*U2L2(KDFG(idof)))
       Du(3) = Du(3) + (A1L*U1L3(KDFG(idof)) + A2L*U2L3(KDFG(idof)))
-    END DO
+    end do
 
     ! Calculate the norm of that local velocity:
     dunorm = SQRT(Du(1)**2 + Du(2)**2 + Du(3)**2) / DBLE(IDFL)
@@ -8999,26 +8994,26 @@ CONTAINS
     ! which results in central difference in the streamline diffusion
     ! matrix assembling:
 
-    IF (dunorm .LE. 1.0E-8_DP) THEN
+    if (dunorm .LE. 1.0E-8_DP) then
     
       ddelta = 0.0_DP
 
-    ELSE
+    else
 
       ! u_T defines the "slope" of the velocity through
       ! the element T. At next, calculate the local mesh width
       ! dlocalH = h = h_T on our element T=IEL:
-      CALL getLocalMeshWidthHexa (dlocalH,Du,dunorm,IEL,Kvert,Dcorvg)
+      call getLocalMeshWidthHexa (dlocalH,Du,dunorm,IEL,Kvert,Dcorvg)
 
       ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
 
-      IF (UPSAM.LT.0.0_DP) THEN
+      if (UPSAM.LT.0.0_DP) then
 
         ! For UPSAM<0, we use simple calculation of ddelta:        
       
         ddelta = ABS(UPSAM)*dlocalH
         
-      ELSE
+      else
       
         ! For UPSAM >= 0, we use standard Samarskji-like calculation
         ! of ddelta. At first calculate the local Reynolds number
@@ -9030,17 +9025,17 @@ CONTAINS
         
         ddelta = UPSAM * dlocalH*duMaxR * 2.0_DP*(RELOC/(1.0_DP+RELOC))
         
-      ENDIF ! (UPSAM.LT.0.0)
+      end if ! (UPSAM.LT.0.0)
       
-    END IF ! (dunorm.LE.1D-8)
+    end if ! (dunorm.LE.1D-8)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE getLocalDeltaHexaVol (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
+  pure subroutine getLocalDeltaHexaVol (U1L1,U1L2,U1L3,U2L1,U2L2,U2L3,&
            A1L,A2L,IEL,duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 !<description>
   ! This routine calculates a local ddelta=DELTA_T for a hexahedral finite
@@ -9057,73 +9052,73 @@ CONTAINS
 
 !<input>
   ! Main velocity field.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: U1L1,U1L2,U1L3
+  real(DP), dimension(:), intent(IN) :: U1L1,U1L2,U1L3
   
   ! Secondary velocity field. 
-  REAL(DP), DIMENSION(:), INTENT(IN) :: U2L1,U2L2,U2L3
+  real(DP), dimension(:), intent(IN) :: U2L1,U2L2,U2L3
   
   ! weighting factor for U1L1/U1L2
-  REAL(DP), INTENT(IN) :: A1L
+  real(DP), intent(IN) :: A1L
   
   ! weighting factor for U2L1/U2L2
-  REAL(DP), INTENT(IN) :: A2L
+  real(DP), intent(IN) :: A2L
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  REAL(DP), INTENT(IN) :: duMaxR
+  real(DP), intent(IN) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  REAL(DP), INTENT(IN) :: NUREC
+  real(DP), intent(IN) :: NUREC
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  REAL(DP), INTENT(IN) :: UPSAM
+  real(DP), intent(IN) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: IEL
+  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
   
   ! Number of degrees of freedom on element IEL
-  INTEGER, INTENT(IN) :: IDFL
+  integer, intent(IN) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  INTEGER(PREC_DOFIDX), DIMENSION(:), INTENT(IN) :: KDFG
+  integer(PREC_DOFIDX), dimension(:), intent(IN) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: Kvert
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: Kvert
   
   ! The DvertexCoords array from the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcorvg
+  real(DP), dimension(:,:), intent(IN) :: Dcorvg
 !</input>
 
 !<output>
   ! The local delta for this quadrilateral
-  REAL(DP), INTENT(OUT) :: ddelta
+  real(DP), intent(OUT) :: ddelta
 
 !</output>
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: dlocalH,dunorm,RELOC
-  REAL(DP), DIMENSION(3) :: Du
-  INTEGER(PREC_DOFIDX) :: idof
+  real(DP) :: dlocalH,dunorm,RELOC
+  real(DP), dimension(3) :: Du
+  integer(PREC_DOFIDX) :: idof
 
     ! Calculate the local mesh width dlocalH = h = h_T on our element T=IEL:
-    CALL getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
+    call getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
     dlocalH = dlocalH**(1.0_DP / 3.0_DP)
    
     ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
-    IF (UPSAM.LT.0.0_DP) THEN
+    if (UPSAM.LT.0.0_DP) then
 
       ! For UPSAM<0, we use simple calculation of ddelta:        
       ddelta = ABS(UPSAM)*dlocalH
       
-    ELSE
+    else
     
       ! Loop through the local degrees of freedom on element IEL.
       ! Sum up the velocities on these DOF's. This will result
@@ -9135,11 +9130,11 @@ CONTAINS
       ! along an egde/on the midpoint of each edge, so U1/U2 is
       ! clearly an approximation to the velocity in element T.
       Du = 0.0_DP
-      DO idof=1, IDFL
+      do idof=1, IDFL
         Du(1) = Du(1) + (A1L*U1L1(KDFG(idof)) + A2L*U2L1(KDFG(idof)))
         Du(2) = Du(2) + (A1L*U1L2(KDFG(idof)) + A2L*U2L2(KDFG(idof)))
         Du(3) = Du(3) + (A1L*U1L3(KDFG(idof)) + A2L*U2L3(KDFG(idof)))
-      END DO
+      end do
 
       ! Calculate the norm of that local velocity:
       dunorm = SQRT(Du(1)**2 + Du(2)**2 + Du(3)**2) / DBLE(IDFL)
@@ -9152,15 +9147,15 @@ CONTAINS
       ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
       ddelta = UPSAM * dlocalH*duMaxR * 2.0_DP*(RELOC/(1.0_DP+RELOC))
       
-    ENDIF ! (UPSAM.LT.0.0)
+    end if ! (UPSAM.LT.0.0)
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE getLocalMeshWidthHexa (dlocalH,Du,dunorm,iel,&
+  pure subroutine getLocalMeshWidthHexa (dlocalH,Du,dunorm,iel,&
                                          IverticesAtElement,DvertexCoords)
 
 !<description>  
@@ -9170,32 +9165,32 @@ CONTAINS
 
 !<input>
   ! mean velocity u_T through element T=iel
-  REAL(DP), DIMENSION(3), INTENT(IN)                  :: Du
+  real(DP), dimension(3), intent(IN)                  :: Du
   
   ! norm ||u||_T = mean velocity through element T=JEL
-  REAL(DP), INTENT(IN)                                :: dunorm
+  real(DP), intent(IN)                                :: dunorm
 
   ! Element where the local h should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN)                :: iel
+  integer(PREC_ELEMENTIDX), intent(IN)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
 !</input>
 
 !<output>
   ! The local mesh width for the hexahedron
-  REAL(DP), INTENT(OUT) :: dlocalH
+  real(DP), intent(OUT) :: dlocalH
 !</output>
 
   ! local variables
-  INTEGER :: i,isrc
-  REAL(DP) :: ds,dt,dmin,dalpha
-  REAL(DP), DIMENSION(3,8) :: Dv
-  REAL(DP), DIMENSION(3,6) :: Dtan1,Dtan2,Dnormal,Dmid
-  REAL(DP), DIMENSION(3) :: Dray
+  integer :: i,isrc
+  real(DP) :: ds,dt,dmin,dalpha
+  real(DP), dimension(3,8) :: Dv
+  real(DP), dimension(3,6) :: Dtan1,Dtan2,Dnormal,Dmid
+  real(DP), dimension(3) :: Dray
   
   ! Description of the local Mesh width calculation
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -9265,7 +9260,7 @@ CONTAINS
     Dtan2(1:3,6) = (Dv(1:3,7)+Dv(1:3,8)) - (Dv(1:3,5)+Dv(1:3,6))
     
     ! Go through all faces and calculate the normals
-    DO i = 1,6
+    do i = 1,6
       ! Calculate outer normal vector by 3D cross product
       Dnormal(1,i) = Dtan1(2,i)*Dtan2(3,i) - Dtan1(3,i)*Dtan2(2,i)
       Dnormal(2,i) = Dtan1(3,i)*Dtan2(1,i) - Dtan1(1,i)*Dtan2(3,i)
@@ -9274,14 +9269,14 @@ CONTAINS
       ! And normalize it
       dt = 1.0_DP / SQRT(Dnormal(1,i)**2 + Dnormal(2,i)**2 + Dnormal(3,i)**2)
       Dnormal(:,i) = Dnormal(:,i) * dt
-    END DO
+    end do
 
     ! Now we have a little problem:
     ! Since the refinement algorithm for hexahedron cells produces cells
     ! which are flipped, it may (and will) happen that the normal vectors
     ! we have calculated are inner normal vectors instead of outer ones.
     ! So we need to check whether the hexahedron is flipped.
-    IF (gaux_isFlipped_hexa3D(Dv)) Dnormal = -Dnormal
+    if (gaux_isFlipped_hexa3D(Dv)) Dnormal = -Dnormal
 
     ! Now we have calculated all the vectors we need - we have the face
     ! midpoints, normal vectors and a ray vector.
@@ -9296,16 +9291,16 @@ CONTAINS
     !          ( r, n_isrc ) <= ( r, n_i )     for all i=1,...,6
     isrc = 0
     dmin = 10.0_DP
-    DO i = 1,6
+    do i = 1,6
       ! Calculate scalar product of ray vector and outer normal vector
       dt = Dray(1)*Dnormal(1,i) + Dray(2)*Dnormal(2,i) + Dray(3)*Dnormal(3,i)
       
       ! Check if this is the "source face"
-      IF (dt .LT. dmin) THEN
+      if (dt .LT. dmin) then
         isrc = i
         dmin = dt
-      END IF
-    END DO
+      end if
+    end do
     
     ! Now we have chosen a source face, so we now need to calculate the
     ! intersection of the ray vector starting at the source face with
@@ -9334,10 +9329,10 @@ CONTAINS
 
     ! Go through all faces again
     dalpha = 1.0E99_DP
-    DO i = 1, 6
+    do i = 1, 6
     
       ! If this is the "source face" then skip it
-      IF (i .EQ. isrc) CYCLE
+      if (i .EQ. isrc) CYCLE
       
       ! Now compute the scalar product of the ray and the outer normal
       ! of this face.
@@ -9348,7 +9343,7 @@ CONTAINS
       ! skip this face.
       ! Note: As we need to divide by dt later, we will check it against
       !       machine exactness instead of 0.
-      IF (dt .LE. SYS_EPSREAL) CYCLE
+      if (dt .LE. SYS_EPSREAL) CYCLE
       
       ! Now calculate the scalar product of the face normal and the vector
       ! between the face midpoint and the "source face" midpoint:
@@ -9362,22 +9357,22 @@ CONTAINS
       ! Now ds is always positive
       dalpha = MIN(dalpha,ds)
     
-    END DO
+    end do
     
     ! Now if alpha is in a valid range, then use it as the local H
-    IF ((dalpha .GT. 0.0_DP) .AND. (dalpha .LT. 1.0E10_DP)) THEN
+    if ((dalpha .GT. 0.0_DP) .AND. (dalpha .LT. 1.0E10_DP)) then
       dlocalH = dalpha
-    ELSE
+    else
       dlocalH = 0.0_DP
-    END IF
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE getHexaVolume (dlocalH,iel,IverticesAtElement,DvertexCoords)
+  pure subroutine getHexaVolume (dlocalH,iel,IverticesAtElement,DvertexCoords)
 
 !<description>  
   ! Calculates the volume of a hexahedron.
@@ -9385,22 +9380,22 @@ CONTAINS
 
 !<input>
   ! Element where the local h should be calculated
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN)                :: iel
+  integer(PREC_ELEMENTIDX), intent(IN)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
 !</input>
 
 !<output>
   ! The local mesh width for the hexahedron
-  REAL(DP), INTENT(OUT) :: dlocalH
+  real(DP), intent(OUT) :: dlocalH
 !</output>
 
   ! local variables
-  REAL(DP), DIMENSION(3,8) :: Dv
+  real(DP), dimension(3,8) :: Dv
   
     ! Get the coordinates of our eight corner vertices
     Dv(1:3,1) = DvertexCoords(1:3,IverticesAtElement(1,iel))
@@ -9415,655 +9410,15 @@ CONTAINS
     ! Reset the volume
     dlocalH = gaux_getVolume_hexa3D(Dv)
 
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  SUBROUTINE conv_ueoJumpStabil_double_uni (rmatrixScalar,rconfig)
-  
-!<description>
-  ! Unified edge oriented jump stabilisation.
-  !
-  ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
-  !            \int_E [grad u] [grad v] ds$$
-  !
-  ! Uniform discretisation, double precision structure-7 and 9 matrix.
-  !
-  ! For a rerefence about the stabilisation, see
-  ! [Ouazzi, A.; Finite Element Simulation of Nonlinear Fluids, Application
-  ! to Granular Material and Powder; Shaker Verlag, ISBN 3-8322-5201-0, p. 55ff]
-  !
-  ! WARNING: For edge oriented stabilisation, the underlying matrix rmatrix
-  !   must have an extended stencil! The matrix structure must be set up with
-  !   the BILF_MATC_EDGEBASED switch!!!
-!</description>
-
-!<input>
-  ! Configuration block for the streamline diffusion scheme
-  TYPE(t_jumpStabilisation), INTENT(IN) :: rconfig
-!</input>
-
-!<inputoutput>
-  ! The matrix which is to be modified. The jump stabilisation is added
-  ! to that matrix. 
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER(PREC_DOFIDX) :: irow, jcol, idof
-  INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
-  INTEGER(PREC_ELEMENTIDX) :: IEL
-  LOGICAL :: bIdenticalTrialAndTest
-  INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
-  REAL(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
-  
-  ! Pointer to KLD, KCOL, DA
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  REAL(DP), DIMENSION(:), POINTER :: p_Da
-  
-  ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTestTempl
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialTempl
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2), TARGET :: IdofsTest
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2), TARGET :: IdofsTrial
-  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IdofsTrial
-  
-  ! Arrays saving the local DOF numbers belonging to the global
-  ! DOF numbers in IdofsTest/IdofsTrial  
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
-  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IlocalDofsTrial
-  
-  ! Renumbering strategy for local DOF's
-  INTEGER, DIMENSION(EL_MAXNBAS), TARGET :: IlocalDofTestRenum,IlocalDofTrialRenum
-  INTEGER, DIMENSION(:), POINTER :: p_IlocalDofTrialRenum
-  
-  ! Number of local DOF's on the patch
-  INTEGER :: ndofTest,ndofTrial
-  
-  ! Number of local degees of freedom for trial and test functions
-  INTEGER :: indofTestPerElement
-  
-  ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  
-  ! Some triangulation arrays we need frequently
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  
-  ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
-  
-  ! Underlying discretisation structure
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-
-  ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
-
-  ! Allocateable arrays for the values of the basis functions - 
-  ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasTrial
-  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
-
-  ! Local matrices, used during the assembly.
-  ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: Dentry
-
-  ! An element evaluation set for evaluating elements.
-  type(t_evalElementSet) :: revalElementSet
-  
-  ! An array receiving the coordinates of cubature points on
-  ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsRefOnAllEdges
-
-  ! An array receiving the coordinates of cubature points on
-  ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: p_DcubPtsRef
-
-  ! Cubature point weights
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-  
-  ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi1D,Dxi2D
-  
-  ! number of cubature points on the reference element
-  INTEGER :: ncubp,icubp
-  
-  ! Derivative specifiers
-  LOGICAL, DIMENSION(EL_MAXNDER) :: BderTrial, BderTest
-
-  ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
-  
-  ! Element evaluation tag; collects some information necessary for evaluating
-  ! the elements.
-  INTEGER(I32) :: cevaluationTag
-  
-    ! Get a pointer to the triangulation and discretisation.
-    p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
-    p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
-    
-    ! Get Kadj, Kmid, Kmel,...
-    CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,&
-                                p_IneighboursAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
-                                p_IedgesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IelementsAtEdge,&
-                                p_IelementsAtEdge)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
-                                p_IverticesAtEdge)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-                                  p_DvertexCoords)
-                                
-    NVT = p_rtriangulation%NVT
-    
-    ! Get KLD, KCol...
-    CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
-    CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
-    CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
-    
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
-    ! Get the number of local DOF's for trial and test functions
-    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
-    
-    ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
-    
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference line [-1,1]
-    CALL cub_getCubPoints(rconfig%ccubType, ncubp, Dxi1D, Domega)
-
-    ! Allocate arrays accepting cubature point coordinates.
-    ! We have ncubp cubature points on every egde.
-    ! DcubPtsRef saves all possible combinations, which edge of
-    ! one element might interact with one edge of one neighbour
-    ! element.
-    ALLOCATE(DcubPtsRefOnAllEdges(NDIM2D,ncubp,NVE))
-    
-    ! Put the 1D cubature points from to all of the edges on the
-    ! reference element, so we can access them quickly.
-    DO iedge = 1,NVE
-      CALL trafo_mapCubPts1Dto2DRefQuad(iedge, ncubp, Dxi1D, Dxi2D)
-      DO i=1,ncubp
-        DcubPtsRefOnAllEdges(1,i,iedge) = Dxi2D(i,1)
-        DcubPtsRefOnAllEdges(2,i,iedge) = Dxi2D(i,2)
-      END DO
-    END DO
-    
-    ! We have always 2 elements in each patch...
-    IELcount = 2
-      
-    ! Allocate memory for the cubature points when being transferred
-    ! to the reference element.
-    ALLOCATE(p_DcubPtsRef(NDIM2D,ncubp,IELcount))
-    
-    ! Allocate arrays saving the local matrices for all elements
-    ! in an element set. We allocate the arrays large enough...
-    ALLOCATE(Kentry(indofTestPerElement*2*indofTestPerElement*2))
-    ALLOCATE(Dentry(indofTestPerElement*2*indofTestPerElement*2))
-    
-    ! Allocate memory for obtaining DOF's:
-    ALLOCATE(IdofsTrialTempl(indofTestPerElement,2))
-    ALLOCATE(IdofsTestTempl(indofTestPerElement,2))
-    
-    ! Allocate arrays for the values of the test- and trial functions.
-    ! This is done here in the size we need it. Allocating it in-advance
-    ! with something like
-    !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
-    ! which reduces the speed by 50%!
-    !
-    ! We allocate space for 3 instead of 2 elements. The reason is that
-    ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
-    ! not indofTestPerElement elements, but even indofTestPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
-    ! a whole element patch.
-    
-    ALLOCATE(DbasTest(indofTestPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
-    ALLOCATE(DbasTrial(indofTestPerElement*2,&
-            elem_getMaxDerivative(p_relementDistribution%celement), &
-            ncubp,3))
-             
-    ! Both spaces must be identical. Let the pointers for the trial space
-    ! point to the same arrays as the test space.
-    !
-    ! (The implementation is a little bit cruel here because of bugfixes
-    ! but should work)
-    p_IdofsTrial => IdofsTest
-    p_IlocalDofsTrial => IlocalDofsTest
-    p_IlocalDofTrialRenum => IlocalDofTestRenum
-    p_DbasTrial => DbasTest
-    
-    ! Set up which derivatives to compute in the basis functions: X/Y-derivative
-    BderTrial = .FALSE.
-    BderTrial(DER_DERIV_X) = .TRUE.
-    BderTrial(DER_DERIV_Y) = .TRUE.
-
-    BderTest = .FALSE.
-    BderTest(DER_DERIV_X) = .TRUE.
-    BderTest(DER_DERIV_Y) = .TRUE.
-
-    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-    ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
-
-    ! We loop through all edges
-    DO IMT = 1,p_rtriangulation%NMT
-    
-      ! Check if we have 1 or 2 elements on the current edge
-      IF (p_IelementsAtEdge (2,IMT) .EQ. 0) THEN
-      
-        ! This only happens if we have a boundary edge.
-        ! The boundary handling is... doing nothing! So we can skip
-        ! the handling of that edge completely!
-        CYCLE
-      
-      END IF
-      
-      ! Fill the basis function arrays with 0. Essential, as only parts
-      ! of them are overwritten later.
-      DbasTest = 0.0_DP
-      DbasTrial = 0.0_DP
-      
-      ! On an example, we now show the relationship between all the DOF's
-      ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
-      ! (example for Q1~):
-      !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
-      !
-      !    +----4----+----7----+       +----20---+----50---+
-      !    |    4    |    4    |       |         |         |
-      !    |         |         |       |         |         |
-      !    1 1     3 3 1     3 6       10        60        70
-      !    |         |         |       |         |         |
-      !    |    2    |    2    |       |         |         |
-      !    +----2----+----3----+       +----40---+----30---+
-      !        IEL1      IEL2              IEL1      IEL2
-      !
-      !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
-      ! from now on. To every local DOF, there belongs a global DOF
-      ! (10,20,30,... or whatever), which gives the coefficient of the basis
-      ! function.
-      !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
-      ! numbering.
-      
-      ! Get the global DOF's of the 1 or two elements
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, &
-                                  p_IelementsAtEdge (1:IELcount,IMT), &
-                                  IdofsTestTempl)
-                                   
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
-      ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
-      ! must renumbered to the appropriate local patch-DOF (like in the
-      ! example, where local DOF 1 of element IEL2 must be renumbered
-      ! to local patch DOF 3!
-      !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
-      
-      ndofTest = indofTestPerElement
-      IdofsTest(1:ndofTest) = IdofsTestTempl(1:ndofTest,1)
-      
-      ! Furthermore, we read IdofsTestTempl and store the DOF's there in IdofsTest,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
-      
-      skiploop: DO IDOFE = 1,indofTestPerElement
-        
-        ! Do we have the DOF? 
-        idof = IdofsTestTempl(IDOFE,IELcount)
-        DO JDOFE=1,ndofTest
-          IF (IdofsTest(JDOFE) .EQ. idof) THEN
-            ! Yes, we have it.
-            ! That means, the local DOF idof has to be mapped to the
-            ! local patch dof...
-            IlocalDofTestRenum (IDOFE) = JDOFE
-            
-            ! Proceed with the next one.
-            CYCLE skiploop
-          END IF
-        END DO
-        
-        ! We don't have that DOF! Append it to IdofsTest.
-        ndofTest = ndofTest+1
-        IdofsTest(ndofTest) = idof
-        IlocalDofTestRenum (IDOFE) = ndofTest
-        
-        ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTestTempl(1..indofTestPerElement)
-        ! belong to the local DOF's 1..indofTestPerElement -- in that order!
-        IlocalDofsTest(ndofTest) = IDOFE
-        
-      END DO skiploop
-        
-      ! If the trial functions are different, get those DOF's
-      IF (.NOT. bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementsAtEdge (1:IELcount,IMT), &
-                                    IdofsTrialTempl)
-
-        ! Collect the DOF's uniquely in IdofsTrial.
-        ! The DOF's of the first element are taken as they are.
-        
-        ndofTrial = indofTestPerElement
-        IdofsTrial(1:ndofTrial) = IdofsTrialTempl(1:ndofTrial,1)
-        
-        ! From the 2nd element on, we have to check which
-        ! DOF's already appear in the first element.
-        
-        skiploop2: DO IDOFE = 1,indofTestPerElement
-          
-          ! Do we have the DOF? 
-          idof = IdofsTrialTempl(IDOFE,IELcount)
-          DO JDOFE=1,ndofTrial
-            IF (IdofsTrial(JDOFE) .EQ. idof) THEN
-              ! Yes, we have it.
-              ! That means, the local DOF idof has to be mapped to the
-              ! local patch dof...
-              IlocalDofTrialRenum (IDOFE) = JDOFE
-              
-              ! Proceed with the next one.
-              CYCLE skiploop2
-            END IF
-          END DO
-          
-          ! We don't have that DOF! Append it to IdofsTrial.
-          ndofTrial = ndofTrial+1
-          IdofsTrial(ndofTrial) = idof
-          IlocalDofTrialRenum (IDOFE) = ndofTrial
-          
-          ! Save also the number of the local DOF.
-          ! Note that the global DOF's in IdofsTrialTempl(1..indofTrialPerElement)
-          ! belong to the local DOF's 1..indofTrialPerElement -- in that order!
-          IlocalDofsTrial(ndofTrial) = IDOFE
-          
-        END DO skiploop2
-          
-      ELSE
-       
-        ! Number of DOF's in test and trial space the same, as DOF's are the same.
-        ndofTrial = ndofTest
-        
-      END IF
-      
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
-      ! calculated) is a ndofsTest*ndofsTrial matrix.
-      !
-      ! Now extract the corresponding entries from the matrix.
-      ! Kentry is an index where the entries of the local matrix Dentry
-      ! (which we build up later) can be found in the global matrix.
-      !
-      ! The test space gives us the rows; loop through them
-      
-      DO IDOFE = 0,ndofTest-1
-      
-        ! The 'local' DOF IDOFE corresponds in the global matrix to line...
-        irow = IdofsTest (1+IDOFE)
-        
-        ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
-        trialspaceloop: DO JDOFE = 1,ndofTrial
-          
-          DO jcol = p_Kld(irow),p_Kld(irow+1)-1
-            
-            IF (p_Kcol(jcol) .EQ. p_IdofsTrial(JDOFE)) THEN
-            
-              ! Found! Put as destination pointer to Kentry
-              Kentry (IDOFE*ndofTrial+JDOFE) = jcol
-              
-              ! Clear local matrix
-              Dentry (IDOFE*ndofTrial+JDOFE) = 0.0_DP
-              
-              ! Jump out of the loop, proceed with next column
-              CYCLE trialspaceloop
-            
-            END IF
-            
-          END DO
-
-          PRINT *,'Matrix invalid! Trial-DOF not found!'
-          CALL sys_halt()
-            
-        END DO trialspaceloop
-      
-      END DO ! JDOFE
-      
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
-      ! the global matrix using the positions in Kentry.
-      !
-      ! The next step is to evaluate the basis functions in the cubature
-      ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
-      !
-      ! Figure out which edge on the current element is IMT.
-      ! We need this local numbering later to determine on which edge we
-      ! have to place the cubature points.
-      DO i = 1,IELcount
-        
-        IEL = p_IelementsAtEdge(i,IMT)
-        DO iedge = 1,NVE
-          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT) EXIT
-        END DO
-        
-        ! Copy the coordinates of the corresponding cubature points
-        ! to DcubPtsEval. We calculated the cubature points on the
-        ! reference element in advance, so we can simply take them.
-        
-        p_DcubPtsRef(:,:,i) = DcubPtsRefOnAllEdges (:,:,iedge)
-        
-      END DO
-
-      ! Calculate all information that is necessary to evaluate the finite element
-      ! on all cells of our subset. This includes the coordinates of the points
-      ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
-          cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
-      p_Ddetj => revalElementSet%p_Ddetj
-
-      ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, BderTest, DbasTest)
-
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
-      ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
-      !
-      ! We copy the values of the basis functions to the space in
-      ! p_DcubPtsTest which is reserved for the 3rd element!
-      ! That way, DbasTest has:
-      !
-      ! local DOF on element   :       1       2       3       4
-      !
-      ! Global DOF on element 1:      10      40      60      20
-      ! DbasTest(1..4,*,*,1):    d1psi10 d1psi40 d1psi60 d1psi20
-      !
-      ! Global DOF on elemenr 2:      60      30      70      50
-      ! DbasTest(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
-      ! and will be transformed to:
-      !
-      ! local patch-DOF:            1       2       3       4       5      6        7
-      ! global DOF:                10      40      60      20      30     70       50
-      ! DbasTest(1..7,*,*,1): d1psi10 d1psi40 d1psi60 d1psi20     0.0    0.0      0.0
-      ! DbasTest(1..7,*,*,2): --------------------------unused-----------------------
-      ! DbasTest(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
-      !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
-      !  "psi_10" = test function on global DOF #10)
-      !
-      ! That space DbasTest(:,:,:,3) is unused up to now, initialised by 0.0 and 
-      ! now overwritten.
-      DbasTest (IlocalDofTestRenum(1:indofTestPerElement),:,:,3) &
-        = DbasTest (1:indofTestPerElement,:,:,2)
-      
-      ! Omit the calculation of the trial function values if they
-      ! are identical to the test function values.
-      IF (.NOT. bidenticalTrialAndTest) THEN
-      
-        CALL elem_generic_sim2 (p_relementDistribution%celement, &
-            revalElementSet, BderTrial, DbasTrial)
-
-        ! Apply the renumbering for the 2nd element, store the result in the
-        ! space of the 3rd element.          
-        DbasTrial (IlocalDofTrialRenum(1:indofTestPerElement),:,:,3) &
-          = DbasTrial (1:indofTestPerElement,:,:,2)
-            
-      END IF
-      
-      ! What do we have now? When looking at the example, we have:
-      !
-      ! ndofTest = 7
-      ! IdofsTest(1..7)             = global DOF's in local numbering 1..7
-      ! DbasTest(1..7,*,1..ncubp,1) = values of basis functions on element 1
-      !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
-      ! DbasTest(1..7,*,1..ncubp,3) = values of basis functions on element 2
-      !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
-      !
-      ! Now we can start to integrate using this.
-      
-      ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
-      ! [-1,1] has length 2.
-      ivt1 = p_IverticesAtEdge (1,IMT)
-      ivt2 = p_IverticesAtEdge (2,IMT)
-      dedgelength = &
-        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
-            + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = 0.5_DP * dedgelength
-      
-      ! Compute the coefficient in front of the integral:
-      ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = MAX(rconfig%dgammastar * rconfig%dnu * dedgelength, &
-                  rconfig%dgamma * dedgelength**2)
-      
-      ! Now we have the values of the basis functions in all the cubature 
-      ! points.
-      !
-      ! Integrate the jump over the edges. This calculates the local matrix.
-      !
-      ! Loop through the test basis functions
-      DO IDOFE = 1,ndofTest
-      
-        ! Loop through the trial basis functions
-        DO JDOFE = 1,ndofTrial
-    
-          dval = 0.0_DP
-          
-          ! Loop through the cubature points to calculate the integral
-          ! of the jump. Note that for computing the jump, we have to
-          ! look in the inverse order to the cubature points of the neighbour
-          ! element!
-          ! Remember that the values of the basis functions on the first element
-          ! are in p_DbasXXXX (.,.,.,1), while those of the 2nd element are
-          ! in p_DbasXXXX (.,.,.,3) (rather than in p_DbasXXXX (.,.,.,2))
-          ! by the above construction!
-          DO icubp = 1,ncubp
-          
-            ! [ grad phi ]   ( jump in the derivative of trial basis function)
-            ! = [ (d/dx) phi  ,  (d/dy) phi ]
-            dphidx = p_DbasTrial (JDOFE,DER_DERIV_X,icubp,1) &
-                  - p_DbasTrial (JDOFE,DER_DERIV_X,ncubp-icubp+1,3)
-
-            dphidy = p_DbasTrial (JDOFE,DER_DERIV_Y,icubp,1) &
-                  - p_DbasTrial (JDOFE,DER_DERIV_Y,ncubp-icubp+1,3)
-
-            ! [ grad psi ]   ( jump in the derivative of test basis function)
-            ! = [ (d/dx) phi  ,  (d/dy) phi ]
-            dpsidx = DbasTest (IDOFE,DER_DERIV_X,icubp,1) &
-                  - DbasTest (IDOFE,DER_DERIV_X,ncubp-icubp+1,3)
-
-            dpsidy = DbasTest (IDOFE,DER_DERIV_Y,icubp,1) &
-                  - DbasTest (IDOFE,DER_DERIV_Y,ncubp-icubp+1,3)
-            
-          
-            ! Compute int_edge ( [grad phi_i] [grad phi_j] )
-            dval = dval + Domega(icubp) * dedgeweight * &
-                          (dphidx*dpsidx + dphidy*dpsidy)
-          
-          END DO
-
-          ! Add the contribution to the local matrix -- weighted by the
-          ! Omega from the cubature formula and the length of the edge.
-          Dentry ((IDOFE-1)*ndofTrial+JDOFE) = &
-            Dentry ((IDOFE-1)*ndofTrial+JDOFE) + dcoeff*dval
-
-        END DO
-      
-      END DO
-      
-      ! Add the local matrix to the global matrix
-      DO IDOFE = 0,ndofTest-1
-        DO JDOFE = 1,ndofTrial
-        
-          p_Da(Kentry(IDOFE*ndofTrial+JDOFE)) = &
-            p_Da(Kentry(IDOFE*ndofTrial+JDOFE)) + &
-            rconfig%dtheta*Dentry (IDOFE*ndofTrial+JDOFE)
-        
-        END DO
-      END DO
-
-      ! Proceed with next edge
-    
-    END DO ! IMT
-
-    ! Clean up allocated arrays and memory.
-    CALL elprep_releaseElementSet(revalElementSet)
-    DEALLOCATE(p_DcubPtsRef)
-    DEALLOCATE(DcubPtsRefOnAllEdges)
-    
-    DEALLOCATE(DbasTest)
-    DEALLOCATE(DbasTrial)
-
-    DEALLOCATE(Kentry) 
-    DEALLOCATE(Dentry)
-
-    DEALLOCATE(IdofsTestTempl) 
-    DEALLOCATE(IdofsTrialTempl)
-
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE conv_JumpStabilisation2d ( &
-                           rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
+  subroutine conv_JumpStabilisation2d ( &
                            rconfig, cdef, &
-                           rmatrix, rsolution, rdefect, &
-                           IvelocityComp)
+                           rmatrix, rsolution, rdefect)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -10085,27 +9440,11 @@ CONTAINS
   !
   ! The configuration how the routine should react is to be configured
   ! in the configuration block rconfig.
-  !
-  ! Remark: Actually, rvecPrimary/rvecSecondary are not used, but might be
-  !  needed in future versions...
 !</description>
 
 !<input>
-
-  ! Primary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecPrimary
-  
-  ! Secondary velocity field for the computation of $u_1$
-  TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvecSecondary
-  
-  ! Weighting factor for rvecPrimary.
-  REAL(DP), INTENT(IN) :: dprimWeight
-  
-  ! Weighting factor for rvecSecondary.
-  REAL(DP), INTENT(IN) :: dsecWeight
-  
   ! Configuration block for the streamline diffusion scheme
-  TYPE(t_jumpStabilisation), INTENT(IN) :: rconfig
+  type(t_jumpStabilisation), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -10114,21 +9453,11 @@ CONTAINS
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
+  integer, intent(IN) :: cdef
 
-  ! OPTIONAL: Solution vector u_2.
+  ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL :: rsolution
-  
-  ! OPTIONAL: 
-  ! Index block that specifies which component in rvecPrimary / rvecSecondary /
-  ! rsolution / rdefect is the X-velocity and which one is the Y-velocity.
-  !  IvelocityComp(1) gives the number of the X-velocity (usually = 1),
-  !  IvelocityComp(2) gives the number of the Y-velocity (usually = 2).
-  ! If not present, IvelocityComp=(/1,2/) is assumed, thus the X-velocity
-  ! must be in rsolution\%RvectorBlock(1) and the Y-velocity in
-  ! rsolution\%RvectorBlock(2).
-  INTEGER, DIMENSION(2), INTENT(IN), OPTIONAL :: IvelocityComp
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
 !</input>
 
 !<inputoutput>
@@ -10136,841 +9465,90 @@ CONTAINS
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
   
-  ! OPTIONAL: Defect vector.
+  ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL, TARGET :: rdefect
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
 
-    ! local variables
-    INTEGER, DIMENSION(2) :: Icomp
-    TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
-    REAL(DP), DIMENSION(:), POINTER :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
-    
     ! At first check the input parameters that everything is present what
     ! we need:
-    IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
-      IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
+    if ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) then
+      if ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) then
         PRINT *,'EOS: Solution/defect vector not present!'
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
     
-    ! Get the actual subvectors from the velocity vectors that define
-    ! the X- and Y-velocity.
-    IF (PRESENT(IvelocityComp)) THEN
-      Icomp = IvelocityComp
-    ELSE
-      Icomp = (/1,2/)
-    END IF
-    
-    IF (PRESENT(rsolution)) THEN
-      p_rsolX => rsolution%RvectorBlock(Icomp(1))
-      p_rsolY => rsolution%RvectorBlock(Icomp(2))
-    ELSE
-      NULLIFY(p_rsolX)
-      NULLIFY(p_rsolY)
-    END IF
-    
-    IF (PRESENT(rsolution)) THEN
-      p_rdefectX => rdefect%RvectorBlock(Icomp(1))
-      p_rdefectY => rdefect%RvectorBlock(Icomp(2))
-    ELSE
-      NULLIFY(p_rdefectX)
-      NULLIFY(p_rdefectY)
-    END IF
-      
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    if ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
       PRINT *,'EOS: Unsupported matrix format'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    if (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) then
       PRINT *,'EOS: Unsupported discretisation.'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    !IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
-    !    (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
+    !if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+    !    (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
     !  PRINT *,'EOS: Unsupported vector data type in velocity.'
-    !  CALL sys_halt()
-    !END IF
+    !  call sys_halt()
+    !end if
     ! 
-    !IF (PRESENT(rdefect)) THEN
-    !  IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
-    !      (rdefect%cdataType .NE. ST_DOUBLE)) THEN
+    !if (PRESENT(rdefect)) then
+    !  if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+    !      (rdefect%cdataType .NE. ST_DOUBLE)) then
     !    PRINT *,'EOS: Unsupported vector data type in solution/defect'
-    !    CALL sys_halt()
-    !  END IF
-    !END IF
+    !    call sys_halt()
+    !  end if
+    !end if
     
-    IF (.NOT. rconfig%bconstViscosity) THEN
+    if (.NOT. rconfig%bconstViscosity) then
       PRINT *,'EOS: Only constant viscosity supported at the moment!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
+    if (rconfig%dnu .EQ. SYS_INFINITY) then
       PRINT *,'EOS: Viscosity parameter nu not initialised!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF (rconfig%cjump .EQ. CONV_JUMP_UNIFIEDEDGE) THEN
-      IF (PRESENT(rdefect)) THEN
-        CALL lsyssc_getbase_double (p_rsolX   ,p_DsolX   )
-        CALL lsyssc_getbase_double (p_rsolY   ,p_DsolY   )
-        CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
-        CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
-        
-        CALL conv_ueoJumpStabil2d_mv_unidble ( &
-                    rmatrix,cdef,rconfig, &
-                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY)
-                      
-      ELSE
+    if (rconfig%cjump .EQ. CONV_JUMP_UNIFIEDEDGE) then
+      if (PRESENT(rdefect)) then
       
-        CALL conv_ueoJumpStabil_double_uni (rmatrix,rconfig)
+        ! Modify the defect?
+        if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
+          call jstab_matvecUEOJumpStabilBlk2d ( &
+              rconfig%dgamma,rconfig%dgammastar,rconfig%ccubType,rconfig%dnu,&
+              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP)
+        end if
 
-      END IF
-    ELSE
+      end if
+      
+      ! Modify the matrix?
+      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
+        call jstab_calcUEOJumpStabilisation (&
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rconfig%ccubType,rconfig%dnu)
+      end if
+
+    else
       PRINT *,'EOS: Unknown jump stabilisation!'
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-  END SUBROUTINE
+  end subroutine
   
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE conv_ueoJumpStabil2d_mv_unidble ( &
-                  rmatrixScalar,cdef,rconfig, &
-                  Du1,Du2,Ddef1,Ddef2)
-!<description>
-  ! Unified edge oriented jump stabilisation.
-  !
-  ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
-  !            \int_E [grad u] [grad v] ds$$
-  ! or updates a defect vector.
-  !
-  ! Uniform discretisation, double precision structure-7 and 9 matrix.
-  !
-  ! For a rerefence about the stabilisation, see
-  ! [Ouazzi, A.; Finite Element Simulation of Nonlinear Fluids, Application
-  ! to Granular Material and Powder; Shaker Verlag, ISBN 3-8322-5201-0, p. 55ff]
-  !
-  ! Remarks:\\
-  !  
-  !  1.) In the nonlinear iteration, as a right hand side there arises
-  !   a defect vector D, which linear part can easily being assembled.
-  !   However, there is a nonlinearity to be included into that vector,
-  !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
-  !   into that vector, using the formula
-  !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
-  !   
-  ! 2.) WARNING: For edge oriented stabilisation, the underlying matrix rmatrix
-  !   must have an extended stencil! The matrix structure must be set up with
-  !   the BILF_MATC_EDGEBASED switch!!!
-  !
-!</description>
-  
-!<input>
-
-  ! Computation/defect correction method. One of the CONV_MODxxxx constants:
-  ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
-  !                 nonlinear part is added to the matrix.
-  ! CONV_MODDEFECT: Set up the nonlinear defect. rdefect and rsolution must be 
-  !                 present.
-  ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
-  !                 rmatrix, rdefect and rsolution must all be present.
-  INTEGER, INTENT(IN) :: cdef
-  
-  ! Configuration block for the jump stabilisation
-  TYPE(t_jumpStabilisation), INTENT(IN) :: rconfig
-
-  ! OPTIONAL: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
-  ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du1
-  
-  ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
-  ! or cdef=CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Du2
-  
-!</input>
-
-!<inputoutput>
-  ! The system matrix. Must be format 7 or 9.
-  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrixScalar
-  
-  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
-  ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
-  
-  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
-  ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
-!</inputoutput>
-
-!</subroutine>
-
-
-  ! local variables
-  INTEGER(PREC_DOFIDX) :: irow, jcol, idof
-  INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
-  INTEGER(PREC_ELEMENTIDX) :: IEL
-  LOGICAL :: bIdenticalTrialAndTest
-  INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
-  REAL(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
-  
-  ! Pointer to KLD, KCOL, DA
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
-  REAL(DP), DIMENSION(:), POINTER :: p_Da
-  
-  ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTestTempl
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialTempl
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2), TARGET :: IdofsTest
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2), TARGET :: IdofsTrial
-  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IdofsTrial
-  
-  ! Arrays saving the local DOF numbers belonging to the global
-  ! DOF numbers in IdofsTest/IdofsTrial  
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
-  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IlocalDofsTrial
-  
-  ! Renumbering strategy for local DOF's
-  INTEGER, DIMENSION(EL_MAXNBAS), TARGET :: IlocalDofTestRenum,IlocalDofTrialRenum
-  INTEGER, DIMENSION(:), POINTER :: p_IlocalDofTrialRenum
-  
-  ! Number of local DOF's on the patch
-  INTEGER :: ndofTest,ndofTrial
-  
-  ! Number of local degees of freedom for trial and test functions
-  INTEGER :: indofTrialPerElement, indofTestPerElement
-  
-  ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
-  
-  ! Some triangulation arrays we need frequently
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  
-  ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
-  
-  ! Underlying discretisation structure
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-
-  ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
-
-  ! Allocateable arrays for the values of the basis functions - 
-  ! for test and trial spaces.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasTrial
-  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
-
-  ! Local matrices, used during the assembly.
-  ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:), ALLOCATABLE :: Dentry
-
-  ! An element evaluation set for evaluating elements.
-  type(t_evalElementSet) :: revalElementSet
-  
-  ! An array receiving the coordinates of cubature points on
-  ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DcubPtsRefOnAllEdges
-
-  ! An array receiving the coordinates of cubature points on
-  ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: p_DcubPtsRef
-
-  ! Cubature point weights
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-  
-  ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi1D,Dxi2D
-  
-  ! number of cubature points on the reference element
-  INTEGER :: ncubp,icubp
-  
-  ! Derivative specifiers
-  LOGICAL, DIMENSION(EL_MAXNDER) :: BderTrial, BderTest
-
-  ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
-  
-  ! Element evaluation tag; collects some information necessary for evaluating
-  ! the elements.
-  INTEGER(I32) :: cevaluationTag
-  
-    ! Get a pointer to the triangulation and discretisation.
-    p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
-    p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
-    
-    ! Get Kvert, Kadj, Kmid, Kmel,...
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-                                p_IverticesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,&
-                                p_IneighboursAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
-                                p_IedgesAtElement)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IelementsAtEdge,&
-                                p_IelementsAtEdge)
-    CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
-                                p_IverticesAtEdge)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-                                  p_DvertexCoords)
-                                
-    NVT = p_rtriangulation%NVT
-    
-    ! Get KLD, KCol...
-    CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
-    CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
-    CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
-    
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
-    ! Get the number of local DOF's for trial and test functions
-    indofTestPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
-    
-    ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
-    
-    ! Get the number of corner vertices of the element
-    IF (NVE .NE. elem_igetNVE(p_relementDistribution%celement)) THEN
-      PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
-      CALL sys_halt()
-    END IF
-    
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference line [-1,1]
-    CALL cub_getCubPoints(rconfig%ccubType, ncubp, Dxi1D, Domega)
-
-    ! Allocate arrays accepting cubature point coordinates.
-    ! We have ncubp cubature points on every egde.
-    ! DcubPtsRef saves all possible combinations, which edge of
-    ! one element might interact with one edge of one neighbour
-    ! element.
-    ALLOCATE(DcubPtsRefOnAllEdges(NDIM2D,ncubp,NVE))
-    
-    ! Put the 1D cubature points from to all of the edges on the
-    ! reference element, so we can access them quickly.
-    DO iedge = 1,NVE
-      CALL trafo_mapCubPts1Dto2DRefQuad(iedge, ncubp, Dxi1D, Dxi2D)
-      DO i=1,ncubp
-        DcubPtsRefOnAllEdges(1,i,iedge) = Dxi2D(i,1)
-        DcubPtsRefOnAllEdges(2,i,iedge) = Dxi2D(i,2)
-      END DO
-    END DO
-    
-    ! We have always 2 elements in each patch...
-    IELcount = 2
-      
-    ! Get from the trial element space the type of coordinate system
-    ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
-    
-    ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP,IELcount))
-
-    ! Allocate arrays saving the local matrices for all elements
-    ! in an element set. We allocate the arrays large enough...
-    ALLOCATE(Kentry(indofTestPerElement*2*indofTrialPerElement*2))
-    ALLOCATE(Dentry(indofTestPerElement*2*indofTrialPerElement*2))
-    
-    ! Allocate memory for obtaining DOF's:
-    ALLOCATE(IdofsTrialTempl(indofTrialPerElement,2))
-    ALLOCATE(IdofsTestTempl(indofTestPerElement,2))
-    
-    ! Allocate arrays for the values of the test- and trial functions.
-    ! This is done here in the size we need it. Allocating it in-advance
-    ! with something like
-    !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
-    ! which reduces the speed by 50%!
-    !
-    ! We allocate space for 3 instead of 2 elements. The reason is that
-    ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
-    ! not indofTestPerElement elements, but even indofTestPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
-    ! a whole element patch.
-    
-    ALLOCATE(DbasTest(indofTestPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
-    ALLOCATE(DbasTrial(indofTestPerElement*2,&
-            elem_getMaxDerivative(p_relementDistribution%celement), &
-            ncubp,3))
-             
-    ! Test and trial functions must be the same, so let the pointers for
-    ! the trial function arrays point to the test function arrays.
-    ! (The implementation is a little bit cruel here due to bugfixes
-    ! but should work)
-    p_IdofsTrial => IdofsTest
-    p_IlocalDofsTrial => IlocalDofsTest
-    p_IlocalDofTrialRenum => IlocalDofTestRenum
-    p_DbasTrial => DbasTest
-    
-    ! Set up which derivatives to compute in the basis functions: X/Y-derivative
-    BderTrial = .FALSE.
-    BderTrial(DER_DERIV_X) = .TRUE.
-    BderTrial(DER_DERIV_Y) = .TRUE.
-
-    BderTest = .FALSE.
-    BderTest(DER_DERIV_X) = .TRUE.
-    BderTest(DER_DERIV_Y) = .TRUE.
-
-    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-    ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,EL_EVLTAG_REFPOINTS)
-
-    ! We loop through all edges
-    DO IMT = 1,p_rtriangulation%NMT
-    
-      ! Check if we have 1 or 2 elements on the current edge
-      IF (p_IelementsAtEdge (2,IMT) .EQ. 0) THEN
-      
-        ! This only happens if we have a boundary edge.
-        ! The boundary handling is... doing nothing! So we can skip
-        ! the handling of that edge completely!
-        CYCLE
-      
-      END IF
-      
-      ! Fill the basis function arrays with 0. Essential, as only parts
-      ! of them are overwritten later.
-      DbasTest = 0.0_DP
-      DbasTrial = 0.0_DP
-      
-      ! On an example, we now show the relationship between all the DOF's
-      ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
-      ! (example for Q1~):
-      !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
-      !
-      !    +----4----+----7----+       +----20---+----50---+
-      !    |    4    |    4    |       |         |         |
-      !    |         |         |       |         |         |
-      !    1 1     3 3 1     3 6       10        60        70
-      !    |         |         |       |         |         |
-      !    |    2    |    2    |       |         |         |
-      !    +----2----+----3----+       +----40---+----30---+
-      !        IEL1      IEL2              IEL1      IEL2
-      !
-      !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
-      ! from now on. To every local DOF, there belongs a global DOF
-      ! (10,20,30,... or whatever), which gives the coefficient of the basis
-      ! function.
-      !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
-      ! numbering.
-      
-      ! Get the global DOF's of the 1 or two elements
-      CALL dof_locGlobMapping_mult(p_rdiscretisation, &
-                                  p_IelementsAtEdge (1:IELcount,IMT), &
-                                  IdofsTestTempl)
-                                   
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
-      ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
-      ! must renumbered to the appropriate local patch-DOF (like in the
-      ! example, where local DOF 1 of element IEL2 must be renumbered
-      ! to local patch DOF 3!
-      !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
-      
-      ndofTest = indofTestPerElement
-      IdofsTest(1:ndofTest) = IdofsTestTempl(1:ndofTest,1)
-      
-      ! Furthermore, we read IdofsTestTempl and store the DOF's there in IdofsTest,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
-      
-      skiploop: DO IDOFE = 1,indofTestPerElement
-        
-        ! Do we have the DOF? 
-        idof = IdofsTestTempl(IDOFE,IELcount)
-        DO JDOFE=1,ndofTest
-          IF (IdofsTest(JDOFE) .EQ. idof) THEN
-            ! Yes, we have it.
-            ! That means, the local DOF idof has to be mapped to the
-            ! local patch dof...
-            IlocalDofTestRenum (IDOFE) = JDOFE
-            
-            ! Proceed with the next one.
-            CYCLE skiploop
-          END IF
-        END DO
-        
-        ! We don't have that DOF! Append it to IdofsTest.
-        ndofTest = ndofTest+1
-        IdofsTest(ndofTest) = idof
-        IlocalDofTestRenum (IDOFE) = ndofTest
-        
-        ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTestTempl(1..indofTestPerElement)
-        ! belong to the local DOF's 1..indofTestPerElement -- in that order!
-        IlocalDofsTest(ndofTest) = IDOFE
-        
-      END DO skiploop
-        
-      ! If the trial functions are different, get those DOF's
-      IF (.NOT. bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementsAtEdge (1:IELcount,IMT), &
-                                    IdofsTrialTempl)
-
-        ! Collect the DOF's uniquely in IdofsTrial.
-        ! The DOF's of the first element are taken as they are.
-        
-        ndofTrial = indofTrialPerElement
-        IdofsTrial(1:ndofTrial) = IdofsTrialTempl(1:ndofTrial,1)
-        
-        ! From the 2nd element on, we have to check which
-        ! DOF's already appear in the first element.
-        
-        skiploop2: DO IDOFE = 1,indofTrialPerElement
-          
-          ! Do we have the DOF? 
-          idof = IdofsTrialTempl(IDOFE,IELcount)
-          DO JDOFE=1,ndofTrial
-            IF (IdofsTrial(JDOFE) .EQ. idof) THEN
-              ! Yes, we have it.
-              ! That means, the local DOF idof has to be mapped to the
-              ! local patch dof...
-              IlocalDofTrialRenum (IDOFE) = JDOFE
-              
-              ! Proceed with the next one.
-              CYCLE skiploop2
-            END IF
-          END DO
-          
-          ! We don't have that DOF! Append it to IdofsTrial.
-          ndofTrial = ndofTrial+1
-          IdofsTrial(ndofTrial) = idof
-          IlocalDofTrialRenum (IDOFE) = ndofTrial
-          
-          ! Save also the number of the local DOF.
-          ! Note that the global DOF's in IdofsTrialTempl(1..indofTrialPerElement)
-          ! belong to the local DOF's 1..indofTrialPerElement -- in that order!
-          IlocalDofsTrial(ndofTrial) = IDOFE
-          
-        END DO skiploop2
-          
-      ELSE
-       
-        ! Number of DOF's in test and trial space the same, as DOF's are the same.
-        ndofTrial = ndofTest
-        
-      END IF
-      
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
-      ! calculated) is a ndofsTest*ndofsTrial matrix.
-      !
-      ! Now extract the corresponding entries from the matrix.
-      ! Kentry is an index where the entries of the local matrix Dentry
-      ! (which we build up later) can be found in the global matrix.
-      !
-      ! The test space gives us the rows; loop through them
-      
-      DO IDOFE = 0,ndofTest-1
-      
-        ! The 'local' DOF IDOFE corresponds in the global matrix to line...
-        irow = IdofsTest (1+IDOFE)
-        
-        ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
-        trialspaceloop: DO JDOFE = 1,ndofTrial
-          
-          DO jcol = p_Kld(irow),p_Kld(irow+1)-1
-            
-            IF (p_Kcol(jcol) .EQ. p_IdofsTrial(JDOFE)) THEN
-            
-              ! Found! Put as destination pointer to Kentry
-              Kentry (IDOFE*ndofTrial+JDOFE) = jcol
-              
-              ! Clear local matrix
-              Dentry (IDOFE*ndofTrial+JDOFE) = 0.0_DP
-              
-              ! Jump out of the loop, proceed with next column
-              CYCLE trialspaceloop
-            
-            END IF
-            
-          END DO
-
-          PRINT *,'Matrix invalid! Trial-DOF not found!'
-          CALL sys_halt()
-            
-        END DO trialspaceloop
-      
-      END DO ! JDOFE
-      
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
-      ! the global matrix using the positions in Kentry.
-      !
-      ! The next step is to evaluate the basis functions in the cubature
-      ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
-      !
-      ! Figure out which edge on the current element is IMT.
-      ! We need this local numbering later to determine on which edge we
-      ! have to place the cubature points.
-      DO i = 1,IELcount
-        
-        IEL = p_IelementsAtEdge(i,IMT)
-        DO iedge = 1,NVE
-          IF (p_IedgesAtElement (iedge,IEL) .EQ. IMT) EXIT
-        END DO
-        
-        ! Copy the coordinates of the corresponding cubature points
-        ! to DcubPtsEval. We calculated the cubature points on the
-        ! reference element in advance, so we can simply take them.
-        
-        p_DcubPtsRef(:,:,i) = DcubPtsRefOnAllEdges (:,:,iedge)
-        
-      END DO
-
-      ! Calculate all information that is necessary to evaluate the finite element
-      ! on all cells of our subset. This includes the coordinates of the points
-      ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalElementSet,&
-          cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
-      p_Ddetj => revalElementSet%p_Ddetj
-
-      ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, BderTest, DbasTest)
-      
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
-      ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
-      !
-      ! We copy the values of the basis functions to the space in
-      ! p_DcubPtsTest which is reserved for the 3rd element!
-      ! That way, DbasTest has:
-      !
-      ! local DOF on element   :       1       2       3       4
-      !
-      ! Global DOF on element 1:      10      40      60      20
-      ! DbasTest(1..4,*,*,1):    d1psi10 d1psi40 d1psi60 d1psi20
-      !
-      ! Global DOF on elemenr 2:      60      30      70      50
-      ! DbasTest(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
-      ! and will be transformed to:
-      !
-      ! local patch-DOF:            1       2       3       4       5      6        7
-      ! global DOF:                10      40      60      20      30     70       50
-      ! DbasTest(1..7,*,*,1): d1psi10 d1psi40 d1psi60 d1psi20     0.0    0.0      0.0
-      ! DbasTest(1..7,*,*,2): --------------------------unused-----------------------
-      ! DbasTest(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
-      !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
-      !  "psi_10" = test function on global DOF #10)
-      !
-      ! That space DbasTest(:,:,:,3) is unused up to now, initialised by 0.0 and 
-      ! now overwritten.
-      DbasTest (IlocalDofTestRenum(1:indofTestPerElement),:,:,3) &
-        = DbasTest (1:indofTestPerElement,:,:,2)
-      
-      ! Omit the calculation of the trial function values if they
-      ! are identical to the test function values.
-      IF (.NOT. bidenticalTrialAndTest) THEN
-        CALL elem_generic_sim2 (p_relementDistribution%celement, &
-            revalElementSet, BderTrial, DbasTrial)
-
-        ! Apply the renumbering for the 2nd element, store the result in the
-        ! space of the 3rd element.          
-        DbasTrial (IlocalDofTrialRenum(1:indofTrialPerElement),:,:,3) &
-          = DbasTrial (1:indofTrialPerElement,:,:,2)
-            
-      END IF
-      
-      ! What do we have now? When looking at the example, we have:
-      !
-      ! ndofTest = 7
-      ! IdofsTest(1..7)             = global DOF's in local numbering 1..7
-      ! DbasTest(1..7,*,1..ncubp,1) = values of basis functions on element 1
-      !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
-      ! DbasTest(1..7,*,1..ncubp,3) = values of basis functions on element 2
-      !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
-      !
-      ! Now we can start to integrate using this.
-      
-      ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
-      ! [-1,1] has length 2.
-      ivt1 = p_IverticesAtEdge (1,IMT)
-      ivt2 = p_IverticesAtEdge (2,IMT)
-      dedgelength = &
-        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
-            + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = 0.5_DP * dedgelength
-      
-      ! Compute the coefficient in front of the integral:
-      ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = MAX(rconfig%dgammastar * rconfig%dnu * dedgelength, &
-                  rconfig%dgamma * dedgelength**2)
-      
-      ! Now we have the values of the basis functions in all the cubature 
-      ! points.
-      !
-      ! Integrate the jump over the edges. This calculates the local matrix.
-      !
-      ! Loop through the test basis functions
-      DO IDOFE = 1,ndofTest
-      
-        ! Loop through the trial basis functions
-        DO JDOFE = 1,ndofTrial
-    
-          dval = 0.0_DP
-          
-          ! Loop through the cubature points to calculate the integral
-          ! of the jump. Note that for computing the jump, we have to
-          ! look in the inverse order to the cubature points of the neighbour
-          ! element!
-          ! Remember that the values of the basis functions on the first element
-          ! are in p_DbasXXXX (.,.,.,1), while those of the 2nd element are
-          ! in p_DbasXXXX (.,.,.,3) (rather than in p_DbasXXXX (.,.,.,2))
-          ! by the above construction!
-          DO icubp = 1,ncubp
-          
-            ! [ grad phi ]   ( jump in the derivative of trial basis function)
-            ! = [ (d/dx) phi  ,  (d/dy) phi ]
-            dphidx = p_DbasTrial (JDOFE,DER_DERIV_X,icubp,1) &
-                  - p_DbasTrial (JDOFE,DER_DERIV_X,ncubp-icubp+1,3)
-
-            dphidy = p_DbasTrial (JDOFE,DER_DERIV_Y,icubp,1) &
-                  - p_DbasTrial (JDOFE,DER_DERIV_Y,ncubp-icubp+1,3)
-
-            ! [ grad psi ]   ( jump in the derivative of test basis function)
-            ! = [ (d/dx) phi  ,  (d/dy) phi ]
-            dpsidx = DbasTest (IDOFE,DER_DERIV_X,icubp,1) &
-                  - DbasTest (IDOFE,DER_DERIV_X,ncubp-icubp+1,3)
-
-            dpsidy = DbasTest (IDOFE,DER_DERIV_Y,icubp,1) &
-                  - DbasTest (IDOFE,DER_DERIV_Y,ncubp-icubp+1,3)
-            
-          
-            ! Compute int_edge ( [grad phi_i] [grad phi_j] )
-            dval = dval + Domega(icubp) * dedgeweight * &
-                          (dphidx*dpsidx + dphidy*dpsidy)
-          
-          END DO
-
-          ! Add the contribution to the local matrix -- weighted by the
-          ! Omega from the cubature formula and the length of the edge.
-          Dentry ((IDOFE-1)*ndofTrial+JDOFE) = &
-            Dentry ((IDOFE-1)*ndofTrial+JDOFE) + dcoeff*dval
-
-        END DO
-      
-      END DO
-      
-      ! For cdef= containing CONV_MODMATRIX, incorporate our "local" system matrix
-      ! into the global matrix. The position of each entry DENTRY(X,Y)    
-      ! in the global matrix array A was saved in element Kentry(X,Y)
-      ! before.                                                      
-      ! Kentry gives the position of the additive contributions in Dentry.
-      ! The entry is weighted by the current dtheta, which is usually
-      ! the weighting parameter of the corresponding THETA-scheme of a
-      ! nonstationary simulation. For stationary simulations, dtheta is typically
-      ! 1.0 which includes the local matrix into the global one directly.)
-      
-      IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
-        DO IDOFE = 0,ndofTest-1
-          DO JDOFE = 1,ndofTrial
-          
-            p_Da(Kentry(IDOFE*ndofTrial+JDOFE)) = &
-              p_Da(Kentry(IDOFE*ndofTrial+JDOFE)) + &
-              rconfig%dtheta * Dentry (IDOFE*ndofTrial+JDOFE)
-          
-          END DO
-        END DO
-      END IF
-      
-      ! For cdef containing CONV_MODDEFECT, build the defect vector                     
-      !     D = RHS - A*U                                         
-      ! This is done matrix free, only with the help of the local 
-      ! matrix.                                                   
-      ! In this case, D=(D1,D2) is expected to be the RHS on      
-      ! entry and will be updated to be the defect vector when    
-      ! this routine is left.                                     
-      
-      IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
-        DO IDOFE=0,ndofTest-1
-
-          irow=IdofsTest(1+IDOFE)
-
-          DO JDOFE=1,ndofTrial
-
-            dval = rconfig%dtheta * Dentry(IDOFE*ndofTrial+JDOFE)         
-  
-            jcol=p_IdofsTrial(JDOFE)
-            Ddef1(irow)= Ddef1(irow) - dval*Du1(jcol)
-            Ddef2(irow)= Ddef2(irow) - dval*Du2(jcol)
-
-          END DO
-        END DO
-      END IF
-      
-      ! Proceed with next edge
-    
-    END DO ! IMT
-
-    ! Clean up allocated arrays and memory.
-    DEALLOCATE(DcubPtsRefOnAllEdges)
-    
-    CALL elprep_releaseElementSet(revalElementSet)
-    DEALLOCATE(p_DcubPtsRef)
-    
-    DEALLOCATE(DbasTest)
-    DEALLOCATE(DbasTrial)
-
-    DEALLOCATE(Kentry) 
-    DEALLOCATE(Dentry)
-
-    DEALLOCATE(IdofsTestTempl) 
-    DEALLOCATE(IdofsTrialTempl)
-
-  END SUBROUTINE
-
-END MODULE
+end module
  
