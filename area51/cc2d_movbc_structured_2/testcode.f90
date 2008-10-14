@@ -1,31 +1,31 @@
-MODULE testcode
+module testcode
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
   
-  IMPLICIT NONE
+  implicit none
 
 
-CONTAINS
+contains
 
-  SUBROUTINE coeff_Laplace (rdiscretisation,rform, &
+  subroutine coeff_Laplace (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
                   Dcoefficients)
     
-    USE BasicGeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use BasicGeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -42,38 +42,38 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The bilinear form which is currently being evaluated:
-    TYPE(t_bilinearForm), INTENT(IN)                            :: rform
+    type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER, INTENT(IN)                                         :: nelements
+    integer, intent(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    real(DP), dimension(NDIM2D,npointsPerElement,nelements), intent(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    type(t_collection), pointer                      :: p_rcollection
     
   !</input>
   
@@ -82,29 +82,29 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
 
   Dcoefficients = 1.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
 !***********************************
 
   !<subroutine>
 
-    SUBROUTINE coeff_RHS (rdiscretisation,rform, &
+    subroutine coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,p_rcollection, &
                   Dcoefficients)
     
-    USE BasicGeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use BasicGeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -121,34 +121,34 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER, INTENT(IN)                                         :: nelements
+    integer, intent(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    real(DP), dimension(NDIM2D,npointsPerElement,nelements), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,Number of elements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                      :: p_rcollection
+    type(t_collection), pointer                      :: p_rcollection
     
   !</input>
   
@@ -157,23 +157,23 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
   
     Dcoefficients = 1.0_DP
   
-    END SUBROUTINE
+    end subroutine
 
   !<subroutine>
 
-    SUBROUTINE getBoundaryValues (rdiscretisation,rbcRegion,ielement, &
+    subroutine getBoundaryValues (rdiscretisation,rbcRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
     
-    USE collection
-    USE spatialdiscretisation
-    USE discretebc
+    use collection
+    use spatialdiscretisation
+    use discretebc
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
@@ -186,22 +186,22 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! Boundary condition region that is currently being processed.
     ! (This e.g. defines the type of boundary conditions that are
     !  currently being calculated, as well as information about the current
     !  boundary segment 'where we are at the moment'.)
-    TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
+    type(t_bcRegion), intent(IN)                                :: rbcRegion
     
     
     ! The element number on the boundary which is currently being processed
-    INTEGER(I32), INTENT(IN)                                    :: ielement
+    integer(I32), intent(IN)                                    :: ielement
     
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
-    INTEGER, INTENT(IN)                                         :: cinfoNeeded
+    integer, intent(IN)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -215,7 +215,7 @@ CONTAINS
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
-    INTEGER, INTENT(IN)                                         :: iwhere
+    integer, intent(IN)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -224,11 +224,11 @@ CONTAINS
     !   dwhere = parameter value of the point where the value should be computed,
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   dwhere = 0 (not used)
-    REAL(DP), INTENT(IN)                                        :: dwhere
+    real(DP), intent(IN)                                        :: dwhere
      
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                  :: p_rcollection
+    type(t_collection), pointer                  :: p_rcollection
 
   !</input>
   
@@ -237,18 +237,18 @@ CONTAINS
     ! only needs one value, the computed quantity is put into Dvalues(1). 
     ! If multiple values are needed, they are collected here (e.g. for 
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-    REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
+    real(DP), dimension(:), intent(OUT)                         :: Dvalues
   !</output>
     
   !</subroutine>
   
     Dvalues(1) = 0.0_DP
   
-    END SUBROUTINE
+    end subroutine
 
 !***************************************
 
-  SUBROUTINE test_MatrixQ1
+  subroutine test_MatrixQ1
   
     use collection
     use triangulation
@@ -257,36 +257,36 @@ CONTAINS
     implicit none
 
     !INCLUDE 'stria.inc'
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
+    include 'cout.inc'
+    include 'cerr.inc'
+    include 'cmem.inc'
+    include 'cparametrization.inc'
 
     ! Variables
     
-    TYPE(t_boundary), POINTER :: p_rboundary
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    REAL(DP) :: x,y,t
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
-    CHARACTER(LEN=60) :: CFILE
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    real(DP) :: x,y,t
+    integer, dimension(SZTRIA,20) :: TRIAS
+    character(LEN=60) :: CFILE
+    real(DP), dimension(:), pointer :: p_Ddata
     
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rvector
     
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
-    INTEGER :: lv, LCOL,LLD,NA,NEQ,LA,LB
-    EXTERNAL E011,COEAGS,EM30,FEATRHS,NDFGX
-    DOUBLE PRECISION FEATRHS 
-    INTEGER :: NDFGX
-    INTEGER, DIMENSION(2,2) :: KAB
-    REAL(DP) :: TTT0,TTT1,TTT2
+    integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
+    external E011,COEAGS,EM30,FEATRHS,NDFGX
+    double precision FEATRHS 
+    integer :: NDFGX
+    integer, dimension(2,2) :: KAB
+    real(DP) :: TTT0,TTT1,TTT2
 
-    CALL storage_init(999, 100)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    call storage_init(999, 100)
+    call boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
     
     lv = 10
     M = 0
@@ -294,30 +294,30 @@ CONTAINS
     IMESH = 1
 
     CFILE = 'pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    call GENPAR (.true.,IMESH,CFILE)
 
     CFILE = 'pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    call INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    call tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
+    call spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
                                    p_rtriangulation, p_rboundary, NULL())
-    CALL ZTIME(TTT0)
-    CALL XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),E011,0)
+    call ZTIME(TTT0)
+    call XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),E011,0)
     
-    CALL ZTIME(TTT1)
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+    call ZTIME(TTT1)
+    call bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
     
-    CALL ZTIME(TTT2)
-    PRINT *,'Time1 structure: ',TTT1-TTT0
-    PRINT *,'Time2 structure: ',TTT2-TTT1
+    call ZTIME(TTT2)
+    print *,'Time1 structure: ',TTT1-TTT0
+    print *,'Time2 structure: ',TTT2-TTT1
     
-    CALL ZTIME(TTT0)
-    KAB = RESHAPE((/2,2,3,3/),(/2,2/))
+    call ZTIME(TTT0)
+    KAB = reshape((/2,2,3,3/),(/2,2/))
     LA = 0
-    CALL XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),E011,.FALSE., &
-               COEAGS,.TRUE.,KAB,2,2,0,'MATRIX',0,0.0_DP)
-    CALL ZTIME(TTT1)
+    call XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),E011,.false., &
+               COEAGS,.true.,KAB,2,2,0,'MATRIX',0,0.0_DP)
+    call ZTIME(TTT1)
     
     !CFILE = 'MATRIX1.TXT'
     !CALL OWM17(DWORK(L(LA)),KWORK(L(LCOL)),KWORK(L(LLD)),&
@@ -331,27 +331,27 @@ CONTAINS
     rform%Idescriptors(2,2) = DER_DERIV_Y
     rform%Dcoefficients(1)  = 1.0 
     rform%Dcoefficients(2)  = 1.0 
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-    CALL ZTIME(TTT2)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
+    call ZTIME(TTT2)
 
-    PRINT *,'Time1 assembly: ',TTT1-TTT0
-    PRINT *,'Time2 assembly: ',TTT2-TTT1
+    print *,'Time1 assembly: ',TTT1-TTT0
+    print *,'Time2 assembly: ',TTT2-TTT1
     
-    PRINT *,IWORK,IWMAX,NNWORK
+    print *,IWORK,IWMAX,NNWORK
     
     !CALL lsyssc_releaseVector (rvector)
-    CALL lsyssc_releaseMatrix (rmatrix)
-    CALL boundary_release (p_rboundary)
+    call lsyssc_releaseMatrix (rmatrix)
+    call boundary_release (p_rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
 !***************************************
 
-  SUBROUTINE test_MatrixEM30
+  subroutine test_MatrixEM30
   
     use collection
     use triangulation
@@ -360,36 +360,36 @@ CONTAINS
     implicit none
 
     !INCLUDE 'stria.inc'
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
+    include 'cout.inc'
+    include 'cerr.inc'
+    include 'cmem.inc'
+    include 'cparametrization.inc'
 
     ! Variables
     
-    TYPE(t_boundary), POINTER :: p_rboundary
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    TYPE(t_spatialDiscretisation),POINTER :: p_rdiscretisation
-    REAL(DP) :: x,y,t
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
-    CHARACTER(LEN=60) :: CFILE
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation),pointer :: p_rdiscretisation
+    real(DP) :: x,y,t
+    integer, dimension(SZTRIA,20) :: TRIAS
+    character(LEN=60) :: CFILE
+    real(DP), dimension(:), pointer :: p_Ddata
     
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rvector
     
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
-    INTEGER :: lv, LCOL,LLD,NA,NEQ,LA,LB
-    EXTERNAL E011,COEAGS,EM30,FEATRHS,NDFGX
-    DOUBLE PRECISION FEATRHS 
-    INTEGER :: NDFGX
-    INTEGER, DIMENSION(2,2) :: KAB
-    REAL(DP) :: TTT0,TTT1,TTT2
+    integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
+    external E011,COEAGS,EM30,FEATRHS,NDFGX
+    double precision FEATRHS 
+    integer :: NDFGX
+    integer, dimension(2,2) :: KAB
+    real(DP) :: TTT0,TTT1,TTT2
 
-    CALL storage_init(999, 100)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    call storage_init(999, 100)
+    call boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
     
     lv = 10
     M = 0
@@ -397,30 +397,30 @@ CONTAINS
     IMESH = 1
 
     CFILE = 'pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    call GENPAR (.true.,IMESH,CFILE)
 
     CFILE = 'pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    call INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    call tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation,EL_EM30,CUB_TRZ,&
+    call spdiscr_initDiscr_simple (p_rdiscretisation,EL_EM30,CUB_TRZ,&
                                    p_rtriangulation, p_rboundary, NULL())
-    CALL ZTIME(TTT0)
-    CALL XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),EM30,0)
+    call ZTIME(TTT0)
+    call XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),EM30,0)
     
-    CALL ZTIME(TTT1)
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+    call ZTIME(TTT1)
+    call bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
     
-    CALL ZTIME(TTT2)
-    PRINT *,'Time1 structure: ',TTT1-TTT0
-    PRINT *,'Time2 structure: ',TTT2-TTT1
+    call ZTIME(TTT2)
+    print *,'Time1 structure: ',TTT1-TTT0
+    print *,'Time2 structure: ',TTT2-TTT1
     
-    CALL ZTIME(TTT0)
-    KAB = RESHAPE((/2,2,3,3/),(/2,2/))
+    call ZTIME(TTT0)
+    KAB = reshape((/2,2,3,3/),(/2,2/))
     LA = 0
-    CALL XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),EM30,.TRUE., &
-               COEAGS,.TRUE.,KAB,2,2,0,'MATRIX',0,0.0_DP)
-    CALL ZTIME(TTT1)
+    call XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),EM30,.true., &
+               COEAGS,.true.,KAB,2,2,0,'MATRIX',0,0.0_DP)
+    call ZTIME(TTT1)
     
     !CFILE = 'MATRIX1.TXT'
     !CALL OWM17(DWORK(L(LA)),KWORK(L(LCOL)),KWORK(L(LLD)),&
@@ -434,27 +434,27 @@ CONTAINS
     rform%Idescriptors(2,2) = DER_DERIV_Y
     rform%Dcoefficients(1)  = 1.0 
     rform%Dcoefficients(2)  = 1.0 
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-    CALL ZTIME(TTT2)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
+    call ZTIME(TTT2)
 
-    PRINT *,'Time1 assembly: ',TTT1-TTT0
-    PRINT *,'Time2 assembly: ',TTT2-TTT1
+    print *,'Time1 assembly: ',TTT1-TTT0
+    print *,'Time2 assembly: ',TTT2-TTT1
     
-    PRINT *,IWORK,IWMAX,NNWORK
+    print *,IWORK,IWMAX,NNWORK
     
     !CALL lsyssc_releaseVector (rvector)
-    CALL lsyssc_releaseMatrix (rmatrix)
-    CALL boundary_release (p_rboundary)
+    call lsyssc_releaseMatrix (rmatrix)
+    call boundary_release (p_rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
 !***************************************
 
-  SUBROUTINE test_RHSQ1
+  subroutine test_RHSQ1
   
     use collection
     use triangulation
@@ -463,36 +463,36 @@ CONTAINS
     implicit none
 
     !INCLUDE 'stria.inc'
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
+    include 'cout.inc'
+    include 'cerr.inc'
+    include 'cmem.inc'
+    include 'cparametrization.inc'
 
     ! Variables
     
-    TYPE(t_boundary), POINTER :: p_rboundary
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    REAL(DP) :: x,y,t
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
-    CHARACTER(LEN=60) :: CFILE
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    real(DP) :: x,y,t
+    integer, dimension(SZTRIA,20) :: TRIAS
+    character(LEN=60) :: CFILE
+    real(DP), dimension(:), pointer :: p_Ddata
     
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rvector
     
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
-    INTEGER :: lv, LCOL,LLD,NA,NEQ,LA,LB
-    EXTERNAL E011,COEAGS,EM30,FEATRHS,NDFGX
-    DOUBLE PRECISION FEATRHS 
-    INTEGER :: NDFGX
-    INTEGER, DIMENSION(2,2) :: KAB
-    REAL(DP) :: TTT0,TTT1,TTT2
+    integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
+    external E011,COEAGS,EM30,FEATRHS,NDFGX
+    double precision FEATRHS 
+    integer :: NDFGX
+    integer, dimension(2,2) :: KAB
+    real(DP) :: TTT0,TTT1,TTT2
 
-    CALL storage_init(999, 100)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    call storage_init(999, 100)
+    call boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
     
     lv = 10
     M = 0
@@ -500,49 +500,49 @@ CONTAINS
     IMESH = 1
 
     CFILE = 'pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    call GENPAR (.true.,IMESH,CFILE)
 
     CFILE = 'pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    call INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    call tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
+    call spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
                                    p_rtriangulation, p_rboundary, NULL())
     
-    CALL ZTIME(TTT0)
+    call ZTIME(TTT0)
     
     LB = 0
     NEQ = NDFGX(30,TRIAS(:,lv))
-    CALL XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
-                       1,LB,NEQ,1,E011,.FALSE.,&
-                       FEATRHS,1,1,.TRUE.,2,'RHS   ') 
-    CALL ZTIME(TTT1)
+    call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
+                       1,LB,NEQ,1,E011,.false.,&
+                       FEATRHS,1,1,.true.,2,'RHS   ') 
+    call ZTIME(TTT1)
     
     ! set up linear form
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rvector,coeff_RHS)
+    call linf_buildVectorScalar (p_rdiscretisation,rlinform,.true.,rvector,coeff_RHS)
     
-    CALL ZTIME(TTT2)
-    PRINT *,'Time1 RHS: ',TTT1-TTT0
-    PRINT *,'Time2 RHS: ',TTT2-TTT1
+    call ZTIME(TTT2)
+    print *,'Time1 RHS: ',TTT1-TTT0
+    print *,'Time2 RHS: ',TTT2-TTT1
 
     !CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
     !p_Ddata = p_Ddata - DWORK(L(LB):L(LB)+NEQ-1)
     
-    PRINT *,IWORK,IWMAX,NNWORK
+    print *,IWORK,IWMAX,NNWORK
     
-    CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+    call storage_getbase_double (rmatrix%h_DA,p_Ddata)
     
-    CALL lsyssc_releaseVector (rvector)
+    call lsyssc_releaseVector (rvector)
     !CALL lsyssc_releaseMatrix (rmatrix)
-    CALL boundary_release (p_rboundary)
+    call boundary_release (p_rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
 !***************************************
 
-  SUBROUTINE test_RHSEM30
+  subroutine test_RHSEM30
   
     use collection
     use triangulation
@@ -551,36 +551,36 @@ CONTAINS
     implicit none
 
     !INCLUDE 'stria.inc'
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
+    include 'cout.inc'
+    include 'cerr.inc'
+    include 'cmem.inc'
+    include 'cparametrization.inc'
 
     ! Variables
     
-    TYPE(t_boundary), POINTER :: p_rboundary
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    REAL(DP) :: x,y,t
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
-    CHARACTER(LEN=60) :: CFILE
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    real(DP) :: x,y,t
+    integer, dimension(SZTRIA,20) :: TRIAS
+    character(LEN=60) :: CFILE
+    real(DP), dimension(:), pointer :: p_Ddata
     
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rvector
     
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
-    INTEGER :: lv, LCOL,LLD,NA,NEQ,LA,LB
-    EXTERNAL E011,COEAGS,EM30,FEATRHS,NDFGX
-    DOUBLE PRECISION FEATRHS 
-    INTEGER :: NDFGX
-    INTEGER, DIMENSION(2,2) :: KAB
-    REAL(DP) :: TTT0,TTT1,TTT2
+    integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
+    external E011,COEAGS,EM30,FEATRHS,NDFGX
+    double precision FEATRHS 
+    integer :: NDFGX
+    integer, dimension(2,2) :: KAB
+    real(DP) :: TTT0,TTT1,TTT2
 
-    CALL storage_init(999, 100)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    call storage_init(999, 100)
+    call boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
     
     lv = 10
     M = 0
@@ -588,50 +588,50 @@ CONTAINS
     IMESH = 1
 
     CFILE = 'pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    call GENPAR (.true.,IMESH,CFILE)
 
     CFILE = 'pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    call INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    call tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation,EL_EM30,CUB_TRZ,&
+    call spdiscr_initDiscr_simple (p_rdiscretisation,EL_EM30,CUB_TRZ,&
                                    p_rtriangulation, p_rboundary, NULL())
     
-    CALL ZTIME(TTT0)
+    call ZTIME(TTT0)
     
     LB = 0
     NEQ = NDFGX(30,TRIAS(:,lv))
-    CALL XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
-                       1,LB,NEQ,1,EM30,.TRUE.,&
-                       FEATRHS,1,1,.TRUE.,2,'RHS   ') 
-    CALL ZTIME(TTT1)
+    call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
+                       1,LB,NEQ,1,EM30,.true.,&
+                       FEATRHS,1,1,.true.,2,'RHS   ') 
+    call ZTIME(TTT1)
     
     ! set up linear form
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rvector,coeff_RHS)
+    call linf_buildVectorScalar (p_rdiscretisation,rlinform,.true.,rvector,coeff_RHS)
     
-    CALL ZTIME(TTT2)
+    call ZTIME(TTT2)
     
-    PRINT *,'Time1 RHS: ',TTT1-TTT0
-    PRINT *,'Time2 RHS: ',TTT2-TTT1
+    print *,'Time1 RHS: ',TTT1-TTT0
+    print *,'Time2 RHS: ',TTT2-TTT1
 
-    PRINT *,IWORK,IWMAX,NNWORK
+    print *,IWORK,IWMAX,NNWORK
 
     !CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
     !p_Ddata = p_Ddata - DWORK(L(LB):L(LB)+NEQ-1)
     
-    CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+    call storage_getbase_double (rmatrix%h_DA,p_Ddata)
     
-    CALL lsyssc_releaseVector (rvector)
+    call lsyssc_releaseVector (rvector)
     !CALL lsyssc_releaseMatrix (rmatrix)
-    CALL boundary_release (p_rboundary)
+    call boundary_release (p_rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
 !***************************************
 
-  SUBROUTINE test_LGS_Q1
+  subroutine test_LGS_Q1
   
     use collection
     use triangulation
@@ -640,52 +640,52 @@ CONTAINS
     implicit none
 
     !INCLUDE 'stria.inc'
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
+    include 'cout.inc'
+    include 'cerr.inc'
+    include 'cmem.inc'
+    include 'cparametrization.inc'
 
     ! Variables
     
-    TYPE(t_boundary), POINTER :: p_rboundary
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
-    TYPE(t_spatialDiscretisation),POINTER :: p_rdiscretisation
-    REAL(DP) :: x,y,t
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
-    CHARACTER(LEN=60) :: CFILE
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Kcol,p_Kld
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation),pointer :: p_rdiscretisation
+    real(DP) :: x,y,t
+    integer, dimension(SZTRIA,20) :: TRIAS
+    character(LEN=60) :: CFILE
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(I32), dimension(:), pointer :: p_Kcol,p_Kld
     
-    TYPE(t_matrixScalar) :: rmatrix
-    TYPE(t_vectorScalar) :: rvector
+    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rvector
     
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
-    INTEGER :: lv, LCOL,LLD,NA,NEQ,LA,LB,ierror
-    EXTERNAL E011,COEAGS,EM30,FEATRHS,NDFGX
-    DOUBLE PRECISION FEATRHS 
-    INTEGER :: NDFGX
-    INTEGER, DIMENSION(2,2) :: KAB
-    REAL(DP) :: TTT0,TTT1,TTT2
+    integer :: lv, LCOL,LLD,NA,NEQ,LA,LB,ierror
+    external E011,COEAGS,EM30,FEATRHS,NDFGX
+    double precision FEATRHS 
+    integer :: NDFGX
+    integer, dimension(2,2) :: KAB
+    real(DP) :: TTT0,TTT1,TTT2
     
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
-    TYPE(t_boundaryRegion) :: rboundaryRegion
-    TYPE(t_bcRegion), POINTER :: p_rbcRegion
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    type(t_boundaryConditions), pointer :: p_rboundaryConditions
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_bcRegion), pointer :: p_rbcRegion
+    type(t_discreteBC), pointer :: p_rdiscreteBC
     
-    TYPE(t_matrixBlock) :: rmatrixBlock
-    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_matrixBlock) :: rmatrixBlock
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
     
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode
     
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
-    INTEGER NCELLS,NVERTS
+    integer NCELLS,NVERTS
 
-    CALL storage_init(999, 100)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    call storage_init(999, 100)
+    call boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
         
     lv = 7
     M = 0
@@ -693,30 +693,30 @@ CONTAINS
     IMESH = 1
 
     CFILE = 'pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    call GENPAR (.true.,IMESH,CFILE)
 
     CFILE = 'pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    call INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    call tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
+    call spdiscr_initDiscr_simple (p_rdiscretisation,EL_E011,CUB_TRZ,&
                                    p_rtriangulation, p_rboundary, NULL())
-    CALL ZTIME(TTT0)
-    CALL XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),E011,0)
+    call ZTIME(TTT0)
+    call XAP7X(LCOL,LLD,NA,NEQ,TRIAS(:,lv),E011,0)
     
-    CALL ZTIME(TTT1)
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+    call ZTIME(TTT1)
+    call bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
     
-    CALL ZTIME(TTT2)
-    PRINT *,'Time1 structure: ',TTT1-TTT0
-    PRINT *,'Time2 structure: ',TTT2-TTT1
+    call ZTIME(TTT2)
+    print *,'Time1 structure: ',TTT1-TTT0
+    print *,'Time2 structure: ',TTT2-TTT1
     
-    CALL ZTIME(TTT0)
-    KAB = RESHAPE((/2,2,3,3/),(/2,2/))
+    call ZTIME(TTT0)
+    KAB = reshape((/2,2,3,3/),(/2,2/))
     LA = 0
-    CALL XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),E011,.FALSE., &
-               COEAGS,.TRUE.,KAB,2,2,0,'MATRIX',0,0.0_DP)
-    CALL ZTIME(TTT1)
+    call XAB7X(LA,LCOL,LLD,NA,NEQ,1,1,TRIAS(:,lv),E011,.false., &
+               COEAGS,.true.,KAB,2,2,0,'MATRIX',0,0.0_DP)
+    call ZTIME(TTT1)
     
     !CFILE = 'MATRIX1.TXT'
     !CALL OWM17(DWORK(L(LA)),KWORK(L(LCOL)),KWORK(L(LLD)),&
@@ -730,62 +730,62 @@ CONTAINS
     rform%Idescriptors(2,2) = DER_DERIV_Y
     rform%Dcoefficients(1)  = 1.0 
     rform%Dcoefficients(2)  = 1.0 
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
-    CALL ZTIME(TTT2)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
+    call ZTIME(TTT2)
 
-    PRINT *,'Time1 assembly: ',TTT1-TTT0
-    PRINT *,'Time2 assembly: ',TTT2-TTT1
+    print *,'Time1 assembly: ',TTT1-TTT0
+    print *,'Time2 assembly: ',TTT2-TTT1
     
-    PRINT *,IWORK,IWMAX,NNWORK
+    print *,IWORK,IWMAX,NNWORK
     
     LB = 0
     NEQ = NDFGX(30,TRIAS(:,lv))
-    CALL XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
-                       1,LB,NEQ,1,E011,.FALSE.,&
-                       FEATRHS,1,1,.TRUE.,2,'RHS   ') 
-    CALL ZTIME(TTT1)
+    call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
+                       1,LB,NEQ,1,E011,.false.,&
+                       FEATRHS,1,1,.true.,2,'RHS   ') 
+    call ZTIME(TTT1)
     
     ! set up linear form
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rvector,coeff_RHS)
+    call linf_buildVectorScalar (p_rdiscretisation,rlinform,.true.,rvector,coeff_RHS)
     
-    CALL ZTIME(TTT2)
-    PRINT *,'Time1 RHS: ',TTT1-TTT0
-    PRINT *,'Time2 RHS: ',TTT2-TTT1
+    call ZTIME(TTT2)
+    print *,'Time1 RHS: ',TTT1-TTT0
+    print *,'Time2 RHS: ',TTT2-TTT1
 
-    CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
-    CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+    call storage_getbase_double (rvector%h_Ddata,p_Ddata)
+    call storage_getbase_double (rmatrix%h_DA,p_Ddata)
     
     ! Structure for boundary conditions
-    CALL scbc_initScalarBC (p_rboundaryConditions,p_rboundary)
+    call scbc_initScalarBC (p_rboundaryConditions,p_rboundary)
     
     ! Add all four edges as Dirichlet
-    CALL boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
+    call boundary_createRegion(p_rboundary,1,1,rboundaryRegion)
+    call scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
                              rboundaryRegion,p_rbcRegion)
                              
-    CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
+    call boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
+    call scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
                              rboundaryRegion,p_rbcRegion)
                              
-    CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
+    call boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
+    call scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
                              rboundaryRegion,p_rbcRegion)
                              
-    CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
+    call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
+    call scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
                              rboundaryRegion,p_rbcRegion)
                              
     p_rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
 
     ! Discretise the boundary conditions; this gives p_RdiscreteBC
-    NULLIFY(p_RdiscreteBC)
-    CALL bcasm_discretiseBC (p_rdiscretisation,p_RdiscreteBC,.FALSE., &
+    nullify(p_RdiscreteBC)
+    call bcasm_discretiseBC (p_rdiscretisation,p_RdiscreteBC,.false., &
                              getBoundaryValues,NULL())
                              
     ! Hang them in into the vector and matrix
@@ -793,10 +793,10 @@ CONTAINS
     rvector%p_RdiscreteBC => p_RdiscreteBC
                              
     ! Create block matrices/vectors for the solver
-    CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock)
-    CALL lsysbl_createVecFromScalar (rvector,rrhsBlock)
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
-    CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
+    call lsysbl_createMatFromScalar (rmatrix,rmatrixBlock)
+    call lsysbl_createVecFromScalar (rvector,rrhsBlock)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
     
     ! Initialise the first filter of the filter chain as boundary
     ! implementation filter:
@@ -804,9 +804,9 @@ CONTAINS
     
     ! Apply the filter chain to the matrix and the vectors.
     ! This implement them into the vectors and matrices
-    CALL filter_applyFilterChainVec (rrhsBlock, RfilterChain)
-    CALL filter_applyFilterChainVec (rvectorBlock, RfilterChain)
-    CALL filter_applyFilterChainMat (rmatrixBlock, RfilterChain)
+    call filter_applyFilterChainVec (rrhsBlock, RfilterChain)
+    call filter_applyFilterChainVec (rvectorBlock, RfilterChain)
+    call filter_applyFilterChainMat (rmatrixBlock, RfilterChain)
     
     ! Change the filter to work with defect vectors during the 
     ! solution process
@@ -814,68 +814,68 @@ CONTAINS
 
     ! Create a BiCGStab-solver with the above filter chain
     p_RfilterChain => RfilterChain
-    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
     
     ! Initialise the solver with the system matrix
-    CALL linsol_setMatrices(p_RsolverNode,(/rmatrixBlock/))
+    call linsol_setMatrices(p_RsolverNode,(/rmatrixBlock/))
     
     ! Initialise structure/data of the solver
-    CALL linsol_initStructure (p_rsolverNode,ierror)
-    CALL linsol_initData (p_rsolverNode,ierror)
+    call linsol_initStructure (p_rsolverNode,ierror)
+    call linsol_initData (p_rsolverNode,ierror)
     
     ! Solve the system
-    CALL linsol_solveAdaptively (p_rsolverNode,&
+    call linsol_solveAdaptively (p_rsolverNode,&
                                  rvectorBlock,rrhsBlock,rtempBlock)
     
     ! Release unnecessary data
-    CALL linsol_doneData (p_rsolverNode)
-    CALL linsol_doneStructure (p_rsolverNode)
-    CALL linsol_releaseSolver (p_rsolverNode)
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
 
-    CALL bcasm_releaseDiscreteBC (p_RdiscreteBC)
-    CALL lsyssc_releaseVector (rvector)
-    CALL lsyssc_releaseMatrix (rmatrix)
-    CALL boundary_release (p_rboundary)
+    call bcasm_releaseDiscreteBC (p_RdiscreteBC)
+    call lsyssc_releaseVector (rvector)
+    call lsyssc_releaseMatrix (rmatrix)
+    call boundary_release (p_rboundary)
     
-    CALL GMVOF0 (69,-2,'u.gmv')
-    CALL GMVHEA (69)
-    CALL GMVTRI (69,p_rtriangulation%Itria,0,NCELLS,NVERTS)
+    call GMVOF0 (69,-2,'u.gmv')
+    call GMVHEA (69)
+    call GMVTRI (69,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
-    CALL storage_getbase_double (rvectorBlock%RvectorBlock(1)%h_Ddata,p_Ddata)
-    CALL GMVSCA (69,p_rtriangulation%Itria,1,NVERTS,&
+    call storage_getbase_double (rvectorBlock%RvectorBlock(1)%h_Ddata,p_Ddata)
+    call GMVSCA (69,p_rtriangulation%Itria,1,NVERTS,&
                  rvectorBlock%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     
-    CALL GMVFOT (69)
-    CLOSE(69)
+    call GMVFOT (69)
+    close(69)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
 
-    DOUBLE PRECISION FUNCTION FEATRHS (X,Y,IA,IBLOC,BFIRST,&
+    double precision function FEATRHS (X,Y,IA,IBLOC,BFIRST,&
                                     TRIA,IPARAM,DPARAM,IGEOM,DGEOM)
     
-    IMPLICIT NONE
+    implicit none
     
-    DOUBLE PRECISION X,Y
-    INTEGER IA, IB, IBLOC
-    LOGICAL BFIRST
+    double precision X,Y
+    integer IA, IB, IBLOC
+    logical BFIRST
     
-    INTEGER IPARAM(*),TRIA(*),IGEOM(*)
-    DOUBLE PRECISION DPARAM(*),DGEOM(*)
+    integer IPARAM(*),TRIA(*),IGEOM(*)
+    double precision DPARAM(*),DGEOM(*)
 
-    DOUBLE PRECISION TIMENS,RE
+    double precision TIMENS,RE
     
     FEATRHS=1.0D0
 
-    END FUNCTION
+    end function
 
 
-PROGRAM testf90
-  USE testcode
-  IMPLICIT NONE
-  INCLUDE 'cmem.inc'
-  CALL ZINIT(NNWORK,'feat.msg','data/cc2d.err','data/cc2d.prt',&
+program testf90
+  use testcode
+  implicit none
+  include 'cmem.inc'
+  call ZINIT(NNWORK,'feat.msg','data/cc2d.err','data/cc2d.prt',&
              'data/cc2d.sys','data/cc2d.trc') 
-  CALL test_MatrixEM30
-END PROGRAM
+  call test_MatrixEM30
+end program

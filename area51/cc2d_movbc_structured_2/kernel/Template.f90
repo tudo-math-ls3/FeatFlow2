@@ -8,19 +8,19 @@
 !# </purpose>
 !##############################################################################
 
-MODULE x
+module x
 
-  USE fsystem
+  use fsystem
   
-  IMPLICIT NONE
+  implicit none
 
 !<types>
   
   !<typeblock>
   
-  TYPE x
+  type x
     !...
-  END TYPE
+  end type
   
   !</typeblock>
 
@@ -33,7 +33,7 @@ MODULE x
   !<constantblock description="x">
 
   ! logical value 'true'
-  INTEGER, PARAMETER :: YES = 0
+  integer, parameter :: YES = 0
 
   !</constantblock>
   
@@ -42,4 +42,4 @@ MODULE x
   ! ***************************************************************************
 
 
-END MODULE
+end module
